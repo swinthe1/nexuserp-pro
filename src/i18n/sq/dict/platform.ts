@@ -110,6 +110,22 @@ export default {
     'Jeni brenda {company} si administrator i platformës. Ndryshimet që bëni ruhen në librat e klientit.',
   'Back to clients': 'Kthehu te klientët',
 
+  // simpler menu
+  'Remove {page} from favourites': 'Hiq {page} nga të preferuarat',
+  'Add {page} to favourites': 'Shto {page} te të preferuarat',
+  'Remove from favourites': 'Hiq nga të preferuarat',
+  'Add to favourites': 'Shto te të preferuarat',
+  'Find a page…': 'Gjej një faqe…',
+  'Favourites': 'Të preferuarat',
+  'Used most': 'Më të përdorurat',
+  'Click the star next to a page to keep it here.': 'Klikoni yllin pranë një faqeje që ta mbani këtu.',
+  'Menu': 'Menuja',
+  '{part} is back in the menu': '{part} u kthye në menu',
+  '{part} is hidden from the menu': '{part} u fsheh nga menuja',
+  'Parts of the menu': 'Pjesët e menusë',
+  "Switch off what this company does not use, for example Manufacturing in a shop. It disappears from everyone's menu; nothing is deleted and you can switch it back on at any time. Each person can also pin the pages they use most with the star.":
+    'Fikni atë që kjo kompani nuk e përdor, për shembull Prodhimin në një dyqan. Zhduket nga menuja e të gjithëve; nuk fshihet asgjë dhe mund ta ndizni përsëri kur të doni. Çdo person mund të mbajë lart edhe faqet që përdor më shumë, me yllin.',
+
   // sign-in pages
   'Invited by your company? {link}': 'Ju ka ftuar kompania? {link}',
   'Accounts are by invitation. Use the email your company invited, and you join it automatically.':

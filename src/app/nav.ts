@@ -23,7 +23,7 @@ export const NAV: NavSection[] = [
     items: [{ label: msg('Dashboard'), href: '/', icon: LayoutDashboard, perm: 'core.read', keywords: ['home', 'kpi'] }],
   },
   {
-    label: msg('Inventory'),
+    label: msg('Inventory|menu'),
     items: [
       { label: msg('Products'), href: '/inventory/products', icon: Boxes, perm: 'inventory.read', keywords: ['items', 'sku', 'variants', 'barcode'] },
       { label: msg('Stock levels'), href: '/inventory/stock', icon: PackageSearch, perm: 'inventory.read', keywords: ['on hand', 'available', 'reserved', 'valuation'] },
@@ -65,7 +65,7 @@ export const NAV: NavSection[] = [
     ],
   },
   {
-    label: msg('Warehouse'),
+    label: msg('Warehouse|menu'),
     items: [
       { label: msg('Warehouse floor'), href: '/wms', icon: ScanLine, perm: 'wms.read', keywords: ['wms', 'scanner', 'handheld', 'magazina'] },
       { label: msg('Receive'), href: '/wms/receive', icon: PackageCheck, perm: 'wms.read', keywords: ['receiving', 'dock', 'grn', 'scan in'] },

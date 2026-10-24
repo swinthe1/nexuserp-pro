@@ -1390,6 +1390,7 @@ export type Database = {
           auto_replenish_enabled: boolean
           auto_replenish_action: string
           auto_replenish_hour: number
+          hidden_menu_sections: string[]
         }
         Insert: {
           id?: string
@@ -1419,6 +1420,7 @@ export type Database = {
           auto_replenish_enabled?: boolean
           auto_replenish_action?: string
           auto_replenish_hour?: number
+          hidden_menu_sections?: string[]
         }
         Update: {
           id?: string
@@ -1448,6 +1450,7 @@ export type Database = {
           auto_replenish_enabled?: boolean
           auto_replenish_action?: string
           auto_replenish_hour?: number
+          hidden_menu_sections?: string[]
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -10460,6 +10463,13 @@ export type Database = {
           p_children?: Json
         }
         Returns: string
+      }
+      save_my_preference: {
+        Args: {
+          p_key: string
+          p_value: Json
+        }
+        Returns: undefined
       }
       save_numbering: {
         Args: {

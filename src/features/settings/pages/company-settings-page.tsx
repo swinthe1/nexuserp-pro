@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import { NAV } from '@/app/nav'
 import { formatDateWith, t, td } from '@/i18n'
 import { formatDate } from '@/lib/utils'
 import { type CompanyProfile, type CompanySettings, useCompanyProfile, useCompanySettings, useDirty, useLookups, useSaveCompanyProfile, useSaveCompanySettings } from '../api'
@@ -33,10 +34,12 @@ export function CompanySettingsPage() {
           <TabsTrigger value="company">{t('Company')}</TabsTrigger>
           <TabsTrigger value="rules">{t('Defaults and rules')}</TabsTrigger>
           <TabsTrigger value="fiscal">{t('Fiscalization')}</TabsTrigger>
+          <TabsTrigger value="menu">{t('Menu')}</TabsTrigger>
         </TabsList>
         <TabsContent value="company"><CompanyProfileForm /></TabsContent>
         <TabsContent value="rules"><RulesForm /></TabsContent>
         <TabsContent value="fiscal"><FiscalForm /></TabsContent>
+        <TabsContent value="menu"><MenuForm /></TabsContent>
       </Tabs>
     </>
   )
@@ -284,5 +287,38 @@ function FiscalForm() {
       </div>
       <SaveBar dirty={dirty} saving={save.isPending} onSave={() => void submit()} onReset={() => setV(settings.data)} disabled={ro} />
     </>
+  )
+}
+
+/** Parts of the menu the company does not use, hidden for everyone (pages stay reachable by search). */
+function MenuForm() {
+  const settings = useCompanySettings()
+  const save = useSaveCompanySettings()
+  const { can } = useCompany()
+  const writable = can('admin.write')
+  if (settings.isLoading) return <Skeleton className="h-64" />
+  if (settings.error) return <ErrorState error={settings.error} onRetry={() => void settings.refetch()} />
+  const hidden = settings.data?.hidden_menu_sections ?? []
+  const sections = NAV.filter((s) => s.label !== 'Overview' && s.label !== 'Company')
+  const setShown = (label: string, shown: boolean) => {
+    const next = shown ? hidden.filter((h) => h !== label) : [...hidden, label]
+    void save.mutateAsync({ hidden_menu_sections: next }).then(() =>
+      toast.success(shown ? t('{part} is back in the menu', { part: t(label) }) : t('{part} is hidden from the menu', { part: t(label) })))
+  }
+  return (
+    <Card className="max-w-2xl">
+      <CardHeader>
+        <CardTitle>{t('Parts of the menu')}</CardTitle>
+        <CardDescription>{t('Switch off what this company does not use, for example Manufacturing in a shop. It disappears from everyone\'s menu; nothing is deleted and you can switch it back on at any time. Each person can also pin the pages they use most with the star.')}</CardDescription>
+      </CardHeader>
+      <CardContent className="divide-y">
+        {sections.map((s) => (
+          <ToggleRow key={s.label} title={t(s.label)}
+            description={s.items.slice(0, 4).map((i) => t(i.label)).join(', ') + (s.items.length > 4 ? '…' : '')}
+            control={<Switch checked={!hidden.includes(s.label)} disabled={!writable || save.isPending} aria-label={t(s.label)}
+              onCheckedChange={(on) => setShown(s.label, on)} />} />
+        ))}
+      </CardContent>
+    </Card>
   )
 }

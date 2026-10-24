@@ -98,5 +98,17 @@ select t.ok((public.platform_clients() ->> 'self_service')::boolean, 'self-servi
 select public.platform_set_self_service(false);
 reset role;
 
+-- simpler menu: personal favourites kept beside other preferences; company hides unused parts
+set role authenticated;
+select t.login('olga@drita.xk');
+update public.profiles set locale = 'en' where id = auth.uid();
+select public.save_my_preference('nav_favourites', '["/pos", "/sales/invoices"]');
+select t.ok((select preferences -> 'nav_favourites' ->> 0 from public.profiles where id = auth.uid()) = '/pos', 'favourites are saved');
+select t.ok((select (preferences ->> 'locale_chosen')::boolean from public.profiles where id = auth.uid()), 'other preferences are kept');
+select t.throws($$ select public.save_my_preference('Bad Key!', '1') $$, 'Unknown preference', 'only simple preference names');
+update public.company_settings set hidden_menu_sections = array['Manufacturing'] where company_id = :'drita';
+select t.ok((select hidden_menu_sections from public.company_settings where company_id = :'drita') = array['Manufacturing'], 'the company admin hides unused menu parts');
+reset role;
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;
