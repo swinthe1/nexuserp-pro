@@ -88,12 +88,16 @@ select public.sync_push(:'key', jsonb_build_object('movements', '[
   {"ext_id":"9005","type":"X","warehouse":"1","sku":"NOPE","qty":"1"}]'::jsonb,
   'stock', '[{"warehouse":"1","sku":"33173","qty":"9"}]'::jsonb)) as rm \gset
 select public.sync_push(:'key', jsonb_build_object('movements', '[{"ext_id":"9001","type":"C-","warehouse":"1","sku":"33173","qty":"-2"}]'::jsonb)) as rm2 \gset
+select public.sync_push(:'key', jsonb_build_object('movements', '[{"ext_id":"9006","type":"FD","warehouse":"1","sku":"33173","qty":"-1","reference":"FD-1"}]'::jsonb,
+  'stock', '[{"warehouse":"1","sku":"33173","qty":"8"}]'::jsonb)) as rfd \gset
 reset role;
+select t.ok((select movement_type from public.stock_movements where company_id = :'co' and external_ref = 'LM:9006') = 'pos_sale'
+  and (:'rfd'::jsonb -> 'stock' ->> 'changed') = '0', 'a till sale written as FD is a till sale, and the stock needs no correction');
 select t.ok((:'rm'::jsonb -> 'movements' ->> 'recorded')::int = 4 and (:'rm'::jsonb -> 'movements' ->> 'unknown_items')::int = 1, 'movements arrive with their own type');
 select t.ok((:'rm'::jsonb -> 'stock' ->> 'changed') = '0', 'the quantity check finds nothing left to correct');
 select t.ok((:'rm2'::jsonb -> 'movements' ->> 'already')::int = 1, 'a movement sent twice is recorded once');
 select t.ok((select string_agg(movement_type || ':' || reference, ',' order by external_ref) from public.stock_movements where company_id = :'co' and external_ref like 'LM:%')
-            = 'pos_sale:POS-77,receipt:FB-12,transfer:MV-3,transfer:MV-3', 'sale, receipt and transfer, each with its document');
+            = 'pos_sale:POS-77,receipt:FB-12,transfer:MV-3,transfer:MV-3,pos_sale:FD-1', 'sale, receipt and transfer, each with its document');
 select t.ok(not exists (select 1 from public.stock_movements where company_id = :'co' and external_ref like 'LM:%' and journal_entry_id is not null), 'mirrored movements stay out of the books');
 
 -- stock per store for the dashboard
