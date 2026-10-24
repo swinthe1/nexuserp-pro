@@ -13,7 +13,7 @@
 param([switch]$Service, [switch]$Full, [switch]$Once)
 
 $ErrorActionPreference = 'Stop'
-$Version = '2.1'
+$Version = '2.2'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $cfgPath = Join-Path $here 'lidhja.json'
 $statePath = Join-Path $here 'lidhja-gjendja.json'
@@ -535,6 +535,21 @@ if ($askLater) {
   $cfg | Add-Member -NotePropertyName main_price_list -NotePropertyValue $lists0[[int]$n - 1].name -Force
   [IO.File]::WriteAllText($cfgPath, ($cfg | ConvertTo-Json), (New-Object System.Text.UTF8Encoding $false))
   Write-Host "U ruajt: $($cfg.server) / $($cfg.database) / $($cfg.main_price_list)" -ForegroundColor Green
+}
+
+# ---------------------------------------------------------------- vetëm një lidhje njëherësh
+# two links at once read Logmicro at different moments and keep undoing each other's quantities
+$script:single = New-Object System.Threading.Mutex($false, 'Global\NexusERP-Lidhja')
+$owned = $false
+try { $owned = $script:single.WaitOne(0) } catch [System.Threading.AbandonedMutexException] { $owned = $true }
+if (-not $owned) {
+  if ($Service) { exit 0 }   # the background link is already running: nothing to do
+  Write-Host ''
+  Write-Host 'Lidhja po punon tashmë në këtë server (ndoshta në sfond, nga Instalo-Lidhjen).' -ForegroundColor Yellow
+  Write-Host 'Dy lidhje njëherësh e prishin stokun. Kjo dritare nuk niset.' -ForegroundColor Yellow
+  Write-Host 'Për ta ndjekur në dritare: nisni Ndalo-Lidhjen.bat, pastaj Nis-Lidhjen.bat.' -ForegroundColor Yellow
+  Read-Host 'Shtypni Enter për ta mbyllur'
+  exit 0
 }
 
 # ---------------------------------------------------------------- cikli i përhershëm
