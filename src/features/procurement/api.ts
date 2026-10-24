@@ -4,7 +4,7 @@ import { useCompany } from '@/app/company-provider'
 import type { Json, Tables } from '@/lib/database.types'
 import { t } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
-import { supabase } from '@/lib/supabase'
+import { after, byName, fetchAll, supabase } from '@/lib/supabase'
 
 export const procKeys = {
   all: (c: string) => ['proc', c] as const,
@@ -32,9 +32,9 @@ export function usePurchasableVariants() {
     queryKey: procKeys.list(companyId, 'purchasable'),
     enabled: !!companyId,
     staleTime: 60_000,
-    queryFn: async () => unwrap(await supabase.from('v_product_stock')
+    queryFn: () => fetchAll('sku', (x) => after(supabase.from('v_product_stock')
       .select('id:variant_id, sku, name:variant_name, product_type, uom_code, on_hand, available, incoming, avg_cost, reorder_min')
-      .eq('company_id', companyId).eq('is_active', true).order('sku').returns<PurchasableVariant[]>()),
+      .eq('company_id', companyId).eq('is_active', true), 'sku', x).order('sku').limit(1000).returns<PurchasableVariant[]>()),
   })
 }
 
@@ -45,9 +45,9 @@ export function useActiveVendors() {
     queryKey: procKeys.list(companyId, 'vendors'),
     enabled: !!companyId,
     staleTime: 60_000,
-    queryFn: async () => unwrap(await supabase.from('business_partners')
+    queryFn: () => fetchAll('id', (x) => after(supabase.from('business_partners')
       .select('id, code, name, tax_number, currency_code, payment_term_id, email, phone, is_active')
-      .eq('company_id', companyId).eq('is_vendor', true).is('deleted_at', null).order('name').returns<VendorRow[]>()),
+      .eq('company_id', companyId).eq('is_vendor', true).is('deleted_at', null), 'id', x).order('id').limit(1000).returns<VendorRow[]>()).then(byName),
   })
 }
 

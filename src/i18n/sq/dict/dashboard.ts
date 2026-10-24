@@ -62,4 +62,6 @@ export default {
   '{n} receipts today': '{n} kupona sot',
   '{amount} this month': '{amount} këtë muaj',
   '{n} receipts · {pct}% gross margin · old program': '{n} kupona · {pct}% marzh bruto · programi i vjetër',
+  'This till records sales only as stock exits; they are valued at the sales price.': 'Kjo arkë i regjistron shitjet vetëm si dalje stoku; vlerësohen me çmimin e shitjes.',
+  'from stock exits': 'nga daljet e stokut',
 } satisfies Dict

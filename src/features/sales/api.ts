@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
 import type { Json, Tables } from '@/lib/database.types'
 import { describeError, unwrap } from '@/lib/errors'
-import { supabase } from '@/lib/supabase'
+import { after, byName, fetchAll, supabase } from '@/lib/supabase'
 import { t } from '@/i18n'
 
 export const salesKeys = {
@@ -28,9 +28,9 @@ export function useCustomers() {
     queryKey: salesKeys.list(companyId, 'customers'),
     enabled: !!companyId,
     staleTime: 60_000,
-    queryFn: async () => unwrap(await supabase.from('business_partners')
+    queryFn: () => fetchAll('id', (x) => after(supabase.from('business_partners')
       .select('id, code, name, tax_number, currency_code, price_list_id, payment_term_id, default_discount_pct, credit_limit, salesperson_id, email, phone')
-      .eq('company_id', companyId).eq('is_customer', true).eq('is_active', true).is('deleted_at', null).order('name')),
+      .eq('company_id', companyId).eq('is_customer', true).eq('is_active', true).is('deleted_at', null), 'id', x).order('id').limit(1000)).then(byName),
   })
 }
 
@@ -88,9 +88,9 @@ export function useSellableVariants() {
     queryKey: salesKeys.list(companyId, 'sellable'),
     enabled: !!companyId,
     staleTime: 60_000,
-    queryFn: async () => unwrap(await supabase.from('v_product_stock')
+    queryFn: () => fetchAll('sku', (x) => after(supabase.from('v_product_stock')
       .select('id:variant_id, sku, name:variant_name, product_type, uom_code, sales_price, available')
-      .eq('company_id', companyId).eq('is_active', true).order('sku').returns<SellableVariant[]>()),
+      .eq('company_id', companyId).eq('is_active', true), 'sku', x).order('sku').limit(1000).returns<SellableVariant[]>()),
   })
 }
 
@@ -325,9 +325,9 @@ export function usePartners() {
   return useQuery({
     queryKey: salesKeys.list(companyId, 'partners'),
     enabled: !!companyId,
-    queryFn: async () => unwrap(await supabase.from('business_partners')
+    queryFn: () => fetchAll('id', (x) => after(supabase.from('business_partners')
       .select('id, code, name, kind, is_customer, is_vendor, tax_number, email, phone, credit_limit, is_active, tags, price_list:price_lists(name), salesperson:profiles!business_partners_salesperson_profile_fkey(full_name)')
-      .eq('company_id', companyId).is('deleted_at', null).order('name')),
+      .eq('company_id', companyId).is('deleted_at', null), 'id', x).order('id').limit(1000)).then(byName),
   })
 }
 

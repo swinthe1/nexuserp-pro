@@ -501,4 +501,11 @@ export default {
   'enum:uom_length': 'Gjatësi',
   'enum:uom_area': 'Sipërfaqe',
   'enum:uom_time': 'Kohë',
+  'Last sold': 'Shitja e fundit',
+  'Last received': 'Pranimi i fundit',
+  'Sold in the last 30 days': 'Shitur në 30 ditët e fundit',
+  'Sold in the last 6 months': 'Shitur në 6 muajt e fundit',
+  'No sale for 6 months': 'Pa shitje mbi 6 muaj',
+  'No movement for a year': 'Pa lëvizje mbi një vit',
+  'No movement at all': 'Asnjë lëvizje',
 } satisfies Dict

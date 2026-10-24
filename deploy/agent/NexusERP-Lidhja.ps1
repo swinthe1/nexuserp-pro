@@ -13,7 +13,7 @@
 param([switch]$Service, [switch]$Full, [switch]$Once)
 
 $ErrorActionPreference = 'Stop'
-$Version = '2.2'
+$Version = '2.3'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $cfgPath = Join-Path $here 'lidhja.json'
 $statePath = Join-Path $here 'lidhja-gjendja.json'
@@ -449,6 +449,28 @@ function Check-AllStock($db) {
     }
   }
 }
+# when each item last moved, sold and arrived (last two years), so dormant items can be found
+function Send-Activity($db) {
+  $t = Query $db @"
+WITH t AS (
+  SELECT M_PRODUCT_ID, MAX(MOVEMENTDATE) AS lm,
+         MAX(CASE WHEN MOVEMENTTYPE IN ('C-', 'FD') THEN MOVEMENTDATE END) AS ls,
+         MAX(CASE WHEN MOVEMENTTYPE = 'V+' THEN MOVEMENTDATE END) AS lr
+    FROM M_TRANSACTION WITH (NOLOCK)
+   WHERE MOVEMENTDATE >= DATEADD(day, -730, GETDATE())
+   GROUP BY M_PRODUCT_ID)
+SELECT p.VALUE AS sku, t.lm, t.ls, t.lr
+  FROM M_PRODUCT p WITH (NOLOCK) LEFT JOIN t ON t.M_PRODUCT_ID = p.M_PRODUCT_ID
+ WHERE p.VALUE IS NOT NULL AND p.ISSUMMARY = 'N'
+"@
+  $rows = @($t.Rows | ForEach-Object { @{ sku = (Str $_.sku); last_movement = (Day $_.lm); last_sold = (Day $_.ls); last_received = (Day $_.lr) } })
+  $saved = 0
+  for ($i = 0; $i -lt $rows.Count; $i += 2500) {
+    $r = Push-History 'activity' @($rows[$i..([math]::Min($i + 2500, $rows.Count) - 1)])
+    $saved += [int]$r.saved
+  }
+  Log ("  lëvizja e fundit: {0} artikuj u përditësuan" -f $saved) 'Green'
+}
 function Run-Cycle {
   $db = New-Connection
   try {
@@ -480,9 +502,10 @@ function Run-Cycle {
       $state.full_done = $true
     } else {
       $hours = $(if ($cfg.stock_check_hours) { [double]$cfg.stock_check_hours } else { 6 })
-      if (-not $state.wm['stockcheck2'] -or ((Get-Date) - [datetime]$state.wm['stockcheck2']).TotalHours -ge $hours) {
+      if (-not $state.wm['stockcheck3'] -or ((Get-Date) - [datetime]$state.wm['stockcheck3']).TotalHours -ge $hours) {
         Check-AllStock $db
-        $state.wm['stockcheck2'] = (Get-Date).ToString('s'); Save-State
+        try { Send-Activity $db } catch { Log "Lëvizja e fundit nuk u dërgua: $($_.Exception.Message)" 'Yellow' }
+        $state.wm['stockcheck3'] = (Get-Date).ToString('s'); Save-State
       }
       $w = @{}; foreach ($k in 'products', 'partners', 'prices', 'stock', 'ledger') { $w[$k] = SqlTime (([datetime]$state.wm[$k]).AddSeconds(-5)) }
       $prodWhere = "AND (p.UPDATED > '$($w.products)' OR p.M_PRODUCT_ID IN (SELECT pp.M_PRODUCT_ID FROM M_PRODUCTPRICE pp WITH (NOLOCK) WHERE pp.UPDATED > '$($w.prices)'))"

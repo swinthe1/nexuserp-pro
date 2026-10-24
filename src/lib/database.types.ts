@@ -3346,6 +3346,48 @@ export type Database = {
           { foreignKeyName: "import_templates_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
         ]
       }
+      item_activity: {
+        Row: {
+          id: string
+          variant_id: string
+          company_id: string
+          last_movement: string | null
+          last_sold: string | null
+          last_received: string | null
+          updated_at: string
+          created_at: string
+          created_by: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          variant_id: string
+          company_id: string
+          last_movement?: string | null
+          last_sold?: string | null
+          last_received?: string | null
+          updated_at?: string
+          created_at?: string
+          created_by?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          variant_id?: string
+          company_id?: string
+          last_movement?: string | null
+          last_sold?: string | null
+          last_received?: string | null
+          updated_at?: string
+          created_at?: string
+          created_by?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "item_activity_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "item_activity_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
       item_cost_history: {
         Row: {
           id: string
@@ -8694,6 +8736,58 @@ export type Database = {
           { foreignKeyName: "sync_connections_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
         ]
       }
+      sync_till_sales: {
+        Row: {
+          id: string
+          company_id: string
+          ext_id: string
+          warehouse_id: string
+          variant_id: string
+          sold_at: string
+          quantity: number
+          amount: number
+          reference: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          ext_id: string
+          warehouse_id: string
+          variant_id: string
+          sold_at: string
+          quantity: number
+          amount: number
+          reference?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          ext_id?: string
+          warehouse_id?: string
+          variant_id?: string
+          sold_at?: string
+          quantity?: number
+          amount?: number
+          reference?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "sync_till_sales_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "sync_till_sales_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "sync_till_sales_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
       table_order_lines: {
         Row: {
           id: string
@@ -10299,6 +10393,9 @@ export type Database = {
           is_low_stock: boolean | null
           reorder_min: number | null
           reorder_max: number | null
+          last_movement: string | null
+          last_sold: string | null
+          last_received: string | null
         }
         Relationships: []
       }
@@ -10402,6 +10499,22 @@ export type Database = {
           journal_entry_id: string | null
           created_by: string | null
           created_by_name: string | null
+        }
+        Relationships: []
+      }
+      v_variant_options: {
+        Row: {
+          company_id: string | null
+          id: string | null
+          sku: string | null
+          name: string | null
+          product_id: string | null
+          is_active: boolean | null
+          tracking: string | null
+          product_type: string | null
+          uom_code: string | null
+          avg_cost: number | null
+          sales_price: number | null
         }
         Relationships: []
       }

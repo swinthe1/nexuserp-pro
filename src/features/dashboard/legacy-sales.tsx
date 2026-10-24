@@ -40,6 +40,7 @@ export function LegacySales({ data }: { data: HistoryLive }) {
                   <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                     <span>{tn(num(s.today_receipts), '{n} receipt today', '{n} receipts today')}</span>
                     <span>{t('{amount} this month', { amount: formatMoney(s.month ?? 0, cur) })}</span>
+                    {s.from_exits && <span title={t('This till records sales only as stock exits; they are valued at the sales price.')}>{t('from stock exits')}</span>}
                   </div>
                 </li>
               )

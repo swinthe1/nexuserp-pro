@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
 import type { Json, Tables, TablesUpdate, Views } from '@/lib/database.types'
 import { describeError, unwrap } from '@/lib/errors'
-import { supabase } from '@/lib/supabase'
+import { after, byName, fetchAll, supabase } from '@/lib/supabase'
 import { t, tn } from '@/i18n'
 
 /* ------------------------------------------------------------------ keys */
@@ -22,6 +22,7 @@ export const invKeys = {
 
 /* --------------------------------------------------------------- lookups */
 function useLookup<T>(what: string, fn: (companyId: string) => PromiseLike<{ data: T | null; error: unknown }>) {
+  // (lists that can grow past 1,000 rows page through fetchAll inside fn)
   const { companyId } = useCompany()
   return useQuery({
     queryKey: invKeys.lookups(companyId, what),
@@ -54,7 +55,8 @@ export const useTaxCodes = () =>
   useLookup('tax', (c) => supabase.from('tax_codes').select('id, code, name, rate, scope, is_active').eq('company_id', c).is('deleted_at', null).order('rate', { ascending: false }))
 
 export const useVendors = () =>
-  useLookup('vendors', (c) => supabase.from('business_partners').select('id, code, name, tax_number, currency_code').eq('company_id', c).eq('is_vendor', true).is('deleted_at', null).order('name'))
+  useLookup('vendors', async (c) => ({ error: null, data: await fetchAll('id', (x) => after(supabase.from('business_partners').select('id, code, name, tax_number, currency_code')
+    .eq('company_id', c).eq('is_vendor', true).is('deleted_at', null), 'id', x).order('id').limit(1000)).then(byName) }))
 
 export const useCurrencies = () =>
   useLookup('currencies', () => supabase.from('currencies').select('code, name, symbol').eq('is_active', true).order('code'))
@@ -68,10 +70,10 @@ export const useAttributes = () =>
 /** Variants for pickers (sku + name + tracking) */
 export type VariantOption = { id: string; sku: string; name: string; product_id: string; tracking: string; avg_cost: number | null; uom_code: string | null }
 export const useVariantOptions = () =>
-  useLookup<VariantOption[]>('variant-options', (c) => supabase.from('v_product_stock')
-    .select('id:variant_id, sku, name:variant_name, product_id, tracking, avg_cost, uom_code')
-    .eq('company_id', c).eq('product_type', 'stockable').eq('is_active', true).order('sku')
-    .returns<VariantOption[]>())
+  useLookup<VariantOption[]>('variant-options', async (c) => ({ error: null, data: await fetchAll('sku', (x) => after(supabase.from('v_variant_options')
+    .select('id, sku, name, product_id, tracking, avg_cost, uom_code')
+    .eq('company_id', c).eq('product_type', 'stockable').eq('is_active', true), 'sku', x).order('sku').limit(1000)
+    .returns<VariantOption[]>()) }))
 
 export const useLots = (variantId?: string) => {
   const { companyId } = useCompany()
@@ -90,7 +92,8 @@ export function useProductStock() {
   return useQuery({
     queryKey: invKeys.productStock(companyId),
     enabled: !!companyId,
-    queryFn: async () => unwrap(await supabase.from('v_product_stock').select('*').eq('company_id', companyId).order('product_name').order('sku')),
+    queryFn: () => fetchAll('sku', (x) => after(supabase.from('v_product_stock').select('*').eq('company_id', companyId), 'sku', x).order('sku').limit(1000))
+      .then((rows) => rows.sort((p, q) => (p.product_name ?? '').localeCompare(q.product_name ?? '') || (p.sku ?? '').localeCompare(q.sku ?? ''))),
   })
 }
 
@@ -283,7 +286,8 @@ export function useStockLevels() {
   return useQuery({
     queryKey: invKeys.stockLevels(companyId),
     enabled: !!companyId,
-    queryFn: async () => unwrap(await supabase.from('v_stock_levels').select('*').eq('company_id', companyId).order('sku').limit(5000)),
+    queryFn: () => fetchAll('id', (x) => after(supabase.from('v_stock_levels').select('*').eq('company_id', companyId), 'id', x).order('id').limit(1000))
+      .then((rows) => rows.sort((p, q) => (p.sku ?? '').localeCompare(q.sku ?? ''))),
   })
 }
 

@@ -104,7 +104,11 @@ select t.ok(not exists (select 1 from public.stock_movements where company_id = 
 set role authenticated;
 select t.login('live@lider.xk');
 select public.stock_by_warehouse(:'co') as sbw \gset
+select public.history_live(:'co') as hl \gset
 reset role;
+select t.ok((select quantity = 1 and amount > 0 from public.sync_till_sales where company_id = :'co' and ext_id = '9006')
+  and (:'hl'::jsonb ->> 'today')::numeric = (select amount from public.sync_till_sales where company_id = :'co' and ext_id = '9006')
+  and (:'hl'::jsonb -> 'by_store' -> 0 ->> 'from_exits')::boolean, 'a till that writes only stock exits still shows its sales today');
 select t.ok((select (e ->> 'items')::int = 1 and (e ->> 'value')::numeric > 0 from jsonb_array_elements(:'sbw'::jsonb) e where e ->> 'code' = '1'),
   'stock by store shows the items and value of each store');
 select t.ok((select count(*) from jsonb_array_elements(:'sbw'::jsonb)) >= 2, 'every active store is listed, also empty ones');

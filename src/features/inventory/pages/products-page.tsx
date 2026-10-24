@@ -9,7 +9,7 @@ import { StockBar } from '@/components/stock-bar'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { formatMoney, formatQty } from '@/lib/utils'
+import { formatDate, formatMoney, formatQty } from '@/lib/utils'
 import { useBulkProducts, useCategories, useProductStock, type ProductStockRow } from '../api'
 import { t, td, tEnum, tn } from '@/i18n'
 
@@ -19,6 +19,18 @@ function stockState(r: ProductStockRow) {
   if ((r.on_hand ?? 0) < 0) return 'negative'
   if (r.is_low_stock) return 'low'
   return 'ok'
+}
+
+const DAY = 86_400_000
+/** How recently an item moved: sold lately, slow, or asleep (for finding items to switch off). */
+function activity(r: ProductStockRow) {
+  const age = (d: string | null | undefined) => (d ? (Date.now() - new Date(`${d}T00:00:00`).getTime()) / DAY : Infinity)
+  const sold = age(r.last_sold), moved = Math.min(age(r.last_movement), sold, age(r.last_received))
+  if (sold <= 30) return 'sold_30'
+  if (sold <= 182) return 'sold_180'
+  if (moved === Infinity) return 'never'
+  if (moved <= 365) return 'slow'
+  return 'asleep'
 }
 
 export function ProductsPage() {
@@ -75,6 +87,15 @@ export function ProductsPage() {
     { accessorKey: 'avg_cost', header: ({ column }) => <ColumnHeader column={column} title={t('Avg cost')} />, meta: { label: t('Average cost'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number, undefined, 2) },
     { accessorKey: 'stock_value', header: ({ column }) => <ColumnHeader column={column} title={t('Value')} />, meta: { label: t('Stock value ({currency})', { currency: cur }), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
     {
+      accessorKey: 'last_sold', header: ({ column }) => <ColumnHeader column={column} title={t('Last sold')} />, meta: { label: t('Last sold'), align: 'right' },
+      cell: ({ getValue }) => (getValue() ? formatDate(getValue() as string) : <span className="text-muted-foreground">—</span>),
+    },
+    {
+      accessorKey: 'last_received', header: ({ column }) => <ColumnHeader column={column} title={t('Last received')} />, meta: { label: t('Last received'), align: 'right' },
+      cell: ({ getValue }) => (getValue() ? formatDate(getValue() as string) : <span className="text-muted-foreground">—</span>),
+    },
+    { id: 'activity', accessorFn: activity, filterFn: inFilter, enableHiding: false, header: () => null, cell: () => null, meta: { label: t('Activity') } },
+    {
       id: 'state', accessorFn: stockState, filterFn: inFilter,
       header: ({ column }) => <ColumnHeader column={column} title={t('Status')} />, meta: { label: t('Status') },
       cell: ({ getValue }) => {
@@ -105,13 +126,17 @@ export function ProductsPage() {
         error={products.error}
         getRowId={(r) => r.variant_id!}
         searchPlaceholder={t('Search name, SKU or barcode')}
-        initialHidden={['sku', 'barcode', 'on_hand', 'reserved', 'incoming']}
+        initialHidden={['sku', 'barcode', 'on_hand', 'reserved', 'incoming', 'last_received', 'activity']}
         initialSorting={[{ id: 'product', desc: false }]}
         onRowClick={(r) => navigate(`/inventory/products/${r.product_id}`)}
         exportName="products"
         facets={[
           { columnId: 'category', title: t('Category'), options: (categories.data ?? []).map((c) => ({ label: td(c.name), value: c.name })) },
           { columnId: 'type', title: t('Type'), options: ['stockable', 'consumable', 'service'].map((x) => ({ label: tEnum(`product_${x}`), value: x })) },
+          { columnId: 'activity', title: t('Activity'), options: [
+            { label: t('Sold in the last 30 days'), value: 'sold_30' }, { label: t('Sold in the last 6 months'), value: 'sold_180' },
+            { label: t('No sale for 6 months'), value: 'slow' }, { label: t('No movement for a year'), value: 'asleep' }, { label: t('No movement at all'), value: 'never' },
+          ] },
           { columnId: 'state', title: t('Status'), options: [
             { label: t('In range'), value: 'ok' }, { label: t('Low stock'), value: 'low' }, { label: t('Negative'), value: 'negative' }, { label: t('Not stocked'), value: 'not_stocked' }, { label: t('Inactive'), value: 'inactive' },
           ] },

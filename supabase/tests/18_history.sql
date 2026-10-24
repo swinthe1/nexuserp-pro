@@ -31,6 +31,7 @@ select public.sync_history(:'key', 'balances', '[{"account":"60100","name":"Shit
 select public.sync_history(:'key', 'barcodes', '[{"sku":"500","barcode":"5449000000996"},{"sku":"500","barcode":"123"},{"sku":"501","barcode":"5449000000997"}]'::jsonb) as bc \gset
 select public.sync_history(:'key', 'vendor_products', '[{"sku":"500","vendor":"V9","vendor_sku":"CC-05","price":"0.5"}]'::jsonb) as vp \gset
 select public.sync_history(:'key', 'reorder', '[{"sku":"500","warehouse":"3","min":"24","max":"96"},{"sku":"501","warehouse":"3","min":"0","max":"0"}]'::jsonb) as ro \gset
+select public.sync_history(:'key', 'activity', '[{"sku":"500","last_movement":"2026-10-20","last_sold":"2026-10-20","last_received":"2026-09-01"},{"sku":"501"},{"sku":"NOPE"}]'::jsonb) as ac \gset
 select public.sync_history(:'key', 'employees', '[{"code":"E-77","first":"Blerim","last":"Krasniqi","start":"2024-03-01","gender":"M"}]'::jsonb) as em \gset
 select public.sync_history(:'key', 'attendance', '[{"employee":"E-77","date":"2026-10-20","in":"2026-10-20T08:00:00","out":"2026-10-20T16:30:00"}]'::jsonb) as at \gset
 reset role;
@@ -47,6 +48,9 @@ select t.ok((:'b1'::jsonb ->> 'saved')::int = 3, 'monthly account balances arriv
 select t.ok((:'bc'::jsonb ->> 'saved')::int = 1 and (:'bc'::jsonb ->> 'skipped')::int = 2, 'valid barcodes are added, wrong ones skipped');
 select t.ok(exists (select 1 from public.vendor_products vp join public.product_variants v on v.id = vp.variant_id where vp.company_id = :'co' and v.sku = '500' and vp.vendor_sku = 'CC-05'), 'the vendor''s code for the product');
 select t.ok((select min_qty = 24 and max_qty = 96 from public.replenishment_rules r join public.product_variants v on v.id = r.variant_id where r.company_id = :'co' and v.sku = '500'), 'reorder levels per store');
+select t.ok((:'ac'::jsonb ->> 'saved')::int = 2 and (:'ac'::jsonb ->> 'skipped')::int = 1
+  and (select last_sold = '2026-10-20' and last_received = '2026-09-01' from public.v_product_stock where company_id = :'co' and sku = '500')
+  and (select last_sold is null from public.v_product_stock where company_id = :'co' and sku = '501'), 'when an item last sold and arrived, from the old program');
 select t.ok((select full_name = 'Blerim Krasniqi' and gender = 'male' from public.employees where company_id = :'co' and number = 'E-77'), 'employees arrive');
 select t.ok((select hours_worked = 8.5 from public.attendance_records a join public.employees e on e.id = a.employee_id where e.company_id = :'co' and e.number = 'E-77'), 'and their attendance');
 set role anon;

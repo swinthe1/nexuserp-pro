@@ -69,8 +69,8 @@ export function useHistoryBalances(year: number, enabled = true) {
 
 export interface HistoryLive {
   has_history: boolean; last_date?: string | null; today?: number; today_receipts?: number; month?: number; month_net?: number; month_receipts?: number
-  month_cost?: number | null; month_purchases?: number
-  by_store?: { store: string; warehouse_id: string | null; today: number | null; today_receipts: number; month: number | null }[]
+  month_cost?: number | null; month_purchases?: number; month_from_exits?: number
+  by_store?: { store: string; warehouse_id: string | null; today: number | null; today_receipts: number; month: number | null; from_exits?: boolean }[]
 }
 /** Today's and this month's sales from the old program; the live link keeps them current. */
 export function useHistoryLive(enabled = true) {
