@@ -13,7 +13,7 @@
 param([switch]$Service, [switch]$Full, [switch]$Once)
 
 $ErrorActionPreference = 'Stop'
-$Version = '1.6'
+$Version = '1.7'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $cfgPath = Join-Path $here 'lidhja.json'
 $statePath = Join-Path $here 'lidhja-gjendja.json'
@@ -339,13 +339,15 @@ function Run-Cycle {
       $wh = Query $db "SELECT w.VALUE AS code, w.NAME AS name, l.ADDRESS1 AS address, l.CITY AS city FROM M_WAREHOUSE w WITH (NOLOCK) LEFT JOIN C_LOCATION l WITH (NOLOCK) ON l.C_LOCATION_ID = w.C_LOCATION_ID WHERE w.ISACTIVE = 'Y'"
       $whRows = @($wh.Rows | ForEach-Object { @{ code = (Str $_.code); name = (Str $_.name); type = 'store'; address = (Str $_.address); city = (Str $_.city) } })
       $sent.magazina = Push-List 'warehouses' $whRows 200
-      $sent.artikuj = Push-List 'products' (Read-Products $db $lists '') 150
+      $allProducts = Read-Products $db $lists ''
+      $known = @{}; foreach ($x in $allProducts) { $known[$x.sku] = 1 }
+      $sent.artikuj = Push-List 'products' $allProducts 150
       $sent.subjekte = Push-List 'partners' (Read-Partners $db "AND bp.ISACTIVE = 'Y'") 200
       $prices = New-Object System.Collections.ArrayList
       foreach ($l in $lists) {
         $pr = Query $db "WITH pp AS ($(Price-Sql $l)) SELECT p.VALUE AS sku, pp.PRICESTD AS price, t.RATE AS vat FROM pp JOIN M_PRODUCT p WITH (NOLOCK) ON p.M_PRODUCT_ID = pp.M_PRODUCT_ID LEFT JOIN C_TAX t WITH (NOLOCK) ON t.C_TAX_ID = p.C_TAX_ID WHERE pp.PRICESTD > 0 AND p.ISACTIVE = 'Y'"
         foreach ($x in $pr.Rows) { $v = [decimal]$x.price; $rate = if ($x.vat -is [DBNull]) { 18 } else { [decimal]$x.vat }; if ($l.taxincl) { $v = $v / (1 + $rate / 100) }
-          [void]$prices.Add(@{ price_list = $l.name; sku = (Str $x.sku); price = (Num $v 4) }) }
+          if ($known.ContainsKey((Str $x.sku))) { [void]$prices.Add(@{ price_list = $l.name; sku = (Str $x.sku); price = (Num $v 4) }) } }
       }
       $sent.cmime = Push-List 'prices' $prices 400
       $sent.stok = Push-List 'stock' (Read-Stock $db 'AND s.QTYONHAND <> 0') 300
