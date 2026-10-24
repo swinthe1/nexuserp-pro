@@ -13,7 +13,7 @@
 param([switch]$Service, [switch]$Full, [switch]$Once)
 
 $ErrorActionPreference = 'Stop'
-$Version = '1.3'
+$Version = '1.4'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $cfgPath = Join-Path $here 'lidhja.json'
 $statePath = Join-Path $here 'lidhja-gjendja.json'
@@ -41,7 +41,7 @@ if (-not (Test-Path $cfgPath)) {
   if (-not $cfg.server) { $cfg | Add-Member -NotePropertyName server -NotePropertyValue (Read-Host 'Serveri SQL (te Lider Market: localhost\SQLPRIME)') -Force }
   if (-not $cfg.database) { $cfg | Add-Member -NotePropertyName database -NotePropertyValue (Read-Host 'Databaza (p.sh. LM2026)') -Force }
   if (-not $cfg.main_price_list) { $cfg | Add-Member -NotePropertyName main_price_list -NotePropertyValue (Read-Host 'Emri i listës kryesore të çmimeve (p.sh. Cm. Shitese_1)') -Force }
-  if (-not $cfg.interval_seconds) { $cfg | Add-Member -NotePropertyName interval_seconds -NotePropertyValue 30 -Force }
+  if (-not $cfg.interval_seconds) { $cfg | Add-Member -NotePropertyName interval_seconds -NotePropertyValue 5 -Force }
   if (-not $cfg.active_years) { $cfg | Add-Member -NotePropertyName active_years -NotePropertyValue 2 -Force }
   [IO.File]::WriteAllText($cfgPath, ($cfg | ConvertTo-Json), (New-Object System.Text.UTF8Encoding $false))
   Write-Host "U ruajt te $cfgPath" -ForegroundColor Green
@@ -59,7 +59,7 @@ if (-not $cfg.server -or -not $cfg.database -or -not $cfg.main_price_list) {
     $v = Read-Host ('Databaza (Enter = LM{0})' -f (Get-Date).Year); if (-not $v) { $v = 'LM{0}' -f (Get-Date).Year }
     $cfg | Add-Member -NotePropertyName database -NotePropertyValue $v -Force
   }
-  if (-not $cfg.interval_seconds) { $cfg | Add-Member -NotePropertyName interval_seconds -NotePropertyValue 30 -Force }
+  if (-not $cfg.interval_seconds) { $cfg | Add-Member -NotePropertyName interval_seconds -NotePropertyValue 5 -Force }
   if (-not $cfg.active_years) { $cfg | Add-Member -NotePropertyName active_years -NotePropertyValue 2 -Force }
   if (-not $cfg.main_price_list) { $askLater = $true }
   else { [IO.File]::WriteAllText($cfgPath, ($cfg | ConvertTo-Json), (New-Object System.Text.UTF8Encoding $false)) }
@@ -382,6 +382,7 @@ if (-not $Service) {
 Log "Nisi lidhja ($($cfg.database) → $($cfg.url))"
 $failures = 0
 while ($true) {
+  $started = Get-Date
   try {
     Run-Cycle
     $failures = 0
@@ -392,5 +393,8 @@ while ($true) {
   if ($Once) { break }
   # after repeated errors wait longer (up to 5 minutes)
   $wait = [math]::Min([int]$cfg.interval_seconds * [math]::Pow(2, [math]::Min($failures, 4)), 300)
-  Start-Sleep -Seconds ([int]$wait)
+  # never keep SQL Server busy more than half the time: a cycle that took 8 s waits at least 8 s
+  $took = ((Get-Date) - $started).TotalSeconds
+  if ($took -gt $wait) { $wait = $took; if (-not $Service -and $state.full_done) { Write-Host ('{0}  cikli zgjati {1:0} s' -f (Get-Date).ToString('HH:mm:ss'), $took) -ForegroundColor DarkGray } }
+  Start-Sleep -Milliseconds ([int]([math]::Max($wait, 2) * 1000))
 }

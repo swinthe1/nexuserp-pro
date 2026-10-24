@@ -28,8 +28,8 @@ export default {
     'Stafi praktikon me të dhëna reale. Asgjë nuk fiskalizohet dhe çdo ekran tregon se është praktikë.',
   'Switch off': 'Fike',
   'Switch on': 'Ndize',
-  "The agent on the client's server sends what changes in the old program every 30 seconds: products, prices, partners, stock and unpaid invoices. The old program stays the official one.":
-    'Agjenti në serverin e klientit dërgon çdo 30 sekonda atë që ndryshon në programin e vjetër: artikujt, çmimet, subjektet, stokun dhe faturat e papaguara. Programi i vjetër mbetet zyrtar.',
+  "The agent on the client's server sends what changes in the old program every few seconds: products, prices, partners, stock and unpaid invoices. The old program stays the official one.":
+    'Agjenti në serverin e klientit dërgon çdo disa sekonda atë që ndryshon në programin e vjetër: artikujt, çmimet, subjektet, stokun dhe faturat e papaguara. Programi i vjetër mbetet zyrtar.',
   'Training': 'Trajnim',
   'Training company': 'Kompani trajnimi',
   'Training company: data comes from the old program, and nothing done here is official or sent to the tax office.':

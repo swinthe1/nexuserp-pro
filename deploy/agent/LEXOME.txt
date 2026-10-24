@@ -27,7 +27,7 @@ Krijon skedaret per NexusERP > Kalimi nga programi tjeter, nga databaza e Logmic
 Stoku merret si eshte NE ATE MOMENT: ekzekutojeni ne diten e kalimit pasi te mbyllet dita.
 Vetem lexon; nuk lexon fjalekalime dhe nuk dergon asgje ne internet.
 
-LIDHJA LIVE (Logmicro -> NexusERP, cdo 30 sekonda)
+LIDHJA LIVE (Logmicro -> NexusERP, cdo 5 sekonda)
 1. Ne NexusERP: Klientet > veprimet e klientit > Lidhja live dhe trajnimi > Krijo celesin >
    Shkarko lidhja.json. Vendoseni lidhja.json ne kete dosje ne serverin e Logmicro.
 2. Klikoni dy here Nis-Lidhjen.bat: plotesoni serverin (localhost\SQLPRIME), databazen (LM2026)

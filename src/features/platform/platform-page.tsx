@@ -571,7 +571,7 @@ function LiveLinkDialog({ client, onClose }: { client: PlatformClient | null; on
       const r = await createKey.mutateAsync({ company: client.id, name })
       setConfig(JSON.stringify({
         url: import.meta.env.VITE_SUPABASE_URL, anon_key: import.meta.env.VITE_SUPABASE_ANON_KEY, sync_key: r.key,
-        server: '', database: '', main_price_list: '', interval_seconds: 30, active_years: 2,
+        server: '', database: '', main_price_list: '', interval_seconds: 5, active_years: 2,
       }, null, 2))
     } catch (e) { toast.error(describeError(e)) }
   }
@@ -587,7 +587,7 @@ function LiveLinkDialog({ client, onClose }: { client: PlatformClient | null; on
       <DialogContent className="max-h-[92dvh] max-w-xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t('Live link and training · {name}', { name: client?.name ?? '' })}</DialogTitle>
-          <DialogDescription>{t('The agent on the client\'s server sends what changes in the old program every 30 seconds: products, prices, partners, stock and unpaid invoices. The old program stays the official one.')}</DialogDescription>
+          <DialogDescription>{t('The agent on the client\'s server sends what changes in the old program every few seconds: products, prices, partners, stock and unpaid invoices. The old program stays the official one.')}</DialogDescription>
         </DialogHeader>
         {client && (
           <div className="grid gap-4">
