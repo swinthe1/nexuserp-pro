@@ -66,3 +66,19 @@ export function useHistoryBalances(year: number, enabled = true) {
     queryFn: async () => unwrap(await supabase.rpc('history_balances', { p_company: companyId, p_year: year })) as unknown as { years: number[]; accounts: BalanceRow[] },
   })
 }
+
+export interface HistoryLive {
+  has_history: boolean; last_date?: string | null; today?: number; today_receipts?: number; month?: number; month_net?: number; month_receipts?: number
+  month_cost?: number | null; month_purchases?: number
+  by_store?: { store: string; warehouse_id: string | null; today: number | null; today_receipts: number; month: number | null }[]
+}
+/** Today's and this month's sales from the old program; the live link keeps them current. */
+export function useHistoryLive(enabled = true) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...key(companyId), 'live'],
+    enabled: !!companyId && enabled,
+    refetchInterval: 15_000,
+    queryFn: async () => unwrap(await supabase.rpc('history_live', { p_company: companyId })) as unknown as HistoryLive,
+  })
+}

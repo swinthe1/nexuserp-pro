@@ -13,7 +13,7 @@
 param([switch]$Service, [switch]$Full, [switch]$Once)
 
 $ErrorActionPreference = 'Stop'
-$Version = '1.8'
+$Version = '1.9'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $cfgPath = Join-Path $here 'lidhja.json'
 $statePath = Join-Path $here 'lidhja-gjendja.json'
@@ -65,6 +65,7 @@ if (-not $cfg.server -or -not $cfg.database -or -not $cfg.main_price_list) {
   else { [IO.File]::WriteAllText($cfgPath, ($cfg | ConvertTo-Json), (New-Object System.Text.UTF8Encoding $false)) }
 }
 $pushUrl = ($cfg.url.TrimEnd('/')) + '/rest/v1/rpc/sync_push'
+$historyUrl = ($cfg.url.TrimEnd('/')) + '/rest/v1/rpc/sync_history'
 
 $state = @{ wm = @{}; full_done = $false }
 if ((Test-Path $statePath) -and -not $Full) {
@@ -106,13 +107,15 @@ $unitMap = @{ 'cope' = 'pcs'; 'copë' = 'pcs'; 'pcs' = 'pcs'; 'kg' = 'kg'; 'g' =
 function SqlTime($t) { return ([datetime]$t).ToString('yyyy-MM-ddTHH:mm:ss.fff', $inv) }
 
 # ---------------------------------------------------------------- dërgimi
-function Push([hashtable]$batch) {
-  $body = @{ p_key = $cfg.sync_key; p_batch = $batch } | ConvertTo-Json -Depth 6 -Compress
+function Push([hashtable]$batch) { return Post-Json $pushUrl @{ p_key = $cfg.sync_key; p_batch = $batch } }
+function Push-History([string]$kind, $rows) { return Post-Json $historyUrl @{ p_key = $cfg.sync_key; p_kind = $kind; p_rows = @($rows) } }
+function Post-Json([string]$url, [hashtable]$payload) {
+  $body = $payload | ConvertTo-Json -Depth 8 -Compress
   $bytes = [Text.Encoding]::UTF8.GetBytes($body)
   for ($try = 1; $try -le 3; $try++) {
     $status = 0; $detail = ''
     try {
-      $r = Invoke-RestMethod -Method Post -Uri $pushUrl -Body $bytes -ContentType 'application/json; charset=utf-8' -TimeoutSec 60 `
+      $r = Invoke-RestMethod -Method Post -Uri $url -Body $bytes -ContentType 'application/json; charset=utf-8' -TimeoutSec 60 `
              -Headers @{ apikey = $cfg.anon_key; Authorization = "Bearer $($cfg.anon_key)" }
       if ($r.ok -eq $false) { $status = 200; $detail = "$($r.error)" } else { return $r }
     } catch {
@@ -357,6 +360,66 @@ SELECT l.bp, l.ord, l.bal, bp.VALUE AS code, bp.ISVENDOR AS vend, o.DOCUMENTNO A
 }
 
 # ---------------------------------------------------------------- një cikël
+# sales, receipts, purchases and returns as they happen, into the history archive (same ids as the history agent)
+function Day($v) { if ($v -is [DBNull] -or $null -eq $v) { return '' }; return ([datetime]$v).ToString('yyyy-MM-dd', $inv) }
+function First-OrderToday($db) {
+  $r = Query $db "SELECT ISNULL(MIN(C_ORDER_ID) - 1, (SELECT ISNULL(MAX(C_ORDER_ID), 0) FROM C_ORDER WITH (NOLOCK))) AS id FROM C_ORDER WITH (NOLOCK) WHERE DATEORDERED >= CAST(GETDATE() AS date)"
+  return [long]$r.Rows[0].id
+}
+function Read-SalesDocs($db, [long]$after, [string]$since) {
+  # recent receipts that changed (lines added, paid); the id range keeps it on the primary key, not a full scan
+  $changed = $(if ($since) { "OR (o.C_ORDER_ID > $([math]::Max(0, $after - 20000)) AND o.UPDATED > '$since')" } else { '' })
+  $h = Query $db @"
+SELECT TOP 500 o.C_ORDER_ID AS id, o.DOCUMENTNO AS num, o.ISSOTRX AS so, COALESCE(o.DATEORDERED, o.DATEACCT) AS d, o.GRANDTOTAL AS total, o.TOTALLINES AS net, o.PAIDAMT AS paid,
+       o.DISCOUNTAMT AS disc, o.C_POS_ID AS pos, o.DESCRIPTION AS descr, COALESCE(o.NOI_FISCALIZATION, o.IIC_FISCALIZATION) AS fiscal,
+       dt.NAME AS dtname, dt.ISRETURN AS isret, bp.VALUE AS pcode, bp.NAME AS pname, w.VALUE AS wh, u.NAME AS cashier,
+       (SELECT SUM(x.TAXAMT) FROM C_ORDERTAX x WITH (NOLOCK) WHERE x.C_ORDER_ID = o.C_ORDER_ID) AS tax
+  FROM C_ORDER o WITH (NOLOCK)
+  LEFT JOIN C_DOCTYPE dt WITH (NOLOCK) ON dt.C_DOCTYPE_ID = o.C_DOCTYPE_ID
+  LEFT JOIN C_BPARTNER bp WITH (NOLOCK) ON bp.C_BPARTNER_ID = o.C_BPARTNER_ID
+  LEFT JOIN M_WAREHOUSE w WITH (NOLOCK) ON w.M_WAREHOUSE_ID = o.M_WAREHOUSE_ID
+  LEFT JOIN AD_USER u WITH (NOLOCK) ON u.AD_USER_ID = o.SALESREP_ID
+ WHERE (o.C_ORDER_ID > $after $changed)
+   AND ISNULL(o.DOCSTATUS, 'CO') NOT IN ('VO', 'RE') AND ISNULL(o.ISACTIVE, 'Y') = 'Y' AND COALESCE(o.DATEORDERED, o.DATEACCT) IS NOT NULL
+ ORDER BY o.C_ORDER_ID
+"@
+  if ($h.Rows.Count -eq 0) { return @() }
+  $ids = ($h.Rows | ForEach-Object { [string]$_.id }) -join ','
+  $l = Query $db @"
+SELECT ol.C_ORDER_ID AS id, ol.LINE AS line, p.VALUE AS sku, COALESCE(p.NAME, ol.DESCRIPTION) AS name, ol.QTYORDERED AS qty, ol.PRICEACTUAL AS price,
+       ol.DISCOUNT AS disc, ol.LINENETAMT AS net, ol.LINETOTALAMT AS total, t.RATE AS rate, ol.PRICECOST AS cost
+  FROM C_ORDERLINE ol WITH (NOLOCK)
+  LEFT JOIN M_PRODUCT p WITH (NOLOCK) ON p.M_PRODUCT_ID = ol.M_PRODUCT_ID
+  LEFT JOIN C_TAX t WITH (NOLOCK) ON t.C_TAX_ID = ol.C_TAX_ID
+ WHERE ol.C_ORDER_ID IN ($ids) AND ol.ISACTIVE = 'Y'
+"@
+  $byDoc = @{}
+  foreach ($x in $l.Rows) { $k = [string]$x.id; if (-not $byDoc[$k]) { $byDoc[$k] = New-Object System.Collections.ArrayList }
+    [void]$byDoc[$k].Add(@{ line = [int]$(if ($x.line -is [DBNull]) { 0 } else { $x.line }); sku = (Str $x.sku); name = (Str $x.name); qty = (Num $x.qty 4); price = (Num $x.price 4)
+                            discount = (Num $x.disc 3); net = (Num $x.net 2); total = (Num $x.total 2); tax_rate = (Num $x.rate 2); cost = (Num $x.cost 4) }) }
+  $dbName = $cfg.database
+  return @($h.Rows | ForEach-Object {
+    $so = (Str $_.so) -eq 'Y'; $ret = (Str $_.isret) -eq 'Y'
+    $kind = if ($so) { if ($ret) { 'sale_return' } elseif (-not ($_.pos -is [DBNull])) { 'pos_sale' } else { 'sale' } } else { if ($ret) { 'purchase_return' } else { 'purchase' } }
+    $k = [string]$_.id
+    @{ ext_id = "O:${dbName}:$k"; id = [long]$_.id; kind = $kind; doc_type = (Str $_.dtname); number = (Str $_.num); date = (Day $_.d); partner = (Str $_.pcode); partner_name = (Str $_.pname)
+       warehouse = (Str $_.wh); total = (Num $_.total 2); net = (Num $_.net 2); tax = (Num $_.tax 2); discount = (Num $_.disc 2); paid = (Num $_.paid 2)
+       cashier = (Str $_.cashier); fiscal = (Str $_.fiscal); description = (Str $_.descr); lines = @($(if ($byDoc[$k]) { $byDoc[$k] } else { @() })) } })
+}
+function Send-SalesDocs($db) {
+  if (-not $state.wm['ord']) { $state.wm['ord'] = [string](First-OrderToday $db) }
+  $since = $(if ($state.wm['orders']) { SqlTime (([datetime]$state.wm['orders']).AddSeconds(-5)) } else { '' })
+  $docs = @(Read-SalesDocs $db ([long]$state.wm['ord']) $since)
+  if ($docs.Count -eq 0) { return 0 }
+  $saved = 0
+  for ($i = 0; $i -lt $docs.Count; $i += 100) {
+    $r = Push-History 'documents' @($docs[$i..([math]::Min($i + 100, $docs.Count) - 1)])
+    $saved += [int]$r.saved
+  }
+  $top = ($docs | ForEach-Object { $_.id } | Measure-Object -Maximum).Maximum
+  if ($top -gt [long]$state.wm['ord']) { $state.wm['ord'] = [string]$top }
+  return $saved
+}
 function Run-Cycle {
   $db = New-Connection
   try {
@@ -384,6 +447,7 @@ function Run-Cycle {
       $docs = Read-OpenDocuments $db ''
       $sent.dokumente = Push-List 'documents' $docs 300
       $state.wm['trx'] = [string](Last-TransactionId $db)
+      $state.wm['ord'] = [string](First-OrderToday $db)
       $state.full_done = $true
     } else {
       $w = @{}; foreach ($k in 'products', 'partners', 'prices', 'stock', 'ledger') { $w[$k] = SqlTime (([datetime]$state.wm[$k]).AddSeconds(-5)) }
@@ -412,6 +476,9 @@ function Run-Cycle {
       $docs = Read-OpenDocuments $db $w.ledger
       if ($docs.Count) { $sent.dokumente = Push-List 'documents' $docs 300 }
     }
+    # receipts and invoices for the dashboard and the history (a failure here does not stop the stock link)
+    try { $n = Send-SalesDocs $db; if ($n) { $sent.kupona = $n }; $state.wm['orders'] = $nowSql }
+    catch { Log "Kuponat/faturat nuk u dërguan: $($_.Exception.Message)" 'Yellow' }
     foreach ($k in 'products', 'partners', 'prices', 'stock', 'ledger') { $state.wm[$k] = $nowSql }
     Save-State
     $summary = ($sent.GetEnumerator() | Where-Object { $_.Value } | ForEach-Object { "$($_.Key) $($_.Value)" }) -join ', '

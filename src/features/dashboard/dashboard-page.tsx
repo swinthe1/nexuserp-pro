@@ -17,11 +17,13 @@ import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { formatDateWith, formatNumberWith, t, td } from '@/i18n'
 import { unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
-import { formatCompact, formatDate, formatMoney, formatQty, humanize, todayISO } from '@/lib/utils'
+import { formatCompact, formatDate, formatMoney, formatQty, humanize, num, todayISO } from '@/lib/utils'
 import { useSalesOverview } from '@/features/sales/api'
 import { useProcurementOverview } from '@/features/procurement/api'
 import { useInventoryOverview, useLowStock } from '@/features/inventory/api'
 import { StockByWarehouse } from './stock-by-warehouse'
+import { LegacySales } from './legacy-sales'
+import { useHistoryLive } from '@/features/history/api'
 import { useFinanceOverview } from '@/features/finance/api'
 
 const tooltipStyle = { background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }
@@ -43,6 +45,9 @@ export function DashboardPage() {
   const low = useLowStock()
   const monthStart = React.useMemo(() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-01` }, [])
   const sales = useSalesOverview(monthStart, todayISO(), can('sales.read'))
+  // a company still selling in the old program: its receipts arrive through the live link
+  const live = useHistoryLive(can('sales.read'))
+  const legacy = live.data?.has_history && !num(sales.data?.invoice_count) ? live.data : null
   const canAp = can('invoicing.read')
   const proc = useProcurementOverview(monthStart, todayISO(), canAp)
   const fin = useFinanceOverview(monthStart, todayISO(), can('finance.read'))
@@ -83,7 +88,9 @@ export function DashboardPage() {
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {can('sales.read') ? <>
-          <StatCard label={t('Sales this month')} value={formatMoney(sales.data?.revenue, cur)} loading={sales.isLoading} href="/sales" hint={sales.data ? t('{n} invoices · {pct}% gross margin', { n: sales.data.invoice_count, pct: sales.data.revenue > 0 ? formatNumberWith(((sales.data.revenue - sales.data.cogs) / sales.data.revenue) * 100, { maximumFractionDigits: 1 }) : '0' }) : undefined} />
+          {legacy ? <StatCard label={t('Sales this month')} value={formatMoney(legacy.month, cur)} href="/history"
+            hint={t('{n} receipts · {pct}% gross margin · old program', { n: num(legacy.month_receipts), pct: legacy.month_cost != null && num(legacy.month_net) > 0 ? formatNumberWith(((num(legacy.month_net) - num(legacy.month_cost)) / num(legacy.month_net)) * 100, { maximumFractionDigits: 1 }) : '—' })} />
+          : <StatCard label={t('Sales this month')} value={formatMoney(sales.data?.revenue, cur)} loading={sales.isLoading} href="/sales" hint={sales.data ? t('{n} invoices · {pct}% gross margin', { n: sales.data.invoice_count, pct: sales.data.revenue > 0 ? formatNumberWith(((sales.data.revenue - sales.data.cogs) / sales.data.revenue) * 100, { maximumFractionDigits: 1 }) : '0' }) : undefined} />}
           <StatCard label={t('Unpaid invoices past due')} value={formatMoney(sales.data?.overdue_amount, cur)} loading={sales.isLoading} tone={sales.data?.overdue_count ? 'destructive' : 'default'} href="/sales/invoices" hint={t('{n} past the due date', { n: sales.data?.overdue_count ?? 0 })} />
         </> : <>
           <StatCard label={t('Sales this month')} value="" pending={t('No access')} hint={t('Needs access to sales')} />
@@ -103,6 +110,7 @@ export function DashboardPage() {
         ) : <StatCard label={t('Net profit this month')} value="" pending={t('No access')} hint={t('Needs access to finance')} />}
       </div>
 
+      {legacy && <LegacySales data={legacy} />}
       {can('inventory.read') && <StockByWarehouse />}
 
       <div className="mt-4 grid gap-4 grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_380px]">

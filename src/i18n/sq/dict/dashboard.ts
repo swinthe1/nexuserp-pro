@@ -55,4 +55,11 @@ export default {
   '{n} running low': '{n} po mbarojnë',
   '{n} without a cost': '{n} pa kosto',
   '{n} below zero': '{n} nën zero',
+  'Sales today by store': 'Shitjet sot sipas njësive',
+  '{amount} from {n} receipts today, from the old program. Updates by itself.': '{amount} nga {n} kupona sot, nga programi i vjetër. Përditësohet vetë.',
+  'No sales this month yet.': 'Ende asnjë shitje këtë muaj.',
+  '{n} receipt today': '{n} kupon sot',
+  '{n} receipts today': '{n} kupona sot',
+  '{amount} this month': '{amount} këtë muaj',
+  '{n} receipts · {pct}% gross margin · old program': '{n} kupona · {pct}% marzh bruto · programi i vjetër',
 } satisfies Dict

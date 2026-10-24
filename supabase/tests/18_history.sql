@@ -58,6 +58,10 @@ select t.ok((:'pg'::jsonb ->> 'total_count')::int = 1 and (:'pg'::jsonb -> 'rows
 select t.ok(jsonb_array_length(public.history_document((:'pg'::jsonb -> 'rows' -> 0 ->> 'id')::uuid) -> 'lines') = 2, 'a document opens with its lines');
 select t.ok((public.history_payments_page(:'co', '{}') ->> 'money_out')::numeric = 100, 'payments add up money in and out');
 select t.ok((public.history_summary(:'co', '2026-01-01', '2026-12-31') -> 'by_month' -> 0 ->> 'sales')::numeric = 2.5, 'sales per month');
+select public.history_live(:'co', '2026-01-05') as lv \gset
+select t.ok((:'lv'::jsonb ->> 'today')::numeric = 2.5 and (:'lv'::jsonb ->> 'today_receipts')::int = 1 and (:'lv'::jsonb ->> 'month_purchases')::numeric = 100
+  and (:'lv'::jsonb -> 'by_store' -> 0 ->> 'store') = 'Njesia 3', 'the dashboard reads today''s sales from the old program');
+select t.ok((public.history_live(:'co', '2026-02-10') ->> 'month')::numeric = 0, 'a new month starts at zero');
 select t.ok((select (a ->> 'opening')::numeric = 50 from jsonb_array_elements(public.history_balances(:'co', 2026) -> 'accounts') a where a ->> 'code' = '12000'), 'balances carry the opening of the year');
 reset role;
 

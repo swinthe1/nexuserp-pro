@@ -10966,6 +10966,13 @@ export type Database = {
         }
         Returns: Json
       }
+      history_live: {
+        Args: {
+          p_company: string
+          p_today?: string
+        }
+        Returns: Json
+      }
       history_payments_page: {
         Args: {
           p_company: string
