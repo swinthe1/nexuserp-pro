@@ -1,0 +1,68 @@
+import { formatDateWith, formatNumberWith, t, tEnum } from '@/i18n'
+import { printHtml } from '@/lib/print'
+
+const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
+const money = (n: number) => formatNumberWith(n, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const qty = (n: number) => (Number.isInteger(n) ? String(n) : formatNumberWith(n, { maximumFractionDigits: 3 }))
+const stamp = (d: Date) => formatDateWith(d, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+/** payment method label (cash, card, voucher, bank_transfer, other) */
+const method = (m: string) => tEnum(m)
+
+// 80 mm thermal paper: 72 mm printable, monospace keeps the columns straight on cheap printers
+const CSS = `@page{size:80mm auto;margin:3mm 4mm} *{box-sizing:border-box} body{margin:0;font:12px/1.35 ui-monospace,Menlo,Consolas,monospace;color:#000;width:72mm}
+ .c{text-align:center} .r{text-align:right} .b{font-weight:700} .big{font-size:16px} hr{border:0;border-top:1px dashed #000;margin:6px 0}
+ table{width:100%;border-collapse:collapse} td{vertical-align:top;padding:1px 0} .muted{font-size:11px}`
+
+export interface ReceiptData {
+  company: { name: string; legal_name: string | null; tax_number: string | null; address: string | null }
+  register: { code: string; name: string; receipt_header: string | null; receipt_footer: string | null }
+  ref: string; number?: string | null; date: Date; cashier: string; customer?: string | null; isRefund?: boolean; offline?: boolean
+  lines: { name: string; qty: number; price: number; discount: number; total: number; rate: number }[]
+  payments: { method: string; amount: number }[]; change: number; currency: string
+}
+
+export function receiptHtml(r: ReceiptData) {
+  const total = r.lines.reduce((s, l) => s + l.total, 0)
+  const byRate = new Map<number, { base: number; tax: number }>()
+  for (const l of r.lines) {
+    const base = Math.round((l.total / (1 + l.rate / 100)) * 100) / 100
+    const v = byRate.get(l.rate) ?? { base: 0, tax: 0 }
+    v.base += base; v.tax += l.total - base; byRate.set(l.rate, v)
+  }
+  const lines = r.lines.map((l) => `<tr><td colspan="2">${esc(l.name)}</td></tr><tr><td class="muted">&nbsp;${esc(qty(l.qty))} × ${money(l.price)}${l.discount ? ` −${l.discount}%` : ''}</td><td class="r">${money(l.total)}</td></tr>`).join('')
+  const taxes = [...byRate.entries()].sort((a, b) => b[0] - a[0]).map(([rate, v]) => `<tr><td class="muted">${esc(t('VAT {rate}% on {base}', { rate, base: money(v.base) }))}</td><td class="r muted">${money(v.tax)}</td></tr>`).join('')
+  const pays = r.payments.map((p) => `<tr><td>${esc(method(p.method))}</td><td class="r">${money(p.amount)}</td></tr>`).join('')
+  return `<div class="c b big">${esc(r.company.name)}</div>
+    <div class="c muted">${esc(r.company.legal_name ?? '')}${r.company.tax_number ? `<br>${esc(t('NIPT'))} ${esc(r.company.tax_number)}` : ''}${r.company.address ? `<br>${esc(r.company.address)}` : ''}</div>
+    ${r.register.receipt_header ? `<div class="c muted">${esc(r.register.receipt_header)}</div>` : ''}
+    <hr><div>${r.isRefund ? `<b>${esc(t('REFUND'))}</b><br>` : ''}${esc(t('Receipt {number}', { number: r.number ?? r.ref }))}${r.number && r.number !== r.ref ? `<br><span class="muted">${esc(t('Till ref {ref}', { ref: r.ref }))}</span>` : ''}<br>
+    ${esc(stamp(r.date))} · ${esc(r.register.name)}<br>${esc(t('Cashier: {name}', { name: r.cashier }))}${r.customer ? `<br>${esc(t('Customer: {name}', { name: r.customer }))}` : ''}</div><hr>
+    <table>${lines}</table><hr>
+    <table><tr class="b big"><td>${esc(t('TOTAL {currency}', { currency: r.currency }))}</td><td class="r">${money(total)}</td></tr>${taxes}</table><hr>
+    <table>${pays}${r.change > 0 ? `<tr class="b"><td>${esc(t('Change'))}</td><td class="r">${money(r.change)}</td></tr>` : ''}</table>
+    ${r.offline ? `<hr><div class="c muted">${esc(t('Recorded offline — sent to the books when the till is back online.'))}</div>` : ''}
+    <hr><div class="c muted">${esc(r.register.receipt_footer ?? 'Faleminderit! Thank you!')}</div>`
+}
+export function printReceipt(r: ReceiptData) { printHtml(receiptHtml(r), CSS) }
+
+export interface ZData {
+  company: string; register: string; number: string; session: string; opened: string; closed: string | null; date: string; currency: string
+  orders: number; refunds: number; gross: number; refundsTotal: number; discounts: number; net: number; tax: number
+  payments: Record<string, number>; taxes: { rate: number; base: number; tax: number }[]
+  opening: number; cashIn: number; cashOut: number; expected: number; counted: number | null; difference: number | null
+  items: { name: string; quantity: number; total: number }[]
+}
+export function printZReport(z: ZData) {
+  const row = (k: string, v: string, cls = '') => `<tr class="${cls}"><td>${esc(k)}</td><td class="r">${esc(v)}</td></tr>`
+  const pays = Object.entries(z.payments).filter(([k]) => k !== 'change_given').map(([k, v]) => row(method(k), money(Number(v)))).join('')
+  printHtml(`<div class="c b big">${esc(t('Z-REPORT {number}', { number: z.number }))}</div><div class="c muted">${esc(z.company)}<br>${esc(z.register)} · ${esc(t('shift {number}', { number: z.session }))}<br>
+    ${esc(stamp(new Date(z.opened)))} → ${esc(z.closed ? stamp(new Date(z.closed)) : '')}</div><hr>
+    <table>${row(t('Receipts'), String(z.orders))}${row(t('Refunds|count'), String(z.refunds))}${row(t('Gross sales'), money(z.gross))}${row(t('Refunds|amount'), `−${money(z.refundsTotal)}`)}
+    ${row(t('Discounts given'), money(z.discounts))}${row(t('Net of VAT'), money(z.net))}${row(t('VAT'), money(z.tax))}${row(t('Total {currency}', { currency: z.currency }), money(z.gross - z.refundsTotal), 'b')}</table><hr>
+    <div class="b">${esc(t('VAT'))}</div><table>${z.taxes.map((x) => row(t('{rate}% on {base}', { rate: x.rate, base: money(x.base) }), money(x.tax))).join('')}</table><hr>
+    <div class="b">${esc(t('Payments'))}</div><table>${pays}${row(t('Change given'), money(Number(z.payments.change_given ?? 0)))}</table><hr>
+    <div class="b">${esc(t('Cash drawer'))}</div><table>${row(t('Opening cash'), money(z.opening))}${row(t('Cash in'), money(z.cashIn))}${row(t('Cash out'), `−${money(z.cashOut)}`)}
+    ${row(t('Expected'), money(z.expected), 'b')}${row(t('Counted'), z.counted == null ? '—' : money(z.counted))}${row(t('Difference'), z.difference == null ? '—' : money(z.difference), 'b')}</table><hr>
+    <div class="b">${esc(t('Best sellers'))}</div><table>${z.items.slice(0, 10).map((i) => row(`${qty(Number(i.quantity))} × ${i.name}`, money(Number(i.total)))).join('')}</table>
+    <hr><div class="c muted">${esc(t('Printed {date}', { date: stamp(new Date()) }))}</div>`, CSS)
+}

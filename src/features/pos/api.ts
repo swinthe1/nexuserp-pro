@@ -1,0 +1,159 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import * as React from 'react'
+import { toast } from 'sonner'
+import { useCompany } from '@/app/company-provider'
+import type { Tables } from '@/lib/database.types'
+import { describeError, unwrap } from '@/lib/errors'
+import { supabase } from '@/lib/supabase'
+import { kvGet, kvSet } from './offline'
+
+export const posKeys = { all: (c: string) => ['pos', c] as const }
+function useInvalidatePos() {
+  const qc = useQueryClient()
+  const { companyId } = useCompany()
+  return React.useCallback(() => Promise.all([qc.invalidateQueries({ queryKey: posKeys.all(companyId) }), qc.invalidateQueries({ queryKey: ['fin', companyId] })]), [qc, companyId])
+}
+function useAction<A, R>(fn: (a: A) => Promise<R>) {
+  const invalidate = useInvalidatePos()
+  return useMutation({ mutationFn: fn, onSuccess: () => void invalidate(), onError: (e) => toast.error(describeError(e)) })
+}
+
+/* ------------------------------------------------------------------ registers & sessions */
+export type Register = Tables<'pos_registers'> & { warehouse: { name: string } | null; location: { code: string } | null; cash: { name: string } | null
+  sessions: { id: string; number: string; status: string; opened_at: string; opening_cash: number; opened_by: string }[] }
+export function useRegisters() {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...posKeys.all(companyId), 'registers'],
+    enabled: !!companyId,
+    queryFn: async () => {
+      const rows = unwrap(await supabase.from('pos_registers')
+        .select('*, warehouse:warehouses(name), location:warehouse_locations(code), cash:bank_accounts(name), sessions:pos_sessions(id, number, status, opened_at, opening_cash, opened_by)')
+        .eq('company_id', companyId).is('deleted_at', null).order('code').returns<Register[]>())
+      return rows.map((r) => ({ ...r, sessions: r.sessions.filter((s) => s.status !== 'closed') }))
+    },
+  })
+}
+export function useSaveRegister() {
+  const { companyId } = useCompany()
+  return useAction(async ({ id, ...v }: Record<string, unknown> & { id?: string }) => id
+    ? unwrap(await supabase.from('pos_registers').update(v as never).eq('id', id))
+    : unwrap(await supabase.from('pos_registers').insert({ ...v, company_id: companyId } as never)))
+}
+export type SessionRow = Tables<'pos_sessions'> & { register: { code: string; name: string } | null; opener: { full_name: string | null } | null
+  z: { id: string; number: string; gross_sales: number; refunds_total: number; cash_difference: number | null; order_count: number }[] }
+export function useSessions() {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...posKeys.all(companyId), 'sessions'],
+    enabled: !!companyId,
+    queryFn: async () => unwrap(await supabase.from('pos_sessions')
+      .select('*, register:pos_registers(code, name), opener:profiles!pos_sessions_opened_by_profile_fkey(full_name), z:z_reports(id, number, gross_sales, refunds_total, cash_difference, order_count)')
+      .eq('company_id', companyId).is('deleted_at', null).order('opened_at', { ascending: false }).limit(200).returns<SessionRow[]>()),
+  })
+}
+export type ZReport = Tables<'z_reports'> & { register: { code: string; name: string; receipt_header: string | null } | null
+  session: { number: string; opened_at: string; closed_at: string | null; journal_entry_id: string | null; cash_journal_entry_id: string | null } | null }
+export function useSessionDetail(id: string | undefined) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...posKeys.all(companyId), 'session', id],
+    enabled: !!companyId && !!id,
+    queryFn: async () => {
+      const s = unwrap(await supabase.from('pos_sessions').select('*, register:pos_registers(code, name)').eq('id', id!).single()
+        .returns<Tables<'pos_sessions'> & { register: { code: string; name: string } | null }>())
+      const z = unwrap(await supabase.from('z_reports')
+        .select('*, register:pos_registers(code, name, receipt_header), session:pos_sessions(number, opened_at, closed_at, journal_entry_id, cash_journal_entry_id)')
+        .eq('session_id', id!).maybeSingle().returns<ZReport | null>())
+      const orders = unwrap(await supabase.from('pos_orders').select('id, number, device_ref, order_at, total, is_refund, offline_created, status, partner:business_partners(name), payments:pos_payments(method, amount)')
+        .eq('session_id', id!).order('order_at', { ascending: false })
+        .returns<{ id: string; number: string; device_ref: string | null; order_at: string; total: number; is_refund: boolean; offline_created: boolean; status: string
+          partner: { name: string } | null; payments: { method: string; amount: number }[] }[]>())
+      return { session: s, z, orders }
+    },
+  })
+}
+export function useSessionSummary(id: string | undefined) {
+  return useQuery({
+    queryKey: ['pos', 'summary', id],
+    enabled: !!id,
+    queryFn: async () => unwrap(await supabase.rpc('pos_session_summary', { p_session: id! })) as unknown as {
+      orders: number; refunds: number; gross: number; refunded: number; net: number; tax: number; payments: Record<string, number>
+      change: number; cash_in: number; cash_out: number; expected_cash: number },
+  })
+}
+export const useOpenSession = () => useAction(async (a: { register: string; cash: number }) =>
+  unwrap(await supabase.rpc('open_pos_session', { p_register: a.register, p_opening_cash: a.cash })) as string)
+export const useCashMove = () => useAction(async (a: { session: string; type: 'cash_in' | 'cash_out'; amount: number; reason: string }) =>
+  unwrap(await supabase.rpc('pos_cash_move', { p_session: a.session, p_type: a.type, p_amount: a.amount, p_reason: a.reason })))
+export const useCloseSession = () => useAction(async (a: { session: string; counted: number; notes?: string }) =>
+  unwrap(await supabase.rpc('close_pos_session', { p_session: a.session, p_counted_cash: a.counted, p_notes: a.notes })) as string)
+
+/* ------------------------------------------------------------------ till data (cached for offline) */
+export type CatalogItem = { variant_id: string; sku: string; name: string; category: string | null; barcodes: { code: string; qty: number }[]
+  price: number; tax_code_id: string | null; tax_rate: number; tracking: string; on_hand: number; product_type: string }
+export type TillData = {
+  register: Pick<Register, 'id' | 'code' | 'name' | 'company_id' | 'receipt_header' | 'receipt_footer' | 'default_customer_id' | 'location_id' | 'warehouse_id'>
+  session: { id: string; number: string; opened_at: string; opening_cash: number } | null
+  catalog: CatalogItem[]
+  customers: { id: string; name: string; code: string | null; tax_number: string | null }[]
+  company: { name: string; legal_name: string | null; tax_number: string | null; base_currency: string; address: string | null }
+  loadedAt: string
+}
+/** Loads the till from the server when online and keeps a copy on the device; falls back to the copy offline */
+export function useTill(registerId: string | undefined) {
+  const [state, setState] = React.useState<{ data: TillData | null; offline: boolean; loading: boolean; error: string | null }>({ data: null, offline: false, loading: true, error: null })
+  const load = React.useCallback(async () => {
+    if (!registerId) return
+    const key = `till:${registerId}`
+    const cached = await kvGet<TillData>(key).catch(() => undefined)
+    if (cached) setState({ data: cached, offline: !navigator.onLine, loading: false, error: null })
+    try {
+      const reg = unwrap(await supabase.from('pos_registers').select('id, code, name, company_id, receipt_header, receipt_footer, default_customer_id, location_id, warehouse_id').eq('id', registerId).single())
+      const [ses, cat, cus, co] = await Promise.all([
+        supabase.from('pos_sessions').select('id, number, opened_at, opening_cash').eq('register_id', registerId).eq('status', 'open').maybeSingle(),
+        supabase.rpc('pos_catalog', { p_register: registerId }),
+        supabase.from('business_partners').select('id, name, code, tax_number').eq('company_id', reg.company_id).eq('is_customer', true).is('deleted_at', null).order('name').limit(2000),
+        supabase.from('companies').select('name, legal_name, tax_number, base_currency, address_line1, city').eq('id', reg.company_id).single(),
+      ])
+      if (cat.error) throw cat.error
+      const data: TillData = {
+        register: reg as TillData['register'], session: ses.data ?? null,
+        catalog: (cat.data ?? []).map((c) => ({ ...c, price: Number(c.price), tax_rate: Number(c.tax_rate), on_hand: Number(c.on_hand), barcodes: (c.barcodes ?? []) as CatalogItem['barcodes'] })) as CatalogItem[],
+        customers: (cus.data ?? []) as TillData['customers'],
+        company: { name: co.data?.name ?? '', legal_name: co.data?.legal_name ?? null, tax_number: co.data?.tax_number ?? null, base_currency: co.data?.base_currency ?? 'ALL', address: [co.data?.address_line1, co.data?.city].filter(Boolean).join(', ') || null },
+        loadedAt: new Date().toISOString(),
+      }
+      await kvSet(key, data).catch(() => undefined)
+      setState({ data, offline: false, loading: false, error: null })
+    } catch (e) {
+      setState((s) => ({ ...s, loading: false, offline: true, error: s.data ? null : describeError(e) }))
+    }
+  }, [registerId])
+  React.useEffect(() => { void load() }, [load])
+  const patch = React.useCallback((fn: (d: TillData) => TillData) => {
+    setState((s) => {
+      if (!s.data) return s
+      const next = fn(s.data)
+      void kvSet(`till:${registerId}`, next).catch(() => undefined)
+      return { ...s, data: next }
+    })
+  }, [registerId])
+  return { ...state, reload: load, patch }
+}
+
+export type ReceiptLookup = { id: string; number: string; device_ref: string | null; order_at: string; total: number; is_refund: boolean
+  lines: { variant_id: string; description: string; quantity: number; unit_price: number; discount_pct: number; line_total: number; tax_rate: number }[]
+  refunds: { lines: { variant_id: string; quantity: number }[] }[] }
+export async function lookupReceipt(companyId: string, code: string): Promise<ReceiptLookup | null> {
+  const c = code.trim().replace(/[,()]/g, '')
+  const rows = unwrap(await supabase.from('pos_orders')
+    .select('id, number, device_ref, order_at, total, is_refund, lines:pos_order_lines(variant_id, description, quantity, unit_price, discount_pct, line_total, tax_rate)')
+    .eq('company_id', companyId).or(`number.eq.${c},device_ref.eq.${c}`).eq('status', 'paid').limit(1))
+  const o = rows[0]
+  if (!o) return null
+  // earlier refunds of this receipt (fetched separately: the self-reference cannot be embedded)
+  const refunds = unwrap(await supabase.from('pos_orders').select('lines:pos_order_lines(variant_id, quantity)')
+    .eq('company_id', companyId).eq('refund_of_id', o.id).eq('status', 'paid'))
+  return { ...(o as unknown as Omit<ReceiptLookup, 'refunds'>), refunds: refunds as unknown as ReceiptLookup['refunds'] }
+}

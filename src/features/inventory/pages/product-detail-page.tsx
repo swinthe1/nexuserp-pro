@@ -1,0 +1,514 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Barcode, Pencil, Plus, ScanLine, Trash2 } from 'lucide-react'
+import * as React from 'react'
+import { useForm } from 'react-hook-form'
+import { useParams } from 'react-router-dom'
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from 'recharts'
+import { toast } from 'sonner'
+import { z } from 'zod'
+import { Can, useCompany } from '@/app/company-provider'
+import { ActivityTimeline } from '@/components/activity-timeline'
+import { EmptyState } from '@/components/empty-state'
+import { PageHeader } from '@/components/page-header'
+import { SearchSelect } from '@/components/search-select'
+import { StatCard } from '@/components/stat-card'
+import { StockBar } from '@/components/stock-bar'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
+import type { Tables } from '@/lib/database.types'
+import { describeError } from '@/lib/errors'
+import { formatDate, formatMoney, formatQty, humanize, num } from '@/lib/utils'
+import {
+  useAttributes, useCategories, useCostHistory, useProduct, useProductStockLevels, useTaxCodes, useUpdateProduct,
+  useVariantMutations, useVendors, useWarehouses, type ProductDetail,
+} from '../api'
+import { MovementsTable } from '../components/movements-table'
+import { VendorPicker } from '../components/pickers'
+import { barcodeSchema } from '../schemas'
+import { msg, t, td, tn } from '@/i18n'
+import { ErrorState } from '@/components/error-state'
+
+export function ProductDetailPage() {
+  const { id } = useParams<{ id: string }>()
+  const { company } = useCompany()
+  const product = useProduct(id)
+  const levels = useProductStockLevels(id)
+  const p = product.data
+
+  if (product.isLoading) {
+    return <div className="grid gap-4"><Skeleton className="h-10 w-80" /><div className="grid gap-3 sm:grid-cols-4">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24" />)}</div><Skeleton className="h-72" /></div>
+  }
+  if (product.isError) return <ErrorState error={product.error} onRetry={() => void product.refetch()} />
+  if (!p) return <EmptyState title={t('Product not found')} description={t('It may have been deleted, or it belongs to another company.')} />
+
+  const rows = levels.data ?? []
+  const onHand = rows.reduce((s, r) => s + num(r.on_hand), 0)
+  const reserved = rows.reduce((s, r) => s + num(r.reserved), 0)
+  const value = rows.reduce((s, r) => s + num(r.stock_value), 0)
+  const avg = onHand > 0 ? value / onHand : num(rows[0]?.avg_cost)
+  const lowVariants = p.product_variants.filter((v) => v.replenishment_rules.some((r) => {
+    const avail = rows.filter((x) => x.variant_id === v.id && x.warehouse_id === r.warehouse_id).reduce((s, x) => s + num(x.available), 0)
+    return avail <= num(r.min_qty)
+  })).length
+
+  return (
+    <>
+      <PageHeader
+        back={{ href: '/inventory/products', label: t('Products') }}
+        title={p.name}
+        meta={<>
+          <Badge variant="outline">{p.code}</Badge>
+          {!p.is_active && <Badge variant="secondary">{t('Inactive')}</Badge>}
+          {p.tracking !== 'none' && <Badge variant="default">{p.tracking === 'lot' ? t('Tracked by lot') : t('Tracked by serial number')}</Badge>}
+        </>}
+        description={p.description ?? undefined}
+        actions={<Can perm="inventory.write"><EditProductSheet product={p} /></Can>}
+      />
+
+      {p.product_type === 'stockable' && (
+        <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label={t('On hand')} value={formatQty(onHand)} hint={t('{qty} reserved', { qty: formatQty(reserved) })} loading={levels.isLoading} />
+          <StatCard label={t('Available')} value={formatQty(onHand - reserved)} tone={onHand - reserved < 0 ? 'destructive' : lowVariants ? 'warning' : 'default'}
+            hint={lowVariants ? tn(lowVariants, '{n} variant at or below the reorder point', '{n} variants at or below the reorder point') : t('All variants are above the reorder point')} loading={levels.isLoading} />
+          <StatCard label={t('Average cost')} value={formatMoney(avg)} hint={t('Weighted, updated on every receipt')} loading={levels.isLoading} />
+          <StatCard label={t('Stock value')} value={formatMoney(value, company?.base_currency)} hint={t('Sales price {price}', { price: formatMoney(p.sales_price) })} loading={levels.isLoading} />
+        </div>
+      )}
+
+      <Tabs defaultValue={p.product_type === 'stockable' ? 'stock' : 'variants'}>
+        <TabsList>
+          {p.product_type === 'stockable' && <TabsTrigger value="stock">{t('Stock')}</TabsTrigger>}
+          <TabsTrigger value="variants">{t('Variants & barcodes')} <Badge variant="secondary">{p.product_variants.length}</Badge></TabsTrigger>
+          {p.product_type === 'stockable' && <TabsTrigger value="reorder">{t('Reorder points')}</TabsTrigger>}
+          {p.product_type === 'stockable' && <TabsTrigger value="movements">{t('Movements')}</TabsTrigger>}
+          <TabsTrigger value="activity">{t('Activity')}</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="stock" className="grid gap-4 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_380px]">
+          <Card>
+            <CardHeader><CardTitle>{t('Where it is')}</CardTitle><CardDescription>{t('On hand by warehouse, bin and lot')}</CardDescription></CardHeader>
+            <CardContent className="p-0">
+              {rows.length === 0 ? <EmptyState compact title={t('No stock yet')} description={t('Receive goods or post opening stock to see it here.')} /> : (
+                <Table>
+                  <TableHeader><TableRow className="hover:bg-transparent">
+                    <TableHead>{t('Variant')}</TableHead><TableHead>{t('Location')}</TableHead><TableHead>{t('Lot')}</TableHead>
+                    <TableHead>{t('Available')}</TableHead><TableHead className="text-right">{t('Value')}</TableHead>
+                  </TableRow></TableHeader>
+                  <TableBody>
+                    {rows.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell className="text-[13px]">{r.sku}</TableCell>
+                        <TableCell className="text-[13px]">{td(r.warehouse_name)} <span className="text-muted-foreground">· {r.location_code}</span></TableCell>
+                        <TableCell className="text-[13px]">{r.lot_number ?? '—'}{r.expiry_date && <span className="ml-1 text-muted-foreground">{t('expires {date}', { date: formatDate(r.expiry_date) })}</span>}</TableCell>
+                        <TableCell><StockBar onHand={r.on_hand} reserved={r.reserved} className="max-w-[220px]" /></TableCell>
+                        <TableCell className="text-right tabular">{formatMoney(r.stock_value)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                  <TableFooter><TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={3}>{t('Total')}</TableCell>
+                    <TableCell className="tabular">{t('{available} available of {total}', { available: formatQty(onHand - reserved), total: formatQty(onHand) })}</TableCell>
+                    <TableCell className="text-right tabular">{formatMoney(value)}</TableCell>
+                  </TableRow></TableFooter>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+          <CostHistoryCard productId={p.id} variants={p.product_variants} />
+        </TabsContent>
+
+        <TabsContent value="variants"><VariantsTab product={p} /></TabsContent>
+        <TabsContent value="reorder"><ReorderTab product={p} /></TabsContent>
+        <TabsContent value="movements"><MovementsTable productId={p.id} tableKey="inventory.product-movements" /></TabsContent>
+        <TabsContent value="activity" className="max-w-2xl"><ActivityTimeline table="products" id={p.id} /></TabsContent>
+      </Tabs>
+    </>
+  )
+}
+
+function CostHistoryCard({ productId, variants }: { productId: string; variants: ProductDetail['product_variants'] }) {
+  const history = useCostHistory(productId)
+  const [variantId, setVariantId] = React.useState(variants[0]?.id ?? '')
+  const data = (history.data ?? []).filter((h) => h.variant_id === variantId)
+    .map((h) => ({ at: h.movement?.movement_date ?? h.created_at, avg: num(h.avg_cost_after), cost: h.qty_in > 0 ? num(h.unit_cost_in) : null, reason: humanize(h.reason) }))
+    .sort((a, b) => a.at.localeCompare(b.at))
+    .map((h) => ({ ...h, date: formatDate(h.at) }))
+  return (
+    <Card>
+      <CardHeader className="flex-row items-start justify-between gap-2">
+        <div><CardTitle>{t('Average cost')}</CardTitle><CardDescription>{t('Recalculated on each receipt and landed cost')}</CardDescription></div>
+        {variants.length > 1 && (
+          <Select value={variantId} onValueChange={setVariantId}>
+            <SelectTrigger className="h-8 w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>{variants.map((v) => <SelectItem key={v.id} value={v.id}>{v.sku}</SelectItem>)}</SelectContent>
+          </Select>
+        )}
+      </CardHeader>
+      <CardContent>
+        {history.isLoading ? <Skeleton className="h-48" /> : data.length < 1 ? (
+          <p className="py-16 text-center text-[13px] text-muted-foreground">{t('No receipts yet.')}</p>
+        ) : (
+          <div className="h-52">
+            <ResponsiveContainer>
+              <LineChart data={data} margin={{ left: -12, right: 8, top: 8 }}>
+                <CartesianGrid stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} minTickGap={24} />
+                <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} width={56} />
+                <ChartTooltip contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }}
+                  formatter={(v: number, n: string) => [formatMoney(v), n === 'avg' ? t('Average cost') : t('Cost of goods received')]} />
+                <Line type="stepAfter" dataKey="avg" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="cost" stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeWidth={0} dot={{ r: 3 }} connectNulls={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+/* ------------------------------------------------------------------ edit */
+const editSchema = z.object({
+  name: z.string().trim().min(2, msg('Enter a product name')),
+  description: z.string().trim().optional(),
+  category_id: z.string().nullable(),
+  sales_price: z.coerce.number().nonnegative(),
+  sales_tax_code_id: z.string().nullable(),
+  purchase_tax_code_id: z.string().nullable(),
+  is_sellable: z.boolean(),
+  is_purchasable: z.boolean(),
+  is_active: z.boolean(),
+  brand: z.string().trim().optional(),
+  hs_code: z.string().trim().optional(),
+  weight_kg: z.preprocess((v) => (v === '' || v == null ? null : Number(v)), z.number().nonnegative().nullable()),
+  volume_m3: z.preprocess((v) => (v === '' || v == null ? null : Number(v)), z.number().nonnegative().nullable()),
+})
+
+function EditProductSheet({ product }: { product: ProductDetail }) {
+  const [open, setOpen] = React.useState(false)
+  const categories = useCategories()
+  const taxes = useTaxCodes()
+  const update = useUpdateProduct(product.id)
+  const form = useForm<z.infer<typeof editSchema>>({
+    resolver: zodResolver(editSchema),
+    values: {
+      name: product.name, description: product.description ?? '', category_id: product.category_id, sales_price: product.sales_price,
+      sales_tax_code_id: product.sales_tax_code_id, purchase_tax_code_id: product.purchase_tax_code_id, is_sellable: product.is_sellable,
+      is_purchasable: product.is_purchasable, is_active: product.is_active, brand: product.brand ?? '', hs_code: product.hs_code ?? '',
+      weight_kg: product.weight_kg, volume_m3: product.volume_m3,
+    },
+  })
+  const onSubmit = form.handleSubmit(async (v) => {
+    await update.mutateAsync({ ...v, description: v.description || null, brand: v.brand || null, hs_code: v.hs_code || null })
+    setOpen(false)
+  })
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild><Button variant="outline"><Pencil /> {t('Edit')}</Button></SheetTrigger>
+      <SheetContent>
+        <SheetHeader><SheetTitle>{t('Edit {name}', { name: product.code })}</SheetTitle></SheetHeader>
+        <Form {...form}>
+          <form onSubmit={onSubmit} className="flex flex-1 flex-col overflow-hidden">
+            <div className="grid flex-1 content-start gap-4 overflow-y-auto px-5 py-4">
+              <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>{t('Name')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel optional>{t('Description')}</FormLabel><FormControl><Textarea rows={2} {...field} /></FormControl></FormItem>)} />
+              <FormField control={form.control} name="category_id" render={({ field }) => (
+                <FormItem><FormLabel optional>{t('Category')}</FormLabel><FormControl>
+                  <SearchSelect value={field.value} onChange={field.onChange} clearable placeholder={t('No category')} options={(categories.data ?? []).map((c) => ({ value: c.id, label: c.name }))} />
+                </FormControl></FormItem>
+              )} />
+              <div className="grid grid-cols-2 gap-3">
+                <FormField control={form.control} name="sales_price" render={({ field }) => (<FormItem><FormLabel>{t('Sales price')}</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="sales_tax_code_id" render={({ field }) => (
+                  <FormItem><FormLabel>{t('Sales VAT')}</FormLabel>
+                    <Select value={field.value ?? ''} onValueChange={field.onChange}><FormControl><SelectTrigger><SelectValue placeholder={t('VAT')} /></SelectTrigger></FormControl>
+                      <SelectContent>{(taxes.data ?? []).filter((x) => x.scope !== 'purchase').map((x) => <SelectItem key={x.id} value={x.id}>{td(x.name)}</SelectItem>)}</SelectContent></Select>
+                  </FormItem>
+                )} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <FormField control={form.control} name="weight_kg" render={({ field }) => (<FormItem><FormLabel optional>{t('Weight (kg)')}</FormLabel><FormControl><Input type="number" step="any" value={field.value ?? ''} onChange={field.onChange} /></FormControl></FormItem>)} />
+                <FormField control={form.control} name="volume_m3" render={({ field }) => (<FormItem><FormLabel optional>{t('Volume (m³)')}</FormLabel><FormControl><Input type="number" step="any" value={field.value ?? ''} onChange={field.onChange} /></FormControl></FormItem>)} />
+                <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel optional>{t('Brand')}</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                <FormField control={form.control} name="hs_code" render={({ field }) => (<FormItem><FormLabel optional>{t('HS code')}</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+              </div>
+              {(['is_sellable', 'is_purchasable', 'is_active'] as const).map((n) => (
+                <FormField key={n} control={form.control} name={n} render={({ field }) => (
+                  <label className="flex items-center justify-between text-sm">{n === 'is_sellable' ? t('Can be sold') : n === 'is_purchasable' ? t('Can be purchased') : t('Active')}<Switch checked={field.value} onCheckedChange={field.onChange} /></label>
+                )} />
+              ))}
+              <p className="text-xs text-muted-foreground">{t('Unit, type and tracking can\'t change after creation because stock history depends on them.')}</p>
+            </div>
+            <div className="flex justify-end gap-2 border-t px-5 py-3">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t('Cancel')}</Button>
+              <Button type="submit" loading={update.isPending}>{t('Save changes')}</Button>
+            </div>
+          </form>
+        </Form>
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+/* -------------------------------------------------------------- variants */
+function VariantsTab({ product }: { product: ProductDetail }) {
+  const { can } = useCompany()
+  const m = useVariantMutations(product.id)
+  const attributes = useAttributes()
+  const valueName = new Map((attributes.data ?? []).flatMap((a) => a.product_attribute_values.map((v) => [v.id, `${a.name}: ${v.value}`] as const)))
+  const editable = can('inventory.write')
+
+  return (
+    <div className="grid gap-3">
+      <div className="overflow-hidden rounded-lg border bg-card">
+        <Table>
+          <TableHeader><TableRow className="hover:bg-transparent">
+            <TableHead>SKU</TableHead><TableHead>{t('Attributes')}</TableHead><TableHead>{t('Barcodes')}</TableHead>
+            <TableHead className="text-right">{t('Price')}</TableHead><TableHead className="w-24">{t('Active')}</TableHead>
+          </TableRow></TableHeader>
+          <TableBody>
+            {product.product_variants.map((v) => (
+              <TableRow key={v.id} className="hover:bg-transparent">
+                <TableCell><div className="font-medium">{v.sku}</div><div className="text-xs text-muted-foreground">{v.name}</div></TableCell>
+                <TableCell className="text-[13px] text-muted-foreground">
+                  {v.variant_attribute_values.map((a) => valueName.get(a.attribute_value_id)).filter(Boolean).join(' · ') || '—'}
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap items-center gap-1">
+                    {v.product_barcodes.map((b) => (
+                      <Badge key={b.id} variant="outline" className="gap-1 tabular">
+                        <Barcode className="size-3 text-muted-foreground" />{b.barcode}
+                        {editable && <button className="rounded hover:text-destructive" aria-label={t('Remove barcode {code}', { code: b.barcode })} onClick={() => m.removeBarcode.mutate(b.id)}><Trash2 className="size-3" /></button>}
+                      </Badge>
+                    ))}
+                    {editable && <AddBarcodeDialog variantId={v.id} onAdd={m.addBarcode.mutateAsync} />}
+                  </div>
+                </TableCell>
+                <TableCell className="text-right tabular">{formatMoney(v.sales_price_override ?? product.sales_price)}</TableCell>
+                <TableCell>
+                  <Switch checked={v.is_active} disabled={!editable} onCheckedChange={(on) => m.updateVariant.mutate({ id: v.id, is_active: on })} aria-label={t('{code} active', { code: v.sku })} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      {editable && <AddVariantDialog product={product} onAdd={m.addVariant.mutateAsync} />}
+    </div>
+  )
+}
+
+function AddBarcodeDialog({ variantId, onAdd }: { variantId: string; onAdd: (b: { variant_id: string; barcode?: string; symbology: string; generate?: boolean }) => Promise<string> }) {
+  const [open, setOpen] = React.useState(false)
+  const [barcode, setBarcode] = React.useState('')
+  const [symbology, setSymbology] = React.useState<'ean13' | 'ean8' | 'upca' | 'code128' | 'qr'>('ean13')
+  const [error, setError] = React.useState<string | null>(null)
+  const [busy, setBusy] = React.useState(false)
+  const submit = async (generate: boolean) => {
+    if (!generate) {
+      const r = barcodeSchema.safeParse({ barcode, symbology })
+      if (!r.success || !barcode.trim()) return setError(r.success ? t('Enter or scan a barcode') : t(r.error.issues[0]!.message))
+    }
+    setBusy(true)
+    try {
+      const code = await onAdd({ variant_id: variantId, barcode: barcode.trim(), symbology, generate })
+      toast.success(t('Barcode {code} added', { code }))
+      setOpen(false); setBarcode(''); setError(null)
+    } catch (e) { setError(describeError(e)) } finally { setBusy(false) }
+  }
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild><Button variant="ghost" size="xs"><Plus /> {t('Barcode')}</Button></DialogTrigger>
+      <DialogContent className="max-w-sm">
+        <DialogHeader><DialogTitle>{t('Add barcode')}</DialogTitle></DialogHeader>
+        <form className="grid gap-3" onSubmit={(e) => { e.preventDefault(); void submit(false) }}>
+          <div className="grid grid-cols-[1fr_110px] gap-2">
+            <div className="grid gap-1.5">
+              <Label htmlFor="bc">{t('Barcode')}</Label>
+              <div className="relative"><ScanLine className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input id="bc" className="pl-8 tabular" autoFocus value={barcode} onChange={(e) => { setBarcode(e.target.value); setError(null) }} placeholder={t('Scan or type')} aria-invalid={!!error} /></div>
+            </div>
+            <div className="grid gap-1.5">
+              <Label>{t('Type')}</Label>
+              <Select value={symbology} onValueChange={(v) => setSymbology(v as typeof symbology)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{['ean13', 'ean8', 'upca', 'code128', 'qr'].map((s) => <SelectItem key={s} value={s}>{s.toUpperCase()}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          </div>
+          {error && <p className="text-xs font-medium text-destructive">{error}</p>}
+          <DialogFooter className="sm:justify-between">
+            <Button type="button" variant="ghost" onClick={() => void submit(true)} disabled={busy}>{t('Generate in-store code')}</Button>
+            <Button type="submit" loading={busy}>{t('Add barcode')}</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function AddVariantDialog({ product, onAdd }: { product: ProductDetail; onAdd: (v: { sku: string; name: string; sales_price_override: number | null; attribute_value_ids: string[] }) => Promise<unknown> }) {
+  const attributes = useAttributes()
+  const [open, setOpen] = React.useState(false)
+  const [sku, setSku] = React.useState('')
+  const [picked, setPicked] = React.useState<Record<string, string>>({})
+  const [price, setPrice] = React.useState('')
+  const [busy, setBusy] = React.useState(false)
+  const labels = (attributes.data ?? []).map((a) => a.product_attribute_values.find((v) => v.id === picked[a.id])?.value).filter(Boolean)
+  const submit = async () => {
+    if (!sku.trim()) return toast.error(t('Enter a SKU'))
+    setBusy(true)
+    try {
+      await onAdd({ sku: sku.trim().toUpperCase(), name: [product.name, ...labels].join(' / '), sales_price_override: price ? Number(price) : null, attribute_value_ids: Object.values(picked) })
+      toast.success(t('Variant {code} added', { code: sku.toUpperCase() }))
+      setOpen(false); setSku(''); setPicked({}); setPrice('')
+    } catch (e) { toast.error(describeError(e)) } finally { setBusy(false) }
+  }
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild><Button variant="outline" size="sm" className="justify-self-start"><Plus /> {t('Add variant')}</Button></DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader><DialogTitle>{t('Add a variant to {name}', { name: product.name })}</DialogTitle></DialogHeader>
+        <form className="grid gap-3" onSubmit={(e) => { e.preventDefault(); void submit() }}>
+          <div className="grid gap-1.5"><Label htmlFor="v-sku">SKU</Label><Input id="v-sku" autoFocus value={sku} onChange={(e) => setSku(e.target.value.toUpperCase())} /></div>
+          {(attributes.data ?? []).map((a) => (
+            <div key={a.id} className="grid gap-1.5">
+              <Label>{a.name}</Label>
+              <Select value={picked[a.id] ?? ''} onValueChange={(v) => setPicked({ ...picked, [a.id]: v })}>
+                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectContent>{a.product_attribute_values.map((v) => <SelectItem key={v.id} value={v.id}>{v.value}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          ))}
+          <div className="grid gap-1.5"><Label htmlFor="v-price">{t('Price override')}</Label><Input id="v-price" type="number" step="0.01" placeholder={t('Same as the product ({price})', { price: formatMoney(product.sales_price) })} value={price} onChange={(e) => setPrice(e.target.value)} /></div>
+          <DialogFooter><Button type="submit" loading={busy}>{t('Add variant')}</Button></DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/* --------------------------------------------------------- reorder points */
+function ReorderTab({ product }: { product: ProductDetail }) {
+  const { can } = useCompany()
+  const warehouses = useWarehouses()
+  const vendors = useVendors()
+  const m = useVariantMutations(product.id)
+  const editable = can('oms.write')
+  const vendorName = new Map((vendors.data ?? []).map((v) => [v.id, v.name]))
+  const whName = new Map((warehouses.data ?? []).map((w) => [w.id, td(w.name)]))
+  const rules = product.product_variants.flatMap((v) => v.replenishment_rules.map((r) => ({ ...r, sku: v.sku })))
+
+  return (
+    <div className="grid gap-3">
+      <p className="text-[13px] text-muted-foreground">{t('When available stock in a warehouse falls to the reorder point, an alert opens and inventory and purchasing managers are notified. Suggested order quantity tops up to “order up to”, rounded to the pack size.')}</p>
+      <div className="overflow-hidden rounded-lg border bg-card">
+        <Table>
+          <TableHeader><TableRow className="hover:bg-transparent">
+            <TableHead>{t('Variant')}</TableHead><TableHead>{t('Warehouse')}</TableHead><TableHead className="text-right">{t('Reorder at')}</TableHead>
+            <TableHead className="text-right">{t('Order up to')}</TableHead><TableHead className="text-right">{t('Pack of')}</TableHead><TableHead>{t('Preferred vendor')}</TableHead><TableHead className="w-20" />
+          </TableRow></TableHeader>
+          <TableBody>
+            {rules.length === 0 && <TableRow className="hover:bg-transparent"><TableCell colSpan={7}><EmptyState compact title={t('No reorder points')} description={t('Add one to get low-stock alerts for this product.')} /></TableCell></TableRow>}
+            {rules.map((r) => (
+              <TableRow key={r.id}>
+                <TableCell className="font-medium">{r.sku}</TableCell>
+                <TableCell>{whName.get(r.warehouse_id) ?? '—'}</TableCell>
+                <TableCell className="text-right tabular">{formatQty(r.min_qty)}</TableCell>
+                <TableCell className="text-right tabular">{formatQty(r.max_qty)}</TableCell>
+                <TableCell className="text-right tabular">{formatQty(r.multiple_qty)}</TableCell>
+                <TableCell>{r.preferred_vendor_id ? vendorName.get(r.preferred_vendor_id) : '—'}</TableCell>
+                <TableCell className="whitespace-nowrap text-right">
+                  {editable && <>
+                    <RuleDialog product={product} rule={r} onSave={m.saveRule.mutateAsync} />
+                    <Button variant="ghost" size="icon-sm" aria-label={t('Remove reorder point')} onClick={() => m.removeRule.mutate(r.id)}><Trash2 /></Button>
+                  </>}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      {editable && <RuleDialog product={product} onSave={m.saveRule.mutateAsync} />}
+    </div>
+  )
+}
+
+const ruleSchema = z.object({
+  variant_id: z.string().uuid({ message: msg('Choose a variant') }),
+  warehouse_id: z.string().uuid({ message: msg('Choose a warehouse') }),
+  min_qty: z.coerce.number().nonnegative(),
+  max_qty: z.coerce.number().nonnegative(),
+  multiple_qty: z.coerce.number().positive(msg('Must be above 0')),
+  preferred_vendor_id: z.string().uuid().nullable(),
+}).refine((r) => r.max_qty >= r.min_qty, { path: ['max_qty'], message: msg('Must be at least the reorder point') })
+
+function RuleDialog({ product, rule, onSave }: {
+  product: ProductDetail
+  rule?: Tables<'replenishment_rules'>
+  onSave: (r: z.infer<typeof ruleSchema> & { id?: string }) => Promise<unknown>
+}) {
+  const [open, setOpen] = React.useState(false)
+  const warehouses = useWarehouses()
+  const form = useForm<z.infer<typeof ruleSchema>>({
+    resolver: zodResolver(ruleSchema),
+    values: rule
+      ? { variant_id: rule.variant_id, warehouse_id: rule.warehouse_id, min_qty: rule.min_qty, max_qty: rule.max_qty, multiple_qty: rule.multiple_qty, preferred_vendor_id: rule.preferred_vendor_id }
+      : { variant_id: product.product_variants[0]?.id ?? '', warehouse_id: warehouses.data?.[0]?.id ?? '', min_qty: 5, max_qty: 20, multiple_qty: 1, preferred_vendor_id: null },
+  })
+  const onSubmit = form.handleSubmit(async (v) => {
+    try {
+      await onSave({ ...v, id: rule?.id })
+      toast.success(t('Reorder point saved'))
+      setOpen(false)
+    } catch (e) {
+      form.setError('warehouse_id', { message: (e as { code?: string }).code === '23505' ? t('This variant already has a reorder point for this warehouse') : describeError(e) })
+    }
+  })
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {rule ? <Button variant="ghost" size="icon-sm" aria-label={t('Edit reorder point')}><Pencil /></Button>
+          : <Button variant="outline" size="sm" className="justify-self-start"><Plus /> {t('Add reorder point')}</Button>}
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader><DialogTitle>{rule ? t('Edit reorder point') : t('New reorder point')}</DialogTitle></DialogHeader>
+        <Form {...form}>
+          <form onSubmit={onSubmit} className="grid gap-3">
+            <FormField control={form.control} name="variant_id" render={({ field }) => (
+              <FormItem><FormLabel>{t('Variant')}</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange} disabled={!!rule}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                  <SelectContent>{product.product_variants.map((v) => <SelectItem key={v.id} value={v.id}>{v.sku}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+            )} />
+            <FormField control={form.control} name="warehouse_id" render={({ field }) => (
+              <FormItem><FormLabel>{t('Warehouse')}</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange} disabled={!!rule}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                  <SelectContent>{(warehouses.data ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{td(w.name)}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+            )} />
+            <div className="grid grid-cols-3 gap-2">
+              <FormField control={form.control} name="min_qty" render={({ field }) => (<FormItem><FormLabel>{t('Reorder at')}</FormLabel><FormControl><Input type="number" step="any" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="max_qty" render={({ field }) => (<FormItem><FormLabel>{t('Order up to')}</FormLabel><FormControl><Input type="number" step="any" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="multiple_qty" render={({ field }) => (<FormItem><FormLabel>{t('Pack of')}</FormLabel><FormControl><Input type="number" step="any" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            </div>
+            <FormField control={form.control} name="preferred_vendor_id" render={({ field }) => (
+              <FormItem><FormLabel optional>{t('Preferred vendor')}</FormLabel><FormControl><VendorPicker value={field.value} onChange={field.onChange} /></FormControl></FormItem>
+            )} />
+            <DialogFooter><Button type="submit" loading={form.formState.isSubmitting}>{t('Save reorder point')}</Button></DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  )
+}

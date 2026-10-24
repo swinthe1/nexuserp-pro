@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 20% 98%;
+    --foreground: 224 16% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 16% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 16% 12%;
+    --primary: 222 62% 47%;           /* Adriatic blue #2B59C3 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 94%;
+    --secondary-foreground: 224 16% 16%;
+    --muted: 220 14% 95%;
+    --muted-foreground: 220 9% 44%;
+    --accent: 221 40% 95%;
+    --accent-foreground: 222 62% 32%;
+    --destructive: 0 72% 42%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 64% 30%;
+    --success-foreground: 0 0% 100%;
+    --warning: 32 92% 36%;
+    --warning-foreground: 0 0% 100%;
+    --border: 220 13% 89%;
+    --input: 220 13% 86%;
+    --ring: 222 62% 47%;
+    --radius: 0.5rem;
+    --sidebar: 220 20% 96%;
+    --sidebar-foreground: 224 12% 28%;
+    --sidebar-border: 220 13% 89%;
+  }
+  .dark {
+    --background: 222 18% 6%;
+    --foreground: 220 14% 92%;
+    --card: 222 16% 9%;
+    --card-foreground: 220 14% 92%;
+    --popover: 222 16% 10%;
+    --popover-foreground: 220 14% 92%;
+    --primary: 221 70% 62%;
+    --primary-foreground: 222 30% 8%;
+    --secondary: 222 13% 15%;
+    --secondary-foreground: 220 14% 90%;
+    --muted: 222 13% 13%;
+    --muted-foreground: 220 9% 60%;
+    --accent: 222 30% 17%;
+    --accent-foreground: 221 80% 82%;
+    --destructive: 0 70% 56%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 55% 46%;
+    --success-foreground: 222 30% 8%;
+    --warning: 36 90% 55%;
+    --warning-foreground: 222 30% 8%;
+    --border: 222 12% 17%;
+    --input: 222 12% 21%;
+    --ring: 221 70% 62%;
+    --sidebar: 222 18% 7.5%;
+    --sidebar-foreground: 220 10% 72%;
+    --sidebar-border: 222 12% 14%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'ss01', 'cv11';
+  }
+  /* all figures line up in tables and KPIs */
+  .tabular, td, th, input[type='number'] { font-variant-numeric: tabular-nums; }
+  :focus-visible { @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+}
