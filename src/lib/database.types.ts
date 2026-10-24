@@ -2990,6 +2990,44 @@ export type Database = {
           { foreignKeyName: "goods_receipts_currency_code_fkey"; columns: ["currency_code"]; isOneToOne: false; referencedRelation: "currencies"; referencedColumns: ["code"] },
         ]
       }
+      import_templates: {
+        Row: {
+          id: string
+          company_id: string | null
+          kind: string
+          name: string
+          source_system: string | null
+          mapping: Json
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id?: string | null
+          kind: string
+          name: string
+          source_system?: string | null
+          mapping: Json
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string | null
+          kind?: string
+          name?: string
+          source_system?: string | null
+          mapping?: Json
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "import_templates_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
       item_cost_history: {
         Row: {
           id: string
@@ -3937,6 +3975,56 @@ export type Database = {
         Relationships: [
           { foreignKeyName: "member_roles_member_fk"; columns: ["company_id", "member_id"]; isOneToOne: false; referencedRelation: "company_members"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "member_roles_role_id_fkey"; columns: ["role_id"]; isOneToOne: false; referencedRelation: "roles"; referencedColumns: ["id"] },
+        ]
+      }
+      migration_runs: {
+        Row: {
+          id: string
+          company_id: string
+          kind: string
+          file_name: string | null
+          cutover_date: string | null
+          rows: number
+          created: number
+          updated: number
+          skipped: number
+          total: number | null
+          journal_entry_id: string | null
+          run_by: string | null
+          run_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          kind: string
+          file_name?: string | null
+          cutover_date?: string | null
+          rows?: number
+          created?: number
+          updated?: number
+          skipped?: number
+          total?: number | null
+          journal_entry_id?: string | null
+          run_by?: string | null
+          run_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          kind?: string
+          file_name?: string | null
+          cutover_date?: string | null
+          rows?: number
+          created?: number
+          updated?: number
+          skipped?: number
+          total?: number | null
+          journal_entry_id?: string | null
+          run_by?: string | null
+          run_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "migration_runs_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
         ]
       }
       notification_preferences: {
@@ -6718,6 +6806,7 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          is_opening: boolean
         }
         Insert: {
           id?: string
@@ -6754,6 +6843,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          is_opening?: boolean
         }
         Update: {
           id?: string
@@ -6790,6 +6880,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          is_opening?: boolean
         }
         Relationships: [
           { foreignKeyName: "sales_invoices_company_id_billing_address_id_fkey"; columns: ["company_id", "billing_address_id"]; isOneToOne: false; referencedRelation: "partner_addresses"; referencedColumns: ["company_id", "id"] },
@@ -8334,6 +8425,7 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          is_opening: boolean
         }
         Insert: {
           id?: string
@@ -8370,6 +8462,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          is_opening?: boolean
         }
         Update: {
           id?: string
@@ -8406,6 +8499,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          is_opening?: boolean
         }
         Relationships: [
           { foreignKeyName: "vendor_bills_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -9852,6 +9946,12 @@ export type Database = {
         }
         Returns: undefined
       }
+      delete_import_template: {
+        Args: {
+          p_id: string
+        }
+        Returns: undefined
+      }
       dispatch_queue: {
         Args: {
           p_company: string
@@ -10012,6 +10112,18 @@ export type Database = {
         }
         Returns: number
       }
+      log_migration_run: {
+        Args: {
+          p_company: string
+          p_kind: string
+          p_file: string
+          p_rows: number
+          p_created: number
+          p_updated: number
+          p_skipped: number
+        }
+        Returns: undefined
+      }
       logistics_overview: {
         Args: {
           p_company: string
@@ -10059,6 +10171,24 @@ export type Database = {
           p_wo: string
         }
         Returns: { material_id: string | null; variant_id: string | null; sku: string | null; name: string | null; uom: string | null; tracking: string | null; required: number | null; consumed: number | null; remaining: number | null; available_at_location: number | null; available_in_warehouse: number | null; shortage: number | null; sub_bom_id: string | null; unit_cost: number | null; child_work_order: string | null }[]
+      }
+      migration_check: {
+        Args: {
+          p_company: string
+          p_cutover?: string
+        }
+        Returns: Json
+      }
+      migration_import: {
+        Args: {
+          p_company: string
+          p_kind: string
+          p_rows: Json
+          p_dry_run?: boolean
+          p_cutover?: string
+          p_file?: string
+        }
+        Returns: Json
       }
       move_stock: {
         Args: {
@@ -10461,6 +10591,17 @@ export type Database = {
           p_table: string
           p_header: Json
           p_children?: Json
+        }
+        Returns: string
+      }
+      save_import_template: {
+        Args: {
+          p_company: string
+          p_kind: string
+          p_name: string
+          p_source: string
+          p_mapping: Json
+          p_shared?: boolean
         }
         Returns: string
       }

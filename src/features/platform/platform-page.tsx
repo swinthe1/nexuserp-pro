@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowRight, Copy, KeyRound, LogOut, MoreHorizontal, Plus, Search, ServerCog } from 'lucide-react'
+import { ArrowDownToLine, ArrowRight, Copy, KeyRound, LogOut, MoreHorizontal, Plus, Search, ServerCog } from 'lucide-react'
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
@@ -92,7 +92,7 @@ export function PlatformPage() {
     return acc
   }, { active: 0, soon: 0, off: 0 })
 
-  const openCompany = async (id: string) => { startSupportVisit(id); await switchCompany(id); navigate('/') }
+  const openCompany = async (id: string, path = '/') => { startSupportVisit(id); await switchCompany(id); navigate(path) }
 
   return (
     <div className="min-h-dvh bg-background">
@@ -185,6 +185,7 @@ export function PlatformPage() {
                               <DropdownMenuItem onSelect={() => setEditing(c)}>{t('Change licence')}</DropdownMenuItem>
                               <DropdownMenuItem disabled={!c.admins.length} onSelect={() => setPassword({ email: c.admins[0] ?? '' })}><KeyRound /> {t('Set a new password')}</DropdownMenuItem>
                               <DropdownMenuSeparator />
+                              <DropdownMenuItem onSelect={() => void openCompany(c.id, '/settings/migration')}><ArrowDownToLine /> {t('Move data from the old program')}</DropdownMenuItem>
                               <DropdownMenuItem onSelect={() => void openCompany(c.id)}><ArrowRight /> {t('Open this company')}</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

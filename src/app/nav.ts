@@ -2,7 +2,7 @@ import {
   Bell, CalendarDays, CalendarClock, ClipboardPen, Contact, FileBarChart, FileSpreadsheet, Fingerprint, Globe, History, Import, KeyRound, ListOrdered,
   MapPinned, PackageCheck as PackageDone, Route, ShieldCheck, UserRound, UsersRound, Workflow,
   ClipboardCheck, Hourglass, PackageOpen, ScanLine, ShoppingBasket,
-  ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, BookOpenText, Building, HandCoins, ListTree, Network, Settings2, Wallet, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, Gauge,
+  ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, BookOpenText, Building, HandCoins, ListTree, Network, Settings2, Wallet, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, Gauge,
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackagePlus, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
   SlidersHorizontal, Store, Tags, Truck, TriangleAlert, Users, Warehouse, type LucideIcon,
 } from 'lucide-react'
@@ -149,6 +149,7 @@ export const NAV: NavSection[] = [
       { label: msg('Users and roles'), href: '/settings/users', icon: KeyRound, perm: 'admin.read', keywords: ['invite', 'members', 'permissions', 'roles', 'access'] },
       { label: msg('Approval workflows'), href: '/settings/workflows', icon: Workflow, perm: 'admin.read', keywords: ['approval limits', 'approvers'] },
       { label: msg('Numbering'), href: '/settings/numbering', icon: ListOrdered, perm: 'admin.read', keywords: ['sequences', 'prefix', 'document numbers'] },
+      { label: msg('Move from another program'), href: '/settings/migration', icon: ArrowDownToLine, perm: 'admin.write', keywords: ['migration', 'kubit', 'logmicro', 'bilanc', 'pantheon', 'opening balances', 'cut-over', 'kalimi', 'migrimi'] },
       { label: msg('Import data'), href: '/settings/import', icon: Import, perm: 'core.read', keywords: ['csv', 'excel', 'upload', 'migration', 'opening balances'] },
       { label: msg('Audit log'), href: '/settings/audit', icon: History, perm: 'audit.read', keywords: ['history', 'changes', 'who changed'] },
       { label: msg('Security'), href: '/settings/roles', icon: ShieldCheck, perm: 'admin.read', keywords: ['roles', 'permission matrix', 'custom role'] },

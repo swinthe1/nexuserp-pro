@@ -235,6 +235,69 @@ export const useImportRows = () => {
   })
 }
 
+/* ------------------------------------------------------------------ migration from another program */
+export type MigrationKind = 'open_receivables' | 'open_payables' | 'opening_balances' | 'price_lists'
+export type AnyImportKind = ImportKind | MigrationKind
+export const MIGRATION_KINDS: MigrationKind[] = ['open_receivables', 'open_payables', 'opening_balances', 'price_lists']
+export const isMigrationKind = (k: string): k is MigrationKind => (MIGRATION_KINDS as string[]).includes(k)
+
+export type MigrationResult = ImportResult & { ok?: number; total?: number; journal_entry_id?: string | null }
+
+/** One import into the current company; spreadsheet kinds go to import_rows, the cut-over position to migration_import */
+export const useAnyImport = () => {
+  const { companyId } = useCompany()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (a: { kind: AnyImportKind; rows: Record<string, string>[]; dryRun: boolean; cutover?: string; file?: string }): Promise<MigrationResult> => {
+      if (isMigrationKind(a.kind)) {
+        return unwrap(await supabase.rpc('migration_import', { p_company: companyId, p_kind: a.kind, p_rows: a.rows as unknown as Json, p_dry_run: a.dryRun,
+          p_cutover: a.cutover, p_file: a.file })) as unknown as MigrationResult
+      }
+      const r = unwrap(await supabase.rpc('import_rows', { p_company: companyId, p_kind: a.kind, p_rows: a.rows as unknown as Json, p_dry_run: a.dryRun })) as unknown as ImportResult
+      if (!a.dryRun) {
+        await supabase.rpc('log_migration_run', { p_company: companyId, p_kind: a.kind, p_file: a.file ?? '', p_rows: r.rows,
+          p_created: r.created, p_updated: r.updated, p_skipped: r.errors.length })
+      }
+      return r
+    },
+    onSuccess: (_r, a) => { if (!a.dryRun) void qc.invalidateQueries() },
+    onError: (e) => toast.error(describeError(e)),
+  })
+}
+
+export type MigrationRun = { id: string; kind: string; file_name: string | null; cutover_date: string | null; rows: number; created: number; updated: number;
+  skipped: number; total: number | null; journal_entry_id: string | null; run_at: string; run_by: string | null }
+export type MigrationCheck = {
+  products: number; customers: number; vendors: number; employees: number; price_list_items: number; stock_value: number; stock_lines: number
+  receivables: number; receivables_count: number; payables: number; payables_count: number; opening_account_balance: number
+  classes: { class: string; debit: number; credit: number }[]; runs: MigrationRun[]
+}
+export function useMigrationCheck(cutover: string) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...adminKeys.all(companyId), 'migration-check', cutover],
+    enabled: !!companyId && !!cutover,
+    queryFn: async () => unwrap(await supabase.rpc('migration_check', { p_company: companyId, p_cutover: cutover })) as unknown as MigrationCheck,
+  })
+}
+
+export type ImportTemplate = { id: string; company_id: string | null; kind: string; name: string; source_system: string | null; mapping: Record<string, string> }
+export function useImportTemplates(kind: string) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...adminKeys.all(companyId), 'import-templates', kind],
+    enabled: !!companyId,
+    queryFn: async () => unwrap(await supabase.from('import_templates').select('id, company_id, kind, name, source_system, mapping').eq('kind', kind).order('name')) as unknown as ImportTemplate[],
+  })
+}
+export const useSaveImportTemplate = () => {
+  const { companyId } = useCompany()
+  return useAction(async (a: { kind: string; name: string; source: string; mapping: Record<string, string>; shared: boolean }) =>
+    unwrap(await supabase.rpc('save_import_template', { p_company: companyId, p_kind: a.kind, p_name: a.name, p_source: a.source,
+      p_mapping: a.mapping as unknown as Json, p_shared: a.shared })))
+}
+export const useDeleteImportTemplate = () => useAction(async (id: string) => unwrap(await supabase.rpc('delete_import_template', { p_id: id })))
+
 /* ------------------------------------------------------------------ notifications */
 export type NotificationRow = Pick<Tables<'notifications'>, 'id' | 'type' | 'category' | 'title' | 'body' | 'link' | 'read_at' | 'created_at' | 'entity_type'>
 export const NOTIFICATION_CATEGORIES = [

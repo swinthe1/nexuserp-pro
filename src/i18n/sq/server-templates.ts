@@ -336,4 +336,6 @@ export const serverTemplates: [string, string][] = [
   ['The licence allows % users. Ask your provider for more.', 'Licenca lejon {0} përdorues. Kërkojini furnitorit më shumë.'],
   ['A company with tax number % already exists', 'Ekziston tashmë një kompani me numrin fiskal {0}'],
   ['No account with the email %', 'Nuk ka llogari me emailin {0}'],
+  ['invalid input syntax for type numeric: "%"', 'Nuk është numër: "{0}"'],
+  ['invalid input syntax for type date: "%"', 'Nuk është datë: "{0}"'],
 ]
