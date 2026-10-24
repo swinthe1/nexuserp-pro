@@ -21,6 +21,7 @@ import { formatCompact, formatDate, formatMoney, formatQty, humanize, todayISO }
 import { useSalesOverview } from '@/features/sales/api'
 import { useProcurementOverview } from '@/features/procurement/api'
 import { useInventoryOverview, useLowStock } from '@/features/inventory/api'
+import { StockByWarehouse } from './stock-by-warehouse'
 import { useFinanceOverview } from '@/features/finance/api'
 
 const tooltipStyle = { background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }
@@ -101,6 +102,8 @@ export function DashboardPage() {
           <StatCard label={t('Net profit this month')} value={formatMoney(fin.data?.net_profit, cur)} loading={fin.isLoading} href="/finance/reports" tone={(fin.data?.net_profit ?? 0) < 0 ? 'destructive' : 'default'} hint={t('From the accounting')} />
         ) : <StatCard label={t('Net profit this month')} value="" pending={t('No access')} hint={t('Needs access to finance')} />}
       </div>
+
+      {can('inventory.read') && <StockByWarehouse />}
 
       <div className="mt-4 grid gap-4 grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_380px]">
         <Card>

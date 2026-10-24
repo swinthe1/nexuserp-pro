@@ -1,6 +1,6 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import * as React from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
 import { ColumnHeader, DataTable, inFilter } from '@/components/data-table/data-table'
 import { PageHeader } from '@/components/page-header'
@@ -17,6 +17,8 @@ type Level = Views<'v_stock_levels'>
 
 export function StockPage() {
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const onlyWarehouse = params.get('warehouse')
   const { company, companyId } = useCompany()
   const levels = useStockLevels()
   const overview = useInventoryOverview()
@@ -60,7 +62,9 @@ export function StockPage() {
         <StatCard label={t('Lines below zero')} value={overview.data?.negative_lines ?? 0} tone={overview.data?.negative_lines ? 'destructive' : 'default'} loading={overview.isLoading} hint={t('Only possible when selling without stock is allowed')} />
       </div>
       <DataTable
+        key={onlyWarehouse ?? 'all'}
         tableKey="inventory.stock-levels"
+        initialFilters={onlyWarehouse ? [{ id: 'warehouse', value: [onlyWarehouse] }] : undefined}
         columns={columns}
         data={levels.data}
         isLoading={levels.isLoading}

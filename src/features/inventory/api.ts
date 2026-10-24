@@ -296,6 +296,27 @@ export function useLowStock() {
   })
 }
 
+export interface WarehouseStock {
+  id: string
+  code: string
+  name: string
+  type: string
+  value: number
+  items: number
+  items_without_cost: number
+  items_negative: number
+  low_stock: number
+}
+/** Stock value and item counts for every active store / warehouse. */
+export function useStockByWarehouse(enabled = true) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: ['inv', companyId, 'by-warehouse'],
+    enabled: !!companyId && enabled,
+    queryFn: async () => unwrap(await supabase.rpc('stock_by_warehouse', { p_company: companyId! })) as unknown as WarehouseStock[],
+  })
+}
+
 export function useAcknowledgeAlert() {
   const invalidate = useInvalidateInventory()
   return useMutation({

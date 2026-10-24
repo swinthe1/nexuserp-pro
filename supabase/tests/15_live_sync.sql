@@ -78,6 +78,15 @@ reset role;
 select t.ok(not (:'r4'::jsonb ->> 'ok')::boolean and (select last_error is not null from public.sync_connections where company_id = :'co'), 'a failing push reports its error');
 select t.ok((select sum(on_hand) from public.stock_levels where company_id = :'co') = 7, 'and changes nothing');
 
+-- stock per store for the dashboard
+set role authenticated;
+select t.login('live@lider.xk');
+select public.stock_by_warehouse(:'co') as sbw \gset
+reset role;
+select t.ok((select (e ->> 'items')::int = 1 and (e ->> 'value')::numeric = round(7 * 0.39, 2) from jsonb_array_elements(:'sbw'::jsonb) e where e ->> 'code' = '1'),
+  'stock by store shows the items and value of each store');
+select t.ok((select count(*) from jsonb_array_elements(:'sbw'::jsonb)) >= 2, 'every active store is listed, also empty ones');
+
 -- switched off
 set role authenticated;
 select t.login('zoe@platform.io');

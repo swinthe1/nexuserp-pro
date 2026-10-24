@@ -46,4 +46,13 @@ export default {
   'Receive goods or add opening stock to get started.': 'Pranoni mall ose shtoni gjendjen fillestare për të filluar.',
   'Receive goods': 'Prit mallin',
   'value only': 'vetëm vlera',
+  'Stock by store': 'Stoku sipas njësive',
+  '{amount} in {n} stores and warehouses, at average cost. Open one to see its items.': '{amount} në {n} njësi dhe magazina, me koston mesatare. Hapni njërën për të parë artikujt e saj.',
+  'At average cost. Open one to see its items.': 'Me koston mesatare. Hapni njërën për të parë artikujt e saj.',
+  'No stock': 'Pa stok',
+  '{n} item in stock': '{n} artikull në stok',
+  '{n} items in stock': '{n} artikuj në stok',
+  '{n} running low': '{n} po mbarojnë',
+  '{n} without a cost': '{n} pa kosto',
+  '{n} below zero': '{n} nën zero',
 } satisfies Dict

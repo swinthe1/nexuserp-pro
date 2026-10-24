@@ -10783,6 +10783,12 @@ export type Database = {
         }
         Returns: string
       }
+      stock_by_warehouse: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       start_route: {
         Args: {
           p_route: string
