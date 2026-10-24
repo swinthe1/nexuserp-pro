@@ -13,7 +13,7 @@
 param([switch]$Service, [switch]$Full, [switch]$Once)
 
 $ErrorActionPreference = 'Stop'
-$Version = '1.5'
+$Version = '1.6'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $cfgPath = Join-Path $here 'lidhja.json'
 $statePath = Join-Path $here 'lidhja-gjendja.json'
@@ -284,13 +284,27 @@ SELECT w.VALUE AS warehouse, p.VALUE AS sku, SUM(s.QTYONHAND) AS qty, MAX(ISNULL
   return ,$rows
 }
 
-function Read-OpenDocuments($db, [string]$partnerFilter) {
-  $t = Query $db @"
+# $since empty: every open document. $since set: only the documents whose card rows changed since then,
+# with their balance now - 0 when paid, so NexusERP closes them too.
+function Read-OpenDocuments($db, [string]$since = '') {
+  $cte = if (-not $since) { @"
 WITH l AS (
   SELECT l.C_BPartner_ID AS bp, ISNULL(l.C_ORDER_ID, 0) AS ord, SUM(ISNULL(l.DEBIT, 0) - ISNULL(l.CREDIT, 0)) AS bal
-    FROM BP_LEDGER l WITH (NOLOCK) WHERE l.ISACTIVE = 'Y' $partnerFilter
+    FROM BP_LEDGER l WITH (NOLOCK) WHERE l.ISACTIVE = 'Y'
    GROUP BY l.C_BPartner_ID, ISNULL(l.C_ORDER_ID, 0)
   HAVING ABS(SUM(ISNULL(l.DEBIT, 0) - ISNULL(l.CREDIT, 0))) >= 0.01)
+"@ } else { @"
+WITH ch AS (
+  SELECT DISTINCT TOP 3000 c.C_BPartner_ID AS bp, ISNULL(c.C_ORDER_ID, 0) AS ord
+    FROM BP_LEDGER c WITH (NOLOCK) WHERE c.UPDATED > '$since' OR c.CREATED > '$since'),
+l AS (
+  SELECT l.C_BPartner_ID AS bp, ISNULL(l.C_ORDER_ID, 0) AS ord,
+         SUM(CASE WHEN l.ISACTIVE = 'Y' THEN ISNULL(l.DEBIT, 0) - ISNULL(l.CREDIT, 0) ELSE 0 END) AS bal
+    FROM BP_LEDGER l WITH (NOLOCK) JOIN ch ON ch.bp = l.C_BPartner_ID AND ch.ord = ISNULL(l.C_ORDER_ID, 0)
+   GROUP BY l.C_BPartner_ID, ISNULL(l.C_ORDER_ID, 0))
+"@ }
+  $t = Query $db @"
+$cte
 SELECT l.bp, l.ord, l.bal, bp.VALUE AS code, bp.ISVENDOR AS vend, o.DOCUMENTNO AS number, o.ISSOTRX AS sales, o.DATEORDERED AS date,
        o.GRANDTOTAL AS total, ISNULL(pt.NETDAYS, 0) AS days, w.VALUE AS warehouse
   FROM l JOIN C_BPARTNER bp WITH (NOLOCK) ON bp.C_BPARTNER_ID = l.bp
@@ -300,7 +314,7 @@ SELECT l.bp, l.ord, l.bal, bp.VALUE AS code, bp.ISVENDOR AS vend, o.DOCUMENTNO A
 "@
   $rows = New-Object System.Collections.ArrayList
   foreach ($d in $t.Rows) {
-    $amount = [decimal]$d.bal
+    $amount = [math]::Round([decimal]$d.bal, 2)
     $hasDoc = -not ($d.number -is [DBNull])
     $isSale = if ($hasDoc) { (Str $d.sales) -eq 'Y' } else { -not ($amount -lt 0 -and (Str $d.vend) -eq 'Y') }
     $date = if ($hasDoc) { ([datetime]$d.date) } else { Get-Date }
@@ -353,14 +367,9 @@ function Run-Cycle {
       # stock: every warehouse of the products that moved (zero included, so sold-out items go to 0)
       $moved = "AND s.M_PRODUCT_ID IN (SELECT M_PRODUCT_ID FROM M_STORAGE WITH (NOLOCK) WHERE UPDATED > '$($w.stock)' UNION SELECT M_PRODUCT_ID FROM M_TRANSACTION WITH (NOLOCK) WHERE CREATED > '$($w.stock)')"
       $sent.stok = Push-List 'stock' (Read-Stock $db $moved) 300
-      # documents: partners whose card changed get their open documents resent in full
-      $changed = Query $db "SELECT DISTINCT bp.VALUE AS code, l.C_BPartner_ID AS id FROM BP_LEDGER l WITH (NOLOCK) JOIN C_BPARTNER bp WITH (NOLOCK) ON bp.C_BPARTNER_ID = l.C_BPartner_ID WHERE l.UPDATED > '$($w.ledger)' OR l.CREATED > '$($w.ledger)'"
-      if ($changed.Rows.Count) {
-        $ids = (@($changed.Rows | ForEach-Object { [string]$_.id }) | Select-Object -First 2000) -join ','
-        $codes = @($changed.Rows | ForEach-Object { Str $_.code })
-        $docs = Read-OpenDocuments $db "AND l.C_BPartner_ID IN ($ids)"
-        $sent.dokumente = Push-List 'documents' $docs 300 @{ replace_partners = $codes }
-      }
+      # documents: only those whose partner-card rows changed, with their balance now (0 = paid)
+      $docs = Read-OpenDocuments $db $w.ledger
+      if ($docs.Count) { $sent.dokumente = Push-List 'documents' $docs 300 }
     }
     foreach ($k in 'products', 'partners', 'prices', 'stock', 'ledger') { $state.wm[$k] = $nowSql }
     Save-State
