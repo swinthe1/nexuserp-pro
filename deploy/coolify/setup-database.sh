@@ -28,7 +28,7 @@ echo "==> Using database container: $container"
 pass="$(docker exec "$container" printenv POSTGRES_PASSWORD)"
 psql_as() { # user, then psql args
   local user="$1"; shift
-  docker exec -i -e PGPASSWORD="$pass" "$container" psql -h 127.0.0.1 -U "$user" -d postgres -v ON_ERROR_STOP=1 -q "$@"
+  docker exec -i -e PGPASSWORD="$pass" -e PGOPTIONS='-c client_min_messages=warning' "$container" psql -h 127.0.0.1 -U "$user" -d postgres -v ON_ERROR_STOP=1 -q "$@"
 }
 
 echo "==> Waiting for the database"
