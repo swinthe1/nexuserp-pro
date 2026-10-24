@@ -3448,6 +3448,57 @@ export type Database = {
           { foreignKeyName: "journals_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
         ]
       }
+      kitchen_stations: {
+        Row: {
+          id: string
+          company_id: string
+          warehouse_id: string
+          name: string
+          category_ids: string[]
+          is_default: boolean
+          sort_order: number
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          warehouse_id: string
+          name: string
+          category_ids?: string[]
+          is_default?: boolean
+          sort_order?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          warehouse_id?: string
+          name?: string
+          category_ids?: string[]
+          is_default?: boolean
+          sort_order?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "kitchen_stations_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "kitchen_stations_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
       landed_cost_allocations: {
         Row: {
           id: string
@@ -4123,6 +4174,7 @@ export type Database = {
           { foreignKeyName: "loyalty_ledger_company_id_card_id_fkey"; columns: ["company_id", "card_id"]; isOneToOne: false; referencedRelation: "loyalty_cards"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "loyalty_ledger_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
           { foreignKeyName: "loyalty_ledger_company_id_pos_order_id_fkey"; columns: ["company_id", "pos_order_id"]; isOneToOne: false; referencedRelation: "pos_orders"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "loyalty_ledger_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
         ]
       }
       loyalty_programs: {
@@ -5315,6 +5367,8 @@ export type Database = {
           loyalty_discount: number
           points_earned: number
           points_redeemed: number
+          table_order_id: string | null
+          waiter_id: string | null
         }
         Insert: {
           id?: string
@@ -5350,6 +5404,8 @@ export type Database = {
           loyalty_discount?: number
           points_earned?: number
           points_redeemed?: number
+          table_order_id?: string | null
+          waiter_id?: string | null
         }
         Update: {
           id?: string
@@ -5385,6 +5441,8 @@ export type Database = {
           loyalty_discount?: number
           points_earned?: number
           points_redeemed?: number
+          table_order_id?: string | null
+          waiter_id?: string | null
         }
         Relationships: [
           { foreignKeyName: "pos_orders_cashier_profile_fkey"; columns: ["cashier_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
@@ -5395,6 +5453,7 @@ export type Database = {
           { foreignKeyName: "pos_orders_company_id_sales_invoice_id_fkey"; columns: ["company_id", "sales_invoice_id"]; isOneToOne: false; referencedRelation: "sales_invoices"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "pos_orders_company_id_session_id_fkey"; columns: ["company_id", "session_id"]; isOneToOne: false; referencedRelation: "pos_sessions"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "pos_orders_loyalty_card_fk"; columns: ["company_id", "loyalty_card_id"]; isOneToOne: false; referencedRelation: "loyalty_cards"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "pos_orders_table_order_fk"; columns: ["company_id", "table_order_id"]; isOneToOne: false; referencedRelation: "table_orders"; referencedColumns: ["company_id", "id"] },
         ]
       }
       pos_payments: {
@@ -5464,6 +5523,7 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          mode: string
         }
         Insert: {
           id?: string
@@ -5487,6 +5547,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          mode?: string
         }
         Update: {
           id?: string
@@ -5510,6 +5571,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          mode?: string
         }
         Relationships: [
           { foreignKeyName: "pos_registers_company_id_cash_account_id_fkey"; columns: ["company_id", "cash_account_id"]; isOneToOne: false; referencedRelation: "bank_accounts"; referencedColumns: ["company_id", "id"] },
@@ -6763,6 +6825,102 @@ export type Database = {
           { foreignKeyName: "replenishment_suggestions_company_id_vendor_id_fkey"; columns: ["company_id", "vendor_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "replenishment_suggestions_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "replenishment_suggestions_company_id_work_order_id_fkey"; columns: ["company_id", "work_order_id"]; isOneToOne: false; referencedRelation: "work_orders"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      restaurant_areas: {
+        Row: {
+          id: string
+          company_id: string
+          warehouse_id: string
+          name: string
+          sort_order: number
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          warehouse_id: string
+          name: string
+          sort_order?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          warehouse_id?: string
+          name?: string
+          sort_order?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "restaurant_areas_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "restaurant_areas_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      restaurant_tables: {
+        Row: {
+          id: string
+          company_id: string
+          area_id: string
+          name: string
+          seats: number
+          sort_order: number
+          is_active: boolean
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          area_id: string
+          name: string
+          seats?: number
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          area_id?: string
+          name?: string
+          seats?: number
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "restaurant_tables_company_id_area_id_fkey"; columns: ["company_id", "area_id"]; isOneToOne: false; referencedRelation: "restaurant_areas"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "restaurant_tables_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
         ]
       }
       role_permissions: {
@@ -8272,6 +8430,149 @@ export type Database = {
         }
         Relationships: [
           { foreignKeyName: "sync_connections_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
+      table_order_lines: {
+        Row: {
+          id: string
+          company_id: string
+          table_order_id: string
+          variant_id: string
+          name: string
+          quantity: number
+          unit_price: number
+          note: string | null
+          station_id: string | null
+          status: string
+          waiter_id: string
+          sent_at: string | null
+          ready_at: string | null
+          void_reason: string | null
+          pos_order_id: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          table_order_id: string
+          variant_id: string
+          name: string
+          quantity: number
+          unit_price: number
+          note?: string | null
+          station_id?: string | null
+          status?: string
+          waiter_id?: string
+          sent_at?: string | null
+          ready_at?: string | null
+          void_reason?: string | null
+          pos_order_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          table_order_id?: string
+          variant_id?: string
+          name?: string
+          quantity?: number
+          unit_price?: number
+          note?: string | null
+          station_id?: string | null
+          status?: string
+          waiter_id?: string
+          sent_at?: string | null
+          ready_at?: string | null
+          void_reason?: string | null
+          pos_order_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "table_order_lines_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "table_order_lines_company_id_pos_order_id_fkey"; columns: ["company_id", "pos_order_id"]; isOneToOne: false; referencedRelation: "pos_orders"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "table_order_lines_company_id_station_id_fkey"; columns: ["company_id", "station_id"]; isOneToOne: false; referencedRelation: "kitchen_stations"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "table_order_lines_company_id_table_order_id_fkey"; columns: ["company_id", "table_order_id"]; isOneToOne: false; referencedRelation: "table_orders"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "table_order_lines_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      table_orders: {
+        Row: {
+          id: string
+          company_id: string
+          number: string
+          warehouse_id: string
+          register_id: string
+          table_id: string | null
+          label: string | null
+          status: string
+          guests: number
+          waiter_id: string
+          opened_at: string
+          closed_at: string | null
+          note: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          number: string
+          warehouse_id: string
+          register_id: string
+          table_id?: string | null
+          label?: string | null
+          status?: string
+          guests?: number
+          waiter_id?: string
+          opened_at?: string
+          closed_at?: string | null
+          note?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          number?: string
+          warehouse_id?: string
+          register_id?: string
+          table_id?: string | null
+          label?: string | null
+          status?: string
+          guests?: number
+          waiter_id?: string
+          opened_at?: string
+          closed_at?: string | null
+          note?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "table_orders_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "table_orders_company_id_register_id_fkey"; columns: ["company_id", "register_id"]; isOneToOne: false; referencedRelation: "pos_registers"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "table_orders_company_id_table_id_fkey"; columns: ["company_id", "table_id"]; isOneToOne: false; referencedRelation: "restaurant_tables"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "table_orders_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
         ]
       }
       tax_codes: {
@@ -10866,6 +11167,95 @@ export type Database = {
           p_id: string
         }
         Returns: number
+      }
+      restaurant_add: {
+        Args: {
+          p_tab: string
+          p_items: Json
+        }
+        Returns: undefined
+      }
+      restaurant_change_line: {
+        Args: {
+          p_line: string
+          p_quantity: number
+          p_note?: string
+        }
+        Returns: undefined
+      }
+      restaurant_close_empty: {
+        Args: {
+          p_tab: string
+        }
+        Returns: undefined
+      }
+      restaurant_floor: {
+        Args: {
+          p_register: string
+        }
+        Returns: Json
+      }
+      restaurant_kitchen: {
+        Args: {
+          p_warehouse: string
+          p_station?: string
+        }
+        Returns: Json
+      }
+      restaurant_move: {
+        Args: {
+          p_tab: string
+          p_table: string
+        }
+        Returns: string
+      }
+      restaurant_open: {
+        Args: {
+          p_register: string
+          p_table: string
+          p_guests?: number
+          p_label?: string
+        }
+        Returns: string
+      }
+      restaurant_pay: {
+        Args: {
+          p: Json
+        }
+        Returns: Json
+      }
+      restaurant_send: {
+        Args: {
+          p_tab: string
+        }
+        Returns: Json
+      }
+      restaurant_set_guests: {
+        Args: {
+          p_tab: string
+          p_guests: number
+        }
+        Returns: undefined
+      }
+      restaurant_set_status: {
+        Args: {
+          p_lines: string[]
+          p_status: string
+        }
+        Returns: undefined
+      }
+      restaurant_tab: {
+        Args: {
+          p_tab: string
+        }
+        Returns: Json
+      }
+      restaurant_void: {
+        Args: {
+          p_line: string
+          p_reason: string
+        }
+        Returns: undefined
       }
       restore_record: {
         Args: {

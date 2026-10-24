@@ -83,6 +83,8 @@ const PosHomePage = lazy(() => import('@/features/pos/pages/pos-home-page'), 'Po
 const PosSessionPage = lazy(() => import('@/features/pos/pages/pos-home-page'), 'PosSessionPage')
 const TillPage = lazy(() => import('@/features/pos/pages/till-page'), 'TillPage')
 const LoyaltyPage = lazy(() => import('@/features/loyalty/loyalty-page'), 'LoyaltyPage')
+const FloorPage = lazy(() => import('@/features/restaurant/floor-page'), 'FloorPage')
+const KitchenPage = lazy(() => import('@/features/restaurant/kitchen-page'), 'KitchenPage')
 
 const MfgOverviewPage = lazy(() => import('@/features/manufacturing/pages/mfg-overview-page'), 'MfgOverviewPage')
 const WorkCentersPage = lazy(() => import('@/features/manufacturing/pages/mfg-overview-page'), 'WorkCentersPage')
@@ -127,6 +129,8 @@ const router = createBrowserRouter([
   { path: '/platform', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PlatformPage /></React.Suspense></ErrorBoundary> },
   // the till runs full screen, outside the app shell, so it keeps working offline
   { path: '/pos/till/:registerId', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><TillPage /></React.Suspense></ErrorBoundary> },
+  { path: '/pos/floor/:registerId', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><FloorPage /></React.Suspense></ErrorBoundary> },
+  { path: '/pos/kitchen/:warehouseId', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><KitchenPage /></React.Suspense></ErrorBoundary> },
   {
     element: <ErrorBoundary><AppLayout /></ErrorBoundary>,
     children: [

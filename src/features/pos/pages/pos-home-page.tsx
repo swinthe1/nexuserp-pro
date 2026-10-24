@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { CloudOff, MonitorSmartphone, Plus, Printer, RefreshCw, Store } from 'lucide-react'
+import { ChefHat, CloudOff, MonitorSmartphone, Plus, Printer, RefreshCw, Store, UtensilsCrossed } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -85,8 +85,8 @@ export function PosHomePage() {
               <CardContent className="grid gap-3 p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5">
-                    <div className="grid size-9 place-items-center rounded-md bg-primary/10 text-primary"><Store className="size-4" /></div>
-                    <div><div className="font-medium">{r.name}</div><div className="text-xs text-muted-foreground">{r.code} · {td(r.warehouse?.name)} · {r.location?.code}</div></div>
+                    <div className="grid size-9 place-items-center rounded-md bg-primary/10 text-primary">{r.mode === 'restaurant' ? <UtensilsCrossed className="size-4" /> : <Store className="size-4" />}</div>
+                    <div><div className="font-medium">{r.name}</div><div className="text-xs text-muted-foreground">{r.code} · {td(r.warehouse?.name)} · {r.mode === 'restaurant' ? t('tables') : r.location?.code}</div></div>
                   </div>
                   {s ? <Badge variant="success">{t('Open|status')}</Badge> : <Badge variant="secondary">{tEnum('closed')}</Badge>}
                 </div>
@@ -94,7 +94,10 @@ export function PosHomePage() {
                   {s ? t('Shift {number} · open for {time} · opening cash {amount} {currency}', { number: s.number, time: since(s.opened_at), amount: formatMoney(s.opening_cash), currency: company?.base_currency ?? '' }) : t('No open shift. Opening the till asks how much cash is in the drawer.')}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Can perm="pos.write"><Button disabled={!r.is_active} onClick={() => navigate(`/pos/till/${r.id}`)}><MonitorSmartphone /> {s ? t('Go to till') : t('Open till')}</Button></Can>
+                  {r.mode === 'restaurant' ? <>
+                    <Can perm="pos.write"><Button disabled={!r.is_active} onClick={() => navigate(`/pos/floor/${r.id}`)}><UtensilsCrossed /> {s ? t('Go to the tables') : t('Open the tables')}</Button></Can>
+                    <Button variant="outline" asChild><Link to={`/pos/kitchen/${r.warehouse_id}`}><ChefHat /> {t('Kitchen screen')}</Link></Button>
+                  </> : <Can perm="pos.write"><Button disabled={!r.is_active} onClick={() => navigate(`/pos/till/${r.id}`)}><MonitorSmartphone /> {s ? t('Go to till') : t('Open till')}</Button></Can>}
                   {s && <Button variant="outline" asChild><Link to={`/pos/sessions/${s.id}`}>{t('Shift')}</Link></Button>}
                   <Can perm="pos.approve"><Button variant="ghost" onClick={() => setEdit(r)}>{t('Settings')}</Button></Can>
                 </div>
@@ -170,6 +173,7 @@ export function SyncPanel({ compact }: { compact?: boolean }) {
 }
 
 function RegisterDialog({ register, onClose }: { register: Register | null; onClose: () => void }) {
+  const { company } = useCompany()
   const warehouses = useWarehouses()
   const locations = useLocations()
   const banks = useBankAccounts()
@@ -181,7 +185,7 @@ function RegisterDialog({ register, onClose }: { register: Register | null; onCl
     code: register?.code ?? '', name: register?.name ?? '', warehouse_id: register?.warehouse_id ?? null as string | null, location_id: register?.location_id ?? null as string | null,
     cash_account_id: register?.cash_account_id ?? null as string | null, journal_id: register?.journal_id ?? null as string | null, price_list_id: register?.price_list_id ?? null as string | null,
     default_customer_id: register?.default_customer_id ?? null as string | null, receipt_header: register?.receipt_header ?? '', receipt_footer: register?.receipt_footer ?? 'Faleminderit! Thank you!',
-    is_active: register?.is_active ?? true,
+    is_active: register?.is_active ?? true, mode: (register?.mode ?? (company?.business_type === 'cafe' || company?.business_type === 'restaurant' ? 'restaurant' : 'retail')) as string,
   }))
   const set = <K extends keyof typeof v>(k: K) => (x: (typeof v)[K]) => setV((s) => ({ ...s, [k]: x }))
   React.useEffect(() => {
@@ -215,6 +219,14 @@ function RegisterDialog({ register, onClose }: { register: Register | null; onCl
           <div className="grid gap-1.5"><Label>{t('Default customer')}</Label>
             <SearchSelect value={v.default_customer_id} onChange={set('default_customer_id')} clearable placeholder={t('Walk-in customer (none)')}
               options={(partners.data ?? []).filter((p) => p.is_customer).map((p) => ({ value: p.id, label: p.name, hint: p.code }))} /></div>
+          <div className="col-span-2 grid gap-1.5"><Label>{t('How this till sells')}</Label>
+            <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('How this till sells')}>
+              {[{ v: 'retail', l: t('Shop'), h: t('Scan items into one basket and take payment.') }, { v: 'restaurant', l: t('Restaurant or café'), h: t('Tables, orders to the kitchen and bar, pay at the end.') }].map((o) => (
+                <button key={o.v} type="button" role="radio" aria-checked={v.mode === o.v} onClick={() => set('mode')(o.v)}
+                  className={cn('rounded-lg border-2 p-3 text-left', v.mode === o.v ? 'border-primary bg-primary/5' : 'hover:bg-muted')}>
+                  <div className="text-sm font-medium">{o.l}</div><div className="mt-0.5 text-xs text-muted-foreground">{o.h}</div>
+                </button>))}
+            </div></div>
           <div className="col-span-2 grid gap-1.5"><Label htmlFor="rg-head">{t('Receipt header')}</Label><Input id="rg-head" value={v.receipt_header} onChange={(e) => set('receipt_header')(e.target.value)} placeholder="Rruga Pjetër Bogdani 12, Tiranë" /></div> {/* i18n-ignore */}
           <div className="col-span-2 grid gap-1.5"><Label htmlFor="rg-foot">{t('Receipt footer')}</Label><Input id="rg-foot" value={v.receipt_footer} onChange={(e) => set('receipt_footer')(e.target.value)} /></div>
           <div className="col-span-2 flex items-center justify-between"><Label htmlFor="rg-active">{t('Till in use')}</Label><Switch id="rg-active" checked={v.is_active} onCheckedChange={set('is_active')} /></div>

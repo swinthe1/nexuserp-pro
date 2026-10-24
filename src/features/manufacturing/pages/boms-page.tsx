@@ -122,7 +122,7 @@ function BomEditor({ bom }: { bom?: BomDetail }) {
           <div className="grid gap-1.5"><Label htmlFor="b-qty">{t('Batch quantity')}</Label><Input id="b-qty" inputMode="decimal" className="text-right tabular" value={head.quantity} disabled={!editable} onChange={(e) => setH('quantity')(e.target.value.replace(',', '.'))} /></div>
           <div className="grid gap-1.5"><Label>{t('Type')}</Label>
             <Select value={head.bom_type} onValueChange={setH('bom_type')} disabled={!editable}><SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent><SelectItem value="manufacture">{t('Production')}</SelectItem><SelectItem value="kit">{t('Kit (sold as a set)')}</SelectItem></SelectContent></Select></div>
+              <SelectContent><SelectItem value="manufacture">{t('Production')}</SelectItem><SelectItem value="kit">{t('Kit or recipe: its parts leave stock when it is sold')}</SelectItem></SelectContent></Select></div>
           <div className="flex items-center justify-between gap-2 sm:col-span-2"><Label htmlFor="b-def">{t('Main recipe for this product')}</Label><Switch id="b-def" checked={head.is_default} disabled={!editable} onCheckedChange={setH('is_default')} /></div>
           <div className="flex items-center justify-between gap-2 sm:col-span-2"><Label htmlFor="b-act">{t('Active')}</Label><Switch id="b-act" checked={head.is_active} disabled={!editable} onCheckedChange={setH('is_active')} /></div>
         </CardContent>

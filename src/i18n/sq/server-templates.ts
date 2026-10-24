@@ -343,4 +343,5 @@ export const serverTemplates: [string, string][] = [
   ['The fiscal period for the cut-over date % is %', 'Periudha fiskale për datën e kalimit {0} është {1}'],
   ['The card has only % points', 'Kartela ka vetëm {0} pikë'],
   ['Line %: the card gives % %%, not %', 'Rreshti {0}: kartela jep {1}%, jo {2}'],
+  ['Pay between 0 and % of %', 'Paguani nga 0 deri në {0} të {1}'],
 ]

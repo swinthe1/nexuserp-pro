@@ -39,7 +39,7 @@ type Method = (typeof METHODS)[number]['id']
 
 type Line = { key: string; variant_id: string; name: string; sku: string; price: number; qty: number; discount: number; rate: number; barcode: string | null }
 type PricedLine = Line & { card?: boolean }
-type Tender = { method: Method; amount: number }
+export type Tender = { method: Method; amount: number }
 type AppliedCard = { id: string; number: string; holder: string; program: TillProgram; points: number; monthUsed: number }
 type Redeem = { points: number; amount: number; pct: Record<string, number> }
 
@@ -76,14 +76,14 @@ export function TillPage() {
   return <Till data={till.data} offline={till.offline} patch={till.patch} reload={till.reload} />
 }
 
-function TillSkeleton() {
+export function TillSkeleton() {
   return <div className="flex h-dvh gap-4 bg-background p-4"><Skeleton className="flex-1" /><Skeleton className="w-[420px]" /></div>
 }
-function Centered({ children }: { children: React.ReactNode }) {
+export function Centered({ children }: { children: React.ReactNode }) {
   return <div className="grid min-h-dvh place-items-center bg-background p-6"><div className="w-full max-w-md text-center">{children}</div></div>
 }
 
-function OpenTill({ data, offline, onOpened }: { data: TillData; offline: boolean; onOpened: () => void }) {
+export function OpenTill({ data, offline, onOpened }: { data: TillData; offline: boolean; onOpened: () => void }) {
   const open = useOpenSession()
   const [cash, setCash] = React.useState('')
   return (
@@ -508,12 +508,12 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   )
 }
 
-function Kbd({ children, className }: { children: React.ReactNode; className?: string }) {
+export function Kbd({ children, className }: { children: React.ReactNode; className?: string }) {
   return <kbd className={cn('hidden rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground lg:inline', className)}>{children}</kbd>
 }
 
 /* ================================================================== payment */
-function PayDialog({ total, currency, onCancel, onPaid }: { total: number; currency: string; onCancel: () => void; onPaid: (t: Tender[]) => Promise<void> }) {
+export function PayDialog({ total, currency, onCancel, onPaid }: { total: number; currency: string; onCancel: () => void; onPaid: (t: Tender[]) => Promise<void> }) {
   const [tenders, setTenders] = React.useState<Tender[]>([])
   const [method, setMethod] = React.useState<Method>('cash')
   const paid = r2(tenders.reduce((s, t) => s + t.amount, 0))
