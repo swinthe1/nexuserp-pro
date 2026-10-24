@@ -62,6 +62,14 @@ select t.ok((select open_amount from public.external_documents where company_id 
 select t.ok((select pushes from public.sync_connections where company_id = :'co') = 3 and (select last_seen_at is not null from public.sync_connections where company_id = :'co'),
   'the connection records when it was last heard from');
 
+-- a barcode that already belongs to another product does not keep the product out
+set role anon;
+select public.sync_push(:'key', jsonb_build_object('products',
+  '[{"sku":"40001","name":"FIRST","barcode":"3800000000010","vat":"18"},{"sku":"40002","name":"SECOND","barcode":"3800000000010","vat":"18"}]'::jsonb)) as rb \gset
+reset role;
+select t.ok((:'rb'::jsonb -> 'products' ->> 'errors') = '0' and (select count(*) from public.product_variants where company_id = :'co' and sku in ('40001','40002')) = 2,
+  'a product whose barcode is taken comes in without it');
+
 -- bad data is reported, nothing half-done
 set role anon;
 select public.sync_push(:'key', jsonb_build_object('stock', '[{"warehouse":"1","sku":"33173","qty":"5"}]'::jsonb,
