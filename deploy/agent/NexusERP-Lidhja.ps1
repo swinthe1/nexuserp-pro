@@ -13,7 +13,7 @@
 param([switch]$Service, [switch]$Full, [switch]$Once)
 
 $ErrorActionPreference = 'Stop'
-$Version = '1.1'
+$Version = '1.2'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $cfgPath = Join-Path $here 'lidhja.json'
 $statePath = Join-Path $here 'lidhja-gjendja.json'
@@ -181,7 +181,11 @@ SELECT p.M_PRODUCT_ID AS id, p.VALUE AS sku, p.NAME AS name, u.X12DE355 AS uom, 
     $price = ''
     if (-not ($p.price -is [DBNull]) -and [decimal]$p.price -gt 0) { $v = [decimal]$p.price; if ($main.taxincl) { $v = $v / (1 + $rate / 100) }; $price = Num $v 4 }
     $u = $unitMap[(Str $p.uom).ToLower()]; if (-not $u) { $u = 'pcs' }
-    $bc = (Str $p.barcode) -replace '\s', ''; if ($bc -and (-not (Test-Barcode $bc) -or $seen.ContainsKey($bc))) { $bc = '' }; if ($bc) { $seen[$bc] = 1 }
+    $bc = (Str $p.barcode) -replace '\s', ''
+    # NexusERP ruan EAN-13: UPC-A (12) merr 0 para, GTIN-14 me 0 para e humb; EAN-8 dhe të tjerat lihen jashtë
+    if ($bc.Length -eq 12) { $bc = '0' + $bc } elseif ($bc.Length -eq 14 -and $bc.StartsWith('0')) { $bc = $bc.Substring(1) }
+    if ($bc.Length -ne 13) { $bc = '' }
+    if ($bc -and (-not (Test-Barcode $bc) -or $seen.ContainsKey($bc))) { $bc = '' }; if ($bc) { $seen[$bc] = 1 }
     $type = if ((Str $p.ptype) -eq 'I' -or [decimal]$p.qty -ne 0) { if ((Str $p.stocked) -eq 'N' -and [decimal]$p.qty -eq 0) { 'consumable' } else { 'stockable' } } else { 'service' }
     if (-not (Str $p.sku) -or -not (Str $p.name)) { continue }
     [void]$rows.Add(@{ sku = (Str $p.sku); name = (Str $p.name); uom = $u; type = $type; category = (Str $p.category); price = $price; cost = (Num $p.cost 4)
@@ -212,7 +216,7 @@ SELECT bp.C_BPARTNER_ID AS id, bp.VALUE AS code, bp.NAME AS name, bp.ISCUSTOMER 
     # a NUI shared by several partners stays only on the first one, so they are not merged
     if ($tax -and ($tax -notmatch '^\d{9}$|^[A-Z]\d{8}[A-Z]$' -or ((-not ($b.first_with_tax -is [DBNull])) -and [long]$b.first_with_tax -ne [long]$b.id))) { $tax = '' }
     [void]$rows.Add(@{ code = $code; name = $(if (Str $b.name) { Str $b.name } else { $code }); role = $(if ($cust -and $vend) { 'both' } elseif ($vend) { 'vendor' } else { 'customer' })
-                       tax_number = $tax; phone = (Str $b.phone); address = (Str $b.address); city = (Str $b.city); country = 'XK'
+                       tax_number = $tax; phone = (Str $b.phone); address = (Str $b.address); city = $(if (Str $b.city) { Str $b.city } elseif (Str $b.address) { Str $b.address } else { '' }); country = 'XK'
                        credit_limit = $(if ($b.credit -is [DBNull] -or [decimal]$b.credit -le 0) { '' } else { Num $b.credit 2 }) })
   }
   return ,$rows
