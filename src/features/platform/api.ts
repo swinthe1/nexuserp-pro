@@ -19,6 +19,7 @@ export interface PlatformClient {
   admins: string[]
   last_activity: string | null
   is_training?: boolean
+  business_type?: string
   sync?: SyncConnection[] | null
 }
 
@@ -46,6 +47,7 @@ export interface NewClient {
   valid_from: string
   valid_until: string
   notes?: string
+  business_type: string
 }
 
 export interface LicenseInput {
@@ -140,5 +142,14 @@ export function useSetTraining() {
   return useMutation({
     mutationFn: async (v: { company: string; on: boolean }) => unwrap(await supabase.rpc('set_training_mode', { p_company: v.company, p_on: v.on })),
     onSuccess: refresh,
+  })
+}
+
+export function useSetBusinessType() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (v: { company: string; type: string; applyMenu: boolean }) =>
+      unwrap(await supabase.rpc('platform_set_business_type', { p_company: v.company, p_type: v.type, p_apply_menu: v.applyMenu })),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   })
 }

@@ -96,5 +96,23 @@ set role anon;
 select t.throws($$ select public.sync_push('$$ || :'key' || $$', '{}') $$, 'switched-off', 'a switched-off key is refused');
 reset role;
 
+-- type of business
+set role authenticated;
+select t.login('zoe@platform.io');
+select public.platform_create_client(jsonb_build_object('name', 'Kafe Test', 'country', 'XK', 'owner_email', 'kafe@test.xk',
+  'owner_password', 'sekret123', 'business_type', 'cafe')) as cafe \gset
+select t.ok((select business_type = 'cafe' from public.companies where id = :'cafe'), 'a new client gets its type of business');
+select t.ok((select 'Manufacturing' = any(hidden_menu_sections) and 'Sales & CRM' = any(hidden_menu_sections) and not 'Retail' = any(hidden_menu_sections)
+               from public.company_settings where company_id = :'cafe'), 'a café starts without manufacturing and sales pipeline, but with the till');
+select public.platform_set_business_type(:'cafe', 'wholesale');
+select t.ok((select 'Retail' = any(hidden_menu_sections) and not 'Sales & CRM' = any(hidden_menu_sections) from public.company_settings where company_id = :'cafe'),
+  'changing the type changes the menu');
+select t.ok((select c -> 'business_type' = '"wholesale"' from jsonb_array_elements(public.platform_clients() -> 'clients') c where c ->> 'id' = :'cafe'), 'the client list shows the type');
+select t.throws($$ select public.platform_set_business_type('$$ || :'cafe' || $$', 'casino') $$, 'Unknown type', 'only known types');
+select t.login('kafe@test.xk');
+select t.ok((public.get_my_context() -> 'companies' -> 0 ->> 'business_type') = 'wholesale', 'the app knows the type');
+select t.throws($$ select public.platform_set_business_type('$$ || :'cafe' || $$', 'retail') $$, 'platform', 'clients cannot change their own type');
+reset role;
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;

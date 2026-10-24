@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowDownToLine, ArrowRight, Cable, Copy, Download, GraduationCap, KeyRound, LogOut, MoreHorizontal, Plus, Search, ServerCog } from 'lucide-react'
+import { ArrowDownToLine, ArrowRight, Cable, Copy, Download, GraduationCap, KeyRound, LogOut, MoreHorizontal, Plus, Search, ServerCog, Shapes } from 'lucide-react'
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
@@ -26,7 +26,8 @@ import { LanguageToggle } from '@/i18n/language'
 import { describeError } from '@/lib/errors'
 import { daysUntil, LICENSE_WARNING_DAYS } from '@/lib/license'
 import { formatDate, formatQty as formatInt, todayISO } from '@/lib/utils'
-import { generatePassword, type PlatformClient, type SyncConnection, useCreateClient, useCreateSyncKey, usePlatformClients, useSaveLicense, useSetPassword, useSetSelfService, useSetSyncActive, useSetTraining } from './api'
+import { generatePassword, type PlatformClient, type SyncConnection, useCreateClient, useCreateSyncKey, usePlatformClients, useSaveLicense, useSetPassword, useSetSelfService, useSetSyncActive, useSetTraining, useSetBusinessType } from './api'
+import { BUSINESS_TYPES, businessTypeLabel } from './business-types'
 
 const PLANS = [
   { value: 'basic', label: msg('Basic') },
@@ -75,6 +76,7 @@ export function PlatformPage() {
   const [editing, setEditing] = React.useState<PlatformClient | null>(null)
   const [password, setPassword] = React.useState<{ email: string } | null>(null)
   const [live, setLive] = React.useState<string | null>(null)
+  const [typing, setTyping] = React.useState<PlatformClient | null>(null)
 
   if (!loading && !user) return <Navigate to="/login" replace />
   if (loading || ctxLoading) return <div className="min-h-dvh bg-background" />
@@ -165,7 +167,7 @@ export function PlatformPage() {
                         <TableCell>
                           <span className="block font-medium">{c.name}</span>
                           <span className="block text-xs text-muted-foreground">
-                            {c.country_code === 'XK' ? t('Kosovo') : t('Albania')}{c.tax_number ? ` · ${c.tax_number}` : ''}
+                            {c.country_code === 'XK' ? t('Kosovo') : t('Albania')}{c.tax_number ? ` · ${c.tax_number}` : ''} · {t(businessTypeLabel(c.business_type))}
                           </span>
                           {(c.is_training || (c.sync ?? []).some((x) => x.is_active)) && (
                             <span className="mt-1 flex flex-wrap gap-1">
@@ -190,6 +192,7 @@ export function PlatformPage() {
                             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon-sm" aria-label={t('Actions for {name}', { name: c.name })}><MoreHorizontal /></Button></DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onSelect={() => setEditing(c)}>{t('Change licence')}</DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => setTyping(c)}><Shapes /> {t('Type of business')}</DropdownMenuItem>
                               <DropdownMenuItem disabled={!c.admins.length} onSelect={() => setPassword({ email: c.admins[0] ?? '' })}><KeyRound /> {t('Set a new password')}</DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onSelect={() => void openCompany(c.id, '/settings/migration')}><ArrowDownToLine /> {t('Move data from the old program')}</DropdownMenuItem>
@@ -226,6 +229,7 @@ export function PlatformPage() {
       <NewClientDialog open={creating} onOpenChange={(o) => { setCreating(o); if (!o && params.get('new')) setParams({}, { replace: true }) }} />
       <LicenseDialog client={editing} onClose={() => setEditing(null)} />
       <PasswordDialog target={password} onClose={() => setPassword(null)} />
+      <BusinessTypeDialog client={typing} onClose={() => setTyping(null)} />
       <LiveLinkDialog client={list.find((x) => x.id === live) ?? null} onClose={() => setLive(null)} />
     </div>
   )
@@ -247,6 +251,7 @@ const clientSchema = z.object({
   legal_name: z.string().trim().optional(),
   country: z.enum(['XK', 'AL']),
   tax_number: z.string().trim().regex(/^$|^[A-Z][0-9]{8}[A-Z]$|^[0-9]{9}$/, 'NIPT looks like L91234567A; NUI is 9 digits').optional(),
+  business_type: z.string().min(1),
   owner_name: z.string().trim().optional(),
   owner_email: z.string().trim().email('Enter a valid email address'),
   owner_password: z.string().min(8, 'Use at least 8 characters'),
@@ -262,7 +267,7 @@ function NewClientDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
   const create = useCreateClient()
   const [done, setDone] = React.useState<ClientValues | null>(null)
   const defaults = React.useCallback((): ClientValues => ({
-    name: '', legal_name: '', country: 'XK', tax_number: '', owner_name: '', owner_email: '', owner_password: generatePassword(),
+    name: '', legal_name: '', country: 'XK', tax_number: '', business_type: 'retail', owner_name: '', owner_email: '', owner_password: generatePassword(),
     plan: 'standard', max_users: 5, valid_from: todayISO(), valid_until: addMonths(todayISO(), 12), notes: '',
   }), [])
   const form = useForm<ClientValues>({ resolver: zodResolver(clientSchema), defaultValues: defaults() })
@@ -331,6 +336,16 @@ function NewClientDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
                 <FormField control={form.control} name="tax_number" render={({ field }) => (
                   <FormItem className="col-span-2 sm:col-span-1"><FormLabel optional>{country === 'AL' ? 'NIPT' : 'NUI'}</FormLabel>
                     <FormControl><Input placeholder={country === 'AL' ? 'L91234567A' : '811234567'} {...field} onChange={(e) => field.onChange(e.target.value.toUpperCase())} /></FormControl><FormMessage /></FormItem>
+                )} />
+
+                <FormField control={form.control} name="business_type" render={({ field }) => (
+                  <FormItem className="col-span-2"><FormLabel>{t('Type of business')}</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent>{BUSINESS_TYPES.map((b) => <SelectItem key={b.value} value={b.value}>{t(b.label)}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <FormDescription>{t(BUSINESS_TYPES.find((b) => b.value === field.value)?.hint ?? '')}</FormDescription>
+                  </FormItem>
                 )} />
 
                 <p className="col-span-2 mt-2 text-xs font-medium text-muted-foreground">{t('Administrator of the client')}</p>
@@ -648,6 +663,53 @@ function LiveLinkDialog({ client, onClose }: { client: PlatformClient | null; on
           </div>
         )}
         <DialogFooter><Button variant="outline" onClick={onClose}>{t('Close')}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/* ------------------------------------------------------------------ type of business */
+
+function BusinessTypeDialog({ client, onClose }: { client: PlatformClient | null; onClose: () => void }) {
+  const save = useSetBusinessType()
+  const [type, setType] = React.useState('general')
+  const [applyMenu, setApplyMenu] = React.useState(true)
+  React.useEffect(() => { if (client) { setType(client.business_type ?? 'general'); setApplyMenu(true) } }, [client])
+  const hint = BUSINESS_TYPES.find((b) => b.value === type)?.hint
+  const submit = () => {
+    if (!client) return
+    save.mutate({ company: client.id, type, applyMenu }, {
+      onSuccess: () => { toast.success(t('{name} is now: {type}', { name: client.name, type: t(businessTypeLabel(type)) })); onClose() },
+      onError: (e) => toast.error(describeError(e)),
+    })
+  }
+  return (
+    <Dialog open={!!client} onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t('Type of business · {name}', { name: client?.name ?? '' })}</DialogTitle>
+          <DialogDescription>{t('The type decides which parts of the menu the client starts with. Nothing is deleted; hidden parts stay reachable by search.')}</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4">
+          <div className="grid gap-1.5">
+            <Select value={type} onValueChange={setType}>
+              <SelectTrigger aria-label={t('Type of business')}><SelectValue /></SelectTrigger>
+              <SelectContent>{BUSINESS_TYPES.map((b) => <SelectItem key={b.value} value={b.value}>{t(b.label)}</SelectItem>)}</SelectContent>
+            </Select>
+            {hint && <p className="text-[13px] text-muted-foreground">{t(hint)}</p>}
+          </div>
+          <label className="flex items-start justify-between gap-4 rounded-md border p-3">
+            <span>
+              <span className="block text-sm font-medium">{t('Set the menu for this type')}</span>
+              <span className="block text-[13px] text-muted-foreground">{t('Replaces the parts of the menu the client switched on or off themselves.')}</span>
+            </span>
+            <Switch checked={applyMenu} onCheckedChange={setApplyMenu} aria-label={t('Set the menu for this type')} />
+          </label>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>{t('Cancel')}</Button>
+          <Button onClick={submit} loading={save.isPending}>{t('Save')}</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

@@ -10400,6 +10400,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      platform_set_business_type: {
+        Args: {
+          p_company: string
+          p_type: string
+          p_apply_menu?: boolean
+        }
+        Returns: undefined
+      }
       platform_set_self_service: {
         Args: {
           p_on: boolean
