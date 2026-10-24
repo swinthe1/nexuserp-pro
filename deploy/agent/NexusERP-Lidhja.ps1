@@ -13,7 +13,7 @@
 param([switch]$Service, [switch]$Full, [switch]$Once)
 
 $ErrorActionPreference = 'Stop'
-$Version = '1.0'
+$Version = '1.1'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $cfgPath = Join-Path $here 'lidhja.json'
 $statePath = Join-Path $here 'lidhja-gjendja.json'
@@ -47,7 +47,23 @@ if (-not (Test-Path $cfgPath)) {
   Write-Host "U ruajt te $cfgPath" -ForegroundColor Green
 }
 $cfg = Get-Content $cfgPath -Raw -Encoding UTF8 | ConvertFrom-Json
-foreach ($k in 'url', 'anon_key', 'sync_key', 'server', 'database', 'main_price_list') { if (-not $cfg.$k) { Log "lidhja.json: mungon '$k'" 'Red'; exit 1 } }
+foreach ($k in 'url', 'anon_key', 'sync_key') { if (-not $cfg.$k) { Log "lidhja.json: mungon '$k' - shkarkojeni përsëri nga NexusERP" 'Red'; exit 1 } }
+$askLater = $false
+if (-not $cfg.server -or -not $cfg.database -or -not $cfg.main_price_list) {
+  if ($Service) { Log 'lidhja.json nuk është plotësuar; nisni njëherë Nis-Lidhjen.bat' 'Red'; exit 1 }
+  if (-not $cfg.server) {
+    $v = Read-Host 'Serveri SQL (Enter = localhost\SQLPRIME)'; if (-not $v) { $v = 'localhost\SQLPRIME' }
+    $cfg | Add-Member -NotePropertyName server -NotePropertyValue $v -Force
+  }
+  if (-not $cfg.database) {
+    $v = Read-Host ('Databaza (Enter = LM{0})' -f (Get-Date).Year); if (-not $v) { $v = 'LM{0}' -f (Get-Date).Year }
+    $cfg | Add-Member -NotePropertyName database -NotePropertyValue $v -Force
+  }
+  if (-not $cfg.interval_seconds) { $cfg | Add-Member -NotePropertyName interval_seconds -NotePropertyValue 30 -Force }
+  if (-not $cfg.active_years) { $cfg | Add-Member -NotePropertyName active_years -NotePropertyValue 2 -Force }
+  if (-not $cfg.main_price_list) { $askLater = $true }
+  else { [IO.File]::WriteAllText($cfgPath, ($cfg | ConvertTo-Json), (New-Object System.Text.UTF8Encoding $false)) }
+}
 $pushUrl = ($cfg.url.TrimEnd('/')) + '/rest/v1/rpc/sync_push'
 
 $state = @{ wm = @{}; full_done = $false }
@@ -301,6 +317,23 @@ function Run-Cycle {
     $summary = ($sent.GetEnumerator() | Where-Object { $_.Value } | ForEach-Object { "$($_.Key) $($_.Value)" }) -join ', '
     if ($summary) { Log "U dërguan: $summary" 'Green' } elseif (-not $Service) { Write-Host ('{0}  pa ndryshime' -f (Get-Date).ToString('HH:mm:ss')) -ForegroundColor DarkGray }
   } finally { $db.Close() }
+}
+
+# ---------------------------------------------------------------- lista kryesore e çmimeve (herën e parë)
+if ($askLater) {
+  try { $db0 = New-Connection } catch {
+    Write-Host "Nuk u lidh me SQL ($($cfg.server) / $($cfg.database)): $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host 'Kontrolloni emrin e serverit dhe databazës, pastaj nisni përsëri.' -ForegroundColor Yellow; Read-Host; exit 1
+  }
+  try { $lists0 = @(Read-Lists $db0 ((Get-Date).ToString('yyyyMMdd'))) } finally { $db0.Close() }
+  if ($lists0.Count -eq 0) { Write-Host 'Nuk u gjet asnjë listë aktive e çmimeve të shitjes.' -ForegroundColor Red; Read-Host; exit 1 }
+  Write-Host ''
+  Write-Host 'Listat e çmimeve të shitjes te Logmicro:' -ForegroundColor Cyan
+  for ($i = 0; $i -lt $lists0.Count; $i++) { Write-Host ('  {0}. {1}' -f ($i + 1), $lists0[$i].name) }
+  do { $n = Read-Host 'Cila është lista kryesore (çmimi në arkë)? Shkruani numrin' } until ($n -match '^\d+$' -and [int]$n -ge 1 -and [int]$n -le $lists0.Count)
+  $cfg | Add-Member -NotePropertyName main_price_list -NotePropertyValue $lists0[[int]$n - 1].name -Force
+  [IO.File]::WriteAllText($cfgPath, ($cfg | ConvertTo-Json), (New-Object System.Text.UTF8Encoding $false))
+  Write-Host "U ruajt: $($cfg.server) / $($cfg.database) / $($cfg.main_price_list)" -ForegroundColor Green
 }
 
 # ---------------------------------------------------------------- cikli i përhershëm
