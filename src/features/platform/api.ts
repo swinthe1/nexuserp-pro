@@ -153,3 +153,12 @@ export function useSetBusinessType() {
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   })
 }
+
+export function useDeleteClient() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (v: { company: string; name: string; deleteUsers: boolean }) =>
+      unwrap(await supabase.rpc('platform_delete_client', { p_company: v.company, p_confirm_name: v.name, p_delete_users: v.deleteUsers })) as unknown as { rows: number; users_deleted: number },
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  })
+}

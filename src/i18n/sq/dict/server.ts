@@ -546,4 +546,5 @@ export default {
   "Nothing to pay on this order": "Asgjë për t’u paguar në këtë porosi",
   "Store not found": "Njësia nuk u gjet",
   "Unknown status": "Status i panjohur",
+  "Type the client's name exactly to confirm": "Shkruani saktë emrin e klientit për ta konfirmuar",
 } satisfies Dict

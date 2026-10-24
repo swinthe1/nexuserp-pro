@@ -151,4 +151,13 @@ export default {
   'The type decides which parts of the menu the client starts with. Nothing is deleted; hidden parts stay reachable by search.': 'Lloji vendos me cilat pjesë të menysë fillon klienti. Asgjë nuk fshihet; pjesët e fshehura gjenden me kërkim.',
   'Set the menu for this type': 'Përshtat menynë për këtë lloj',
   'Replaces the parts of the menu the client switched on or off themselves.': 'Zëvendëson pjesët e menysë që klienti i ka ndezur ose fikur vetë.',
+  'Delete the client': 'Fshi klientin',
+  'Delete {name} completely': 'Fshi plotësisht {name}',
+  "Everything of this client is deleted for good: documents, stock, accounting, tills, cards, tables, users' access, the licence and the live link. It cannot be undone; only a database backup brings it back.":
+    'Çdo gjë e këtij klienti fshihet përgjithmonë: dokumentet, stoku, kontabiliteti, arkat, kartelat, tavolinat, qasja e përdoruesve, licenca dhe lidhja live. Nuk kthehet më; vetëm një kopje rezervë e databazës mund ta rikthejë.',
+  'This client still has an active licence. If you only want to stop them, pause the licence instead.': 'Ky klient ka ende licencë aktive. Nëse doni vetëm ta ndaloni, pezulloni licencën.',
+  'Also delete the accounts of people who work only for this client': 'Fshi edhe llogaritë e personave që punojnë vetëm për këtë klient',
+  'Type {name} to confirm': 'Shkruani {name} për ta konfirmuar',
+  '{name} was deleted ({n} records)': '{name} u fshi ({n} rreshta)',
+  'Delete for good': 'Fshi përgjithmonë',
 } satisfies Dict

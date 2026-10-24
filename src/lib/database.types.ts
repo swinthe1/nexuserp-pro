@@ -10941,6 +10941,14 @@ export type Database = {
         }
         Returns: string
       }
+      platform_delete_client: {
+        Args: {
+          p_company: string
+          p_confirm_name: string
+          p_delete_users?: boolean
+        }
+        Returns: Json
+      }
       platform_save_license: {
         Args: {
           p_company: string

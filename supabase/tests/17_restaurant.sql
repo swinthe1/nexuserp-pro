@@ -89,5 +89,32 @@ select t.throws(format($q$select public.restaurant_pay('{"tab_id":"%s","session_
   'short', 'the bill must be paid in full');
 reset role;
 
+-- deleting a client completely (the shop above has stock, accounting, tills, cards and tables)
+set role authenticated;
+select t.login('alice@alba.al');
+select t.throws(format($q$select public.platform_delete_client(%L, 'Magazina Test')$q$, :'co'), 'platform', 'only the platform administrator deletes clients');
+select t.login('zoe@platform.io');
+select t.throws(format($q$select public.platform_delete_client(%L, 'magazina')$q$, :'co'), 'name exactly', 'the name must be typed exactly');
+-- the slow path, as on a server where triggers cannot be switched off for a session
+select set_config('app.purge_no_replica', 'on', false);
+select public.platform_delete_client(:'co', 'Magazina Test') as del \gset
+select t.ok(not (:'del'::jsonb ->> 'fast')::boolean and (:'del'::jsonb ->> 'rows')::int > 100, 'every row went, round by round');
+reset role;
+select t.ok(not exists (select 1 from public.companies where id = :'co'), 'the client is gone');
+select t.ok((select bool_and(n = 0) from (select (xpath('/row/n/text()', query_to_xml(format('select count(*) as n from public.%I where company_id = %L', c.relname, :'co'), false, true, '')))[1]::text::int as n
+               from pg_class c join pg_namespace s on s.oid = c.relnamespace join pg_attribute a on a.attrelid = c.oid and a.attname = 'company_id'
+              where s.nspname = 'public' and c.relkind = 'r') x), 'no row of it is left in any table');
+select t.ok(not exists (select 1 from auth.users where email = 'cora@wms.al') and exists (select 1 from auth.users where email = 'alice@alba.al'),
+  'people only in that company are removed; people with other companies stay');
+select t.ok((select bool_and(tgenabled <> 'D') from pg_trigger where not tgisinternal and tgrelid in (select oid from pg_class where relnamespace = 'public'::regnamespace)),
+  'every paused rule is back on');
+-- and the fast path on another client
+set role authenticated;
+select t.login('zoe@platform.io');
+select set_config('app.purge_no_replica', 'off', false);
+select (public.platform_delete_client(id, name) ->> 'fast')::boolean as fast2 from public.companies where name = 'Lider Live' \gset
+reset role;
+select t.ok(not exists (select 1 from public.companies where name = 'Lider Live'), 'a second client goes too');
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;

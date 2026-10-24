@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowDownToLine, ArrowRight, Cable, Copy, Download, GraduationCap, KeyRound, LogOut, MoreHorizontal, Plus, Search, ServerCog, Shapes } from 'lucide-react'
+import { ArrowDownToLine, ArrowRight, Cable, Copy, Download, GraduationCap, KeyRound, LogOut, MoreHorizontal, Plus, Search, ServerCog, Shapes, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
@@ -26,7 +26,8 @@ import { LanguageToggle } from '@/i18n/language'
 import { describeError } from '@/lib/errors'
 import { daysUntil, LICENSE_WARNING_DAYS } from '@/lib/license'
 import { formatDate, formatQty as formatInt, todayISO } from '@/lib/utils'
-import { generatePassword, type PlatformClient, type SyncConnection, useCreateClient, useCreateSyncKey, usePlatformClients, useSaveLicense, useSetPassword, useSetSelfService, useSetSyncActive, useSetTraining, useSetBusinessType } from './api'
+import { generatePassword, type PlatformClient, type SyncConnection, useCreateClient, useCreateSyncKey, usePlatformClients, useSaveLicense, useSetPassword, useSetSelfService, useSetSyncActive, useSetTraining, useSetBusinessType, useDeleteClient } from './api'
+import { Checkbox } from '@/components/ui/checkbox'
 import { BUSINESS_TYPES, businessTypeLabel } from './business-types'
 
 const PLANS = [
@@ -77,6 +78,7 @@ export function PlatformPage() {
   const [password, setPassword] = React.useState<{ email: string } | null>(null)
   const [live, setLive] = React.useState<string | null>(null)
   const [typing, setTyping] = React.useState<PlatformClient | null>(null)
+  const [deleting, setDeleting] = React.useState<PlatformClient | null>(null)
 
   if (!loading && !user) return <Navigate to="/login" replace />
   if (loading || ctxLoading) return <div className="min-h-dvh bg-background" />
@@ -198,6 +200,8 @@ export function PlatformPage() {
                               <DropdownMenuItem onSelect={() => void openCompany(c.id, '/settings/migration')}><ArrowDownToLine /> {t('Move data from the old program')}</DropdownMenuItem>
                               <DropdownMenuItem onSelect={() => setLive(c.id)}><Cable /> {t('Live link and training')}</DropdownMenuItem>
                               <DropdownMenuItem onSelect={() => void openCompany(c.id)}><ArrowRight /> {t('Open this company')}</DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setDeleting(c)}><Trash2 /> {t('Delete the client')}</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -230,6 +234,7 @@ export function PlatformPage() {
       <LicenseDialog client={editing} onClose={() => setEditing(null)} />
       <PasswordDialog target={password} onClose={() => setPassword(null)} />
       <BusinessTypeDialog client={typing} onClose={() => setTyping(null)} />
+      <DeleteClientDialog client={deleting} onClose={() => setDeleting(null)} />
       <LiveLinkDialog client={list.find((x) => x.id === live) ?? null} onClose={() => setLive(null)} />
     </div>
   )
@@ -709,6 +714,48 @@ function BusinessTypeDialog({ client, onClose }: { client: PlatformClient | null
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{t('Cancel')}</Button>
           <Button onClick={submit} loading={save.isPending}>{t('Save')}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/* ------------------------------------------------------------------ delete a client */
+
+function DeleteClientDialog({ client, onClose }: { client: PlatformClient | null; onClose: () => void }) {
+  const del = useDeleteClient()
+  const [name, setName] = React.useState('')
+  const [users, setUsers] = React.useState(true)
+  const [err, setErr] = React.useState<string | null>(null)
+  React.useEffect(() => { setName(''); setUsers(true); setErr(null) }, [client])
+  const ok = !!client && name.trim() === client.name
+  return (
+    <Dialog open={!!client} onOpenChange={(o) => { if (!o && !del.isPending) onClose() }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-destructive">{t('Delete {name} completely', { name: client?.name ?? '' })}</DialogTitle>
+          <DialogDescription>{t('Everything of this client is deleted for good: documents, stock, accounting, tills, cards, tables, users\' access, the licence and the live link. It cannot be undone; only a database backup brings it back.')}</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3">
+          {client?.status === 'active' && <p className="rounded-md bg-warning/10 px-3 py-2 text-[13px] text-warning">{t('This client still has an active licence. If you only want to stop them, pause the licence instead.')}</p>}
+          <label className="flex items-start gap-2 text-[13px]"><Checkbox checked={users} onCheckedChange={(v) => setUsers(!!v)} className="mt-0.5" />
+            <span>{t('Also delete the accounts of people who work only for this client')}</span></label>
+          <div className="grid gap-1.5">
+            <label htmlFor="del-name" className="text-[13px]">{t('Type {name} to confirm', { name: client?.name ?? '' })}</label>
+            <Input id="del-name" autoComplete="off" value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          {err && <p className="text-[13px] text-destructive">{err}</p>}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={del.isPending}>{t('Cancel')}</Button>
+          <Button variant="destructive" disabled={!ok} loading={del.isPending} onClick={() => {
+            if (!client) return
+            setErr(null)
+            del.mutate({ company: client.id, name: name.trim(), deleteUsers: users }, {
+              onSuccess: (r) => { toast.success(t('{name} was deleted ({n} records)', { name: client.name, n: r.rows })); onClose() },
+              onError: (e) => setErr(describeError(e)),
+            })
+          }}><Trash2 /> {t('Delete for good')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
