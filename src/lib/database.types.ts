@@ -8583,6 +8583,8 @@ export type Database = {
           created_by: string | null
           updated_at: string
           updated_by: string | null
+          quantity_received: number | null
+          difference_action: string | null
         }
         Insert: {
           id?: string
@@ -8598,6 +8600,8 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          quantity_received?: number | null
+          difference_action?: string | null
         }
         Update: {
           id?: string
@@ -8613,6 +8617,8 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          quantity_received?: number | null
+          difference_action?: string | null
         }
         Relationships: [
           { foreignKeyName: "stock_transfer_lines_company_id_from_location_id_fkey"; columns: ["company_id", "from_location_id"]; isOneToOne: false; referencedRelation: "warehouse_locations"; referencedColumns: ["company_id", "id"] },
@@ -8641,6 +8647,11 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          is_request: boolean
+          shipped_by: string | null
+          received_by: string | null
+          has_difference: boolean
+          receive_note: string | null
         }
         Insert: {
           id?: string
@@ -8660,6 +8671,11 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          is_request?: boolean
+          shipped_by?: string | null
+          received_by?: string | null
+          has_difference?: boolean
+          receive_note?: string | null
         }
         Update: {
           id?: string
@@ -8679,6 +8695,11 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          is_request?: boolean
+          shipped_by?: string | null
+          received_by?: string | null
+          has_difference?: boolean
+          receive_note?: string | null
         }
         Relationships: [
           { foreignKeyName: "stock_transfers_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -11526,6 +11547,14 @@ export type Database = {
         }
         Returns: { variant_id: string | null; sku: string | null; name: string | null; bom_id: string | null; bom_code: string | null; bom_quantity: number | null; on_hand: number | null; reserved: number | null; sales_demand: number | null; component_demand: number | null; min_qty: number | null; max_qty: number | null; in_production: number | null; projected: number | null; suggested: number | null; unit_cost: number | null; lead_minutes: number | null }[]
       }
+      receive_stock_transfer: {
+        Args: {
+          p_id: string
+          p_lines?: Json
+          p_note?: string
+        }
+        Returns: Json
+      }
       reconcile_statement: {
         Args: {
           p_statement: string
@@ -11863,6 +11892,12 @@ export type Database = {
         }
         Returns: Json
       }
+      ship_stock_transfer: {
+        Args: {
+          p_id: string
+        }
+        Returns: string
+      }
       ship_with_carrier: {
         Args: {
           p_shipment: string
@@ -11983,6 +12018,12 @@ export type Database = {
           p_company: string
         }
         Returns: { obligation: string | null; period_start: string | null; period_end: string | null; due_date: string | null; status: string | null; document_id: string | null; document_number: string | null; amount: number | null }[]
+      }
+      transfers_on_the_road: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
       }
       update_shipment: {
         Args: {

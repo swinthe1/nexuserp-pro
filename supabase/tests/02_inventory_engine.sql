@@ -202,6 +202,39 @@ select t.throws(format($q$insert into public.products (company_id, code, name, u
 select t.login('alice@alba.al');
 select t.ok((select (qty_on_hand, avg_cost) = (10.0000, 200.000000) from public.item_costs where variant_id = :'coffee'), 'transfers do not change valuation');
 
+-- ---------- two-step transfer: ship (on the road) → receive with differences ----------
+select t.login('wendy@store.al');
+insert into public.stock_transfers (company_id, from_warehouse_id, to_warehouse_id) values (:'co', :'wh', :'store') returning id as trf2 \gset
+insert into public.stock_transfer_lines (company_id, transfer_id, variant_id, from_location_id, to_location_id, quantity)
+values (:'co', :'trf2', :'coffee', :'stock', :'store_stock', 2) returning id as tl1 \gset
+insert into public.stock_transfer_lines (company_id, transfer_id, variant_id, from_location_id, to_location_id, quantity)
+values (:'co', :'trf2', :'coffee', :'stock', :'store_stock', 1) returning id as tl2 \gset
+insert into public.stock_transfer_lines (company_id, transfer_id, variant_id, from_location_id, to_location_id, quantity)
+values (:'co', :'trf2', :'coffee', :'stock', :'store_stock', 1) returning id as tl3 \gset
+select t.ok(public.ship_stock_transfer(:'trf2') = 'in_transit', 'the sending store ships');
+select t.ok((select string_agg(warehouse_code || '=' || trim_scale(on_hand), ',' order by warehouse_code) from public.v_stock_levels where variant_id = :'coffee' and on_hand <> 0) = 'ST1=4,TRANSIT=4,WH=2',
+            'shipped goods are on the road, no longer on the sender''s shelves');
+select t.ok((public.transfers_on_the_road(:'co') ->> 'count')::int = 1, 'the dashboard counts goods on the road');
+select t.throws(format($q$select public.post_stock_transfer(%L)$q$, :'trf2'), 'Only draft transfers', 'a shipped transfer cannot be posted again');
+select public.receive_stock_transfer(:'trf2', jsonb_build_array(jsonb_build_object('line_id', :'tl1', 'received', 3),
+                                                                jsonb_build_object('line_id', :'tl2', 'received', 0),
+                                                                jsonb_build_object('line_id', :'tl3', 'received', 0, 'action', 'return')), 'one bag torn') as rcv \gset
+select t.ok((:'rcv'::jsonb ->> 'lost')::numeric = 1 and (:'rcv'::jsonb ->> 'returned')::numeric = 1 and (:'rcv'::jsonb ->> 'extra')::numeric = 1,
+            'one unit more than shipped, one lost, one sent back');
+select t.ok((select string_agg(warehouse_code || '=' || trim_scale(on_hand), ',' order by warehouse_code) from public.v_stock_levels where variant_id = :'coffee' and on_hand <> 0) = 'ST1=7,WH=3',
+            'the receiving store gets what arrived, the sender gets back what was returned');
+select t.ok((select status = 'done' and has_difference and receive_note = 'one bag torn' from public.stock_transfers where id = :'trf2'), 'the transfer closes with its difference noted');
+select t.login('alice@alba.al');
+select t.ok((select (qty_on_hand, avg_cost) = (10.0000, 200.000000) from public.item_costs where variant_id = :'coffee'), 'the loss and the extra unit balance out at the average cost');
+select t.ok(not exists (select 1 from public.stock_movements where source_doc_id = :'trf2' and journal_entry_id is not null)
+  and not exists (select 1 from public.journal_entries where source_doc_id = :'trf2'),
+  'a loss and an extra unit of the same item cancel out: no journal entry');
+-- put the stock back where the next tests expect it (WH=6, ST1=4)
+insert into public.stock_transfers (company_id, from_warehouse_id, to_warehouse_id) values (:'co', :'store', :'wh') returning id as trf3 \gset
+insert into public.stock_transfer_lines (company_id, transfer_id, variant_id, from_location_id, to_location_id, quantity)
+values (:'co', :'trf3', :'coffee', :'store_stock', :'stock', 3);
+select public.post_stock_transfer(:'trf3');
+
 -- ---------- low-stock alert cycle & notifications ---------------------------------
 insert into public.stock_adjustments (company_id, warehouse_id, reason) values (:'co', :'wh', 'damage') returning id as adj4 \gset
 insert into public.stock_adjustment_lines (company_id, adjustment_id, variant_id, location_id, quantity_change) values (:'co', :'adj4', :'tee_m', :'stock', -2);

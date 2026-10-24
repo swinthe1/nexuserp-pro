@@ -150,6 +150,7 @@ export const transferSchema = z.object({
   to_warehouse_id: uuid(msg('Choose the destination warehouse')),
   transfer_date: z.string().min(1),
   notes: z.string().trim().max(2000).optional(),
+  is_request: z.boolean().optional(),
   lines: z.array(z.object({
     variant_id: uuid(msg('Choose a product')),
     from_location_id: uuid(msg('Choose a location')),

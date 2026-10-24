@@ -6,6 +6,7 @@ import { Can, useCompany } from '@/app/company-provider'
 import { ColumnHeader, DataTable, inFilter } from '@/components/data-table/data-table'
 import { PageHeader } from '@/components/page-header'
 import { StatusBadge } from '@/components/status-badge'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatMoney, humanize } from '@/lib/utils'
 import { useDocuments, type DocKind } from '../api'
@@ -63,14 +64,26 @@ const CONFIG: Record<DocKind, KindConfig> = {
     ],
   },
   transfers: {
-    title: msg('Transfers'), newLabel: msg('New transfer'), emptyTitle: msg('No transfers yet'), perm: 'wms.write', statuses: ['draft', 'done', 'cancelled'],
-    description: msg('Moving stock between warehouses and shelves. The stock value does not change.'),
+    title: msg('Transfers'), newLabel: msg('New transfer'), emptyTitle: msg('No transfers yet'), perm: 'wms.write', statuses: ['draft', 'in_transit', 'done', 'cancelled'],
+    description: msg('Moving stock between stores: requested, shipped, on the road, then counted and received by the other store. The stock value does not change.'),
     empty: msg('Move stock from the main warehouse to a store, or between shelves.'),
     columns: () => [
       dateCol('transfer_date'),
       { id: 'from', accessorFn: (r) => name(r.from), filterFn: inFilter, header: t('From'), meta: { label: t('From') } },
       { id: 'to', accessorFn: (r) => name(r.to), filterFn: inFilter, header: t('To'), meta: { label: t('To') } },
       { id: 'lines', accessorFn: (r) => count(r.lines), header: t('Lines'), meta: { label: t('Lines'), align: 'right' } },
+      {
+        id: 'flag', filterFn: inFilter, header: t('Attention'), meta: { label: t('Attention') },
+        accessorFn: (r) => r.status === 'draft' && r.is_request ? 'request'
+          : r.status === 'in_transit' && r.shipped_at && Date.now() - new Date(r.shipped_at as string).getTime() > 86_400_000 ? 'late'
+            : r.status === 'done' && r.has_difference ? 'difference' : '',
+        cell: ({ getValue }) => {
+          const f = getValue() as string
+          return f === 'request' ? <Badge variant="secondary">{t('Request')}</Badge>
+            : f === 'late' ? <Badge variant="warning">{t('On the road over a day')}</Badge>
+              : f === 'difference' ? <Badge variant="destructive">{t('Received with differences')}</Badge> : null
+        },
+      },
     ],
   },
   'landed-costs': {
@@ -121,8 +134,9 @@ export function DocumentsPage({ kind }: { kind: DocKind }) {
         exportName={kind}
         onRowClick={(r) => navigate(`${HREF[kind]}/${r.id}`)}
         facets={[
-          { columnId: 'status', title: t('Status'), options: cfg.statuses.map((s) => ({ label: humanize(s), value: s })) },
+          { columnId: 'status', title: t('Status'), options: cfg.statuses.map((s) => ({ label: tEnum(s), value: s })) },
           ...(kind === 'receipts' ? [{ columnId: 'import', title: t('Customs'), options: [{ label: t('Waiting for customs'), value: 'pending' }, { label: t('Cleared'), value: 'cleared' }, { label: t('Domestic'), value: 'not_required' }] }] : []),
+          ...(kind === 'transfers' ? [{ columnId: 'flag', title: t('Attention'), options: [{ label: t('Request'), value: 'request' }, { label: t('On the road over a day'), value: 'late' }, { label: t('Received with differences'), value: 'difference' }] }] : []),
           ...(kind === 'adjustments' ? [{ columnId: 'reason', title: t('Reason'), options: Object.entries(ADJUSTMENT_REASONS).map(([value, label]) => ({ label: t(label), value })) }] : []),
         ]}
         empty={{ title: t(cfg.emptyTitle), description: t(cfg.empty), action: newButton }}

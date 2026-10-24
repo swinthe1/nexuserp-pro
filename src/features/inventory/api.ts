@@ -396,7 +396,7 @@ export const DOC_TABLE: Record<DocKind, 'goods_receipts' | 'stock_adjustments' |
 const LIST_SELECT: Record<DocKind, string> = {
   receipts: 'id, number, status, receipt_date, receipt_type, is_import, clearance_status, currency_code, total_value, vendor:business_partners(name), warehouse:warehouses(name), purchase_order:purchase_orders(number), lines:goods_receipt_lines(count)',
   adjustments: 'id, number, status, adjustment_date, reason, total_value, notes, warehouse:warehouses(name), lines:stock_adjustment_lines(count)',
-  transfers: 'id, number, status, transfer_date, from:warehouses!stock_transfers_company_id_from_warehouse_id_fkey(name), to:warehouses!stock_transfers_company_id_to_warehouse_id_fkey(name), lines:stock_transfer_lines(count)',
+  transfers: 'id, number, status, transfer_date, is_request, has_difference, shipped_at, from:warehouses!stock_transfers_company_id_from_warehouse_id_fkey(name), to:warehouses!stock_transfers_company_id_to_warehouse_id_fkey(name), lines:stock_transfer_lines(count)',
   'landed-costs': 'id, number, status, landed_cost_date, allocation_method, total_amount, notes, receipts:landed_cost_receipts(receipt:goods_receipts(number))',
 }
 
@@ -492,6 +492,63 @@ export function useDeleteDocument(kind: DocKind) {
   return useMutation({
     mutationFn: async (id: string) => unwrap(await supabase.from(DOC_TABLE[kind]).delete().eq('id', id)),
     onSuccess: () => { toast.success(t('Draft deleted')); void invalidate() },
+  })
+}
+
+/* ------------------------------------------------- transfers between stores */
+/** The sending store ships: the goods go on the road (still in stock, same value). */
+export function useShipTransfer() {
+  const invalidate = useInvalidateInventory()
+  return useMutation({
+    mutationFn: async (id: string) => unwrap(await supabase.rpc('ship_stock_transfer', { p_id: id })),
+    onSuccess: () => void invalidate(),
+    onError: (e) => toast.error(t('Could not ship the transfer'), { description: describeError(e) }),
+  })
+}
+
+export type ReceiveLine = { line_id: string; received: number; action?: 'loss' | 'return' }
+/** The receiving store confirms what arrived; differences are a loss, go back, or are added. */
+export function useReceiveTransfer() {
+  const invalidate = useInvalidateInventory()
+  return useMutation({
+    mutationFn: async (a: { id: string; lines: ReceiveLine[]; note?: string }) =>
+      unwrap(await supabase.rpc('receive_stock_transfer', { p_id: a.id, p_lines: a.lines as unknown as Json, p_note: a.note || undefined })) as unknown as
+        { status: string; difference: boolean; lost: number; returned: number; extra: number },
+    onSuccess: () => void invalidate(),
+    onError: (e) => toast.error(t('Could not receive the transfer'), { description: describeError(e) }),
+  })
+}
+
+/** Goods on the road and open requests, for the dashboard. */
+export function useTransfersOnTheRoad(enabled = true) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...invKeys.all(companyId), 'on-the-road'],
+    enabled: !!companyId && enabled,
+    queryFn: async () => unwrap(await supabase.rpc('transfers_on_the_road', { p_company: companyId })) as unknown as { count: number; late: number; requests: number; value: number },
+  })
+}
+
+/** Barcodes of a few items (to scan them while counting a delivery). */
+export function useBarcodesOf(variantIds: string[]) {
+  const { companyId } = useCompany()
+  const ids = [...new Set(variantIds)].sort()
+  return useQuery({
+    queryKey: [...invKeys.all(companyId), 'barcodes-of', ids.join(',')],
+    enabled: !!companyId && ids.length > 0,
+    staleTime: 5 * 60_000,
+    queryFn: async () => unwrap(await supabase.from('product_barcodes').select('variant_id, barcode').in('variant_id', ids).is('deleted_at', null)),
+  })
+}
+
+/** Stock of one warehouse (what a transfer can take from it). */
+export function useWarehouseLevels(warehouseId: string | undefined) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...invKeys.all(companyId), 'wh-levels', warehouseId],
+    enabled: !!companyId && !!warehouseId,
+    queryFn: () => fetchAll('id', (x) => after(supabase.from('v_stock_levels').select('id, variant_id, location_id, lot_id, available')
+      .eq('company_id', companyId).eq('warehouse_id', warehouseId!), 'id', x).order('id').limit(1000)),
   })
 }
 

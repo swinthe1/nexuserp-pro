@@ -13,7 +13,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Textarea } from '@/components/ui/textarea'
 import type { Tables } from '@/lib/database.types'
 import { cn, formatQty, num, todayISO } from '@/lib/utils'
-import { useDocument, useLocations, usePostDocument, useSaveDocument, useStockLevels, useVariantOptions } from '../api'
+import { useDocument, useLocations, usePostDocument, useSaveDocument, useShipTransfer, useVariantOptions, useWarehouseLevels } from '../api'
+import { ReceiveTransferCard } from '../components/receive-transfer'
+import { Switch } from '@/components/ui/switch'
 import { DocumentShell, LinesCard, SummaryCard } from '../components/document-shell'
 import { LocationPicker, LotPicker, VariantPicker, WarehousePicker } from '../components/pickers'
 import { transferSchema, type TransferFormValues } from '../schemas'
@@ -37,26 +39,29 @@ function TransferForm({ doc }: { doc?: TransferDoc }) {
   const post = usePostDocument('transfers')
   const variants = useVariantOptions()
   const locations = useLocations()
-  const levels = useStockLevels()
+  const ship = useShipTransfer()
   const editable = !doc || doc.status === 'draft'
 
   const form = useForm<TransferFormValues>({
     resolver: zodResolver(transferSchema),
     disabled: !editable,
     defaultValues: doc
-      ? { id: doc.id, from_warehouse_id: doc.from_warehouse_id, to_warehouse_id: doc.to_warehouse_id, transfer_date: doc.transfer_date, notes: doc.notes ?? '',
+      ? { id: doc.id, from_warehouse_id: doc.from_warehouse_id, to_warehouse_id: doc.to_warehouse_id, transfer_date: doc.transfer_date, notes: doc.notes ?? '', is_request: doc.is_request,
           lines: doc.lines.map((l) => ({ variant_id: l.variant_id, from_location_id: l.from_location_id, to_location_id: l.to_location_id, lot_id: l.lot_id, quantity: l.quantity })) }
-      : { from_warehouse_id: '', to_warehouse_id: '', transfer_date: todayISO(), notes: '', lines: [] },
+      : { from_warehouse_id: '', to_warehouse_id: '', transfer_date: todayISO(), notes: '', is_request: false, lines: [] },
   })
   const lines = useFieldArray({ control: form.control, name: 'lines' })
   const [fromWh, toWh, watched] = useWatch({ control: form.control, name: ['from_warehouse_id', 'to_warehouse_id', 'lines'] })
+  const levels = useWarehouseLevels(editable ? fromWh || undefined : undefined)
+  // between two stores the goods travel (ship, then the other store receives); inside one store they move at once
+  const betweenStores = !!fromWh && !!toWh && fromWh !== toWh
   const stockLoc = (wh: string) => locations.data?.find((l) => l.warehouse_id === wh && l.location_type === 'internal')?.id ?? ''
   const availableAt = (variantId?: string, loc?: string, lot?: string | null) =>
     (levels.data ?? []).filter((l) => l.variant_id === variantId && l.location_id === loc && (l.lot_id ?? null) === (lot ?? null)).reduce((s, l) => s + num(l.available), 0)
 
   const persist = (v: TransferFormValues) => {
     const { lines: ls, id: docId, ...header } = v
-    return save.mutateAsync({ header: { ...header, id: docId ?? doc?.id, notes: header.notes || null }, children: { stock_transfer_lines: ls.map((l) => ({ ...l, lot_id: l.lot_id || null })) } })
+    return save.mutateAsync({ header: { ...header, id: docId ?? doc?.id, notes: header.notes || null, is_request: !!header.is_request }, children: { stock_transfer_lines: ls.map((l) => ({ ...l, lot_id: l.lot_id || null })) } })
   }
   const onSave = form.handleSubmit(async (v) => {
     const id = await persist(v)
@@ -67,8 +72,13 @@ function TransferForm({ doc }: { doc?: TransferDoc }) {
     let id: string | undefined
     await form.handleSubmit(async (v) => { id = await persist(v) }, () => toast.error(t('Fix the highlighted fields first')))()
     if (!id) throw new Error('invalid')
-    await post.mutateAsync(id)
-    toast.success(t('Transfer done'), { description: t('The stock was moved; its value did not change.') })
+    if (betweenStores) {
+      await ship.mutateAsync(id)
+      toast.success(t('Shipped'), { description: t('The goods are on the road until the other store receives them.') })
+    } else {
+      await post.mutateAsync(id)
+      toast.success(t('Transfer done'), { description: t('The stock was moved; its value did not change.') })
+    }
     navigate(`/inventory/transfers/${id}`, { replace: true })
   }
 
@@ -76,10 +86,17 @@ function TransferForm({ doc }: { doc?: TransferDoc }) {
     <Form {...form}>
       <DocumentShell
         kind="transfers" doc={doc} newTitle={t('New transfer')} writePerm="wms.write"
-        saving={save.isPending} posting={post.isPending} onSave={() => void onSave()} onPost={onPost}
-        postLabel={t('Move stock')} postConfirm={t('The stock leaves the source shelves and arrives on the destination shelves right away. Average costs do not change.')}
-        lines={
-        <LinesCard
+        saving={save.isPending} posting={post.isPending || ship.isPending} onSave={() => void onSave()} onPost={onPost}
+        postLabel={betweenStores ? t('Ship') : t('Move stock')}
+        postConfirm={betweenStores
+          ? t('The goods leave the sending store now and are on the road until the receiving store counts and receives them. Their value does not change.')
+          : t('The stock leaves the source shelves and arrives on the destination shelves right away. Average costs do not change.')}
+        banner={doc?.status === 'draft' && doc.is_request
+          ? <div className="mb-4 rounded-lg border bg-muted/40 px-4 py-3 text-sm">{t('A request from the receiving store. Check the quantities, then ship.')}</div>
+          : undefined}
+        lines={doc && doc.status !== 'draft' && doc.shipped_at && doc.from_warehouse_id !== doc.to_warehouse_id && doc.lines.some((l) => l.quantity_received !== null || doc.status === 'in_transit')
+          ? <ReceiveTransferCard doc={doc} />
+          : <LinesCard
             title={t('Products to move')}
             error={form.formState.errors.lines?.root?.message ?? form.formState.errors.lines?.message}
             action={editable && (
@@ -138,6 +155,12 @@ function TransferForm({ doc }: { doc?: TransferDoc }) {
             )} />
             <FormField control={form.control} name="notes" render={({ field }) => (
               <FormItem className="sm:col-span-4"><FormLabel optional>{t('Notes')}</FormLabel><FormControl><Textarea rows={2} {...field} /></FormControl></FormItem>
+            )} />
+            <FormField control={form.control} name="is_request" render={({ field }) => (
+              <FormItem className="flex items-center gap-2 space-y-0 sm:col-span-4">
+                <FormControl><Switch checked={!!field.value} onCheckedChange={field.onChange} disabled={field.disabled} /></FormControl>
+                <FormLabel className="font-normal">{t('This is a request from the receiving store')}</FormLabel>
+              </FormItem>
             )} />
           </CardContent>
         </Card>
