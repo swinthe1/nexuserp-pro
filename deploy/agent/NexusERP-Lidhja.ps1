@@ -13,7 +13,7 @@
 param([switch]$Service, [switch]$Full, [switch]$Once)
 
 $ErrorActionPreference = 'Stop'
-$Version = '1.2'
+$Version = '1.3'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $cfgPath = Join-Path $here 'lidhja.json'
 $statePath = Join-Path $here 'lidhja-gjendja.json'
@@ -110,15 +110,49 @@ function Push([hashtable]$batch) {
   $body = @{ p_key = $cfg.sync_key; p_batch = $batch } | ConvertTo-Json -Depth 6 -Compress
   $bytes = [Text.Encoding]::UTF8.GetBytes($body)
   for ($try = 1; $try -le 3; $try++) {
+    $status = 0; $detail = ''
     try {
       $r = Invoke-RestMethod -Method Post -Uri $pushUrl -Body $bytes -ContentType 'application/json; charset=utf-8' -TimeoutSec 60 `
              -Headers @{ apikey = $cfg.anon_key; Authorization = "Bearer $($cfg.anon_key)" }
-      if ($r.ok -eq $false) { throw "NexusERP: $($r.error)" }
-      return $r
+      if ($r.ok -eq $false) { $status = 200; $detail = "$($r.error)" } else { return $r }
     } catch {
-      if ($try -eq 3) { throw }
-      Start-Sleep -Seconds (5 * $try)
+      try { if ($_.Exception.Response) { $status = [int]$_.Exception.Response.StatusCode } } catch { }
+      if ($_.ErrorDetails -and $_.ErrorDetails.Message) { $detail = $_.ErrorDetails.Message }
+      elseif ($_.Exception.Response) { try { $detail = (New-Object IO.StreamReader($_.Exception.Response.GetResponseStream())).ReadToEnd() } catch { } }
+      try { $j = $detail | ConvertFrom-Json; if ($j.message) { $detail = "$($j.message)" + $(if ($j.details) { " ($($j.details))" } else { '' }) } } catch { }
+      if (-not $detail) { $detail = $_.Exception.Message }
     }
+    # 4xx and refused data will not get better by waiting; network trouble and 5xx might
+    if ($try -eq 3 -or ($status -ge 400 -and $status -lt 500) -or $status -eq 200) {
+      $ex = New-Object Exception ("NexusERP{0}: {1}" -f $(if ($status -and $status -ne 200) { " ($status)" } else { '' }), $detail)
+      $ex.Data['reached'] = [bool]$status
+      throw $ex
+    }
+    Start-Sleep -Seconds (5 * $try)
+  }
+}
+function Row-Label($row) {
+  foreach ($k in 'sku', 'code', 'ext_id', 'partner') { $v = $row.$k; if (-not $v -and $row -is [hashtable]) { $v = $row[$k] }; if ($v) { return "$k=$v" } }
+  $t = ($row | ConvertTo-Json -Compress -Depth 3); if ($t.Length -gt 120) { $t = $t.Substring(0, 120) + '…' }; return $t
+}
+# dërgon një copë; nëse NexusERP e refuzon, e ndan në dysh derisa të gjejë rreshtin e keq dhe e kalon atë
+function Send-Part([string]$name, [object[]]$part, [hashtable]$extra) {
+  $b = @{ $name = $part }; foreach ($k in $extra.Keys) { $b[$k] = $extra[$k] }
+  try {
+    $r = Push $b
+    $errs = $r.$name.errors
+    if ($errs) { Log ("  {0}: {1} rreshta me gabime (p.sh. {2})" -f $name, $errs, (($r.$name.sample | Select-Object -First 1 | ConvertTo-Json -Compress))) 'Yellow' }
+    return $part.Count
+  } catch {
+    if (-not $_.Exception.Data['reached']) { throw }   # pa internet / serveri nuk përgjigjet: provohet në ciklin tjetër
+    if ($part.Count -le 1) {
+      $what = if ($part.Count) { Row-Label $part[0] } else { '(pa rreshta)' }
+      Log ("  {0}: u kalua {1} - {2}" -f $name, $what, $_.Exception.Message) 'Yellow'
+      return 0
+    }
+    $h = [int][math]::Floor($part.Count / 2)
+    [object[]]$p1 = @($part[0..($h - 1)]); [object[]]$p2 = @($part[$h..($part.Count - 1)])
+    return (Send-Part $name $p1 $extra) + (Send-Part $name $p2 @{})
   }
 }
 # dërgon një listë në copa të vogla (NexusERP pranon pak rreshta për thirrje)
@@ -129,12 +163,8 @@ function Push-List([string]$name, $rows, [int]$size, [hashtable]$extra = @{}) {
     # (an if-expression would unwrap a one-row list into a single object)
     [object[]]$part = @()
     if ($rows.Count) { $part = @($rows[$i..([math]::Min($i + $size, $rows.Count) - 1)]) }
-    $b = @{ $name = $part }
-    if ($i -eq 0) { foreach ($k in $extra.Keys) { $b[$k] = $extra[$k] } }
-    $r = Push $b
-    $sent += $part.Count
-    $errs = $r.$name.errors
-    if ($errs) { Log ("  {0}: {1} rreshta me gabime (p.sh. {2})" -f $name, $errs, (($r.$name.sample | Select-Object -First 1 | ConvertTo-Json -Compress))) 'Yellow' }
+    $ex = if ($i -eq 0) { $extra } else { @{} }
+    $sent += Send-Part $name $part $ex
   }
   return $sent
 }
