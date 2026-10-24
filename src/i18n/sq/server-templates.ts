@@ -341,4 +341,6 @@ export const serverTemplates: [string, string][] = [
   ['Fix the % rows with problems first; nothing was imported', 'Ndreqni fillimisht {0} rreshtat me probleme; nuk u importua asgjë'],
   ['No fiscal period covers the cut-over date %. Add the financial year under Finance setup first.', 'Asnjë periudhë fiskale nuk e mbulon datën e kalimit {0}. Shtoni vitin financiar te Cilësimet e financës.'],
   ['The fiscal period for the cut-over date % is %', 'Periudha fiskale për datën e kalimit {0} është {1}'],
+  ['The card has only % points', 'Kartela ka vetëm {0} pikë'],
+  ['Line %: the card gives % %%, not %', 'Rreshti {0}: kartela jep {1}%, jo {2}'],
 ]

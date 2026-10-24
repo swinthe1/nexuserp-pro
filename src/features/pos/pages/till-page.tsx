@@ -1,5 +1,5 @@
 import {
-  ArrowLeft, Banknote, Camera, Check, CloudOff, CreditCard, Landmark, LogOut, Minus, Plus, Printer, ReceiptText, RotateCcw, ScanLine, Search, Ticket, Trash2,
+  ArrowLeft, BadgePercent, Banknote, Camera, Check, CloudOff, CreditCard, Landmark, LogOut, Minus, Plus, Printer, ReceiptText, RotateCcw, ScanLine, Search, Ticket, Trash2,
   UserRound, Wallet, X,
 } from 'lucide-react'
 import * as React from 'react'
@@ -17,11 +17,12 @@ import { Textarea } from '@/components/ui/textarea'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { formatDateWith, msg, t, td, tEnum, tn } from '@/i18n'
-import { cn, formatMoney, num } from '@/lib/utils'
+import { cn, formatMoney, num, todayISO } from '@/lib/utils'
 import { lookupReceipt, useCashMove, useCloseSession, useOpenSession, useSessionSummary, useTill, type CatalogItem, type ReceiptLookup, type TillData } from '../api'
 import { enqueue, nextDeviceRef, syncNow, useOnSynced, useSyncState, type QueuedSale } from '../offline'
 import { printReceipt, printZReport, type ReceiptData } from '../receipt'
 import { SyncPanel } from './pos-home-page'
+import { phoneKey, quoteLoyalty, type TillCardRow, type TillProgram } from '@/features/loyalty/api'
 
 /* ------------------------------------------------------------------ money helpers (same rounding as the database) */
 const r2 = (v: number) => Math.sign(v) * Math.round(Math.abs(v) * 100 + 1e-7) / 100
@@ -37,7 +38,19 @@ const METHODS = [
 type Method = (typeof METHODS)[number]['id']
 
 type Line = { key: string; variant_id: string; name: string; sku: string; price: number; qty: number; discount: number; rate: number; barcode: string | null }
+type PricedLine = Line & { card?: boolean }
 type Tender = { method: Method; amount: number }
+type AppliedCard = { id: string; number: string; holder: string; program: TillProgram; points: number; monthUsed: number }
+type Redeem = { points: number; amount: number; pct: Record<string, number> }
+
+function cardUsable(p: TillProgram) {
+  const today = todayISO()
+  return p.applies_here && (!p.valid_from || p.valid_from <= today) && (!p.valid_until || p.valid_until >= today)
+}
+function toApplied(row: TillCardRow, programs: TillProgram[]): AppliedCard | null {
+  const program = programs.find((p) => p.id === row[4])
+  return program ? { id: row[0], number: row[1], holder: row[3], program, points: num(row[5]), monthUsed: num(row[6]) } : null
+}
 type Done = { ref: string; number: string | null; total: number; change: number; receipt: ReceiptData; offline: boolean }
 
 const prefGet = (k: string, d: string) => { try { return localStorage.getItem(k) ?? d } catch { return d } }
@@ -101,23 +114,83 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   const session = data.session!
 
   const [lines, setLines] = React.useState<Line[]>([])
+  const [card, setCard] = React.useState<AppliedCard | null>(null)
+  const [redeem, setRedeem] = React.useState<Redeem | null>(null)
+  React.useEffect(() => { setRedeem(null) }, [lines])
   const [selected, setSelected] = React.useState<string | null>(null)
   const [query, setQuery] = React.useState('')
   const [multiplier, setMultiplier] = React.useState<number | null>(null)
   const [category, setCategory] = React.useState<string>('__all')
   const [customer, setCustomer] = React.useState<string | null>(data.register.default_customer_id)
   const [flash, setFlash] = React.useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
-  const [dialog, setDialog] = React.useState<null | 'pay' | 'customer' | 'refund' | 'cash' | 'close' | 'line' | 'queue'>(null)
+  const [dialog, setDialog] = React.useState<null | 'pay' | 'customer' | 'card' | 'refund' | 'cash' | 'close' | 'line' | 'queue'>(null)
   const [done, setDone] = React.useState<Done | null>(null)
   const [camera, setCamera] = React.useState(false)
   const [autoPrint, setAutoPrint] = React.useState(() => prefGet('pos.autoprint', '1') === '1')
   const search = React.useRef<HTMLInputElement>(null)
   const focusSearch = React.useCallback(() => setTimeout(() => search.current?.focus(), 0), [])
 
-  const total = lines.reduce((s, l) => s + lineTotal(l), 0)
-  const vat = lines.reduce((s, l) => { const t = lineTotal(l); return s + (t - r2(t / (1 + l.rate / 100))) }, 0)
+  /* ---------- loyalty card: the same rule as the server (app.loyalty_eval) */
+  const catOf = React.useMemo(() => new Map(data.catalog.map((c) => [c.variant_id, c.category])), [data.catalog])
+  const priced = React.useMemo<PricedLine[]>(() => {
+    if (!card || !cardUsable(card.program)) return lines
+    const p = card.program
+    const excluded = new Set(p.excluded_categories)
+    const eligible = (l: Line) => l.qty > 0 && l.discount === 0 && !excluded.has(catOf.get(l.variant_id) ?? '\u0000')
+    let pct = num(p.discount_pct)
+    if (p.monthly_limit != null) {
+      const left = Math.max(num(p.monthly_limit) - card.monthUsed, 0)
+      const d = lines.filter(eligible).reduce((s, l) => s + r2(l.qty * l.price) * pct / 100, 0)
+      if (d > left) pct = d > 0 ? Math.floor(pct * left / d * 100) / 100 : 0
+    }
+    return lines.map((l) => (eligible(l) ? { ...l, discount: redeem?.pct[l.key] ?? pct, card: true } : l))
+  }, [lines, card, redeem, catOf])
+  const cardSaving = priced.filter((l) => l.card).reduce((s, l) => s + r2(l.qty * l.price) - lineTotal(l), 0)
+
+  const total = priced.reduce((s, l) => s + lineTotal(l), 0)
+  const vat = priced.reduce((s, l) => { const t = lineTotal(l); return s + (t - r2(t / (1 + l.rate / 100))) }, 0)
   const itemsCount = lines.reduce((s, l) => s + l.qty, 0)
   const customerName = data.customers.find((c) => c.id === customer)?.name ?? null
+
+  const findCard = React.useCallback((code: string, d: TillData = data) => {
+    const rows = d.loyalty?.cards ?? []
+    const v = code.trim()
+    const k = phoneKey(v)
+    const row = rows.find((r) => r[1] === v) ?? (k && k.length >= 6 ? rows.find((r) => r[2] === k) : undefined)
+    return row ? toApplied(row, d.loyalty?.programs ?? []) : null
+  }, [data])
+  const applyCard = (c: AppliedCard) => {
+    if (!cardUsable(c.program)) { scanFeedback('error'); setFlash({ tone: 'error', text: t('{name}: this card is not valid here or today', { name: c.holder }) }); return }
+    setCard(c); setRedeem(null); scanFeedback('ok')
+    setFlash({ tone: 'ok', text: t('Card of {name} · {rule}', { name: c.holder, rule: c.program.kind === 'points' ? tn(c.points, '{n} point', '{n} points') : t('{pct}% off', { pct: num(c.program.discount_pct) }) }) })
+  }
+  /** card number or phone: the copy on the device first, then the server (a card made after the till opened) */
+  const applyCardCode = async (code: string): Promise<boolean> => {
+    let c = findCard(code)
+    if (!c && navigator.onLine) {
+      try {
+        const q = await quoteLoyalty(data.register.id, code, [])
+        if (!q.usable) { scanFeedback('error'); setFlash({ tone: 'error', text: t(q.reason ?? 'This card cannot be used') }); return false }
+        await reload()
+        const program = data.loyalty?.programs.find((p) => p.id === q.program_id)
+        c = program ? { id: q.card_id, number: q.card_number, holder: q.holder_name, program, points: num(q.points_balance), monthUsed: 0 } : null
+      } catch { c = null }
+    }
+    if (!c) { scanFeedback('error'); setFlash({ tone: 'error', text: t('No active card with this number or phone') }); return false }
+    applyCard(c)
+    return true
+  }
+  const spendPoints = async () => {
+    if (!card) return
+    try {
+      const q = await quoteLoyalty(data.register.id, card.number, lines.map((l) => ({ variant_id: l.variant_id, quantity: l.qty, unit_price: l.price, manual_pct: l.discount })), card.points)
+      if (!q.usable) { setFlash({ tone: 'error', text: t(q.reason ?? 'This card cannot be used') }); return }
+      setCard({ ...card, points: num(q.points_balance) })
+      if (!(q.redeem_points > 0)) { setFlash({ tone: 'error', text: t('Not enough points to spend on this sale (at least {n})', { n: q.min_redeem_points }) }); return }
+      setRedeem({ points: q.redeem_points, amount: num(q.redeem_amount), pct: Object.fromEntries(lines.map((l, i) => [l.key, num(q.lines[i]?.pct)])) })
+      setFlash({ tone: 'ok', text: t('{n} points take {amount} off', { n: q.redeem_points, amount: formatMoney(q.redeem_amount) }) })
+    } catch (e) { setFlash({ tone: 'error', text: navigator.onLine ? describeError(e) : t('Spending points needs internet') }) }
+  }
 
   /* ---------- catalog lookup */
   const byCode = React.useMemo(() => {
@@ -167,6 +240,8 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     }
     const hit = byCode.get(v.toLowerCase())
     if (hit) { add(hit.item, hit.qty, v, n); setQuery(''); return }
+    const scannedCard = !n ? findCard(v) : null
+    if (scannedCard && scannedCard.number === v) { applyCard(scannedCard); setQuery(''); return }
     if (visible.length === 1) { add(visible[0]!, 1, null, n); setQuery(''); return }
     if (n) setMultiplier(n)
     scanFeedback('error')
@@ -176,7 +251,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
 
   const updateLine = (key: string, patchLine: Partial<Line>) => setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patchLine } : l)).filter((l) => l.qty > 0))
   const removeLine = (key: string) => { setLines((ls) => ls.filter((l) => l.key !== key)); setSelected(null) }
-  const clearSale = () => { setLines([]); setSelected(null); setCustomer(data.register.default_customer_id); setMultiplier(null); setFlash(null) }
+  const clearSale = () => { setLines([]); setSelected(null); setCustomer(data.register.default_customer_id); setMultiplier(null); setFlash(null); setCard(null); setRedeem(null) }
 
   /* ---------- finishing a sale: queue first, then everything else */
   const [lastNumbers, setLastNumbers] = React.useState<Record<string, string>>({})
@@ -185,7 +260,8 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
 
   const finish = async (tenders: Tender[], opts?: { refund?: { of: ReceiptLookup; lines: Line[] } }) => {
     const refund = opts?.refund
-    const saleLines = refund ? refund.lines : lines
+    const saleLines: PricedLine[] = refund ? refund.lines : priced
+    const usedCard = !refund && card && saleLines.some((l) => l.card) ? card : null
     const saleTotal = saleLines.reduce((s, l) => s + lineTotal(l), 0)
     const paid = tenders.reduce((s, t) => s + t.amount, 0)
     const change = refund ? 0 : r2(paid - saleTotal)
@@ -195,9 +271,14 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     const isOffline = !navigator.onLine || !sync.online
     const payload = {
       client_uuid, session_id: session.id, order_at: created_at, device_ref, offline: isOffline, partner_id: customer, is_refund: !!refund, refund_of_id: refund?.of.id ?? null,
-      lines: saleLines.map((l) => ({ variant_id: l.variant_id, quantity: l.qty, unit_price: l.price, discount_pct: l.discount, barcode: l.barcode, description: l.name })),
+      lines: saleLines.map((l) => ({ variant_id: l.variant_id, quantity: l.qty, unit_price: l.price, discount_pct: l.discount, manual_pct: l.card ? 0 : l.discount, barcode: l.barcode, description: l.name })),
       payments: tenders.map((t) => ({ method: t.method, amount: t.amount })),
+      loyalty: usedCard ? { card_id: usedCard.id, redeem_points: redeem?.points ?? 0 } : null,
     }
+    const cardLines = saleLines.filter((l) => l.card)
+    const saved = r2(cardLines.reduce((s, l) => s + r2(l.qty * l.price) - lineTotal(l), 0))
+    const earned = usedCard?.program.kind === 'points' ? Math.floor(cardLines.reduce((s, l) => s + lineTotal(l), 0) * num(usedCard.program.points_per_unit)) : 0
+    const spent = usedCard ? redeem?.points ?? 0 : 0
     await enqueue({ client_uuid, register_id: data.register.id, company_id: data.register.company_id, device_ref, created_at, total: r2(saleTotal), payload, attempts: 0, status: 'pending' })
     // the drawer view of stock follows the sale right away
     patch((d) => ({ ...d, catalog: d.catalog.map((c) => { const sold = saleLines.filter((l) => l.variant_id === c.variant_id).reduce((s, l) => s + l.qty, 0); return sold ? { ...c, on_hand: c.on_hand - sold } : c }) }))
@@ -205,7 +286,12 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       company: data.company, register: data.register, ref: device_ref, number: null, date: new Date(created_at), cashier, customer: customerName, isRefund: !!refund, offline: isOffline, currency: cur,
       lines: saleLines.map((l) => ({ name: l.name, qty: l.qty, price: l.price, discount: l.discount, total: lineTotal(l), rate: l.rate })),
       payments: tenders.map((t) => ({ method: t.method, amount: t.amount })), change: Math.max(change, 0),
+      loyalty: usedCard ? { holder: usedCard.holder, number: usedCard.number, discount: saved, redeemed: spent || undefined, earned: earned || undefined,
+                            balance: usedCard.program.kind === 'points' ? usedCard.points - spent + earned : undefined } : null,
     }
+    // the copy of the card on this device follows the sale (points, this month's discount)
+    if (usedCard) patch((d) => d.loyalty ? { ...d, loyalty: { ...d.loyalty, cards: d.loyalty.cards.map((r) => r[0] === usedCard.id
+      ? [r[0], r[1], r[2], r[3], r[4], num(r[5]) - spent + earned, num(r[6]) + saved] as TillCardRow : r) } } : d)
     doneUuid.current = client_uuid
     setDone({ ref: device_ref, number: null, total: r2(saleTotal), change: Math.max(change, 0), receipt, offline: isOffline })
     setDialog(null)
@@ -224,6 +310,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       if (dialog) return
       if (e.key === 'F2') { e.preventDefault(); search.current?.focus(); search.current?.select() }
       else if (e.key === 'F4') { e.preventDefault(); setDialog('customer') }
+      else if (e.key === 'F3') { e.preventDefault(); setFlash(null); setDialog('card') }
       else if (e.key === 'F9') { e.preventDefault(); setDialog('refund') }
       else if ((e.key === 'F12' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) && lines.length) { e.preventDefault(); setDialog('pay') }
       else if (e.key === 'Escape') { if (query) setQuery(''); else if (multiplier) setMultiplier(null) }
@@ -333,17 +420,43 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
             <span className="flex-1 truncate text-[13px]">{customerName ?? t('Walk-in customer')}</span>
             <Kbd>F4</Kbd>
           </button>
+          {data.loyalty && (card ? (
+            <div className="border-b bg-primary/5 px-4 py-2.5">
+              <div className="flex items-center gap-2">
+                <BadgePercent className="size-4 text-primary" />
+                <span className="flex-1 truncate text-[13px] font-medium">{card.holder} <span className="font-normal text-muted-foreground">· {card.program.name}</span></span>
+                <button type="button" className="text-muted-foreground hover:text-destructive" aria-label={t('Remove the card')} onClick={() => { setCard(null); setRedeem(null) }}><X className="size-4" /></button>
+              </div>
+              <div className="mt-1 flex items-center justify-between gap-2 text-xs">
+                <span className="text-muted-foreground">
+                  {!cardUsable(card.program) ? <span className="text-destructive">{t('Not valid in this store or today')}</span>
+                    : card.program.kind === 'points' ? tn(card.points, '{n} point', '{n} points') : t('{pct}% off', { pct: num(card.program.discount_pct) })}
+                  {cardSaving > 0 && <> · <span className="font-medium text-primary">{t('saves {amount}', { amount: formatMoney(cardSaving) })}</span></>}
+                </span>
+                {card.program.kind === 'points' && cardUsable(card.program) && (redeem
+                  ? <button type="button" className="font-medium text-primary hover:underline" onClick={() => setRedeem(null)}>{t('{n} points used · undo', { n: redeem.points })}</button>
+                  : <button type="button" className="font-medium text-primary hover:underline disabled:opacity-50" disabled={!lines.length || card.points < num(card.program.min_redeem_points) || !sync.online}
+                      onClick={() => void spendPoints()}>{t('Spend points')}</button>)}
+              </div>
+            </div>
+          ) : (
+            <button type="button" onClick={() => { setFlash(null); setDialog('card') }} className="flex items-center gap-2 border-b px-4 py-2.5 text-left hover:bg-muted/50">
+              <BadgePercent className="size-4 text-muted-foreground" />
+              <span className="flex-1 truncate text-[13px] text-muted-foreground">{t('Loyalty card')}</span>
+              <Kbd>F3</Kbd>
+            </button>
+          ))}
           <div className="min-h-0 flex-1 overflow-y-auto" role="listbox" aria-label={t('Sale lines')}>
             {!lines.length ? (
               <div className="grid h-full place-items-center p-8 text-center">
                 <div><ReceiptText className="mx-auto size-8 text-muted-foreground/50" /><p className="mt-2 text-[13px] text-muted-foreground">{t('Scan an item or tap a product to start a sale.')}</p></div>
               </div>
-            ) : lines.map((l) => (
+            ) : priced.map((l) => (
               <div key={l.key} role="option" aria-selected={selected === l.key} onClick={() => setSelected(l.key)} onDoubleClick={() => { setSelected(l.key); setDialog('line') }}
                 className={cn('grid cursor-pointer grid-cols-[1fr_auto] gap-x-3 border-b px-4 py-2.5', selected === l.key ? 'bg-primary/5 ring-1 ring-inset ring-primary/30' : 'hover:bg-muted/40')}>
                 <div className="min-w-0">
                   <div className="truncate text-[13px] font-medium">{l.name}</div>
-                  <div className="text-xs text-muted-foreground tabular">{num(l.qty)} × {formatMoney(l.price)}{l.discount ? <span className="text-primary"> · −{l.discount}%</span> : null}</div>
+                  <div className="text-xs text-muted-foreground tabular">{num(l.qty)} × {formatMoney(l.price)}{l.discount ? <span className="text-primary"> · −{l.discount}%{l.card ? ` ${t('card')}` : ''}</span> : null}</div>
                 </div>
                 <div className="text-right text-[15px] font-semibold tabular">{formatMoney(lineTotal(l))}</div>
                 {selected === l.key && (
@@ -374,6 +487,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
 
       {camera && <CameraScanner onClose={() => setCamera(false)} onCode={(c) => { setCamera(false); submitQuery(c) }} />}
       {dialog === 'pay' && <PayDialog total={r2(total)} currency={cur} onCancel={() => { setDialog(null); focusSearch() }} onPaid={(t) => finish(t)} />}
+      {dialog === 'card' && <CardDialog onClose={() => { setDialog(null); focusSearch() }} onCode={async (c) => { if (await applyCardCode(c)) { setDialog(null); focusSearch() } }} error={flash?.tone === 'error' ? flash.text : null} />}
       {dialog === 'customer' && <CustomerDialog data={data} value={customer} onClose={(v) => { if (v !== undefined) setCustomer(v); setDialog(null); focusSearch() }} />}
       {dialog === 'line' && selectedLine && <LineDialog line={selectedLine} canDiscount={(d) => d <= MAX_DISCOUNT || can('pos.approve')}
         onClose={(p) => { if (p) updateLine(selectedLine.key, p); setDialog(null); focusSearch() }} onRemove={() => { removeLine(selectedLine.key); setDialog(null); focusSearch() }} />}
@@ -525,6 +639,23 @@ function DoneOverlay({ done, currency, onNext }: { done: Done; currency: string;
 }
 
 /* ================================================================== small dialogs */
+function CardDialog({ onClose, onCode, error }: { onClose: () => void; onCode: (code: string) => Promise<void>; error: string | null }) {
+  const [code, setCode] = React.useState('')
+  const [busy, setBusy] = React.useState(false)
+  return (
+    <Dialog open onOpenChange={(o) => !o && !busy && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader><DialogTitle>{t('Loyalty card')}</DialogTitle><DialogDescription>{t('Scan the card, or type its number or the customer\'s phone.')}</DialogDescription></DialogHeader>
+        <form className="grid gap-3" onSubmit={async (e) => { e.preventDefault(); if (!code.trim()) return; setBusy(true); try { await onCode(code) } finally { setBusy(false) } }}>
+          <Input autoFocus className="h-12 font-mono text-lg" value={code} onChange={(e) => setCode(e.target.value)} placeholder="29… / 044 123 456" aria-label={t('Card number or phone')} />
+          {error && <p className="text-[13px] text-destructive">{error}</p>}
+          <DialogFooter><Button type="button" variant="ghost" onClick={onClose} disabled={busy}>{t('Cancel')}</Button><Button type="submit" loading={busy} disabled={!code.trim()}>{t('Use the card')}</Button></DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function CustomerDialog({ data, value, onClose }: { data: TillData; value: string | null; onClose: (v?: string | null) => void }) {
   const [q, setQ] = React.useState('')
   const list = data.customers.filter((c) => !q || `${c.name} ${c.code ?? ''} ${c.tax_number ?? ''}`.toLowerCase().includes(q.toLowerCase())).slice(0, 50)

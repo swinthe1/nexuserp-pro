@@ -19,6 +19,8 @@ export interface ReceiptData {
   ref: string; number?: string | null; date: Date; cashier: string; customer?: string | null; isRefund?: boolean; offline?: boolean
   lines: { name: string; qty: number; price: number; discount: number; total: number; rate: number }[]
   payments: { method: string; amount: number }[]; change: number; currency: string
+  /** loyalty card used on this receipt */
+  loyalty?: { holder: string; number: string; discount: number; redeemed?: number; earned?: number; balance?: number } | null
 }
 
 export function receiptHtml(r: ReceiptData) {
@@ -40,6 +42,11 @@ export function receiptHtml(r: ReceiptData) {
     <table>${lines}</table><hr>
     <table><tr class="b big"><td>${esc(t('TOTAL {currency}', { currency: r.currency }))}</td><td class="r">${money(total)}</td></tr>${taxes}</table><hr>
     <table>${pays}${r.change > 0 ? `<tr class="b"><td>${esc(t('Change'))}</td><td class="r">${money(r.change)}</td></tr>` : ''}</table>
+    ${r.loyalty ? `<hr><div>${esc(t('Card {number}', { number: '•••• ' + r.loyalty.number.slice(-4) }))} · ${esc(r.loyalty.holder)}</div><table>
+      ${r.loyalty.discount > 0 ? `<tr><td>${esc(t('You saved with the card'))}</td><td class="r b">${money(r.loyalty.discount)}</td></tr>` : ''}
+      ${r.loyalty.redeemed ? `<tr><td>${esc(t('Points spent'))}</td><td class="r">−${esc(r.loyalty.redeemed)}</td></tr>` : ''}
+      ${r.loyalty.earned ? `<tr><td>${esc(t('Points earned'))}</td><td class="r">+${esc(r.loyalty.earned)}</td></tr>` : ''}
+      ${r.loyalty.balance != null ? `<tr><td>${esc(t('Points on the card'))}</td><td class="r b">${esc(r.loyalty.balance)}</td></tr>` : ''}</table>` : ''}
     ${r.offline ? `<hr><div class="c muted">${esc(t('Recorded offline — sent to the books when the till is back online.'))}</div>` : ''}
     <hr><div class="c muted">${esc(r.register.receipt_footer ?? 'Faleminderit! Thank you!')}</div>`
 }

@@ -1217,6 +1217,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           is_training: boolean
+          business_type: string
         }
         Insert: {
           id?: string
@@ -1246,6 +1247,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           is_training?: boolean
+          business_type?: string
         }
         Update: {
           id?: string
@@ -1275,6 +1277,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           is_training?: boolean
+          business_type?: string
         }
         Relationships: [
           { foreignKeyName: "companies_base_currency_fkey"; columns: ["base_currency"]; isOneToOne: false; referencedRelation: "currencies"; referencedColumns: ["code"] },
@@ -3997,6 +4000,205 @@ export type Database = {
           { foreignKeyName: "lots_company_id_vendor_id_fkey"; columns: ["company_id", "vendor_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      loyalty_cards: {
+        Row: {
+          id: string
+          company_id: string
+          program_id: string
+          card_number: string
+          partner_id: string | null
+          holder_name: string
+          phone: string | null
+          phone_digits: string | null
+          email: string | null
+          status: string
+          points_balance: number
+          last_used_at: string | null
+          notes: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          program_id: string
+          card_number: string
+          partner_id?: string | null
+          holder_name: string
+          phone?: string | null
+          phone_digits?: never
+          email?: string | null
+          status?: string
+          points_balance?: number
+          last_used_at?: string | null
+          notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          program_id?: string
+          card_number?: string
+          partner_id?: string | null
+          holder_name?: string
+          phone?: string | null
+          phone_digits?: never
+          email?: string | null
+          status?: string
+          points_balance?: number
+          last_used_at?: string | null
+          notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "loyalty_cards_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "loyalty_cards_company_id_partner_id_fkey"; columns: ["company_id", "partner_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "loyalty_cards_company_id_program_id_fkey"; columns: ["company_id", "program_id"]; isOneToOne: false; referencedRelation: "loyalty_programs"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      loyalty_ledger: {
+        Row: {
+          id: string
+          company_id: string
+          card_id: string
+          kind: string
+          points: number
+          amount: number
+          pos_order_id: string | null
+          warehouse_id: string | null
+          note: string | null
+          occurred_at: string
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          card_id: string
+          kind: string
+          points?: number
+          amount?: number
+          pos_order_id?: string | null
+          warehouse_id?: string | null
+          note?: string | null
+          occurred_at?: string
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          card_id?: string
+          kind?: string
+          points?: number
+          amount?: number
+          pos_order_id?: string | null
+          warehouse_id?: string | null
+          note?: string | null
+          occurred_at?: string
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "loyalty_ledger_company_id_card_id_fkey"; columns: ["company_id", "card_id"]; isOneToOne: false; referencedRelation: "loyalty_cards"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "loyalty_ledger_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "loyalty_ledger_company_id_pos_order_id_fkey"; columns: ["company_id", "pos_order_id"]; isOneToOne: false; referencedRelation: "pos_orders"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      loyalty_programs: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          kind: string
+          discount_pct: number
+          points_per_unit: number
+          point_value: number
+          min_redeem_points: number
+          monthly_limit: number | null
+          excluded_category_ids: string[]
+          warehouse_ids: string[]
+          valid_from: string | null
+          valid_until: string | null
+          is_active: boolean
+          description: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          kind?: string
+          discount_pct?: number
+          points_per_unit?: number
+          point_value?: number
+          min_redeem_points?: number
+          monthly_limit?: number | null
+          excluded_category_ids?: string[]
+          warehouse_ids?: string[]
+          valid_from?: string | null
+          valid_until?: string | null
+          is_active?: boolean
+          description?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string
+          kind?: string
+          discount_pct?: number
+          points_per_unit?: number
+          point_value?: number
+          min_redeem_points?: number
+          monthly_limit?: number | null
+          excluded_category_ids?: string[]
+          warehouse_ids?: string[]
+          valid_from?: string | null
+          valid_until?: string | null
+          is_active?: boolean
+          description?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "loyalty_programs_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
       member_roles: {
         Row: {
           id: string
@@ -5109,6 +5311,10 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           device_ref: string | null
+          loyalty_card_id: string | null
+          loyalty_discount: number
+          points_earned: number
+          points_redeemed: number
         }
         Insert: {
           id?: string
@@ -5140,6 +5346,10 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           device_ref?: string | null
+          loyalty_card_id?: string | null
+          loyalty_discount?: number
+          points_earned?: number
+          points_redeemed?: number
         }
         Update: {
           id?: string
@@ -5171,6 +5381,10 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           device_ref?: string | null
+          loyalty_card_id?: string | null
+          loyalty_discount?: number
+          points_earned?: number
+          points_redeemed?: number
         }
         Relationships: [
           { foreignKeyName: "pos_orders_cashier_profile_fkey"; columns: ["cashier_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
@@ -5180,6 +5394,7 @@ export type Database = {
           { foreignKeyName: "pos_orders_company_id_register_id_fkey"; columns: ["company_id", "register_id"]; isOneToOne: false; referencedRelation: "pos_registers"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "pos_orders_company_id_sales_invoice_id_fkey"; columns: ["company_id", "sales_invoice_id"]; isOneToOne: false; referencedRelation: "sales_invoices"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "pos_orders_company_id_session_id_fkey"; columns: ["company_id", "session_id"]; isOneToOne: false; referencedRelation: "pos_sessions"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "pos_orders_loyalty_card_fk"; columns: ["company_id", "loyalty_card_id"]; isOneToOne: false; referencedRelation: "loyalty_cards"; referencedColumns: ["company_id", "id"] },
         ]
       }
       pos_payments: {
@@ -10258,6 +10473,50 @@ export type Database = {
         }
         Returns: { lot_id: string | null; lot_number: string | null; variant_id: string | null; sku: string | null; name: string | null; expiry_date: string | null; days_left: number | null; on_hand: number | null; value: number | null; locations: string | null }[]
       }
+      loyalty_adjust_points: {
+        Args: {
+          p_card: string
+          p_points: number
+          p_note: string
+        }
+        Returns: undefined
+      }
+      loyalty_issue_card: {
+        Args: {
+          p: Json
+        }
+        Returns: Json
+      }
+      loyalty_overview: {
+        Args: {
+          p_company: string
+          p_from: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      loyalty_quote: {
+        Args: {
+          p_register: string
+          p_code: string
+          p_lines: Json
+          p_redeem?: number
+        }
+        Returns: Json
+      }
+      loyalty_save_program: {
+        Args: {
+          p: Json
+        }
+        Returns: string
+      }
+      loyalty_update_card: {
+        Args: {
+          p_card: string
+          p: Json
+        }
+        Returns: undefined
+      }
       manufacturing_overview: {
         Args: {
           p_company: string
@@ -10393,18 +10652,18 @@ export type Database = {
         }
         Returns: undefined
       }
-      platform_set_password: {
-        Args: {
-          p_email: string
-          p_password: string
-        }
-        Returns: undefined
-      }
       platform_set_business_type: {
         Args: {
           p_company: string
           p_type: string
           p_apply_menu?: boolean
+        }
+        Returns: undefined
+      }
+      platform_set_password: {
+        Args: {
+          p_email: string
+          p_password: string
         }
         Returns: undefined
       }
@@ -10428,6 +10687,12 @@ export type Database = {
           p_register: string
         }
         Returns: { variant_id: string | null; sku: string | null; name: string | null; category: string | null; barcodes: Json | null; price: number | null; tax_code_id: string | null; tax_rate: number | null; tracking: string | null; on_hand: number | null; image_path: string | null; product_type: string | null }[]
+      }
+      pos_loyalty_data: {
+        Args: {
+          p_register: string
+        }
+        Returns: Json
       }
       pos_session_summary: {
         Args: {
@@ -10791,17 +11056,17 @@ export type Database = {
         }
         Returns: string
       }
-      stock_by_warehouse: {
-        Args: {
-          p_company: string
-        }
-        Returns: Json
-      }
       start_route: {
         Args: {
           p_route: string
         }
         Returns: number
+      }
+      stock_by_warehouse: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
       }
       submit_cycle_count: {
         Args: {
