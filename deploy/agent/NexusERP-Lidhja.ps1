@@ -13,7 +13,7 @@
 param([switch]$Service, [switch]$Full, [switch]$Once)
 
 $ErrorActionPreference = 'Stop'
-$Version = '1.7'
+$Version = '1.8'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $cfgPath = Join-Path $here 'lidhja.json'
 $statePath = Join-Path $here 'lidhja-gjendja.json'
@@ -268,6 +268,36 @@ SELECT bp.C_BPARTNER_ID AS id, bp.VALUE AS code, bp.NAME AS name, bp.ISCUSTOMER 
   return ,$rows
 }
 
+# the old program's own movements (sales, receipts, transfers, counts) after transaction id $after
+function Read-Movements($db, [long]$after) {
+  $t = Query $db @"
+SELECT TOP 3000 t.M_TRANSACTION_ID AS id, t.MOVEMENTTYPE AS mt, w.VALUE AS warehouse, p.VALUE AS sku, t.MOVEMENTQTY AS qty, t.MOVEMENTDATE AS dt,
+       COALESCE(mv.DOCUMENTNO, inv.DOCUMENTNO, o.DOCUMENTNO) AS ref, CASE WHEN o.C_POS_ID IS NOT NULL THEN 1 ELSE 0 END AS pos
+  FROM M_TRANSACTION t WITH (NOLOCK)
+  JOIN M_LOCATOR loc WITH (NOLOCK) ON loc.M_LOCATOR_ID = t.M_LOCATOR_ID
+  JOIN M_WAREHOUSE w WITH (NOLOCK) ON w.M_WAREHOUSE_ID = loc.M_WAREHOUSE_ID
+  JOIN M_PRODUCT p WITH (NOLOCK) ON p.M_PRODUCT_ID = t.M_PRODUCT_ID
+  LEFT JOIN M_MOVEMENTLINE ml WITH (NOLOCK) ON ml.M_MOVEMENTLINE_ID = t.M_MOVEMENTLINE_ID
+  LEFT JOIN M_MOVEMENT mv WITH (NOLOCK) ON mv.M_MOVEMENT_ID = ml.M_MOVEMENT_ID
+  LEFT JOIN M_INVENTORYLINE il WITH (NOLOCK) ON il.M_INVENTORYLINE_ID = t.M_INVENTORYLINE_ID
+  LEFT JOIN M_INVENTORY inv WITH (NOLOCK) ON inv.M_INVENTORY_ID = il.M_INVENTORY_ID
+  LEFT JOIN C_ORDERLINE ol WITH (NOLOCK) ON ol.C_ORDERLINE_ID = t.M_INOUTLINE_ID
+  LEFT JOIN C_ORDER o WITH (NOLOCK) ON o.C_ORDER_ID = ol.C_ORDER_ID
+ WHERE t.M_TRANSACTION_ID > $after
+ ORDER BY t.M_TRANSACTION_ID
+"@
+  $rows = New-Object System.Collections.ArrayList
+  foreach ($m in $t.Rows) {
+    [void]$rows.Add(@{ ext_id = [string]$m.id; type = (Str $m.mt); warehouse = (Str $m.warehouse); sku = (Str $m.sku); qty = (Num $m.qty 4)
+                       date = $(if ($m.dt -is [DBNull]) { '' } else { SqlTime $m.dt }); reference = (Str $m.ref); pos = ([int]$m.pos -eq 1) })
+  }
+  return ,$rows
+}
+function Last-TransactionId($db) {
+  $v = (Query $db 'SELECT ISNULL(MAX(M_TRANSACTION_ID), 0) AS id FROM M_TRANSACTION WITH (NOLOCK)').Rows[0].id
+  return [long]$v
+}
+
 function Read-Stock($db, [string]$productFilter) {
   $t = Query $db @"
 SELECT w.VALUE AS warehouse, p.VALUE AS sku, SUM(s.QTYONHAND) AS qty, MAX(ISNULL(c.cost, p.PRICECOST)) AS cost
@@ -353,6 +383,7 @@ function Run-Cycle {
       $sent.stok = Push-List 'stock' (Read-Stock $db 'AND s.QTYONHAND <> 0') 300
       $docs = Read-OpenDocuments $db ''
       $sent.dokumente = Push-List 'documents' $docs 300
+      $state.wm['trx'] = [string](Last-TransactionId $db)
       $state.full_done = $true
     } else {
       $w = @{}; foreach ($k in 'products', 'partners', 'prices', 'stock', 'ledger') { $w[$k] = SqlTime (([datetime]$state.wm[$k]).AddSeconds(-5)) }
@@ -367,7 +398,15 @@ function Run-Cycle {
       }
       $sent.cmime = Push-List 'prices' $prices 400
       # stock: every warehouse of the products that moved (zero included, so sold-out items go to 0)
-      $moved = "AND s.M_PRODUCT_ID IN (SELECT M_PRODUCT_ID FROM M_STORAGE WITH (NOLOCK) WHERE UPDATED > '$($w.stock)' UNION SELECT M_PRODUCT_ID FROM M_TRANSACTION WITH (NOLOCK) WHERE CREATED > '$($w.stock)')"
+      # the old program's movements, each with its own type and document (sales, receipts, transfers…)
+      if (-not $state.wm['trx']) { $state.wm['trx'] = [string](Last-TransactionId $db) }
+      $fromTrx = [long]$state.wm['trx']
+      $movements = Read-Movements $db $fromTrx
+      if ($movements.Count) {
+        $sent.levizje = Push-List 'movements' $movements 300
+        $state.wm['trx'] = ($movements | ForEach-Object { [long]$_.ext_id } | Measure-Object -Maximum).Maximum.ToString()
+      }
+      $moved = "AND s.M_PRODUCT_ID IN (SELECT M_PRODUCT_ID FROM M_STORAGE WITH (NOLOCK) WHERE UPDATED > '$($w.stock)' UNION SELECT M_PRODUCT_ID FROM M_TRANSACTION WITH (NOLOCK) WHERE M_TRANSACTION_ID > $fromTrx)"
       $sent.stok = Push-List 'stock' (Read-Stock $db $moved) 300
       # documents: only those whose partner-card rows changed, with their balance now (0 = paid)
       $docs = Read-OpenDocuments $db $w.ledger

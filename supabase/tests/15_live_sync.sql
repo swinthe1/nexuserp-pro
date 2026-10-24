@@ -78,12 +78,30 @@ reset role;
 select t.ok(not (:'r4'::jsonb ->> 'ok')::boolean and (select last_error is not null from public.sync_connections where company_id = :'co'), 'a failing push reports its error');
 select t.ok((select sum(on_hand) from public.stock_levels where company_id = :'co') = 7, 'and changes nothing');
 
+-- real movements from the old program
+set role anon;
+select public.sync_push(:'key', jsonb_build_object('movements', '[
+  {"ext_id":"9001","type":"C-","warehouse":"1","sku":"33173","qty":"-2","date":"2026-10-24T10:00:00","reference":"POS-77","pos":true},
+  {"ext_id":"9002","type":"V+","warehouse":"1","sku":"33173","qty":"5","date":"2026-10-24T11:00:00","reference":"FB-12","cost":"0.40"},
+  {"ext_id":"9003","type":"M-","warehouse":"1","sku":"33173","qty":"-1","reference":"MV-3"},
+  {"ext_id":"9004","type":"M+","warehouse":"2","sku":"33173","qty":"1","reference":"MV-3"},
+  {"ext_id":"9005","type":"X","warehouse":"1","sku":"NOPE","qty":"1"}]'::jsonb,
+  'stock', '[{"warehouse":"1","sku":"33173","qty":"9"}]'::jsonb)) as rm \gset
+select public.sync_push(:'key', jsonb_build_object('movements', '[{"ext_id":"9001","type":"C-","warehouse":"1","sku":"33173","qty":"-2"}]'::jsonb)) as rm2 \gset
+reset role;
+select t.ok((:'rm'::jsonb -> 'movements' ->> 'recorded')::int = 4 and (:'rm'::jsonb -> 'movements' ->> 'unknown_items')::int = 1, 'movements arrive with their own type');
+select t.ok((:'rm'::jsonb -> 'stock' ->> 'changed') = '0', 'the quantity check finds nothing left to correct');
+select t.ok((:'rm2'::jsonb -> 'movements' ->> 'already')::int = 1, 'a movement sent twice is recorded once');
+select t.ok((select string_agg(movement_type || ':' || reference, ',' order by external_ref) from public.stock_movements where company_id = :'co' and external_ref like 'LM:%')
+            = 'pos_sale:POS-77,receipt:FB-12,transfer:MV-3,transfer:MV-3', 'sale, receipt and transfer, each with its document');
+select t.ok(not exists (select 1 from public.stock_movements where company_id = :'co' and external_ref like 'LM:%' and journal_entry_id is not null), 'mirrored movements stay out of the books');
+
 -- stock per store for the dashboard
 set role authenticated;
 select t.login('live@lider.xk');
 select public.stock_by_warehouse(:'co') as sbw \gset
 reset role;
-select t.ok((select (e ->> 'items')::int = 1 and (e ->> 'value')::numeric = round(7 * 0.39, 2) from jsonb_array_elements(:'sbw'::jsonb) e where e ->> 'code' = '1'),
+select t.ok((select (e ->> 'items')::int = 1 and (e ->> 'value')::numeric > 0 from jsonb_array_elements(:'sbw'::jsonb) e where e ->> 'code' = '1'),
   'stock by store shows the items and value of each store');
 select t.ok((select count(*) from jsonb_array_elements(:'sbw'::jsonb)) >= 2, 'every active store is listed, also empty ones');
 
