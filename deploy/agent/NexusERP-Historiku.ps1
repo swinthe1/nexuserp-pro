@@ -19,7 +19,7 @@
 param([string]$Database, [switch]$Restart)
 
 $ErrorActionPreference = 'Stop'
-$Version = '1.1'
+$Version = '1.2'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $cfgPath = Join-Path $here 'lidhja.json'
 $statePath = Join-Path $here 'historiku-gjendja.json'
@@ -123,24 +123,24 @@ $started = Get-Date
 $conn = New-Connection
 try {
   # ------------------------------------------------------------ 1. kontabiliteti: gjendjet mujore
-  if (Bar 'kontabiliteti3') {
+  if (Bar 'kontabiliteti4') {
     $pt = Query $conn "SELECT ISNULL(POSTINGTYPE, '-') AS p, COUNT(*) AS n FROM FACT_ACCT WITH (NOLOCK) GROUP BY POSTINGTYPE"
     Log ("  FACT_ACCT sipas llojit: {0}" -f (($pt.Rows | ForEach-Object { "$($_.p)=$($_.n)" }) -join ', ')) 'DarkGray'
     # several ledgers would count the same entry twice: keep the main one
     $sc = Query $conn "SELECT TOP 1 C_ACCTSCHEMA_ID AS id, COUNT(*) AS n FROM FACT_ACCT WITH (NOLOCK) GROUP BY C_ACCTSCHEMA_ID ORDER BY COUNT(*) DESC"
     $schema = $(if ($sc.Rows.Count) { [long]$sc.Rows[0].id } else { 0 })
     $hasA = @($pt.Rows | Where-Object { (Str $_.p) -eq 'A' }).Count -gt 0
-    $ptype = $(if ($hasA) { 'A' } else { Str (@($pt.Rows | Sort-Object { [long]$_.n } -Descending)[0].p) })
-    Log "  libri $schema, lloji '$ptype'" 'DarkGray'
+    $ptFilter = $(if ($hasA) { "AND f.POSTINGTYPE = 'A'" } else { '' })
+    Log ("  libri $schema, " + $(if ($hasA) { "vetëm lloji 'A'" } else { 'të gjitha llojet' })) 'DarkGray'
     $t = Query $conn @"
 SELECT ev.VALUE AS code, MAX(ev.NAME) AS name, CONVERT(char(7), f.DATEACCT, 126) AS period, SUM(f.AMTACCTDR) AS debit, SUM(f.AMTACCTCR) AS credit
   FROM FACT_ACCT f WITH (NOLOCK) JOIN C_ELEMENTVALUE ev WITH (NOLOCK) ON ev.C_ELEMENTVALUE_ID = f.ACCOUNT_ID
- WHERE f.C_ACCTSCHEMA_ID = $schema AND LTRIM(RTRIM(ISNULL(f.POSTINGTYPE, '-'))) = '$ptype' AND f.DATEACCT IS NOT NULL
+ WHERE f.C_ACCTSCHEMA_ID = $schema $ptFilter AND f.DATEACCT IS NOT NULL
  GROUP BY ev.VALUE, CONVERT(char(7), f.DATEACCT, 126)
 "@
     $rows = @($t.Rows | ForEach-Object { @{ account = (Str $_.code); name = (Str $_.name); period = (Str $_.period); debit = (Num $_.debit 2); credit = (Num $_.credit 2) } })
     Log "  $($rows.Count) konto-muaj të lexuara" 'DarkGray'
-    Done 'kontabiliteti3' (Send-All 'balances' $rows 2000)
+    Done 'kontabiliteti4' (Send-All 'balances' $rows 2000)
   }
 
   # ------------------------------------------------------------ 2. artikujt: barkodet, furnitorët, riporositja
@@ -177,31 +177,35 @@ SELECT p.VALUE AS sku, w.VALUE AS wh, r.LEVEL_MIN AS mn, r.LEVEL_MAX AS mx
 
   # ------------------------------------------------------------ 3. punonjësit dhe prezenca
   # Logmicro gives every employee CODE '1', so the partner id is the only unique key
-  $empCode = "'LM' + CAST(e.C_BPARTNER_ID AS varchar(20))"
-  if ((Has-Table $conn 'HR_EMPLOYEE') -and (Bar 'punonjesit2')) {
+  $hasClock = Has-Table $conn 'HR_CHECKINOUT'
+  if ((Has-Table $conn 'HR_EMPLOYEE') -and (Bar 'punonjesit3')) {
+    $clock = $(if ($hasClock) { "OR bp.C_BPARTNER_ID IN (SELECT C_BPARTNER_ID FROM HR_CHECKINOUT WITH (NOLOCK) WHERE C_BPARTNER_ID IS NOT NULL)" } else { '' })
     $t = Query $conn @"
-SELECT $empCode AS code, e.NAME AS name, e.NAME2 AS name2, e.NATIONALCODE AS personal, e.BIRTHDATE AS birth, e.GENDER AS gender,
-       e.STARTDATE AS sd, e.ENDDATE AS ed, e.ISACTIVE AS active, bp.VALUE AS partner
-  FROM HR_EMPLOYEE e WITH (NOLOCK) JOIN C_BPARTNER bp WITH (NOLOCK) ON bp.C_BPARTNER_ID = e.C_BPARTNER_ID
- WHERE bp.ISEMPLOYEE = 'Y' OR EXISTS (SELECT 1 FROM HR_CHECKINOUT c WITH (NOLOCK) WHERE c.C_BPARTNER_ID = e.C_BPARTNER_ID)
+SELECT 'LM' + CAST(bp.C_BPARTNER_ID AS varchar(20)) AS code, COALESCE(e.NAME, bp.NAME) AS name, CASE WHEN e.NAME IS NULL THEN bp.NAME2 ELSE e.NAME2 END AS name2,
+       e.NATIONALCODE AS personal, e.BIRTHDATE AS birth, e.GENDER AS gender, e.STARTDATE AS sd, e.ENDDATE AS ed,
+       CASE WHEN bp.ISACTIVE = 'N' OR e.ISACTIVE = 'N' THEN 'N' ELSE 'Y' END AS active, bp.VALUE AS partner
+  FROM C_BPARTNER bp WITH (NOLOCK)
+  OUTER APPLY (SELECT TOP 1 * FROM HR_EMPLOYEE x WITH (NOLOCK) WHERE x.C_BPARTNER_ID = bp.C_BPARTNER_ID ORDER BY x.HR_EMPLOYEE_ID DESC) e
+ WHERE bp.ISEMPLOYEE = 'Y' $clock
 "@
+    Log "  $($t.Rows.Count) punonjës në Logmicro" 'DarkGray'
     $rows = @($t.Rows | ForEach-Object {
       $n = Str $_.name; $n2 = Str $_.name2
       if ($n2) { $first = $n; $last = $n2 } else { $i = $n.LastIndexOf(' '); if ($i -gt 0) { $first = $n.Substring(0, $i); $last = $n.Substring($i + 1) } else { $first = ''; $last = $n } }
       @{ code = (Str $_.code); first = $first; last = $last; personal = (Str $_.personal); birth = (Day $_.birth); gender = (Str $_.gender).ToLower()
          start = (Day $_.sd); end = (Day $_.ed); active = ((Str $_.active) -ne 'N'); partner = (Str $_.partner) } })
-    Done 'punonjesit2' (Send-All 'employees' $rows 500)
+    Done 'punonjesit3' (Send-All 'employees' $rows 500)
   }
-  if ((Has-Table $conn 'HR_CHECKINOUT') -and (Bar 'prezenca3')) {
+  if ($hasClock -and (Bar 'prezenca4')) {
     $t = Query $conn @"
-SELECT $empCode AS emp, CAST(c.CHECKTIME AS date) AS d, MIN(c.CHECKTIME) AS i, MAX(c.CHECKTIME) AS o
+SELECT 'LM' + CAST(c.C_BPARTNER_ID AS varchar(20)) AS emp, CAST(c.CHECKTIME AS date) AS d, MIN(c.CHECKTIME) AS i, MAX(c.CHECKTIME) AS o
   FROM HR_CHECKINOUT c WITH (NOLOCK)
-  JOIN (SELECT DISTINCT C_BPARTNER_ID FROM HR_EMPLOYEE WITH (NOLOCK)) e ON e.C_BPARTNER_ID = c.C_BPARTNER_ID
- WHERE ISNULL(c.ISACTIVE, 'Y') = 'Y' AND c.CHECKTIME IS NOT NULL
- GROUP BY $empCode, CAST(c.CHECKTIME AS date)
+ WHERE ISNULL(c.ISACTIVE, 'Y') = 'Y' AND c.CHECKTIME IS NOT NULL AND c.C_BPARTNER_ID IS NOT NULL
+ GROUP BY c.C_BPARTNER_ID, CAST(c.CHECKTIME AS date)
 "@
+    Log "  $($t.Rows.Count) ditë pune në Logmicro" 'DarkGray'
     $rows = @($t.Rows | ForEach-Object { @{ employee = (Str $_.emp); date = (Day $_.d); in = (Stamp $_.i); out = $(if ([datetime]$_.o -gt [datetime]$_.i) { Stamp $_.o } else { '' }) } })
-    Done 'prezenca3' (Send-All 'attendance' $rows 500)
+    Done 'prezenca4' (Send-All 'attendance' $rows 500)
   }
 
   # ------------------------------------------------------------ 4. pagesat dhe arka (me copa, vazhdon aty ku mbeti)
