@@ -13,7 +13,7 @@
 param([switch]$Service, [switch]$Full, [switch]$Once)
 
 $ErrorActionPreference = 'Stop'
-$Version = '1.4'
+$Version = '1.5'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $cfgPath = Join-Path $here 'lidhja.json'
 $statePath = Join-Path $here 'lidhja-gjendja.json'
@@ -172,13 +172,29 @@ function Push-List([string]$name, $rows, [int]$size, [hashtable]$extra = @{}) {
 # ---------------------------------------------------------------- leximet nga Logmicro
 function Read-Lists($db, [string]$now) {
   $l = Query $db @"
-SELECT pl.NAME AS name, pl.ISTAXINCLUDED AS taxincl,
+SELECT pl.M_PRICELIST_ID AS id, pl.NAME AS name, pl.ISTAXINCLUDED AS taxincl,
        (SELECT TOP 1 v.M_PRICELIST_VERSION_ID FROM M_PRICELIST_VERSION v WITH (NOLOCK)
          WHERE v.M_PRICELIST_ID = pl.M_PRICELIST_ID AND v.ISACTIVE = 'Y' AND v.VALIDFROM <= '$now' ORDER BY v.VALIDFROM DESC) AS version
   FROM M_PRICELIST pl WITH (NOLOCK) WHERE pl.ISACTIVE = 'Y' AND pl.ISSOPRICELIST = 'Y'
 "@
-  return @($l.Rows | Where-Object { -not ($_.version -is [DBNull]) } | ForEach-Object { [pscustomobject]@{ name = (Str $_.name); taxincl = ((Str $_.taxincl) -eq 'Y'); version = $_.version } })
+  return @($l.Rows | Where-Object { -not ($_.version -is [DBNull]) } | ForEach-Object { [pscustomobject]@{ id = $_.id; name = (Str $_.name); taxincl = ((Str $_.taxincl) -eq 'Y'); version = $_.version } })
 }
+# the price a list gives each product today: Logmicro may keep several versions of a list,
+# a newer one holding only the prices that changed, so take the newest price per product
+function Price-Sql($list, [string]$since = '') {
+  $only = if ($since) { "AND pp.M_PRODUCT_ID IN (SELECT c.M_PRODUCT_ID FROM M_PRODUCTPRICE c WITH (NOLOCK) WHERE c.UPDATED > '$since')" } else { '' }
+  return @"
+SELECT x.M_PRODUCT_ID, x.PRICESTD, x.UPDATED FROM (
+  SELECT pp.M_PRODUCT_ID, pp.PRICESTD, pp.UPDATED,
+         ROW_NUMBER() OVER (PARTITION BY pp.M_PRODUCT_ID ORDER BY v.VALIDFROM DESC, pp.UPDATED DESC) AS rn
+    FROM M_PRODUCTPRICE pp WITH (NOLOCK)
+    JOIN M_PRICELIST_VERSION v WITH (NOLOCK) ON v.M_PRICELIST_VERSION_ID = pp.M_PRICELIST_VERSION_ID
+   WHERE v.M_PRICELIST_ID = $($list.id) AND v.ISACTIVE = 'Y' AND v.VALIDFROM <= GETDATE() AND pp.ISACTIVE = 'Y' $only) x
+ WHERE x.rn = 1
+"@
+}
+# Logmicro sometimes holds a negative average cost; NexusERP needs 0 or more (blank = keep the current cost)
+function Cost($v) { $n = Num $v 4; if ($n -and [decimal]::Parse($n, $inv) -lt 0) { return '' }; return $n }
 
 function Read-Products($db, $lists, [string]$where) {
   $main = $lists | Where-Object { $_.name -eq $cfg.main_price_list } | Select-Object -First 1
@@ -199,7 +215,7 @@ SELECT p.M_PRODUCT_ID AS id, p.VALUE AS sku, p.NAME AS name, u.X12DE355 AS uom, 
   LEFT JOIN M_MANUFACTURER m WITH (NOLOCK) ON m.M_MANUFACTURER_ID = p.M_MANUFACTURER_ID
   LEFT JOIN cost ON cost.M_PRODUCT_ID = p.M_PRODUCT_ID
   LEFT JOIN stock ON stock.M_PRODUCT_ID = p.M_PRODUCT_ID
-  LEFT JOIN M_PRODUCTPRICE pp WITH (NOLOCK) ON pp.M_PRODUCT_ID = p.M_PRODUCT_ID AND pp.M_PRICELIST_VERSION_ID = $($main.version)
+  LEFT JOIN ($(Price-Sql $main)) pp ON pp.M_PRODUCT_ID = p.M_PRODUCT_ID
  WHERE p.ISSUMMARY = 'N'
    AND (ISNULL(stock.qty, 0) <> 0 OR (p.ISACTIVE = 'Y' AND (p.CREATED >= '$since'
         OR EXISTS (SELECT 1 FROM M_TRANSACTION x WITH (NOLOCK) WHERE x.M_PRODUCT_ID = p.M_PRODUCT_ID AND x.MOVEMENTDATE >= '$since'))))
@@ -218,7 +234,7 @@ SELECT p.M_PRODUCT_ID AS id, p.VALUE AS sku, p.NAME AS name, u.X12DE355 AS uom, 
     if ($bc -and (-not (Test-Barcode $bc) -or $seen.ContainsKey($bc))) { $bc = '' }; if ($bc) { $seen[$bc] = 1 }
     $type = if ((Str $p.ptype) -eq 'I' -or [decimal]$p.qty -ne 0) { if ((Str $p.stocked) -eq 'N' -and [decimal]$p.qty -eq 0) { 'consumable' } else { 'stockable' } } else { 'service' }
     if (-not (Str $p.sku) -or -not (Str $p.name)) { continue }
-    [void]$rows.Add(@{ sku = (Str $p.sku); name = (Str $p.name); uom = $u; type = $type; category = (Str $p.category); price = $price; cost = (Num $p.cost 4)
+    [void]$rows.Add(@{ sku = (Str $p.sku); name = (Str $p.name); uom = $u; type = $type; category = (Str $p.category); price = $price; cost = (Cost $p.cost)
                        vat = (Num $rate 2); barcode = $bc; brand = (Str $p.brand) })
   }
   return ,$rows
@@ -264,7 +280,7 @@ SELECT w.VALUE AS warehouse, p.VALUE AS sku, SUM(s.QTYONHAND) AS qty, MAX(ISNULL
  GROUP BY w.VALUE, p.VALUE
 "@
   $rows = New-Object System.Collections.ArrayList
-  foreach ($s in $t.Rows) { [void]$rows.Add(@{ warehouse = (Str $s.warehouse); sku = (Str $s.sku); qty = (Num $s.qty 3); cost = (Num $s.cost 4) }) }
+  foreach ($s in $t.Rows) { [void]$rows.Add(@{ warehouse = (Str $s.warehouse); sku = (Str $s.sku); qty = (Num $s.qty 3); cost = (Cost $s.cost) }) }
   return ,$rows
 }
 
@@ -313,7 +329,7 @@ function Run-Cycle {
       $sent.subjekte = Push-List 'partners' (Read-Partners $db "AND bp.ISACTIVE = 'Y'") 200
       $prices = New-Object System.Collections.ArrayList
       foreach ($l in $lists) {
-        $pr = Query $db "SELECT p.VALUE AS sku, pp.PRICESTD AS price, t.RATE AS vat FROM M_PRODUCTPRICE pp WITH (NOLOCK) JOIN M_PRODUCT p WITH (NOLOCK) ON p.M_PRODUCT_ID = pp.M_PRODUCT_ID LEFT JOIN C_TAX t WITH (NOLOCK) ON t.C_TAX_ID = p.C_TAX_ID WHERE pp.M_PRICELIST_VERSION_ID = $($l.version) AND pp.ISACTIVE = 'Y' AND pp.PRICESTD > 0 AND p.ISACTIVE = 'Y'"
+        $pr = Query $db "WITH pp AS ($(Price-Sql $l)) SELECT p.VALUE AS sku, pp.PRICESTD AS price, t.RATE AS vat FROM pp JOIN M_PRODUCT p WITH (NOLOCK) ON p.M_PRODUCT_ID = pp.M_PRODUCT_ID LEFT JOIN C_TAX t WITH (NOLOCK) ON t.C_TAX_ID = p.C_TAX_ID WHERE pp.PRICESTD > 0 AND p.ISACTIVE = 'Y'"
         foreach ($x in $pr.Rows) { $v = [decimal]$x.price; $rate = if ($x.vat -is [DBNull]) { 18 } else { [decimal]$x.vat }; if ($l.taxincl) { $v = $v / (1 + $rate / 100) }
           [void]$prices.Add(@{ price_list = $l.name; sku = (Str $x.sku); price = (Num $v 4) }) }
       }
@@ -329,7 +345,7 @@ function Run-Cycle {
       $sent.subjekte = Push-List 'partners' (Read-Partners $db "AND bp.UPDATED > '$($w.partners)'") 200
       $prices = New-Object System.Collections.ArrayList
       foreach ($l in $lists) {
-        $pr = Query $db "SELECT p.VALUE AS sku, pp.PRICESTD AS price, t.RATE AS vat FROM M_PRODUCTPRICE pp WITH (NOLOCK) JOIN M_PRODUCT p WITH (NOLOCK) ON p.M_PRODUCT_ID = pp.M_PRODUCT_ID LEFT JOIN C_TAX t WITH (NOLOCK) ON t.C_TAX_ID = p.C_TAX_ID WHERE pp.M_PRICELIST_VERSION_ID = $($l.version) AND pp.UPDATED > '$($w.prices)' AND pp.PRICESTD > 0"
+        $pr = Query $db "WITH pp AS ($(Price-Sql $l $w.prices)) SELECT p.VALUE AS sku, pp.PRICESTD AS price, t.RATE AS vat FROM pp JOIN M_PRODUCT p WITH (NOLOCK) ON p.M_PRODUCT_ID = pp.M_PRODUCT_ID LEFT JOIN C_TAX t WITH (NOLOCK) ON t.C_TAX_ID = p.C_TAX_ID WHERE pp.UPDATED > '$($w.prices)' AND pp.PRICESTD > 0"
         foreach ($x in $pr.Rows) { $v = [decimal]$x.price; $rate = if ($x.vat -is [DBNull]) { 18 } else { [decimal]$x.vat }; if ($l.taxincl) { $v = $v / (1 + $rate / 100) }
           [void]$prices.Add(@{ price_list = $l.name; sku = (Str $x.sku); price = (Num $v 4) }) }
       }
@@ -382,7 +398,7 @@ if (-not $Service) {
 Log "Nisi lidhja ($($cfg.database) → $($cfg.url))"
 $failures = 0
 while ($true) {
-  $started = Get-Date
+  $started = Get-Date; $wasFull = -not $state.full_done
   try {
     Run-Cycle
     $failures = 0
@@ -395,6 +411,6 @@ while ($true) {
   $wait = [math]::Min([int]$cfg.interval_seconds * [math]::Pow(2, [math]::Min($failures, 4)), 300)
   # never keep SQL Server busy more than half the time: a cycle that took 8 s waits at least 8 s
   $took = ((Get-Date) - $started).TotalSeconds
-  if ($took -gt $wait) { $wait = $took; if (-not $Service -and $state.full_done) { Write-Host ('{0}  cikli zgjati {1:0} s' -f (Get-Date).ToString('HH:mm:ss'), $took) -ForegroundColor DarkGray } }
+  if ($took -gt $wait -and -not $wasFull) { $wait = $took; if (-not $Service -and $state.full_done) { Write-Host ('{0}  cikli zgjati {1:0} s' -f (Get-Date).ToString('HH:mm:ss'), $took) -ForegroundColor DarkGray } }
   Start-Sleep -Milliseconds ([int]([math]::Max($wait, 2) * 1000))
 }
