@@ -24,7 +24,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$Version = '1.0'
+$Version = '1.1'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $OutDir = Join-Path $here 'rezultati'
 
@@ -154,7 +154,8 @@ Say "Databaza: $Database" 'Cyan'
 if ($Samples -lt 0) {
   Say ''
   Say 'Rreshtat shembull e ndihmojnë shumë kuptimin e kolonave (cila është çmimi, cila kosto, data...).'
-  Say 'Ato mund të përmbajnë emra klientësh ose numra telefoni. Skedari mbetet në këtë dosje derisa ta dërgoni ju.'
+  Say 'Ato mund të përmbajnë emra klientësh ose numra telefoni. Fjalëkalimet dhe tabelat e përdoruesve nuk lexohen kurrë.'
+  Say 'Skedari mbetet në këtë dosje derisa ta dërgoni ju.'
   $a = Read-Host 'Të përfshihen 3 rreshta shembull për çdo tabelë? (P = po, J = jo) [P]'
   $Samples = if ($a -match '^[jJnN]') { 0 } else { 3 }
 }
@@ -229,6 +230,10 @@ Say ("  {0} pamje (views)" -f $views.Count)
 # ---------------------------------------------------------------- 5. shembujt
 $sampleData = [ordered]@{}
 $skipTypes = @('image', 'varbinary', 'binary', 'timestamp', 'rowversion', 'geography', 'geometry', 'hierarchyid', 'xml', 'sql_variant')
+# fjalëkalime, çelësa dhe të ngjashme nuk lexohen kurrë, as si shembull
+$secretColumn = '(?i)(pass|pwd|_pw$|pw$|secret|token|api_?key|hash|salt|pin$|private|certificate|cert$|licen[cs]e_?key)'
+# tabelat e përdoruesve dhe të lidhjeve lexohen vetëm si strukturë
+$noSampleTables = '(?i)^(AD_USER|AD_CLIENT|AD_CONN|AD_SESSION|AD_PINSTANCE|CONSOLE_PARAMETERS|C_MOBILE_POS)'
 if ($Samples -gt 0) {
   Say ''
   Say "Po lexoj $Samples rreshta shembull për tabelat që kanë të dhëna..." 'Cyan'
@@ -237,7 +242,8 @@ if ($Samples -gt 0) {
   foreach ($t in $withRows) {
     $n++
     Write-Progress -Activity 'Rreshta shembull' -Status "$($t.schema).$($t.table)" -PercentComplete ([int](100 * $n / [math]::Max($withRows.Count, 1)))
-    $cols = @($colsByTable["$($t.schema).$($t.table)"] | Where-Object { $_ -and $skipTypes -notcontains $_.data_type })
+    if ($t.table -match $noSampleTables) { continue }
+    $cols = @($colsByTable["$($t.schema).$($t.table)"] | Where-Object { $_ -and $skipTypes -notcontains $_.data_type -and $_.column -notmatch $secretColumn })
     if ($cols.Count -eq 0) { continue }
     $list = ($cols | ForEach-Object { '[' + $_.column.Replace(']', ']]') + ']' }) -join ', '
     $sql = "SELECT TOP ($Samples) $list FROM [$($t.schema.Replace(']', ']]'))].[$($t.table.Replace(']', ']]'))] WITH (NOLOCK)"
