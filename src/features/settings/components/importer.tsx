@@ -1,4 +1,4 @@
-import { Boxes, CheckCircle2, Contact, Download, FileUp, HandCoins, PackagePlus, Receipt, Save, Scale, Tags, Trash2, TriangleAlert, Users } from 'lucide-react'
+import { Boxes, CheckCircle2, Contact, Download, FileUp, HandCoins, ListTree, PackagePlus, Receipt, Save, Scale, Store, Tags, Trash2, TriangleAlert, Users } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -91,6 +91,23 @@ export const KINDS: Kind[] = [
       { key: 'lot', label: msg('Lot'), hint: msg('for lot-tracked items'), example: ['', 'BR-24-201'], aliases: ['loti', 'batch'] },
       { key: 'expiry', label: msg('Expiry'), example: ['', '2027-06-30'], aliases: ['skadenca', 'afati'], date: true },
     ] },
+  { key: 'warehouses', title: msg('Stores and warehouses'), description: msg('Every store or warehouse the stock sits in, with the code the stock files use.'), perm: 'admin.write', icon: Store,
+    done: { label: msg('Open warehouses'), href: '/inventory/warehouses' },
+    columns: [
+      { key: 'code', label: msg('Code'), required: true, example: ['1', '2'], aliases: ['kodi', 'shifra', 'nr', 'value'] },
+      { key: 'name', label: msg('Name'), required: true, example: ['Store 1 Drenas', 'Store 2 Korroticë'], aliases: ['emri', 'emertimi', 'njesia', 'magazina'] },
+      { key: 'type', label: msg('Type'), hint: msg('store or warehouse (default store)'), example: ['store', 'store'], aliases: ['lloji'] },
+      { key: 'address', label: msg('Address'), example: ['', ''], aliases: ['adresa'] },
+      { key: 'city', label: msg('City'), example: ['Drenas', 'Korroticë'], aliases: ['qyteti', 'komuna'] },
+    ] },
+  { key: 'accounts', title: msg('Chart of accounts'), description: msg('The accounts of the old program with their codes, so balances can come in as they were.'), perm: 'admin.write', icon: ListTree,
+    done: { label: msg('Open the chart of accounts'), href: '/finance/accounts' },
+    columns: [
+      { key: 'code', label: msg('Account code'), required: true, example: ['12103', '50001'], aliases: ['konto', 'kodi', 'llogaria', 'value'] },
+      { key: 'name', label: msg('Name'), required: true, example: ['Receivables', 'Product expenses'], aliases: ['emri', 'emertimi', 'pershkrimi'] },
+      { key: 'type', label: msg('Type'), required: true, hint: msg('asset, liability, equity, revenue or expense (A, L, O, R, E)'), example: ['A', 'E'], aliases: ['lloji', 'accounttype'] },
+      { key: 'subtype', label: msg('Kind'), hint: msg('optional: bank, cash, receivable, payable, inventory, tax…'), example: ['receivable', ''], aliases: ['nenlloji'] },
+    ] },
   { key: 'price_lists', title: msg('Price lists'), description: msg('Special prices per list, e.g. wholesale. Lists are created when new; existing prices are updated.'), perm: 'sales.write', icon: Tags,
     done: { label: msg('Open price lists'), href: '/sales/price-lists' },
     columns: [
@@ -152,7 +169,7 @@ export function Importer({ kind, cutover, source }: { kind: Kind; cutover?: stri
     try {
       const data = await parseFile(f)
       if (!data.rows.length) return toast.error(t('The file has column names but no rows.'))
-      if (data.rows.length > 5000) return toast.error(t('Import at most 5,000 rows at a time; split the file.'))
+      if (data.rows.length > (isMigrationKind(kind.key) ? 20000 : 5000)) return toast.error(isMigrationKind(kind.key) ? t('Import at most 20,000 rows at a time; split the file.') : t('Import at most 5,000 rows at a time; split the file.'))
       // match columns by name or a known alias (Albanian headers too)
       const heads = data.headers.map(normalize)
       const m: Record<string, number | null> = {}

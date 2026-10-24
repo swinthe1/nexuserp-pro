@@ -90,5 +90,19 @@ select t.ok(exists (select 1 from public.import_templates where name = 'Logmicro
 select t.throws($$ select public.migration_import('$$ || :'co' || $$', 'price_lists', '[]', true, current_date) $$, 'Permission denied', 'other companies cannot import here');
 reset role;
 
+-- ---------------------------------------------------------- warehouses and accounts from the old program
+set role authenticated;
+select t.login('mira@lider.xk');
+select public.migration_import(:'co', 'warehouses', '[{"code":"1","name":"Njesia 1 DRENAS","type":"njesia","city":"Drenas"},{"code":"2","name":"Njesia 2 KORROTICE"},{"code":"","name":"x"}]', true, current_date) as wh \gset
+select t.ok((:'wh'::jsonb ->> 'ok') = '2' and jsonb_array_length(:'wh'::jsonb -> 'errors') = 1, 'warehouse rows are checked');
+select public.migration_import(:'co', 'warehouses', '[{"code":"1","name":"Njesia 1 DRENAS","type":"njesia","city":"Drenas"},{"code":"2","name":"Njesia 2 KORROTICE"}]', false, current_date, 'magazinat.csv');
+select t.ok((select count(*) from public.warehouses where company_id = :'co' and warehouse_type = 'store') = 2, 'stores are created');
+select public.migration_import(:'co', 'accounts', '[{"code":"12103","name":"Llogarite e Arketushme","type":"A","subtype":"receivable"},{"code":"50001","name":"Shpenzimet e Produktit","type":"E"},{"code":"x","name":"y","type":"Q"}]', false, current_date) as ac \gset
+select t.ok((select account_subtype from public.accounts where company_id = :'co' and code = '12103') = 'receivable'
+            and (select account_type from public.accounts where company_id = :'co' and code = '50001') = 'expense', 'accounts come in with their type');
+select t.ok(jsonb_array_length(:'ac'::jsonb -> 'errors') = 1, 'an unknown account type is reported');
+select t.ok((public.migration_check(:'co', current_date) ->> 'warehouses')::int >= 3 and (public.migration_check(:'co', current_date) ->> 'accounts_imported')::int = 2, 'the check counts stores and accounts');
+reset role;
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;

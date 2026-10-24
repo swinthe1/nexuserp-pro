@@ -16,3 +16,13 @@ Si perdoret:
 
 Nese hyrja me Windows nuk funksionon, agjenti kerkon perdorues SQL (p.sh. sa).
 Fjalekalimi nuk ruhet askund.
+
+HAPI 2 - NXJERRJA (Nis-Nxjerrjen.bat)
+Krijon skedaret per NexusERP > Kalimi nga programi tjeter, nga databaza e Logmicro.
+1. Ne serverin e Logmicro: klik i djathte "Nis-Nxjerrjen.bat" > Run as administrator.
+2. Zgjidhni instancen (te Lider Market: SQLPRIME), databazen e vitit (LM2026),
+   daten e kalimit (p.sh. 2026-12-31) dhe listen kryesore te cmimeve.
+3. Hapet dosja "nxjerrja-LM2026-<data>" me skedaret 01..10 dhe PERMBLEDHJA.txt.
+4. Ne NexusERP importojini me radhe, sipas numrit ne emrin e skedarit.
+Stoku merret si eshte NE ATE MOMENT: ekzekutojeni ne diten e kalimit pasi te mbyllet dita.
+Vetem lexon; nuk lexon fjalekalime dhe nuk dergon asgje ne internet.

@@ -57,6 +57,20 @@ export default {
   'instead of debit and credit: positive = debit': 'në vend të debisë dhe kredisë: pozitive = debi',
   'default 1': 'nëse mungon: 1',
 
+  'Every store or warehouse the stock sits in, with the code the stock files use.': 'Çdo dyqan ose magazinë ku mbahet stoku, me kodin që përdorin skedarët e stokut.',
+  'Open the chart of accounts': 'Hap planin kontabël',
+  'Open warehouses': 'Hap magazinat',
+  'Stores and warehouses': 'Dyqanet dhe magazinat',
+  'Stores and warehouses, before their stock. The company starts with one main warehouse.': 'Dyqanet dhe magazinat, para stokut të tyre. Kompania fillon me një magazinë kryesore.',
+  'The accounts of the old program with their codes, so balances can come in as they were.': 'Kontot e programit të vjetër me kodet e tyre, që saldot të hyjnë ashtu siç ishin.',
+  "The old program's account codes, when the balances use them.": 'Kodet e kontove të programit të vjetër, kur saldot i përdorin ato.',
+  'asset, liability, equity, revenue or expense (A, L, O, R, E)': 'aktiv, detyrim, kapital, të hyra ose shpenzim (A, L, O, R, E)',
+  'optional: bank, cash, receivable, payable, inventory, tax…': 'opsionale: bank, cash, receivable, payable, inventory, tax…',
+  'store or warehouse (default store)': 'store (dyqan) ose warehouse (magazinë); nëse mungon: dyqan',
+  '{n} warehouse': '{n} magazinë',
+  '{n} warehouses': '{n} magazina',
+
+  'Import at most 20,000 rows at a time; split the file.': 'Importoni të shumtën 20 000 rreshta njëherësh; ndajeni skedarin.',
   // importer
   'These rows go in together, so fix them first.': 'Këto rreshta hyjnë së bashku, prandaj ndreqini fillimisht.',
   'Total in the file: {amount}. Compare it with the same report in the old program.': 'Totali në skedar: {amount}. Krahasojeni me të njëjtin raport në programin e vjetër.',

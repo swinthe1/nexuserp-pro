@@ -20,4 +20,9 @@ Opening invoices and bills stay out of sales and purchase figures, the VAT books
 
 Database: `supabase/migrations/20261026002300_migration_center.sql` (`migration_import`, `migration_check`, `migration_runs`, `import_templates`). Tests: `supabase/tests/14_migration_center.sql`.
 
-Planned next: an agent installed on the client's server that reads the old program's database directly and fills these same steps (column mapping proposed by AI, approved by a person).
+## Agent for Logmicro (Compiere/ADempiere on SQL Server)
+
+`deploy/agent/` runs on the client's server and only reads:
+
+- `NexusERP-Agjenti.ps1` (*Nis-Agjentin.bat*): structure report of any SQL Server database (tables, columns, keys, row counts, optional sample rows; password-like columns and user tables are never read).
+- `NexusERP-Nxjerrja.ps1` (*Nis-Nxjerrjen.bat*): extracts a Logmicro database into the migration centre's files, numbered by step: products (active with movements in the last N years or with stock; main price list converted to prices without VAT; invalid or duplicate barcodes dropped), partners (NUI cleaned and de-duplicated), stores, stock per store (from `M_STORAGE`, cost from `M_COST`; negative stock left out and reported), price lists, open customer and vendor documents (from the `BP_LEDGER` partner cards, per `C_ORDER`, remaining payments as one `SALDO-<code>` line), chart of accounts and trial balance (`FACT_ACCT`, without the receivable/payable/inventory control accounts, profit of the year to 109). `PERMBLEDHJA.txt` lists totals, everything left out and Logmicro's control-account balances to compare.

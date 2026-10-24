@@ -22,10 +22,12 @@ const STEPS: Step[] = [
   { key: 'products', why: msg('Codes, names, units, prices and VAT of every item.') },
   { key: 'partners', why: msg('Customers and vendors with their NUI/NIPT, before their open invoices.') },
   { key: 'employees', optional: true, why: msg('Only if the company runs payroll here.') },
+  { key: 'warehouses', optional: true, why: msg('Stores and warehouses, before their stock. The company starts with one main warehouse.') },
   { key: 'opening_stock', why: msg('Quantity and cost per item on the cut-over date, one file per warehouse.') },
   { key: 'price_lists', optional: true, why: msg('Wholesale or customer-specific prices.') },
   { key: 'open_receivables', why: msg('Unpaid customer invoices on the cut-over date.') },
   { key: 'open_payables', why: msg('Unpaid vendor bills on the cut-over date.') },
+  { key: 'accounts', optional: true, why: msg('The old program\'s account codes, when the balances use them.') },
   { key: 'opening_balances', why: msg('Bank, cash, loans, VAT and capital from the trial balance.') },
   { key: 'check', why: msg('Compare the totals with the old program before the client starts working.') },
 ]
@@ -152,7 +154,7 @@ function CheckPanel({ check, loading, error, retry, cutover }: { check?: Migrati
           <CardDescription>{t('Open the same reports in the old program for the cut-over date. Every figure here should match; if one does not, import that step again or correct the document.')}</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Figure label={t('Products')} value={formatQty(check.products)} />
+          <Figure label={t('Products')} value={formatQty(check.products)} sub={tn(check.warehouses ?? 0, '{n} warehouse', '{n} warehouses')} />
           <Figure label={t('Customers')} value={formatQty(check.customers)} sub={tn(check.vendors, '{n} vendor', '{n} vendors')} />
           <Figure label={t('Stock value')} value={formatMoney(check.stock_value, cur)} sub={tn(check.stock_lines, '{n} item in stock', '{n} items in stock')} />
           <Figure label={t('Employees')} value={formatQty(check.employees)} sub={tn(check.price_list_items, '{n} special price', '{n} special prices')} />

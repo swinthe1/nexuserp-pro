@@ -236,9 +236,9 @@ export const useImportRows = () => {
 }
 
 /* ------------------------------------------------------------------ migration from another program */
-export type MigrationKind = 'open_receivables' | 'open_payables' | 'opening_balances' | 'price_lists'
+export type MigrationKind = 'open_receivables' | 'open_payables' | 'opening_balances' | 'price_lists' | 'warehouses' | 'accounts'
 export type AnyImportKind = ImportKind | MigrationKind
-export const MIGRATION_KINDS: MigrationKind[] = ['open_receivables', 'open_payables', 'opening_balances', 'price_lists']
+export const MIGRATION_KINDS: MigrationKind[] = ['open_receivables', 'open_payables', 'opening_balances', 'price_lists', 'warehouses', 'accounts']
 export const isMigrationKind = (k: string): k is MigrationKind => (MIGRATION_KINDS as string[]).includes(k)
 
 export type MigrationResult = ImportResult & { ok?: number; total?: number; journal_entry_id?: string | null }
@@ -268,6 +268,7 @@ export const useAnyImport = () => {
 export type MigrationRun = { id: string; kind: string; file_name: string | null; cutover_date: string | null; rows: number; created: number; updated: number;
   skipped: number; total: number | null; journal_entry_id: string | null; run_at: string; run_by: string | null }
 export type MigrationCheck = {
+  warehouses?: number; accounts_imported?: number
   products: number; customers: number; vendors: number; employees: number; price_list_items: number; stock_value: number; stock_lines: number
   receivables: number; receivables_count: number; payables: number; payables_count: number; opening_account_balance: number
   classes: { class: string; debit: number; credit: number }[]; runs: MigrationRun[]

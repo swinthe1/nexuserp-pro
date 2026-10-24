@@ -338,4 +338,7 @@ export const serverTemplates: [string, string][] = [
   ['No account with the email %', 'Nuk ka llogari me emailin {0}'],
   ['invalid input syntax for type numeric: "%"', 'Nuk është numër: "{0}"'],
   ['invalid input syntax for type date: "%"', 'Nuk është datë: "{0}"'],
+  ['Fix the % rows with problems first; nothing was imported', 'Ndreqni fillimisht {0} rreshtat me probleme; nuk u importua asgjë'],
+  ['No fiscal period covers the cut-over date %. Add the financial year under Finance setup first.', 'Asnjë periudhë fiskale nuk e mbulon datën e kalimit {0}. Shtoni vitin financiar te Cilësimet e financës.'],
+  ['The fiscal period for the cut-over date % is %', 'Periudha fiskale për datën e kalimit {0} është {1}'],
 ]
