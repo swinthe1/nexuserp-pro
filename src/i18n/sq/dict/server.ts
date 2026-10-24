@@ -533,7 +533,6 @@ export default {
   "This card is not valid in this store": "Kjo kartelë nuk vlen në këtë njësi",
   "Unknown type of business": "Lloj biznesi i panjohur",
   "Client not found": "Klienti nuk u gjet",
-  "Order not found": "Porosia nuk u gjet",
   "This order is already closed": "Kjo porosi është mbyllur tashmë",
   "This table is not in this store": "Kjo tavolinë nuk është në këtë njësi",
   "Line not found": "Rreshti nuk u gjet",

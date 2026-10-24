@@ -14,6 +14,7 @@ export interface CompanySummary {
   license?: { plan: string; max_users: number; valid_until: string } | null
   /** practice company: data comes live from the old program, nothing is fiscalized */
   is_training?: boolean
+  business_type?: string
 }
 
 /** A company the person belongs to that is on hold because of its licence */
