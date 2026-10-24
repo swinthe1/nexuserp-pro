@@ -29,7 +29,7 @@ export function OnboardingPage() {
   const { companies, switchCompany } = useCompany()
   const qc = useQueryClient()
   const navigate = useNavigate()
-  const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { name: '', legalName: '', country: 'AL', taxNumber: '' } })
+  const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { name: '', legalName: '', country: 'XK', taxNumber: '' } })
 
   if (!loading && !user) return <Navigate to="/login" replace />
   const country = form.watch('country')
@@ -53,10 +53,10 @@ export function OnboardingPage() {
         <Form {...form}>
           <form onSubmit={onSubmit} className="mt-6 grid gap-4" noValidate>
             <FormField control={form.control} name="name" render={({ field }) => (
-              <FormItem><FormLabel>{t('Trading name')}</FormLabel><FormControl><Input autoFocus placeholder="Dyqani Ylli" {...field} /></FormControl><FormMessage /></FormItem> // i18n-ignore
+              <FormItem><FormLabel>{t('Trading name')}</FormLabel><FormControl><Input autoFocus placeholder="Dyqani Drita" {...field} /></FormControl><FormMessage /></FormItem> // i18n-ignore
             )} />
             <FormField control={form.control} name="legalName" render={({ field }) => (
-              <FormItem><FormLabel optional>{t('Legal name')}</FormLabel><FormControl><Input placeholder="Ylli sh.p.k." {...field} /></FormControl><FormMessage /></FormItem> // i18n-ignore
+              <FormItem><FormLabel optional>{t('Legal name')}</FormLabel><FormControl><Input placeholder={form.watch('country') === 'XK' ? 'Drita L.L.C.' : 'Drita sh.p.k.'} {...field} /></FormControl><FormMessage /></FormItem> // i18n-ignore
             )} />
             <FormField control={form.control} name="country" render={({ field }) => (
               <FormItem>
@@ -64,8 +64,8 @@ export function OnboardingPage() {
                 <Select value={field.value} onValueChange={field.onChange}>
                   <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                   <SelectContent>
-                    <SelectItem value="AL">{t('Albania — ALL, VAT 20 / 6 / 0%')}</SelectItem>
                     <SelectItem value="XK">{t('Kosovo — EUR, VAT 18 / 8 / 0%')}</SelectItem>
+                    <SelectItem value="AL">{t('Albania — ALL, VAT 20 / 6 / 0%')}</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormDescription>{t('Sets the main currency, VAT codes and fiscalization rules.')}</FormDescription>

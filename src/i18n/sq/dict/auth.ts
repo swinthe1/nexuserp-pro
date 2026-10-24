@@ -48,8 +48,8 @@ export default {
   'Trading name': 'Emri tregtar',
   'Legal name': 'Emri ligjor',
   'Country': 'Shteti',
-  'Albania — ALL, VAT 20 / 6 / 0%': 'Shqipëri — ALL, TVSH 20 / 6 / 0%',
-  'Kosovo — EUR, VAT 18 / 8 / 0%': 'Kosovë — EUR, TVSH 18 / 8 / 0%',
+  'Albania — ALL, VAT 20 / 6 / 0%': 'Shqipëri — lekë, TVSH 20 / 6 / 0%',
+  'Kosovo — EUR, VAT 18 / 8 / 0%': 'Kosovë — euro, TVSH 18 / 8 / 0%',
   'Sets the main currency, VAT codes and fiscalization rules.': 'Përcakton monedhën kryesore, kodet e TVSH-së dhe rregullat e fiskalizimit.',
   'Create company': 'Krijo kompaninë',
 

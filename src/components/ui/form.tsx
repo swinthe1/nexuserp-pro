@@ -55,7 +55,7 @@ const FormLabel = React.forwardRef<React.ElementRef<typeof Label>, React.Compone
     return (
       <Label ref={ref} className={cn(error && 'text-destructive', className)} htmlFor={formItemId} {...props}>
         {children}
-        {optional && <span className="ml-1 font-normal text-muted-foreground">(optional)</span>}
+        {optional && <span className="ml-1 font-normal text-muted-foreground">{t('(optional)')}</span>}
       </Label>
     )
   },
