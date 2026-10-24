@@ -18,6 +18,19 @@ export interface PlatformClient {
   users: number
   admins: string[]
   last_activity: string | null
+  is_training?: boolean
+  sync?: SyncConnection[] | null
+}
+
+export interface SyncConnection {
+  id: string
+  name: string
+  key_prefix: string
+  is_active: boolean
+  last_seen_at: string | null
+  last_error: string | null
+  pushes: number
+  last_counts: Record<string, unknown> | null
 }
 
 export interface NewClient {
@@ -103,4 +116,29 @@ export function generatePassword() {
   for (let i = 0; i < 6; i++) p += pick(letters)
   for (let i = 0; i < 4; i++) p += pick(digits)
   return p.charAt(0).toUpperCase() + p.slice(1)
+}
+
+export function useCreateSyncKey() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (v: { company: string; name: string }) =>
+      unwrap(await supabase.rpc('sync_create_connection', { p_company: v.company, p_name: v.name })) as unknown as { id: string; key: string },
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  })
+}
+
+export function useSetSyncActive() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (v: { id: string; active: boolean }) => unwrap(await supabase.rpc('sync_set_active', { p_id: v.id, p_active: v.active })),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  })
+}
+
+export function useSetTraining() {
+  const refresh = useRefresh()
+  return useMutation({
+    mutationFn: async (v: { company: string; on: boolean }) => unwrap(await supabase.rpc('set_training_mode', { p_company: v.company, p_on: v.on })),
+    onSuccess: refresh,
+  })
 }

@@ -1,4 +1,4 @@
-import { CheckCircle2, Circle, ClipboardCheck } from 'lucide-react'
+import { Cable, CheckCircle2, Circle, ClipboardCheck } from 'lucide-react'
 import * as React from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { msg, t, tn } from '@/i18n'
 import { cn, formatDate, formatMoney, formatQty, todayISO } from '@/lib/utils'
-import { type AnyImportKind, type MigrationCheck, type MigrationRun, useMigrationCheck } from '../api'
+import { type AnyImportKind, type ExternalDocument, type MigrationCheck, type MigrationRun, useLiveLink, useMigrationCheck } from '../api'
 import { Importer, KINDS } from '../components/importer'
 
 const PROGRAMS = ['Kubit', 'Logmicro', 'Bilanc', 'Pantheon', 'Excel']
@@ -60,6 +60,8 @@ export function MigrationPage() {
     <>
       <PageHeader title={t('Move from another program')}
         description={t('Bring {company} over from the program it used until now: master data first, then the position on the cut-over date, then compare the totals.', { company: company?.name ?? '' })} />
+
+      <LiveLinkCard />
 
       <Card className="mb-4">
         <CardContent className="grid gap-4 pt-5 sm:grid-cols-[200px_220px_minmax(0,1fr)] sm:items-end">
@@ -197,5 +199,68 @@ function CheckPanel({ check, loading, error, retry, cutover }: { check?: Migrati
         ) : <CardContent><p className="text-sm text-muted-foreground">{t('Nothing imported yet. Start with step 1.')}</p></CardContent>}
       </Card>
     </div>
+  )
+}
+
+/** Status of the live link and what is still open in the old program. */
+function LiveLinkCard() {
+  const live = useLiveLink()
+  const { company } = useCompany()
+  const [open, setOpen] = React.useState(false)
+  const conns = live.data?.conns ?? []
+  if (!conns.length) return null
+  const active = conns.find((c) => c.is_active)
+  const minutes = active?.last_seen_at ? (Date.now() - new Date(active.last_seen_at).getTime()) / 60000 : null
+  const ok = active && minutes !== null && minutes <= 3 && !active.last_error
+  const docs = live.data?.docs ?? []
+  const sum = (k: ExternalDocument['kind']) => docs.filter((d) => d.kind === k).reduce((a, d) => a + Number(d.open_amount), 0)
+  const cur = company?.base_currency
+  return (
+    <Card className="mb-4">
+      <CardHeader className="flex-row flex-wrap items-start justify-between gap-3 space-y-0">
+        <div>
+          <CardTitle className="flex items-center gap-2"><Cable className="size-4" /> {t('Live link with the old program')}
+            <span className={cn('rounded px-1.5 py-0.5 text-xs font-medium', ok ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning')}>
+              {!active ? t('Link off') : ok ? t('Live|link') : active.last_seen_at ? t('No signal') : t('Not connected yet')}</span>
+          </CardTitle>
+          <CardDescription>
+            {active?.last_seen_at ? t('Last update {time}. Products, prices, partners and stock follow the old program; its unpaid invoices are listed here.', { time: formatDate(active.last_seen_at, true) })
+              : t('Waiting for the agent on the server of the old program.')}
+            {active?.last_error && <span className="block text-destructive">{active.last_error}</span>}
+          </CardDescription>
+        </div>
+        {docs.length > 0 && <button type="button" className="text-[13px] text-primary hover:underline" onClick={() => setOpen(!open)}>{open ? t('Hide the invoices') : t('Show the invoices')}</button>}
+      </CardHeader>
+      {docs.length > 0 && (
+        <CardContent className="grid gap-3">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Figure label={t('Customers owe')} value={formatMoney(sum('sale') + sum('balance'), cur)} sub={tn(docs.filter((d) => d.kind !== 'purchase').length, '{n} open invoice', '{n} open invoices')} />
+            <Figure label={t('Owed to vendors')} value={formatMoney(sum('purchase'), cur)} sub={tn(docs.filter((d) => d.kind === 'purchase').length, '{n} open bill', '{n} open bills')} />
+          </div>
+          {open && (
+            <div className="max-h-96 overflow-auto rounded-md border">
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>{t('Document')}</TableHead><TableHead>{t('Partner')}</TableHead><TableHead>{t('Date')}</TableHead><TableHead>{t('Due date')}</TableHead>
+                  <TableHead className="text-right">{t('Total')}</TableHead><TableHead className="text-right">{t('Unpaid amount')}</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {docs.map((d) => (
+                    <TableRow key={d.id}>
+                      <TableCell><span className="font-medium">{d.number ?? '—'}</span> <span className="text-xs text-muted-foreground">{d.kind === 'purchase' ? t('Purchase') : d.kind === 'sale' ? t('Sale') : t('Balance')}</span></TableCell>
+                      <TableCell>{d.partner_code ?? '—'}</TableCell>
+                      <TableCell>{formatDate(d.doc_date)}</TableCell>
+                      <TableCell>{formatDate(d.due_date)}</TableCell>
+                      <TableCell className="text-right tabular">{d.total == null ? '—' : formatMoney(d.total, cur)}</TableCell>
+                      <TableCell className="text-right tabular font-medium">{formatMoney(d.open_amount, cur)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      )}
+    </Card>
   )
 }

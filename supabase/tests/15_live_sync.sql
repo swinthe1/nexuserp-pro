@@ -1,0 +1,83 @@
+-- =============================================================================
+-- NexusERP Pro · live link tests (runs after 01–14)
+-- =============================================================================
+\set QUIET on
+\set ON_ERROR_STOP on
+grant usage on schema t to anon;
+grant execute on all functions in schema t to anon;
+grant insert, select on t.results to anon;
+grant usage on sequence t.results_n_seq to anon;
+
+set role authenticated;
+select t.login('zoe@platform.io');
+select public.platform_create_client(jsonb_build_object('name', 'Lider Live', 'country', 'XK', 'owner_email', 'live@lider.xk',
+  'owner_password', 'sekret123', 'max_users', 5)) as co \gset
+select public.migration_import(:'co', 'warehouses', '[{"code":"1","name":"Njesia 1 DRENAS"}]', false, current_date);
+select public.set_training_mode(:'co', true);
+select public.sync_create_connection(:'co', 'Logmicro LM2026') as conn \gset
+select (:'conn'::jsonb ->> 'key') as key \gset
+select t.ok(:'key' like 'nxs_%' and length(:'key') = 52, 'a connection key is made and shown once');
+select t.login('live@lider.xk');
+select t.throws($$ select public.sync_create_connection('$$ || :'co' || $$', 'x') $$, 'Only the platform administrator', 'clients cannot make connection keys');
+select t.ok((public.get_my_context() -> 'companies' -> 0 ->> 'is_training')::boolean, 'the app knows the company is in training');
+select t.ok(not (select fiscalization_enabled from public.company_settings where company_id = :'co'), 'training companies do not fiscalize');
+update public.company_settings set fiscalization_enabled = true where company_id = :'co';
+select t.ok(not (select fiscalization_enabled from public.company_settings where company_id = :'co'), 'and cannot be switched to fiscalize');
+reset role;
+select t.ok(not exists (select 1 from public.sync_connections where key_hash like 'nxs_%' or key_prefix = :'key'), 'only a hash of the key is stored');
+
+-- the agent pushes with the anon role
+set role anon;
+select t.throws($$ select public.sync_push('nxs_wrong', '{}') $$, 'Unknown or switched-off', 'a wrong key is refused');
+reset role;
+set role anon;
+select public.sync_push(:'key', jsonb_build_object(
+  'warehouses', '[{"code":"2","name":"Njesia 2 KORROTICE"}]'::jsonb,
+  'products', '[{"sku":"33173","name":"ENERGY DRINK 250ML","uom":"pcs","price":"1","cost":"0.39","vat":"18"},{"sku":"33174","name":"SUGAR FREE","price":"2","vat":"18"}]'::jsonb,
+  'partners', '[{"code":"1001","name":"Viva Fresh","role":"customer","tax_number":"810000011"},{"code":"1002","name":"Devolli","role":"vendor"}]'::jsonb,
+  'prices', '[{"price_list":"Cm. Shitese_1","sku":"33173","price":"1"}]'::jsonb,
+  'stock', '[{"warehouse":"1","sku":"33173","qty":"10","cost":"0.39"},{"warehouse":"1","sku":"NOPE","qty":"1"}]'::jsonb,
+  'documents', '[{"ext_id":"100","kind":"sale","number":"F-1","partner":"1001","date":"2026-10-20","due_date":"2026-11-03","total":"120","open":"120"}]'::jsonb,
+  'replace_partners', '["1001"]'::jsonb)) as r1 \gset
+reset role;
+select t.ok((:'r1'::jsonb ->> 'ok')::boolean, 'the agent''s push is accepted');
+select t.ok((select count(*) from public.product_variants where company_id = :'co') = 2, 'products arrive');
+select t.ok(exists (select 1 from public.warehouses where company_id = :'co' and code = '2'), 'stores arrive');
+select t.ok((select count(*) from public.business_partners where company_id = :'co' and code in ('1001','1002')) = 2, 'partners arrive');
+select t.ok((select sum(on_hand) from public.stock_levels where company_id = :'co') = 10, 'stock is set to the old program''s quantity');
+select t.ok((:'r1'::jsonb -> 'stock' ->> 'unknown_items') = '1', 'unknown items are counted, not fatal');
+select t.ok((select open_amount from public.external_documents where company_id = :'co' and ext_id = '100') = 120, 'open documents are mirrored');
+select t.ok((select partner_id is not null from public.external_documents where company_id = :'co' and ext_id = '100'), 'and linked to the partner');
+select t.ok(not exists (select 1 from public.journal_entries where company_id = :'co' and source_doc_type = 'sales_invoice'), 'mirrored documents do not touch the books');
+
+-- next push: stock goes down, the invoice is paid (partner resent without it)
+set role anon;
+select public.sync_push(:'key', jsonb_build_object(
+  'stock', '[{"warehouse":"1","sku":"33173","qty":"7"}]'::jsonb, 'replace_partners', '["1001"]'::jsonb)) as r2 \gset
+select public.sync_push(:'key', jsonb_build_object('stock', '[{"warehouse":"1","sku":"33173","qty":"7"}]'::jsonb)) as r3 \gset
+reset role;
+select t.ok((select sum(on_hand) from public.stock_levels where company_id = :'co') = 7, 'stock follows the old program down');
+select t.ok((:'r3'::jsonb -> 'stock' ->> 'changed') = '0', 'an unchanged quantity makes no adjustment');
+select t.ok((select open_amount from public.external_documents where company_id = :'co' and ext_id = '100') = 0, 'a paid document drops to zero');
+select t.ok((select pushes from public.sync_connections where company_id = :'co') = 3 and (select last_seen_at is not null from public.sync_connections where company_id = :'co'),
+  'the connection records when it was last heard from');
+
+-- bad data is reported, nothing half-done
+set role anon;
+select public.sync_push(:'key', jsonb_build_object('stock', '[{"warehouse":"1","sku":"33173","qty":"5"}]'::jsonb,
+  'documents', '[{"ext_id":"x","kind":"bogus"}]'::jsonb)) as r4 \gset
+reset role;
+select t.ok(not (:'r4'::jsonb ->> 'ok')::boolean and (select last_error is not null from public.sync_connections where company_id = :'co'), 'a failing push reports its error');
+select t.ok((select sum(on_hand) from public.stock_levels where company_id = :'co') = 7, 'and changes nothing');
+
+-- switched off
+set role authenticated;
+select t.login('zoe@platform.io');
+select public.sync_set_active((select id from public.sync_connections where company_id = :'co'), false);
+reset role;
+set role anon;
+select t.throws($$ select public.sync_push('$$ || :'key' || $$', '{}') $$, 'switched-off', 'a switched-off key is refused');
+reset role;
+
+\set QUIET off
+select count(*) as assertions_passed from t.results;

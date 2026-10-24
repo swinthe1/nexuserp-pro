@@ -299,6 +299,26 @@ export const useSaveImportTemplate = () => {
 }
 export const useDeleteImportTemplate = () => useAction(async (id: string) => unwrap(await supabase.rpc('delete_import_template', { p_id: id })))
 
+/* ------------------------------------------------------------------ live link from the old program */
+export type LiveConnection = { id: string; name: string; key_prefix: string; is_active: boolean; last_seen_at: string | null; last_error: string | null; pushes: number }
+export type ExternalDocument = { id: string; kind: 'sale' | 'purchase' | 'balance'; number: string | null; partner_code: string | null; partner_id: string | null
+  doc_date: string | null; due_date: string | null; total: number | null; open_amount: number; warehouse_code: string | null; synced_at: string }
+export function useLiveLink() {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...adminKeys.all(companyId), 'live-link'],
+    enabled: !!companyId,
+    refetchInterval: 30_000,
+    queryFn: async () => {
+      const conns = unwrap(await supabase.from('sync_connections').select('id, name, key_prefix, is_active, last_seen_at, last_error, pushes').eq('company_id', companyId)) as LiveConnection[]
+      if (!conns.length) return { conns, docs: [] as ExternalDocument[] }
+      const docs = unwrap(await supabase.from('external_documents').select('id, kind, number, partner_code, partner_id, doc_date, due_date, total, open_amount, warehouse_code, synced_at')
+        .eq('company_id', companyId).neq('open_amount', 0).order('due_date', { ascending: true }).limit(500)) as ExternalDocument[]
+      return { conns, docs }
+    },
+  })
+}
+
 /* ------------------------------------------------------------------ notifications */
 export type NotificationRow = Pick<Tables<'notifications'>, 'id' | 'type' | 'category' | 'title' | 'body' | 'link' | 'read_at' | 'created_at' | 'entity_type'>
 export const NOTIFICATION_CATEGORIES = [

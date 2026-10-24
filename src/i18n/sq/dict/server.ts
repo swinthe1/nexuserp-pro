@@ -510,4 +510,7 @@ export default {
   'Use asset, liability, equity, revenue or expense': 'Përdorni asset, liability, equity, revenue ose expense (A, L, O, R, E)',
   'Use store or warehouse': 'Përdorni store (dyqan) ose warehouse (magazinë)',
   'Company not found': 'Kompania nuk u gjet',
+  "Unknown or switched-off connection key": "Çelës lidhjeje i panjohur ose i fikur",
+  "The licence for this company is not active": "Licenca e kësaj kompanie nuk është aktive",
+  "Send at most 3,000 rows per push": "Dërgoni të shumtën 3 000 rreshta njëherësh",
 } satisfies Dict

@@ -1,4 +1,4 @@
-import { CalendarClock, Eye } from 'lucide-react'
+import { CalendarClock, Eye, GraduationCap } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
 import { t, tn } from '@/i18n'
@@ -43,6 +43,18 @@ export function SupportBanner() {
       <Eye className="size-4 shrink-0 text-primary" />
       <span>{t('You are inside {company} as the platform administrator. Changes you make are saved in the client\'s books.', { company: company.name })}</span>
       <Link to="/platform" className="font-medium text-primary hover:underline">{t('Back to clients')}</Link>
+    </div>
+  )
+}
+
+/** Practice company: everyone sees that nothing here is official. */
+export function TrainingBanner() {
+  const { company } = useCompany()
+  if (!company?.is_training) return null
+  return (
+    <div role="status" className="flex items-center justify-center gap-2 border-b border-warning/40 bg-warning/15 px-4 py-1.5 text-center text-[13px] font-medium text-foreground print:hidden">
+      <GraduationCap className="size-4 shrink-0 text-warning" />
+      <span>{t('Training company: data comes from the old program, and nothing done here is official or sent to the tax office.')}</span>
     </div>
   )
 }

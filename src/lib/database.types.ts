@@ -1216,6 +1216,7 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          is_training: boolean
         }
         Insert: {
           id?: string
@@ -1244,6 +1245,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          is_training?: boolean
         }
         Update: {
           id?: string
@@ -1272,6 +1274,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          is_training?: boolean
         }
         Relationships: [
           { foreignKeyName: "companies_base_currency_fkey"; columns: ["base_currency"]; isOneToOne: false; referencedRelation: "currencies"; referencedColumns: ["code"] },
@@ -2403,6 +2406,59 @@ export type Database = {
         Relationships: [
           { foreignKeyName: "exchange_rates_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
           { foreignKeyName: "exchange_rates_currency_code_fkey"; columns: ["currency_code"]; isOneToOne: false; referencedRelation: "currencies"; referencedColumns: ["code"] },
+        ]
+      }
+      external_documents: {
+        Row: {
+          id: string
+          company_id: string
+          source: string
+          ext_id: string
+          kind: string
+          number: string | null
+          partner_code: string | null
+          partner_id: string | null
+          doc_date: string | null
+          due_date: string | null
+          total: number | null
+          open_amount: number
+          warehouse_code: string | null
+          synced_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          source?: string
+          ext_id: string
+          kind: string
+          number?: string | null
+          partner_code?: string | null
+          partner_id?: string | null
+          doc_date?: string | null
+          due_date?: string | null
+          total?: number | null
+          open_amount?: number
+          warehouse_code?: string | null
+          synced_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          source?: string
+          ext_id?: string
+          kind?: string
+          number?: string | null
+          partner_code?: string | null
+          partner_id?: string | null
+          doc_date?: string | null
+          due_date?: string | null
+          total?: number | null
+          open_amount?: number
+          warehouse_code?: string | null
+          synced_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "external_documents_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
         ]
       }
       fiscal_periods: {
@@ -7953,6 +8009,56 @@ export type Database = {
           { foreignKeyName: "stock_transfers_company_id_to_warehouse_id_fkey"; columns: ["company_id", "to_warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      sync_connections: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          source: string
+          key_prefix: string
+          key_hash: string
+          run_as: string
+          is_active: boolean
+          created_at: string
+          last_seen_at: string | null
+          last_counts: Json | null
+          last_error: string | null
+          pushes: number
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          source?: string
+          key_prefix: string
+          key_hash: string
+          run_as: string
+          is_active?: boolean
+          created_at?: string
+          last_seen_at?: string | null
+          last_counts?: Json | null
+          last_error?: string | null
+          pushes?: number
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string
+          source?: string
+          key_prefix?: string
+          key_hash?: string
+          run_as?: string
+          is_active?: boolean
+          created_at?: string
+          last_seen_at?: string | null
+          last_counts?: Json | null
+          last_error?: string | null
+          pushes?: number
+        }
+        Relationships: [
+          { foreignKeyName: "sync_connections_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
       tax_codes: {
         Row: {
           id: string
@@ -10654,6 +10760,13 @@ export type Database = {
         }
         Returns: Json
       }
+      set_training_mode: {
+        Args: {
+          p_company: string
+          p_on: boolean
+        }
+        Returns: undefined
+      }
       settle_cod: {
         Args: {
           p_shipments: string[]
@@ -10734,6 +10847,27 @@ export type Database = {
           p_channel: string
         }
         Returns: Json
+      }
+      sync_create_connection: {
+        Args: {
+          p_company: string
+          p_name: string
+        }
+        Returns: Json
+      }
+      sync_push: {
+        Args: {
+          p_key: string
+          p_batch: Json
+        }
+        Returns: Json
+      }
+      sync_set_active: {
+        Args: {
+          p_id: string
+          p_active: boolean
+        }
+        Returns: undefined
       }
       tax_calendar: {
         Args: {

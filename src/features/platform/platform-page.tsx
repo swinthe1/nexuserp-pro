@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowDownToLine, ArrowRight, Copy, KeyRound, LogOut, MoreHorizontal, Plus, Search, ServerCog } from 'lucide-react'
+import { ArrowDownToLine, ArrowRight, Cable, Copy, Download, GraduationCap, KeyRound, LogOut, MoreHorizontal, Plus, Search, ServerCog } from 'lucide-react'
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
@@ -26,7 +26,7 @@ import { LanguageToggle } from '@/i18n/language'
 import { describeError } from '@/lib/errors'
 import { daysUntil, LICENSE_WARNING_DAYS } from '@/lib/license'
 import { formatDate, formatQty as formatInt, todayISO } from '@/lib/utils'
-import { generatePassword, type PlatformClient, useCreateClient, usePlatformClients, useSaveLicense, useSetPassword, useSetSelfService } from './api'
+import { generatePassword, type PlatformClient, type SyncConnection, useCreateClient, useCreateSyncKey, usePlatformClients, useSaveLicense, useSetPassword, useSetSelfService, useSetSyncActive, useSetTraining } from './api'
 
 const PLANS = [
   { value: 'basic', label: msg('Basic') },
@@ -74,6 +74,7 @@ export function PlatformPage() {
   const [creating, setCreating] = React.useState(params.get('new') === '1')
   const [editing, setEditing] = React.useState<PlatformClient | null>(null)
   const [password, setPassword] = React.useState<{ email: string } | null>(null)
+  const [live, setLive] = React.useState<string | null>(null)
 
   if (!loading && !user) return <Navigate to="/login" replace />
   if (loading || ctxLoading) return <div className="min-h-dvh bg-background" />
@@ -166,6 +167,12 @@ export function PlatformPage() {
                           <span className="block text-xs text-muted-foreground">
                             {c.country_code === 'XK' ? t('Kosovo') : t('Albania')}{c.tax_number ? ` · ${c.tax_number}` : ''}
                           </span>
+                          {(c.is_training || (c.sync ?? []).some((x) => x.is_active)) && (
+                            <span className="mt-1 flex flex-wrap gap-1">
+                              {c.is_training && <Badge variant="warning">{t('Training')}</Badge>}
+                              {(c.sync ?? []).filter((x) => x.is_active).map((x) => <Badge key={x.id} variant={linkState(x).variant}>{linkState(x).label}</Badge>)}
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell className="text-[13px]">{c.admins[0] ?? <span className="text-muted-foreground">—</span>}
                           {c.admins.length > 1 && <span className="text-xs text-muted-foreground"> +{c.admins.length - 1}</span>}</TableCell>
@@ -186,6 +193,7 @@ export function PlatformPage() {
                               <DropdownMenuItem disabled={!c.admins.length} onSelect={() => setPassword({ email: c.admins[0] ?? '' })}><KeyRound /> {t('Set a new password')}</DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onSelect={() => void openCompany(c.id, '/settings/migration')}><ArrowDownToLine /> {t('Move data from the old program')}</DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => setLive(c.id)}><Cable /> {t('Live link and training')}</DropdownMenuItem>
                               <DropdownMenuItem onSelect={() => void openCompany(c.id)}><ArrowRight /> {t('Open this company')}</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -218,6 +226,7 @@ export function PlatformPage() {
       <NewClientDialog open={creating} onOpenChange={(o) => { setCreating(o); if (!o && params.get('new')) setParams({}, { replace: true }) }} />
       <LicenseDialog client={editing} onClose={() => setEditing(null)} />
       <PasswordDialog target={password} onClose={() => setPassword(null)} />
+      <LiveLinkDialog client={list.find((x) => x.id === live) ?? null} onClose={() => setLive(null)} />
     </div>
   )
 }
@@ -519,6 +528,126 @@ function PasswordDialog({ target, onClose }: { target: { email: string } | null;
             </DialogFooter>
           </form>
         )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/* ------------------------------------------------------------------ live link */
+
+function linkState(x: SyncConnection): { label: string; variant: 'success' | 'warning' | 'secondary' | 'destructive' } {
+  if (!x.is_active) return { label: t('Link off'), variant: 'secondary' }
+  if (!x.last_seen_at) return { label: t('Not connected yet'), variant: 'secondary' }
+  if (x.last_error) return { label: t('Link has errors'), variant: 'destructive' }
+  const minutes = (Date.now() - new Date(x.last_seen_at).getTime()) / 60000
+  return minutes <= 3 ? { label: t('Live|link'), variant: 'success' } : { label: t('No signal'), variant: 'warning' }
+}
+
+function countsText(c: Record<string, unknown> | null) {
+  if (!c) return ''
+  const parts: string[] = []
+  const pick = (k: string, label: string) => {
+    const v = c[k] as { created?: number; updated?: number; changed?: number } | undefined
+    if (!v) return
+    const n = (v.created ?? 0) + (v.updated ?? 0) + (v.changed ?? 0)
+    if (n) parts.push(`${label} ${n}`)
+  }
+  pick('products', t('products')); pick('partners', t('partners')); pick('prices', t('prices')); pick('stock', t('stock lines'))
+  if (typeof c.documents === 'number' && c.documents) parts.push(`${t('documents')} ${c.documents}`)
+  return parts.join(' · ')
+}
+
+function LiveLinkDialog({ client, onClose }: { client: PlatformClient | null; onClose: () => void }) {
+  const createKey = useCreateSyncKey()
+  const setActive = useSetSyncActive()
+  const setTraining = useSetTraining()
+  const [name, setName] = React.useState('Logmicro')
+  const [config, setConfig] = React.useState<string | null>(null)
+  React.useEffect(() => { if (client) { setConfig(null); setName('Logmicro') } }, [client?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const make = async () => {
+    if (!client) return
+    try {
+      const r = await createKey.mutateAsync({ company: client.id, name })
+      setConfig(JSON.stringify({
+        url: import.meta.env.VITE_SUPABASE_URL, anon_key: import.meta.env.VITE_SUPABASE_ANON_KEY, sync_key: r.key,
+        server: '', database: '', main_price_list: '', interval_seconds: 30, active_years: 2,
+      }, null, 2))
+    } catch (e) { toast.error(describeError(e)) }
+  }
+  const download = () => {
+    if (!config) return
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([config], { type: 'application/json' }))
+    a.download = 'lidhja.json'; a.click(); URL.revokeObjectURL(a.href)
+  }
+
+  return (
+    <Dialog open={!!client} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[92dvh] max-w-xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{t('Live link and training · {name}', { name: client?.name ?? '' })}</DialogTitle>
+          <DialogDescription>{t('The agent on the client\'s server sends what changes in the old program every 30 seconds: products, prices, partners, stock and unpaid invoices. The old program stays the official one.')}</DialogDescription>
+        </DialogHeader>
+        {client && (
+          <div className="grid gap-4">
+            <div className="flex items-start justify-between gap-4 rounded-md border p-3">
+              <div>
+                <p className="flex items-center gap-1.5 text-sm font-medium"><GraduationCap className="size-4 text-warning" /> {t('Training company')}</p>
+                <p className="mt-0.5 text-[13px] text-muted-foreground">{t('Staff practise on live data. Nothing is fiscalized and every screen shows that it is practice.')}</p>
+              </div>
+              <Switch checked={!!client.is_training} disabled={setTraining.isPending} aria-label={t('Training company')}
+                onCheckedChange={(on) => setTraining.mutate({ company: client.id, on }, { onError: (e) => toast.error(describeError(e)) })} />
+            </div>
+
+            <div className="grid gap-2">
+              <p className="text-sm font-medium">{t('Connections')}</p>
+              {(client.sync ?? []).length === 0 && <p className="text-[13px] text-muted-foreground">{t('No connection yet. Make a key and give it to the agent on the client\'s server.')}</p>}
+              {(client.sync ?? []).map((x) => {
+                const st = linkState(x)
+                return (
+                  <div key={x.id} className="rounded-md border p-3 text-[13px]">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium">{x.name} <span className="font-mono text-xs text-muted-foreground">{x.key_prefix}…</span></span>
+                      <Badge variant={st.variant}>{st.label}</Badge>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {x.last_seen_at ? t('Last heard {time} · {n} pushes', { time: formatDate(x.last_seen_at, true), n: formatInt(x.pushes) }) : t('Waiting for the agent')}
+                      {countsText(x.last_counts) && <> · {t('last change')}: {countsText(x.last_counts)}</>}
+                    </p>
+                    {x.last_error && <p className="mt-1 text-xs text-destructive">{x.last_error}</p>}
+                    <div className="mt-2">
+                      <Button size="sm" variant="outline" disabled={setActive.isPending} onClick={() => setActive.mutate({ id: x.id, active: !x.is_active })}>
+                        {x.is_active ? t('Switch off') : t('Switch on')}
+                      </Button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {config ? (
+              <div className="grid gap-2 rounded-md border border-warning/40 bg-warning/5 p-3">
+                <p className="text-[13px] font-medium">{t('Connection settings for the agent (lidhja.json). The key is shown only now.')}</p>
+                <pre className="max-h-48 overflow-auto rounded border bg-background p-2 text-xs">{config}</pre>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => void copy(config)}><Copy /> {t('Copy')}</Button>
+                  <Button size="sm" onClick={download}><Download /> {t('Download lidhja.json')}</Button>
+                </div>
+                <p className="text-xs text-muted-foreground">{t('Put lidhja.json next to the agent on the client\'s server. Anyone with this key can send data into this company, so keep it there only.')}</p>
+              </div>
+            ) : (
+              <div className="flex items-end gap-2">
+                <div className="grid flex-1 gap-1.5">
+                  <label htmlFor="sync-name" className="text-[13px] font-medium">{t('Name of the new connection')}</label>
+                  <Input id="sync-name" value={name} onChange={(e) => setName(e.target.value)} />
+                </div>
+                <Button onClick={() => void make()} loading={createKey.isPending}><Cable /> {t('Make a key')}</Button>
+              </div>
+            )}
+          </div>
+        )}
+        <DialogFooter><Button variant="outline" onClick={onClose}>{t('Close')}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   )
