@@ -19,7 +19,7 @@
 param([string]$Database, [switch]$Restart)
 
 $ErrorActionPreference = 'Stop'
-$Version = '1.0'
+$Version = '1.1'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $cfgPath = Join-Path $here 'lidhja.json'
 $statePath = Join-Path $here 'historiku-gjendja.json'
@@ -70,6 +70,11 @@ function Str($v) { if ($v -is [DBNull] -or $null -eq $v) { return '' }; return (
 function Num($v, [int]$dec = 4) { if ($v -is [DBNull] -or $null -eq $v -or "$v" -eq '') { return '' }; return ([math]::Round([decimal]$v, $dec)).ToString('0.####', $inv) }
 function Day($v) { if ($v -is [DBNull] -or $null -eq $v) { return '' }; return ([datetime]$v).ToString('yyyy-MM-dd', $inv) }
 function Stamp($v) { if ($v -is [DBNull] -or $null -eq $v) { return '' }; return ([datetime]$v).ToString('yyyy-MM-ddTHH:mm:ss', $inv) }
+$skipStatus = "ISNULL(DOCSTATUS, 'CO') NOT IN ('VO', 'RE') AND ISNULL(ISACTIVE, 'Y') = 'Y'"
+function Show-Statuses($conn, [string]$table) {
+  $t = Query $conn "SELECT ISNULL(DOCSTATUS, '-') AS s, COUNT(*) AS n FROM $table WITH (NOLOCK) GROUP BY DOCSTATUS ORDER BY COUNT(*) DESC"
+  Log ("  {0} sipas statusit: {1}" -f $table, (($t.Rows | ForEach-Object { "$($_.s)=$($_.n)" }) -join ', ')) 'DarkGray'
+}
 function Has-Table($conn, [string]$name) { return (Query $conn "SELECT COUNT(*) AS n FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '$name'").Rows[0].n -gt 0 }
 
 # ---------------------------------------------------------------- dërgimi
@@ -118,15 +123,24 @@ $started = Get-Date
 $conn = New-Connection
 try {
   # ------------------------------------------------------------ 1. kontabiliteti: gjendjet mujore
-  if (Bar 'kontabiliteti') {
+  if (Bar 'kontabiliteti3') {
+    $pt = Query $conn "SELECT ISNULL(POSTINGTYPE, '-') AS p, COUNT(*) AS n FROM FACT_ACCT WITH (NOLOCK) GROUP BY POSTINGTYPE"
+    Log ("  FACT_ACCT sipas llojit: {0}" -f (($pt.Rows | ForEach-Object { "$($_.p)=$($_.n)" }) -join ', ')) 'DarkGray'
+    # several ledgers would count the same entry twice: keep the main one
+    $sc = Query $conn "SELECT TOP 1 C_ACCTSCHEMA_ID AS id, COUNT(*) AS n FROM FACT_ACCT WITH (NOLOCK) GROUP BY C_ACCTSCHEMA_ID ORDER BY COUNT(*) DESC"
+    $schema = $(if ($sc.Rows.Count) { [long]$sc.Rows[0].id } else { 0 })
+    $hasA = @($pt.Rows | Where-Object { (Str $_.p) -eq 'A' }).Count -gt 0
+    $ptype = $(if ($hasA) { 'A' } else { Str (@($pt.Rows | Sort-Object { [long]$_.n } -Descending)[0].p) })
+    Log "  libri $schema, lloji '$ptype'" 'DarkGray'
     $t = Query $conn @"
 SELECT ev.VALUE AS code, MAX(ev.NAME) AS name, CONVERT(char(7), f.DATEACCT, 126) AS period, SUM(f.AMTACCTDR) AS debit, SUM(f.AMTACCTCR) AS credit
   FROM FACT_ACCT f WITH (NOLOCK) JOIN C_ELEMENTVALUE ev WITH (NOLOCK) ON ev.C_ELEMENTVALUE_ID = f.ACCOUNT_ID
- WHERE f.POSTINGTYPE = 'A'
+ WHERE f.C_ACCTSCHEMA_ID = $schema AND LTRIM(RTRIM(ISNULL(f.POSTINGTYPE, '-'))) = '$ptype' AND f.DATEACCT IS NOT NULL
  GROUP BY ev.VALUE, CONVERT(char(7), f.DATEACCT, 126)
 "@
     $rows = @($t.Rows | ForEach-Object { @{ account = (Str $_.code); name = (Str $_.name); period = (Str $_.period); debit = (Num $_.debit 2); credit = (Num $_.credit 2) } })
-    Done 'kontabiliteti' (Send-All 'balances' $rows 2000)
+    Log "  $($rows.Count) konto-muaj të lexuara" 'DarkGray'
+    Done 'kontabiliteti3' (Send-All 'balances' $rows 2000)
   }
 
   # ------------------------------------------------------------ 2. artikujt: barkodet, furnitorët, riporositja
@@ -162,45 +176,49 @@ SELECT p.VALUE AS sku, w.VALUE AS wh, r.LEVEL_MIN AS mn, r.LEVEL_MAX AS mx
   }
 
   # ------------------------------------------------------------ 3. punonjësit dhe prezenca
-  $empCode = "COALESCE(NULLIF(LTRIM(RTRIM(e.CODE)), ''), 'HR' + CAST(e.HR_EMPLOYEE_ID AS varchar(20)))"
-  if ((Has-Table $conn 'HR_EMPLOYEE') -and (Bar 'punonjesit')) {
+  # Logmicro gives every employee CODE '1', so the partner id is the only unique key
+  $empCode = "'LM' + CAST(e.C_BPARTNER_ID AS varchar(20))"
+  if ((Has-Table $conn 'HR_EMPLOYEE') -and (Bar 'punonjesit2')) {
     $t = Query $conn @"
 SELECT $empCode AS code, e.NAME AS name, e.NAME2 AS name2, e.NATIONALCODE AS personal, e.BIRTHDATE AS birth, e.GENDER AS gender,
        e.STARTDATE AS sd, e.ENDDATE AS ed, e.ISACTIVE AS active, bp.VALUE AS partner
-  FROM HR_EMPLOYEE e WITH (NOLOCK) LEFT JOIN C_BPARTNER bp WITH (NOLOCK) ON bp.C_BPARTNER_ID = e.C_BPARTNER_ID
+  FROM HR_EMPLOYEE e WITH (NOLOCK) JOIN C_BPARTNER bp WITH (NOLOCK) ON bp.C_BPARTNER_ID = e.C_BPARTNER_ID
+ WHERE bp.ISEMPLOYEE = 'Y' OR EXISTS (SELECT 1 FROM HR_CHECKINOUT c WITH (NOLOCK) WHERE c.C_BPARTNER_ID = e.C_BPARTNER_ID)
 "@
     $rows = @($t.Rows | ForEach-Object {
       $n = Str $_.name; $n2 = Str $_.name2
       if ($n2) { $first = $n; $last = $n2 } else { $i = $n.LastIndexOf(' '); if ($i -gt 0) { $first = $n.Substring(0, $i); $last = $n.Substring($i + 1) } else { $first = ''; $last = $n } }
       @{ code = (Str $_.code); first = $first; last = $last; personal = (Str $_.personal); birth = (Day $_.birth); gender = (Str $_.gender).ToLower()
          start = (Day $_.sd); end = (Day $_.ed); active = ((Str $_.active) -ne 'N'); partner = (Str $_.partner) } })
-    Done 'punonjesit' (Send-All 'employees' $rows 500)
+    Done 'punonjesit2' (Send-All 'employees' $rows 500)
   }
-  if ((Has-Table $conn 'HR_CHECKINOUT') -and (Bar 'prezenca')) {
+  if ((Has-Table $conn 'HR_CHECKINOUT') -and (Bar 'prezenca3')) {
     $t = Query $conn @"
 SELECT $empCode AS emp, CAST(c.CHECKTIME AS date) AS d, MIN(c.CHECKTIME) AS i, MAX(c.CHECKTIME) AS o
-  FROM HR_CHECKINOUT c WITH (NOLOCK) JOIN HR_EMPLOYEE e WITH (NOLOCK) ON e.C_BPARTNER_ID = c.C_BPARTNER_ID
- WHERE c.ISACTIVE = 'Y'
+  FROM HR_CHECKINOUT c WITH (NOLOCK)
+  JOIN (SELECT DISTINCT C_BPARTNER_ID FROM HR_EMPLOYEE WITH (NOLOCK)) e ON e.C_BPARTNER_ID = c.C_BPARTNER_ID
+ WHERE ISNULL(c.ISACTIVE, 'Y') = 'Y' AND c.CHECKTIME IS NOT NULL
  GROUP BY $empCode, CAST(c.CHECKTIME AS date)
 "@
     $rows = @($t.Rows | ForEach-Object { @{ employee = (Str $_.emp); date = (Day $_.d); in = (Stamp $_.i); out = $(if ([datetime]$_.o -gt [datetime]$_.i) { Stamp $_.o } else { '' }) } })
-    Done 'prezenca' (Send-All 'attendance' $rows 500)
+    Done 'prezenca3' (Send-All 'attendance' $rows 500)
   }
 
   # ------------------------------------------------------------ 4. pagesat dhe arka (me copa, vazhdon aty ku mbeti)
-  if (-not $st['pagesat_bere']) {
+  if (-not $st['pagesat2_bere']) {
     Log 'pagesat (C_PAYMENT)…' 'Cyan'
+    Show-Statuses $conn 'C_PAYMENT'
     $total = 0
     while ($true) {
-      $last = [long]$(if ($st['pagesat']) { $st['pagesat'] } else { 0 })
+      $last = [long]$(if ($st['pagesat2']) { $st['pagesat2'] } else { 0 })
       $t = Query $conn @"
-SELECT TOP 2000 p.C_PAYMENT_ID AS id, p.DOCUMENTNO AS num, p.DATETRX AS d, p.ISRECEIPT AS rec, p.PAYAMT AS amt, p.C_BANKACCOUNT_ID AS bank,
+SELECT TOP 2000 p.C_PAYMENT_ID AS id, p.DOCUMENTNO AS num, COALESCE(p.DATETRX, p.DATEACCT) AS d, p.ISRECEIPT AS rec, p.PAYAMT AS amt, p.C_BANKACCOUNT_ID AS bank,
        bp.VALUE AS pcode, bp.NAME AS pname, COALESCE(ba.DESCRIPTION, ba.ACCOUNTNO) AS book, o.DOCUMENTNO AS doc, p.DESCRIPTION AS descr
   FROM C_PAYMENT p WITH (NOLOCK)
   LEFT JOIN C_BPARTNER bp WITH (NOLOCK) ON bp.C_BPARTNER_ID = p.C_BPARTNER_ID
   LEFT JOIN C_BANKACCOUNT ba WITH (NOLOCK) ON ba.C_BANKACCOUNT_ID = p.C_BANKACCOUNT_ID
   LEFT JOIN C_ORDER o WITH (NOLOCK) ON o.C_ORDER_ID = COALESCE(p.C_ORDER_ID, p.C_INVOICE_ID)
- WHERE p.C_PAYMENT_ID > $last AND p.DOCSTATUS IN ('CO', 'CL') AND p.DATETRX IS NOT NULL
+ WHERE p.C_PAYMENT_ID > $last AND ISNULL(p.DOCSTATUS, 'CO') NOT IN ('VO', 'RE') AND ISNULL(p.ISACTIVE, 'Y') = 'Y' AND COALESCE(p.DATETRX, p.DATEACCT) IS NOT NULL
  ORDER BY p.C_PAYMENT_ID
 "@
       if ($t.Rows.Count -eq 0) { break }
@@ -209,10 +227,10 @@ SELECT TOP 2000 p.C_PAYMENT_ID AS id, p.DOCUMENTNO AS num, p.DATETRX AS d, p.ISR
            partner = (Str $_.pcode); partner_name = (Str $_.pname); amount = (Num $a 2); book = (Str $_.book); document = (Str $_.doc); description = (Str $_.descr) } })
       [void](Send-All 'payments' $rows 1000)
       $total += $rows.Count
-      $st['pagesat'] = [string]($t.Rows | ForEach-Object { [long]$_.id } | Measure-Object -Maximum).Maximum; Save-State
+      $st['pagesat2'] = [string]($t.Rows | ForEach-Object { [long]$_.id } | Measure-Object -Maximum).Maximum; Save-State
       Log "  pagesat: $total" 'DarkGray'
     }
-    $st['pagesat_bere'] = $true; Save-State; Log "  pagesat: $total gjithsej" 'Green'
+    $st['pagesat2_bere'] = $true; Save-State; Log "  pagesat: $total gjithsej" 'Green'
   }
   if (-not $st['arka_bere']) {
     Log 'arka (C_CASHLINE)…' 'Cyan'
@@ -243,18 +261,18 @@ SELECT TOP 3000 l.C_CASHLINE_ID AS id, c.NAME AS num, COALESCE(l.DATETRX, c.STAT
   }
 
   # ------------------------------------------------------------ 5. inventarizimet dhe transferimet
-  if (Bar 'inventarizimet') {
-    $h = Query $conn "SELECT i.M_INVENTORY_ID AS id, i.DOCUMENTNO AS num, i.MOVEMENTDATE AS d, w.VALUE AS wh, i.DESCRIPTION AS descr FROM M_INVENTORY i WITH (NOLOCK) LEFT JOIN M_WAREHOUSE w WITH (NOLOCK) ON w.M_WAREHOUSE_ID = i.M_WAREHOUSE_ID WHERE i.DOCSTATUS IN ('CO', 'CL')"
+  if (Bar 'inventarizimet2') {
+    $h = Query $conn "SELECT i.M_INVENTORY_ID AS id, i.DOCUMENTNO AS num, i.MOVEMENTDATE AS d, w.VALUE AS wh, i.DESCRIPTION AS descr FROM M_INVENTORY i WITH (NOLOCK) LEFT JOIN M_WAREHOUSE w WITH (NOLOCK) ON w.M_WAREHOUSE_ID = i.M_WAREHOUSE_ID WHERE ISNULL(i.DOCSTATUS, 'CO') NOT IN ('VO', 'RE') AND ISNULL(i.ISACTIVE, 'Y') = 'Y'"
     $l = Query $conn "SELECT il.M_INVENTORY_ID AS id, il.LINE AS line, p.VALUE AS sku, p.NAME AS name, il.QTYBOOK AS qb, il.QTYCOUNT AS qc, il.PRICEACTUAL AS price FROM M_INVENTORYLINE il WITH (NOLOCK) JOIN M_PRODUCT p WITH (NOLOCK) ON p.M_PRODUCT_ID = il.M_PRODUCT_ID WHERE il.ISACTIVE = 'Y'"
     $byDoc = @{}; foreach ($x in $l.Rows) { $k = [string]$x.id; if (-not $byDoc[$k]) { $byDoc[$k] = New-Object System.Collections.ArrayList }
       $q = [decimal]$(if ($x.qc -is [DBNull]) { 0 } else { $x.qc }) - [decimal]$(if ($x.qb -is [DBNull]) { 0 } else { $x.qb })
       [void]$byDoc[$k].Add(@{ line = [int]$x.line; sku = (Str $x.sku); name = (Str $x.name); qty = (Num $q 4); price = (Num $x.price 4) }) }
     $rows = @($h.Rows | Where-Object { -not ($_.d -is [DBNull]) } | ForEach-Object { @{ ext_id = "INV:${db}:$($_.id)"; kind = 'count'; doc_type = 'Inventarizim'; number = (Str $_.num); date = (Day $_.d)
       warehouse = (Str $_.wh); total = '0'; description = (Str $_.descr); lines = @($(if ($byDoc[[string]$_.id]) { $byDoc[[string]$_.id] } else { @() })) } })
-    Done 'inventarizimet' (Send-All 'documents' $rows 20)
+    Done 'inventarizimet2' (Send-All 'documents' $rows 20)
   }
-  if (Bar 'transferimet') {
-    $h = Query $conn "SELECT m.M_MOVEMENT_ID AS id, m.DOCUMENTNO AS num, m.MOVEMENTDATE AS d, m.DESCRIPTION AS descr, m.TOTALAMT AS total FROM M_MOVEMENT m WITH (NOLOCK) WHERE m.DOCSTATUS IN ('CO', 'CL')"
+  if (Bar 'transferimet2') {
+    $h = Query $conn "SELECT m.M_MOVEMENT_ID AS id, m.DOCUMENTNO AS num, m.MOVEMENTDATE AS d, m.DESCRIPTION AS descr, m.TOTALAMT AS total FROM M_MOVEMENT m WITH (NOLOCK) WHERE ISNULL(m.DOCSTATUS, 'CO') NOT IN ('VO', 'RE') AND ISNULL(m.ISACTIVE, 'Y') = 'Y'"
     $l = Query $conn @"
 SELECT ml.M_MOVEMENT_ID AS id, ml.LINE AS line, p.VALUE AS sku, p.NAME AS name, ml.MOVEMENTQTY AS qty, ml.PRICEACTUAL AS price, ml.LINENETAMT AS net,
        wf.VALUE AS wfrom, wt.VALUE AS wto
@@ -269,19 +287,20 @@ SELECT ml.M_MOVEMENT_ID AS id, ml.LINE AS line, p.VALUE AS sku, p.NAME AS name, 
     $rows = @($h.Rows | Where-Object { -not ($_.d -is [DBNull]) } | ForEach-Object { $k = [string]$_.id; $rt = $route[$k]
       @{ ext_id = "MV:${db}:$k"; kind = 'transfer'; doc_type = 'Transferim'; number = (Str $_.num); date = (Day $_.d); warehouse = $(if ($rt) { $rt[0] } else { '' })
          total = (Num $_.total 2); description = $(if ($rt) { "$($rt[0]) → $($rt[1])" } else { Str $_.descr }); lines = @($(if ($byDoc[$k]) { $byDoc[$k] } else { @() })) } })
-    Done 'transferimet' (Send-All 'documents' $rows 20)
+    Done 'transferimet2' (Send-All 'documents' $rows 20)
   }
 
   # ------------------------------------------------------------ 6. shitjet, kuponat, blerjet, kthimet (me copa)
-  if (-not $st['dokumentet_bere']) {
-    $count = (Query $conn "SELECT COUNT(*) AS n FROM C_ORDER WITH (NOLOCK) WHERE DOCSTATUS IN ('CO', 'CL')").Rows[0].n
+  if (-not $st['dokumentet2_bere']) {
+    Show-Statuses $conn 'C_ORDER'
+    $count = (Query $conn "SELECT COUNT(*) AS n FROM C_ORDER WITH (NOLOCK) WHERE $skipStatus").Rows[0].n
     Log "dokumentet (C_ORDER): $count gjithsej" 'Cyan'
-    $done = [long]$(if ($st['dokumentet_numri']) { $st['dokumentet_numri'] } else { 0 })
+    $done = [long]$(if ($st['dokumentet2_numri']) { $st['dokumentet2_numri'] } else { 0 })
     $t0 = Get-Date
     while ($true) {
-      $last = [long]$(if ($st['dokumentet']) { $st['dokumentet'] } else { 0 })
+      $last = [long]$(if ($st['dokumentet2']) { $st['dokumentet2'] } else { 0 })
       $h = Query $conn @"
-SELECT TOP 400 o.C_ORDER_ID AS id, o.DOCUMENTNO AS num, o.ISSOTRX AS so, o.DATEORDERED AS d, o.GRANDTOTAL AS total, o.TOTALLINES AS net, o.PAIDAMT AS paid,
+SELECT TOP 400 o.C_ORDER_ID AS id, o.DOCUMENTNO AS num, o.ISSOTRX AS so, COALESCE(o.DATEORDERED, o.DATEACCT) AS d, o.GRANDTOTAL AS total, o.TOTALLINES AS net, o.PAIDAMT AS paid,
        o.DISCOUNTAMT AS disc, o.C_POS_ID AS pos, o.DESCRIPTION AS descr, COALESCE(o.NOI_FISCALIZATION, o.IIC_FISCALIZATION) AS fiscal,
        dt.NAME AS dtname, dt.ISRETURN AS isret, bp.VALUE AS pcode, bp.NAME AS pname, w.VALUE AS wh, u.NAME AS cashier,
        (SELECT SUM(x.TAXAMT) FROM C_ORDERTAX x WITH (NOLOCK) WHERE x.C_ORDER_ID = o.C_ORDER_ID) AS tax
@@ -290,7 +309,7 @@ SELECT TOP 400 o.C_ORDER_ID AS id, o.DOCUMENTNO AS num, o.ISSOTRX AS so, o.DATEO
   LEFT JOIN C_BPARTNER bp WITH (NOLOCK) ON bp.C_BPARTNER_ID = o.C_BPARTNER_ID
   LEFT JOIN M_WAREHOUSE w WITH (NOLOCK) ON w.M_WAREHOUSE_ID = o.M_WAREHOUSE_ID
   LEFT JOIN AD_USER u WITH (NOLOCK) ON u.AD_USER_ID = o.SALESREP_ID
- WHERE o.C_ORDER_ID > $last AND o.DOCSTATUS IN ('CO', 'CL') AND o.DATEORDERED IS NOT NULL
+ WHERE o.C_ORDER_ID > $last AND ISNULL(o.DOCSTATUS, 'CO') NOT IN ('VO', 'RE') AND ISNULL(o.ISACTIVE, 'Y') = 'Y' AND COALESCE(o.DATEORDERED, o.DATEACCT) IS NOT NULL
  ORDER BY o.C_ORDER_ID
 "@
       if ($h.Rows.Count -eq 0) { break }
@@ -316,14 +335,14 @@ SELECT ol.C_ORDER_ID AS id, ol.LINE AS line, p.VALUE AS sku, COALESCE(p.NAME, ol
            cashier = (Str $_.cashier); fiscal = (Str $_.fiscal); description = (Str $_.descr); lines = @($(if ($byDoc[$k]) { $byDoc[$k] } else { @() })) } })
       [void](Send-All 'documents' $rows 200)
       $done += $rows.Count
-      $st['dokumentet'] = [string]($h.Rows | ForEach-Object { [long]$_.id } | Measure-Object -Maximum).Maximum
-      $st['dokumentet_numri'] = [string]$done; Save-State
+      $st['dokumentet2'] = [string]($h.Rows | ForEach-Object { [long]$_.id } | Measure-Object -Maximum).Maximum
+      $st['dokumentet2_numri'] = [string]$done; Save-State
       $pct = if ($count -gt 0) { [math]::Min(100, [math]::Round(100 * $done / $count, 1)) } else { 100 }
       $rate = $done / [math]::Max(((Get-Date) - $t0).TotalSeconds, 1)
       $eta = if ($rate -gt 0 -and $count -gt $done) { [TimeSpan]::FromSeconds(($count - $done) / $rate).ToString('hh\:mm') } else { '00:00' }
       Log ("  dokumentet: {0} nga {1} ({2}%), mbeten rreth {3}" -f $done, $count, $pct, $eta) 'DarkGray'
     }
-    $st['dokumentet_bere'] = $true; Save-State; Log "  dokumentet: $done gjithsej" 'Green'
+    $st['dokumentet2_bere'] = $true; Save-State; Log "  dokumentet: $done gjithsej" 'Green'
   }
 } finally { $conn.Close() }
 
