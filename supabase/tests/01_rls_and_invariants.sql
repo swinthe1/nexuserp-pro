@@ -52,6 +52,8 @@ insert into auth.users (email, raw_user_meta_data) values
   ('erin@alba.al',   '{"full_name":"Erin Employee"}'),
   ('zoe@platform.io','{"full_name":"Zoe Super"}');
 update public.profiles set is_super_admin = true where email = 'zoe@platform.io';
+-- these suites build their own companies as ordinary users (self-service on); 13_platform_licensing covers the closed mode
+update public.platform_settings set self_service = true;
 
 select t.ok((select count(*) from public.profiles) = 7, 'profiles auto-created on signup');
 
@@ -423,7 +425,7 @@ select t.ok(not exists (
    where n.nspname = 'public' and c.relkind = 'r'
      and exists (select 1 from pg_attribute a where a.attrelid = c.oid and a.attname = 'company_id')
      and c.relname not in (select table_name from app.table_registry)
-     and c.relname not in ('audit_log', 'document_sequence_counters', 'notification_preferences', 'roles')   -- hand-written policies by design
+     and c.relname not in ('audit_log', 'document_sequence_counters', 'notification_preferences', 'roles', 'licenses')   -- hand-written policies by design
   ), 'every company table went through register_table');
 
 -- ---------- summary ------------------------------------------------------------

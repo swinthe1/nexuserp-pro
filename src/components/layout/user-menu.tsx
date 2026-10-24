@@ -1,4 +1,5 @@
-import { Download, Languages, LogOut, Monitor, Moon, Sun, UserRound } from 'lucide-react'
+import { Download, KeyRound, Languages, LogOut, Monitor, Moon, ServerCog, Sun, UserRound } from 'lucide-react'
+import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/app/auth-provider'
 import { useCompany } from '@/app/company-provider'
@@ -10,17 +11,20 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { LOCALES, type Locale, t, td, useLocale } from '@/i18n'
 import { chooseLocale } from '@/i18n/language'
+import { ChangePasswordDialog } from '@/components/change-password-dialog'
 import { useInstallApp } from '@/components/pwa-prompts'
 import { initials } from '@/lib/utils'
 
 export function UserMenu() {
   const { user, signOut } = useAuth()
-  const { company } = useCompany()
+  const { company, isSuperAdmin } = useCompany()
+  const [pwOpen, setPwOpen] = React.useState(false)
   const { theme, setTheme } = useTheme()
   const locale = useLocale()
   const { canInstall, install } = useInstallApp()
   const name = (user?.user_metadata?.full_name as string | undefined) ?? user?.email ?? ''
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={t('Account menu')}>
         <Avatar className="size-7"><AvatarFallback>{initials(name)}</AvatarFallback></Avatar>
@@ -33,6 +37,8 @@ export function UserMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild><Link to="/hr/me"><UserRound /> {t('My workplace')}</Link></DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => setPwOpen(true)}><KeyRound /> {t('Change password')}</DropdownMenuItem>
+        {isSuperAdmin && <DropdownMenuItem asChild><Link to="/platform"><ServerCog /> {t('Clients and licences')}</Link></DropdownMenuItem>}
         <DropdownMenuSub>
           <DropdownMenuSubTrigger><Languages /> {t('Language')}: {LOCALES.find((l) => l.key === locale)?.label}</DropdownMenuSubTrigger>
           <DropdownMenuSubContent>
@@ -56,5 +62,7 @@ export function UserMenu() {
         <DropdownMenuItem onSelect={() => void signOut()}><LogOut /> {t('Sign out')}</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    <ChangePasswordDialog open={pwOpen} onOpenChange={setPwOpen} />
+    </>
   )
 }

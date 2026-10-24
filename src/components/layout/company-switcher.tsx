@@ -1,6 +1,7 @@
-import { Check, ChevronsUpDown, Plus } from 'lucide-react'
+import { Check, ChevronsUpDown, Plus, ServerCog } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
+import { startSupportVisit } from '@/components/license-banner'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -16,7 +17,7 @@ export function CompanyMark({ name, className }: { name: string; className?: str
 }
 
 export function CompanySwitcher({ collapsed }: { collapsed?: boolean }) {
-  const { companies, company, switchCompany } = useCompany()
+  const { companies, company, switchCompany, isSuperAdmin, selfService } = useCompany()
   const navigate = useNavigate()
   if (!company) return null
   return (
@@ -42,16 +43,23 @@ export function CompanySwitcher({ collapsed }: { collapsed?: boolean }) {
       <DropdownMenuContent className="w-64" align="start">
         <DropdownMenuLabel>{t('Companies')}</DropdownMenuLabel>
         {companies.map((c) => (
-          <DropdownMenuItem key={c.id} onSelect={() => { void switchCompany(c.id); navigate('/') }}>
+          <DropdownMenuItem key={c.id} onSelect={() => { startSupportVisit(c.id); void switchCompany(c.id); navigate('/') }}>
             <CompanyMark name={c.name} className="size-6 text-[10px]" />
             <span className="flex-1 truncate">{c.name}</span>
             {c.id === company.id && <Check className="!text-primary" />}
           </DropdownMenuItem>
         ))}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => navigate('/onboarding')}>
-          <Plus /> {t('Create a company')}
-        </DropdownMenuItem>
+        {(isSuperAdmin || selfService) && <DropdownMenuSeparator />}
+        {isSuperAdmin && (
+          <DropdownMenuItem onSelect={() => navigate('/platform')}>
+            <ServerCog /> {t('Clients and licences')}
+          </DropdownMenuItem>
+        )}
+        {selfService && !isSuperAdmin && (
+          <DropdownMenuItem onSelect={() => navigate('/onboarding')}>
+            <Plus /> {t('Create a company')}
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )

@@ -11,13 +11,24 @@ export interface CompanySummary {
   logo_path: string | null
   roles: string[]
   permissions: string[]
+  license?: { plan: string; max_users: number; valid_until: string } | null
+}
+
+/** A company the person belongs to that is on hold because of its licence */
+export interface BlockedCompany {
+  id: string
+  name: string
+  reason: 'expired' | 'suspended' | 'not_started' | 'missing'
+  valid_until: string | null
 }
 
 interface MyContext {
   user_id: string
   is_super_admin: boolean
+  self_service?: boolean
   last_company_id: string | null
   companies: CompanySummary[]
+  blocked?: BlockedCompany[]
 }
 
 interface CompanyCtx {
@@ -26,6 +37,9 @@ interface CompanyCtx {
   company: CompanySummary | null
   companyId: string
   isSuperAdmin: boolean
+  /** anyone may open a company (otherwise only the platform owner creates clients) */
+  selfService: boolean
+  blocked: BlockedCompany[]
   switchCompany: (id: string) => Promise<void>
   /** permission check with the same pattern rules as the database: exact, module.*, *.action, * */
   can: (perm: string) => boolean
@@ -91,6 +105,8 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     company,
     companyId: company?.id ?? '',
     isSuperAdmin: !!ctxQuery.data?.is_super_admin,
+    selfService: !!ctxQuery.data?.self_service,
+    blocked: ctxQuery.data?.blocked ?? [],
     switchCompany,
     can,
     refresh: () => ctxQuery.refetch(),

@@ -332,4 +332,8 @@ export const serverTemplates: [string, string][] = [
   ['Reversed: %', 'Stornuar: {0}'],
   ['Step %', 'Hapi {0}'],
   ['Nothing could be picked (%)', 'Nuk u mblodh asgjë ({0})'],
+  // platform and licences
+  ['The licence allows % users. Ask your provider for more.', 'Licenca lejon {0} përdorues. Kërkojini furnitorit më shumë.'],
+  ['A company with tax number % already exists', 'Ekziston tashmë një kompani me numrin fiskal {0}'],
+  ['No account with the email %', 'Nuk ka llogari me emailin {0}'],
 ]

@@ -5,6 +5,8 @@ import { AuthLayout } from '@/app/layouts/auth-layout'
 import { PageErrorBoundary } from '@/components/page-error-boundary'
 import { ForgotPasswordPage, LoginPage, ResetPasswordPage, SignupPage } from '@/features/auth/auth-pages'
 import { OnboardingPage } from '@/features/auth/onboarding-page'
+import { isSupportVisit } from '@/components/license-banner'
+import { lazyPage } from '@/app/require-perm'
 import { NotFoundPage } from '@/features/misc/coming-soon-page'
 import { RequirePerm } from '@/app/require-perm'
 import { useCompany } from '@/app/company-provider'
@@ -96,7 +98,9 @@ const ErrorBoundary = ({ children }: { children: React.ReactNode }) => <PageErro
  * leads the delivery board, employees without other access their own workplace page.
  */
 function Home() {
-  const { can } = useCompany()
+  const { can, isSuperAdmin, company } = useCompany()
+  // the platform owner starts on the client list, unless they chose to look inside this client
+  if (isSuperAdmin && company && !company.roles.length && !isSupportVisit(company.id)) return <Navigate to="/platform" replace />
   const manager = can('reports.read') && (can('sales.read') || can('finance.read'))
   if (can('pos.write') && !can('sales.read') && !can('finance.read')) return <Navigate to="/pos" replace />
   if (can('logistics.delete') && !can('sales.write') && !can('finance.read')) return <Navigate to="/logistics/planning" replace />
@@ -105,6 +109,8 @@ function Home() {
   if (!can('reports.read') && !can('sales.read') && !can('inventory.read') && !can('finance.read')) return <Navigate to="/hr/me" replace />
   return <DashboardPage />
 }
+
+const PlatformPage = lazyPage(() => import('@/features/platform/platform-page'), 'PlatformPage')
 
 const router = createBrowserRouter([
   {
@@ -117,6 +123,7 @@ const router = createBrowserRouter([
   },
   { path: '/reset-password', element: <div className="mx-auto max-w-sm px-6 py-16"><ResetPasswordPage /></div> },
   { path: '/onboarding', element: <OnboardingPage /> },
+  { path: '/platform', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PlatformPage /></React.Suspense></ErrorBoundary> },
   // the till runs full screen, outside the app shell, so it keeps working offline
   { path: '/pos/till/:registerId', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><TillPage /></React.Suspense></ErrorBoundary> },
   {

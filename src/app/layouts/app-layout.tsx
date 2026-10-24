@@ -6,6 +6,7 @@ import { CommandPaletteProvider } from '@/components/layout/command-palette'
 import { CompanySwitcher } from '@/components/layout/company-switcher'
 import { Sidebar, SidebarNav } from '@/components/layout/sidebar'
 import { Topbar } from '@/components/layout/topbar'
+import { LicenseBanner, SupportBanner } from '@/components/license-banner'
 import { OfflineBanner } from '@/components/offline-banner'
 import { PageErrorBoundary } from '@/components/page-error-boundary'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
@@ -32,7 +33,7 @@ function FullPageSkeleton() {
 
 export function AppLayout() {
   const { user, loading } = useAuth()
-  const { loading: companyLoading, companies } = useCompany()
+  const { loading: companyLoading, companies, isSuperAdmin } = useCompany()
   const location = useLocation()
   const [collapsed, setCollapsed] = React.useState(() => {
     try { return localStorage.getItem(KEY) === '1' } catch { return false }
@@ -50,7 +51,7 @@ export function AppLayout() {
   if (loading) return <FullPageSkeleton />
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />
   if (companyLoading) return <FullPageSkeleton />
-  if (!companies.length) return <Navigate to="/onboarding" replace />
+  if (!companies.length) return <Navigate to={isSuperAdmin ? '/platform' : '/onboarding'} replace />
 
   return (
     <CommandPaletteProvider>
@@ -69,6 +70,8 @@ export function AppLayout() {
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar onOpenMobileNav={() => setMobileOpen(true)} />
           <OfflineBanner />
+          <SupportBanner />
+          <LicenseBanner />
           <main id="main" className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
             <PageErrorBoundary key={location.pathname}><Outlet /></PageErrorBoundary>
           </main>

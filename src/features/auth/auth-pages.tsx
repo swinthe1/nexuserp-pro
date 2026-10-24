@@ -20,6 +20,7 @@ function authError(e: unknown): string {
   if (/already registered|already been registered|user already exists/i.test(m)) return t('An account with this email already exists. Sign in instead.')
   if (/rate limit|too many/i.test(m)) return t('Too many attempts. Wait a minute and try again.')
   if (/password should be at least/i.test(m)) return t('Use at least 8 characters')
+  if (/invitation only|database error saving new user|signups not allowed/i.test(m)) return t('This email has no invitation. Ask your company\'s administrator to invite you, then try again.')
   return describeError(e)
 }
 
@@ -54,7 +55,7 @@ export function LoginPage() {
 
   return (
     <>
-      <Heading title={t('Sign in')} sub={tr('New here? {link}', { link: <Link to="/signup" className="text-primary hover:underline">{t('Create an account')}</Link> })} />
+      <Heading title={t('Sign in')} sub={tr('Invited by your company? {link}', { link: <Link to="/signup" className="text-primary hover:underline">{t('Create your account')}</Link> })} />
       <Form {...form}>
         <form onSubmit={onSubmit} className="grid gap-4" noValidate>
           <FormField control={form.control} name="email" render={({ field }) => (
@@ -113,7 +114,7 @@ export function SignupPage() {
             <FormItem><FormLabel>{t('Password')}</FormLabel><FormControl><Input type="password" autoComplete="new-password" {...field} /></FormControl><FormMessage /></FormItem>
           )} />
           <Button type="submit" loading={form.formState.isSubmitting} className="mt-1">{t('Create account')}</Button>
-          <p className="text-xs text-muted-foreground">{t("If a colleague invited you, sign up with the same email and you'll join their company automatically.")}</p>
+          <p className="text-xs text-muted-foreground">{t('Accounts are by invitation. Use the email your company invited, and you join it automatically.')}</p>
         </form>
       </Form>
     </>

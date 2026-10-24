@@ -3759,6 +3759,47 @@ export type Database = {
           { foreignKeyName: "leave_types_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
         ]
       }
+      licenses: {
+        Row: {
+          company_id: string
+          plan: string
+          max_users: number
+          valid_from: string
+          valid_until: string
+          status: string
+          notes: string | null
+          created_at: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          company_id: string
+          plan?: string
+          max_users?: number
+          valid_from?: string
+          valid_until: string
+          status?: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          company_id?: string
+          plan?: string
+          max_users?: number
+          valid_from?: string
+          valid_until?: string
+          status?: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "licenses_company_id_fkey"; columns: ["company_id"]; isOneToOne: true; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
       lot_genealogy: {
         Row: {
           id: string
@@ -4751,6 +4792,24 @@ export type Database = {
           module?: string
           action?: string
           description?: string | null
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          id: boolean
+          self_service: boolean
+          updated_at: string
+        }
+        Insert: {
+          id?: boolean
+          self_service?: boolean
+          updated_at?: string
+        }
+        Update: {
+          id?: boolean
+          self_service?: boolean
+          updated_at?: string
         }
         Relationships: []
       }
@@ -10072,6 +10131,41 @@ export type Database = {
           p_run: string
         }
         Returns: { line_no: number | null; employee_id: string | null; personal_number: string | null; last_name: string | null; first_name: string | null; job_title: string | null; department: string | null; paid_days: number | null; gross: number | null; contribution_base: number | null; ss_employee: number | null; health_employee: number | null; ss_employer: number | null; health_employer: number | null; taxable: number | null; income_tax: number | null; net: number | null; employer_cost: number | null; iban: string | null }[]
+      }
+      platform_clients: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      platform_create_client: {
+        Args: {
+          p: Json
+        }
+        Returns: string
+      }
+      platform_save_license: {
+        Args: {
+          p_company: string
+          p_plan: string
+          p_max_users: number
+          p_valid_from: string
+          p_valid_until: string
+          p_status: string
+          p_notes?: string
+        }
+        Returns: undefined
+      }
+      platform_set_password: {
+        Args: {
+          p_email: string
+          p_password: string
+        }
+        Returns: undefined
+      }
+      platform_set_self_service: {
+        Args: {
+          p_on: boolean
+        }
+        Returns: undefined
       }
       pos_cash_move: {
         Args: {
