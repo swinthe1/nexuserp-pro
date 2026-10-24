@@ -5,7 +5,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { t } from '@/i18n'
-import { cn, initials } from '@/lib/utils'
+import { cn, initials, currencyLabel } from '@/lib/utils'
 
 export function CompanyMark({ name, className }: { name: string; className?: string }) {
   return (
@@ -33,7 +33,7 @@ export function CompanySwitcher({ collapsed }: { collapsed?: boolean }) {
           <>
             <span className="min-w-0 flex-1">
               <span className="block truncate font-semibold leading-tight">{company.name}</span>
-              <span className="block text-xs text-muted-foreground">{company.country_code === 'XK' ? t('Kosovo') : company.country_code === 'AL' ? t('Albania') : company.country_code} · {company.base_currency}</span>
+              <span className="block text-xs text-muted-foreground">{company.country_code === 'XK' ? t('Kosovo') : company.country_code === 'AL' ? t('Albania') : company.country_code} · {currencyLabel(company.base_currency)}</span>
             </span>
             <ChevronsUpDown className="size-4 text-muted-foreground" />
           </>

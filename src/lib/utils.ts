@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import { tEnum } from '@/i18n'
+import { getLocale, tEnum } from '@/i18n'
 import { formatDateWith, formatNumberWith } from '@/i18n/format'
 
 export function cn(...inputs: ClassValue[]) {
@@ -11,12 +11,19 @@ function nf(_key: string, opts: Intl.NumberFormatOptions) {
   return { format: (n: number) => formatNumberWith(n, opts) }
 }
 
-/** Money in the current language's format with the currency code after it: "12 340,00 ALL" (sq), "12,340.00 ALL" (en) */
+/** How a currency is written next to an amount: lekë in Albanian ("12 340,00 lekë"), the euro sign for euros, otherwise the code. */
+export function currencyLabel(code: string) {
+  if (code === 'ALL') return getLocale() === 'sq' ? 'lekë' : 'ALL'
+  if (code === 'EUR') return '€'
+  return code
+}
+
+/** Money in the current language's format with the currency after it: "12 340,00 lekë" (sq), "12,340.00 ALL" (en), "1 250,00 €" */
 export function formatMoney(value: number | string | null | undefined, currency?: string, decimals = 2) {
   if (value === null || value === undefined || value === '') return '—'
   const n = typeof value === 'string' ? Number(value) : value
   const s = nf(`m${decimals}`, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(n)
-  return currency ? `${s} ${currency}` : s
+  return currency ? `${s} ${currencyLabel(currency)}` : s
 }
 
 /** Quantities: up to 4 decimals, trailing zeros trimmed */

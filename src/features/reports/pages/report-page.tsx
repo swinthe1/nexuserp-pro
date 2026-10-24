@@ -15,7 +15,7 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import type { XlsxColumn } from '@/lib/export'
 import { ErrorState } from '@/components/error-state'
 import { formatDateWith, msg, t, tn, tServer } from '@/i18n'
-import { cn, formatCompact, formatDate, formatMoney, formatQty, num, todayISO } from '@/lib/utils'
+import { cn, formatCompact, formatDate, formatMoney, formatQty, num, todayISO, currencyLabel } from '@/lib/utils'
 import { axisTick, iso, tooltipStyle } from '@/features/finance/pages/finance-overview-page'
 import { useReport, type ReportColumn, type ReportRow } from '../api'
 import { DIM_LABEL, canRunReport, reportDef } from '../catalog'
@@ -153,7 +153,7 @@ export function ReportPage() {
               <Table className="min-w-[640px]">
                 <TableHeader><TableRow className="hover:bg-transparent">
                   <TableHead>{dimLabel}</TableHead>
-                  {cols.map((c) => <TableHead key={c.key} className="text-right">{tServer(c.label)}{c.type === 'money' && company ? <span className="font-normal text-muted-foreground"> {company.base_currency}</span> : null}</TableHead>)}
+                  {cols.map((c) => <TableHead key={c.key} className="text-right">{tServer(c.label)}{c.type === 'money' && company ? <span className="font-normal text-muted-foreground"> {currencyLabel(company.base_currency)}</span> : null}</TableHead>)}
                 </TableRow></TableHeader>
                 <TableBody>
                   {rows.map((r) => {
