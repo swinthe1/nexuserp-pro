@@ -45,7 +45,7 @@ select t.ok((select count(*) from public.product_variants where company_id = :'c
 select t.ok(exists (select 1 from public.warehouses where company_id = :'co' and code = '2'), 'stores arrive');
 select t.ok((select count(*) from public.business_partners where company_id = :'co' and code in ('1001','1002')) = 2, 'partners arrive');
 select t.ok((select sum(on_hand) from public.stock_levels where company_id = :'co') = 10, 'stock is set to the old program''s quantity');
-select t.ok((:'r1'::jsonb -> 'stock' ->> 'unknown_items') = '1', 'unknown items are counted, not fatal');
+select t.ok((:'r1'::jsonb -> 'stock' ->> 'unknown_items') = '1' and (:'r1'::jsonb -> 'stock' -> 'unknown_skus' ->> 0) = 'NOPE', 'unknown items are counted and named, not fatal');
 select t.ok((select open_amount from public.external_documents where company_id = :'co' and ext_id = '100') = 120, 'open documents are mirrored');
 select t.ok((select partner_id is not null from public.external_documents where company_id = :'co' and ext_id = '100'), 'and linked to the partner');
 select t.ok(not exists (select 1 from public.journal_entries where company_id = :'co' and source_doc_type = 'sales_invoice'), 'mirrored documents do not touch the books');

@@ -13,7 +13,7 @@
 param([switch]$Service, [switch]$Full, [switch]$Once)
 
 $ErrorActionPreference = 'Stop'
-$Version = '1.9'
+$Version = '2.0'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $cfgPath = Join-Path $here 'lidhja.json'
 $statePath = Join-Path $here 'lidhja-gjendja.json'
@@ -143,6 +143,9 @@ function Send-Part([string]$name, [object[]]$part, [hashtable]$extra) {
   $b = @{ $name = $part }; foreach ($k in $extra.Keys) { $b[$k] = $extra[$k] }
   try {
     $r = Push $b
+    if ($name -eq 'stock' -and $r.stock) { $script:stockReport.changed += [int]$r.stock.changed; $script:stockReport.unknown += [int]$r.stock.unknown_items; $script:stockReport.nowh += [int]$r.stock.unknown_warehouse
+      foreach ($x in @($r.stock.unknown_skus)) { if ($x -and $script:stockReport.skus.Count -lt 8) { [void]$script:stockReport.skus.Add([string]$x) } }
+      foreach ($x in @($r.stock.unknown_warehouses)) { if ($x -and -not $script:stockReport.whs.Contains([string]$x)) { [void]$script:stockReport.whs.Add([string]$x) } } }
     $errs = $r.$name.errors
     if ($errs) { Log ("  {0}: {1} rreshta me gabime (p.sh. {2})" -f $name, $errs, (($r.$name.sample | Select-Object -First 1 | ConvertTo-Json -Compress))) 'Yellow' }
     return $part.Count
@@ -420,6 +423,19 @@ function Send-SalesDocs($db) {
   if ($top -gt [long]$state.wm['ord']) { $state.wm['ord'] = [string]$top }
   return $saved
 }
+function New-StockReport { $script:stockReport = @{ changed = 0; unknown = 0; nowh = 0; skus = (New-Object System.Collections.ArrayList); whs = (New-Object System.Collections.ArrayList) } }
+New-StockReport
+# every few hours: every quantity Logmicro has, compared with NexusERP; only differences are corrected
+function Check-AllStock($db) {
+  Log 'Kontrolli i plotë i stokut (krahasohet çdo artikull në çdo njësi)…' 'Cyan'
+  New-StockReport
+  $rows = Read-Stock $db 'AND s.QTYONHAND <> 0'
+  $n = Push-List 'stock' $rows 300
+  $r = $script:stockReport
+  Log ("  {0} rreshta të kontrolluar, {1} u korrigjuan" -f $n, $r.changed) $(if ($r.changed) { 'Yellow' } else { 'Green' })
+  if ($r.unknown) { Log ("  {0} rreshta me artikuj që NexusERP nuk i njeh, p.sh. {1}" -f $r.unknown, ($r.skus -join ', ')) 'Yellow' }
+  if ($r.nowh) { Log ("  {0} rreshta në njësi që NexusERP nuk i njeh: {1}" -f $r.nowh, ($r.whs -join ', ')) 'Yellow' }
+}
 function Run-Cycle {
   $db = New-Connection
   try {
@@ -450,6 +466,11 @@ function Run-Cycle {
       $state.wm['ord'] = [string](First-OrderToday $db)
       $state.full_done = $true
     } else {
+      $hours = $(if ($cfg.stock_check_hours) { [double]$cfg.stock_check_hours } else { 6 })
+      if (-not $state.wm['stockcheck'] -or ((Get-Date) - [datetime]$state.wm['stockcheck']).TotalHours -ge $hours) {
+        Check-AllStock $db
+        $state.wm['stockcheck'] = (Get-Date).ToString('s'); Save-State
+      }
       $w = @{}; foreach ($k in 'products', 'partners', 'prices', 'stock', 'ledger') { $w[$k] = SqlTime (([datetime]$state.wm[$k]).AddSeconds(-5)) }
       $prodWhere = "AND (p.UPDATED > '$($w.products)' OR p.M_PRODUCT_ID IN (SELECT pp.M_PRODUCT_ID FROM M_PRODUCTPRICE pp WITH (NOLOCK) WHERE pp.UPDATED > '$($w.prices)'))"
       $sent.artikuj = Push-List 'products' (Read-Products $db $lists $prodWhere) 150
