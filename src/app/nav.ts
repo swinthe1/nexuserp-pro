@@ -1,5 +1,5 @@
 import {
-  Bell, CalendarDays, CalendarClock, ClipboardPen, Contact, FileBarChart, FileSpreadsheet, Fingerprint, Globe, History, Import, KeyRound, ListOrdered,
+  Bell, CalendarDays, CalendarClock, ClipboardPen, Contact, FileBarChart, FileSpreadsheet, Fingerprint, Globe, History, Import, KeyRound, Archive, ListOrdered,
   MapPinned, PackageCheck as PackageDone, Route, ShieldCheck, UserRound, UsersRound, Workflow,
   BadgePercent, ClipboardCheck, Hourglass, PackageOpen, ScanLine, ShoppingBasket,
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, BookOpenText, Building, HandCoins, ListTree, Network, Settings2, Wallet, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, Gauge,
@@ -145,6 +145,7 @@ export const NAV: NavSection[] = [
     label: msg('Company'),
     items: [
       { label: msg('Reports'), href: '/reports', icon: FileBarChart, perm: 'core.read', keywords: ['analytics', 'sales analysis', 'margin', 'valuation', 'aging', 'raporte'] },
+      { label: msg('History from the old program'), href: '/history', icon: Archive, perm: 'invoicing.read', keywords: ['historiku', 'logmicro', 'arkiv', 'archive', 'old program', 'kubit', 'bilanc'] },
       { label: msg('Approvals'), href: '/approvals', icon: Gauge, perm: 'core.read', keywords: ['approve', 'pending', 'inbox'] },
       { label: msg('Notifications'), href: '/notifications', icon: Bell, perm: 'core.read', keywords: ['alerts', 'inbox', 'reminders', 'njoftime'] },
       { label: msg('Company settings'), href: '/settings', icon: Building2, perm: 'admin.read', keywords: ['profile', 'nipt', 'fiscal codes', 'preferences'] },

@@ -3049,6 +3049,265 @@ export type Database = {
           { foreignKeyName: "goods_receipts_currency_code_fkey"; columns: ["currency_code"]; isOneToOne: false; referencedRelation: "currencies"; referencedColumns: ["code"] },
         ]
       }
+      history_account_balances: {
+        Row: {
+          id: string
+          company_id: string
+          account_code: string
+          account_name: string | null
+          period: string
+          debit: number
+          credit: number
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          account_code: string
+          account_name?: string | null
+          period: string
+          debit?: number
+          credit?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          account_code?: string
+          account_name?: string | null
+          period?: string
+          debit?: number
+          credit?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "history_account_balances_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
+      history_document_lines: {
+        Row: {
+          id: string
+          company_id: string
+          document_id: string
+          line_no: number
+          sku: string | null
+          name: string | null
+          variant_id: string | null
+          quantity: number
+          unit_price: number | null
+          discount_pct: number | null
+          net: number | null
+          total: number | null
+          tax_rate: number | null
+          unit_cost: number | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          document_id: string
+          line_no?: number
+          sku?: string | null
+          name?: string | null
+          variant_id?: string | null
+          quantity?: number
+          unit_price?: number | null
+          discount_pct?: number | null
+          net?: number | null
+          total?: number | null
+          tax_rate?: number | null
+          unit_cost?: number | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          document_id?: string
+          line_no?: number
+          sku?: string | null
+          name?: string | null
+          variant_id?: string | null
+          quantity?: number
+          unit_price?: number | null
+          discount_pct?: number | null
+          net?: number | null
+          total?: number | null
+          tax_rate?: number | null
+          unit_cost?: number | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "history_document_lines_company_id_document_id_fkey"; columns: ["company_id", "document_id"]; isOneToOne: false; referencedRelation: "history_documents"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "history_document_lines_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "history_document_lines_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      history_documents: {
+        Row: {
+          id: string
+          company_id: string
+          ext_id: string
+          kind: string
+          doc_type: string | null
+          number: string | null
+          doc_date: string
+          partner_code: string | null
+          partner_name: string | null
+          partner_id: string | null
+          warehouse_code: string | null
+          warehouse_id: string | null
+          total: number
+          net: number | null
+          tax: number | null
+          discount: number | null
+          paid: number | null
+          cashier: string | null
+          fiscal_code: string | null
+          description: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          ext_id: string
+          kind: string
+          doc_type?: string | null
+          number?: string | null
+          doc_date: string
+          partner_code?: string | null
+          partner_name?: string | null
+          partner_id?: string | null
+          warehouse_code?: string | null
+          warehouse_id?: string | null
+          total?: number
+          net?: number | null
+          tax?: number | null
+          discount?: number | null
+          paid?: number | null
+          cashier?: string | null
+          fiscal_code?: string | null
+          description?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          ext_id?: string
+          kind?: string
+          doc_type?: string | null
+          number?: string | null
+          doc_date?: string
+          partner_code?: string | null
+          partner_name?: string | null
+          partner_id?: string | null
+          warehouse_code?: string | null
+          warehouse_id?: string | null
+          total?: number
+          net?: number | null
+          tax?: number | null
+          discount?: number | null
+          paid?: number | null
+          cashier?: string | null
+          fiscal_code?: string | null
+          description?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "history_documents_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "history_documents_company_id_partner_id_fkey"; columns: ["company_id", "partner_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "history_documents_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      history_payments: {
+        Row: {
+          id: string
+          company_id: string
+          ext_id: string
+          kind: string
+          number: string | null
+          pay_date: string
+          partner_code: string | null
+          partner_name: string | null
+          partner_id: string | null
+          amount: number
+          book: string | null
+          document: string | null
+          description: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          ext_id: string
+          kind: string
+          number?: string | null
+          pay_date: string
+          partner_code?: string | null
+          partner_name?: string | null
+          partner_id?: string | null
+          amount: number
+          book?: string | null
+          document?: string | null
+          description?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          ext_id?: string
+          kind?: string
+          number?: string | null
+          pay_date?: string
+          partner_code?: string | null
+          partner_name?: string | null
+          partner_id?: string | null
+          amount?: number
+          book?: string | null
+          document?: string | null
+          description?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "history_payments_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "history_payments_company_id_partner_id_fkey"; columns: ["company_id", "partner_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
       import_templates: {
         Row: {
           id: string
@@ -8137,6 +8396,7 @@ export type Database = {
           created_by: string | null
           updated_at: string
           updated_by: string | null
+          external_ref: string | null
         }
         Insert: {
           id?: string
@@ -8163,6 +8423,7 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          external_ref?: string | null
         }
         Update: {
           id?: string
@@ -8189,6 +8450,7 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          external_ref?: string | null
         }
         Relationships: [
           { foreignKeyName: "stock_movements_company_id_from_location_id_fkey"; columns: ["company_id", "from_location_id"]; isOneToOne: false; referencedRelation: "warehouse_locations"; referencedColumns: ["company_id", "id"] },
@@ -10684,6 +10946,41 @@ export type Database = {
         }
         Returns: { kind: string | null; id: string | null; title: string | null; subtitle: string | null; href: string | null }[]
       }
+      history_balances: {
+        Args: {
+          p_company: string
+          p_year: number
+        }
+        Returns: Json
+      }
+      history_document: {
+        Args: {
+          p_id: string
+        }
+        Returns: Json
+      }
+      history_documents_page: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: Json
+      }
+      history_payments_page: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: Json
+      }
+      history_summary: {
+        Args: {
+          p_company: string
+          p_from: string
+          p_to: string
+        }
+        Returns: Json
+      }
       hr_overview: {
         Args: {
           p_company: string
@@ -11529,6 +11826,14 @@ export type Database = {
         Args: {
           p_company: string
           p_name: string
+        }
+        Returns: Json
+      }
+      sync_history: {
+        Args: {
+          p_key: string
+          p_kind: string
+          p_rows: Json
         }
         Returns: Json
       }
