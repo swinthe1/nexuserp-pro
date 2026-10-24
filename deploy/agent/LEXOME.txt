@@ -1,0 +1,18 @@
+NexusERP - Agjenti i leximit (hapi 1)
+
+Cfare ben: lexon STRUKTUREN e databazes se programit te vjeter (tabelat, kolonat,
+lidhjet, numrin e rreshtave) dhe, nese lejoni, 3 rreshta shembull per tabele.
+VETEM LEXON. Nuk ndryshon, nuk fshin, nuk dergon asgje ne internet.
+
+Si perdoret:
+1. Kopjoni kete dosje (Agjenti) ne serverin ku punon programi i vjeter.
+2. Ne server, klikoni me te djathten "Nis-Agjentin.bat" > Run as administrator.
+   (ose me llogarine qe hap SQL Server Management Studio)
+3. Zgjidhni databazen e programit kur pyet.
+4. Ne fund hapet dosja "rezultati" me dy skedare:
+     struktura-....json   -> ia dergoni zhvilluesit
+     permbledhja-....txt  -> mund ta lexoni vete
+5. Mund ta fshini dosjen Agjenti nga serveri pas perdorimit.
+
+Nese hyrja me Windows nuk funksionon, agjenti kerkon perdorues SQL (p.sh. sa).
+Fjalekalimi nuk ruhet askund.
