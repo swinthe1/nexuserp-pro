@@ -13,7 +13,7 @@
 param([switch]$Service, [switch]$Full, [switch]$Once)
 
 $ErrorActionPreference = 'Stop'
-$Version = '2.0'
+$Version = '2.1'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $cfgPath = Join-Path $here 'lidhja.json'
 $statePath = Join-Path $here 'lidhja-gjendja.json'
@@ -104,6 +104,7 @@ function Test-Barcode([string]$code) {
 }
 $unitMap = @{ 'cope' = 'pcs'; 'copë' = 'pcs'; 'pcs' = 'pcs'; 'kg' = 'kg'; 'g' = 'g'; 'gr' = 'g'; 'l' = 'l'; 'lit' = 'l'; 'litër' = 'l'; 'ml' = 'ml'; 'm' = 'm'; 'cm' = 'cm';
               'pako' = 'box'; 'kuti' = 'box'; 'box' = 'box'; 'paketë' = 'box'; 'dz' = 'dz'; 'ore' = 'h'; 'orë' = 'h' }
+$whCode = "COALESCE(NULLIF(LTRIM(RTRIM(w.VALUE)), ''), 'W' + CAST(w.M_WAREHOUSE_ID AS varchar(20)))"
 function SqlTime($t) { return ([datetime]$t).ToString('yyyy-MM-ddTHH:mm:ss.fff', $inv) }
 
 # ---------------------------------------------------------------- dërgimi
@@ -145,7 +146,7 @@ function Send-Part([string]$name, [object[]]$part, [hashtable]$extra) {
     $r = Push $b
     if ($name -eq 'stock' -and $r.stock) { $script:stockReport.changed += [int]$r.stock.changed; $script:stockReport.unknown += [int]$r.stock.unknown_items; $script:stockReport.nowh += [int]$r.stock.unknown_warehouse
       foreach ($x in @($r.stock.unknown_skus)) { if ($x -and $script:stockReport.skus.Count -lt 8) { [void]$script:stockReport.skus.Add([string]$x) } }
-      foreach ($x in @($r.stock.unknown_warehouses)) { if ($x -and -not $script:stockReport.whs.Contains([string]$x)) { [void]$script:stockReport.whs.Add([string]$x) } } }
+      foreach ($x in @($r.stock.unknown_warehouses)) { if ($null -ne $x -and -not $script:stockReport.whs.Contains([string]$x)) { [void]$script:stockReport.whs.Add([string]$x) } } }
     $errs = $r.$name.errors
     if ($errs) { Log ("  {0}: {1} rreshta me gabime (p.sh. {2})" -f $name, $errs, (($r.$name.sample | Select-Object -First 1 | ConvertTo-Json -Compress))) 'Yellow' }
     return $part.Count
@@ -277,7 +278,7 @@ SELECT bp.C_BPARTNER_ID AS id, bp.VALUE AS code, bp.NAME AS name, bp.ISCUSTOMER 
 # the old program's own movements (sales, receipts, transfers, counts) after transaction id $after
 function Read-Movements($db, [long]$after) {
   $t = Query $db @"
-SELECT TOP 3000 t.M_TRANSACTION_ID AS id, t.MOVEMENTTYPE AS mt, w.VALUE AS warehouse, p.VALUE AS sku, t.MOVEMENTQTY AS qty, t.MOVEMENTDATE AS dt,
+SELECT TOP 3000 t.M_TRANSACTION_ID AS id, t.MOVEMENTTYPE AS mt, $whCode AS warehouse, p.VALUE AS sku, t.MOVEMENTQTY AS qty, t.MOVEMENTDATE AS dt,
        COALESCE(mv.DOCUMENTNO, inv.DOCUMENTNO, o.DOCUMENTNO) AS ref, CASE WHEN o.C_POS_ID IS NOT NULL THEN 1 ELSE 0 END AS pos
   FROM M_TRANSACTION t WITH (NOLOCK)
   JOIN M_LOCATOR loc WITH (NOLOCK) ON loc.M_LOCATOR_ID = t.M_LOCATOR_ID
@@ -306,14 +307,14 @@ function Last-TransactionId($db) {
 
 function Read-Stock($db, [string]$productFilter) {
   $t = Query $db @"
-SELECT w.VALUE AS warehouse, p.VALUE AS sku, SUM(s.QTYONHAND) AS qty, MAX(ISNULL(c.cost, p.PRICECOST)) AS cost
+SELECT $whCode AS warehouse, p.VALUE AS sku, SUM(s.QTYONHAND) AS qty, MAX(ISNULL(c.cost, p.PRICECOST)) AS cost
   FROM M_STORAGE s WITH (NOLOCK)
   JOIN M_LOCATOR loc WITH (NOLOCK) ON loc.M_LOCATOR_ID = s.M_LOCATOR_ID
   JOIN M_WAREHOUSE w WITH (NOLOCK) ON w.M_WAREHOUSE_ID = loc.M_WAREHOUSE_ID
   JOIN M_PRODUCT p WITH (NOLOCK) ON p.M_PRODUCT_ID = s.M_PRODUCT_ID
   OUTER APPLY (SELECT MAX(mc.CURRENTCOSTPRICE) AS cost FROM M_COST mc WITH (NOLOCK) WHERE mc.M_PRODUCT_ID = s.M_PRODUCT_ID AND mc.CURRENTCOSTPRICE > 0) c
  WHERE 1 = 1 $productFilter
- GROUP BY w.VALUE, p.VALUE
+ GROUP BY $whCode, p.VALUE
 "@
   $rows = New-Object System.Collections.ArrayList
   foreach ($s in $t.Rows) { [void]$rows.Add(@{ warehouse = (Str $s.warehouse); sku = (Str $s.sku); qty = (Num $s.qty 3); cost = (Cost $s.cost) }) }
@@ -342,7 +343,7 @@ l AS (
   $t = Query $db @"
 $cte
 SELECT l.bp, l.ord, l.bal, bp.VALUE AS code, bp.ISVENDOR AS vend, o.DOCUMENTNO AS number, o.ISSOTRX AS sales, o.DATEORDERED AS date,
-       o.GRANDTOTAL AS total, ISNULL(pt.NETDAYS, 0) AS days, w.VALUE AS warehouse
+       o.GRANDTOTAL AS total, ISNULL(pt.NETDAYS, 0) AS days, $whCode AS warehouse
   FROM l JOIN C_BPARTNER bp WITH (NOLOCK) ON bp.C_BPARTNER_ID = l.bp
   LEFT JOIN C_ORDER o WITH (NOLOCK) ON o.C_ORDER_ID = l.ord
   LEFT JOIN C_PAYMENTTERM pt WITH (NOLOCK) ON pt.C_PAYMENTTERM_ID = o.C_PAYMENTTERM_ID
@@ -375,7 +376,7 @@ function Read-SalesDocs($db, [long]$after, [string]$since) {
   $h = Query $db @"
 SELECT TOP 500 o.C_ORDER_ID AS id, o.DOCUMENTNO AS num, o.ISSOTRX AS so, COALESCE(o.DATEORDERED, o.DATEACCT) AS d, o.GRANDTOTAL AS total, o.TOTALLINES AS net, o.PAIDAMT AS paid,
        o.DISCOUNTAMT AS disc, o.C_POS_ID AS pos, o.DESCRIPTION AS descr, COALESCE(o.NOI_FISCALIZATION, o.IIC_FISCALIZATION) AS fiscal,
-       dt.NAME AS dtname, dt.ISRETURN AS isret, bp.VALUE AS pcode, bp.NAME AS pname, w.VALUE AS wh, u.NAME AS cashier,
+       dt.NAME AS dtname, dt.ISRETURN AS isret, bp.VALUE AS pcode, bp.NAME AS pname, $whCode AS wh, u.NAME AS cashier,
        (SELECT SUM(x.TAXAMT) FROM C_ORDERTAX x WITH (NOLOCK) WHERE x.C_ORDER_ID = o.C_ORDER_ID) AS tax
   FROM C_ORDER o WITH (NOLOCK)
   LEFT JOIN C_DOCTYPE dt WITH (NOLOCK) ON dt.C_DOCTYPE_ID = o.C_DOCTYPE_ID
@@ -434,7 +435,19 @@ function Check-AllStock($db) {
   $r = $script:stockReport
   Log ("  {0} rreshta të kontrolluar, {1} u korrigjuan" -f $n, $r.changed) $(if ($r.changed) { 'Yellow' } else { 'Green' })
   if ($r.unknown) { Log ("  {0} rreshta me artikuj që NexusERP nuk i njeh, p.sh. {1}" -f $r.unknown, ($r.skus -join ', ')) 'Yellow' }
-  if ($r.nowh) { Log ("  {0} rreshta në njësi që NexusERP nuk i njeh: {1}" -f $r.nowh, ($r.whs -join ', ')) 'Yellow' }
+  if ($r.nowh) {
+    $names = Query $db "SELECT $whCode AS code, w.NAME AS name, w.ISACTIVE AS active FROM M_WAREHOUSE w WITH (NOLOCK)"
+    $missing = @($names.Rows | Where-Object { $r.whs.Contains((Str $_.code)) })
+    Log ("  {0} rreshta në njësi që NexusERP nuk i ka: {1}" -f $r.nowh, (($missing | ForEach-Object { "$(Str $_.code) $(Str $_.name)" + $(if ((Str $_.active) -eq 'N') { ' (joaktive te Logmicro)' } else { '' }) }) -join ', ')) 'Yellow'
+    if ($missing.Count) {
+      $whRows = @($missing | ForEach-Object { @{ code = (Str $_.code); name = $(if (Str $_.name) { Str $_.name } else { "Njësia $(Str $_.code)" }); type = 'store' } })
+      [void](Push-List 'warehouses' $whRows 200)
+      New-StockReport
+      $again = @($rows | Where-Object { $r.whs.Contains($_.warehouse) })
+      [void](Push-List 'stock' $again 300)
+      Log ("  u krijuan {0} njësi dhe u dërgua stoku i tyre: {1} rreshta, {2} u korrigjuan" -f $missing.Count, $again.Count, $script:stockReport.changed) 'Green'
+    }
+  }
 }
 function Run-Cycle {
   $db = New-Connection
@@ -445,7 +458,7 @@ function Run-Cycle {
     $sent = [ordered]@{}
     if (-not $state.full_done) {
       Log 'Ngarkimi i plotë i parë (mund të zgjasë disa minuta)...' 'Cyan'
-      $wh = Query $db "SELECT w.VALUE AS code, w.NAME AS name, l.ADDRESS1 AS address, l.CITY AS city FROM M_WAREHOUSE w WITH (NOLOCK) LEFT JOIN C_LOCATION l WITH (NOLOCK) ON l.C_LOCATION_ID = w.C_LOCATION_ID WHERE w.ISACTIVE = 'Y'"
+      $wh = Query $db "SELECT $whCode AS code, w.NAME AS name, l.ADDRESS1 AS address, l.CITY AS city FROM M_WAREHOUSE w WITH (NOLOCK) LEFT JOIN C_LOCATION l WITH (NOLOCK) ON l.C_LOCATION_ID = w.C_LOCATION_ID WHERE w.ISACTIVE = 'Y'"
       $whRows = @($wh.Rows | ForEach-Object { @{ code = (Str $_.code); name = (Str $_.name); type = 'store'; address = (Str $_.address); city = (Str $_.city) } })
       $sent.magazina = Push-List 'warehouses' $whRows 200
       $allProducts = Read-Products $db $lists ''
@@ -467,9 +480,9 @@ function Run-Cycle {
       $state.full_done = $true
     } else {
       $hours = $(if ($cfg.stock_check_hours) { [double]$cfg.stock_check_hours } else { 6 })
-      if (-not $state.wm['stockcheck'] -or ((Get-Date) - [datetime]$state.wm['stockcheck']).TotalHours -ge $hours) {
+      if (-not $state.wm['stockcheck2'] -or ((Get-Date) - [datetime]$state.wm['stockcheck2']).TotalHours -ge $hours) {
         Check-AllStock $db
-        $state.wm['stockcheck'] = (Get-Date).ToString('s'); Save-State
+        $state.wm['stockcheck2'] = (Get-Date).ToString('s'); Save-State
       }
       $w = @{}; foreach ($k in 'products', 'partners', 'prices', 'stock', 'ledger') { $w[$k] = SqlTime (([datetime]$state.wm[$k]).AddSeconds(-5)) }
       $prodWhere = "AND (p.UPDATED > '$($w.products)' OR p.M_PRODUCT_ID IN (SELECT pp.M_PRODUCT_ID FROM M_PRODUCTPRICE pp WITH (NOLOCK) WHERE pp.UPDATED > '$($w.prices)'))"
