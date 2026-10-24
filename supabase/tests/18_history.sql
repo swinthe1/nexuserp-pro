@@ -22,6 +22,8 @@ select public.sync_history(:'key', 'documents', '[
    "lines":[{"line":10,"sku":"500","qty":"200","price":"0.5","total":"100"}]}]'::jsonb) as h1 \gset
 select public.sync_history(:'key', 'documents', '[{"ext_id":"LM2026:1","kind":"pos_sale","number":"K-1","date":"2026-01-05","total":"2.5","partner":"C9","warehouse":"3",
    "lines":[{"line":10,"sku":"500","qty":"2","price":"1","total":"2"},{"line":20,"sku":"501","qty":"1","price":"0.5","total":"0.5"}]}]'::jsonb) as h2 \gset
+select public.sync_history(:'key', 'documents', '[{"ext_id":"LM2026:3","kind":"pos_sale","number":"K-3","date":"2026-01-06","warehouse":"3","total":"1","tax":"","paid":"","partner":"",
+   "lines":[{"line":10,"sku":"500","qty":"1","price":"1","total":"1","discount":"","cost":""}]}]'::jsonb) as h3 \gset
 select public.sync_history(:'key', 'payments', '[{"ext_id":"CL:1","kind":"cash","number":"K-1","date":"2026-01-05","amount":"2.5","book":"Arka 3","document":"K-1"},
   {"ext_id":"P:1","kind":"bank","number":"PAG-1","date":"2026-01-20","partner":"V9","amount":"-100","document":"FB-1"}]'::jsonb) as p1 \gset
 select public.sync_history(:'key', 'balances', '[{"account":"60100","name":"Shitjet","period":"2026-01","debit":"0","credit":"2.12"},
@@ -33,12 +35,13 @@ select public.sync_history(:'key', 'employees', '[{"code":"E-77","first":"Blerim
 select public.sync_history(:'key', 'attendance', '[{"employee":"E-77","date":"2026-10-20","in":"2026-10-20T08:00:00","out":"2026-10-20T16:30:00"}]'::jsonb) as at \gset
 reset role;
 
-select t.ok((:'h1'::jsonb ->> 'saved')::int = 2 and (select count(*) from public.history_document_lines l join public.history_documents h on h.id = l.document_id where h.company_id = :'co') = 3,
+select t.ok((:'h1'::jsonb ->> 'saved')::int = 2 and (select count(*) from public.history_document_lines l join public.history_documents h on h.id = l.document_id where h.company_id = :'co') = 4,
   'documents arrive with their lines');
 select t.ok((select count(*) from public.history_document_lines l join public.history_documents h on h.id = l.document_id where h.company_id = :'co' and h.ext_id = 'LM2026:1') = 2,
   'sending a document again replaces it, it does not double');
 select t.ok((select partner_id is not null and warehouse_id is not null from public.history_documents where company_id = :'co' and ext_id = 'LM2026:1'), 'linked to the customer and the store');
-select t.ok((select count(*) from public.history_document_lines l join public.history_documents h on h.id = l.document_id where h.company_id = :'co' and l.variant_id is not null) = 3, 'lines linked to the products');
+select t.ok((select count(*) from public.history_document_lines l join public.history_documents h on h.id = l.document_id where h.company_id = :'co' and l.variant_id is not null) = 4, 'lines linked to the products');
+select t.ok((:'h3'::jsonb ->> 'saved')::int = 1, 'a receipt with empty tax and paid amounts is saved');
 select t.ok((:'p1'::jsonb ->> 'saved')::int = 2, 'payments arrive');
 select t.ok((:'b1'::jsonb ->> 'saved')::int = 3, 'monthly account balances arrive');
 select t.ok((:'bc'::jsonb ->> 'saved')::int = 1 and (:'bc'::jsonb ->> 'skipped')::int = 2, 'valid barcodes are added, wrong ones skipped');
@@ -54,10 +57,10 @@ reset role;
 set role authenticated;
 select t.login('kafe@test.xk');
 select public.history_documents_page(:'co', '{"kind":["pos_sale","sale"]}') as pg \gset
-select t.ok((:'pg'::jsonb ->> 'total_count')::int = 1 and (:'pg'::jsonb -> 'rows' -> 0 ->> 'number') = 'K-1', 'the list filters by kind');
-select t.ok(jsonb_array_length(public.history_document((:'pg'::jsonb -> 'rows' -> 0 ->> 'id')::uuid) -> 'lines') = 2, 'a document opens with its lines');
+select t.ok((:'pg'::jsonb ->> 'total_count')::int = 2 and (:'pg'::jsonb -> 'rows' -> 1 ->> 'number') = 'K-1', 'the list filters by kind');
+select t.ok(jsonb_array_length(public.history_document((:'pg'::jsonb -> 'rows' -> 1 ->> 'id')::uuid) -> 'lines') = 2, 'a document opens with its lines');
 select t.ok((public.history_payments_page(:'co', '{}') ->> 'money_out')::numeric = 100, 'payments add up money in and out');
-select t.ok((public.history_summary(:'co', '2026-01-01', '2026-12-31') -> 'by_month' -> 0 ->> 'sales')::numeric = 2.5, 'sales per month');
+select t.ok((public.history_summary(:'co', '2026-01-01', '2026-12-31') -> 'by_month' -> 0 ->> 'sales')::numeric = 3.5, 'sales per month');
 select public.history_live(:'co', '2026-01-05') as lv \gset
 select t.ok((:'lv'::jsonb ->> 'today')::numeric = 2.5 and (:'lv'::jsonb ->> 'today_receipts')::int = 1 and (:'lv'::jsonb ->> 'month_purchases')::numeric = 100
   and (:'lv'::jsonb -> 'by_store' -> 0 ->> 'store') = 'Njesia 3', 'the dashboard reads today''s sales from the old program');
