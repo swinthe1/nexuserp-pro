@@ -13,7 +13,7 @@
 param([switch]$Service, [switch]$Full, [switch]$Once)
 
 $ErrorActionPreference = 'Stop'
-$Version = '2.4'
+$Version = '2.5'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $cfgPath = Join-Path $here 'lidhja.json'
 $statePath = Join-Path $here 'lidhja-gjendja.json'
@@ -254,7 +254,7 @@ SELECT p.M_PRODUCT_ID AS id, p.VALUE AS sku, p.NAME AS name, u.X12DE355 AS uom, 
 
 function Read-Partners($db, [string]$where) {
   $t = Query $db @"
-SELECT bp.C_BPARTNER_ID AS id, bp.VALUE AS code, bp.NAME AS name, bp.ISCUSTOMER AS cust, bp.ISVENDOR AS vend, bp.SO_CREDITLIMIT AS credit,
+SELECT bp.C_BPARTNER_ID AS id, bp.VALUE AS code, bp.NAME AS name, bp.ISCUSTOMER AS cust, bp.ISVENDOR AS vend, bp.SO_CREDITLIMIT AS credit, bp.FLATDISCOUNT AS disc,
        COALESCE(NULLIF(LTRIM(RTRIM(bp.NRFISKAL)), ''), NULLIF(LTRIM(RTRIM(bp.NRB)), ''), NULLIF(LTRIM(RTRIM(bp.TAXID)), '')) AS tax,
        loc.PHONE AS phone, l.ADDRESS1 AS address, l.CITY AS city,
        (SELECT MIN(o.C_BPARTNER_ID) FROM C_BPARTNER o WITH (NOLOCK)
@@ -275,7 +275,9 @@ SELECT bp.C_BPARTNER_ID AS id, bp.VALUE AS code, bp.NAME AS name, bp.ISCUSTOMER 
     if ($tax -and ($tax -notmatch '^\d{9}$|^[A-Z]\d{8}[A-Z]$' -or ((-not ($b.first_with_tax -is [DBNull])) -and [long]$b.first_with_tax -ne [long]$b.id))) { $tax = '' }
     [void]$rows.Add(@{ code = $code; name = $(if (Str $b.name) { Str $b.name } else { $code }); role = $(if ($cust -and $vend) { 'both' } elseif ($vend) { 'vendor' } else { 'customer' })
                        tax_number = $tax; phone = (Str $b.phone); address = (Str $b.address); city = $(if (Str $b.city) { Str $b.city } elseif (Str $b.address) { Str $b.address } else { '' }); country = 'XK'
-                       credit_limit = $(if ($b.credit -is [DBNull] -or [decimal]$b.credit -le 0) { '' } else { Num $b.credit 2 }) })
+                       credit_limit = $(if ($b.credit -is [DBNull] -or [decimal]$b.credit -le 0) { '' } else { Num $b.credit 2 })
+                       # the customer's standing discount in % (0 clears it)
+                       discount_pct = $(if ($b.disc -is [DBNull] -or [decimal]$b.disc -le 0 -or [decimal]$b.disc -gt 100) { '0' } else { Num $b.disc 2 }) })
   }
   return ,$rows
 }
@@ -505,6 +507,7 @@ function Run-Cycle {
       $state.wm['trx'] = [string](Last-TransactionId $db)
       $state.wm['ord'] = [string](First-OrderToday $db)
       $state.full_done = $true
+      $state.wm['partners_disc'] = (Get-Date).ToString('s')
     } else {
       $hours = $(if ($cfg.stock_check_hours) { [double]$cfg.stock_check_hours } else { 6 })
       if (-not $state.wm['stockcheck3'] -or ((Get-Date) - [datetime]$state.wm['stockcheck3']).TotalHours -ge $hours) {
@@ -515,6 +518,12 @@ function Run-Cycle {
       $w = @{}; foreach ($k in 'products', 'partners', 'prices', 'stock', 'ledger') { $w[$k] = SqlTime (([datetime]$state.wm[$k]).AddSeconds(-5)) }
       $prodWhere = "AND (p.UPDATED > '$($w.products)' OR p.M_PRODUCT_ID IN (SELECT pp.M_PRODUCT_ID FROM M_PRODUCTPRICE pp WITH (NOLOCK) WHERE pp.UPDATED > '$($w.prices)'))"
       $sent.artikuj = Push-List 'products' (Read-Products $db $lists $prodWhere) 150
+      # once (2.5): every partner again, so their discounts arrive
+      if (-not $state.wm['partners_disc']) {
+        $n = Push-List 'partners' (Read-Partners $db "AND bp.ISACTIVE = 'Y'") 200
+        Log "Zbritjet e klientëve u dërguan: $n subjekte" 'Green'
+        $state.wm['partners_disc'] = (Get-Date).ToString('s'); Save-State
+      }
       $sent.subjekte = Push-List 'partners' (Read-Partners $db "AND bp.UPDATED > '$($w.partners)'") 200
       $prices = New-Object System.Collections.ArrayList
       foreach ($l in $lists) {

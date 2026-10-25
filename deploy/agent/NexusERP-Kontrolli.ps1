@@ -12,7 +12,7 @@
 param([string]$Database)
 
 $ErrorActionPreference = 'Stop'
-$Version = '1.0'
+$Version = '1.1'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $cfgPath = Join-Path $here 'lidhja.json'
 $outPath = Join-Path $here 'kontrolli.txt'
@@ -114,6 +114,19 @@ $hits = foreach ($t in ($cols.Keys | Sort-Object)) {
   if ($m.Count) { "  {0,-34} {1}" -f $t, ($m -join ', ') }
 }
 if ($hits) { $hits | Select-Object -First 80 | ForEach-Object { Out $_ } } else { Out '  (asnjë)' 'DarkGray' }
+
+# 1.1: tables that look like Lider's own (price levelling, offers, extra product data, images, hours)
+Out ''; Out '== Tabela të veçanta: rreshta dhe kolona (vetëm emrat)' 'Cyan'
+$special = @('C_LC', 'C_LCLINE', 'M_PRICENVL', 'M_PRICENVLLINE', 'C_OFFER', 'C_OFFERLINE', 'M_PRODUCT_EXTRA', 'M_PRODUCT_DDR', 'AD_IMAGE', 'LM_MONTH_HOURS', 'T_TRX')
+$special += @($rows.Keys | Where-Object { $_ -like 'LM_*' -and $special -notcontains $_ } | Sort-Object)
+foreach ($t in $special) {
+  if (-not $rows.ContainsKey($t)) { continue }
+  Table $t
+  if ($cols.ContainsKey($t)) { Out ("      kolonat: {0}" -f (($cols[$t] | Where-Object { $_ -notmatch 'PASSWORD|PASS$|PWD|PIN$|SECRET|TOKEN' }) -join ', ')) 'DarkGray' }
+}
+if (Has 'M_PRODUCT' 'GUARANTEEDAYS') { Breakdown 'Artikuj me ditë qëndrueshmërie (GUARANTEEDAYS > 0)' "SELECT COUNT(*) AS n FROM M_PRODUCT WITH (NOLOCK) WHERE ISNULL(GUARANTEEDAYS,0) > 0 AND ISACTIVE = 'Y'" }
+if (Has 'M_PRODUCT' 'AD_IMAGE_ID') { Breakdown 'Artikuj me foto (AD_IMAGE_ID)' "SELECT COUNT(*) AS n FROM M_PRODUCT WITH (NOLOCK) WHERE ISNULL(AD_IMAGE_ID,0) > 0 AND ISACTIVE = 'Y'" }
+if (Has 'C_ORDER' 'C_DOCTYPE_ID') { Breakdown 'Lloje dokumentesh me numra (12 muaj, të gjitha)' "SELECT TOP 40 RTRIM(ISNULL(d.NAME,'-')) AS lloji, ISNULL(d.DOCBASETYPE,'-') AS baza, COUNT(*) AS n FROM C_ORDER o WITH (NOLOCK) LEFT JOIN C_DOCTYPE d WITH (NOLOCK) ON d.C_DOCTYPE_ID = o.C_DOCTYPE_ID WHERE o.DATEORDERED >= DATEADD(year,-1,GETDATE()) GROUP BY d.NAME, d.DOCBASETYPE ORDER BY 3 DESC" }
 
 # the 40 biggest tables, to see whatever else is in use
 Out ''; Out '== 40 tabelat më të mëdha' 'Cyan'

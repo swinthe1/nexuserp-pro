@@ -162,5 +162,19 @@ select t.login('live@lider.xk');
 select t.ok(jsonb_array_length(public.sync_agent_log((select id from public.sync_connections where company_id = :'co' limit 1), 'problems')) = 1, 'the admin reads the log, problems only');
 reset role;
 
+-- a customer's standing discount from the old program
+set role anon;
+select public.sync_push(:'key', jsonb_build_object('partners', '[{"code":"1001","name":"Viva Fresh","role":"customer","discount_pct":"5"}]'::jsonb));
+reset role;
+select t.ok((select default_discount_pct from public.business_partners where company_id = :'co' and code = '1001') = 5, 'the customer''s discount arrives');
+set role anon;
+select public.sync_push(:'key', jsonb_build_object('partners', '[{"code":"1001","name":"Viva Fresh","role":"customer"}]'::jsonb));
+reset role;
+select t.ok((select default_discount_pct from public.business_partners where company_id = :'co' and code = '1001') = 5, 'a row without the discount keeps it');
+set role anon;
+select public.sync_push(:'key', jsonb_build_object('partners', '[{"code":"1001","name":"Viva Fresh","role":"customer","discount_pct":"0"}]'::jsonb));
+reset role;
+select t.ok((select default_discount_pct from public.business_partners where company_id = :'co' and code = '1001') = 0, 'and a discount taken away is cleared');
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;
