@@ -152,6 +152,21 @@ export function useCostHistory(productId: string | undefined) {
   })
 }
 
+/** Every change of an item's selling price: made here, or levelled in the old program. Newest first. */
+export function usePriceChanges(productId: string | undefined) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: ['inv', companyId, 'price-changes', productId],
+    enabled: !!companyId && !!productId,
+    queryFn: async () => {
+      const variants = unwrap(await supabase.from('product_variants').select('id').eq('product_id', productId!))
+      return unwrap(await supabase.from('price_changes')
+        .select('id, variant_id, changed_on, old_price, new_price, quantity, value_change, price_list, doc_number, source, created_at, warehouse:warehouses(name), by:profiles(full_name)')
+        .in('variant_id', variants.map((v) => v.id)).order('changed_on', { ascending: false }).order('created_at', { ascending: false }).limit(300))
+    },
+  })
+}
+
 function useInvalidateInventory() {
   const qc = useQueryClient()
   const { companyId } = useCompany()

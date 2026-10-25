@@ -13,7 +13,7 @@
 param([switch]$Service, [switch]$Full, [switch]$Once)
 
 $ErrorActionPreference = 'Stop'
-$Version = '2.5'
+$Version = '2.6'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $cfgPath = Join-Path $here 'lidhja.json'
 $statePath = Join-Path $here 'lidhja-gjendja.json'
@@ -457,6 +457,61 @@ function Check-AllStock($db) {
   }
 }
 # when each item last moved, sold and arrived (last two years), so dormant items can be found
+# price levellings (M_PRICENVL): every item's old and new price, the stock then and the change in value.
+# Which of the two prices is the new one is checked once against today's price lists.
+function Send-PriceChanges($db) {
+  if (-not $state.wm['nvl_dir']) {
+    $c = Query $db @"
+WITH last AS (
+  SELECT TOP 3000 l.M_PRODUCT_ID AS pid, l.PRICESTD AS p1, l.PRICESTD2 AS p2, h.M_PRICELIST_ID AS pl
+    FROM M_PRICENVLLINE l WITH (NOLOCK) JOIN M_PRICENVL h WITH (NOLOCK) ON h.M_PRICENVL_ID = l.M_PRICENVL_ID
+   WHERE ISNULL(h.DOCSTATUS, 'CO') NOT IN ('VO', 'RE') AND ISNULL(h.ISACTIVE, 'Y') = 'Y' AND ISNULL(l.PRICESTD, 0) <> ISNULL(l.PRICESTD2, 0)
+   ORDER BY h.DATENVL DESC, l.M_PRICENVLLINE_ID DESC)
+SELECT SUM(CASE WHEN pp.PRICESTD = last.p2 THEN 1 ELSE 0 END) AS m2, SUM(CASE WHEN pp.PRICESTD = last.p1 THEN 1 ELSE 0 END) AS m1
+  FROM last
+  JOIN M_PRICELIST_VERSION v WITH (NOLOCK) ON v.M_PRICELIST_ID = last.pl AND v.ISACTIVE = 'Y'
+  JOIN M_PRODUCTPRICE pp WITH (NOLOCK) ON pp.M_PRICELIST_VERSION_ID = v.M_PRICELIST_VERSION_ID AND pp.M_PRODUCT_ID = last.pid
+"@
+    $m1 = if ($c.Rows[0].m1 -is [DBNull]) { 0 } else { [long]$c.Rows[0].m1 }
+    $m2 = if ($c.Rows[0].m2 -is [DBNull]) { 0 } else { [long]$c.Rows[0].m2 }
+    $state.wm['nvl_dir'] = $(if ($m1 -gt $m2) { '1' } else { '2' })
+    Log ("Nivelimi i çmimeve: çmimi i ri është kolona {0} (përputhen me çmimet e sotme: PRICESTD2 {1}, PRICESTD {2})" -f $state.wm['nvl_dir'], $m2, $m1) 'Cyan'
+  }
+  $since = if ($state.wm['nvl']) { SqlTime (([datetime]$state.wm['nvl']).AddSeconds(-5)) } else { '1900-01-01T00:00:00.000' }
+  $t = Query $db @"
+SELECT l.M_PRICENVLLINE_ID AS id, h.DOCUMENTNO AS num, h.DATENVL AS d, $whCode AS wh, pl.NAME AS plname, p.VALUE AS sku,
+       l.PRICESTD AS p1, l.PRICESTD2 AS p2, l.QTY AS qty,
+       CASE WHEN l.UPDATED > h.UPDATED THEN l.UPDATED ELSE h.UPDATED END AS upd
+  FROM M_PRICENVLLINE l WITH (NOLOCK)
+  JOIN M_PRICENVL h WITH (NOLOCK) ON h.M_PRICENVL_ID = l.M_PRICENVL_ID
+  JOIN M_PRODUCT p WITH (NOLOCK) ON p.M_PRODUCT_ID = l.M_PRODUCT_ID
+  LEFT JOIN M_WAREHOUSE w WITH (NOLOCK) ON w.M_WAREHOUSE_ID = h.M_WAREHOUSE_ID
+  LEFT JOIN M_PRICELIST pl WITH (NOLOCK) ON pl.M_PRICELIST_ID = h.M_PRICELIST_ID
+ WHERE ISNULL(h.DOCSTATUS, 'CO') NOT IN ('VO', 'RE') AND ISNULL(h.ISACTIVE, 'Y') = 'Y' AND ISNULL(l.ISACTIVE, 'Y') = 'Y'
+   AND h.DATENVL IS NOT NULL AND p.VALUE IS NOT NULL
+   AND (l.UPDATED > '$since' OR h.UPDATED > '$since')
+"@
+  if ($t.Rows.Count -eq 0) { return 0 }
+  $newIs2 = $state.wm['nvl_dir'] -ne '1'
+  $rows = New-Object System.Collections.ArrayList; $max = [datetime]'1900-01-01'
+  foreach ($r in $t.Rows) {
+    $old = $(if ($newIs2) { $r.p1 } else { $r.p2 }); $new = $(if ($newIs2) { $r.p2 } else { $r.p1 })
+    if ($new -is [DBNull]) { continue }
+    [void]$rows.Add(@{ ext_id = "N:$($cfg.database):$($r.id)"; sku = (Str $r.sku); warehouse = (Str $r.wh); price_list = (Str $r.plname)
+                       date = (Day $r.d); old_price = (Num $old); new_price = (Num $new); qty = (Num $r.qty); number = (Str $r.num) })
+    if (-not ($r.upd -is [DBNull]) -and [datetime]$r.upd -gt $max) { $max = [datetime]$r.upd }
+  }
+  $saved = 0
+  for ($i = 0; $i -lt $rows.Count; $i += 2000) {
+    $res = Push-History 'price_changes' @($rows[$i..([math]::Min($i + 2000, $rows.Count) - 1)])
+    $saved += [int]$res.saved
+  }
+  if ($max -gt [datetime]'1900-01-01') { $state.wm['nvl'] = $max.ToString('s') }
+  Save-State
+  if (-not $state.wm['nvl_first']) { $state.wm['nvl_first'] = (Get-Date).ToString('s'); Log ("Historiku i çmimeve: {0} ndryshime u dërguan" -f $saved) 'Green' }
+  return $saved
+}
+
 function Send-Activity($db) {
   $t = Query $db @"
 WITH t AS (
@@ -514,6 +569,11 @@ function Run-Cycle {
         Check-AllStock $db
         try { Send-Activity $db } catch { Log "Lëvizja e fundit nuk u dërgua: $($_.Exception.Message)" 'Yellow' }
         $state.wm['stockcheck3'] = (Get-Date).ToString('s'); Save-State
+      }
+      # price levellings: every 30 minutes (the first time all of them)
+      if (-not $state.wm['nvl_check'] -or ((Get-Date) - [datetime]$state.wm['nvl_check']).TotalMinutes -ge 30) {
+        try { $n = Send-PriceChanges $db; if ($n) { $sent.nivelime = $n } } catch { Log "Nivelimi i çmimeve nuk u dërgua: $($_.Exception.Message)" 'Yellow' }
+        $state.wm['nvl_check'] = (Get-Date).ToString('s')
       }
       $w = @{}; foreach ($k in 'products', 'partners', 'prices', 'stock', 'ledger') { $w[$k] = SqlTime (([datetime]$state.wm[$k]).AddSeconds(-5)) }
       $prodWhere = "AND (p.UPDATED > '$($w.products)' OR p.M_PRODUCT_ID IN (SELECT pp.M_PRODUCT_ID FROM M_PRODUCTPRICE pp WITH (NOLOCK) WHERE pp.UPDATED > '$($w.prices)'))"

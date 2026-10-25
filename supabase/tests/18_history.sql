@@ -72,5 +72,23 @@ select t.ok((public.history_live(:'co', '2026-02-10') ->> 'month')::numeric = 0,
 select t.ok((select (a ->> 'opening')::numeric = 50 from jsonb_array_elements(public.history_balances(:'co', 2026) -> 'accounts') a where a ->> 'code' = '12000'), 'balances carry the opening of the year');
 reset role;
 
+-- price history: the old program's levellings, and a change made here
+set role anon;
+select public.sync_history(:'key', 'price_changes', '[
+  {"ext_id":"N:LM2026:1","sku":"500","warehouse":"3","price_list":"Cm. Shitese_1","date":"2026-02-01","old_price":"1","new_price":"1.2","qty":"50","number":"NVL-1"},
+  {"ext_id":"N:LM2026:1","sku":"500","warehouse":"3","price_list":"Cm. Shitese_1","date":"2026-02-01","old_price":"1","new_price":"1.2","qty":"50","number":"NVL-1"},
+  {"ext_id":"N:LM2026:2","sku":"NOPE","date":"2026-02-01","new_price":"3"}]'::jsonb) as pc1 \gset
+select public.sync_history(:'key', 'price_changes', '[{"ext_id":"N:LM2026:1","sku":"500","warehouse":"3","date":"2026-02-01","old_price":"1","new_price":"1.25","qty":"50","number":"NVL-1"}]'::jsonb) as pc2 \gset
+reset role;
+select t.ok((:'pc1'::jsonb ->> 'saved') = '1' and (:'pc1'::jsonb ->> 'skipped') = '2', 'a levelling is saved once, an unknown item is skipped');
+select t.ok((select value_change from public.price_changes where company_id = :'co' and ext_id = 'N:LM2026:1') = 12.5, 'sent again it is updated, with the change in stock value');
+select t.ok((select count(*) from public.price_changes where company_id = :'co' and source = 'manual') = 0, 'nothing logged by hand yet');
+update public.products set sales_price = 9 where company_id = :'co' and id = (select product_id from public.product_variants where company_id = :'co' and sku = '500');
+select t.ok(not exists (select 1 from public.price_changes where company_id = :'co' and source = 'manual'), 'on the live link a price change here is not logged (it comes as a levelling)');
+update public.sync_connections set is_active = false where company_id = :'co';
+update public.products set sales_price = 10 where company_id = :'co' and id = (select product_id from public.product_variants where company_id = :'co' and sku = '500');
+select t.ok((select old_price = 9 and new_price = 10 from public.price_changes where company_id = :'co' and source = 'manual'), 'without the link a change of the selling price is kept');
+update public.sync_connections set is_active = true where company_id = :'co';
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;

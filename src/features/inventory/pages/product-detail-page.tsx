@@ -31,7 +31,7 @@ import type { Tables } from '@/lib/database.types'
 import { describeError } from '@/lib/errors'
 import { formatDate, formatMoney, formatQty, humanize, num } from '@/lib/utils'
 import {
-  useAttributes, useCategories, useCostHistory, useProduct, useProductStockLevels, useTaxCodes, useUpdateProduct,
+  useAttributes, useCategories, useCostHistory, usePriceChanges, useProduct, useProductStockLevels, useTaxCodes, useUpdateProduct,
   useVariantMutations, useVendors, useWarehouses, type ProductDetail,
 } from '../api'
 import { MovementsTable } from '../components/movements-table'
@@ -90,6 +90,7 @@ export function ProductDetailPage() {
       <Tabs defaultValue={p.product_type === 'stockable' ? 'stock' : 'variants'}>
         <TabsList>
           {p.product_type === 'stockable' && <TabsTrigger value="stock">{t('Stock')}</TabsTrigger>}
+          <TabsTrigger value="prices">{t('Price history')}</TabsTrigger>
           <TabsTrigger value="variants">{t('Variants & barcodes')} <Badge variant="secondary">{p.product_variants.length}</Badge></TabsTrigger>
           {p.product_type === 'stockable' && <TabsTrigger value="reorder">{t('Reorder points')}</TabsTrigger>}
           {p.product_type === 'stockable' && <TabsTrigger value="movements">{t('Movements')}</TabsTrigger>}
@@ -129,6 +130,7 @@ export function ProductDetailPage() {
           <CostHistoryCard productId={p.id} variants={p.product_variants} />
         </TabsContent>
 
+        <TabsContent value="prices"><PriceHistoryCard productId={p.id} variants={p.product_variants} /></TabsContent>
         <TabsContent value="variants"><VariantsTab product={p} /></TabsContent>
         <TabsContent value="reorder"><ReorderTab product={p} /></TabsContent>
         <TabsContent value="movements"><MovementsTable productId={p.id} tableKey="inventory.product-movements" /></TabsContent>
@@ -173,6 +175,64 @@ function CostHistoryCard({ productId, variants }: { productId: string; variants:
               </LineChart>
             </ResponsiveContainer>
           </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+/** each change of the selling price, newest first: when, where, from what to what, and what it did to the value of the stock */
+function PriceHistoryCard({ productId, variants }: { productId: string; variants: ProductDetail['product_variants'] }) {
+  const history = usePriceChanges(productId)
+  const sku = (id: string) => variants.find((v) => v.id === id)?.sku ?? ''
+  const rows = history.data ?? []
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('Price history')}</CardTitle>
+        <CardDescription>{t('Every change of the selling price, with the stock at that moment and what the change did to its value.')}</CardDescription>
+      </CardHeader>
+      <CardContent className="p-0">
+        {history.isLoading ? <div className="p-4"><Skeleton className="h-40" /></div> : !rows.length ? (
+          <EmptyState compact title={t('No price changes yet')} description={t('A change of the selling price appears here, and so do the price levellings of the old program.')} />
+        ) : (
+          <Table>
+            <TableHeader><TableRow className="hover:bg-transparent">
+              <TableHead>{t('Date')}</TableHead>
+              {variants.length > 1 && <TableHead>{t('Variant')}</TableHead>}
+              <TableHead>{t('Where')}</TableHead>
+              <TableHead className="text-right">{t('Old price')}</TableHead>
+              <TableHead className="text-right">{t('New price')}</TableHead>
+              <TableHead className="text-right">{t('Change|price')}</TableHead>
+              <TableHead className="text-right">{t('Stock then')}</TableHead>
+              <TableHead className="text-right">{t('Change in value')}</TableHead>
+              <TableHead>{t('Document')}</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {rows.map((r) => {
+                const oldP = r.old_price == null ? null : num(r.old_price)
+                const newP = num(r.new_price)
+                const pct = oldP ? ((newP - oldP) / oldP) * 100 : null
+                return (
+                  <TableRow key={r.id}>
+                    <TableCell className="whitespace-nowrap text-[13px]">{formatDate(r.changed_on)}</TableCell>
+                    {variants.length > 1 && <TableCell className="text-[13px]">{sku(r.variant_id)}</TableCell>}
+                    <TableCell className="text-[13px]">{r.warehouse?.name ? td(r.warehouse.name) : t('All stores')}
+                      {r.price_list && <span className="block text-xs text-muted-foreground">{r.price_list}</span>}</TableCell>
+                    <TableCell className="text-right tabular text-[13px] text-muted-foreground">{oldP == null ? '—' : formatMoney(oldP)}</TableCell>
+                    <TableCell className="text-right tabular text-[13px] font-medium">{formatMoney(newP)}</TableCell>
+                    <TableCell className={`text-right tabular text-[13px] ${pct == null ? '' : pct > 0 ? 'text-success' : pct < 0 ? 'text-destructive' : ''}`}>
+                      {pct == null ? '—' : `${pct > 0 ? '+' : ''}${pct.toFixed(1)}%`}</TableCell>
+                    <TableCell className="text-right tabular text-[13px]">{r.quantity == null ? '—' : formatQty(r.quantity)}</TableCell>
+                    <TableCell className="text-right tabular text-[13px]">{r.value_change == null ? '—' : formatMoney(r.value_change)}</TableCell>
+                    <TableCell className="text-[13px]">{r.source === 'logmicro'
+                      ? <>{r.doc_number ?? '—'} <span className="text-xs text-muted-foreground">· {t('old program')}</span></>
+                      : <span className="text-muted-foreground">{r.by?.full_name ?? t('Changed here')}</span>}</TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
         )}
       </CardContent>
     </Card>

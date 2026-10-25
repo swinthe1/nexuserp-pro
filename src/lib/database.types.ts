@@ -5968,6 +5968,74 @@ export type Database = {
           { foreignKeyName: "pos_sessions_opened_by_profile_fkey"; columns: ["opened_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
         ]
       }
+      price_changes: {
+        Row: {
+          id: string
+          company_id: string
+          variant_id: string
+          warehouse_id: string | null
+          price_list: string | null
+          changed_on: string
+          old_price: number | null
+          new_price: number
+          quantity: number | null
+          value_change: number | null
+          doc_number: string | null
+          source: string
+          ext_id: string | null
+          changed_by: string | null
+          created_at: string
+          updated_at: string
+          created_by: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          variant_id: string
+          warehouse_id?: string | null
+          price_list?: string | null
+          changed_on: string
+          old_price?: number | null
+          new_price: number
+          quantity?: number | null
+          value_change?: number | null
+          doc_number?: string | null
+          source?: string
+          ext_id?: string | null
+          changed_by?: string | null
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          variant_id?: string
+          warehouse_id?: string | null
+          price_list?: string | null
+          changed_on?: string
+          old_price?: number | null
+          new_price?: number
+          quantity?: number | null
+          value_change?: number | null
+          doc_number?: string | null
+          source?: string
+          ext_id?: string | null
+          changed_by?: string | null
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "price_changes_changed_by_fkey"; columns: ["changed_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "price_changes_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "price_changes_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "price_changes_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
       price_list_items: {
         Row: {
           id: string

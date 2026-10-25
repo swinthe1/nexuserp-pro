@@ -12,7 +12,7 @@
 param([string]$Database)
 
 $ErrorActionPreference = 'Stop'
-$Version = '1.1'
+$Version = '1.2'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $cfgPath = Join-Path $here 'lidhja.json'
 $outPath = Join-Path $here 'kontrolli.txt'
@@ -127,6 +127,30 @@ foreach ($t in $special) {
 if (Has 'M_PRODUCT' 'GUARANTEEDAYS') { Breakdown 'Artikuj me ditë qëndrueshmërie (GUARANTEEDAYS > 0)' "SELECT COUNT(*) AS n FROM M_PRODUCT WITH (NOLOCK) WHERE ISNULL(GUARANTEEDAYS,0) > 0 AND ISACTIVE = 'Y'" }
 if (Has 'M_PRODUCT' 'AD_IMAGE_ID') { Breakdown 'Artikuj me foto (AD_IMAGE_ID)' "SELECT COUNT(*) AS n FROM M_PRODUCT WITH (NOLOCK) WHERE ISNULL(AD_IMAGE_ID,0) > 0 AND ISACTIVE = 'Y'" }
 if (Has 'C_ORDER' 'C_DOCTYPE_ID') { Breakdown 'Lloje dokumentesh me numra (12 muaj, të gjitha)' "SELECT TOP 40 RTRIM(ISNULL(d.NAME,'-')) AS lloji, ISNULL(d.DOCBASETYPE,'-') AS baza, COUNT(*) AS n FROM C_ORDER o WITH (NOLOCK) LEFT JOIN C_DOCTYPE d WITH (NOLOCK) ON d.C_DOCTYPE_ID = o.C_DOCTYPE_ID WHERE o.DATEORDERED >= DATEADD(year,-1,GETDATE()) GROUP BY d.NAME, d.DOCBASETYPE ORDER BY 3 DESC" }
+
+# 1.2: the pictures (AD_IMAGE): which table they belong to, how big, and whether their name or value is an item code
+Out ''; Out '== Fotot (AD_IMAGE)' 'Cyan'
+if ($rows.ContainsKey('AD_IMAGE') -and $rows['AD_IMAGE'] -gt 0) {
+  Breakdown 'Sipas tabelës (tabela/sa/KB mesatare)' "SELECT TOP 15 ISNULL(t.TABLENAME, CAST(i.AD_TABLE_ID AS varchar(20))) AS tabela, COUNT(*) AS n, AVG(DATALENGTH(i.IMAGE)) / 1024 AS kb FROM AD_IMAGE i WITH (NOLOCK) LEFT JOIN AD_TABLE t WITH (NOLOCK) ON t.AD_TABLE_ID = i.AD_TABLE_ID GROUP BY t.TABLENAME, i.AD_TABLE_ID ORDER BY 2 DESC"
+  Breakdown 'Formati (JPEG/PNG/tjetër/bosh)' "SELECT SUM(CASE WHEN SUBSTRING(IMAGE,1,2) = 0xFFD8 THEN 1 ELSE 0 END) AS jpeg, SUM(CASE WHEN SUBSTRING(IMAGE,1,4) = 0x89504E47 THEN 1 ELSE 0 END) AS png, SUM(CASE WHEN IMAGE IS NOT NULL AND SUBSTRING(IMAGE,1,2) <> 0xFFD8 AND SUBSTRING(IMAGE,1,4) <> 0x89504E47 THEN 1 ELSE 0 END) AS tjeter, SUM(CASE WHEN IMAGE IS NULL THEN 1 ELSE 0 END) AS bosh FROM AD_IMAGE WITH (NOLOCK)"
+  Breakdown 'MB gjithsej' "SELECT SUM(CAST(DATALENGTH(IMAGE) AS bigint)) / 1048576 AS mb FROM AD_IMAGE WITH (NOLOCK)"
+  Breakdown 'VALUE = kod artikulli' "SELECT COUNT(*) AS n FROM AD_IMAGE i WITH (NOLOCK) WHERE EXISTS (SELECT 1 FROM M_PRODUCT p WITH (NOLOCK) WHERE p.VALUE = LTRIM(RTRIM(i.VALUE)))"
+  Breakdown 'NAME = kod artikulli' "SELECT COUNT(*) AS n FROM AD_IMAGE i WITH (NOLOCK) WHERE EXISTS (SELECT 1 FROM M_PRODUCT p WITH (NOLOCK) WHERE p.VALUE = LTRIM(RTRIM(i.NAME)))"
+  Breakdown 'NAME pa prapashtesë = kod artikulli' "SELECT COUNT(*) AS n FROM AD_IMAGE i WITH (NOLOCK) WHERE CHARINDEX('.', i.NAME) > 1 AND EXISTS (SELECT 1 FROM M_PRODUCT p WITH (NOLOCK) WHERE p.VALUE = LEFT(LTRIM(i.NAME), CHARINDEX('.', LTRIM(i.NAME)) - 1))"
+  Breakdown 'NAME = emër artikulli' "SELECT COUNT(*) AS n FROM AD_IMAGE i WITH (NOLOCK) WHERE EXISTS (SELECT 1 FROM M_PRODUCT p WITH (NOLOCK) WHERE p.NAME = LTRIM(RTRIM(i.NAME)))"
+  Breakdown 'Shembuj NAME | VALUE | DOCTYPE' "SELECT TOP 8 LEFT(ISNULL(NAME,'-'),40) AS n, LEFT(ISNULL(VALUE,'-'),30) AS v, ISNULL(DOCTYPE,'-') AS d FROM AD_IMAGE WITH (NOLOCK) ORDER BY UPDATED DESC"
+}
+# any column elsewhere that points to a picture
+$imgCols = foreach ($t in ($cols.Keys | Sort-Object)) {
+  if (-not $rows.ContainsKey($t) -or $rows[$t] -eq 0) { continue }
+  $m = @($cols[$t] | Where-Object { $_ -match 'IMAGE|FOTO|PHOTO|PICTURE|LOGO' })
+  if ($m.Count) { "  {0,-34} {1}" -f $t, ($m -join ', ') }
+}
+if ($imgCols) { Out '  Kolona që lidhen me foto:'; $imgCols | Select-Object -First 30 | ForEach-Object { Out $_ } }
+foreach ($c in @('M_PRODUCT.AD_IMAGE_ID', 'M_PRODUCT.IMAGEURL', 'M_PRODUCT.IMAGE')) {
+  $tn, $cn = $c.Split('.')
+  if (Has $tn $cn) { Breakdown "$c i plotësuar" "SELECT COUNT(*) AS n FROM $tn WITH (NOLOCK) WHERE $cn IS NOT NULL AND CAST($cn AS nvarchar(200)) NOT IN ('', '0')" }
+}
 
 # the 40 biggest tables, to see whatever else is in use
 Out ''; Out '== 40 tabelat më të mëdha' 'Cyan'
