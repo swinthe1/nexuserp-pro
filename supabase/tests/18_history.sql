@@ -112,5 +112,35 @@ select public.product_image_set((select product_id from public.product_variants 
 reset role;
 select t.ok((select image_path from public.products where id = (select product_id from public.product_variants where company_id = :'co' and sku = '500')) is null, 'removing the picture clears the flag');
 
+-- work done without internet, sent later: each step once, documents made offline found by the step's id
+set role anon;
+select public.sync_push(:'key', jsonb_build_object('stock', '[{"warehouse":"3","sku":"500","qty":"10","cost":"0.4"}]'::jsonb));
+reset role;
+set role authenticated;
+select t.login('zoe@platform.io');
+select id as wh3 from public.warehouses where company_id = :'co' and code = '3' \gset
+select id as loc3 from public.warehouse_locations where warehouse_id = :'wh3' order by created_at limit 1 \gset
+select v.id as v500 from public.product_variants v where v.company_id = :'co' and v.sku = '500' \gset
+select gen_random_uuid() as op1, gen_random_uuid() as op2, gen_random_uuid() as op3, gen_random_uuid() as op4 \gset
+select public.create_cycle_count(:'wh3') as cnt \gset
+select public.offline_call(:'op1', 'count_item', jsonb_build_object('p_count', :'cnt', 'p_variant', :'v500', 'p_location', :'loc3', 'p_qty', 2));
+select public.offline_call(:'op1', 'count_item', jsonb_build_object('p_count', :'cnt', 'p_variant', :'v500', 'p_location', :'loc3', 'p_qty', 2));
+select t.ok((select counted_qty from public.cycle_count_lines where cycle_count_id = :'cnt' and variant_id = :'v500' and location_id = :'loc3') = 2, 'a counted item sent twice counts once');
+select public.offline_call(:'op2', 'save_document', jsonb_build_object('p_table', 'goods_receipts',
+  'p_header', jsonb_build_object('company_id', :'co', 'warehouse_id', :'wh3', 'receipt_date', current_date),
+  'p_children', jsonb_build_object('goods_receipt_lines', jsonb_build_array(jsonb_build_object('variant_id', :'v500', 'location_id', :'loc3', 'quantity', 5, 'unit_cost', 0.4))))) as gr_off \gset
+select public.offline_call(:'op3', 'save_document', jsonb_build_object('p_table', 'goods_receipts',
+  'p_header', jsonb_build_object('id', :'op2', 'company_id', :'co', 'warehouse_id', :'wh3', 'receipt_date', current_date, 'notes', 'nga pajisja'),
+  'p_children', jsonb_build_object('goods_receipt_lines', jsonb_build_array(jsonb_build_object('variant_id', :'v500', 'location_id', :'loc3', 'quantity', 6, 'unit_cost', 0.4)))));
+select t.ok((select notes = 'nga pajisja' from public.goods_receipts where id = (:'gr_off'::jsonb #>> '{}')::uuid)
+            and (select quantity from public.goods_receipt_lines where receipt_id = (:'gr_off'::jsonb #>> '{}')::uuid) = 6,
+  'saving it again with the device''s id changes the same receipt');
+select public.offline_call(:'op4', 'post_goods_receipt', jsonb_build_object('p_id', :'op2'));
+select public.offline_call(:'op4', 'post_goods_receipt', jsonb_build_object('p_id', :'op2'));
+select t.ok((select status from public.goods_receipts where id = (:'gr_off'::jsonb #>> '{}')::uuid) = 'done', 'and posting it, once');
+select t.throws($$ select public.offline_call(gen_random_uuid(), 'platform_delete_client', '{}') $$, 'cannot be done without internet', 'only the steps meant for offline can wait');
+select t.ok(jsonb_array_length(public.scan_catalog(:'co') -> 'items') >= 2, 'the device gets the items to recognise scans offline');
+reset role;
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;

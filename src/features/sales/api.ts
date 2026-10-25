@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
+import { saveDocumentOffline } from '@/lib/offline/step'
 import type { Json, Tables } from '@/lib/database.types'
 import { describeError, unwrap } from '@/lib/errors'
 import { after, byName, fetchAll, supabase } from '@/lib/supabase'
@@ -243,16 +244,22 @@ export function useSalesDocument<T>(kind: SalesKind, id: string | undefined) {
   })
 }
 
+/** Save a draft. Quotes, orders and invoices can also be saved without internet (sent when the connection is back). */
 export function useSaveSalesDocument(kind: SalesKind) {
   const { companyId } = useCompany()
   const invalidate = useInvalidateSales()
   return useMutation({
-    mutationFn: async ({ header, lines }: { header: Record<string, unknown>; lines: Record<string, unknown>[] }) =>
-      unwrap(await supabase.rpc('save_document', {
+    mutationFn: async ({ header, lines, label }: { header: Record<string, unknown>; lines: Record<string, unknown>[]; label?: string }) => {
+      if (kind !== 'deliveries') {
+        return saveDocumentOffline({ companyId: companyId!, table: SALES_TABLE[kind], header, children: { [SALES_LINES[kind]]: lines }, label: label ?? t('Draft'),
+          invalidate: [['sales', companyId]] })
+      }
+      return unwrap(await supabase.rpc('save_document', {
         p_table: SALES_TABLE[kind],
         p_header: { ...header, company_id: companyId } as unknown as Json,
         p_children: { [SALES_LINES[kind]]: lines } as unknown as Json,
-      })) as string,
+      })) as string
+    },
     onSuccess: () => void invalidate(),
     onError: (e) => toast.error(describeError(e)),
   })

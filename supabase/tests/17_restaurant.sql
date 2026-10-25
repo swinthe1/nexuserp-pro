@@ -105,6 +105,35 @@ select t.throws(format($q$select public.restaurant_pay('{"tab_id":"%s","session_
   'short', 'the bill must be paid in full');
 reset role;
 
+-- without internet: the device makes up the ids, each step may arrive twice
+set role authenticated;
+select t.login('cora@wms.al');
+select gen_random_uuid() as dx, gen_random_uuid() as dy, gen_random_uuid() as l1, gen_random_uuid() as l2, gen_random_uuid() as pu \gset
+select t.ok(public.restaurant_open(:'reg', :'t2', 2, null, :'dx') = :'dx'::uuid and public.restaurant_open(:'reg', :'t2', 2, null, :'dx') = :'dx'::uuid,
+  'a table opened on the device keeps the device''s id, also when the step comes twice');
+select t.ok(public.restaurant_open(:'reg', :'t2', 3, null, :'dy') = :'dx'::uuid, 'another device that opened the same table offline lands on the same order');
+select public.restaurant_add(:'dy', jsonb_build_array(jsonb_build_object('id', :'l1', 'variant_id', :'tea', 'quantity', 1), jsonb_build_object('id', :'l2', 'variant_id', :'caj', 'quantity', 1)));
+select public.restaurant_add(:'dy', jsonb_build_array(jsonb_build_object('id', :'l1', 'variant_id', :'tea', 'quantity', 1)));
+select t.ok((select count(*) from public.table_order_lines where table_order_id = :'dx') = 2 and exists (select 1 from public.table_order_lines where id = :'l1' and table_order_id = :'dx'),
+  'items sent twice are added once, on the order the device''s id stands for');
+select t.ok((public.restaurant_tab(:'dy') ->> 'id')::uuid = :'dx'::uuid and (select guests from public.table_orders where id = :'dx') = 3, 'the order is read by either id; the larger number of guests stays');
+select public.restaurant_change_line(:'l2', 0);
+select public.restaurant_change_line(:'l2', 0);
+select t.ok(not exists (select 1 from public.table_order_lines where id = :'l2'), 'removing an item twice is fine');
+select public.restaurant_send(:'dy');
+select t.ok(exists (select 1 from jsonb_array_elements(public.restaurant_open_tabs(:'reg')) x where (x ->> 'id')::uuid = :'dx'::uuid and jsonb_array_length(x -> 'lines') = 1),
+  'all open orders of the till come in one call');
+select public.restaurant_pay(jsonb_build_object('tab_id', :'dy', 'session_id', :'ses', 'client_uuid', :'pu', 'offline', true, 'order_at', (now() - interval '10 minutes')::text,
+  'payments', jsonb_build_array(jsonb_build_object('method', 'cash', 'amount', 120)))) as op1 \gset
+select public.restaurant_pay(jsonb_build_object('tab_id', :'dy', 'session_id', :'ses', 'client_uuid', :'pu',
+  'payments', jsonb_build_array(jsonb_build_object('method', 'cash', 'amount', 120)))) as op2 \gset
+select t.ok((:'op1'::jsonb ->> 'closed')::boolean and (:'op2'::jsonb ->> 'replayed')::boolean and (:'op1'::jsonb ->> 'id') = (:'op2'::jsonb ->> 'id')
+  and (select count(*) from public.pos_orders where client_uuid = :'pu'::uuid) = 1, 'a payment sent twice is made once');
+select t.ok((select offline_created and order_at < now() - interval '5 minutes' from public.pos_orders where client_uuid = :'pu'::uuid), 'the receipt keeps the time it was paid offline');
+select public.restaurant_close_empty(:'dx');
+select t.ok(true, 'freeing a table that is closed already is fine');
+reset role;
+
 -- deleting a client completely (the shop above has stock, accounting, tills, cards and tables)
 set role authenticated;
 select t.login('alice@alba.al');

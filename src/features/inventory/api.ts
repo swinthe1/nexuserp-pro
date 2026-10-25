@@ -5,6 +5,7 @@ import type { Json, Tables, TablesUpdate, Views } from '@/lib/database.types'
 import { describeError, unwrap } from '@/lib/errors'
 import { after, byName, fetchAll, supabase } from '@/lib/supabase'
 import { t, tn } from '@/i18n'
+import { isNetError, postReceiptOffline, saveDocumentOffline } from '@/lib/offline/step'
 
 /* ------------------------------------------------------------------ keys */
 export const invKeys = {
@@ -481,17 +482,20 @@ export function useDocument<T>(kind: DocKind, id: string | undefined) {
   })
 }
 
-/** Atomic save of a draft header + child rows (server: save_document RPC) */
+/** Atomic save of a draft header + child rows (server: save_document RPC). A goods receipt can also be saved without internet. */
 export function useSaveDocument(kind: DocKind) {
   const { companyId } = useCompany()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ header, children }: { header: Record<string, unknown>; children: Record<string, Record<string, unknown>[]> }) =>
-      unwrap(await supabase.rpc('save_document', {
-        p_table: DOC_TABLE[kind],
-        p_header: { ...header, company_id: companyId } as unknown as Json,
-        p_children: children as unknown as Json,
-      })),
+    mutationFn: async ({ header, children, label }: { header: Record<string, unknown>; children: Record<string, Record<string, unknown>[]>; label?: string }) => {
+      if (kind === 'receipts') {
+        return saveDocumentOffline({ companyId: companyId!, table: DOC_TABLE[kind], header, children, label: label ?? t('Goods receipt'),
+          invalidate: [[...invKeys.docs(companyId, kind)], ['inv', companyId]] })
+      }
+      const res = await supabase.rpc('save_document', { p_table: DOC_TABLE[kind], p_header: { ...header, company_id: companyId } as unknown as Json, p_children: children as unknown as Json })
+      if (res.error && isNetError(res.error)) throw new Error(t('Saving this needs internet.'))
+      return unwrap(res)
+    },
     onSuccess: (id) => {
       void qc.invalidateQueries({ queryKey: invKeys.docs(companyId, kind) })
       void qc.invalidateQueries({ queryKey: invKeys.doc(companyId, kind, id) })
@@ -501,12 +505,13 @@ export function useSaveDocument(kind: DocKind) {
 
 export function usePostDocument(kind: DocKind) {
   const invalidate = useInvalidateInventory()
+  const { companyId } = useCompany()
   return useMutation({
     mutationFn: async (id: string): Promise<{ status: string; detail?: Json }> => {
       switch (kind) {
         case 'receipts': {
-          const r = unwrap(await supabase.rpc('post_goods_receipt', { p_id: id }))
-          return { status: 'done', detail: r }
+          const r = await postReceiptOffline({ companyId: companyId!, id, label: t('Goods receipt: receive'), invalidate: [['inv', companyId]] })
+          return { status: r.offline ? 'queued' : 'done', detail: r.detail as Json }
         }
         case 'adjustments': return { status: unwrap(await supabase.rpc('post_stock_adjustment', { p_id: id })) }
         case 'transfers': return { status: unwrap(await supabase.rpc('post_stock_transfer', { p_id: id })) }

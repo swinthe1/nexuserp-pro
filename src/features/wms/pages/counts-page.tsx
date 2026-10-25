@@ -123,7 +123,7 @@ export function CountPage() {
   const record = async (variantId: string, qty: number, lot: string | null, label: string, set = false) => {
     try {
       const r = await countItem.mutateAsync({ count: c.id, variant: variantId, location: bin!.id, qty, lot, set })
-      scanFeedback('ok'); st.ok(t('{item} at {code}: {n}', { item: label, code: bin!.code, n: formatQty(r.counted_qty) }))
+      scanFeedback('ok'); st.ok(t('{item} at {code}: {n}', { item: label, code: bin!.code, n: formatQty(r.counted_qty) }) + (r.offline ? ` · ${t('saved on this device')}` : ''))
     } catch (e) { scanFeedback('error'); st.error(describeError(e)) }
   }
   const onScan = async (code: string) => {

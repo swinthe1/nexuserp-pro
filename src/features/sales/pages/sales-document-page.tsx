@@ -7,6 +7,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Can, useCompany } from '@/app/company-provider'
+import { isOfflineId } from '@/lib/offline/step'
 import { ActivityTimeline } from '@/components/activity-timeline'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState } from '@/components/empty-state'
@@ -135,8 +136,11 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
     else if (kind !== 'invoices') header[cfg.second] = null
     if (kind === 'invoices' && !v.second_date) header.due_date = v.doc_date
     if (!doc && kind === 'orders' && !v.warehouse_id) throw new Error(t('Choose a warehouse'))
+    const kindName = kind === 'quotes' ? t('Quote') : kind === 'orders' ? t('Sales order') : t('Invoice')
     return save.mutateAsync({
       header,
+      label: t('{kind}: {n} lines, {amount}', { kind: kindName, n: v.lines.length,
+        amount: v.lines.reduce((sum, l) => sum + Number(l.quantity || 0) * Number(l.unit_price || 0) * (1 - Number(l.discount_pct || 0) / 100), 0).toFixed(2) }),
       lines: v.lines.map((l, i) => ({
         line_no: i + 1, variant_id: l.variant_id ?? null, description: l.description, quantity: l.quantity, unit_price: l.unit_price,
         discount_pct: l.discount_pct, tax_code_id: l.tax_code_id ?? null, sales_order_line_id: l.sales_order_line_id ?? null,
@@ -145,6 +149,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
   }
   const saveOnly = form.handleSubmit(async (v) => {
     const id = await persist(v)
+    if (isOfflineId(id)) { toast.success(t('Saved on this device'), { description: t('The draft is sent when the connection is back; its number comes then.') }); navigate(cfg.list); return }
     toast.success(t('Draft saved'))
     if (!doc) navigate(`${cfg.list}/${id}`, { replace: true })
   }, () => toast.error(t('Fix the highlighted fields first')))
@@ -153,6 +158,10 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
     if (!editable) return doc?.id
     let id: string | undefined
     await form.handleSubmit(async (v) => { id = await persist(v) }, () => toast.error(t('Fix the highlighted fields first')))()
+    if (isOfflineId(id)) {
+      toast.success(t('Saved on this device as a draft'), { description: t('Confirming or posting needs internet; do it when the connection is back.') })
+      navigate(cfg.list); return undefined
+    }
     return id
   }
   const go = (id: string) => navigate(`${cfg.list}/${id}`, { replace: true })

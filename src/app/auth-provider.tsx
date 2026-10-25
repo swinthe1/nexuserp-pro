@@ -2,6 +2,7 @@ import type { Session, User } from '@supabase/supabase-js'
 import { useQueryClient } from '@tanstack/react-query'
 import * as React from 'react'
 import { supabase } from '@/lib/supabase'
+import { forgetQueryCache } from '@/lib/offline/cache'
 
 interface AuthCtx {
   session: Session | null
@@ -53,7 +54,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error
     },
     async signOut() {
+      const id = session?.user.id
       await supabase.auth.signOut()
+      if (id) await forgetQueryCache(id)
     },
   }), [session, loading])
 

@@ -6,6 +6,10 @@ import type { Json } from '@/lib/database.types'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { useLocations, type LocationRow } from '@/features/inventory/api'
+import { t } from '@/i18n'
+import { ensureScanCatalog, findOffline, itemOffline, useScanCatalog } from '@/lib/offline/catalog'
+import { newId } from '@/lib/offline/outbox'
+import { isNetError, useOfflineStep } from '@/lib/offline/step'
 
 export const wmsKeys = { all: (c: string) => ['wms', c] as const }
 
@@ -34,12 +38,23 @@ export type Resolved =
 export function useResolveCode() {
   const { companyId } = useCompany()
   const locations = useLocations()
+  useScanCatalog()
   return React.useCallback(async (code: string): Promise<Resolved> => {
     const c = code.trim()
     const up = c.toUpperCase()
     const loc = (locations.data ?? []).find((l) => l.warehouse_id && (l.barcode === c || l.code.toUpperCase() === up))
     if (loc) return { kind: 'location', location: loc }
-    const { data: hit } = await supabase.rpc('find_variant_by_code', { p_company: companyId, p_code: c })
+    // without internet: the device's copy of the items
+    const offline = async (): Promise<Resolved> => {
+      await ensureScanCatalog(companyId!)
+      const f = findOffline(companyId!, c)
+      if (f?.kind === 'variant') return { kind: 'variant', variantId: f.item.variant_id, sku: f.item.sku, name: f.item.name, qty: f.qty, tracking: f.item.tracking }
+      if (f?.kind === 'lot') return { kind: 'lot', lotId: f.lot.id, lotNumber: f.lot.lot_number, variantId: f.lot.variant_id, expiry: f.lot.expiry_date }
+      return { kind: 'unknown', code: c }
+    }
+    if (!navigator.onLine) return offline()
+    const { data: hit, error: hitError } = await supabase.rpc('find_variant_by_code', { p_company: companyId, p_code: c })
+    if (hitError && isNetError(hitError)) return offline()
     const h = hit?.[0]
     if (h?.variant_id) return { kind: 'variant', variantId: h.variant_id, sku: h.sku ?? '', name: h.name ?? '', qty: Number(h.units_per_scan) || 1, tracking: h.tracking ?? 'none' }
     const { data: lot } = await supabase.from('lots').select('id, lot_number, variant_id, expiry_date').eq('company_id', companyId).eq('lot_number', c).is('deleted_at', null).limit(1)
@@ -277,9 +292,41 @@ export function useCount(id: string | undefined) {
 export const useCreateCount = () => useAction(async (a: { warehouse: string; locations?: string[] | null; category?: string | null; blind: boolean }) =>
   unwrap(await supabase.rpc('create_cycle_count', { p_warehouse: a.warehouse, p_locations: a.locations?.length ? a.locations : undefined,
     p_category: a.category ?? undefined, p_blind: a.blind })) as string)
-export const useCountItem = () => useAction(async (a: { count: string; variant: string; location: string; qty: number; lot?: string | null; set?: boolean }) =>
-  unwrap(await supabase.rpc('count_item', { p_count: a.count, p_variant: a.variant, p_location: a.location, p_qty: a.qty, p_lot: a.lot ?? undefined, p_set: a.set ?? false })) as unknown as
-    { line_id: string; counted_qty: number; system_qty: number | null }, true)
+/** Count an item; without internet it is kept on the device and sent later (once, even if sent twice). */
+export function useCountItem() {
+  const qc = useQueryClient()
+  const { companyId } = useCompany()
+  return useOfflineStep((a: { count: string; variant: string; location: string; qty: number; lot?: string | null; set?: boolean }) => {
+    const op = newId()
+    const countKey = [...wmsKeys.all(companyId), 'count', a.count]
+    return {
+      chain: `count:${a.count}`, fn: 'offline_call',
+      args: { p_op: op, p_fn: 'count_item', p_args: { p_count: a.count, p_variant: a.variant, p_location: a.location, p_qty: a.qty, p_lot: a.lot ?? null, p_set: a.set ?? false } },
+      label: t('Count: {item} {qty}', { item: itemOffline(companyId ?? '', a.variant)?.sku ?? '', qty: a.set ? `= ${a.qty}` : `+${a.qty}` }),
+      invalidate: [[...wmsKeys.all(companyId)]],
+      online: (d) => d as { line_id: string; counted_qty: number; system_qty: number | null },
+      local: () => {
+        let out = { line_id: op, counted_qty: a.qty, system_qty: null as number | null }
+        qc.setQueryData<{ lines: CountLine[] } & Record<string, unknown>>(countKey, (c) => {
+          if (!c) return c
+          const i = c.lines.findIndex((l) => l.variant_id === a.variant && l.location_id === a.location && (l.lot_id ?? null) === (a.lot ?? null))
+          if (i >= 0) {
+            const l = c.lines[i]!
+            const q = Math.max(0, a.set ? a.qty : Number(l.counted_qty ?? 0) + a.qty)
+            out = { line_id: l.id, counted_qty: q, system_qty: null }
+            const lines = [...c.lines]; lines[i] = { ...l, counted_qty: q, counted_at: new Date().toISOString() }
+            return { ...c, lines }
+          }
+          const it = itemOffline(companyId ?? '', a.variant)
+          const loc = c.lines.find((l) => l.location_id === a.location)?.location ?? null
+          return { ...c, lines: [...c.lines, { id: op, variant_id: a.variant, location_id: a.location, lot_id: a.lot ?? null, system_qty: 0, counted_qty: Math.max(0, a.qty), variance: null,
+            counted_at: new Date().toISOString(), variant: it ? { sku: it.sku, name: it.name, product: { tracking: it.tracking } } : null, location: loc, lot: null }] }
+        })
+        return out
+      },
+    }
+  }, { quiet: true })
+}
 export const useSubmitCount = () => useAction(async (a: { id: string; zero: boolean }) => unwrap(await supabase.rpc('submit_cycle_count', { p_id: a.id, p_zero_uncounted: a.zero })))
 export const usePostCount = () => useAction(async (id: string) =>
   unwrap(await supabase.rpc('post_cycle_count', { p_id: id })) as unknown as { adjustment_id: string | null; adjustment_status: string; lines: number; value: number | null })

@@ -26,6 +26,7 @@ import { LocationPicker, LotPicker, VariantPicker, VendorPicker, WarehousePicker
 import { receiptSchema, type ReceiptFormValues } from '../schemas'
 import { t, tEnum, tr } from '@/i18n'
 import { ErrorState } from '@/components/error-state'
+import { isOfflineId } from '@/lib/offline/step'
 
 type ReceiptDoc = Tables<'goods_receipts'> & {
   lines: Tables<'goods_receipt_lines'>[]
@@ -118,10 +119,12 @@ function ReceiptForm({ doc }: { doc?: ReceiptDoc }) {
         notes: header.notes || null,
       },
       children: { goods_receipt_lines: ls.map((l) => ({ ...l, lot_id: l.lot_id || null, po_line_id: l.po_line_id || null })) },
+      label: t('Goods receipt {ref}: {n} lines', { ref: header.vendor_delivery_note || doc?.number || '', n: ls.length }),
     })
   }
   const onSave = form.handleSubmit(async (v) => {
     const newId = await persist(v)
+    if (isOfflineId(newId)) { toast.success(t('Saved on this device'), { description: t('It is sent when the connection is back.') }); navigate('/inventory/receipts'); return }
     toast.success(t('Draft saved'))
     if (!doc) navigate(`/inventory/receipts/${newId}`, { replace: true })
   }, () => toast.error(t('Fix the highlighted fields first')))
@@ -131,6 +134,10 @@ function ReceiptForm({ doc }: { doc?: ReceiptDoc }) {
     await form.handleSubmit(async (v) => { savedId = await persist(v) }, () => toast.error(t('Fix the highlighted fields first')))()
     if (!savedId) throw new Error('invalid')
     const res = await post.mutateAsync(savedId)
+    if (res.status === 'queued') {
+      toast.success(t('Saved on this device'), { description: t('The goods are received in the stock when the connection is back.') })
+      navigate('/inventory/receipts'); return
+    }
     const d = res.detail as { total_value?: number; clearance_status?: string } | undefined
     toast.success(t('Goods received'), {
       description: d?.clearance_status === 'pending'

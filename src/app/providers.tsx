@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/app/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { PwaPrompts } from '@/components/pwa-prompts'
+import { OfflineSync } from '@/app/offline-sync'
 import { LanguageSync, LocaleBoundary } from '@/i18n/language'
 import { describeError } from '@/lib/errors'
 
@@ -24,6 +25,8 @@ function makeClient() {
       },
     }),
     defaultOptions: {
+      // without internet a save fails at once with a clear message (the outbox handles the work that can wait)
+      mutations: { networkMode: 'always' },
       queries: { staleTime: 30_000, retry: (n, err) => n < 2 && !String((err as { code?: string })?.code ?? '').startsWith('4'), refetchOnWindowFocus: false },
     },
   })
@@ -38,6 +41,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <CompanyProvider>
             <TooltipProvider delayDuration={300}>
               <LanguageSync />
+              <OfflineSync />
               <LocaleBoundary>{children}</LocaleBoundary>
               <Toaster />
               <PwaPrompts />

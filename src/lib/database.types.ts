@@ -8977,6 +8977,39 @@ export type Database = {
           { foreignKeyName: "sync_till_sales_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      table_order_aliases: {
+        Row: {
+          id: string
+          company_id: string
+          table_order_id: string
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id: string
+          company_id: string
+          table_order_id: string
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          table_order_id?: string
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "table_order_aliases_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "table_order_aliases_table_order_id_fkey"; columns: ["table_order_id"]; isOneToOne: false; referencedRelation: "table_orders"; referencedColumns: ["id"] },
+        ]
+      }
       table_order_lines: {
         Row: {
           id: string
@@ -11502,6 +11535,14 @@ export type Database = {
         }
         Returns: { doc_type: string | null; name: string | null; module: string | null; prefix: string | null; include_year: boolean | null; padding: number | null; reset_policy: string | null; configured: boolean | null; period_key: string | null; next_value: number | null; next_number: string | null; last_used: string | null }[]
       }
+      offline_call: {
+        Args: {
+          p_op: string
+          p_fn: string
+          p_args: Json
+        }
+        Returns: Json
+      }
       open_pos_session: {
         Args: {
           p_register: string
@@ -11873,8 +11914,15 @@ export type Database = {
           p_table: string
           p_guests?: number
           p_label?: string
+          p_id?: string
         }
         Returns: string
+      }
+      restaurant_open_tabs: {
+        Args: {
+          p_register: string
+        }
+        Returns: Json
       }
       restaurant_pay: {
         Args: {
@@ -12059,6 +12107,12 @@ export type Database = {
           p_next_value?: number
         }
         Returns: undefined
+      }
+      scan_catalog: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
       }
       set_member_roles: {
         Args: {

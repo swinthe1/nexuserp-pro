@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
 import * as React from 'react'
+import { ensureScanCatalog, findOffline } from '@/lib/offline/catalog'
 import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
 import { SearchSelect } from '@/components/search-select'
@@ -31,8 +32,11 @@ export const VariantPicker = React.forwardRef<HTMLButtonElement, { value: string
         placeholder={t('Product')}
         searchPlaceholder={t('Code, name or scan a barcode')}
         onUnmatchedEnter={async (code) => {
-          const { data: hit } = await supabase.rpc('find_variant_by_code', { p_company: companyId, p_code: code })
-          if (hit?.[0]?.variant_id) onChange(hit[0].variant_id)
+          const { data: hit, error } = navigator.onLine ? await supabase.rpc('find_variant_by_code', { p_company: companyId, p_code: code }) : { data: null, error: new Error('offline') }
+          // without internet: the device's copy of the items
+          const local = error ? (await ensureScanCatalog(companyId!), findOffline(companyId!, code)) : null
+          if (local?.kind === 'variant') onChange(local.item.variant_id)
+          else if (hit?.[0]?.variant_id) onChange(hit[0].variant_id)
           else toast.error(t('No product with barcode or code “{code}”', { code }))
         }}
         {...rest}

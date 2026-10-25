@@ -552,4 +552,5 @@ export default {
   "The picture is too big (at most 1.5 MB)": "Fotoja është shumë e madhe (deri në 1,5 MB)",
   "Only JPEG, PNG or WebP pictures": "Vetëm foto JPEG, PNG ose WebP",
   "At most 60 pictures at once": "Deri në 60 foto njëherësh",
+  "The step needs its id": "Hapit i mungon id-ja",
 } satisfies Dict

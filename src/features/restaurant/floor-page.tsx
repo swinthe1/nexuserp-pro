@@ -23,6 +23,7 @@ import {
   useAddItems, useChangeLine, useCloseEmpty, useFloor, useMoveTab, useOpenTab, usePayTab, useSend, useSetGuests, useTab, useVoidLine,
 } from './api'
 import { RoomSetupDialog } from './room-setup'
+import { OfflineBanner } from '@/components/offline-banner'
 import { tableBox } from './floor-plan'
 import { quoteLoyalty, type Quote } from '@/features/loyalty/api'
 import { describeError } from '@/lib/errors'
@@ -116,10 +117,11 @@ function Restaurant({ data }: { data: TillData }) {
           <Button variant="outline" size="sm" asChild><Link to={`/pos/till/${data.register.id}`}>{t('Till and shift')}</Link></Button>
         </div>
       </header>
+      <OfflineBanner />
 
       {tabId
         ? <TabScreen key={tabId} data={data} tabId={tabId} floor={floor.data} kitchenPrint={kitchenPrint} onClose={() => setTabId(null)} onMoved={setTabId} cashier={cashier} />
-        : <FloorView floor={floor.data} loading={floor.isLoading} areaId={current?.id} onOpen={(table) => void open(table)} onOpenTab={setTabId}
+        : <FloorView floor={floor.data} loading={floor.isLoading || (!floor.data && floor.fetchStatus === 'paused')} areaId={current?.id} onOpen={(table) => void open(table)} onOpenTab={setTabId}
             onSetup={can('pos.approve') ? () => setSetup(true) : undefined} />}
       {setup && <RoomSetupDialog warehouseId={data.register.warehouse_id} onClose={() => setSetup(false)} />}
     </div>
@@ -261,7 +263,7 @@ function TabScreen({ data, tabId, floor, kitchenPrint, onClose, onMoved, cashier
     if (busy) return false
     setBusy(true)
     try {
-      if (drafts.length) await add.mutateAsync({ tab: tabId, items: drafts.map((d) => ({ variant_id: d.variant_id, quantity: d.quantity, note: d.note || null })) })
+      if (drafts.length) await add.mutateAsync({ tab: tabId, items: drafts.map((d) => ({ variant_id: d.variant_id, quantity: d.quantity, note: d.note || null, name: d.name, price: d.price })) })
       setDrafts([])
       const res = await send.mutateAsync(tabId)
       if (res.tickets.length) {
@@ -278,7 +280,7 @@ function TabScreen({ data, tabId, floor, kitchenPrint, onClose, onMoved, cashier
   }
 
   if (tab.isLoading) return <div className="flex flex-1 gap-4 p-4"><Skeleton className="flex-1" /><Skeleton className="w-[420px]" /></div>
-  if (!tab.data) return <Centered><p className="text-[13px] text-muted-foreground">{t('This order is closed.')}</p><Button className="mt-3" onClick={onClose}>{t('Back to the floor')}</Button></Centered>
+  if (!tab.data) return <Centered><p className="text-[13px] text-muted-foreground">{tab.fetchStatus === 'paused' ? t('This order is not on this device yet. It opens when the connection is back.') : t('This order is closed.')}</p><Button className="mt-3" onClick={onClose}>{t('Back to the floor')}</Button></Centered>
   const o = tab.data
   const title = o.table ? t('Table {name}', { name: o.table }) : o.label || o.number
 
@@ -531,6 +533,7 @@ function PayTabDialog({ data, tab, cashier, onClose, onClosedTab }: { data: Till
       split: everything ? undefined : chosen.map((l) => ({ line_id: l.id, quantity: qty[l.id]! })),
       discounts: chosen.map((l, i) => ({ line_id: l.id, variant_id: l.variant_id, discount_pct: pctOf(l, i), manual_pct: card ? 0 : manualPct })).filter((d) => d.discount_pct > 0),
       loyalty: card ? { card_id: card.quote.card_id, redeem_points: card.redeem ? num(card.quote.redeem_points) : 0 } : null,
+      total,
     })
     const earned = card && card.quote.kind === 'points' ? Math.floor(total * num(card.quote.points_per_unit)) : 0
     const spent = card?.redeem ? num(card.quote.redeem_points) : 0
@@ -543,7 +546,8 @@ function PayTabDialog({ data, tab, cashier, onClose, onClosedTab }: { data: Till
                         balance: card.quote.kind === 'points' ? num(card.quote.points_balance) - spent + earned : undefined } : null,
     }
     printReceipt(receipt)
-    toast.success(num(res.change) > 0 ? t('Paid · change {amount}', { amount: formatMoney(res.change) }) : t('Paid'))
+    toast.success(num(res.change) > 0 ? t('Paid · change {amount}', { amount: formatMoney(res.change) }) : t('Paid'),
+      res.offline ? { description: t('Saved on this device; it is sent when the connection is back.') } : undefined)
     onClose()
     if (res.closed) onClosedTab()
   }

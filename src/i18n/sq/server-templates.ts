@@ -6,6 +6,7 @@
  */
 export const serverTemplates: [string, string][] = [
   // ---------------------------------------------------------------- errors (raise exception)
+  ['This cannot be done without internet: %', 'Kjo nuk mund të bëhet pa internet: {0}'],
   ['% already has leave in those dates', '{0} ka tashmë leje në këto data'],
   ['% barcode must be exactly % digits', 'Barkodi {0} duhet të ketë saktësisht {1} shifra'],
   ['% has % days of % left; this request needs %', '{0} ka edhe {1} ditë {2}; kjo kërkesë kërkon {3}'],
