@@ -69,5 +69,4 @@ export default {
   "DrisPRO for Windows": "DrisPRO për Windows",
   "Version {v} · {size} · {date}": "Versioni {v} · {size} · {date}",
   "The download did not finish. Check the connection and try again.": "Shkarkimi nuk përfundoi. Kontrolloni lidhjen dhe provoni përsëri.",
-  "Prints straight to the receipt and kitchen printers and opens the cash drawer. Install it once: it always opens the newest DrisPRO.": "Printon direkt te printerët e kuponëve dhe të kuzhinës dhe hap sirtarin e parave. Instalojeni një herë: hap gjithmonë DrisPRO-n më të ri.",
 } satisfies Dict

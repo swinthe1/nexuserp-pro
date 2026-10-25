@@ -77,10 +77,7 @@ export function DesktopDownload({ className }: { className?: string }) {
         </Button>
       </div>
       {progress !== null && <div className="mt-3 h-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${pct}%` }} /></div>}
-      <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-        {error ? <span className="text-destructive">{t('The download did not finish. Check the connection and try again.')}</span>
-          : t('Prints straight to the receipt and kitchen printers and opens the cash drawer. Install it once: it always opens the newest DrisPRO.')}
-      </p>
+      {error && <p className="mt-3 text-xs text-destructive">{t('The download did not finish. Check the connection and try again.')}</p>}
     </div>
   )
 }
