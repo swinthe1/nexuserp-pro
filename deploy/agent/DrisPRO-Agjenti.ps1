@@ -1,5 +1,5 @@
 ﻿<#
-  NexusERP · Agjenti i leximit (hapi 1: struktura e databazës)
+  DrisPRO · Agjenti i leximit (hapi 1: struktura e databazës)
 
   Lexon strukturën e databazës së programit të vjetër (p.sh. Logmicro në SQL Server):
   tabelat, kolonat, lidhjet dhe numrin e rreshtave, plus (nëse lejoni) disa rreshta shembull.
@@ -8,7 +8,7 @@
 
   Si ekzekutohet: klikoni dy herë "Nis-Agjentin.bat" (si administrator i serverit),
   ose në PowerShell:
-    powershell -ExecutionPolicy Bypass -File NexusERP-Agjenti.ps1
+    powershell -ExecutionPolicy Bypass -File DrisPRO-Agjenti.ps1
   Opsione:
     -Server "localhost\INSTANCA"   serveri SQL (përndryshe e gjen vetë)
     -Database "EmriDatabazes"      databaza (përndryshe pyet)
@@ -49,7 +49,7 @@ function New-Connection([string]$db) {
   $b = New-Object System.Data.SqlClient.SqlConnectionStringBuilder
   $b['Data Source'] = $Server
   $b['Initial Catalog'] = $db
-  $b['Application Name'] = 'NexusERP-Agjenti (vetem lexim)'
+  $b['Application Name'] = 'DrisPRO-Agjenti (vetem lexim)'
   $b['Connect Timeout'] = 15
   try { $b['ApplicationIntent'] = 'ReadOnly' } catch { }
   if ($User) { $b['User ID'] = $User; $b['Password'] = $Password } else { $b['Integrated Security'] = $true }
@@ -87,7 +87,7 @@ function Rows($table) {
 
 Say ''
 Say '==============================================================' 'Green'
-Say " NexusERP · Agjenti i leximit $Version" 'Green'
+Say " DrisPRO · Agjenti i leximit $Version" 'Green'
 Say ' Vetëm lexon strukturën e databazës. Nuk ndryshon asgjë.' 'Green'
 Say '==============================================================' 'Green'
 
@@ -278,7 +278,7 @@ $jsonPath = Join-Path $OutDir "struktura-$safeDb-$stamp.json"
 $txtPath = Join-Path $OutDir "permbledhja-$safeDb-$stamp.txt"
 
 $report = [ordered]@{
-  agent = "NexusERP-Agjenti $Version"
+  agent = "DrisPRO-Agjenti $Version"
   created_at = (Get-Date).ToString('s')
   computer = $env:COMPUTERNAME
   sql_server = [ordered]@{ instance = $Server; version = $sqlVersion.v; edition = $sqlVersion.e }
@@ -295,7 +295,7 @@ $json = $report | ConvertTo-Json -Depth 8 -Compress
 [IO.File]::WriteAllText($jsonPath, $json, (New-Object System.Text.UTF8Encoding $false))
 
 $sb = New-Object System.Text.StringBuilder
-[void]$sb.AppendLine("NexusERP · struktura e databazës $Database ($Server)")
+[void]$sb.AppendLine("DrisPRO · struktura e databazës $Database ($Server)")
 [void]$sb.AppendLine("Lexuar më $((Get-Date).ToString('dd.MM.yyyy HH:mm')) në $env:COMPUTERNAME")
 [void]$sb.AppendLine("$($tables.Count) tabela · $($columns.Count) kolona · $($foreign.Count) lidhje · $($views.Count) pamje")
 [void]$sb.AppendLine('')
@@ -318,7 +318,7 @@ Say 'U krijuan dy skedarë në dosjen "rezultati":'
 Say "  $jsonPath" 'White'
 Say "  $txtPath" 'White'
 Say ''
-Say 'Dërgojani skedarin .json zhvilluesit (NexusERP). Ai tregon vetëm strukturën'
+Say 'Dërgojani skedarin .json zhvilluesit (DrisPRO). Ai tregon vetëm strukturën'
 Say ($(if ($Samples -gt 0) { "dhe $Samples rreshta shembull për tabelë." } else { 'pa asnjë rresht të dhënash.' }))
 Say ''
 try { Start-Process explorer.exe $OutDir } catch { }

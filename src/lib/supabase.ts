@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
 
-// a NexusERP on a local server says at start where its API is (nexus-config.js); the cloud build has it built in
+// a DrisPRO on a local server says at start where its API is (nexus-config.js); the cloud build has it built in
 const local = (typeof window !== 'undefined' ? (window as unknown as { __NEXUS__?: { url?: string; anonKey?: string } | null }).__NEXUS__ : null) ?? null
 export const supabaseUrl: string = local?.url === 'same-origin' ? window.location.origin : (local?.url || import.meta.env.VITE_SUPABASE_URL)
 export const supabaseAnonKey: string = local?.anonKey || import.meta.env.VITE_SUPABASE_ANON_KEY
-/** this NexusERP runs on a server of the client (not in the cloud) */
+/** this DrisPRO runs on a server of the client (not in the cloud) */
 export const isLocalServer = !!local
 const url = supabaseUrl
 const anonKey = supabaseAnonKey

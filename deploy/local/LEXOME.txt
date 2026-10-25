@@ -5,7 +5,7 @@ Databaza, hyrja, API-ja dhe aplikacioni punojnë në këtë server. Kompjuterët
 telefonat e lokalit e hapin me adresën e serverit (p.sh. http://192.168.1.20).
 
 Instalimi (Ubuntu/Debian, ose Ubuntu brenda WSL në Windows):
-  1. Kopjoni dosjen nexuserp-server në /opt/nexuserp
+  1. Kopjoni dosjen drispro-server në /opt/nexuserp
   2. cd /opt/nexuserp && sudo bash install.sh
      Kërkon: kodin e licencës (NXS-....), email-in dhe fjalëkalimin e administratorit.
   3. Në fund shkruan adresën. Hapeni në shfletues ose në programin DrisPRO

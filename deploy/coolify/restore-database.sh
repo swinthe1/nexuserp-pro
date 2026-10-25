@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# NexusERP · put a copy back. EVERYTHING written after that copy is lost.
+# DrisPRO · put a copy back. EVERYTHING written after that copy is lost.
 #
 #   bash deploy/coolify/restore-database.sh <db-container> <file.dump>
 #

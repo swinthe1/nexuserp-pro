@@ -1,4 +1,4 @@
-# NexusERP Pro
+# DrisPRO
 
 Multi-company ERP for retail, wholesale, production and distribution companies in Albania and Kosovo. Built with React 18, TypeScript, Vite, Tailwind CSS and shadcn/ui on Supabase.
 
@@ -17,7 +17,7 @@ Multi-company ERP for retail, wholesale, production and distribution companies i
 | 9 | Shqip as the default language with English as the second (every label, message, report, printout and notification; switcher in the top bar, the user menu and the sign-in page; each person's choice saved to their profile). Plain-language pass for cashiers, warehouse staff and sales reps; role-based start screens. Albanian demo data across all modules (`supabase/seed/demo.sql`). Live updates on the lists people watch during the day. PWA: install, offline start, update prompt, app shortcuts. Page-level error recovery, offline banner, error and empty states, optimistic updates. Accent-insensitive search | ✅ |
 | 10 | Clients and licences: only the platform administrator creates client companies (with the client's admin account and licence), sign-up only by invitation, a licence per company (plan, user limit, start and end, pause), access stops outside the licence while the data is kept, ending-soon banner, change password, support visits. Simpler menu: personal favourites (star) or most-used pages at the top, folding menu parts, company admins hide parts the company does not use (Company settings → Menu). See [docs/PLATFORM.md](docs/PLATFORM.md) | ✅ |
 | 11 | Migration centre: move a client from Kubit, Logmicro, Bilanc or any spreadsheet — products, partners, employees, opening stock, price lists, open customer invoices and vendor bills (they age and take payments), account balances, all on a cut-over date; Albanian column names and number formats recognised, saved column templates, check before import, totals to compare with the old program. See [docs/MIGRATION.md](docs/MIGRATION.md) | ✅ |
-| 12 | Live link from the old program (Logmicro → NexusERP every 30 seconds: products, prices, partners, stock, unpaid invoices) with a background agent on the client's server, and training companies that never fiscalize. See [docs/MIGRATION.md](docs/MIGRATION.md#live-link-and-training-companies) | ✅ |
+| 12 | Live link from the old program (Logmicro → DrisPRO every 30 seconds: products, prices, partners, stock, unpaid invoices) with a background agent on the client's server, and training companies that never fiscalize. See [docs/MIGRATION.md](docs/MIGRATION.md#live-link-and-training-companies) | ✅ |
 
 ## Getting started
 

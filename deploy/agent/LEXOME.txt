@@ -1,4 +1,4 @@
-NexusERP - Agjenti i leximit (hapi 1)
+DrisPRO - Agjenti i leximit (hapi 1)
 
 Cfare ben: lexon STRUKTUREN e databazes se programit te vjeter (tabelat, kolonat,
 lidhjet, numrin e rreshtave) dhe, nese lejoni, 3 rreshta shembull per tabele.
@@ -18,21 +18,21 @@ Nese hyrja me Windows nuk funksionon, agjenti kerkon perdorues SQL (p.sh. sa).
 Fjalekalimi nuk ruhet askund.
 
 HAPI 2 - NXJERRJA (Nis-Nxjerrjen.bat)
-Krijon skedaret per NexusERP > Kalimi nga programi tjeter, nga databaza e Logmicro.
+Krijon skedaret per DrisPRO > Kalimi nga programi tjeter, nga databaza e Logmicro.
 1. Ne serverin e Logmicro: klik i djathte "Nis-Nxjerrjen.bat" > Run as administrator.
 2. Zgjidhni instancen (te Lider Market: SQLPRIME), databazen e vitit (LM2026),
    daten e kalimit (p.sh. 2026-12-31) dhe listen kryesore te cmimeve.
 3. Hapet dosja "nxjerrja-LM2026-<data>" me skedaret 01..10 dhe PERMBLEDHJA.txt.
-4. Ne NexusERP importojini me radhe, sipas numrit ne emrin e skedarit.
+4. Ne DrisPRO importojini me radhe, sipas numrit ne emrin e skedarit.
 Stoku merret si eshte NE ATE MOMENT: ekzekutojeni ne diten e kalimit pasi te mbyllet dita.
 Vetem lexon; nuk lexon fjalekalime dhe nuk dergon asgje ne internet.
 
-LIDHJA LIVE (Logmicro -> NexusERP, cdo 5 sekonda)
-1. Ne NexusERP: Klientet > veprimet e klientit > Lidhja live dhe trajnimi > Krijo celesin >
+LIDHJA LIVE (Logmicro -> DrisPRO, cdo 5 sekonda)
+1. Ne DrisPRO: Klientet > veprimet e klientit > Lidhja live dhe trajnimi > Krijo celesin >
    Shkarko lidhja.json. Vendoseni lidhja.json ne kete dosje ne serverin e Logmicro.
 2. Klikoni dy here Nis-Lidhjen.bat: plotesoni serverin (localhost\SQLPRIME), databazen (LM2026)
    dhe listen kryesore te cmimeve; behet ngarkimi i plote. Pastaj mbyllni dritaren.
 3. Klikoni dy here Instalo-Lidhjen.bat: lidhja punon vete ne sfond, edhe pas rinisjes.
 4. Ndalo-Lidhjen.bat e ndal dhe e heq.
-Ditari: lidhja.log. Vetem lexon nga Logmicro; dergon vetem te adresa e NexusERP ne lidhja.json.
-Serveri duhet te kete qasje ne internet te adresa e NexusERP (https).
+Ditari: lidhja.log. Vetem lexon nga Logmicro; dergon vetem te adresa e DrisPRO ne lidhja.json.
+Serveri duhet te kete qasje ne internet te adresa e DrisPRO (https).

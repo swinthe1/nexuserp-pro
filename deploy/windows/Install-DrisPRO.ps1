@@ -1,7 +1,7 @@
 <#
-  Unzips NexusERP Pro next to this script and runs the local setup.
+  Unzips DrisPRO next to this script and runs the local setup.
   Put this file in the same folder as nexuserp-pro-phase9.zip and run:
-    powershell -ExecutionPolicy Bypass -File Install-NexusERP.ps1
+    powershell -ExecutionPolicy Bypass -File Install-DrisPRO.ps1
   Any options are passed on to setup-local.ps1 (for example -NoDemo or -Dev).
 #>
 $ErrorActionPreference = 'Continue'

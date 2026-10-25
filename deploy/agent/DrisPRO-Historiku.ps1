@@ -1,7 +1,7 @@
 ﻿<#
-  NexusERP · Historiku nga Logmicro (njëherë, mund të ndalet dhe të vazhdojë)
+  DrisPRO · Historiku nga Logmicro (njëherë, mund të ndalet dhe të vazhdojë)
 
-  Dërgon në NexusERP gjithë historikun e Logmicro-s, si arkiv që nuk prek stokun,
+  Dërgon në DrisPRO gjithë historikun e Logmicro-s, si arkiv që nuk prek stokun,
   kontabilitetin e ri apo ATK-në:
     - gjendjet mujore të çdo konte (nga FACT_ACCT)
     - barkodet e tjera, kodet e furnitorëve, nivelet e riporositjes
@@ -51,7 +51,7 @@ Add-Type -AssemblyName System.Data
 function New-Connection {
   $b = New-Object System.Data.SqlClient.SqlConnectionStringBuilder
   $b['Data Source'] = $cfg.server; $b['Initial Catalog'] = $db
-  $b['Application Name'] = 'NexusERP-Historiku (vetem lexim)'; $b['Connect Timeout'] = 15
+  $b['Application Name'] = 'DrisPRO-Historiku (vetem lexim)'; $b['Connect Timeout'] = 15
   try { $b['ApplicationIntent'] = 'ReadOnly' } catch { }
   if ($cfg.sql_user) { $b['User ID'] = $cfg.sql_user; $b['Password'] = $cfg.sql_password } else { $b['Integrated Security'] = $true }
   $c = New-Object System.Data.SqlClient.SqlConnection $b.ConnectionString
@@ -88,7 +88,7 @@ function Send([string]$kind, $rows) {
                -Headers @{ apikey = $cfg.anon_key; Authorization = "Bearer $($cfg.anon_key)" }
     } catch {
       $detail = if ($_.ErrorDetails -and $_.ErrorDetails.Message) { $_.ErrorDetails.Message } else { $_.Exception.Message }
-      if ($try -eq 5) { throw "NexusERP: $detail" }
+      if ($try -eq 5) { throw "DrisPRO: $detail" }
       Log "  provë $try dështoi ($detail), provoj përsëri…" 'Yellow'
       Start-Sleep -Seconds (5 * $try)
     }
@@ -115,7 +115,7 @@ function Barcode([string]$c) {
 
 Write-Host ''
 Write-Host '==============================================================' -ForegroundColor Green
-Write-Host " NexusERP · Historiku nga Logmicro $Version" -ForegroundColor Green
+Write-Host " DrisPRO · Historiku nga Logmicro $Version" -ForegroundColor Green
 Write-Host " $($cfg.server) / $db → $($cfg.url)" -ForegroundColor Green
 Write-Host ' Vetëm lexon. Mund ta mbyllni; herën tjetër vazhdon aty ku mbeti.' -ForegroundColor Green
 Write-Host '==============================================================' -ForegroundColor Green

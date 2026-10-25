@@ -1,5 +1,5 @@
 <#
-  NexusERP Pro - run it on this Windows computer.
+  DrisPRO - run it on this Windows computer.
 
   What it does, in order:
     1. checks Node.js and Docker Desktop
@@ -92,7 +92,7 @@ if (-not $Dev) {
 $app = if ($Dev) { 'http://localhost:5173' } else { 'http://localhost:4173' }
 Write-Host ''
 Write-Host '------------------------------------------------------------' -ForegroundColor Green
-Write-Host " NexusERP Pro:      $app" -ForegroundColor Green
+Write-Host " DrisPRO:      $app" -ForegroundColor Green
 Write-Host " Supabase Studio:   http://127.0.0.1:54323   (tables, SQL, users)"
 Write-Host " Emails (Mailpit):  http://127.0.0.1:54324"
 if (-not $NoDemo -and -not $KeepData) {

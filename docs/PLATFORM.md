@@ -1,6 +1,6 @@
 # Clients and licences (platform administrator)
 
-NexusERP is run by one platform administrator (you, the provider). Clients cannot create companies or open accounts on their own.
+DrisPRO is run by one platform administrator (you, the provider). Clients cannot create companies or open accounts on their own.
 
 ## Who can do what
 

@@ -1,7 +1,7 @@
 ﻿<#
-  NexusERP · Agjenti, hapi 2: nxjerrja e të dhënave nga Logmicro (Compiere/ADempiere në SQL Server)
+  DrisPRO · Agjenti, hapi 2: nxjerrja e të dhënave nga Logmicro (Compiere/ADempiere në SQL Server)
 
-  Lexon databazën e Logmicro dhe krijon skedarët CSV për Qendrën e migrimit të NexusERP:
+  Lexon databazën e Logmicro dhe krijon skedarët CSV për Qendrën e migrimit të DrisPRO:
   artikujt, subjektet, magazinat, stokun, çmimet, faturat e hapura, kontot dhe bilancin.
   VETËM LEXON: nuk shkruan, nuk fshin, nuk ndryshon asgjë. Nuk dërgon asgjë në internet.
   Fjalëkalime dhe tabela përdoruesish nuk lexohen.
@@ -44,7 +44,7 @@ Add-Type -AssemblyName System.Data
 function New-Connection([string]$db) {
   $b = New-Object System.Data.SqlClient.SqlConnectionStringBuilder
   $b['Data Source'] = $Server; $b['Initial Catalog'] = $db
-  $b['Application Name'] = 'NexusERP-Nxjerrja (vetem lexim)'; $b['Connect Timeout'] = 15
+  $b['Application Name'] = 'DrisPRO-Nxjerrja (vetem lexim)'; $b['Connect Timeout'] = 15
   try { $b['ApplicationIntent'] = 'ReadOnly' } catch { }
   if ($User) { $b['User ID'] = $User; $b['Password'] = $Password } else { $b['Integrated Security'] = $true }
   $c = New-Object System.Data.SqlClient.SqlConnection $b.ConnectionString
@@ -107,7 +107,7 @@ function Write-Csv([string]$base, [string[]]$headers, $rows, [int]$chunk) {
 
 Say ''
 Say '==============================================================' 'Green'
-Say " NexusERP · Nxjerrja nga Logmicro $Version" 'Green'
+Say " DrisPRO · Nxjerrja nga Logmicro $Version" 'Green'
 Say ' Vetëm lexon. Nuk ndryshon asgjë në databazë.' 'Green'
 Say '==============================================================' 'Green'
 
@@ -441,10 +441,10 @@ $db.Close()
 
 # ---------------------------------------------------------------- përmbledhja
 $sb = New-Object System.Text.StringBuilder
-[void]$sb.AppendLine("NexusERP · nxjerrja nga $Database ($Server)")
+[void]$sb.AppendLine("DrisPRO · nxjerrja nga $Database ($Server)")
 [void]$sb.AppendLine("Data e kalimit: $($cut.ToString('dd.MM.yyyy'))   ·   nxjerrë më $((Get-Date).ToString('dd.MM.yyyy HH:mm'))   ·   çmimi kryesor: $($main.name)")
 [void]$sb.AppendLine('')
-[void]$sb.AppendLine('SKEDARËT, sipas hapave te NexusERP → Kalimi nga programi tjetër:')
+[void]$sb.AppendLine('SKEDARËT, sipas hapave te DrisPRO → Kalimi nga programi tjetër:')
 $steps = [ordered]@{ '01' = '1. Produktet'; '02' = '2. Klientë dhe furnitorë'; '04' = '4. Dyqanet dhe magazinat'; '05' = '5. Gjendja fillestare (një skedar për magazinë)'
                      '06' = '6. Lista çmimesh'; '07' = '7. Faturat e hapura të klientëve'; '08' = '8. Faturat e hapura te furnitorët'; '09' = '9. Plani kontabël'; '10' = '10. Saldot e llogarive' }
 foreach ($k in $steps.Keys) { [void]$sb.AppendLine(('  {0,-52} {1}' -f $steps[$k], (($files[$k] | Where-Object { $_ }) -join ', '))) }
@@ -467,6 +467,6 @@ Say '==============================================================' 'Green'
 Say " Gati për $secs sekonda. Nuk u ndryshua asgjë në databazë." 'Green'
 Say '==============================================================' 'Green'
 Say "Skedarët janë te: $script:OutDir"
-Say 'Lexoni PERMBLEDHJA.txt, pastaj importojini skedarët me radhë te NexusERP → Kalimi nga programi tjetër.'
+Say 'Lexoni PERMBLEDHJA.txt, pastaj importojini skedarët me radhë te DrisPRO → Kalimi nga programi tjetër.'
 try { Start-Process explorer.exe $script:OutDir } catch { }
 Read-Host 'Shtypni Enter për të mbyllur' | Out-Null

@@ -1,7 +1,7 @@
 ﻿<#
-  NexusERP · Kontrolli i Logmicro-s (njëherë, vetëm numëron)
+  DrisPRO · Kontrolli i Logmicro-s (njëherë, vetëm numëron)
 
-  Shikon çfarë tabelash ka Logmicro me të dhëna që NexusERP ende nuk i merr:
+  Shikon çfarë tabelash ka Logmicro me të dhëna që DrisPRO ende nuk i merr:
   porositë te furnitorët, zbritjet dhe aksionet, lotet dhe skadimet, plani kontabël,
   bankat, asetet, pagat, mbylljet e arkës.
   VETËM NUMËRON rreshta dhe lexon emrat e tabelave e kolonave. Nuk lexon emra klientësh,
@@ -26,7 +26,7 @@ $db = if ($Database) { $Database } else { [string]$cfg.database }
 Add-Type -AssemblyName System.Data
 $b = New-Object System.Data.SqlClient.SqlConnectionStringBuilder
 $b['Data Source'] = $cfg.server; $b['Initial Catalog'] = $db
-$b['Application Name'] = 'NexusERP-Kontrolli (vetem lexim)'; $b['Connect Timeout'] = 15
+$b['Application Name'] = 'DrisPRO-Kontrolli (vetem lexim)'; $b['Connect Timeout'] = 15
 try { $b['ApplicationIntent'] = 'ReadOnly' } catch { }
 if ($cfg.sql_user) { $b['User ID'] = $cfg.sql_user; $b['Password'] = $cfg.sql_password } else { $b['Integrated Security'] = $true }
 $conn = New-Object System.Data.SqlClient.SqlConnection $b.ConnectionString
@@ -75,7 +75,7 @@ function Breakdown([string]$title, [string]$sql) {
   if ($q -and $q.Rows.Count) { Out ("  {0}: {1}" -f $title, (($q.Rows | ForEach-Object { ($_.ItemArray | ForEach-Object { if ($_ -is [DBNull]) { '-' } else { "$_".Trim() } }) -join '/' }) -join ', ')) 'Gray' }
 }
 
-Out "NexusERP Kontrolli $Version · $db · $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
+Out "DrisPRO Kontrolli $Version · $db · $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
 Out "Tabela gjithsej: $($rows.Count), me të dhëna: $(@($rows.Values | Where-Object { $_ -gt 0 }).Count)"
 
 Out ''; Out '== 1. Porositë te furnitorët' 'Cyan'
@@ -160,4 +160,4 @@ $conn.Close()
 [IO.File]::WriteAllLines($outPath, $lines, (New-Object System.Text.UTF8Encoding $true))
 Write-Host ''
 Write-Host "U RUAJT te $outPath" -ForegroundColor Green
-Write-Host 'Kopjojeni kontrolli.txt në kompjuterin tuaj (Documents\NexusERP\Agjenti) dhe tregojini Claude-it.' -ForegroundColor Green
+Write-Host 'Kopjojeni kontrolli.txt në kompjuterin tuaj (Documents\DrisPRO\Agjenti) dhe tregojini Claude-it.' -ForegroundColor Green

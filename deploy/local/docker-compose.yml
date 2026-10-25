@@ -1,4 +1,4 @@
-# NexusERP on a local server: the database, sign-in, API, live updates and file storage (the same
+# DrisPRO on a local server: the database, sign-in, API, live updates and file storage (the same
 # Supabase pieces as the cloud), and the app itself, all behind one address on port 80.
 # Started and updated by install.sh / update.sh; settings and secrets are in .env next to this file.
 name: nexuserp

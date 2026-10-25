@@ -4,7 +4,7 @@
   The server runs inside Linux (WSL 2, Ubuntu) on this computer, the same way as on a Linux server:
   database, sign-in, API and the app. Other computers in the shop open it with this computer's address.
 
-  Run as administrator, from the unpacked nexuserp-server folder:
+  Run as administrator, from the unpacked drispro-server folder:
     powershell -ExecutionPolicy Bypass -File windows\Install-Server.ps1
   The first time Windows may need a restart to turn on WSL; then run it again.
 #>

@@ -12,7 +12,7 @@ if [ "${1:-}" = "--setup" ]; then
   echo "The app's UUID is in its address in Coolify: .../application/<UUID>"
   read -rp "Coolify address [http://31.97.47.9:8000]: " url; url="${url:-http://31.97.47.9:8000}"
   read -rsp "API token (not shown): " token; echo
-  read -rp "UUID of the NexusERP app: " uuid
+  read -rp "UUID of the DrisPRO app: " uuid
   db="$(docker ps --format '{{.Names}}' | grep -E '^supabase-db' | head -1 || true)"
   read -rp "Database container [$db]: " c; db="${c:-$db}"
   umask 077

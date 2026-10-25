@@ -1,11 +1,11 @@
 ﻿<#
-  NexusERP · Lidhja live me Logmicro (një drejtim: Logmicro → NexusERP)
+  DrisPRO · Lidhja live me Logmicro (një drejtim: Logmicro → DrisPRO)
 
   Çdo ~30 sekonda lexon nga Logmicro vetëm atë që ka ndryshuar (artikuj, çmime, subjekte,
-  stok, faturat e papaguara) dhe ia dërgon NexusERP-it me çelësin e lidhjes.
-  VETËM LEXON nga Logmicro. Nuk lexon fjalëkalime. Dërgon vetëm te adresa e NexusERP në lidhja.json.
+  stok, faturat e papaguara) dhe ia dërgon DrisPRO-it me çelësin e lidhjes.
+  VETËM LEXON nga Logmicro. Nuk lexon fjalëkalime. Dërgon vetëm te adresa e DrisPRO në lidhja.json.
 
-  Hera e parë:  klikoni dy herë "Nis-Lidhjen.bat" — ngjitni konfigurimin nga NexusERP
+  Hera e parë:  klikoni dy herë "Nis-Lidhjen.bat" — ngjitni konfigurimin nga DrisPRO
                 (Klientët → veprimet → Lidhja live), prisni ngarkimin e plotë.
   Pastaj:       "Instalo-Lidhjen.bat" e bën të punojë vetë, edhe pas rinisjes së serverit.
   Opsione:      -Service (pa pyetje, për Task Scheduler)  -Full (ngarko gjithçka nga e para)  -Once (një cikël)
@@ -21,7 +21,7 @@ $logPath = Join-Path $here 'lidhja.log'
 $inv = [Globalization.CultureInfo]::InvariantCulture
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
-# every log line also goes to NexusERP (sent each cycle), so the link can be watched from the app
+# every log line also goes to DrisPRO (sent each cycle), so the link can be watched from the app
 $script:logBuf = New-Object System.Collections.ArrayList
 $script:lastLogSent = [datetime]::MinValue
 function Log([string]$text, [string]$color = 'Gray') {
@@ -39,7 +39,7 @@ function Log([string]$text, [string]$color = 'Gray') {
 if (-not (Test-Path $cfgPath)) {
   if ($Service) { Log 'lidhja.json mungon; nisni njëherë Nis-Lidhjen.bat' 'Red'; exit 1 }
   Write-Host ''
-  Write-Host 'Ngjitni konfigurimin nga NexusERP (Klientët → veprimet e klientit → Lidhja live).' -ForegroundColor Cyan
+  Write-Host 'Ngjitni konfigurimin nga DrisPRO (Klientët → veprimet e klientit → Lidhja live).' -ForegroundColor Cyan
   Write-Host 'Ngjiteni të gjithë tekstin {...}, pastaj shtypni Enter dy herë.' -ForegroundColor Cyan
   $lines = @(); while ($true) { $l = Read-Host; if ($l -eq '' -and $lines.Count -gt 0) { break }; $lines += $l }
   try { $cfg = ($lines -join "`n") | ConvertFrom-Json } catch { Write-Host 'Teksti nuk është konfigurim i vlefshëm.' -ForegroundColor Red; Read-Host; exit 1 }
@@ -52,7 +52,7 @@ if (-not (Test-Path $cfgPath)) {
   Write-Host "U ruajt te $cfgPath" -ForegroundColor Green
 }
 $cfg = Get-Content $cfgPath -Raw -Encoding UTF8 | ConvertFrom-Json
-foreach ($k in 'url', 'anon_key', 'sync_key') { if (-not $cfg.$k) { Log "lidhja.json: mungon '$k' - shkarkojeni përsëri nga NexusERP" 'Red'; exit 1 } }
+foreach ($k in 'url', 'anon_key', 'sync_key') { if (-not $cfg.$k) { Log "lidhja.json: mungon '$k' - shkarkojeni përsëri nga DrisPRO" 'Red'; exit 1 } }
 $askLater = $false
 if (-not $cfg.server -or -not $cfg.database -or -not $cfg.main_price_list) {
   if ($Service) { Log 'lidhja.json nuk është plotësuar; nisni njëherë Nis-Lidhjen.bat' 'Red'; exit 1 }
@@ -84,7 +84,7 @@ Add-Type -AssemblyName System.Data
 function New-Connection {
   $b = New-Object System.Data.SqlClient.SqlConnectionStringBuilder
   $b['Data Source'] = $cfg.server; $b['Initial Catalog'] = $cfg.database
-  $b['Application Name'] = 'NexusERP-Lidhja (vetem lexim)'; $b['Connect Timeout'] = 15
+  $b['Application Name'] = 'DrisPRO-Lidhja (vetem lexim)'; $b['Connect Timeout'] = 15
   try { $b['ApplicationIntent'] = 'ReadOnly' } catch { }
   if ($cfg.sql_user) { $b['User ID'] = $cfg.sql_user; $b['Password'] = $cfg.sql_password } else { $b['Integrated Security'] = $true }
   $c = New-Object System.Data.SqlClient.SqlConnection $b.ConnectionString
@@ -134,7 +134,7 @@ function Post-Json([string]$url, [hashtable]$payload) {
     }
     # 4xx and refused data will not get better by waiting; network trouble and 5xx might
     if ($try -eq 3 -or ($status -ge 400 -and $status -lt 500) -or $status -eq 200) {
-      $ex = New-Object Exception ("NexusERP{0}: {1}" -f $(if ($status -and $status -ne 200) { " ($status)" } else { '' }), $detail)
+      $ex = New-Object Exception ("DrisPRO{0}: {1}" -f $(if ($status -and $status -ne 200) { " ($status)" } else { '' }), $detail)
       $ex.Data['reached'] = [bool]$status
       throw $ex
     }
@@ -145,7 +145,7 @@ function Row-Label($row) {
   foreach ($k in 'sku', 'code', 'ext_id', 'partner') { $v = $row.$k; if (-not $v -and $row -is [hashtable]) { $v = $row[$k] }; if ($v) { return "$k=$v" } }
   $t = ($row | ConvertTo-Json -Compress -Depth 3); if ($t.Length -gt 120) { $t = $t.Substring(0, 120) + '…' }; return $t
 }
-# dërgon një copë; nëse NexusERP e refuzon, e ndan në dysh derisa të gjejë rreshtin e keq dhe e kalon atë
+# dërgon një copë; nëse DrisPRO e refuzon, e ndan në dysh derisa të gjejë rreshtin e keq dhe e kalon atë
 function Send-Part([string]$name, [object[]]$part, [hashtable]$extra) {
   $b = @{ $name = $part }; foreach ($k in $extra.Keys) { $b[$k] = $extra[$k] }
   try {
@@ -168,7 +168,7 @@ function Send-Part([string]$name, [object[]]$part, [hashtable]$extra) {
     return (Send-Part $name $p1 $extra) + (Send-Part $name $p2 @{})
   }
 }
-# dërgon një listë në copa të vogla (NexusERP pranon pak rreshta për thirrje)
+# dërgon një listë në copa të vogla (DrisPRO pranon pak rreshta për thirrje)
 function Push-List([string]$name, $rows, [int]$size, [hashtable]$extra = @{}) {
   if ($rows.Count -eq 0 -and $extra.Count -eq 0) { return 0 }
   $sent = 0
@@ -206,7 +206,7 @@ SELECT x.M_PRODUCT_ID, x.PRICESTD, x.UPDATED FROM (
  WHERE x.rn = 1
 "@
 }
-# Logmicro sometimes holds a negative average cost; NexusERP needs 0 or more (blank = keep the current cost)
+# Logmicro sometimes holds a negative average cost; DrisPRO needs 0 or more (blank = keep the current cost)
 function Cost($v) { $n = Num $v 4; if ($n -and [decimal]::Parse($n, $inv) -lt 0) { return '' }; return $n }
 
 function Read-Products($db, $lists, [string]$where) {
@@ -241,7 +241,7 @@ SELECT p.M_PRODUCT_ID AS id, p.VALUE AS sku, p.NAME AS name, u.X12DE355 AS uom, 
     if (-not ($p.price -is [DBNull]) -and [decimal]$p.price -gt 0) { $v = [decimal]$p.price; if ($main.taxincl) { $v = $v / (1 + $rate / 100) }; $price = Num $v 4 }
     $u = $unitMap[(Str $p.uom).ToLower()]; if (-not $u) { $u = 'pcs' }
     $bc = (Str $p.barcode) -replace '\s', ''
-    # NexusERP ruan EAN-13: UPC-A (12) merr 0 para, GTIN-14 me 0 para e humb; EAN-8 dhe të tjerat lihen jashtë
+    # DrisPRO ruan EAN-13: UPC-A (12) merr 0 para, GTIN-14 me 0 para e humb; EAN-8 dhe të tjerat lihen jashtë
     if ($bc.Length -eq 12) { $bc = '0' + $bc } elseif ($bc.Length -eq 14 -and $bc.StartsWith('0')) { $bc = $bc.Substring(1) }
     if ($bc.Length -ne 13) { $bc = '' }
     if ($bc -and (-not (Test-Barcode $bc) -or $seen.ContainsKey($bc))) { $bc = '' }; if ($bc) { $seen[$bc] = 1 }
@@ -330,7 +330,7 @@ SELECT $whCode AS warehouse, p.VALUE AS sku, SUM(s.QTYONHAND) AS qty, MAX(ISNULL
 }
 
 # $since empty: every open document. $since set: only the documents whose card rows changed since then,
-# with their balance now - 0 when paid, so NexusERP closes them too.
+# with their balance now - 0 when paid, so DrisPRO closes them too.
 function Read-OpenDocuments($db, [string]$since = '') {
   $cte = if (-not $since) { @"
 WITH l AS (
@@ -434,7 +434,7 @@ function Send-SalesDocs($db) {
 }
 function New-StockReport { $script:stockReport = @{ changed = 0; unknown = 0; nowh = 0; skus = (New-Object System.Collections.ArrayList); whs = (New-Object System.Collections.ArrayList) } }
 New-StockReport
-# every few hours: every quantity Logmicro has, compared with NexusERP; only differences are corrected
+# every few hours: every quantity Logmicro has, compared with DrisPRO; only differences are corrected
 function Check-AllStock($db) {
   Log 'Kontrolli i plotë i stokut (krahasohet çdo artikull në çdo njësi)…' 'Cyan'
   New-StockReport
@@ -442,11 +442,11 @@ function Check-AllStock($db) {
   $n = Push-List 'stock' $rows 300
   $r = $script:stockReport
   Log ("  {0} rreshta të kontrolluar, {1} u korrigjuan" -f $n, $r.changed) $(if ($r.changed) { 'Yellow' } else { 'Green' })
-  if ($r.unknown) { Log ("  {0} rreshta me artikuj që NexusERP nuk i njeh, p.sh. {1}" -f $r.unknown, ($r.skus -join ', ')) 'Yellow' }
+  if ($r.unknown) { Log ("  {0} rreshta me artikuj që DrisPRO nuk i njeh, p.sh. {1}" -f $r.unknown, ($r.skus -join ', ')) 'Yellow' }
   if ($r.nowh) {
     $names = Query $db "SELECT $whCode AS code, w.NAME AS name, w.ISACTIVE AS active FROM M_WAREHOUSE w WITH (NOLOCK)"
     $missing = @($names.Rows | Where-Object { $r.whs.Contains((Str $_.code)) })
-    Log ("  {0} rreshta në njësi që NexusERP nuk i ka: {1}" -f $r.nowh, (($missing | ForEach-Object { "$(Str $_.code) $(Str $_.name)" + $(if ((Str $_.active) -eq 'N') { ' (joaktive te Logmicro)' } else { '' }) }) -join ', ')) 'Yellow'
+    Log ("  {0} rreshta në njësi që DrisPRO nuk i ka: {1}" -f $r.nowh, (($missing | ForEach-Object { "$(Str $_.code) $(Str $_.name)" + $(if ((Str $_.active) -eq 'N') { ' (joaktive te Logmicro)' } else { '' }) }) -join ', ')) 'Yellow'
     if ($missing.Count) {
       $whRows = @($missing | ForEach-Object { @{ code = (Str $_.code); name = $(if (Str $_.name) { Str $_.name } else { "Njësia $(Str $_.code)" }); type = 'store' } })
       [void](Push-List 'warehouses' $whRows 200)
@@ -709,7 +709,7 @@ if (-not $owned) {
 if (-not $Service) {
   Write-Host ''
   Write-Host '==============================================================' -ForegroundColor Green
-  Write-Host " NexusERP · Lidhja live me Logmicro $Version" -ForegroundColor Green
+  Write-Host " DrisPRO · Lidhja live me Logmicro $Version" -ForegroundColor Green
   Write-Host " $($cfg.database) → $($cfg.url)   çdo $($cfg.interval_seconds) sekonda" -ForegroundColor Green
   Write-Host ' Vetëm lexon nga Logmicro. Mbylleni dritaren për ta ndalur.' -ForegroundColor Green
   Write-Host '==============================================================' -ForegroundColor Green

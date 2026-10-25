@@ -10,13 +10,13 @@
 #   GATEWAY     the router, with STATIC_IP (found by itself)
 #   TUNNEL_TOKEN  Cloudflare tunnel, to open DrisPRO from outside the shop
 #
-# Run it from the unpacked nexuserp-server folder. It can be run again: it keeps the data.
+# Run it from the unpacked drispro-server folder. It can be run again: it keeps the data.
 set -euo pipefail
 src="$(cd "$(dirname "$0")/.." && pwd)"
 say() { printf '\n==> %s\n' "$*"; }
 die() { printf '\n!! %s\n' "$*" >&2; exit 1; }
 [ "$(id -u)" = 0 ] || die "Run as root: sudo bash box/prepare-box.sh"
-[ -f "$src/install.sh" ] || die "Run this from the unpacked nexuserp-server folder"
+[ -f "$src/install.sh" ] || die "Run this from the unpacked drispro-server folder"
 . /etc/os-release 2>/dev/null || true
 [ "${ID:-}" = ubuntu ] || [ "${ID:-}" = debian ] || die "DrisPRO Box needs Ubuntu Server (24.04) or Debian"
 name="${BOX_NAME:-drispro}"

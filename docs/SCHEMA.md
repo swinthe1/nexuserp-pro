@@ -1,4 +1,4 @@
-# NexusERP Pro — Database Schema (Phase 1)
+# DrisPRO — Database Schema (Phase 1)
 
 PostgreSQL 15+ on Supabase · 135 tables · 461 RLS policies · 13 migrations · 81 passing schema tests
 

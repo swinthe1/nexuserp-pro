@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# NexusERP · copy of the whole database (every company, users, settings)
+# DrisPRO · copy of the whole database (every company, users, settings)
 #
 #   bash deploy/coolify/backup-database.sh <db-container> [folder] [days-to-keep]
 #
@@ -22,7 +22,7 @@ pass="$(docker exec "$container" printenv POSTGRES_PASSWORD)"
 user=supabase_admin
 docker exec -e PGPASSWORD="$pass" "$container" psql -h 127.0.0.1 -U "$user" -d postgres -tAc 'select 1' >/dev/null 2>&1 || user=postgres
 
-# tell NexusERP how it went (the platform page shows it); a missing table just means an older database
+# tell DrisPRO how it went (the platform page shows it); a missing table just means an older database
 report() { # ok file size message
   local free total
   free="$(df -B1 --output=avail "$dir" | tail -1 | tr -d ' ')"; total="$(df -B1 --output=size "$dir" | tail -1 | tr -d ' ')"

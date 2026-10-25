@@ -1,4 +1,4 @@
 @echo off
 chcp 65001 >nul
 cd /d "%~dp0"
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0NexusERP-Nxjerrja.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0DrisPRO-Nxjerrja.ps1"

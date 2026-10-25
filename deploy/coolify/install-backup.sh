@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# NexusERP · run backup-database.sh every night at 02:30 (server time), keep 14 days.
+# DrisPRO · run backup-database.sh every night at 02:30 (server time), keep 14 days.
 #
 #   bash deploy/coolify/install-backup.sh <db-container>
 #
@@ -11,7 +11,7 @@ here="$(cd "$(dirname "$0")" && pwd)"
 install -m 700 "$here/backup-database.sh" /usr/local/bin/nexuserp-backup
 install -m 700 "$here/restore-database.sh" /usr/local/bin/nexuserp-restore
 cat > /etc/cron.d/nexuserp-backup <<EOF
-# NexusERP nightly database copy
+# DrisPRO nightly database copy
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 30 2 * * * root /usr/local/bin/nexuserp-backup $container /root/backups 14 >> /var/log/nexuserp-backup.log 2>&1

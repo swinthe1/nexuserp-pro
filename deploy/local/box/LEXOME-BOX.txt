@@ -26,10 +26,10 @@ Para instalimit, në BIOS të mini-PC
 
 2. DrisPRO
 ----------
-  Kopjoni nexuserp-server-<versioni>.zip në mini-PC (me USB ose me scp), pastaj:
+  Kopjoni drispro-server-<versioni>.zip në mini-PC (me USB ose me scp), pastaj:
 
      sudo apt install -y unzip
-     unzip nexuserp-server-*.zip && cd nexuserp-server
+     unzip drispro-server-*.zip && cd drispro-server
      sudo LICENCE=NXS-XXXX-XXXX-XXXX bash box/prepare-box.sh
 
   Kërkon email-in dhe fjalëkalimin e administratorit. Herën e parë shkarkon rreth 1.5 GB.

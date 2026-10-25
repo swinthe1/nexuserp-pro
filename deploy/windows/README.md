@@ -1,4 +1,4 @@
-# NexusERP Pro on your Windows computer
+# DrisPRO on your Windows computer
 
 Everything runs on this computer: the database, sign-in, the API and live updates run in Docker (the local Supabase stack), and the app is served by Node.js. Nothing is sent to the internet except downloading the tools the first time.
 
@@ -13,14 +13,14 @@ Everything runs on this computer: the database, sign-in, the API and live update
 
 ## Start it
 
-1. Unzip `nexuserp-pro-phase9.zip` (or run `Install-NexusERP.ps1` next to it, which unzips and starts everything).
+1. Unzip `nexuserp-pro-phase9.zip` (or run `Install-DrisPRO.ps1` next to it, which unzips and starts everything).
 2. Open **PowerShell** in the `nexuserp-pro` folder and run:
 
    ```powershell
    powershell -ExecutionPolicy Bypass -File deploy\windows\setup-local.ps1
    ```
 
-3. When it says **NexusERP Pro: http://localhost:4173**, open that address and sign in as `arta@ylli.al` with password `demo1234`.
+3. When it says **DrisPRO: http://localhost:4173**, open that address and sign in as `arta@ylli.al` with password `demo1234`.
 
 The first run takes 10–20 minutes, mostly downloading Docker images. Later runs take about a minute.
 

@@ -32,4 +32,4 @@ update public.profiles set is_super_admin = true,
  where id = :'uid';
 select 'Platform administrator: ' || email from public.profiles where id = :'uid';
 SQL
-echo "Sign in at your NexusERP address; you land on Clients and licences."
+echo "Sign in at your DrisPRO address; you land on Clients and licences."

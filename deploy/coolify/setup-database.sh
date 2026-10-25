@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Creates the NexusERP Pro database inside a Supabase that runs in Coolify, and loads the demo company.
+# Creates the DrisPRO database inside a Supabase that runs in Coolify, and loads the demo company.
 #
 # Run on the VPS as root, from the project folder:
 #   bash deploy/coolify/setup-database.sh                 # finds the Supabase database container itself
@@ -19,7 +19,7 @@ if [ -z "$container" ]; then
   fi
   if [ "${#found[@]}" -gt 1 ]; then
     echo "More than one Supabase database is running:" >&2; printf '  %s\n' "${found[@]}" >&2
-    echo "Run again with the one for NexusERP, e.g.: bash $0 ${found[0]}" >&2; exit 1
+    echo "Run again with the one for DrisPRO, e.g.: bash $0 ${found[0]}" >&2; exit 1
   fi
   container="${found[0]}"
 fi
