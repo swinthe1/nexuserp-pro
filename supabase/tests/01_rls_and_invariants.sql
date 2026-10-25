@@ -425,7 +425,7 @@ select t.ok(not exists (
    where n.nspname = 'public' and c.relkind = 'r'
      and exists (select 1 from pg_attribute a where a.attrelid = c.oid and a.attname = 'company_id')
      and c.relname not in (select table_name from app.table_registry)
-     and c.relname not in ('audit_log', 'document_sequence_counters', 'notification_preferences', 'roles', 'licenses', 'migration_runs', 'import_templates', 'sync_connections', 'external_documents')   -- hand-written policies by design
+     and c.relname not in ('audit_log', 'document_sequence_counters', 'notification_preferences', 'roles', 'licenses', 'migration_runs', 'import_templates', 'sync_connections', 'external_documents', 'sync_agent_logs')   -- hand-written policies by design
   ), 'every company table went through register_table');
 
 -- ---------- summary ------------------------------------------------------------

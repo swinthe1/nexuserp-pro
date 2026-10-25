@@ -1,9 +1,10 @@
-import { CalendarClock, Eye, GraduationCap } from 'lucide-react'
+import { CableCar, CalendarClock, Eye, GraduationCap } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
 import { t, tn } from '@/i18n'
 import { daysUntil, LICENSE_WARNING_DAYS } from '@/lib/license'
 import { formatDate } from '@/lib/utils'
+import { useLiveLink } from '@/features/settings/api'
 
 /** Tells the company's administrators that the licence ends soon. */
 export function LicenseBanner() {
@@ -55,6 +56,22 @@ export function TrainingBanner() {
     <div role="status" className="flex items-center justify-center gap-2 border-b border-warning/40 bg-warning/15 px-4 py-1.5 text-center text-[13px] font-medium text-foreground print:hidden">
       <GraduationCap className="size-4 shrink-0 text-warning" />
       <span>{t('Training company: data comes from the old program, and nothing done here is official or sent to the tax office.')}</span>
+    </div>
+  )
+}
+
+/** The link with the old program went quiet: the company's admins should look at the agent. */
+export function LiveLinkBanner() {
+  const { can } = useCompany()
+  const admin = can('admin.read')
+  const live = useLiveLink(admin)
+  const silent = (live.data?.conns ?? []).find((c) => c.is_active && c.last_seen_at && Date.now() - new Date(c.last_seen_at).getTime() > 10 * 60_000)
+  if (!admin || !silent) return null
+  return (
+    <div role="alert" className="flex items-center justify-center gap-2 border-b border-destructive/30 bg-destructive/10 px-4 py-1.5 text-center text-[13px] text-foreground print:hidden">
+      <CableCar className="size-4 shrink-0 text-destructive" />
+      <span>{t('The link with the old program has sent nothing since {time}. Stock and sales here are not current.', { time: formatDate(silent.last_seen_at, true) })}</span>
+      <Link to="/settings/migration" className="font-medium text-primary hover:underline">{t('See the agent log')}</Link>
     </div>
   )
 }

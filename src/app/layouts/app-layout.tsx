@@ -6,7 +6,7 @@ import { CommandPaletteProvider } from '@/components/layout/command-palette'
 import { CompanySwitcher } from '@/components/layout/company-switcher'
 import { Sidebar, SidebarNav } from '@/components/layout/sidebar'
 import { Topbar } from '@/components/layout/topbar'
-import { LicenseBanner, SupportBanner, TrainingBanner } from '@/components/license-banner'
+import { LicenseBanner, LiveLinkBanner, SupportBanner, TrainingBanner } from '@/components/license-banner'
 import { OfflineBanner } from '@/components/offline-banner'
 import { PageErrorBoundary } from '@/components/page-error-boundary'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
@@ -71,6 +71,7 @@ export function AppLayout() {
           <Topbar onOpenMobileNav={() => setMobileOpen(true)} />
           <OfflineBanner />
           <TrainingBanner />
+          <LiveLinkBanner />
           <SupportBanner />
           <LicenseBanner />
           <main id="main" className="flex-1 px-4 py-5 sm:px-6 lg:px-8">

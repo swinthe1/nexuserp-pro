@@ -8707,6 +8707,36 @@ export type Database = {
           { foreignKeyName: "stock_transfers_company_id_to_warehouse_id_fkey"; columns: ["company_id", "to_warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      sync_agent_logs: {
+        Row: {
+          id: number
+          connection_id: string
+          company_id: string
+          at: string
+          level: string
+          msg: string
+        }
+        Insert: {
+          id?: number
+          connection_id: string
+          company_id: string
+          at: string
+          level: string
+          msg: string
+        }
+        Update: {
+          id?: number
+          connection_id?: string
+          company_id?: string
+          at?: string
+          level?: string
+          msg?: string
+        }
+        Relationships: [
+          { foreignKeyName: "sync_agent_logs_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "sync_agent_logs_connection_id_fkey"; columns: ["connection_id"]; isOneToOne: false; referencedRelation: "sync_connections"; referencedColumns: ["id"] },
+        ]
+      }
       sync_connections: {
         Row: {
           id: string
@@ -8722,6 +8752,8 @@ export type Database = {
           last_counts: Json | null
           last_error: string | null
           pushes: number
+          down_since: string | null
+          agent_version: string | null
         }
         Insert: {
           id?: string
@@ -8737,6 +8769,8 @@ export type Database = {
           last_counts?: Json | null
           last_error?: string | null
           pushes?: number
+          down_since?: string | null
+          agent_version?: string | null
         }
         Update: {
           id?: string
@@ -8752,6 +8786,8 @@ export type Database = {
           last_counts?: Json | null
           last_error?: string | null
           pushes?: number
+          down_since?: string | null
+          agent_version?: string | null
         }
         Relationships: [
           { foreignKeyName: "sync_connections_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -10664,6 +10700,10 @@ export type Database = {
         }
         Returns: string
       }
+      check_sync_health: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       clock_attendance: {
         Args: {
           p_employee?: string
@@ -11971,6 +12011,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      sync_agent_log: {
+        Args: {
+          p_connection: string
+          p_level?: string
+          p_limit?: number
+        }
+        Returns: Json
+      }
       sync_channel_stock: {
         Args: {
           p_channel: string
@@ -11989,6 +12037,14 @@ export type Database = {
           p_key: string
           p_kind: string
           p_rows: Json
+        }
+        Returns: Json
+      }
+      sync_log: {
+        Args: {
+          p_key: string
+          p_items?: Json
+          p_version?: string
         }
         Returns: Json
       }

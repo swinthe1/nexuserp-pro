@@ -13,7 +13,7 @@
 param([switch]$Service, [switch]$Full, [switch]$Once)
 
 $ErrorActionPreference = 'Stop'
-$Version = '2.3'
+$Version = '2.4'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $cfgPath = Join-Path $here 'lidhja.json'
 $statePath = Join-Path $here 'lidhja-gjendja.json'
@@ -21,8 +21,13 @@ $logPath = Join-Path $here 'lidhja.log'
 $inv = [Globalization.CultureInfo]::InvariantCulture
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
+# every log line also goes to NexusERP (sent each cycle), so the link can be watched from the app
+$script:logBuf = New-Object System.Collections.ArrayList
+$script:lastLogSent = [datetime]::MinValue
 function Log([string]$text, [string]$color = 'Gray') {
   $line = '{0}  {1}' -f (Get-Date).ToString('yyyy-MM-dd HH:mm:ss'), $text
+  $level = switch ($color) { 'Red' { 'error' } 'Yellow' { 'warn' } 'Green' { 'ok' } default { 'info' } }
+  if ($script:logBuf.Count -lt 1000) { [void]$script:logBuf.Add(@{ at = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'); level = $level; msg = $text }) }
   if (-not $Service) { Write-Host $line -ForegroundColor $color }
   try {
     if ((Test-Path $logPath) -and (Get-Item $logPath).Length -gt 5MB) { Move-Item $logPath "$logPath.1" -Force }
@@ -586,6 +591,17 @@ if (-not $Service) {
 }
 Log "Nisi lidhja ($($cfg.database) → $($cfg.url))"
 $failures = 0
+# the log lines of the cycle, or a heartbeat once a minute when nothing happened
+function Send-Log {
+  if ($script:logBuf.Count -eq 0 -and ((Get-Date) - $script:lastLogSent).TotalSeconds -lt 60) { return }
+  try {
+    [object[]]$items = @($script:logBuf | Select-Object -First 500)
+    [void](Post-Json (($cfg.url.TrimEnd('/')) + '/rest/v1/rpc/sync_log') @{ p_key = $cfg.sync_key; p_items = $items; p_version = $Version })
+    $script:logBuf.RemoveRange(0, $items.Count)
+    $script:lastLogSent = Get-Date
+  } catch { }   # an older server without sync_log, or no internet: the lines wait for the next cycle
+}
+
 while ($true) {
   $started = Get-Date; $wasFull = -not $state.full_done
   try {
@@ -595,6 +611,7 @@ while ($true) {
     $failures++
     Log "Gabim: $($_.Exception.Message)" 'Red'
   }
+  Send-Log
   if ($Once) { break }
   # after repeated errors wait longer (up to 5 minutes)
   $wait = [math]::Min([int]$cfg.interval_seconds * [math]::Pow(2, [math]::Min($failures, 4)), 300)

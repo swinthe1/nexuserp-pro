@@ -498,6 +498,8 @@ export default {
   'Not a number': 'Nuk është numër',
   'Opening balances are already imported. Reverse that journal entry first to import them again.': 'Saldot fillestare janë importuar tashmë. Stornoni fillimisht atë regjistrim për t’i importuar sërish.',
   'Rows must be a list': 'Rreshtat duhet të jenë listë',
+  'Items must be a list': 'Elementet duhet të jenë listë',
+  'Connection not found': 'Lidhja nuk u gjet',
   'Stock value comes from the opening stock import, not from here': 'Vlera e stokut vjen nga importi i stokut fillestar, jo nga këtu',
   'Template not found': 'Shablloni nuk u gjet',
   'The amount is zero; leave paid documents out': 'Shuma është zero; lërini jashtë dokumentet e paguara',

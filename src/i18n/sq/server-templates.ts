@@ -239,6 +239,10 @@ export const serverTemplates: [string, string][] = [
   ['Lot % (%) expires % %', 'Loti {0} ({1}) skadon më {2} {3}'],
   ['% on hand', '{0} gjendje'],
 
+  ['Live link back: %', 'Lidhja live u rikthye: {0}'],
+  ['The link with the old program is sending again after % min of silence.', 'Lidhja me programin e vjetër po dërgon sërish pas {0} min heshtjeje.'],
+  ['Live link stopped: %', 'Lidhja live u ndal: {0}'],
+  ["Nothing has come from the old program since %. Check that the agent runs on the client's server and that it has internet.", 'Asgjë nuk ka ardhur nga programi i vjetër që nga {0}. Kontrolloni që agjenti punon në serverin e klientit dhe që ka internet.'],
   // ---------------------------------------------------------------- global search subtitles
   ['Account · %', 'Llogari · {0}'],
   ['Opportunity · %', 'Mundësi shitjeje · {0}'],

@@ -43,4 +43,13 @@ export default {
   'products': 'artikuj',
   'stock lines': 'rreshta stoku',
   'Live|link': 'E lidhur',
+  "The link with the old program has sent nothing since {time}. Stock and sales here are not current.": "Lidhja me programin e vjetër nuk ka dërguar asgjë që nga {time}. Stoku dhe shitjet këtu nuk janë të përditësuara.",
+  "See the agent log": "Shiko ditarin e agjentit",
+  "Agent log": "Ditari i agjentit",
+  "Agent log · {name}": "Ditari i agjentit · {name}",
+  "What the agent on the client’s server is doing, as it happens. Kept for a week.": "Çfarë po bën agjenti në serverin e klientit, në kohë reale. Ruhet për një javë.",
+  "Agent version {v}.": "Versioni i agjentit {v}.",
+  "Only warnings and errors": "Vetëm paralajmërimet dhe gabimet",
+  "No warnings or errors this week.": "Asnjë paralajmërim apo gabim këtë javë.",
+  "Nothing from the agent yet. Agent 2.4 or newer sends its log here.": "Ende asgjë nga agjenti. Agjenti 2.4 ose më i ri e dërgon ditarin këtu.",
 } satisfies Dict

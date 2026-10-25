@@ -11,7 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { msg, t, tn } from '@/i18n'
 import { cn, formatDate, formatMoney, formatQty, todayISO } from '@/lib/utils'
-import { type AnyImportKind, type ExternalDocument, type MigrationCheck, type MigrationRun, useLiveLink, useMigrationCheck } from '../api'
+import { type AnyImportKind, type ExternalDocument, type LiveConnection, type MigrationCheck, type MigrationRun, useLiveLink, useMigrationCheck } from '../api'
+import { AgentLogSheet } from '../components/agent-log'
 import { Importer, KINDS } from '../components/importer'
 
 const PROGRAMS = ['Kubit', 'Logmicro', 'Bilanc', 'Pantheon', 'Excel']
@@ -207,6 +208,7 @@ function LiveLinkCard() {
   const live = useLiveLink()
   const { company } = useCompany()
   const [open, setOpen] = React.useState(false)
+  const [logOf, setLogOf] = React.useState<LiveConnection | null>(null)
   const conns = live.data?.conns ?? []
   if (!conns.length) return null
   const active = conns.find((c) => c.is_active)
@@ -229,7 +231,11 @@ function LiveLinkCard() {
             {active?.last_error && <span className="block text-destructive">{active.last_error}</span>}
           </CardDescription>
         </div>
-        {docs.length > 0 && <button type="button" className="text-[13px] text-primary hover:underline" onClick={() => setOpen(!open)}>{open ? t('Hide the invoices') : t('Show the invoices')}</button>}
+        <div className="flex items-center gap-3">
+          {active && <button type="button" className="text-[13px] text-primary hover:underline" onClick={() => setLogOf(active)}>{t('Agent log')}</button>}
+          {docs.length > 0 && <button type="button" className="text-[13px] text-primary hover:underline" onClick={() => setOpen(!open)}>{open ? t('Hide the invoices') : t('Show the invoices')}</button>}
+        </div>
+        <AgentLogSheet connection={logOf} onClose={() => setLogOf(null)} />
       </CardHeader>
       {docs.length > 0 && (
         <CardContent className="grid gap-3">

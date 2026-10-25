@@ -140,5 +140,27 @@ select t.ok((public.get_my_context() -> 'companies' -> 0 ->> 'business_type') = 
 select t.throws($$ select public.platform_set_business_type('$$ || :'cafe' || $$', 'retail') $$, 'platform', 'clients cannot change their own type');
 reset role;
 
+
+-- the agent's log, heartbeat and outage alerts
+update public.sync_connections set is_active = true where company_id = :'co';
+set role anon;
+select public.sync_log(:'key', '[{"level":"ok","msg":"U dërguan: stok 3"},{"level":"warn","msg":"Kujdes"},{"level":"bogus","msg":"x"},{"msg":""}]'::jsonb, '2.4') as lg \gset
+reset role;
+select t.ok((:'lg'::jsonb ->> 'saved')::int = 3 and (select agent_version from public.sync_connections where company_id = :'co' limit 1) = '2.4', 'the agent''s log lines arrive');
+update public.sync_connections set last_seen_at = now() - interval '25 minutes' where company_id = :'co';
+select public.check_sync_health() as hc \gset
+select t.ok(:hc >= 1 and (select down_since is not null from public.sync_connections where company_id = :'co' limit 1), 'a link silent for 10 minutes is marked as stopped');
+select t.ok(exists (select 1 from public.notifications where company_id = :'co' and type = 'alert' and title like 'Live link stopped:%'), 'and the admins are told');
+select t.ok(public.check_sync_health() = 0, 'told once, not every 5 minutes');
+set role anon;
+select public.sync_log(:'key') as hb \gset
+reset role;
+select t.ok((select down_since is null and last_seen_at > now() - interval '1 minute' from public.sync_connections where company_id = :'co' limit 1)
+  and exists (select 1 from public.notifications where company_id = :'co' and title like 'Live link back:%'), 'a heartbeat closes the outage and says it is back');
+set role authenticated;
+select t.login('live@lider.xk');
+select t.ok(jsonb_array_length(public.sync_agent_log((select id from public.sync_connections where company_id = :'co' limit 1), 'problems')) = 1, 'the admin reads the log, problems only');
+reset role;
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;

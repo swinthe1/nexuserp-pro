@@ -3,6 +3,7 @@ import { ArrowDownToLine, ArrowRight, Cable, Copy, Download, GraduationCap, KeyR
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
+import { AgentLogSheet } from '@/features/settings/components/agent-log'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { useAuth } from '@/app/auth-provider'
@@ -583,6 +584,7 @@ function LiveLinkDialog({ client, onClose }: { client: PlatformClient | null; on
   const setTraining = useSetTraining()
   const [name, setName] = React.useState('Logmicro')
   const [config, setConfig] = React.useState<string | null>(null)
+  const [logOf, setLogOf] = React.useState<SyncConnection | null>(null)
   React.useEffect(() => { if (client) { setConfig(null); setName('Logmicro') } }, [client?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const make = async () => {
@@ -604,6 +606,7 @@ function LiveLinkDialog({ client, onClose }: { client: PlatformClient | null; on
 
   return (
     <Dialog open={!!client} onOpenChange={(o) => !o && onClose()}>
+      <AgentLogSheet connection={logOf} onClose={() => setLogOf(null)} />
       <DialogContent className="max-h-[92dvh] max-w-xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t('Live link and training · {name}', { name: client?.name ?? '' })}</DialogTitle>
@@ -636,10 +639,11 @@ function LiveLinkDialog({ client, onClose }: { client: PlatformClient | null; on
                       {countsText(x.last_counts) && <> · {t('last change')}: {countsText(x.last_counts)}</>}
                     </p>
                     {x.last_error && <p className="mt-1 text-xs text-destructive">{x.last_error}</p>}
-                    <div className="mt-2">
+                    <div className="mt-2 flex gap-2">
                       <Button size="sm" variant="outline" disabled={setActive.isPending} onClick={() => setActive.mutate({ id: x.id, active: !x.is_active })}>
                         {x.is_active ? t('Switch off') : t('Switch on')}
                       </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setLogOf(x)}>{t('Agent log')}</Button>
                     </div>
                   </div>
                 )
