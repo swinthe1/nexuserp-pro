@@ -1,0 +1,194 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Camera, Check, FileText, Loader2, ScanText, Sparkles, TriangleAlert } from 'lucide-react'
+import * as React from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { toast } from 'sonner'
+import { useCompany } from '@/app/company-provider'
+import { PageHeader } from '@/components/page-header'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { describeError, unwrap } from '@/lib/errors'
+import { supabase } from '@/lib/supabase'
+import { cn, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
+import { t, tn, tServer } from '@/i18n'
+import { VariantPicker, VendorPicker, WarehousePicker } from '../components/pickers'
+import { useWarehouses } from '../api'
+
+type ReadLine = { code?: string; barcode?: string; name: string; quantity: number; unit?: string; unit_price?: number; discount_pct?: number; vat_rate?: number; line_total?: number
+  variant_id: string | null; matched_by: 'learned' | 'vendor_code' | 'barcode' | 'code' | 'name' | null; variant_name: string | null; variant_sku: string | null }
+type ReadResult = { vendor_name?: string; vendor_tax_number?: string; number?: string; date?: string; currency?: string; total?: number; subtotal?: number; tax_total?: number
+  notes?: string; lines: ReadLine[]; vendor_id: string | null; vendor_match_name: string | null }
+type Read = { id: string; status: 'queued' | 'reading' | 'done' | 'failed'; error: string | null; file_name: string | null; receipt_id: string | null; created_at: string; result: ReadResult | null }
+type ReadRow = { id: string; file_name: string | null; status: string; error: string | null; vendor: string | null; number: string | null; total: number | null; receipt_id: string | null; created_at: string }
+
+/* a phone photo is several MB: make it 2000 px at most, which reads just as well and costs less */
+async function shrink(file: File): Promise<{ data: string; mime: string }> {
+  const toB64 = (b: Blob) => new Promise<string>((ok, bad) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1] ?? ''); r.onerror = bad; r.readAsDataURL(b) })
+  if (file.type === 'application/pdf') return { data: await toB64(file), mime: 'application/pdf' }
+  try {
+    const bmp = await createImageBitmap(file)
+    const k = Math.min(1, 2000 / Math.max(bmp.width, bmp.height))
+    if (k === 1 && file.size < 2_500_000 && /image\/(jpeg|png|webp)/.test(file.type)) return { data: await toB64(file), mime: file.type }
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k)
+    c.getContext('2d')!.drawImage(bmp, 0, 0, c.width, c.height)
+    const blob = await new Promise<Blob>((ok, bad) => c.toBlob((b) => (b ? ok(b) : bad(new Error('image'))), 'image/jpeg', 0.85))
+    return { data: await toB64(blob), mime: 'image/jpeg' }
+  } catch { return { data: await toB64(file), mime: file.type || 'image/jpeg' } }
+}
+
+export function ReadInvoicePage() {
+  const { companyId } = useCompany()
+  const qc = useQueryClient()
+  const [params, setParams] = useSearchParams()
+  const id = params.get('id')
+  const list = useQuery({ queryKey: ['doc-reads', companyId], enabled: !!companyId, refetchInterval: (q) => ((q.state.data as ReadRow[] | undefined)?.some((r) => r.status === 'queued' || r.status === 'reading') ? 3000 : false),
+    queryFn: async () => unwrap(await supabase.rpc('doc_reads_list', { p_company: companyId! })) as unknown as ReadRow[] })
+  const send = useMutation({
+    mutationFn: async (file: File) => {
+      if (!/^(image\/|application\/pdf)/.test(file.type)) throw new Error(t('Choose a photo or a PDF of the invoice'))
+      const f = await shrink(file)
+      return unwrap(await supabase.rpc('doc_read_submit', { p_company: companyId!, p_file: f.data, p_mime: f.mime, p_name: file.name })) as string
+    },
+    onSuccess: (newId) => { setParams({ id: newId }); void qc.invalidateQueries({ queryKey: ['doc-reads', companyId] }) },
+    onError: (e) => toast.error(describeError(e)),
+  })
+  const pick = (capture: boolean) => {
+    const inp = document.createElement('input')
+    inp.type = 'file'; inp.accept = 'image/*,application/pdf'
+    if (capture) inp.setAttribute('capture', 'environment')
+    inp.onchange = () => { const f = inp.files?.[0]; if (f) send.mutate(f) }
+    inp.click()
+  }
+  return (
+    <div className="mx-auto grid max-w-5xl gap-4">
+      <PageHeader title={t('Invoice from a photo')} back={{ href: '/inventory/receipts', label: t('Goods receipts') }}
+        description={t('Photograph the supplier’s invoice or choose its PDF. DrisPRO reads the vendor and the lines and finds your items; you check them and a draft receipt is made.')} />
+      <Card>
+        <CardContent className="flex flex-col items-center gap-3 p-6 text-center sm:flex-row sm:text-left">
+          <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><ScanText className="size-6" /></span>
+          <div className="flex-1"><div className="font-medium">{t('A new invoice')}</div>
+            <div className="text-[13px] text-muted-foreground">{t('The whole page in the photo, flat and with light. A PDF from the vendor is read best.')}</div></div>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button size="lg" loading={send.isPending} onClick={() => pick(true)}><Camera /> {t('Take a photo')}</Button>
+            <Button size="lg" variant="outline" disabled={send.isPending} onClick={() => pick(false)}><FileText /> {t('Choose a file')}</Button>
+          </div>
+        </CardContent>
+      </Card>
+      {id ? <ReadReview key={id} id={id} onDone={() => setParams({})} /> : <RecentReads rows={list.data ?? []} onOpen={(x) => setParams({ id: x })} />}
+    </div>
+  )
+}
+
+function RecentReads({ rows, onOpen }: { rows: ReadRow[]; onOpen: (id: string) => void }) {
+  if (!rows.length) return null
+  const label: Record<string, string> = { queued: t('Waiting'), reading: t('Reading'), done: t('Read'), failed: t('Not read') }
+  return (
+    <Card><CardContent className="p-0">
+      <ul className="divide-y">
+        {rows.map((r) => (
+          <li key={r.id}>
+            <button type="button" onClick={() => onOpen(r.id)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted/40">
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-medium">{r.vendor ?? r.file_name ?? t('Invoice')}{r.number ? ` · ${r.number}` : ''}</div>
+                <div className="truncate text-xs text-muted-foreground">{formatDate(r.created_at, true)}{r.total != null ? ` · ${formatMoney(r.total)}` : ''}{r.error ? ` · ${tServer(r.error)}` : ''}</div>
+              </div>
+              {r.receipt_id ? <Badge variant="outline" className="border-success/40 text-success">{t('Receipt made')}</Badge>
+                : <span className={cn('text-xs font-medium', r.status === 'failed' ? 'text-destructive' : r.status === 'done' ? 'text-primary' : 'text-muted-foreground')}>{label[r.status] ?? r.status}</span>}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </CardContent></Card>
+  )
+}
+
+function ReadReview({ id, onDone }: { id: string; onDone: () => void }) {
+  const navigate = useNavigate()
+  const { companyId } = useCompany()
+  const qc = useQueryClient()
+  const warehouses = useWarehouses()
+  const q = useQuery({ queryKey: ['doc-read', id], refetchInterval: (x) => (['queued', 'reading'].includes((x.state.data as Read | undefined)?.status ?? 'queued') ? 2500 : false),
+    queryFn: async () => unwrap(await supabase.rpc('doc_read_get', { p_id: id })) as unknown as Read })
+  const r = q.data?.result
+  const [vendor, setVendor] = React.useState<string | null>(null)
+  const [wh, setWh] = React.useState<string | null>(null)
+  const [number, setNumber] = React.useState('')
+  const [date, setDate] = React.useState(todayISO())
+  const [lines, setLines] = React.useState<(ReadLine & { use: boolean })[]>([])
+  React.useEffect(() => {
+    if (!r) return
+    setVendor((v) => v ?? r.vendor_id); setNumber((n) => n || r.number || ''); if (r.date) setDate(r.date)
+    setLines((l) => (l.length ? l : r.lines.map((x) => ({ ...x, use: true }))))
+  }, [r])
+  React.useEffect(() => { if (!wh && warehouses.data?.length) setWh(warehouses.data[0]!.id) }, [warehouses.data, wh])
+  const make = useMutation({
+    mutationFn: async () => unwrap(await supabase.rpc('doc_read_to_receipt', { p_id: id, p: {
+      vendor_id: vendor, warehouse_id: wh, date, number,
+      lines: lines.filter((l) => l.use && l.variant_id).map((l) => ({ variant_id: l.variant_id, quantity: l.quantity, unit_cost: l.unit_price ?? 0, code: l.code ?? null, name: l.name })),
+    } as never })) as string,
+    onSuccess: (rec) => { toast.success(t('Draft receipt made; check it and post it')); void qc.invalidateQueries({ queryKey: ['doc-reads', companyId] }); navigate(`/inventory/receipts/${rec}`) },
+    onError: (e) => toast.error(describeError(e)),
+  })
+
+  if (!q.data || q.data.status === 'queued' || q.data.status === 'reading') {
+    return <Card><CardContent className="flex items-center justify-center gap-3 p-10 text-sm text-muted-foreground"><Loader2 className="size-5 animate-spin" /> {t('Reading the invoice… it takes about half a minute.')}</CardContent></Card>
+  }
+  if (q.data.status === 'failed' || !r) {
+    return <Card><CardContent className="grid justify-items-center gap-2 p-8 text-center"><TriangleAlert className="size-6 text-destructive" />
+      <div className="font-medium">{t('The invoice could not be read')}</div><div className="text-[13px] text-muted-foreground">{tServer(q.data.error)}</div>
+      <Button variant="outline" onClick={onDone}>{t('Back')}</Button></CardContent></Card>
+  }
+  const missing = lines.filter((l) => l.use && !l.variant_id).length
+  const sum = lines.filter((l) => l.use).reduce((s, l) => s + num(l.quantity) * num(l.unit_price), 0)
+  const how: Record<string, string> = { learned: t('as last time'), vendor_code: t('vendor’s code'), barcode: t('barcode'), code: t('our code'), name: t('by name') }
+  return (
+    <div className="grid gap-4">
+      {q.data.receipt_id && <div className="rounded-md border border-success/40 bg-success/5 px-4 py-3 text-[13px]">{t('A receipt was already made from this invoice.')} <Link className="font-medium text-primary hover:underline" to={`/inventory/receipts/${q.data.receipt_id}`}>{t('Open it')}</Link></div>}
+      <Card><CardContent className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-1.5 sm:col-span-2"><Label>{t('Vendor')}</Label>
+          <VendorPicker value={vendor} onChange={setVendor} />
+          <span className="text-xs text-muted-foreground">{t('On the invoice: {name}', { name: [r.vendor_name, r.vendor_tax_number].filter(Boolean).join(' · ') || '—' })}{!r.vendor_id && r.vendor_name ? ` · ${t('not found; choose it or add the vendor first')}` : ''}</span></div>
+        <div className="grid gap-1.5"><Label htmlFor="rn">{t('Invoice number')}</Label><Input id="rn" value={number} onChange={(e) => setNumber(e.target.value)} /></div>
+        <div className="grid gap-1.5"><Label htmlFor="rd">{t('Date')}</Label><Input id="rd" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+        <div className="grid gap-1.5 sm:col-span-2"><Label>{t('Into the warehouse')}</Label><WarehousePicker value={wh} onChange={setWh} /></div>
+        <div className="flex items-end justify-between gap-3 sm:col-span-2 lg:justify-end">
+          <div className="text-right text-[13px] text-muted-foreground">{t('Lines without VAT')} <span className="block text-lg font-semibold text-foreground tabular">{formatMoney(sum)}</span>
+            {r.total != null && <span>{t('Invoice total with VAT {amount}', { amount: formatMoney(r.total) })}</span>}</div>
+        </div>
+      </CardContent></Card>
+      {r.notes && <p className="rounded-md bg-warning/10 px-4 py-2 text-[13px]"><Sparkles className="mr-1 inline size-4 text-warning" />{r.notes}</p>}
+      <Card><CardContent className="p-0">
+        <ul className="divide-y">
+          {lines.map((l, i) => {
+            const set = (p: Partial<typeof l>) => setLines((ls) => ls.map((x, j) => (j === i ? { ...x, ...p } : x)))
+            return (
+              <li key={i} className={cn('grid gap-2 p-3 sm:grid-cols-[auto_1fr_minmax(220px,1.2fr)_90px_110px] sm:items-center', !l.use && 'opacity-50')}>
+                <input type="checkbox" className="size-5" checked={l.use} onChange={(e) => set({ use: e.target.checked })} aria-label={t('Receive this line')} />
+                <div className="min-w-0"><div className="text-sm font-medium">{l.name}</div>
+                  <div className="text-xs text-muted-foreground">{[l.code, l.barcode, l.unit].filter(Boolean).join(' · ')}</div></div>
+                <div className="grid gap-1">
+                  <VariantPicker value={l.variant_id} onChange={(v) => set({ variant_id: v, matched_by: null })} aria-invalid={l.use && !l.variant_id} />
+                  {l.variant_id && l.matched_by && <span className="flex items-center gap-1 text-xs text-success"><Check className="size-3" />{t('found: {how}', { how: how[l.matched_by] ?? '' })}</span>}
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:contents">
+                <div className="grid gap-1"><Label className="text-xs text-muted-foreground sm:sr-only">{t('Quantity')}</Label>
+                  <Input type="number" step="any" className="text-right tabular" value={l.quantity} onChange={(e) => set({ quantity: num(e.target.value) })} aria-label={t('Quantity')} /></div>
+                <div className="grid gap-1"><Label className="text-xs text-muted-foreground sm:sr-only">{t('Unit cost')}</Label>
+                  <Input type="number" step="any" className="text-right tabular" value={l.unit_price ?? 0} onChange={(e) => set({ unit_price: num(e.target.value) })} aria-label={t('Unit cost')} /></div>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      </CardContent></Card>
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        {missing > 0 && <span className="text-[13px] text-warning">{tn(missing, 'Choose the item for {n} line, or untick it', 'Choose the item for {n} lines, or untick them')}</span>}
+        <Button variant="ghost" onClick={onDone}>{t('Back')}</Button>
+        <Button size="lg" loading={make.isPending} disabled={!wh || missing > 0 || !lines.some((l) => l.use) || !!q.data.receipt_id} onClick={() => make.mutate()}>{t('Make the draft receipt')}</Button>
+      </div>
+    </div>
+  )
+}

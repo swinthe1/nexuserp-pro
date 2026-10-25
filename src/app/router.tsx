@@ -29,6 +29,7 @@ const StockPage = lazy(() => import('@/features/inventory/pages/stock-page'), 'S
 const MovementsPage = lazy(() => import('@/features/inventory/pages/movements-page'), 'MovementsPage')
 const AlertsPage = lazy(() => import('@/features/inventory/pages/alerts-page'), 'AlertsPage')
 const RecurringPage = lazy(() => import('@/features/sales/recurring'), 'RecurringPage')
+const ReadInvoicePage = lazy(() => import('@/features/inventory/pages/read-invoice-page'), 'ReadInvoicePage')
 const PricesPage = lazy(() => import('@/features/inventory/pages/prices-page'), 'PricesPage')
 const ReceiptPage = lazy(() => import('@/features/inventory/pages/receipt-page'), 'ReceiptPage')
 const AdjustmentPage = lazy(() => import('@/features/inventory/pages/adjustment-page'), 'AdjustmentPage')
@@ -151,6 +152,7 @@ const router = createBrowserRouter([
         { path: 'movements', element: <MovementsPage /> },
         { path: 'alerts', element: <AlertsPage /> },
         { path: 'prices', element: <PricesPage /> },
+        { path: 'read-invoice', element: <ReadInvoicePage /> },
         { path: 'receipts', element: <DocumentsPage kind="receipts" /> },
         { path: 'receipts/new', element: <ReceiptPage /> },
         { path: 'receipts/:id', element: <ReceiptPage /> },

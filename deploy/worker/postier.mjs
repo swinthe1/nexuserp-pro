@@ -151,6 +151,104 @@ async function whatsapp(m) {
   return j?.messages?.[0]?.id ?? null
 }
 
+/* ------------------------------------------------------------------ reading supplier invoices */
+const INVOICE_TOOL = {
+  name: 'record_invoice',
+  description: 'Record what is printed on a supplier invoice or delivery note.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      vendor_name: { type: 'string', description: 'The company that issued the invoice (the seller), not the buyer' },
+      vendor_tax_number: { type: 'string', description: 'The seller\'s tax or business number (NUI, NIPT, NRB, fiscal number)' },
+      number: { type: 'string', description: 'The invoice number' },
+      date: { type: 'string', description: 'Invoice date as YYYY-MM-DD' },
+      due_date: { type: 'string', description: 'Due date as YYYY-MM-DD, if printed' },
+      currency: { type: 'string', description: 'ISO currency code, e.g. EUR or ALL' },
+      subtotal: { type: 'number', description: 'Total without VAT' },
+      tax_total: { type: 'number', description: 'VAT amount' },
+      total: { type: 'number', description: 'Total to pay, with VAT' },
+      lines: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            code: { type: 'string', description: 'The seller\'s item code, if printed' },
+            barcode: { type: 'string', description: 'EAN/barcode, if printed' },
+            name: { type: 'string' },
+            quantity: { type: 'number' },
+            unit: { type: 'string', description: 'copë, kg, pako…' },
+            unit_price: { type: 'number', description: 'Price of one unit WITHOUT VAT, after any discount' },
+            discount_pct: { type: 'number' },
+            vat_rate: { type: 'number', description: 'VAT percent of the line, e.g. 18 or 8' },
+            line_total: { type: 'number', description: 'Line amount as printed' },
+          },
+          required: ['name', 'quantity'],
+        },
+      },
+      notes: { type: 'string', description: 'Anything unclear: unreadable parts, handwritten corrections' },
+    },
+    required: ['vendor_name', 'lines'],
+  },
+}
+const PROMPT = 'This is a supplier invoice (or delivery note) received by a shop in Kosovo or Albania; it may be in Albanian, Serbian or English. '
+  + 'Read it and call record_invoice. Use numbers with a dot for decimals. If a price on the invoice includes VAT, give unit_price without VAT. '
+  + 'Leave out lines that are not goods (subtotals, transport notes). Do not guess values that are not printed.'
+
+async function readInvoice(doc) {
+  if (!waConfig) waConfig = await rpc('postier_config')
+  const key = waConfig?.anthropic_api_key || process.env.ANTHROPIC_API_KEY
+  if (!key) throw new Error('Reading invoices is not set up on the DrisPRO cloud yet')
+  const block = doc.mime === 'application/pdf'
+    ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: doc.file } }
+    : { type: 'image', source: { type: 'base64', media_type: doc.mime, data: doc.file } }
+  const r = await fetch(`${process.env.ANTHROPIC_API || 'https://api.anthropic.com'}/v1/messages`, {
+    method: 'POST',
+    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+    body: JSON.stringify({ model: waConfig?.ai_model || 'claude-sonnet-5-5', max_tokens: 4096, tools: [INVOICE_TOOL], tool_choice: { type: 'tool', name: 'record_invoice' },
+      messages: [{ role: 'user', content: [block, { type: 'text', text: PROMPT }] }] }),
+  })
+  const j = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error(j?.error?.message || `AI ${r.status}`)
+  const use = (j.content || []).find((c) => c.type === 'tool_use')
+  if (!use) throw new Error('The invoice could not be read')
+  return { result: use.input, usage: j.usage || {} }
+}
+
+async function readerRound() {
+  let n = 0
+  for (let i = 0; i < 3; i++) {
+    const doc = await rpc('reader_claim')
+    if (!doc) break
+    n++
+    try {
+      if (MODE === 'local') {
+        if (!LICENCE || !SERVER_ID) throw new Error('This server has no licence yet')
+        const relay = await rpc('licence_read_submit', { p_code: LICENCE, p_server: SERVER_ID, p_file: doc.file, p_mime: doc.mime, p_name: doc.name }, LICENCE_SERVER, CLOUD_ANON_KEY)
+        await rpc('reader_done', { p_id: doc.id, p_ok: true, p_relay_id: relay })
+        log('invoice handed to the cloud', doc.name ?? '')
+      } else {
+        const { result, usage } = await readInvoice(doc)
+        await rpc('reader_done', { p_id: doc.id, p_ok: true, p_result: result, p_input_tokens: usage.input_tokens ?? null, p_output_tokens: usage.output_tokens ?? null })
+        log('invoice read', doc.name ?? '', result?.vendor_name ?? '', (result?.lines || []).length, 'lines')
+      }
+    } catch (e) {
+      log('invoice not read', doc.name ?? '', String(e.message || e))
+      await rpc('reader_done', { p_id: doc.id, p_ok: false, p_error: String(e.message || e) }).catch(() => {})
+    }
+  }
+  // local: the answers of the cloud
+  if (MODE === 'local' && LICENCE && SERVER_ID) {
+    for (const x of await rpc('reader_relayed').catch(() => [])) {
+      try {
+        const a = await rpc('licence_read_result', { p_code: LICENCE, p_server: SERVER_ID, p_id: x.relay_id }, LICENCE_SERVER, CLOUD_ANON_KEY)
+        if (a?.status === 'done') await rpc('reader_done', { p_id: x.id, p_ok: true, p_result: a.result, p_input_tokens: a.input_tokens, p_output_tokens: a.output_tokens })
+        else if (a?.status === 'failed') await rpc('reader_done', { p_id: x.id, p_ok: false, p_error: a.error || 'The invoice could not be read' })
+      } catch (e) { log('answer from the cloud failed', String(e.message || e)) }
+    }
+  }
+  return n
+}
+
 /* ------------------------------------------------------------------ one round */
 async function round() {
   const batch = await rpc('postier_claim', { p_limit: 20 })
@@ -194,12 +292,12 @@ async function tick() {
   try {
     const r = await rpc('automation_tick')
     if (r && (r.summaries || r.reminders || r.daily)) log('timed work', JSON.stringify(r))
-  } catch (e) { log('timed work failed', String(e.message || e)) }
+  } catch (e) { log('timed work failed', String(e.message || e)); lastTick = Date.now() - 4 * 60 * 1000 }
   waConfig = null
 }
 
 log(`postier ${MODE} → ${API}`)
 for (;;) {
-  try { await tick(); const n = await round(); if (ONCE) break; await new Promise((r) => setTimeout(r, n ? 2000 : 20000)) }
+  try { await tick(); const n = (await round()) + (await readerRound().catch((e) => { log('reading failed', String(e.message || e)); return 0 })); if (ONCE) break; await new Promise((r) => setTimeout(r, n ? 2000 : 20000)) }
   catch (e) { log('round failed', String(e.message || e)); if (ONCE) process.exit(1); await new Promise((r) => setTimeout(r, 30000)) }
 }

@@ -1,0 +1,76 @@
+DrisPRO · Automatizimet: çfarë duhet ndezur një herë
+=====================================================
+
+Të gjitha ndizen te: Cilësimet → Automatizimet (në çdo kompani).
+Më poshtë janë vetëm hapat që i bën pronari i platformës (ju), një herë për të gjithë.
+
+
+1. Email-i (nuk kërkon asgjë nga ju)
+------------------------------------
+Çdo kompani vendos email-in e vet te Automatizimet → "Email-i i kompanisë".
+  Gmail: smtp.gmail.com, porta 587, STARTTLS, përdoruesi = adresa,
+         fjalëkalimi = "App password" (Google Account → Security → 2-Step Verification → App passwords).
+  Outlook/Microsoft 365: smtp.office365.com, 587, STARTTLS.
+  Hosting-u i domain-it (p.sh. Hostinger): smtp.hostinger.com, 465, SSL/TLS.
+Pastaj "Dërgo një email prove". Kur del "Punon", gjithçka tjetër del nga ky email.
+
+
+2. Leximi i faturave me AI (një herë, në serverin cloud)
+---------------------------------------------------------
+  a) Hapni https://console.anthropic.com → krijoni llogari → Billing: shtoni kartë ose kredit.
+     Kostoja: rreth 1-3 cent për faturë.
+  b) API Keys → Create Key → kopjojeni.
+  c) Në server (Hostinger VPS, si zakonisht me Perditeso):
+       bash /root/nexuserp-pro/deploy/coolify/update.sh --ai
+     ngjitni çelësin (nuk shfaqet në ekran). Mbaron.
+  Serverët lokalë nuk kanë nevojë për çelës: fatura u kalon përmes cloud-it me licencën.
+  Kufiri: 500 fatura në muaj për licencë.
+
+
+3. WhatsApp (një herë, te Meta)
+-------------------------------
+Për mesazhe që dërgohen vetë, Meta kërkon "WhatsApp Business Platform" (jo aplikacionin e zakonshëm).
+  a) https://business.facebook.com → krijoni Business Portfolio "DrisPRO" (verifikoni biznesin
+     me dokumentet e firmës).
+  b) https://developers.facebook.com → My Apps → Create App → "Business" → shtoni produktin WhatsApp.
+  c) WhatsApp → API Setup → "Add phone number": një numër që NUK përdoret në WhatsApp-in
+     e zakonshëm (mund të jetë numër i ri ose fiks). Verifikojeni me SMS/telefonatë.
+     Kopjoni "Phone number ID".
+  d) Business Settings → Users → System users → Add (Admin) → Generate token me lejet
+     whatsapp_business_messaging dhe whatsapp_business_management, pa skadim. Kopjojeni.
+  e) WhatsApp Manager → Message templates → Create, gjuha "Albanian", kategoria "Utility".
+     Dy shabllone me këta emra dhe këto tekste (Meta i miraton zakonisht brenda një dite):
+
+     Emri: drispro_permbledhja
+       Përmbledhja e {{1}} për {{2}}:
+       Shitjet: {{3}}
+       Para në dorë: {{4}}
+       Artikuj me stok të ulët: {{5}}
+       Borxhe me vonesë: {{6}}
+       Presin vendimin tuaj: {{7}}
+
+     Emri: drispro_kujtese
+       Përshëndetje {{1}}, ju shkruan {{2}}. Ju kujtojmë që këto fatura janë ende të papaguara: {{3}}. Gjithsej: {{4}}. Nëse i keni paguar, ju lutemi mos e merrni parasysh këtë mesazh. Faleminderit!
+
+  f) Në server:
+       bash /root/nexuserp-pro/deploy/coolify/update.sh --whatsapp
+     ngjitni token-in, pastaj Phone number ID. Mbaron.
+  Meta paguhet për çdo bisedë (për Kosovën rreth 1-5 cent); fatura vjen nga Meta te DrisPRO.
+  Serverët lokalë dërgojnë përmes cloud-it, deri në 300 mesazhe në ditë për licencë.
+
+
+4. Ekstraktet e bankave
+-----------------------
+Programi lexon tashmë XML (CAMT.053), MT940, Excel dhe CSV. Që të jem i sigurt për çdo bankë,
+më dërgoni nga një ekstrakt shembull nga e-banking i ProCredit, Raiffeisen, TEB, NLB, BKT, BPB
+(mund t'i fshini emrat, por formati të mbetet i njëjti).
+
+
+Çfarë bën vetë programi (pasi ndizet te Automatizimet)
+------------------------------------------------------
+  Çdo mëngjes: faturat që përsëriten (04:30), arkat e harruara hapur (05:00), pagat në ditën
+  e zgjedhur (05:15), përmbledhja për pronarin (në orën që zgjidhni), kujtesat për borxhet (09:00).
+  Menjëherë: çmimi i ri kur ndryshon kosto, diferenca në arkë, porosia te furnitori kur miratohet,
+  faturat që mbyllen nga ekstrakti i bankës.
+  Asgjë që prek paratë ose ligjin nuk bëhet pa një njeri: pranimet, pagat, pagesat dhe çmimet presin
+  konfirmimin tuaj.

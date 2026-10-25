@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { Globe2, Plus } from 'lucide-react'
+import { Globe2, Plus, ScanText } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Can, useCompany } from '@/app/company-provider'
@@ -119,7 +119,9 @@ export function DocumentsPage({ kind }: { kind: DocKind }) {
     ...cfg.columns(cur),
   ], [cfg, cur])
 
-  const newButton = <Can perm={cfg.perm}><Button asChild><Link to={`${HREF[kind]}/new`}><Plus /> {t(cfg.newLabel)}</Link></Button></Can>
+  const newButton = <Can perm={cfg.perm}>
+    {kind === 'receipts' && <Button variant="outline" asChild><Link to="/inventory/read-invoice"><ScanText /> {t('Invoice from a photo')}</Link></Button>}
+    <Button asChild><Link to={`${HREF[kind]}/new`}><Plus /> {t(cfg.newLabel)}</Link></Button></Can>
   return (
     <>
       <PageHeader title={t(cfg.title)} description={t(cfg.description)} actions={newButton} />

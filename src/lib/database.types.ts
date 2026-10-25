@@ -11478,6 +11478,34 @@ export type Database = {
         }
         Returns: Json
       }
+      doc_read_get: {
+        Args: {
+          p_id: string
+        }
+        Returns: Json
+      }
+      doc_read_submit: {
+        Args: {
+          p_company: string
+          p_file: string
+          p_mime: string
+          p_name?: string
+        }
+        Returns: string
+      }
+      doc_read_to_receipt: {
+        Args: {
+          p_id: string
+          p: Json
+        }
+        Returns: string
+      }
+      doc_reads_list: {
+        Args: {
+          p_company: string
+        }
+        Returns: { id: string | null; file_name: string | null; status: string | null; error: string | null; vendor: string | null; number: string | null; total: number | null; receipt_id: string | null; created_at: string | null }[]
+      }
       dunning_preview: {
         Args: {
           p_company: string
@@ -11702,6 +11730,24 @@ export type Database = {
           p_version?: string
         }
         Returns: Json
+      }
+      licence_read_result: {
+        Args: {
+          p_code: string
+          p_server: string
+          p_id: string
+        }
+        Returns: Json
+      }
+      licence_read_submit: {
+        Args: {
+          p_code: string
+          p_server: string
+          p_file: string
+          p_mime: string
+          p_name?: string
+        }
+        Returns: string
       }
       licence_whatsapp_relay: {
         Args: {
@@ -12244,6 +12290,26 @@ export type Database = {
           p_warehouse?: string
         }
         Returns: { variant_id: string | null; sku: string | null; name: string | null; bom_id: string | null; bom_code: string | null; bom_quantity: number | null; on_hand: number | null; reserved: number | null; sales_demand: number | null; component_demand: number | null; min_qty: number | null; max_qty: number | null; in_production: number | null; projected: number | null; suggested: number | null; unit_cost: number | null; lead_minutes: number | null }[]
+      }
+      reader_claim: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      reader_done: {
+        Args: {
+          p_id: string
+          p_ok: boolean
+          p_result?: Json
+          p_error?: string
+          p_input_tokens?: number
+          p_output_tokens?: number
+          p_relay_id?: string
+        }
+        Returns: undefined
+      }
+      reader_relayed: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       receive_stock_transfer: {
         Args: {

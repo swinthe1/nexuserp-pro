@@ -199,7 +199,6 @@ select t.throws(format($q$select public.licence_whatsapp_relay(%L, %L, '[]')$q$,
 reset role;
 select t.ok((:'relayed'::jsonb ->> 'accepted')::int = 1 and exists (select 1 from app.message_outbox where relay_licence = :'alcode' and channel = 'whatsapp'),
   'a local server''s WhatsApp messages wait in the cloud outbox (wrong numbers are left out)');
-update public.licenses set local_server_id = null where company_id = :'aco';
 
 -- ---------- bank statements that settle invoices ------------------------------------------
 set role authenticated;
@@ -233,5 +232,49 @@ select t.ok((select match_status = 'matched' and matched_payment_id is not null 
   'accepting it records the payment and settles the invoice');
 reset role;
 
+-- ---------- the supplier's invoice from a photo ------------------------------------------------
+set role authenticated;
+select t.login('ana@auto.xk');
+update public.business_partners set tax_number = '810123456' where id = :'avend';
+select public.doc_read_submit(:'aco', encode(decode(repeat('ff', 600), 'hex'), 'base64'), 'image/jpeg', 'fatura.jpg') as rd \gset
+select t.throws(format($q$select public.doc_read_submit(%L, 'AAAA', 'image/jpeg')$q$, :'aco'), 'empty', 'an empty file is refused');
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+set role service_role;
+select public.reader_claim() as claimed_doc \gset
+select public.reader_done((:'claimed_doc'::jsonb ->> 'id')::uuid, true, '{"vendor_name":"FURNITORI PIJE SHPK","vendor_tax_number":"810 123 456","number":"F-77","date":"2026-10-20",
+  "lines":[{"code":"KK-05","name":"Coca-Cola 0,5L","quantity":24,"unit_price":0.41},{"code":"ZZ-1","name":"Artikull i panjohur","quantity":1,"unit_price":3}]}', null, 1500, 300);
+reset role;
+set role authenticated;
+select t.login('ana@auto.xk');
+select public.doc_read_get(:'rd') as got \gset
+select t.ok((:'got'::jsonb ->> 'status') = 'done' and (:'got'::jsonb -> 'result' ->> 'vendor_id') = :'avend'
+            and (:'got'::jsonb -> 'result' -> 'lines' -> 0 ->> 'variant_id') = :'avar' and (:'got'::jsonb -> 'result' -> 'lines' -> 1 ->> 'variant_id') is null,
+  'the read invoice finds the vendor by its tax number and the item by its name; an unknown line waits for the person');
+select public.doc_read_to_receipt(:'rd', jsonb_build_object('vendor_id', :'avend', 'warehouse_id', :'awh', 'number', 'F-77', 'lines',
+  jsonb_build_array(jsonb_build_object('variant_id', :'avar', 'quantity', 24, 'unit_cost', 0.41, 'code', 'KK-05', 'name', 'Coca-Cola 0,5L')))) as rrec \gset
+select t.ok((select status = 'draft' and vendor_delivery_note = 'F-77' from public.goods_receipts where id = :'rrec')
+            and (select quantity = 24 and unit_cost = 0.41 from public.goods_receipt_lines where receipt_id = :'rrec'), 'a draft goods receipt is made from it, to check and post');
+select t.throws(format($q$select public.doc_read_to_receipt(%L, '{}')$q$, :'rd'), 'already made', 'only once per invoice');
+select public.doc_read_submit(:'aco', encode(decode(repeat('ee', 600), 'hex'), 'base64'), 'image/png', 'fatura2.png') as rd2 \gset
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+set role service_role;
+select public.reader_claim() as c2 \gset
+select public.reader_done((:'c2'::jsonb ->> 'id')::uuid, true, '{"vendor_name":"Furnitori Pije","lines":[{"code":"KK-05","name":"Coca Kola gjysmë litri","quantity":12,"unit_price":0.42}]}');
+reset role;
+set role authenticated;
+select t.login('ana@auto.xk');
+select t.ok((public.doc_read_get(:'rd2') -> 'result' -> 'lines' -> 0 ->> 'matched_by') = 'learned', 'the next invoice of that vendor finds the item as the person matched it last time');
+select t.throws($$ select public.reader_claim() $$, 'permission denied', 'a signed-in person cannot take the files to read');
+reset role;
+set role anon;
+select public.licence_read_submit(:'alcode', :'asrv', encode(decode(repeat('dd', 600), 'hex'), 'base64'), 'image/jpeg', 'x.jpg') as lr \gset
+\if :{?lr}
+\endif
+reset role;
+
+select t.ok(exists (select 1 from app.document_reads where id = :'lr' and relay_licence = :'alcode'), 'a local server hands its invoice to the cloud with its licence');
+update public.licenses set local_server_id = null where company_id = :'aco';
 \set QUIET off
 select count(*) as assertions_passed from t.results;

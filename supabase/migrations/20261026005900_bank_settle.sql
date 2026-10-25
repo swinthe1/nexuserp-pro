@@ -139,11 +139,14 @@ revoke execute on function app.settle_statement_line(uuid, jsonb) from public, a
 -- every unmatched line: settle what is sure, keep a suggestion for what is likely
 create or replace function public.settle_statement(p_statement uuid)
 returns jsonb language plpgsql security definer set search_path = '' as $$
-declare s public.bank_statements; l record; v_c jsonb; n_sure int := 0; n_sug int := 0; n_err int := 0;
+declare s public.bank_statements; l record; v_c jsonb; n_sure int := 0; n_sug int := 0; n_err int := 0; v_pass int := 0; v_before int;
 begin
   select * into s from public.bank_statements where id = p_statement;
   if s.id is null then raise exception 'Statement not found' using errcode = 'P0002'; end if;
   perform app.require_permission(s.company_id, 'finance.write');
+  -- a settled line may teach an account that settles another: go round again while that happens
+  loop
+  v_pass := v_pass + 1; v_before := n_sure; n_sug := 0; n_err := 0;
   for l in select id from public.bank_statement_lines where statement_id = s.id and match_status = 'unmatched' order by transaction_date, id loop
     v_c := app.statement_candidate(l.id);
     if v_c is null then
@@ -161,6 +164,8 @@ begin
       update public.bank_statement_lines set suggestion = v_c where id = l.id;
       n_sug := n_sug + 1;
     end if;
+  end loop;
+  exit when n_sure = v_before or v_pass >= 3;
   end loop;
   return jsonb_build_object('settled', n_sure, 'suggested', n_sug, 'failed', n_err);
 end $$;

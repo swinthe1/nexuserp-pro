@@ -60,6 +60,24 @@ begin
     grant all on all sequences in schema storage to anon, authenticated;
     grant execute on all functions in schema storage to anon, authenticated, service_role;
   end if;
+  -- DrisPRO's own schemas belong to postgres, which applies the updates (a restore as supabase_admin would keep them otherwise)
+  foreach s in array array['public', 'app', 'nexus_meta'] loop
+    if not exists (select 1 from pg_namespace where nspname = s) then continue; end if;
+    if pg_get_userbyid((select nspowner from pg_namespace where nspname = s)) = 'supabase_admin' and s <> 'public' then execute format('alter schema %I owner to postgres', s); end if;
+    for r in select c.oid::regclass as obj, c.relkind as k from pg_class c join pg_namespace n on n.oid = c.relnamespace
+              where n.nspname = s and c.relkind in ('r', 'p', 'S', 'v', 'm') and pg_get_userbyid(c.relowner) = 'supabase_admin'
+                and not exists (select 1 from pg_depend d where d.objid = c.oid and d.deptype in ('a', 'i') and d.classid = 'pg_class'::regclass and c.relkind = 'S') loop
+      execute format('alter %s %s owner to postgres', case r.k when 'S' then 'sequence' when 'v' then 'view' when 'm' then 'materialized view' else 'table' end, r.obj);
+    end loop;
+    for r in select p.oid::regprocedure as f from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = s and pg_get_userbyid(p.proowner) = 'supabase_admin' and p.prokind in ('f', 'p') loop
+      execute format('alter routine %s owner to postgres', r.f);
+    end loop;
+    for r in select t.oid::regtype as ty from pg_type t join pg_namespace n on n.oid = t.typnamespace
+              where n.nspname = s and t.typtype in ('e', 'd', 'c') and t.typrelid = 0 and pg_get_userbyid(t.typowner) = 'supabase_admin' loop
+      execute format('alter type %s owner to postgres', r.ty);
+    end loop;
+  end loop;
   if exists (select 1 from pg_roles where rolname = 'dashboard_user') and to_regclass('auth.users') is not null then
     grant all on all tables in schema auth to dashboard_user;
   end if;
