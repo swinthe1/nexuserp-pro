@@ -165,5 +165,29 @@ select t.login('zoe@platform.io');
 select t.ok((public.platform_licence_info(:'co', 'local', true) ->> 'local_server')::boolean = false, 'the platform owner can free the code for another server');
 reset role;
 
+-- copies of local servers in the cloud: a ticket for its own folder only
+set role anon;
+select public.licence_check(:'lcode', :'srv1') is not null as bound \gset
+select t.throws(format($q$select public.licence_backup_ticket(%L, %L)$q$, :'lcode', :'srv1'), 'not set up', 'without the API secret no ticket is given');
+reset role;
+insert into app.server_secrets (key, value) values ('jwt_secret', 'test-secret-0123456789-0123456789-abcd') on conflict (key) do update set value = excluded.value;
+set role anon;
+select public.licence_backup_ticket(:'lcode', :'srv1') as tk \gset
+select t.throws(format($q$select public.licence_backup_ticket(%L, %L)$q$, :'lcode', :'srv2'), 'another server', 'another server gets no ticket');
+select public.licence_backup_done(:'lcode', :'srv1', 'drispro-2026-10-25_0230.dump.enc', 2, 12345);
+reset role;
+select t.ok(split_part(:'tk'::jsonb ->> 'token', '.', 3) = app.b64url(extensions.hmac(convert_to(split_part(:'tk'::jsonb ->> 'token', '.', 1) || '.' || split_part(:'tk'::jsonb ->> 'token', '.', 2), 'utf8'), convert_to('test-secret-0123456789-0123456789-abcd', 'utf8'), 'sha256'))
+            and length(:'tk'::jsonb ->> 'key') = 64 and (:'tk'::jsonb ->> 'folder') = :'lcode', 'the ticket is signed with the API secret and carries the copy key and folder');
+insert into storage.objects (bucket_id, name) values ('local-backups', 'seed/x') on conflict do nothing;
+set role authenticated;
+select set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'backup_licence', :'lcode')::text, false);
+insert into storage.objects (bucket_id, name) values ('local-backups', :'lcode' || '/copy.part1');
+select t.throws($$ insert into storage.objects (bucket_id, name) values ('local-backups', 'NXS-OTHR-FOLD-ER22/copy') $$, 'row-level security', 'a ticket cannot write into another client''s folder');
+select t.ok(not exists (select 1 from storage.objects where name = 'seed/x'), 'nor read it');
+select set_config('request.jwt.claims', '', false);
+select t.login('zoe@platform.io');
+select t.ok(jsonb_array_length(public.platform_local_backups(:'co')) = 1, 'the platform owner sees the copies that arrived');
+reset role;
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;

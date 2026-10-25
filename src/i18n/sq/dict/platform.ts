@@ -202,4 +202,7 @@ export default {
   "Move to another server": "Kaloje në server tjetër",
   "The client types it when the DrisPRO program starts the first time, and chooses where the data lives.": "Klienti e shkruan kur programi DrisPRO hapet për herë të parë dhe zgjedh ku ruhen të dhënat.",
   "Where it may run": "Ku mund të punojë",
+  "Last copy in the cloud: {time} ({size})": "Kopja e fundit në cloud: {time} ({size})",
+  "No copy in the cloud yet": "Ende asnjë kopje në cloud",
+  "{count} copies kept": "{count} kopje të ruajtura",
 } satisfies Dict

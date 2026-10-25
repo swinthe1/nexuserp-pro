@@ -598,6 +598,30 @@ function LicenceCodeCard({ companyId }: { companyId: string }) {
           <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => { if (confirm(t('Free the code? The current local server stops getting its licence; a new server can use the code.'))) void call(undefined, true) }}>{t('Move to another server')}</Button>
         </div>
       )}
+      {info?.local_server && <CloudCopies companyId={companyId} />}
+    </div>
+  )
+}
+
+/* the nightly copies a local server sent to our cloud (encrypted) */
+type CloudCopy = { file: string; parts: number; bytes: number; created_at: string }
+function CloudCopies({ companyId }: { companyId: string }) {
+  const [rows, setRows] = React.useState<CloudCopy[] | null>(null)
+  React.useEffect(() => {
+    let live = true
+    void supabase.rpc('platform_local_backups', { p_company: companyId }).then(({ data, error }) => { if (live) setRows(error ? [] : ((data as unknown as CloudCopy[]) ?? [])) })
+    return () => { live = false }
+  }, [companyId])
+  if (!rows) return null
+  const last = rows[0]
+  const old = !last || Date.now() - new Date(last.created_at).getTime() > 36 * 3600 * 1000
+  const mb = (b: number) => `${(b / 1048576).toFixed(1)} MB`
+  return (
+    <div className="grid gap-1 border-t pt-2 text-xs">
+      <span className={old ? 'font-medium text-destructive' : 'text-muted-foreground'}>
+        {last ? t('Last copy in the cloud: {time} ({size})', { time: formatDate(last.created_at, true), size: mb(last.bytes) }) : t('No copy in the cloud yet')}
+      </span>
+      {rows.length > 1 && <span className="text-muted-foreground">{t('{count} copies kept', { count: rows.length })}</span>}
     </div>
   )
 }

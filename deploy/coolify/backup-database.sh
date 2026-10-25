@@ -35,7 +35,9 @@ SQL
 trap 'report false "" 0 "the copy failed at line $LINENO"' ERR
 
 echo "==> $(date '+%F %T') copying the database as $user"
-docker exec -e PGPASSWORD="$pass" "$container" pg_dump -h 127.0.0.1 -U "$user" -d postgres -Fc -Z 6 --no-owner --no-privileges \
+# as supabase_admin the copy keeps who owns what and who may read what (needed by sign-in and storage)
+keep_acl=(--no-owner --no-privileges); [ "$user" = supabase_admin ] && keep_acl=()
+docker exec -e PGPASSWORD="$pass" "$container" pg_dump -h 127.0.0.1 -U "$user" -d postgres -Fc -Z 6 "${keep_acl[@]}" \
   --exclude-schema=_analytics --exclude-schema=_realtime --exclude-schema=supabase_functions > "$tmp"
 
 # a copy that cannot be read back is no copy

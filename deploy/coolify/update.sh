@@ -39,6 +39,17 @@ NO_FIRST=1 bash deploy/coolify/install-backup.sh "$db" >/dev/null
 
 echo "==> 2/3 Database"
 NO_DEMO=1 bash deploy/coolify/setup-database.sh $db
+# the API's signing secret, so the cloud can give local servers their tickets for cloud copies
+auth="$(docker ps --format '{{.Names}}' | grep -E '^supabase-auth' | head -1 || true)"
+if [ -n "$auth" ]; then
+  jwt="$(docker exec "$auth" printenv GOTRUE_JWT_SECRET 2>/dev/null || true)"
+  if [ -n "$jwt" ]; then
+    pass="$(docker exec "$db" printenv POSTGRES_PASSWORD)"
+    docker exec -i -e PGPASSWORD="$pass" "$db" psql -h 127.0.0.1 -U postgres -d postgres -q -v ON_ERROR_STOP=1 -v s="$jwt" >/dev/null <<'SQL' && echo "    cloud copies of local servers: ready"
+insert into app.server_secrets (key, value) values ('jwt_secret', :'s') on conflict (key) do update set value = excluded.value;
+SQL
+  fi
+fi
 
 echo "==> 3/3 Redeploy in Coolify"
 if [ -z "${COOLIFY_TOKEN:-}" ] || [ -z "${COOLIFY_APP:-}" ]; then

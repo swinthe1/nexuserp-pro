@@ -559,4 +559,5 @@ export default {
   "This licence is used by another server; ask your NexusERP supplier to move it": "Kjo licencë përdoret nga një server tjetër; kërkojini furnitorit të DrisPRO ta kalojë",
   "This client has no licence yet": "Ky klient nuk ka ende licencë",
   "No licence to apply": "Nuk ka licencë për të vendosur",
+  "Cloud copies are not set up on the cloud yet": "Kopjet në cloud ende nuk janë ndezur në serverin cloud",
 } satisfies Dict

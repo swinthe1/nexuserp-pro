@@ -10,7 +10,7 @@ version="${2:-$(date -u +%Y.%m.%d.%H%M)}"
 work="$(mktemp -d)"; out="$work/nexuserp-server"
 mkdir -p "$out/app" "$out/supabase" "$out/deploy/coolify"
 ( cd "$dist" && tar cf - --exclude=./updates . ) | ( cd "$out/app" && tar xf - )
-cp deploy/local/docker-compose.yml deploy/local/nginx.conf deploy/local/install.sh deploy/local/licence.sh deploy/local/update.sh deploy/local/auto-update.sh deploy/local/LEXOME.txt "$out/"
+cp deploy/local/docker-compose.yml deploy/local/nginx.conf deploy/local/install.sh deploy/local/licence.sh deploy/local/update.sh deploy/local/auto-update.sh deploy/local/cloud-backup.sh deploy/local/restore-from-cloud.sh deploy/local/LEXOME.txt "$out/"
 cp -r deploy/local/db "$out/db"; cp -r deploy/local/windows "$out/windows"
 cp -r supabase/migrations "$out/supabase/migrations"
 cp deploy/coolify/setup-database.sh deploy/coolify/backup-database.sh deploy/coolify/install-backup.sh deploy/coolify/restore-database.sh "$out/deploy/coolify/"

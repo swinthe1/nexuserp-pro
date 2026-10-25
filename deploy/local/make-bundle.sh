@@ -8,7 +8,7 @@ out="build/local/nexuserp-server"
 rm -rf build/local && mkdir -p "$out"
 # the app reads where its server is at start (nexus-config.js), so one build serves every server
 VITE_SUPABASE_URL=http://local-server VITE_SUPABASE_ANON_KEY=local-server npx vite build --outDir "$out/app" --emptyOutDir >/dev/null
-cp deploy/local/docker-compose.yml deploy/local/nginx.conf deploy/local/install.sh deploy/local/licence.sh deploy/local/update.sh deploy/local/auto-update.sh deploy/local/LEXOME.txt "$out/"
+cp deploy/local/docker-compose.yml deploy/local/nginx.conf deploy/local/install.sh deploy/local/licence.sh deploy/local/update.sh deploy/local/auto-update.sh deploy/local/cloud-backup.sh deploy/local/restore-from-cloud.sh deploy/local/LEXOME.txt "$out/"
 cp -r deploy/local/db "$out/db"
 cp -r deploy/local/windows "$out/windows"
 mkdir -p "$out/supabase" "$out/deploy/coolify"

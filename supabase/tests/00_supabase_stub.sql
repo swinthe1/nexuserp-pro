@@ -30,6 +30,10 @@ create function auth.uid() returns uuid language sql stable as $$
   ), '')::uuid
 $$;
 grant execute on function auth.uid() to anon, authenticated, service_role;
+create function auth.jwt() returns jsonb language sql stable as $$
+  select coalesce(nullif(current_setting('request.jwt.claims', true), '')::jsonb, '{}'::jsonb)
+$$;
+grant execute on function auth.jwt() to anon, authenticated, service_role;
 
 create table storage.buckets (id text primary key, name text, public boolean default false);
 create table storage.objects (

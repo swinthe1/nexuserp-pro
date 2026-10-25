@@ -68,6 +68,8 @@ LICENCE=${LICENCE:-}
 LICENCE_SERVER=${LICENCE_SERVER:-https://api.erp.dris-ks.com}
 # new versions every night at 04:15 (false = only by hand with update.sh)
 AUTO_UPDATE=true
+# the nightly copy also goes to the DrisPRO cloud, encrypted (false = only on this server)
+CLOUD_BACKUP=true
 UPDATE_SERVER=https://erp.dris-ks.com
 EOF
   umask 022
@@ -109,6 +111,7 @@ cat > /etc/cron.d/nexuserp-licence <<EOF
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 45 3 * * * root bash $here/licence.sh >> /var/log/nexuserp-licence.log 2>&1
+0 4 * * * root bash $here/cloud-backup.sh >> /var/log/nexuserp-cloud-backup.log 2>&1
 15 4 * * * root bash $here/auto-update.sh >> /var/log/nexuserp-update.log 2>&1
 EOF
 chmod 644 /etc/cron.d/nexuserp-licence
