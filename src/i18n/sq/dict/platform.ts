@@ -208,4 +208,7 @@ export default {
   "Another monthly limit for this client": "Një kufi tjetër mujor për këtë klient",
   "Invoices read with AI this month": "Fatura të lexuara me AI këtë muaj",
   "{n} not read": "{n} të palexuara",
+  "Questions to the assistant this month": "Pyetje te asistenti këtë muaj",
+  "{n} question": "{n} pyetje",
+  "{n} questions": "{n} pyetje",
 } satisfies Dict

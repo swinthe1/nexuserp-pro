@@ -61,6 +61,17 @@ Për mesazhe që dërgohen vetë, Meta kërkon "WhatsApp Business Platform" (jo 
   Serverët lokalë dërgojnë përmes cloud-it, deri në 300 mesazhe në ditë për licencë.
 
 
+2b. Asistenti DrisPRO (përdor të njëjtin çelës si leximi i faturave)
+--------------------------------------------------------------------
+  Pasi çelësi është vendosur (hapi 2c), butoni "Asistenti" lart në çdo faqe (ose Ctrl+J) punon
+  menjëherë, në cloud dhe në serverët lokalë (këta pyesin përmes cloud-it me licencën).
+  Faza 1: vetëm pyetje. Lexon me lejet e personit që pyet (arkëtari nuk sheh paga as borxhe),
+  nuk ndryshon dhe nuk dërgon asgjë.
+  Kostoja: rreth 1-3 cent për pyetje.
+  Kufiri në muaj sipas paketës: Provë 30, Basic 150, Standard 600, Pro 2000 pyetje.
+  Për një klient të veçantë: Platforma → licenca e klientit → "Pyetje te asistenti këtë muaj".
+
+
 4. Ekstraktet e bankave
 -----------------------
 Programi lexon tashmë XML (CAMT.053), MT940, Excel dhe CSV. Që të jem i sigurt për çdo bankë,

@@ -288,5 +288,58 @@ reset role;
 
 select t.ok(exists (select 1 from app.document_reads where id = :'lr' and relay_licence = :'alcode'), 'a local server hands its invoice to the cloud with its licence');
 update public.licenses set local_server_id = null where company_id = :'aco';
+
+-- ---------- the assistant: questions, answered with the person's own permissions ---------------
+insert into auth.users (email, raw_user_meta_data) values ('kasa@auto.xk', '{"full_name":"Kasa Auto"}');
+set role authenticated;
+select t.login('ana@auto.xk');
+select public.invite_member(:'aco', 'kasa@auto.xk', array['pos_cashier']);
+select t.ok((public.assistant_usage(:'aco') ->> 'limit')::int = 600, 'the Standard plan asks the assistant 600 questions a month');
+select public.assistant_send(:'aco', null, 'Sa borxh ka Kafe Prizreni?', '{"path":"/sales/invoices"}') as asend \gset
+select t.throws(format($q$select public.assistant_send(%L, %L, 'Edhe një')$q$, :'aco', :'asend'::jsonb ->> 'conversation_id'), 'Wait for the answer', 'one question at a time in a conversation');
+select t.throws(format($q$select public.assistant_send(%L, null, '   ')$q$, :'aco'), 'Write a question', 'an empty question is refused');
+select t.login('kasa@auto.xk');
+select t.throws(format($q$select public.assistant_state(%L)$q$, :'asend'::jsonb ->> 'conversation_id'), 'not found', 'nobody else reads a person''s conversation');
+select t.throws($$ select public.assistant_wait(10) $$, 'permission denied', 'a signed-in person cannot take the questions');
+select public.assistant_send(:'aco', null, 'Sa i paguam rrogat?') as ksend \gset
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+set role service_role;
+select public.assistant_wait(500) as aw \gset
+select public.assistant_tool((:'aw'::jsonb ->> 'job')::uuid, 'find_items', '{"query":"Coca"}') as tfi \gset
+select public.assistant_tool((:'aw'::jsonb ->> 'job')::uuid, 'report', '{"report":"sales","group_by":"month"}') ? 'totals' as trep \gset
+select public.assistant_tool((:'aw'::jsonb ->> 'job')::uuid, 'drop_everything', '{}') ->> 'error' as tbad \gset
+select public.assistant_done((:'aw'::jsonb ->> 'job')::uuid, true, 'Kafe Prizreni ka **0 €** borxh.', '[{"name":"partner_balance"}]', 900, 60, 'claude-sonnet-5-5');
+select public.assistant_wait(500) as kw \gset
+select public.assistant_tool((:'kw'::jsonb ->> 'job')::uuid, 'report', '{"report":"payroll"}') ->> 'error' as kpay \gset
+select public.assistant_tool((:'kw'::jsonb ->> 'job')::uuid, 'partner_balance', '{"query":"a"}') ->> 'error' as kbal \gset
+select public.assistant_wait(10) is null as anone \gset
+select public.assistant_done((:'kw'::jsonb ->> 'job')::uuid, false, null, null, null, null, null, 'overloaded');
+reset role;
+select t.ok((:'aw'::jsonb ->> 'job') = (:'asend'::jsonb ->> 'job_id') and (:'aw'::jsonb -> 'messages' -> 0 ->> 'content') = 'Sa borxh ka Kafe Prizreni?'
+            and (:'aw'::jsonb -> 'company' ->> 'today') is not null, 'the server takes the oldest question with its conversation and the company');
+select t.ok(jsonb_array_length(:'tfi'::jsonb) >= 1 and (:'tfi'::jsonb -> 0 ->> 'href') like '/inventory/products/%', 'a tool runs as the person and finds the item');
+select t.ok(:'trep'::boolean, 'reports answer with their totals');
+select t.ok(:'tbad' like 'Unknown tool%', 'only the known tools exist');
+select t.ok(:'kpay' like 'Permission denied%' and :'kbal' ilike '%permission%', 'the cashier''s assistant sees no salaries and no debts: the tools keep the person''s permissions');
+select t.ok(:'anone'::boolean, 'no question waiting: nothing to take');
+reset role;
+set role authenticated;
+select t.login('ana@auto.xk');
+select public.assistant_state((:'asend'::jsonb ->> 'conversation_id')::uuid) as ast \gset
+select t.ok(jsonb_array_length(:'ast'::jsonb -> 'messages') = 2 and (:'ast'::jsonb -> 'messages' -> 1 ->> 'role') = 'assistant'
+            and (:'ast'::jsonb -> 'job' ->> 'status') = 'done', 'the answer is in the conversation');
+select t.ok((select count(*) from public.assistant_conversations(:'aco')) = 1, 'each person sees only their own conversations');
+select t.login('zoe@platform.io');
+select public.platform_set_ai_chat_limit(:'aco', 2);
+select t.ok((public.platform_ai_chat_usage(:'aco') -> 'months' -> 0 ->> 'questions')::int = 2, 'the platform owner sees the questions per month');
+select t.login('ana@auto.xk');
+select t.throws(format($q$select public.assistant_send(%L, null, 'Edhe një pyetje')$q$, :'aco'), 'limit of its plan', 'past the month''s questions the assistant waits for the 1st');
+select public.assistant_forget((:'asend'::jsonb ->> 'conversation_id')::uuid);
+select t.ok((select count(*) from public.assistant_conversations(:'aco')) = 0, 'a person can forget a conversation');
+reset role;
+update app.assistant_jobs set started_at = now() - interval '5 minutes', status = 'running' where id = (:'kw'::jsonb ->> 'job')::uuid;
+select app.assistant_cleanup();
+select t.ok((select status = 'failed' and error like '%in time%' from app.assistant_jobs where id = (:'kw'::jsonb ->> 'job')::uuid), 'a question left hanging is given back');
 \set QUIET off
 select count(*) as assertions_passed from t.results;

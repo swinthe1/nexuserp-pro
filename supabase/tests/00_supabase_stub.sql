@@ -24,8 +24,9 @@ create table auth.users (
 
 -- Mirrors Supabase: reads the JWT subject PostgREST puts in request.jwt.claims
 create function auth.uid() returns uuid language sql stable as $$
+  -- as Supabase defines it: an empty claim.sub (left behind by an earlier set_config on the connection) falls through to the claims
   select nullif(coalesce(
-    current_setting('request.jwt.claim.sub', true),
+    nullif(current_setting('request.jwt.claim.sub', true), ''),
     (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')
   ), '')::uuid
 $$;

@@ -540,6 +540,7 @@ function LicenseDialog({ client, onClose }: { client: PlatformClient | null; onC
             </div>
             {client && <LicenceCodeCard companyId={client.id} />}
             {client && <AiReadsCard companyId={client.id} />}
+            {client && <AiReadsCard companyId={client.id} chat />}
             <FormField control={form.control} name="status" render={({ field }) => (
               <FormItem className="col-span-2 flex items-center justify-between gap-3 space-y-0 rounded-md border p-3">
                 <div>
@@ -628,21 +629,23 @@ function CloudCopies({ companyId }: { companyId: string }) {
 }
 
 /* supplier invoices read with AI: this month against the limit, the months before with their cost */
-type AiUsage = { used: number; limit: number; override: number | null; plan_limit: number; months: { month: string; reads: number; failed: number; input_tokens: number; output_tokens: number; cost_usd: number }[] }
-function AiReadsCard({ companyId }: { companyId: string }) {
+type AiUsage = { used: number; limit: number; override: number | null; plan_limit: number; months: { month: string; reads?: number; questions?: number; failed?: number; cost_usd: number }[] }
+/* with chat: the assistant's questions instead, counted and limited the same way */
+function AiReadsCard({ companyId, chat = false }: { companyId: string; chat?: boolean }) {
   const [u, setU] = React.useState<AiUsage | null>(null)
   const [val, setVal] = React.useState('')
   const [busy, setBusy] = React.useState(false)
   const load = React.useCallback(async () => {
-    const { data, error } = await supabase.rpc('platform_ai_usage', { p_company: companyId })
+    const { data, error } = chat ? await supabase.rpc('platform_ai_chat_usage', { p_company: companyId }) : await supabase.rpc('platform_ai_usage', { p_company: companyId })
     if (!error && data) { const x = data as unknown as AiUsage; setU(x); setVal(x.override == null ? '' : String(x.override)) }
-  }, [companyId])
+  }, [companyId, chat])
   React.useEffect(() => { void load() }, [load])
   if (!u) return null
   const save = async () => {
     setBusy(true)
     try {
-      const { error } = await supabase.rpc('platform_set_ai_limit', { p_company: companyId, p_limit: (val === '' ? null : Number(val)) as unknown as number })
+      const limit = (val === '' ? null : Number(val)) as unknown as number
+      const { error } = chat ? await supabase.rpc('platform_set_ai_chat_limit', { p_company: companyId, p_limit: limit }) : await supabase.rpc('platform_set_ai_limit', { p_company: companyId, p_limit: limit })
       if (error) throw error
       toast.success(t('Saved')); await load()
     } catch (e) { toast.error(describeError(e)) } finally { setBusy(false) }
@@ -651,7 +654,7 @@ function AiReadsCard({ companyId }: { companyId: string }) {
   return (
     <div className="col-span-2 grid gap-2 rounded-md border p-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[13px] font-medium">{t('Invoices read with AI this month')}</span>
+        <span className="text-[13px] font-medium">{chat ? t('Questions to the assistant this month') : t('Invoices read with AI this month')}</span>
         <span className="text-[13px] tabular">{u.used} / {u.limit}</span>
       </div>
       <div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className={cn('h-full rounded-full', pct >= 90 ? 'bg-destructive' : 'bg-primary')} style={{ width: `${pct}%` }} /></div>
@@ -659,14 +662,14 @@ function AiReadsCard({ companyId }: { companyId: string }) {
         <div className="grid gap-0.5 text-xs text-muted-foreground">
           {u.months.slice(0, 4).map((m) => (
             <div key={m.month} className="flex justify-between gap-2"><span>{m.month}</span>
-              <span className="tabular">{tn(m.reads, '{n} invoice', '{n} invoices')}{m.failed ? ` · ${t('{n} not read', { n: m.failed })}` : ''} · ${m.cost_usd.toFixed(2)}</span></div>
+              <span className="tabular">{chat ? tn(m.questions ?? 0, '{n} question', '{n} questions') : tn(m.reads ?? 0, '{n} invoice', '{n} invoices')}{m.failed ? ` · ${t('{n} not read', { n: m.failed })}` : ''} · ${m.cost_usd.toFixed(2)}</span></div>
           ))}
         </div>
       )}
       <div className="flex items-end gap-2">
         <div className="grid flex-1 gap-1.5">
-          <Label htmlFor="ai-limit" optional>{t('Another monthly limit for this client')}</Label>
-          <Input id="ai-limit" type="number" min={0} step={1} className="tabular" value={val} onChange={(e) => setVal(e.target.value)} placeholder={t('The plan\u2019s {n}', { n: u.plan_limit })} />
+          <Label htmlFor={chat ? 'ai-chat-limit' : 'ai-limit'} optional>{t('Another monthly limit for this client')}</Label>
+          <Input id={chat ? 'ai-chat-limit' : 'ai-limit'} type="number" min={0} step={1} className="tabular" value={val} onChange={(e) => setVal(e.target.value)} placeholder={t('The plan\u2019s {n}', { n: u.plan_limit })} />
         </div>
         <Button type="button" variant="outline" loading={busy} disabled={val === (u.override == null ? '' : String(u.override))} onClick={() => void save()}>{t('Save')}</Button>
       </div>

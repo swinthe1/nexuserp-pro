@@ -4299,6 +4299,7 @@ export type Database = {
           local_version: string | null
           backup_key: string | null
           ai_reads_limit: number | null
+          ai_chat_limit: number | null
         }
         Insert: {
           company_id: string
@@ -4321,6 +4322,7 @@ export type Database = {
           local_version?: string | null
           backup_key?: string | null
           ai_reads_limit?: number | null
+          ai_chat_limit?: number | null
         }
         Update: {
           company_id?: string
@@ -4343,6 +4345,7 @@ export type Database = {
           local_version?: string | null
           backup_key?: string | null
           ai_reads_limit?: number | null
+          ai_chat_limit?: number | null
         }
         Relationships: [
           { foreignKeyName: "licenses_company_id_fkey"; columns: ["company_id"]; isOneToOne: true; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -11030,9 +11033,47 @@ export type Database = {
         }
         Returns: string
       }
+      ai_find_document: {
+        Args: {
+          p_company: string
+          p_number: string
+        }
+        Returns: Json
+      }
+      ai_find_items: {
+        Args: {
+          p_company: string
+          p_query: string
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      ai_low_stock: {
+        Args: {
+          p_company: string
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      ai_partner_balance: {
+        Args: {
+          p_company: string
+          p_query: string
+          p_side?: string
+        }
+        Returns: Json
+      }
       ai_reads_usage: {
         Args: {
           p_company: string
+        }
+        Returns: Json
+      }
+      ai_search: {
+        Args: {
+          p_company: string
+          p_query: string
+          p_limit?: number
         }
         Returns: Json
       }
@@ -11048,6 +11089,73 @@ export type Database = {
           p_shipments: string[]
         }
         Returns: number
+      }
+      assistant_conversations: {
+        Args: {
+          p_company: string
+        }
+        Returns: { id: string | null; title: string | null; updated_at: string | null }[]
+      }
+      assistant_done: {
+        Args: {
+          p_job: string
+          p_ok: boolean
+          p_text?: string
+          p_tools?: Json
+          p_input_tokens?: number
+          p_output_tokens?: number
+          p_model?: string
+          p_error?: string
+        }
+        Returns: undefined
+      }
+      assistant_forget: {
+        Args: {
+          p_conversation: string
+        }
+        Returns: undefined
+      }
+      assistant_send: {
+        Args: {
+          p_company: string
+          p_conversation: string
+          p_text: string
+          p_context?: Json
+        }
+        Returns: Json
+      }
+      assistant_state: {
+        Args: {
+          p_conversation: string
+        }
+        Returns: Json
+      }
+      assistant_step: {
+        Args: {
+          p_job: string
+          p_step: string
+        }
+        Returns: undefined
+      }
+      assistant_tool: {
+        Args: {
+          p_job: string
+          p_name: string
+          p_input?: Json
+        }
+        Returns: Json
+      }
+      assistant_usage: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
+      assistant_wait: {
+        Args: {
+          p_wait_ms?: number
+        }
+        Returns: Json
       }
       attendance_month: {
         Args: {
@@ -11714,6 +11822,22 @@ export type Database = {
         }
         Returns: Json
       }
+      licence_ai_result: {
+        Args: {
+          p_code: string
+          p_server: string
+          p_id: string
+        }
+        Returns: Json
+      }
+      licence_ai_submit: {
+        Args: {
+          p_code: string
+          p_server: string
+          p_request: Json
+        }
+        Returns: string
+      }
       licence_backup_done: {
         Args: {
           p_code: string
@@ -12029,6 +12153,12 @@ export type Database = {
         }
         Returns: { line_no: number | null; employee_id: string | null; personal_number: string | null; last_name: string | null; first_name: string | null; job_title: string | null; department: string | null; paid_days: number | null; gross: number | null; contribution_base: number | null; ss_employee: number | null; health_employee: number | null; ss_employer: number | null; health_employer: number | null; taxable: number | null; income_tax: number | null; net: number | null; employer_cost: number | null; iban: string | null }[]
       }
+      platform_ai_chat_usage: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       platform_ai_usage: {
         Args: {
           p_company: string
@@ -12080,6 +12210,13 @@ export type Database = {
           p_valid_until: string
           p_status: string
           p_notes?: string
+        }
+        Returns: undefined
+      }
+      platform_set_ai_chat_limit: {
+        Args: {
+          p_company: string
+          p_limit: number
         }
         Returns: undefined
       }
@@ -12393,6 +12530,21 @@ export type Database = {
         Args: {
           p_id: string
           p_refund?: number
+        }
+        Returns: Json
+      }
+      relay_done: {
+        Args: {
+          p_id: string
+          p_ok: boolean
+          p_response?: Json
+          p_error?: string
+        }
+        Returns: undefined
+      }
+      relay_wait: {
+        Args: {
+          p_wait_ms?: number
         }
         Returns: Json
       }
