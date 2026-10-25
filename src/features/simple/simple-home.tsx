@@ -14,7 +14,7 @@ const L = {
   sell: msg('Sell'), sellHint: msg('Open the till and sell'),
   invoice: msg('New invoice'), invoiceHint: msg('An invoice for a customer'),
   order: msg('New order'), orderHint: msg('What a customer orders'),
-  receive: msg('Receive goods'), receiveHint: msg('Goods that came from a supplier'),
+  receive: msg('Receive goods|simple'), receiveHint: msg('Goods that came from a supplier'),
   receivePhoto: msg('Take a photo of the supplier’s invoice'),
   count: msg('Count the stock'), countHint: msg('Count what is on the shelf'),
   find: msg('Find an item'), findHint: msg('Price and how many are left'),

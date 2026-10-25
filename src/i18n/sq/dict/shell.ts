@@ -351,4 +351,5 @@ export default {
   "Hello, {name}": "Përshëndetje, {name}",
   "Start": "Fillimi",
   "Lock|till": "Kyçe",
+  "Receive goods|simple": "Prano mallin",
 } satisfies Dict
