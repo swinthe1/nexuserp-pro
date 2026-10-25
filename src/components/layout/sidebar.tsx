@@ -1,4 +1,4 @@
-import { ChevronRight, PanelLeftClose, PanelLeftOpen, Search, Star } from 'lucide-react'
+import { BadgeDollarSign, Boxes, Building2, ChevronRight, Factory, Landmark, type LucideIcon, PanelLeftClose, PanelLeftOpen, Percent, ScanLine, Search, ShoppingCart, Star, Store, Truck, Users } from 'lucide-react'
 import * as React from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
@@ -6,6 +6,7 @@ import { NAV, type NavItem } from '@/app/nav'
 import { useCommandPalette } from '@/components/layout/command-palette'
 import { CompanySwitcher } from '@/components/layout/company-switcher'
 import { mostUsed, recordVisit, useFavourites, useHiddenSections, useOpenSections } from '@/components/layout/nav-prefs'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { t } from '@/i18n'
 import { cn } from '@/lib/utils'
@@ -35,6 +36,46 @@ function useActiveHref() {
 
 const ALWAYS_SHOWN = new Set(['Overview', 'Company'])
 
+/** one icon per section for the narrow menu; its pages open beside it */
+const SECTION_ICON: Record<string, LucideIcon> = {
+  'Inventory|menu': Boxes, 'Sales & CRM': BadgeDollarSign, Purchasing: ShoppingCart, 'Warehouse|menu': ScanLine, Retail: Store,
+  Manufacturing: Factory, Logistics: Truck, Finance: Landmark, 'Tax|menu': Percent, People: Users, Company: Building2,
+}
+
+function SectionFlyout({ label, items, activeHref, onNavigate }: { label: string; items: NavItem[]; activeHref: string | null; onNavigate?: () => void }) {
+  const [open, setOpen] = React.useState(false)
+  const timer = React.useRef<number | undefined>(undefined)
+  const show = () => { window.clearTimeout(timer.current); setOpen(true) }
+  const hide = () => { window.clearTimeout(timer.current); timer.current = window.setTimeout(() => setOpen(false), 160) }
+  const Icon = SECTION_ICON[label] ?? Boxes
+  const active = items.some((i) => i.href === activeHref)
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button type="button" aria-label={t(label)} onMouseEnter={show} onMouseLeave={hide}
+          className={cn('flex h-9 w-full items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
+            active && 'bg-card text-primary shadow-sm ring-1 ring-border', open && !active && 'bg-secondary text-foreground')}>
+          <Icon className="size-[18px]" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent side="right" align="start" sideOffset={10} className="w-60 p-1.5" onMouseEnter={show} onMouseLeave={hide}
+        onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
+        <p className="px-2 pb-1 pt-1 text-xs font-medium text-muted-foreground">{t(label)}</p>
+        <div className="flex flex-col gap-0.5">
+          {items.map((i) => (
+            <NavLink key={i.href} to={i.href} onClick={() => { setOpen(false); onNavigate?.() }}
+              className={cn('flex h-8 items-center gap-2.5 rounded-md px-2 text-[13px] font-medium hover:bg-secondary',
+                i.href === activeHref ? 'bg-secondary text-foreground' : 'text-popover-foreground')}>
+              <i.icon className={cn('size-4 shrink-0', i.href === activeHref ? 'text-primary' : 'text-muted-foreground')} />
+              <span className="truncate">{t(i.label)}</span>
+            </NavLink>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 function Item({ item, collapsed, onNavigate, active, pinned, onTogglePin }: {
   item: NavItem; collapsed: boolean; onNavigate?: () => void; active: boolean; pinned?: boolean; onTogglePin?: () => void
 }) {
@@ -45,20 +86,16 @@ function Item({ item, collapsed, onNavigate, active, pinned, onTogglePin }: {
       end={item.href === '/'}
       onClick={onNavigate}
       aria-current={active ? 'page' : undefined}
-      className={() =>
+      className={
         cn(
           'group/item flex h-8 min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 text-[13px] font-medium text-sidebar-foreground transition-colors hover:bg-secondary hover:text-foreground',
           active && 'bg-card text-foreground shadow-sm ring-1 ring-border',
-          collapsed && 'justify-center px-0',
+          collapsed && 'h-9 flex-none justify-center px-0',
         )
       }
     >
-      {() => (
-        <>
-          <Icon className={cn('size-4 shrink-0', active ? 'text-primary' : 'text-muted-foreground group-hover/item:text-foreground')} />
-          {!collapsed && <span className="flex-1 truncate">{t(item.label)}</span>}
-        </>
-      )}
+      <Icon className={cn('size-4 shrink-0', active ? 'text-primary' : 'text-muted-foreground group-hover/item:text-foreground')} />
+      {!collapsed && <span className="flex-1 truncate">{t(item.label)}</span>}
     </NavLink>
   )
   if (collapsed) {
@@ -116,17 +153,18 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
   const pinProps = (i: NavItem) => ({ pinned: favourites.includes(i.href), onTogglePin: () => toggle(i.href) })
 
   if (collapsed) {
+    // narrow: the dashboard, the pinned pages, then one icon per section with its pages beside it
+    const overview = sections.find((s) => s.label === 'Overview')
     return (
-      <nav className="flex flex-col gap-4" aria-label={t('Main menu')}>
-        {quick.length > 0 && (
-          <div className="flex flex-col gap-0.5 border-b border-sidebar-border pb-3">
-            {quick.map((i) => <Item key={i.href} item={i} collapsed onNavigate={onNavigate} active={i.href === activeHref} />)}
+      <nav className="flex flex-col gap-1" aria-label={t('Main menu')}>
+        {overview?.items.map((i) => <Item key={i.href} item={i} collapsed onNavigate={onNavigate} active={i.href === activeHref} />)}
+        {pinnedItems.length > 0 && (
+          <div className="my-1 flex flex-col gap-0.5 border-y border-sidebar-border py-2">
+            {pinnedItems.slice(0, 6).map((i) => <Item key={`p-${i.href}`} item={i} collapsed onNavigate={onNavigate} active={i.href === activeHref} />)}
           </div>
         )}
-        {sections.map((section) => (
-          <div key={section.label} className="flex flex-col gap-0.5">
-            {section.items.map((i) => <Item key={i.href} item={i} collapsed onNavigate={onNavigate} active={i.href === activeHref} />)}
-          </div>
+        {sections.filter((s) => s.label !== 'Overview').map((section) => (
+          <SectionFlyout key={section.label} label={section.label} items={section.items} activeHref={activeHref} onNavigate={onNavigate} />
         ))}
       </nav>
     )
