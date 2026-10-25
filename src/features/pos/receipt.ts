@@ -50,7 +50,7 @@ export function receiptHtml(r: ReceiptData) {
     ${r.offline ? `<hr><div class="c muted">${esc(t('Recorded offline — sent to the books when the till is back online.'))}</div>` : ''}
     <hr><div class="c muted">${esc(r.register.receipt_footer ?? 'Faleminderit! Thank you!')}</div>`
 }
-export function printReceipt(r: ReceiptData) { printHtml(receiptHtml(r), CSS) }
+export function printReceipt(r: ReceiptData) { printHtml(receiptHtml(r), CSS, 'receipt') }
 
 export interface ZData {
   company: string; register: string; number: string; session: string; opened: string; closed: string | null; date: string; currency: string
@@ -71,5 +71,5 @@ export function printZReport(z: ZData) {
     <div class="b">${esc(t('Cash drawer'))}</div><table>${row(t('Opening cash'), money(z.opening))}${row(t('Cash in'), money(z.cashIn))}${row(t('Cash out'), `−${money(z.cashOut)}`)}
     ${row(t('Expected'), money(z.expected), 'b')}${row(t('Counted'), z.counted == null ? '—' : money(z.counted))}${row(t('Difference'), z.difference == null ? '—' : money(z.difference), 'b')}</table><hr>
     <div class="b">${esc(t('Best sellers'))}</div><table>${z.items.slice(0, 10).map((i) => row(`${qty(Number(i.quantity))} × ${i.name}`, money(Number(i.total)))).join('')}</table>
-    <hr><div class="c muted">${esc(t('Printed {date}', { date: stamp(new Date()) }))}</div>`, CSS)
+    <hr><div class="c muted">${esc(t('Printed {date}', { date: stamp(new Date()) }))}</div>`, CSS, 'receipt')
 }

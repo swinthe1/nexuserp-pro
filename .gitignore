@@ -6,3 +6,5 @@ dev-dist
 *.log
 *.tsbuildinfo
 .DS_Store
+desktop/node_modules
+desktop/dist

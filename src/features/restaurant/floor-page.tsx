@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatDateWith, t, td, tn } from '@/i18n'
-import { printHtml } from '@/lib/print'
+import { openCashDrawer, printHtml } from '@/lib/print'
 import { cn, formatMoney, num } from '@/lib/utils'
 import { type CatalogItem, type TillData, useTill } from '@/features/pos/api'
 import { nextDeviceRef } from '@/features/pos/offline'
@@ -43,7 +43,7 @@ function printKitchen(s: SentTickets) {
   const body = s.tickets.map((tk, i) => `${i ? '<div style="page-break-before:always"></div>' : ''}<div class="c big">${esc(tk.station || t('Kitchen'))}</div>
     <div class="c big">${esc(s.table ? t('Table {name}', { name: s.table }) : s.label || s.number)}</div><div class="c">${esc(when)} · ${esc(s.waiter)}</div><hr>
     <table>${tk.lines.map((l) => `<tr><td class="big">${esc(num(l.quantity))} ×</td><td class="big">${esc(l.name)}</td></tr>${l.note ? `<tr><td></td><td class="n">» ${esc(l.note)}</td></tr>` : ''}`).join('')}</table>`).join('')
-  if (body) printHtml(body, TICKET_CSS)
+  if (body) printHtml(body, TICKET_CSS, 'kitchen')
 }
 function printBill(company: TillData['company'], tab: Tab) {
   const lines = tab.lines.filter((l) => l.status !== 'void' && !l.paid)
@@ -52,7 +52,7 @@ function printBill(company: TillData['company'], tab: Tab) {
     <table>${lines.map((l) => `<tr><td>${esc(num(l.quantity))} × ${esc(l.name)}</td><td style="text-align:right">${esc(formatMoney(lineSum(l)))}</td></tr>`).join('')}</table><hr>
     <table><tr class="big"><td>${esc(t('Total'))}</td><td style="text-align:right">${esc(formatMoney(total))}</td></tr></table>
     ${tab.guests > 1 ? `<div>${esc(t('Per guest {amount}', { amount: formatMoney(total / tab.guests) }))}</div>` : ''}
-    <hr><div class="c">${esc(t('This is not a fiscal receipt.'))}</div>`, TICKET_CSS)
+    <hr><div class="c">${esc(t('This is not a fiscal receipt.'))}</div>`, TICKET_CSS, 'receipt')
 }
 
 /* ================================================================== route */
@@ -545,6 +545,7 @@ function PayTabDialog({ data, tab, cashier, onClose, onClosedTab }: { data: Till
       loyalty: card ? { holder: card.quote.holder_name, number: card.quote.card_number, discount: discount, redeemed: spent || undefined, earned: earned || undefined,
                         balance: card.quote.kind === 'points' ? num(card.quote.points_balance) - spent + earned : undefined } : null,
     }
+    if (tenders.some((x) => x.method === 'cash')) openCashDrawer()
     printReceipt(receipt)
     toast.success(num(res.change) > 0 ? t('Paid · change {amount}', { amount: formatMoney(res.change) }) : t('Paid'),
       res.offline ? { description: t('Saved on this device; it is sent when the connection is back.') } : undefined)

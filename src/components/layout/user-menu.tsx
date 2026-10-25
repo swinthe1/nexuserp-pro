@@ -1,4 +1,4 @@
-import { Download, KeyRound, Languages, LogOut, Monitor, Moon, ServerCog, Sun, UserRound } from 'lucide-react'
+import { Download, KeyRound, Languages, LaptopMinimal, LogOut, Monitor, Moon, ServerCog, Sun, UserRound } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/app/auth-provider'
@@ -14,11 +14,14 @@ import { chooseLocale } from '@/i18n/language'
 import { ChangePasswordDialog } from '@/components/change-password-dialog'
 import { useInstallApp } from '@/components/pwa-prompts'
 import { initials } from '@/lib/utils'
+import { DesktopSettingsDialog } from '@/components/desktop-settings'
+import { isDesktop } from '@/lib/desktop'
 
 export function UserMenu() {
   const { user, signOut } = useAuth()
   const { company, isSuperAdmin } = useCompany()
   const [pwOpen, setPwOpen] = React.useState(false)
+  const [pcOpen, setPcOpen] = React.useState(false)
   const { theme, setTheme } = useTheme()
   const locale = useLocale()
   const { canInstall, install } = useInstallApp()
@@ -57,12 +60,14 @@ export function UserMenu() {
             </DropdownMenuRadioGroup>
           </DropdownMenuSubContent>
         </DropdownMenuSub>
-        {canInstall && <DropdownMenuItem onSelect={() => void install()}><Download /> {t('Install the app on this device')}</DropdownMenuItem>}
+        {isDesktop && <DropdownMenuItem onSelect={() => setPcOpen(true)}><LaptopMinimal /> {t('This computer: printers')}</DropdownMenuItem>}
+        {!isDesktop && canInstall && <DropdownMenuItem onSelect={() => void install()}><Download /> {t('Install the app on this device')}</DropdownMenuItem>}
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => void signOut()}><LogOut /> {t('Sign out')}</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
     <ChangePasswordDialog open={pwOpen} onOpenChange={setPwOpen} />
+    <DesktopSettingsDialog open={pcOpen} onOpenChange={setPcOpen} />
     </>
   )
 }

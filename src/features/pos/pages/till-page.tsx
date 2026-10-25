@@ -3,6 +3,7 @@ import {
   UserRound, Wallet, X,
 } from 'lucide-react'
 import * as React from 'react'
+import { openCashDrawer } from '@/lib/print'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useAuth } from '@/app/auth-provider'
@@ -296,6 +297,8 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     setDone({ ref: device_ref, number: null, total: r2(saleTotal), change: Math.max(change, 0), receipt, offline: isOffline })
     setDialog(null)
     clearSale()
+    // the drawer opens for a sale paid (partly) in cash (Windows program with a network receipt printer)
+    if (tenders.some((x) => x.method === 'cash')) openCashDrawer()
     if (autoPrint) printReceipt(receipt)
   }
 

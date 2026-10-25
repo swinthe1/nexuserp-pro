@@ -138,5 +138,5 @@ function printTickets(orders: KitchenOrder[], station: string) {
   const when = formatDateWith(new Date(), { hour: '2-digit', minute: '2-digit' })
   printHtml(orders.map((o, i) => `${i ? '<div style="page-break-before:always"></div>' : ''}<div class="c big">${esc(station)}</div>
     <div class="c big">${esc(o.table ? t('Table {name}', { name: o.table }) : o.label || o.number)}</div><div class="c">${esc(when)} · ${esc(o.waiter)}</div><hr>
-    <table>${o.lines.map((l) => `<tr><td class="big">${esc(num(l.quantity))} ×</td><td class="big">${esc(l.name)}</td></tr>${l.note ? `<tr><td></td><td class="n">» ${esc(l.note)}</td></tr>` : ''}`).join('')}</table>`).join(''), TICKET_CSS)
+    <table>${o.lines.map((l) => `<tr><td class="big">${esc(num(l.quantity))} ×</td><td class="big">${esc(l.name)}</td></tr>${l.note ? `<tr><td></td><td class="n">» ${esc(l.note)}</td></tr>` : ''}`).join('')}</table>`).join(''), TICKET_CSS, 'kitchen')
 }
