@@ -4,6 +4,12 @@ DrisPRO · Automatizimet: çfarë duhet ndezur një herë
 Të gjitha ndizen te: Cilësimet → Automatizimet (në çdo kompani).
 Më poshtë janë vetëm hapat që i bën pronari i platformës (ju), një herë për të gjithë.
 
+MODULET ME KOSTO (nuk janë në asnjë paketë):
+  Leximi i faturave me AI, Asistenti DrisPRO dhe Mesazhet në WhatsApp kushtojnë për çdo përdorim.
+  Pyeteni klientin nëse i do, vendosini në ofertë, pastaj ndizini te:
+  Platforma → klienti → Licenca → "Module me kosto për çdo përdorim".
+  Pa i ndezur, klienti nuk i sheh (dhe serveri i refuzon); email-i punon gjithmonë falas.
+
 
 1. Email-i (nuk kërkon asgjë nga ju)
 ------------------------------------

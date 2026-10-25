@@ -9,6 +9,14 @@ select t.login('zoe@platform.io');
 select public.platform_create_client(jsonb_build_object('name', 'Automatika Test', 'country', 'XK', 'tax_number', '811990011',
   'owner_email', 'ana@auto.xk', 'owner_name', 'Ana Auto', 'owner_password', 'sekret123', 'plan', 'standard', 'max_users', 5,
   'valid_until', (current_date + 365)::text)) as aco \gset
+-- the modules that cost per use are off until the platform owner turns them on for this client
+select t.login('ana@auto.xk');
+select t.throws(format($q$select public.assistant_send(%L, null, 'Sa shitëm?')$q$, :'aco'), 'not in your plan', 'the assistant is a module of its own: off, it is refused');
+select t.throws(format($q$select public.doc_read_submit(%L, %L, 'image/jpeg')$q$, :'aco', encode(decode(repeat('ab', 600), 'hex'), 'base64')), 'not in your plan', 'so is reading invoices with AI');
+select t.ok(not (public.messaging_settings(:'aco') ->> 'whatsapp_module')::boolean, 'and WhatsApp');
+select t.login('zoe@platform.io');
+select public.platform_set_plan_extras(:'aco', array['ai_reads', 'ai_assistant', 'whatsapp', 'made_up'], null);
+select t.ok((select extra_features = array['ai_assistant', 'ai_reads', 'whatsapp'] from public.licenses where company_id = :'aco'), 'the platform owner turns them on for a client who asked for them');
 select t.login('ana@auto.xk');
 select id as avat from public.tax_codes where company_id = :'aco' and rate > 0 order by rate desc limit 1 \gset
 select rate as avat_rate from public.tax_codes where id = :'avat' \gset

@@ -38,6 +38,11 @@ const SUGGESTIONS = [
 ]
 
 export function AssistantButton() {
+  const { hasFeature } = useCompany()
+  return hasFeature('ai_assistant') ? <AssistantLauncher /> : null
+}
+
+function AssistantLauncher() {
   const [open, setOpen] = React.useState(false)
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

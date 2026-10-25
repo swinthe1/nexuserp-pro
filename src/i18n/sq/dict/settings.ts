@@ -414,4 +414,5 @@ export default {
   "{n} summaries on their way": "{n} përmbledhje po shkojnë",
   "{n} summary on its way": "{n} përmbledhje po shkon",
   "Security|mail": "Siguria",
+  "Sending by WhatsApp is a separate module (each message has a cost). Ask DrisPRO to add it to your licence.": "Dërgimi me WhatsApp është modul më vete (çdo mesazh ka kosto). Kërkojeni te DrisPRO që ta shtojë në licencën tuaj.",
 } satisfies Dict

@@ -33,7 +33,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { BUSINESS_TYPES, businessTypeLabel } from './business-types'
 import { Label } from '@/components/ui/label'
 import { BackupCard } from './backup-card'
-import { FEATURES, PLAN_FEATURES, PLAN_STORES, type Feature } from '@/lib/plans'
+import { FEATURES, PAID_MODULES, PLAN_FEATURES, PLAN_STORES, type Feature } from '@/lib/plans'
 
 const PLANS = [
   { value: 'basic', label: msg('Basic') },
@@ -520,11 +520,11 @@ function LicenseDialog({ client, onClose }: { client: PlatformClient | null; onC
         <Form {...form}>
           <form onSubmit={submit} className="grid grid-cols-2 gap-3" noValidate>
             <LicenseFields form={form} />
-            {(PLAN_FEATURES[plan] ?? PLAN_FEATURES.pro).length < FEATURES.length && (
+            {(PLAN_FEATURES[plan] ?? PLAN_FEATURES.pro).length < FEATURES.length - PAID_MODULES.length && (
               <fieldset className="col-span-2 grid gap-2 rounded-md border p-3">
                 <legend className="px-1 text-[13px] font-medium">{t('Extra modules for this client')}</legend>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                  {FEATURES.filter((f) => !(PLAN_FEATURES[plan] ?? []).includes(f.key)).map((f) => (
+                  {FEATURES.filter((f) => f.plan !== 'paid' && !(PLAN_FEATURES[plan] ?? []).includes(f.key)).map((f) => (
                     <label key={f.key} className="flex items-center gap-2 text-[13px]">
                       <Checkbox checked={extras.includes(f.key)} onCheckedChange={(on) => setExtras((x) => on ? [...x, f.key] : x.filter((k) => k !== f.key))} />
                       {t(f.label)}
@@ -539,8 +539,18 @@ function LicenseDialog({ client, onClose }: { client: PlatformClient | null; onC
                 placeholder={PLAN_STORES[plan] ? t('The plan\u2019s {n}', { n: PLAN_STORES[plan]! }) : t('No limit')} />
             </div>
             {client && <LicenceCodeCard companyId={client.id} />}
-            {client && <AiReadsCard companyId={client.id} />}
-            {client && <AiReadsCard companyId={client.id} chat />}
+            <fieldset className="col-span-2 grid gap-2 rounded-md border p-3">
+              <legend className="px-1 text-[13px] font-medium">{t('Modules with a cost per use')}</legend>
+              <p className="text-xs text-muted-foreground">{t('In no plan. Turn one on only when the client asked for it and it is in their offer.')}</p>
+              {PAID_MODULES.map((f) => (
+                <label key={f.key} className="flex items-start gap-2 text-[13px]">
+                  <Checkbox className="mt-0.5" checked={extras.includes(f.key)} onCheckedChange={(on) => setExtras((x) => on ? [...x, f.key] : x.filter((k) => k !== f.key))} />
+                  <span>{t(f.label)}<span className="block text-xs text-muted-foreground">{f.cost ? t(f.cost) : null}</span></span>
+                </label>
+              ))}
+            </fieldset>
+            {client && extras.includes('ai_reads') && <AiReadsCard companyId={client.id} />}
+            {client && extras.includes('ai_assistant') && <AiReadsCard companyId={client.id} chat />}
             <FormField control={form.control} name="status" render={({ field }) => (
               <FormItem className="col-span-2 flex items-center justify-between gap-3 space-y-0 rounded-md border p-3">
                 <div>

@@ -211,4 +211,12 @@ export default {
   "Questions to the assistant this month": "Pyetje te asistenti këtë muaj",
   "{n} question": "{n} pyetje",
   "{n} questions": "{n} pyetje",
+  "Modules with a cost per use": "Module me kosto për çdo përdorim",
+  "In no plan. Turn one on only when the client asked for it and it is in their offer.": "Nuk janë në asnjë paketë. Ndizeni vetëm kur klienti e ka kërkuar dhe është në ofertën e tij.",
+  "Supplier invoices read with AI": "Leximi i faturave të furnitorëve me AI",
+  "about 1–3 cents per invoice (Claude)": "rreth 1–3 cent për faturë (Claude)",
+  "The DrisPRO assistant": "Asistenti DrisPRO",
+  "about 1–3 cents per question (Claude)": "rreth 1–3 cent për pyetje (Claude)",
+  "WhatsApp messages": "Mesazhet në WhatsApp",
+  "about 1–5 cents per conversation (Meta)": "rreth 1–5 cent për bisedë (Meta)",
 } satisfies Dict

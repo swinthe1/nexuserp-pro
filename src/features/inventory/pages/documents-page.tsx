@@ -105,7 +105,7 @@ const HREF: Record<DocKind, string> = {
 
 export function DocumentsPage({ kind }: { kind: DocKind }) {
   const navigate = useNavigate()
-  const { company } = useCompany()
+  const { company, hasFeature } = useCompany()
   const docs = useDocuments<Row>(kind)
   const cfg = CONFIG[kind]
   const cur = company?.base_currency ?? ''
@@ -120,7 +120,7 @@ export function DocumentsPage({ kind }: { kind: DocKind }) {
   ], [cfg, cur])
 
   const newButton = <Can perm={cfg.perm}>
-    {kind === 'receipts' && <Button variant="outline" asChild><Link to="/inventory/read-invoice"><ScanText /> {t('Invoice from a photo')}</Link></Button>}
+    {kind === 'receipts' && hasFeature('ai_reads') && <Button variant="outline" asChild><Link to="/inventory/read-invoice"><ScanText /> {t('Invoice from a photo')}</Link></Button>}
     <Button asChild><Link to={`${HREF[kind]}/new`}><Plus /> {t(cfg.newLabel)}</Link></Button></Can>
   return (
     <>

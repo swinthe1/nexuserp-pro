@@ -21,7 +21,7 @@ type Mailbox = { host: string; port: number; security: 'tls' | 'starttls' | 'non
   from_email: string; reply_to: string | null; is_active: boolean; verified_at: string | null; last_error: string | null }
 type Messaging = { summary_hour: number | null; summary_emails: string[]; summary_whatsapp: string[]; dunning_enabled: boolean; dunning_email: boolean
   dunning_whatsapp: boolean; dunning_steps: number[]; dunning_subject: string | null; dunning_text: string | null; po_email_auto: boolean; po_email_text: string | null
-  mailbox: Mailbox | null; whatsapp_ready: boolean }
+  mailbox: Mailbox | null; whatsapp_ready: boolean; whatsapp_module?: boolean }
 type Msg = { id: string; channel: 'email' | 'whatsapp'; to_address: string; subject: string | null; purpose: string; status: string; attempts: number; last_error: string | null; sent_at: string | null; created_at: string }
 
 // sample texts shown in empty fields (the customer-facing texts are Albanian on purpose)
@@ -150,9 +150,10 @@ function SummaryCard({ d, writer }: { d: Messaging; writer: boolean }) {
             <div className="grid gap-1.5"><Label htmlFor="se">{t('Email addresses')}</Label>
               <Input id="se" value={emails} onChange={(e) => setEmails(e.target.value)} placeholder={PH.emails} disabled={!writer} /></div>
           </div>
-          <div className="grid gap-1.5"><Label htmlFor="sw">{t('WhatsApp numbers')}</Label>
+          {d.whatsapp_module ? <div className="grid gap-1.5"><Label htmlFor="sw">{t('WhatsApp numbers')}</Label>
             <Input id="sw" value={phones} onChange={(e) => setPhones(e.target.value)} placeholder={PH.phones} disabled={!writer} />
             {!d.whatsapp_ready && <p className="text-xs text-warning">{t('WhatsApp starts working once the DrisPRO business number is connected; until then only the email goes out.')}</p>}</div>
+            : <WhatsAppOff />}
           {writer && <div className="flex flex-wrap justify-end gap-2">
             <Button variant="outline" loading={now.isPending} onClick={() => now.mutate()}><Send /> {t('Send it now')}</Button>
             <Button loading={save.isPending} onClick={() => save.mutate({ summary_emails: list(emails), summary_whatsapp: list(phones) })}>{t('Save')}</Button>
@@ -161,6 +162,10 @@ function SummaryCard({ d, writer }: { d: Messaging; writer: boolean }) {
       )}
     </AutomationCard>
   )
+}
+
+function WhatsAppOff() {
+  return <p className="text-xs text-muted-foreground">{t('Sending by WhatsApp is a separate module (each message has a cost). Ask DrisPRO to add it to your licence.')}</p>
 }
 
 /* ------------------------------------------------------------------ reminders for overdue invoices */
@@ -182,7 +187,7 @@ function DunningCard({ d, writer }: { d: Messaging; writer: boolean }) {
             <div className="grid gap-1.5"><Label htmlFor="ds">{t('Days after the due date')}</Label>
               <Input id="ds" value={steps} onChange={(e) => setSteps(e.target.value)} placeholder={PH.steps} disabled={!writer} /></div>
             <label className="flex h-10 items-center gap-2 text-sm"><Switch checked={d.dunning_email} disabled={!writer} onCheckedChange={(v) => save.mutate({ dunning_email: v })} /> {t('Email')}</label>
-            <label className="flex h-10 items-center gap-2 text-sm"><Switch checked={d.dunning_whatsapp} disabled={!writer} onCheckedChange={(v) => save.mutate({ dunning_whatsapp: v })} /> {PH.wa}</label>
+            {d.whatsapp_module && <label className="flex h-10 items-center gap-2 text-sm"><Switch checked={d.dunning_whatsapp} disabled={!writer} onCheckedChange={(v) => save.mutate({ dunning_whatsapp: v })} /> {PH.wa}</label>}
           </div>
           <div className="grid gap-1.5"><Label htmlFor="dsub">{t('Subject')}</Label>
             <Input id="dsub" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={PH.subject} disabled={!writer} /></div>

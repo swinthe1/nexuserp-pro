@@ -15,7 +15,9 @@ export function PlanLocked({ path }: { path: string }) {
       <span className="grid size-11 place-items-center rounded-full bg-muted"><Lock className="size-5 text-muted-foreground" /></span>
       <h1 className="text-lg font-semibold">{t('This module is not in your plan')}</h1>
       <p className="text-sm text-muted-foreground">
-        {t('{module} comes with the {plan} plan. {company} is on {current}. Ask your provider to add it.', {
+        {need.length && need.every((f) => f.plan === 'paid')
+          ? t('{module} is a separate module, each use has a cost. Ask your provider to add it to your licence.', { module: need.map((f) => t(f.label)).join(' / ') })
+          : t('{module} comes with the {plan} plan. {company} is on {current}. Ask your provider to add it.', {
           module: need.map((f) => t(f.label)).join(' / '), plan, company: company?.name ?? '',
           current: company?.license?.plan === 'basic' ? t('Basic') : company?.license?.plan === 'standard' ? t('Standard') : t('Pro'),
         })}

@@ -319,4 +319,5 @@ export default {
   "Ask again": "Pyet përsëri",
   "This month’s questions are used up. The assistant starts again on the 1st.": "Pyetjet e këtij muaji mbaruan. Asistenti nis përsëri më 1 të muajit.",
   "Ask something…": "Pyet diçka…",
+  "{module} is a separate module, each use has a cost. Ask your provider to add it to your licence.": "{module} është modul më vete, çdo përdorim ka kosto. Kërkojini furnitorit tuaj ta shtojë në licencë.",
 } satisfies Dict
