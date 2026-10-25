@@ -2,22 +2,27 @@
 // printing straight to the receipt and kitchen printers (no print window), opening the cash drawer of a
 // network printer, starting with Windows, full screen for tills. The application itself comes from the
 // server (always the latest version) and keeps working offline the same way as in the browser.
-const { app, BrowserWindow, ipcMain, shell, Menu, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, shell, Menu, dialog, net: enet } = require('electron')
 const fs = require('fs')
 const net = require('net')
 const path = require('path')
 
 const DEFAULT_SERVER = 'https://erp.dris-ks.com'
+// where licences are checked (our cloud), with its public key (anon role: only the public licence functions)
+const LICENCE_API = 'https://api.erp.dris-ks.com'
+const LICENCE_KEY = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc5Mjg0NTY2MCwiZXhwIjo0OTQ4NTE5MjYwLCJyb2xlIjoiYW5vbiJ9.b6G9lu0yfVwPpWlddYYql4Hf0oelvnyrF-JH_xl3jd0'
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json')
-const defaults = { server: DEFAULT_SERVER, receiptPrinter: '', kitchenPrinter: '', documentPrinter: '', paperWidth: 80, drawer: { mode: 'none', host: '', port: 9100 }, autoStart: false, fullScreen: false, bounds: null }
+const defaults = { licence: '', mode: '', company: '', server: DEFAULT_SERVER, receiptPrinter: '', kitchenPrinter: '', documentPrinter: '', paperWidth: 80, drawer: { mode: 'none', host: '', port: 9100 }, autoStart: false, fullScreen: false, bounds: null }
 function readSettings() {
   try { return { ...defaults, ...JSON.parse(fs.readFileSync(settingsFile(), 'utf8')) } } catch { return { ...defaults } }
 }
 function writeSettings(s) {
   try { fs.mkdirSync(path.dirname(settingsFile()), { recursive: true }); fs.writeFileSync(settingsFile(), JSON.stringify(s, null, 2)) } catch { /* keep going */ }
 }
-let settings
+let settings = readSettings()
 let win
+// a local server on a plain address (http://192.168.x.x) is treated like https, so offline work and the device's ids work there too
+if (/^http:\/\//.test(settings.server)) app.commandLine.appendSwitch('unsafely-treat-insecure-origin-as-secure', new URL(settings.server).origin)
 
 // one window only: a second start brings the first one forward
 if (!app.requestSingleInstanceLock()) app.quit()
@@ -46,7 +51,8 @@ function createWindow() {
   win.webContents.on('did-fail-load', (_e, code, _desc, url, isMain) => {
     if (isMain && code !== -3 && !url.startsWith('file:')) void win.loadFile(path.join(__dirname, 'offline.html'), { query: { server: settings.server } })
   })
-  void win.loadURL(settings.server)
+  if (!settings.licence) void win.loadFile(path.join(__dirname, 'activation.html'))
+  else void win.loadURL(settings.server)
 }
 
 function buildMenu() {
@@ -123,13 +129,59 @@ handle('nexus:set-server', async (url) => {
   try { u = new URL(String(url)); if (!/^https?:$/.test(u.protocol)) throw new Error() } catch { throw new Error('Adresa nuk është e vlefshme') }
   const ok = await dialog.showMessageBox(win, { type: 'question', buttons: ['Po', 'Jo'], defaultId: 0, message: `Të hapet NexusERP nga ${u.origin}?` })
   if (ok.response !== 0) return false
-  settings.server = u.origin; writeSettings(settings); void win.loadURL(settings.server)
+  settings.server = u.origin; writeSettings(settings)
+  if (u.protocol === 'http:') { app.relaunch(); app.exit(0); return true }
+  void win.loadURL(settings.server)
   return true
 })
 handle('nexus:retry', () => { void win.loadURL(settings.server); return true })
 
+/* ------------------------------------------------------------------ licence and where the data lives */
+async function post(url, body, headers = {}) {
+  const r = await enet.fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) })
+  const text = await r.text()
+  let json = null; try { json = JSON.parse(text) } catch { /* not json */ }
+  if (!r.ok) throw new Error(json?.message || text.slice(0, 200) || `HTTP ${r.status}`)
+  return json
+}
+const SERVER_MSG = {
+  'This licence code is not known': 'Ky kod licence nuk njihet. Kontrollojeni dhe provoni përsëri.',
+  'This licence is not active; ask your NexusERP supplier': 'Kjo licencë nuk është aktive; pyesni furnitorin e NexusERP.',
+}
+handle('nexus:activate', async (code) => {
+  const c = String(code ?? '').trim().toUpperCase()
+  if (!/^NXS(-[A-Z0-9]{4}){3}$/.test(c)) throw new Error('Kodi duket kështu: NXS-XXXX-XXXX-XXXX')
+  try { return await post(`${LICENCE_API}/rest/v1/rpc/licence_activate`, { p_code: c }, { apikey: LICENCE_KEY, Authorization: `Bearer ${LICENCE_KEY}` }) }
+  catch (e) { const m = String(e.message); throw new Error(SERVER_MSG[m] ?? (/fetch failed|ENOTFOUND|ECONN|network/i.test(m) ? 'Aktivizimi kërkon internet një herë. Lidhuni dhe provoni përsëri.' : m)) }
+})
+handle('nexus:finish-activation', async (a) => {
+  const lic = await post(`${LICENCE_API}/rest/v1/rpc/licence_activate`, { p_code: a.code }, { apikey: LICENCE_KEY, Authorization: `Bearer ${LICENCE_KEY}` })
+  let server = DEFAULT_SERVER
+  if (a.mode === 'local') {
+    let u
+    try { u = new URL(/^https?:\/\//.test(a.server) ? a.server : `http://${a.server}`) } catch { throw new Error('Shkruani adresën e serverit, p.sh. http://192.168.1.20') }
+    // it must be a NexusERP local server
+    const r = await enet.fetch(`${u.origin}/nexus-config.js`).catch(() => null)
+    const text = r && r.ok ? await r.text() : ''
+    if (!/local:\s*true/.test(text)) throw new Error(`Në ${u.origin} nuk u gjet një server lokal i NexusERP. Kontrolloni adresën dhe që serveri është ndezur.`)
+    server = u.origin
+  } else if (lic.deployment === 'local') throw new Error('Kjo licencë është vetëm për server lokal.')
+  settings = { ...settings, licence: lic.code, mode: a.mode, company: lic.company?.name ?? '', server }
+  writeSettings(settings)
+  // a plain-http local server needs the program to start again once (see the start of this file)
+  if (server.startsWith('http://')) { app.relaunch(); app.exit(0); return true }
+  void win.loadURL(settings.server)
+  return true
+})
+handle('nexus:reactivate', async () => {
+  const ok = await dialog.showMessageBox(win, { type: 'question', buttons: ['Po', 'Jo'], defaultId: 1, message: 'Të ndryshohet licenca ose vendi i të dhënave (Cloud / server lokal)?', detail: 'Të dhënat nuk fshihen; programi thjesht lidhet me serverin që zgjidhni.' })
+  if (ok.response !== 0) return false
+  settings = { ...settings, licence: '' }; writeSettings(settings)
+  void win.loadFile(path.join(__dirname, 'activation.html'))
+  return true
+})
+
 app.whenReady().then(() => {
-  settings = readSettings()
   buildMenu()
   createWindow()
 })

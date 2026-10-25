@@ -142,5 +142,28 @@ select t.throws($$ select public.offline_call(gen_random_uuid(), 'platform_delet
 select t.ok(jsonb_array_length(public.scan_catalog(:'co') -> 'items') >= 2, 'the device gets the items to recognise scans offline');
 reset role;
 
+-- licence codes: the program activates with it; a local server checks it every night and applies it
+set role authenticated;
+select t.login('zoe@platform.io');
+select public.platform_licence_info(:'co') ->> 'code' as lcode \gset
+select t.ok(:'lcode' ~ '^NXS(-[A-Z2-9]{4}){3}$' and public.platform_licence_info(:'co') ->> 'code' = :'lcode', 'a client''s licence gets a code, the same every time');
+reset role;
+set role anon;
+select t.ok(public.licence_activate(lower(:'lcode')) -> 'company' ->> 'name' = 'Kafe Test', 'the program learns whose licence the code is');
+select t.throws($$ select public.licence_activate('NXS-AAAA-BBBB-CCCC') $$, 'not known', 'an unknown code is refused');
+select gen_random_uuid() as srv1, gen_random_uuid() as srv2 \gset
+select public.licence_check(:'lcode', :'srv1', 'http://192.168.1.20', '1.0') as lic \gset
+select t.ok((:'lic'::jsonb ->> 'plan') is not null and (:'lic'::jsonb ->> 'status') = 'active', 'the local server gets its licence');
+select t.throws(format($q$select public.licence_check(%L, %L)$q$, :'lcode', :'srv2'), 'another server', 'a second server cannot use the same code');
+reset role;
+select app.apply_licence(jsonb_set(jsonb_set(:'lic'::jsonb, '{code}', '"NXS-LOCA-LTES-T234"'), '{plan}', '"basic"'), 'zoe@platform.io') as local_co \gset
+select app.apply_licence(jsonb_set(:'lic'::jsonb, '{code}', '"NXS-LOCA-LTES-T234"'), 'zoe@platform.io') as local_co2 \gset
+select t.ok(:'local_co' = :'local_co2' and (select plan from public.licenses where company_id = :'local_co') = (:'lic'::jsonb ->> 'plan')
+            and (select name from public.companies where id = :'local_co') = 'Kafe Test', 'on the local server the company is made once and follows the licence');
+set role authenticated;
+select t.login('zoe@platform.io');
+select t.ok((public.platform_licence_info(:'co', 'local', true) ->> 'local_server')::boolean = false, 'the platform owner can free the code for another server');
+reset role;
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;

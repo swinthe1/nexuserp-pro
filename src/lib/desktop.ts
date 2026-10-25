@@ -1,5 +1,6 @@
 /** The Windows program (desktop/) gives the page a few things a browser cannot: see window.nexusDesktop. */
 export interface DesktopSettings {
+  licence: string; mode: 'cloud' | 'local' | ''; company: string
   server: string; receiptPrinter: string; kitchenPrinter: string; documentPrinter: string; paperWidth: number
   drawer: { mode: 'none' | 'network'; host: string; port: number }; autoStart: boolean; fullScreen: boolean
 }
@@ -12,6 +13,8 @@ export interface NexusDesktop {
   settings: () => Promise<DesktopSettings>
   saveSettings: (s: Partial<DesktopSettings>) => Promise<boolean>
   setServer: (url: string) => Promise<boolean>
+  /** back to the licence page: another licence, or cloud ↔ local server */
+  reactivate?: () => Promise<boolean>
 }
 export type PrintKind = 'receipt' | 'kitchen' | 'document'
 

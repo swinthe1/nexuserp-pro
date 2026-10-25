@@ -1,7 +1,7 @@
 {
   "name": "nexuserp-desktop",
   "productName": "NexusERP",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "NexusERP Pro për Windows: i gjithë aplikacioni, me printim direkt në printerët e kuponëve dhe të kuzhinës.",
   "author": "NexusERP",
   "main": "main.js",
@@ -19,7 +19,7 @@
     "productName": "NexusERP",
     "artifactName": "NexusERP-Setup-${version}.${ext}",
     "directories": { "output": "dist", "buildResources": "build" },
-    "files": ["main.js", "preload.js", "offline.html", "package.json"],
+    "files": ["main.js", "preload.js", "offline.html", "activation.html", "package.json"],
     "win": { "target": ["nsis"], "icon": "build/icon.png" },
     "nsis": {
       "oneClick": false,

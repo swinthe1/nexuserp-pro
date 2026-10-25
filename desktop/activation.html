@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="sq"><head><meta charset="utf-8"><title>Aktivizo NexusERP</title>
+<style>
+  :root { color-scheme: light; --ink: #172033; --mut: #5a6478; --line: #dfe4ee; --brand: #2B59C3; --bad: #b42318; --ok: #067647; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; font: 15px/1.5 "Segoe UI", system-ui, sans-serif; color: var(--ink); background: #f4f6fa; }
+  main { width: min(520px, 92vw); background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 30px; }
+  h1 { margin: 0 0 4px; font-size: 22px; letter-spacing: -0.01em; } p { margin: 0 0 18px; color: var(--mut); }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 14px 0 6px; }
+  input { width: 100%; height: 42px; border: 1px solid #c9d1e0; border-radius: 9px; padding: 0 12px; font: inherit; }
+  input.code { font: 600 18px/1 ui-monospace, Consolas, monospace; letter-spacing: 0.06em; text-transform: uppercase; }
+  .row { display: flex; gap: 8px; margin-top: 18px; justify-content: flex-end; }
+  button { height: 42px; padding: 0 18px; border-radius: 9px; border: 1px solid #c9d1e0; background: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+  button.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+  button:disabled { opacity: .55; cursor: default; }
+  .msg { margin-top: 12px; font-size: 13px; min-height: 1.2em; } .msg.bad { color: var(--bad); } .msg.ok { color: var(--ok); }
+  .who { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 6px; }
+  .who b { display: block; font-size: 16px; }
+  .choices { display: grid; gap: 10px; margin-top: 8px; }
+  .choice { display: flex; gap: 12px; align-items: flex-start; border: 1.5px solid var(--line); border-radius: 12px; padding: 14px; cursor: pointer; }
+  .choice:has(input:checked) { border-color: var(--brand); background: #f3f6fd; }
+  .choice input { width: 18px; height: 18px; margin-top: 3px; }
+  .choice span b { display: block; } .choice span small { color: var(--mut); }
+  .step[hidden] { display: none; }
+</style></head>
+<body><main>
+  <section class="step" id="s1">
+    <h1>Aktivizo NexusERP</h1>
+    <p>Shkruani kodin e licencës që ju ka dhënë furnitori i NexusERP.</p>
+    <label for="code">Kodi i licencës</label>
+    <input id="code" class="code" placeholder="NXS-XXXX-XXXX-XXXX" spellcheck="false" autocomplete="off">
+    <div class="msg" id="m1"></div>
+    <div class="row"><button class="primary" id="check">Vazhdo</button></div>
+  </section>
+
+  <section class="step" id="s2" hidden>
+    <h1>Ku ruhen të dhënat?</h1>
+    <div class="who" id="who"></div>
+    <div class="choices">
+      <label class="choice" id="c-cloud"><input type="radio" name="mode" value="cloud">
+        <span><b>Cloud (serveri i NexusERP)</b><small>Të dhënat ruhen në serverin tonë, me kopje rezervë çdo natë. Punon kudo ku ka internet, dhe pa internet për punën e përditshme.</small></span></label>
+      <label class="choice" id="c-local"><input type="radio" name="mode" value="local">
+        <span><b>Server lokal</b><small>Të dhënat ruhen në serverin e lokalit tuaj. Punon edhe pa internet; licenca kontrollohet një herë në natë.</small></span></label>
+    </div>
+    <div id="local" hidden>
+      <label for="addr">Adresa e serverit lokal</label>
+      <input id="addr" placeholder="http://192.168.1.20" spellcheck="false">
+    </div>
+    <div class="msg" id="m2"></div>
+    <div class="row"><button id="back">Kthehu</button><button class="primary" id="go" disabled>Hap NexusERP</button></div>
+  </section>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id)
+  const clean = (e) => String(e && e.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, '')
+  let lic = null
+  const code = $('code'), addr = $('addr')
+  code.addEventListener('keydown', (e) => { if (e.key === 'Enter') $('check').click() })
+  $('check').onclick = async () => {
+    $('m1').className = 'msg'; $('m1').textContent = 'Po kontrollohet…'; $('check').disabled = true
+    try {
+      lic = await window.nexusDesktop.activate(code.value.trim())
+      const c = lic.company || {}
+      $('who').innerHTML = ''
+      const b = document.createElement('b'); b.textContent = c.name || ''
+      const s = document.createElement('span'); s.textContent = `Paketa ${lic.plan} · deri më ${lic.valid_until}`
+      $('who').append(b, s)
+      $('c-cloud').hidden = lic.deployment === 'local'; $('c-local').hidden = lic.deployment === 'cloud'
+      const only = lic.deployment === 'cloud' ? 'cloud' : lic.deployment === 'local' ? 'local' : null
+      document.querySelectorAll('input[name=mode]').forEach((r) => { r.checked = r.value === only })
+      pick()
+      $('s1').hidden = true; $('s2').hidden = false; $('m1').textContent = ''
+    } catch (e) { $('m1').className = 'msg bad'; $('m1').textContent = clean(e) } finally { $('check').disabled = false }
+  }
+  const mode = () => (document.querySelector('input[name=mode]:checked') || {}).value
+  function pick() { $('local').hidden = mode() !== 'local'; $('go').disabled = !mode() }
+  document.querySelectorAll('input[name=mode]').forEach((r) => r.addEventListener('change', pick))
+  $('back').onclick = () => { $('s2').hidden = true; $('s1').hidden = false }
+  $('go').onclick = async () => {
+    $('m2').className = 'msg'; $('m2').textContent = mode() === 'local' ? 'Po kërkohet serveri…' : ''; $('go').disabled = true
+    try { await window.nexusDesktop.finishActivation({ code: lic.code, mode: mode(), server: addr.value.trim() }) }
+    catch (e) { $('m2').className = 'msg bad'; $('m2').textContent = clean(e); $('go').disabled = false }
+  }
+</script>
+</body></html>

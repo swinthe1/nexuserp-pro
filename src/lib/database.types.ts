@@ -1218,6 +1218,7 @@ export type Database = {
           deleted_by: string | null
           is_training: boolean
           business_type: string
+          licence_code: string | null
         }
         Insert: {
           id?: string
@@ -1248,6 +1249,7 @@ export type Database = {
           deleted_by?: string | null
           is_training?: boolean
           business_type?: string
+          licence_code?: string | null
         }
         Update: {
           id?: string
@@ -1278,6 +1280,7 @@ export type Database = {
           deleted_by?: string | null
           is_training?: boolean
           business_type?: string
+          licence_code?: string | null
         }
         Relationships: [
           { foreignKeyName: "companies_base_currency_fkey"; columns: ["base_currency"]; isOneToOne: false; referencedRelation: "currencies"; referencedColumns: ["code"] },
@@ -4225,6 +4228,12 @@ export type Database = {
           updated_by: string | null
           extra_features: string[]
           max_warehouses: number | null
+          code: string | null
+          deployment: string
+          local_server_id: string | null
+          local_seen_at: string | null
+          local_url: string | null
+          local_version: string | null
         }
         Insert: {
           company_id: string
@@ -4239,6 +4248,12 @@ export type Database = {
           updated_by?: string | null
           extra_features?: string[]
           max_warehouses?: number | null
+          code?: string | null
+          deployment?: string
+          local_server_id?: string | null
+          local_seen_at?: string | null
+          local_url?: string | null
+          local_version?: string | null
         }
         Update: {
           company_id?: string
@@ -4253,6 +4268,12 @@ export type Database = {
           updated_by?: string | null
           extra_features?: string[]
           max_warehouses?: number | null
+          code?: string | null
+          deployment?: string
+          local_server_id?: string | null
+          local_seen_at?: string | null
+          local_url?: string | null
+          local_version?: string | null
         }
         Relationships: [
           { foreignKeyName: "licenses_company_id_fkey"; columns: ["company_id"]; isOneToOne: true; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -11371,6 +11392,21 @@ export type Database = {
         }
         Returns: { employee_id: string | null; employee: string | null; leave_type_id: string | null; leave_type: string | null; entitlement: number | null; taken: number | null; pending: number | null; remaining: number | null }[]
       }
+      licence_activate: {
+        Args: {
+          p_code: string
+        }
+        Returns: Json
+      }
+      licence_check: {
+        Args: {
+          p_code: string
+          p_server: string
+          p_url?: string
+          p_version?: string
+        }
+        Returns: Json
+      }
       link_channel_products: {
         Args: {
           p_channel: string
@@ -11607,6 +11643,14 @@ export type Database = {
           p_company: string
           p_confirm_name: string
           p_delete_users?: boolean
+        }
+        Returns: Json
+      }
+      platform_licence_info: {
+        Args: {
+          p_company: string
+          p_deployment?: string
+          p_free_server?: boolean
         }
         Returns: Json
       }

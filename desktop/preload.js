@@ -11,4 +11,8 @@ contextBridge.exposeInMainWorld('nexusDesktop', {
   saveSettings: (s) => ipcRenderer.invoke('nexus:save-settings', s),
   setServer: (url) => ipcRenderer.invoke('nexus:set-server', url),
   retry: () => ipcRenderer.invoke('nexus:retry'),
+  /** licence code → whose it is, plan, cloud/local allowed */
+  activate: (code) => ipcRenderer.invoke('nexus:activate', code),
+  finishActivation: (a) => ipcRenderer.invoke('nexus:finish-activation', a),
+  reactivate: () => ipcRenderer.invoke('nexus:reactivate'),
 })

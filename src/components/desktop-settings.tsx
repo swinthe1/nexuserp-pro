@@ -89,6 +89,13 @@ export function DesktopSettingsDialog({ open, onOpenChange }: { open: boolean; o
             <label className="flex items-center justify-between gap-3 text-[13px]"><span><span className="font-medium">{t('Full screen')}</span>
               <span className="block text-xs text-muted-foreground">{t('For tills and kitchen screens. F11 switches it any time.')}</span></span>
               <Switch checked={s.fullScreen} onCheckedChange={(v) => set({ fullScreen: v })} /></label>
+            {s.licence && (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3 text-[13px]">
+                <span><span className="font-medium">{s.company || t('Licence')}</span>
+                  <span className="block font-mono text-xs text-muted-foreground">{s.licence} · {s.mode === 'local' ? t('Local server') : t('Cloud')}</span></span>
+                {desktop.reactivate && <Button variant="outline" size="sm" onClick={() => void desktop!.reactivate!()}>{t('Change licence or server')}</Button>}
+              </div>
+            )}
             <div className="grid gap-1.5">
               <Label htmlFor="ds-server">{t('Server address')}</Label>
               <div className="flex gap-2">

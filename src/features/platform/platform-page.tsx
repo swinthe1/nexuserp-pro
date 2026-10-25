@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowDownToLine, ArrowRight, Cable, Copy, Download, GraduationCap, KeyRound, LogOut, MoreHorizontal, Plus, Search, ServerCog, Shapes, Trash2 } from 'lucide-react'
 import * as React from 'react'
+import { supabase, supabaseAnonKey, supabaseUrl } from '@/lib/supabase'
 import { useForm } from 'react-hook-form'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { AgentLogSheet } from '@/features/settings/components/agent-log'
@@ -529,6 +530,7 @@ function LicenseDialog({ client, onClose }: { client: PlatformClient | null; onC
               <Input id="max-stores" type="number" min={1} step={1} className="tabular" value={maxStores} onChange={(e) => setMaxStores(e.target.value)}
                 placeholder={PLAN_STORES[plan] ? t('The plan\u2019s {n}', { n: PLAN_STORES[plan]! }) : t('No limit')} />
             </div>
+            {client && <LicenceCodeCard companyId={client.id} />}
             <FormField control={form.control} name="status" render={({ field }) => (
               <FormItem className="col-span-2 flex items-center justify-between gap-3 space-y-0 rounded-md border p-3">
                 <div>
@@ -546,6 +548,49 @@ function LicenseDialog({ client, onClose }: { client: PlatformClient | null; onC
         </Form>
       </DialogContent>
     </Dialog>
+  )
+}
+
+/* ------------------------------------------------------------------ licence code: the program activates with it, cloud or local server */
+type LicenceInfo = { code: string; deployment: 'any' | 'cloud' | 'local'; local_server: boolean; local_seen_at: string | null; local_url: string | null; local_version: string | null }
+function LicenceCodeCard({ companyId }: { companyId: string }) {
+  const [info, setInfo] = React.useState<LicenceInfo | null>(null)
+  const [busy, setBusy] = React.useState(false)
+  const call = React.useCallback(async (deployment?: string, free = false) => {
+    setBusy(true)
+    try {
+      const { data, error } = await supabase.rpc('platform_licence_info', { p_company: companyId, p_deployment: deployment, p_free_server: free })
+      if (error) throw error
+      setInfo(data as unknown as LicenceInfo)
+    } catch (e) { toast.error(describeError(e)) } finally { setBusy(false) }
+  }, [companyId])
+  React.useEffect(() => { void call() }, [call])
+  return (
+    <div className="col-span-2 grid gap-2 rounded-md border p-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[13px] font-medium">{t('Licence code')}</span>
+        {info && <button type="button" className="text-xs text-primary hover:underline" onClick={() => { void navigator.clipboard?.writeText(info.code); toast.success(t('Code copied')) }}>{t('Copy')}</button>}
+      </div>
+      <div className="font-mono text-lg font-semibold tracking-wider">{info?.code ?? '…'}</div>
+      <p className="text-xs text-muted-foreground">{t('The client types it when the NexusERP program starts the first time, and chooses where the data lives.')}</p>
+      <div className="grid gap-1.5">
+        <Label>{t('Where it may run')}</Label>
+        <Select value={info?.deployment ?? 'any'} disabled={!info || busy} onValueChange={(v) => void call(v)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="any">{t('Cloud or local server (the client chooses)')}</SelectItem>
+            <SelectItem value="cloud">{t('Cloud only')}</SelectItem>
+            <SelectItem value="local">{t('Local server only')}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      {info?.local_server && (
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span>{t('Local server {url}, last check {time}', { url: info.local_url ?? '', time: info.local_seen_at ? formatDate(info.local_seen_at, true) : '—' })}{info.local_version ? ` · v${info.local_version}` : ''}</span>
+          <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => { if (confirm(t('Free the code? The current local server stops getting its licence; a new server can use the code.'))) void call(undefined, true) }}>{t('Move to another server')}</Button>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -640,7 +685,7 @@ function LiveLinkDialog({ client, onClose }: { client: PlatformClient | null; on
     try {
       const r = await createKey.mutateAsync({ company: client.id, name })
       setConfig(JSON.stringify({
-        url: import.meta.env.VITE_SUPABASE_URL, anon_key: import.meta.env.VITE_SUPABASE_ANON_KEY, sync_key: r.key,
+        url: supabaseUrl, anon_key: supabaseAnonKey, sync_key: r.key,
         server: '', database: '', main_price_list: '', interval_seconds: 5, active_years: 2,
       }, null, 2))
     } catch (e) { toast.error(describeError(e)) }
