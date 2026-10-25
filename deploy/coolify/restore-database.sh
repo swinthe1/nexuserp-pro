@@ -17,16 +17,59 @@ echo "Everything entered after that copy was made will be lost."
 read -r -p "Type RESTORE to continue: " answer
 [ "$answer" = "RESTORE" ] || { echo "Stopped, nothing changed."; exit 1; }
 
-safety="$(dirname "$file")/drispro-$(date +%Y-%m-%d_%H%M)-before-restore.dump"
+safety="$(dirname "$file")/drispro-$(date +%Y-%m-%d_%H%M%S)-before-restore.dump"
 echo "==> first a copy of the current state: $safety"
 docker exec -e PGPASSWORD="$pass" "$container" pg_dump -h 127.0.0.1 -U "$user" -d postgres -Fc --no-owner --no-privileges \
   --exclude-schema=_analytics --exclude-schema=_realtime --exclude-schema=supabase_functions > "$safety"
 
+# what talks to the database stops while the copy goes in (it would hold locks on the tables), and starts after
+users="$(docker ps --format '{{.Names}}' | grep -E '^(drispro-(rest|auth|storage|postier|web)|realtime-dev\..*|supabase-(rest|auth|storage|realtime|meta|analytics|kong)(-.*)?)$' || true)"
+[ -n "$users" ] && docker stop $users >/dev/null
+trap '[ -n "$users" ] && docker start $users >/dev/null' EXIT
+docker exec -e PGPASSWORD="$pass" "$container" psql -h 127.0.0.1 -U "$user" -d postgres -q -tAc \
+  "select pg_terminate_backend(pid) from pg_stat_activity where datname = 'postgres' and pid <> pg_backend_pid() and backend_type = 'client backend'" >/dev/null || true
+
 echo "==> restoring"
 docker exec -e PGPASSWORD="$pass" "$container" psql -h 127.0.0.1 -U "$user" -d postgres -q -c "create schema if not exists extensions; create extension if not exists pgcrypto with schema extensions; create extension if not exists pg_trgm with schema extensions; create extension if not exists btree_gist with schema extensions; create schema if not exists app; create schema if not exists drispro_meta;"
+# an older copy has fewer tables than this database: whatever came with a newer version is removed
+# first, or it would hold on to the tables being replaced (the updates bring it back afterwards)
+toc="$(docker exec -i "$container" pg_restore -l < "$file")"
+# a copy made under the older name (NexusERP) keeps its bookkeeping in its own schema: it needs to exist
+grep -q " SCHEMA - nexus""_meta " <<<"$toc" && docker exec -e PGPASSWORD="$pass" "$container" psql -h 127.0.0.1 -U "$user" -d postgres -q -c "create schema if not exists nexus""_meta"
+keep="$(printf '%s\n' "$toc" | sed -nE 's/^[0-9]+; [0-9]+ [0-9]+ (TABLE|VIEW|SEQUENCE|TYPE|FUNCTION|MATERIALIZED VIEW) ([^ ]+) ([^ (]+).*/\2.\3/p' | sort -u)"
+docker exec -i -e PGPASSWORD="$pass" "$container" psql -h 127.0.0.1 -U "$user" -d postgres -q -v ON_ERROR_STOP=1 -v keep="$keep" >/dev/null <<'SQL'
+select set_config('restore.keep', :'keep', false);
+do $$
+declare k text[] := string_to_array(current_setting('restore.keep'), E'\n'); r record; n int := 0;
+begin
+  for r in select c.oid::regclass as obj, c.relkind as kind from pg_class c join pg_namespace s on s.oid = c.relnamespace
+            where s.nspname in ('public', 'app') and c.relkind in ('r', 'p', 'v', 'm')
+              and not exists (select 1 from pg_depend d where d.objid = c.oid and d.deptype = 'e')
+              and not (s.nspname || '.' || c.relname = any (k)) loop
+    begin
+      execute format('drop %s if exists %s cascade', case r.kind when 'v' then 'view' when 'm' then 'materialized view' else 'table' end, r.obj); n := n + 1;
+    exception when undefined_table then null; end;
+  end loop;
+  for r in select p.oid::regprocedure as f from pg_proc p join pg_namespace s on s.oid = p.pronamespace
+            where s.nspname in ('public', 'app') and p.prokind in ('f', 'p')
+              and not exists (select 1 from pg_depend d where d.objid = p.oid and d.deptype = 'e')
+              and not (s.nspname || '.' || p.proname = any (k)) loop
+    begin execute format('drop routine if exists %s cascade', r.f); exception when undefined_function then null; end;
+  end loop;
+  if n > 0 then raise notice 'removed % tables of a newer version', n; end if;
+end $$;
+SQL
 keep_acl=(--no-owner --no-privileges); [ "$user" = supabase_admin ] && keep_acl=()
-docker exec -i -e PGPASSWORD="$pass" "$container" pg_restore -h 127.0.0.1 -U "$user" -d postgres --clean --if-exists "${keep_acl[@]}" \
-  --schema=public --schema=app --schema=auth --schema=storage --schema=drispro_meta --schema=nexus_meta --single-transaction < "$file"
+restore() {
+  docker exec -i -e PGPASSWORD="$pass" "$container" pg_restore -h 127.0.0.1 -U "$user" -d postgres --clean --if-exists "${keep_acl[@]}" \
+    --schema=public --schema=app --schema=auth --schema=storage --schema=drispro_meta --schema=nexus_meta --single-transaction < "$1"
+}
+if ! restore "$file"; then
+  # nothing of the copy was written; what the clearing above took away comes back from the copy made a moment ago
+  echo "!!  the copy could not be put back; the state from before is restored from $safety" >&2
+  restore "$safety" || echo "!!  also that failed: send these lines to the developer" >&2
+  exit 1
+fi
 # sign-in and file storage must own their tables again (an older copy made without owners leaves them to the restorer)
 docker exec -i -e PGPASSWORD="$pass" "$container" psql -h 127.0.0.1 -U "$user" -d postgres -q -v ON_ERROR_STOP=0 >/dev/null 2>&1 <<'SQL' || true
 do $$
@@ -92,5 +135,11 @@ begin
   end if;
 end $$;
 SQL
+# the copy may come from an older version: the updates of this one are applied on top
+here="$(cd "$(dirname "$0")" && pwd)"
+if [ -f "$here/setup-database.sh" ]; then
+  echo "==> bringing the copy up to this version"
+  ( cd "$here/../.." && NO_DEMO=1 bash "$here/setup-database.sh" "$container" | grep -v '^   skip' )
+fi
 docker exec -e PGPASSWORD="$pass" "$container" psql -h 127.0.0.1 -U "$user" -d postgres -c "notify pgrst, 'reload schema';" >/dev/null || true
-echo "==> done. Restart sign-in and the API (or Redeploy in Coolify) and sign in again."
+echo "==> done. The services start again now; sign in again."
