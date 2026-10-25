@@ -583,7 +583,6 @@ export default {
   "There is nothing to match this line with any more": "Nuk ka më asgjë për ta lidhur këtë rresht",
   "The file is empty": "Skedari është bosh",
   "The file is larger than 8 MB; take the photo again at a lower size": "Skedari është më i madh se 8 MB; bëni sërish foton me madhësi më të vogël",
-  "The warehouse has no location to receive into": "Magazina nuk ka vend ku të pranohet malli",
   "A receipt was already made from this invoice": "Nga kjo faturë është bërë tashmë një pranim",
   "Choose the item for at least one line": "Zgjidhni artikullin të paktën për një rresht",
   "This licence has read 500 invoices this month": "Kjo licencë ka lexuar 500 fatura këtë muaj",

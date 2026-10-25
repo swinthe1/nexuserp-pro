@@ -627,4 +627,6 @@ export default {
   "not found; choose it or add the vendor first": "nuk u gjet; zgjidheni ose shtoni fillimisht furnitorin",
   "our code": "kodi ynë",
   "vendor’s code": "kodi i furnitorit",
+  "This month’s {n} invoices are used up; reading starts again on the 1st. Receive goods by hand meanwhile.": "Faturat e këtij muaji ({n}) mbaruan; leximi nis sërish më 1 të muajit. Deri atëherë pranoni mallin me dorë.",
+  "{used} of {limit} invoices read this month": "{used} nga {limit} fatura të lexuara këtë muaj",
 } satisfies Dict

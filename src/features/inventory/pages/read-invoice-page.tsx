@@ -52,9 +52,12 @@ export function ReadInvoicePage() {
       const f = await shrink(file)
       return unwrap(await supabase.rpc('doc_read_submit', { p_company: companyId!, p_file: f.data, p_mime: f.mime, p_name: file.name })) as string
     },
-    onSuccess: (newId) => { setParams({ id: newId }); void qc.invalidateQueries({ queryKey: ['doc-reads', companyId] }) },
+    onSuccess: (newId) => { setParams({ id: newId }); void qc.invalidateQueries({ queryKey: ['doc-reads', companyId] }); void qc.invalidateQueries({ queryKey: ['ai-usage', companyId] }) },
     onError: (e) => toast.error(describeError(e)),
   })
+  const usage = useQuery({ queryKey: ['ai-usage', companyId], enabled: !!companyId,
+    queryFn: async () => unwrap(await supabase.rpc('ai_reads_usage', { p_company: companyId! })) as unknown as { used: number; limit: number } })
+  const full = !!usage.data && usage.data.used >= usage.data.limit
   const pick = (capture: boolean) => {
     const inp = document.createElement('input')
     inp.type = 'file'; inp.accept = 'image/*,application/pdf'
@@ -70,10 +73,13 @@ export function ReadInvoicePage() {
         <CardContent className="flex flex-col items-center gap-3 p-6 text-center sm:flex-row sm:text-left">
           <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><ScanText className="size-6" /></span>
           <div className="flex-1"><div className="font-medium">{t('A new invoice')}</div>
-            <div className="text-[13px] text-muted-foreground">{t('The whole page in the photo, flat and with light. A PDF from the vendor is read best.')}</div></div>
+            <div className="text-[13px] text-muted-foreground">{t('The whole page in the photo, flat and with light. A PDF from the vendor is read best.')}</div>
+            {usage.data && <div className={cn('mt-1 text-xs', full ? 'font-medium text-destructive' : 'text-muted-foreground')}>
+              {full ? t('This month\u2019s {n} invoices are used up; reading starts again on the 1st. Receive goods by hand meanwhile.', { n: usage.data.limit })
+                : t('{used} of {limit} invoices read this month', { used: usage.data.used, limit: usage.data.limit })}</div>}</div>
           <div className="flex flex-wrap justify-center gap-2">
-            <Button size="lg" loading={send.isPending} onClick={() => pick(true)}><Camera /> {t('Take a photo')}</Button>
-            <Button size="lg" variant="outline" disabled={send.isPending} onClick={() => pick(false)}><FileText /> {t('Choose a file')}</Button>
+            <Button size="lg" loading={send.isPending} disabled={full} onClick={() => pick(true)}><Camera /> {t('Take a photo')}</Button>
+            <Button size="lg" variant="outline" disabled={send.isPending || full} onClick={() => pick(false)}><FileText /> {t('Choose a file')}</Button>
           </div>
         </CardContent>
       </Card>

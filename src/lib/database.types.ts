@@ -4298,6 +4298,7 @@ export type Database = {
           local_url: string | null
           local_version: string | null
           backup_key: string | null
+          ai_reads_limit: number | null
         }
         Insert: {
           company_id: string
@@ -4319,6 +4320,7 @@ export type Database = {
           local_url?: string | null
           local_version?: string | null
           backup_key?: string | null
+          ai_reads_limit?: number | null
         }
         Update: {
           company_id?: string
@@ -4340,6 +4342,7 @@ export type Database = {
           local_url?: string | null
           local_version?: string | null
           backup_key?: string | null
+          ai_reads_limit?: number | null
         }
         Relationships: [
           { foreignKeyName: "licenses_company_id_fkey"; columns: ["company_id"]; isOneToOne: true; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -11027,6 +11030,12 @@ export type Database = {
         }
         Returns: string
       }
+      ai_reads_usage: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       approve_payroll: {
         Args: {
           p_run: string
@@ -12020,6 +12029,12 @@ export type Database = {
         }
         Returns: { line_no: number | null; employee_id: string | null; personal_number: string | null; last_name: string | null; first_name: string | null; job_title: string | null; department: string | null; paid_days: number | null; gross: number | null; contribution_base: number | null; ss_employee: number | null; health_employee: number | null; ss_employer: number | null; health_employer: number | null; taxable: number | null; income_tax: number | null; net: number | null; employer_cost: number | null; iban: string | null }[]
       }
+      platform_ai_usage: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       platform_backup_status: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -12065,6 +12080,13 @@ export type Database = {
           p_valid_until: string
           p_status: string
           p_notes?: string
+        }
+        Returns: undefined
+      }
+      platform_set_ai_limit: {
+        Args: {
+          p_company: string
+          p_limit: number
         }
         Returns: undefined
       }

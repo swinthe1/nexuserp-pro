@@ -24,7 +24,9 @@ Pastaj "Dërgo një email prove". Kur del "Punon", gjithçka tjetër del nga ky 
        bash /root/nexuserp-pro/deploy/coolify/update.sh --ai
      ngjitni çelësin (nuk shfaqet në ekran). Mbaron.
   Serverët lokalë nuk kanë nevojë për çelës: fatura u kalon përmes cloud-it me licencën.
-  Kufiri: 500 fatura në muaj për licencë.
+  Kufiri në muaj sipas paketës: Provë 30, Basic 100, Standard 300, Pro 1000 fatura.
+  Për një klient të veçantë: Platforma → licenca e klientit → "Një kufi tjetër mujor".
+  Aty shihni edhe sa ka lexuar çdo muaj dhe sa ka kushtuar.
 
 
 3. WhatsApp (një herë, te Meta)

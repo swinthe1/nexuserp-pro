@@ -205,4 +205,7 @@ export default {
   "Last copy in the cloud: {time} ({size})": "Kopja e fundit në cloud: {time} ({size})",
   "No copy in the cloud yet": "Ende asnjë kopje në cloud",
   "{count} copies kept": "{count} kopje të ruajtura",
+  "Another monthly limit for this client": "Një kufi tjetër mujor për këtë klient",
+  "Invoices read with AI this month": "Fatura të lexuara me AI këtë muaj",
+  "{n} not read": "{n} të palexuara",
 } satisfies Dict

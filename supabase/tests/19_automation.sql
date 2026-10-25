@@ -274,6 +274,18 @@ select public.licence_read_submit(:'alcode', :'asrv', encode(decode(repeat('dd',
 \endif
 reset role;
 
+-- ---------- how many invoices a company may read each month ------------------------------------
+set role authenticated;
+select t.login('ana@auto.xk');
+select t.ok((public.ai_reads_usage(:'aco') ->> 'limit')::int = 300 and (public.ai_reads_usage(:'aco') ->> 'used')::int >= 2, 'the Standard plan reads 300 invoices a month; the month''s reads are counted');
+select t.login('zoe@platform.io');
+select public.platform_set_ai_limit(:'aco', (public.ai_reads_usage(:'aco') ->> 'used')::int);
+select t.ok((public.platform_ai_usage(:'aco') ->> 'override')::int is not null and jsonb_array_length(public.platform_ai_usage(:'aco') -> 'months') >= 1
+            and (public.platform_ai_usage(:'aco') -> 'months' -> 0 ->> 'cost_usd') is not null, 'the platform owner sees the reads and their cost per month, and can give another limit');
+select t.login('ana@auto.xk');
+select t.throws(format($q$select public.doc_read_submit(%L, %L, 'image/jpeg')$q$, :'aco', encode(decode(repeat('ab', 600), 'hex'), 'base64')), 'limit of its plan', 'past the limit, no more reading this month');
+reset role;
+
 select t.ok(exists (select 1 from app.document_reads where id = :'lr' and relay_licence = :'alcode'), 'a local server hands its invoice to the cloud with its licence');
 update public.licenses set local_server_id = null where company_id = :'aco';
 \set QUIET off
