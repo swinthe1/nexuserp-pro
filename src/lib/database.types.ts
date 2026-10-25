@@ -578,6 +578,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           journal_entry_id: string | null
+          suggestion: Json | null
         }
         Insert: {
           id?: string
@@ -599,6 +600,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           journal_entry_id?: string | null
+          suggestion?: Json | null
         }
         Update: {
           id?: string
@@ -620,6 +622,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           journal_entry_id?: string | null
+          suggestion?: Json | null
         }
         Relationships: [
           { foreignKeyName: "bank_statement_lines_company_id_journal_entry_id_fkey"; columns: ["company_id", "journal_entry_id"]; isOneToOne: false; referencedRelation: "journal_entries"; referencedColumns: ["company_id", "id"] },
@@ -895,6 +898,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           default_discount_pct: number
+          bank_iban: string | null
         }
         Insert: {
           id?: string
@@ -927,6 +931,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           default_discount_pct?: number
+          bank_iban?: string | null
         }
         Update: {
           id?: string
@@ -959,6 +964,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           default_discount_pct?: number
+          bank_iban?: string | null
         }
         Relationships: [
           { foreignKeyName: "business_partners_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -10993,6 +10999,12 @@ export type Database = {
       }
     }
     Functions: {
+      accept_statement_suggestion: {
+        Args: {
+          p_line: string
+        }
+        Returns: string
+      }
       account_balances: {
         Args: {
           p_company: string
@@ -11441,6 +11453,12 @@ export type Database = {
       delete_import_template: {
         Args: {
           p_id: string
+        }
+        Returns: undefined
+      }
+      dismiss_statement_suggestion: {
+        Args: {
+          p_line: string
         }
         Returns: undefined
       }
@@ -12626,6 +12644,12 @@ export type Database = {
           p_shipments: string[]
           p_bank_account: string
           p_date?: string
+        }
+        Returns: Json
+      }
+      settle_statement: {
+        Args: {
+          p_statement: string
         }
         Returns: Json
       }

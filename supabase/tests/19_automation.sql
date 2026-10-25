@@ -201,5 +201,37 @@ select t.ok((:'relayed'::jsonb ->> 'accepted')::int = 1 and exists (select 1 fro
   'a local server''s WhatsApp messages wait in the cloud outbox (wrong numbers are left out)');
 update public.licenses set local_server_id = null where company_id = :'aco';
 
+-- ---------- bank statements that settle invoices ------------------------------------------
+set role authenticated;
+select t.login('ana@auto.xk');
+select id as abank from public.bank_accounts where company_id = :'aco' and account_kind = 'bank' limit 1 \gset
+\if :{?abank}
+\else
+insert into public.bank_accounts (company_id, name, account_kind, currency_code, account_id)
+  values (:'aco', 'Banka Test', 'bank', :'acur', (select id from public.accounts where company_id = :'aco' and code = '5121')) returning id as abank \gset
+\endif
+-- two open invoices of the tenant (the recurring ones above): one paid by number, the next by the remembered account
+select i.id as inv1, i.number as inv1_no, i.amount_due as inv1_amt from public.sales_invoices i where i.company_id = :'aco' and i.status = 'posted' and i.payment_status <> 'paid' order by i.invoice_date limit 1 \gset
+select i.id as inv2, i.amount_due as inv2_amt from public.sales_invoices i where i.company_id = :'aco' and i.status = 'posted' and i.payment_status <> 'paid' and i.id <> :'inv1' order by i.invoice_date limit 1 \gset
+insert into public.bank_statements (company_id, bank_account_id, statement_date, opening_balance, closing_balance) values (:'aco', :'abank', current_date, 0, 0) returning id as stm \gset
+insert into public.bank_statement_lines (company_id, statement_id, transaction_date, description, amount, counterparty_name, counterparty_iban) values
+  (:'aco', :'stm', current_date, 'Pagesa e qirasë sipas ' || replace(:'inv1_no', '-', ' '), :'inv1_amt', 'QIRAMARRESI', 'XK05 1212 0123 4567 8906'),
+  (:'aco', :'stm', current_date, 'Qiraja', :'inv2_amt', 'Dikush', 'XK051212012345678906'),
+  (:'aco', :'stm', current_date, 'Pagese', 7777.77, 'Askush', null);
+select public.settle_statement(:'stm') as st1 \gset
+select t.ok((:'st1'::jsonb ->> 'settled')::int = 2 and (select payment_status = 'paid' from public.sales_invoices where id = :'inv1') and (select payment_status = 'paid' from public.sales_invoices where id = :'inv2'),
+  'money in with the invoice number pays that invoice; the account it came from is remembered and pays the next one');
+select t.ok((select bank_iban = 'XK051212012345678906' from public.business_partners where id = :'acust'), 'the customer''s account is kept for next time');
+select t.ok((select match_status = 'unmatched' and suggestion is null from public.bank_statement_lines where statement_id = :'stm' and amount = 7777.77), 'money that fits nothing is left to the person');
+select i.id as inv3, i.amount_due as inv3_amt from public.sales_invoices i where i.company_id = :'aco' and i.status = 'posted' and i.payment_status <> 'paid' order by i.invoice_date limit 1 \gset
+insert into public.bank_statement_lines (company_id, statement_id, transaction_date, description, amount, counterparty_name) values
+  (:'aco', :'stm', current_date, 'Transfer', :'inv3_amt', 'Qiramarresi sh.p.k.') returning id as sline \gset
+select public.settle_statement(:'stm') as st2 \gset
+select t.ok((select suggestion ->> 'reason' = 'name' and match_status = 'unmatched' from public.bank_statement_lines where id = :'sline'), 'a name that looks like the customer''s, with a fitting amount, waits as a suggestion');
+select public.accept_statement_suggestion(:'sline');
+select t.ok((select match_status = 'matched' and matched_payment_id is not null from public.bank_statement_lines where id = :'sline') and (select payment_status = 'paid' from public.sales_invoices where id = :'inv3'),
+  'accepting it records the payment and settles the invoice');
+reset role;
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;

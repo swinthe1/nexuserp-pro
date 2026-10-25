@@ -580,4 +580,5 @@ export default {
   "The mail server does not offer STARTTLS; choose SSL/TLS or \"none\"": "Serveri i email-it nuk ofron STARTTLS; zgjidhni SSL/TLS ose \"Asnjë\"",
   "The mail server did not answer in time": "Serveri i email-it nuk u përgjigj në kohë",
   "This server has no licence yet": "Ky server ende nuk ka licencë",
+  "There is nothing to match this line with any more": "Nuk ka më asgjë për ta lidhur këtë rresht",
 } satisfies Dict

@@ -26,8 +26,9 @@ import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { t, td, tn, tServer } from '@/i18n'
 import { cn, formatDate, formatMoney, humanize, num, todayISO } from '@/lib/utils'
 import { usePartners } from '@/features/sales/api'
+import { type BankFile, readBankFile } from '../bank-formats'
 import {
-  finKeys, useAccountBalances, useAccountDefaults, useAccounts, useAutoMatch, useBankAccounts, useBookStatementLine, useCreateStatement, useJournals, useMatchCandidates,
+  finKeys, useAcceptSuggestion, useAccountBalances, useAccountDefaults, useAccounts, useAutoMatch, useDismissSuggestion, useBankAccounts, useBookStatementLine, useCreateStatement, useJournals, useMatchCandidates,
   useReconcileStatement, useSaveBankAccount, useStatement, useStatements, useUpdateStatementLine, type StatementLine, type StatementRow,
 } from '../api'
 
@@ -192,14 +193,34 @@ function ImportStatementDialog({ bankId, banks, lastClosing, onClose, onCreated 
   bankId: string | null; banks: BankAccount[]; lastClosing: (id: string) => number | undefined; onClose: () => void; onCreated: (id: string) => void
 }) {
   const create = useCreateStatement()
+  const auto = useAutoMatch()
   const [bank, setBank] = React.useState<string>(bankId ?? banks.find((b) => b.account_kind === 'bank')?.id ?? banks[0]?.id ?? '')
   const [date, setDate] = React.useState(todayISO())
   const [reference, setReference] = React.useState('')
   const [opening, setOpening] = React.useState(() => String(lastClosing(bank) ?? 0))
   const [text, setText] = React.useState('')
-  const parsed = React.useMemo(() => parseStatement(text), [text])
+  const [file, setFile] = React.useState<(BankFile & { name: string }) | null>(null)
+  const [fileError, setFileError] = React.useState<string | null>(null)
+  const typed = React.useMemo(() => parseStatement(text), [text])
+  const parsed = file ?? typed
   const sum = parsed.lines.reduce((s, l) => s + l.amount, 0)
-  const closing = Math.round((num(opening) + sum) * 100) / 100
+  const closing = file?.closing ?? Math.round((num(opening) + sum) * 100) / 100
+  const onFile = async (f: File | undefined) => {
+    if (!f) return
+    setFileError(null)
+    try {
+      const r = await readBankFile(f)
+      if (!r.lines.length) { setFile(null); setFileError(t('No transactions found in {name}. Export the statement from e-banking as XML (CAMT.053), MT940, Excel or CSV.', { name: f.name })); return }
+      setFile({ ...r, name: f.name })
+      // the account of the statement, by its IBAN
+      const clean = (x: string | null | undefined) => (x ?? '').replace(/\s/g, '').toUpperCase()
+      const own = r.iban && banks.find((b) => clean(b.iban) === clean(r.iban))
+      if (own) setBank(own.id)
+      if (r.opening != null) setTimeout(() => setOpening(String(r.opening)), 0)
+      if (r.date) setDate(r.date)
+      if (r.reference) setReference(r.reference)
+    } catch (e) { setFile(null); setFileError(describeError(e)) }
+  }
   React.useEffect(() => { setOpening(String(lastClosing(bank) ?? 0)) }, [bank]) // eslint-disable-line react-hooks/exhaustive-deps
   React.useEffect(() => { const last = parsed.lines.at(-1)?.transaction_date; if (last) setDate(parsed.lines.reduce((m, l) => (l.transaction_date > m ? l.transaction_date : m), last)) }, [parsed.lines])
   return (
@@ -214,18 +235,31 @@ function ImportStatementDialog({ bankId, banks, lastClosing, onClose, onCreated 
           <div className="grid gap-1.5"><Label htmlFor="st-date">{t('Statement date')}</Label><Input id="st-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
           <div className="grid gap-1.5"><Label htmlFor="st-ref">{t('Reference')}</Label><Input id="st-ref" value={reference} onChange={(e) => setReference(e.target.value)} placeholder={t('No. 10/2026')} /></div>
         </div>
-        <Textarea rows={8} className="font-mono text-xs" value={text} onChange={(e) => setText(e.target.value)} placeholder={SAMPLE} aria-label={t('Statement rows')} />
+        <div className="grid gap-2 rounded-md border border-dashed p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" variant="outline" size="sm" asChild><label className="cursor-pointer"><Upload /> {t('Choose the statement file')}
+              <input type="file" className="sr-only" accept=".xml,.sta,.mt940,.txt,.940,.csv,.xlsx" onChange={(e) => { void onFile(e.target.files?.[0]); e.target.value = '' }} /></label></Button>
+            <span className="text-xs text-muted-foreground">{t('XML (CAMT.053), MT940, Excel or CSV from e-banking')}</span>
+          </div>
+          {file && <div className="flex items-center justify-between gap-2 text-[13px]"><span>{file.name} · {file.format === 'camt' ? 'CAMT' : file.format === 'mt940' ? 'MT940' : t('table')}{file.iban ? ` · ${file.iban}` : ''}</span>
+            <Button type="button" size="xs" variant="ghost" onClick={() => setFile(null)}>{t('Remove')}</Button></div>}
+          {fileError && <p className="text-[13px] text-destructive">{fileError}</p>}
+        </div>
+        {!file && <Textarea rows={6} className="font-mono text-xs" value={text} onChange={(e) => setText(e.target.value)} placeholder={SAMPLE} aria-label={t('Statement rows')} />}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px]">
           <div className="flex items-center gap-2"><Label htmlFor="st-open" className="text-muted-foreground">{t('Opening balance')}</Label>
             <Input id="st-open" type="number" step="any" className="h-8 w-36 text-right tabular" value={opening} onChange={(e) => setOpening(e.target.value)} /></div>
           <span className="text-muted-foreground">{tn(parsed.lines.length, '{n} line', '{n} lines')} · {t('net')} <span className="tabular text-foreground">{formatMoney(sum)}</span></span>
           <span className="text-muted-foreground">{t('Closing balance')} <span className="tabular font-medium text-foreground">{formatMoney(closing)}</span></span>
-          {parsed.errors.length > 0 && <span className="text-destructive">{t('Rows {rows} could not be read', { rows: parsed.errors.slice(0, 6).join(', ') + (parsed.errors.length > 6 ? '…' : '') })}</span>}
+          {file?.closing != null && Math.abs(num(opening) + sum - file.closing) > 0.005 && <span className="text-destructive">{t('Opening + lines differ from the closing balance in the file')}</span>}
+          {parsed.errors.length > 0 && parsed.errors[0]! > 0 && <span className="text-destructive">{t('Rows {rows} could not be read', { rows: parsed.errors.slice(0, 6).join(', ') + (parsed.errors.length > 6 ? '…' : '') })}</span>}
         </div>
         <DialogFooter><Button variant="ghost" onClick={onClose}>{t('Cancel')}</Button>
           <Button loading={create.isPending} disabled={!bank || !parsed.lines.length} onClick={async () => {
             const id = await create.mutateAsync({ header: { bank_account_id: bank, statement_date: date, reference: reference || null, opening_balance: num(opening), closing_balance: closing }, lines: parsed.lines })
             toast.success(tn(parsed.lines.length, '{n} line imported', '{n} lines imported')); onClose(); onCreated(id)
+            // match at once: recorded payments first, then the invoices and bills the money pays
+            void auto.mutateAsync(id).then((r) => { if (r.matched + r.settled + r.suggested) toast.success(matchMessage(r)) }).catch(() => {})
           }}>{parsed.lines.length ? tn(parsed.lines.length, 'Import {n} line', 'Import {n} lines') : t('Import lines')}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
@@ -264,7 +298,7 @@ export function StatementPage() {
       <PageHeader back={{ href: '/finance/bank', label: t('Bank and cash') }} title={`${td(s.bank?.name)} · ${formatDate(s.statement_date)}`} meta={<StatusBadge status={s.status} />}
         description={s.reference ?? undefined}
         actions={open && <Can perm="finance.write">
-          <Button variant="outline" loading={autoMatch.isPending} disabled={!unmatched} onClick={async () => { const n = await autoMatch.mutateAsync(s.id); toast.success(n ? tn(n, '{n} line matched', '{n} lines matched') : t('No new matches found')) }}><Wand2 /> {t('Match automatically')}</Button>
+          <Button variant="outline" loading={autoMatch.isPending} disabled={!unmatched} onClick={async () => { const r = await autoMatch.mutateAsync(s.id); toast.success(r.matched + r.settled + r.suggested ? matchMessage(r) : t('No new matches found')) }}><Wand2 /> {t('Match automatically')}</Button>
           <Button loading={reconcile.isPending} disabled={!!unmatched || !balanced} onClick={async () => { await reconcile.mutateAsync(s.id); toast.success(t('Statement reconciled')) }}><BookCheck /> {t('Reconcile')}</Button>
         </Can>} />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -297,7 +331,9 @@ export function StatementPage() {
                       l.matched_payment_id ? <Link className="inline-flex items-center gap-1 text-primary hover:underline" to={`/finance/payments/${l.matched_payment_id}`}><Check className="size-3.5" />{l.payment?.number} · {l.payment?.partner?.name}</Link>
                         : l.journal_entry_id ? <Link className="inline-flex items-center gap-1 text-primary hover:underline" to={`/finance/journal/${l.journal_entry_id}`}><Check className="size-3.5" />{t('Recorded to an account')}{l.partner ? ` · ${l.partner.name}` : ''}</Link>
                         : <span className="inline-flex items-center gap-1 text-muted-foreground"><Check className="size-3.5" />{t('Accounting entry')}</span>
-                    ) : l.match_status === 'ignored' ? <Badge variant="secondary">{t('Ignored')}</Badge> : <span className="text-warning">{t('Not matched')}</span>}
+                    ) : l.match_status === 'ignored' ? <Badge variant="secondary">{t('Ignored')}</Badge>
+                      : l.suggestion ? <Suggestion line={l} open={open} />
+                      : <span className="text-warning">{t('Not matched')}</span>}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-right">
                     {open && <Can perm="finance.write">
@@ -322,6 +358,30 @@ export function StatementPage() {
       {bookLine && <BookDialog line={bookLine} onClose={() => setBookLine(null)} />}
     </>
   )
+}
+
+type Suggested = { partner_id: string; docs: { id: string; number: string; amount: number }[]; reason: 'number' | 'account' | 'account_all' | 'name' | 'amount'; error?: string }
+/** what a line probably pays, waiting for one tap */
+function Suggestion({ line, open }: { line: StatementLine; open: boolean }) {
+  const { can } = useCompany()
+  const accept = useAcceptSuggestion()
+  const dismiss = useDismissSuggestion()
+  const sg = line.suggestion as unknown as Suggested
+  const why = { number: t('its number is in the text'), account: t('from their account'), account_all: t('all their open invoices'), name: t('the name and amount fit'), amount: t('the only one with this amount') }[sg.reason]
+  return (
+    <div className="grid gap-1">
+      <span className="text-[13px]">{t('Probably')} <b>{sg.docs.map((d) => d.number).join(', ')}</b> <span className="text-muted-foreground">· {why}</span></span>
+      {sg.error && <span className="text-xs text-destructive">{tServer(sg.error)}</span>}
+      {open && can('finance.write') && <span className="flex gap-1">
+        <Button size="xs" loading={accept.isPending} onClick={() => accept.mutate(line.id, { onSuccess: () => toast.success(t('Payment recorded and matched')) })}><Check /> {t('Accept')}</Button>
+        <Button size="xs" variant="ghost" disabled={dismiss.isPending} onClick={() => dismiss.mutate(line.id)}>{t('Not this')}</Button>
+      </span>}
+    </div>
+  )
+}
+function matchMessage(r: { matched: number; settled: number; suggested: number }) {
+  return [r.matched && tn(r.matched, '{n} line matched to a payment', '{n} lines matched to payments'), r.settled && tn(r.settled, '{n} invoice settled from the bank', '{n} invoices settled from the bank'),
+          r.suggested && tn(r.suggested, '{n} suggestion to check', '{n} suggestions to check')].filter(Boolean).join(' · ')
 }
 
 function Fact({ label, value, hint, bad }: { label: string; value: React.ReactNode; hint: string; bad: boolean }) {

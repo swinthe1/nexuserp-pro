@@ -329,7 +329,15 @@ export function useCreateStatement() {
     onError: (e) => toast.error(describeError(e)),
   })
 }
-export const useAutoMatch = () => useAction(async (id: string) => unwrap(await supabase.rpc('auto_match_statement', { p_statement: id })) as number)
+/** recorded payments first, then the invoices and bills the money pays (sure ones are settled, likely ones suggested) */
+export async function matchAll(id: string) {
+  const matched = unwrap(await supabase.rpc('auto_match_statement', { p_statement: id })) as number
+  const r = unwrap(await supabase.rpc('settle_statement', { p_statement: id })) as unknown as { settled: number; suggested: number; failed: number }
+  return { matched, settled: r.settled, suggested: r.suggested + r.failed }
+}
+export const useAutoMatch = () => useAction(matchAll)
+export const useAcceptSuggestion = () => useAction(async (line: string) => unwrap(await supabase.rpc('accept_statement_suggestion', { p_line: line })))
+export const useDismissSuggestion = () => useAction(async (line: string) => unwrap(await supabase.rpc('dismiss_statement_suggestion', { p_line: line })))
 export const useBookStatementLine = () => useAction(async (a: { line: string; account: string; memo?: string; partner?: string | null }) =>
   unwrap(await supabase.rpc('book_statement_line', { p_line: a.line, p_account: a.account, p_memo: a.memo, p_partner: a.partner ?? undefined })))
 export const useReconcileStatement = () => useAction(async (id: string) => unwrap(await supabase.rpc('reconcile_statement', { p_statement: id })))
