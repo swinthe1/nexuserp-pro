@@ -69,7 +69,7 @@ export function MovePage() {
       {from && (
         <div className="grid gap-2 rounded-xl border bg-card p-4">
           <div className="flex items-center justify-between"><div className="flex items-center gap-2 font-mono text-xl font-semibold"><MapPin className="size-5 text-primary" />{from.code}</div>
-            <Button variant="ghost" size="sm" onClick={() => { setFrom(null); setItems([]); st.clear() }}>{t('Change')}</Button></div>
+            <Button variant="ghost" size="sm" onClick={() => { setFrom(null); setItems([]); st.clear() }}>{t('Change|choice')}</Button></div>
           {items.length > 0 && <div className="grid gap-1.5">
             {items.map((i) => (
               <div key={i.key} className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2">

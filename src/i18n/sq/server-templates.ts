@@ -5,6 +5,7 @@
  * report bucket labels and journal line descriptions.
  */
 export const serverTemplates: [string, string][] = [
+  ['Recurring invoices made: %', 'Fatura që përsëriten u krijuan: {0}'],
   // ---------------------------------------------------------------- errors (raise exception)
   ['This cannot be done without internet: %', 'Kjo nuk mund të bëhet pa internet: {0}'],
   ['The administrator % does not exist on this server', 'Administratori {0} nuk ekziston në këtë server'],

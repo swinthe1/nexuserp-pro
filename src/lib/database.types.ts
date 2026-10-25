@@ -1400,6 +1400,10 @@ export type Database = {
           auto_replenish_action: string
           auto_replenish_hour: number
           hidden_menu_sections: string[]
+          price_margin_basis: string
+          price_round_step: number
+          price_suggest_down: boolean
+          price_suggest_min_pct: number
         }
         Insert: {
           id?: string
@@ -1430,6 +1434,10 @@ export type Database = {
           auto_replenish_action?: string
           auto_replenish_hour?: number
           hidden_menu_sections?: string[]
+          price_margin_basis?: string
+          price_round_step?: number
+          price_suggest_down?: boolean
+          price_suggest_min_pct?: number
         }
         Update: {
           id?: string
@@ -1460,6 +1468,10 @@ export type Database = {
           auto_replenish_action?: string
           auto_replenish_hour?: number
           hidden_menu_sections?: string[]
+          price_margin_basis?: string
+          price_round_step?: number
+          price_suggest_down?: boolean
+          price_suggest_min_pct?: number
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -6177,6 +6189,79 @@ export type Database = {
           { foreignKeyName: "price_lists_currency_code_fkey"; columns: ["currency_code"]; isOneToOne: false; referencedRelation: "currencies"; referencedColumns: ["code"] },
         ]
       }
+      price_suggestions: {
+        Row: {
+          id: string
+          company_id: string
+          variant_id: string
+          product_id: string
+          cost_before: number | null
+          cost_after: number
+          margin_pct: number
+          basis: string
+          tax_rate: number
+          price_now: number | null
+          price_new: number
+          gross_now: number | null
+          gross_new: number
+          status: string
+          decided_by: string | null
+          decided_at: string | null
+          created_at: string
+          updated_at: string
+          created_by: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          variant_id: string
+          product_id: string
+          cost_before?: number | null
+          cost_after: number
+          margin_pct: number
+          basis: string
+          tax_rate?: number
+          price_now?: number | null
+          price_new: number
+          gross_now?: number | null
+          gross_new: number
+          status?: string
+          decided_by?: string | null
+          decided_at?: string | null
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          variant_id?: string
+          product_id?: string
+          cost_before?: number | null
+          cost_after?: number
+          margin_pct?: number
+          basis?: string
+          tax_rate?: number
+          price_now?: number | null
+          price_new?: number
+          gross_now?: number | null
+          gross_new?: number
+          status?: string
+          decided_by?: string | null
+          decided_at?: string | null
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "price_suggestions_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "price_suggestions_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "price_suggestions_decided_by_fkey"; columns: ["decided_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
       product_attribute_values: {
         Row: {
           id: string
@@ -6340,6 +6425,7 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          target_margin_pct: number | null
         }
         Insert: {
           id?: string
@@ -6358,6 +6444,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          target_margin_pct?: number | null
         }
         Update: {
           id?: string
@@ -6376,6 +6463,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          target_margin_pct?: number | null
         }
         Relationships: [
           { foreignKeyName: "product_categories_company_id_cogs_account_id_fkey"; columns: ["company_id", "cogs_account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["company_id", "id"] },
@@ -6587,6 +6675,7 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          target_margin_pct: number | null
         }
         Insert: {
           id?: string
@@ -6619,6 +6708,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          target_margin_pct?: number | null
         }
         Update: {
           id?: string
@@ -6651,6 +6741,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          target_margin_pct?: number | null
         }
         Relationships: [
           { foreignKeyName: "products_company_id_category_id_fkey"; columns: ["company_id", "category_id"]; isOneToOne: false; referencedRelation: "product_categories"; referencedColumns: ["company_id", "id"] },
@@ -7065,6 +7156,93 @@ export type Database = {
           { foreignKeyName: "purchase_requisitions_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "purchase_requisitions_decider_profile_fkey"; columns: ["decided_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
           { foreignKeyName: "purchase_requisitions_requester_profile_fkey"; columns: ["requested_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
+      recurring_invoices: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          partner_id: string
+          source_invoice_id: string | null
+          every_months: number
+          day_of_month: number
+          next_date: string
+          end_date: string | null
+          post: boolean
+          is_active: boolean
+          currency_code: string
+          payment_term_id: string | null
+          salesperson_id: string | null
+          billing_address_id: string | null
+          notes: string | null
+          lines: Json
+          last_invoice_id: string | null
+          last_run_at: string | null
+          last_error: string | null
+          made_count: number
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          partner_id: string
+          source_invoice_id?: string | null
+          every_months?: number
+          day_of_month?: number
+          next_date: string
+          end_date?: string | null
+          post?: boolean
+          is_active?: boolean
+          currency_code: string
+          payment_term_id?: string | null
+          salesperson_id?: string | null
+          billing_address_id?: string | null
+          notes?: string | null
+          lines?: Json
+          last_invoice_id?: string | null
+          last_run_at?: string | null
+          last_error?: string | null
+          made_count?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string
+          partner_id?: string
+          source_invoice_id?: string | null
+          every_months?: number
+          day_of_month?: number
+          next_date?: string
+          end_date?: string | null
+          post?: boolean
+          is_active?: boolean
+          currency_code?: string
+          payment_term_id?: string | null
+          salesperson_id?: string | null
+          billing_address_id?: string | null
+          notes?: string | null
+          lines?: Json
+          last_invoice_id?: string | null
+          last_run_at?: string | null
+          last_error?: string | null
+          made_count?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "recurring_invoices_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "recurring_invoices_company_id_partner_id_fkey"; columns: ["company_id", "partner_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
         ]
       }
       replenishment_rules: {
@@ -7693,6 +7871,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           is_opening: boolean
+          recurring_id: string | null
         }
         Insert: {
           id?: string
@@ -7730,6 +7909,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           is_opening?: boolean
+          recurring_id?: string | null
         }
         Update: {
           id?: string
@@ -7767,6 +7947,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           is_opening?: boolean
+          recurring_id?: string | null
         }
         Relationships: [
           { foreignKeyName: "sales_invoices_company_id_billing_address_id_fkey"; columns: ["company_id", "billing_address_id"]; isOneToOne: false; referencedRelation: "partner_addresses"; referencedColumns: ["company_id", "id"] },
@@ -7777,6 +7958,7 @@ export type Database = {
           { foreignKeyName: "sales_invoices_company_id_payment_term_id_fkey"; columns: ["company_id", "payment_term_id"]; isOneToOne: false; referencedRelation: "payment_terms"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "sales_invoices_company_id_sales_order_id_fkey"; columns: ["company_id", "sales_order_id"]; isOneToOne: false; referencedRelation: "sales_orders"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "sales_invoices_currency_code_fkey"; columns: ["currency_code"]; isOneToOne: false; referencedRelation: "currencies"; referencedColumns: ["code"] },
+          { foreignKeyName: "sales_invoices_recurring_id_fkey"; columns: ["recurring_id"]; isOneToOne: false; referencedRelation: "recurring_invoices"; referencedColumns: ["id"] },
           { foreignKeyName: "sales_invoices_salesperson_profile_fkey"; columns: ["salesperson_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
         ]
       }
@@ -11815,6 +11997,39 @@ export type Database = {
         }
         Returns: Json
       }
+      price_rules_save: {
+        Args: {
+          p_company: string
+          p_basis: string
+          p_step: number
+          p_down: boolean
+          p_min_pct: number
+          p_categories: Json
+        }
+        Returns: undefined
+      }
+      price_suggestions_decide: {
+        Args: {
+          p_company: string
+          p_ids: string[]
+          p_accept: boolean
+          p_gross?: number
+        }
+        Returns: number
+      }
+      price_suggestions_list: {
+        Args: {
+          p_company: string
+          p_status?: string
+        }
+        Returns: { id: string | null; variant_id: string | null; product_id: string | null; sku: string | null; name: string | null; category: string | null; cost_before: number | null; cost_after: number | null; margin_pct: number | null; basis: string | null; tax_rate: number | null; price_now: number | null; price_new: number | null; gross_now: number | null; gross_new: number | null; on_hand: number | null; status: string | null; created_at: string | null; decided_at: string | null; decided_by_name: string | null }[]
+      }
+      price_suggestions_scan: {
+        Args: {
+          p_company: string
+        }
+        Returns: number
+      }
       process_fiscal_queue: {
         Args: {
           p_company: string
@@ -11892,6 +12107,31 @@ export type Database = {
           p_cod_collected?: boolean
         }
         Returns: string
+      }
+      recurring_from_invoice: {
+        Args: {
+          p_invoice: string
+          p_name: string
+          p_every: number
+          p_day: number
+          p_start: string
+          p_end?: string
+          p_post?: boolean
+        }
+        Returns: string
+      }
+      recurring_list: {
+        Args: {
+          p_company: string
+        }
+        Returns: { id: string | null; name: string | null; partner_id: string | null; partner_name: string | null; every_months: number | null; day_of_month: number | null; next_date: string | null; end_date: string | null; post: boolean | null; is_active: boolean | null; currency_code: string | null; total: number | null; made_count: number | null; last_invoice_id: string | null; last_invoice_number: string | null; last_run_at: string | null; last_error: string | null; source_invoice_id: string | null }[]
+      }
+      recurring_update: {
+        Args: {
+          p_id: string
+          p_patch: Json
+        }
+        Returns: undefined
       }
       refresh_vat_declaration: {
         Args: {
@@ -12088,6 +12328,12 @@ export type Database = {
           p_asset?: string
         }
         Returns: Json
+      }
+      run_recurring_invoices: {
+        Args: {
+          p_company?: string
+        }
+        Returns: number
       }
       run_replenishment: {
         Args: {

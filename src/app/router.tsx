@@ -28,6 +28,8 @@ const ProductDetailPage = lazy(() => import('@/features/inventory/pages/product-
 const StockPage = lazy(() => import('@/features/inventory/pages/stock-page'), 'StockPage')
 const MovementsPage = lazy(() => import('@/features/inventory/pages/movements-page'), 'MovementsPage')
 const AlertsPage = lazy(() => import('@/features/inventory/pages/alerts-page'), 'AlertsPage')
+const RecurringPage = lazy(() => import('@/features/sales/recurring'), 'RecurringPage')
+const PricesPage = lazy(() => import('@/features/inventory/pages/prices-page'), 'PricesPage')
 const ReceiptPage = lazy(() => import('@/features/inventory/pages/receipt-page'), 'ReceiptPage')
 const AdjustmentPage = lazy(() => import('@/features/inventory/pages/adjustment-page'), 'AdjustmentPage')
 const TransferPage = lazy(() => import('@/features/inventory/pages/transfer-page'), 'TransferPage')
@@ -148,6 +150,7 @@ const router = createBrowserRouter([
         { path: 'stock', element: <StockPage /> },
         { path: 'movements', element: <MovementsPage /> },
         { path: 'alerts', element: <AlertsPage /> },
+        { path: 'prices', element: <PricesPage /> },
         { path: 'receipts', element: <DocumentsPage kind="receipts" /> },
         { path: 'receipts/new', element: <ReceiptPage /> },
         { path: 'receipts/:id', element: <ReceiptPage /> },
@@ -187,6 +190,7 @@ const router = createBrowserRouter([
         { path: 'new', element: <SalesDocumentPage key="invoice-new" kind="invoices" /> },
         { path: ':id', element: <SalesDocumentPage key="invoice" kind="invoices" /> },
       ] },
+      { path: 'sales/recurring', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <RecurringPage /> }] },
       { path: 'partners', element: <RequirePerm perm="partners.read" />, children: [
         { index: true, element: <PartnersPage /> },
         { path: 'new', element: <PartnerPage key="new" /> },

@@ -4,7 +4,7 @@ import {
   BadgePercent, ClipboardCheck, Hourglass, PackageOpen, ScanLine, ShoppingBasket,
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, BookOpenText, Building, HandCoins, ListTree, Network, Settings2, Wallet, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, Gauge,
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackagePlus, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
-  SlidersHorizontal, Store, Tags, Truck, TriangleAlert, Users, Warehouse, type LucideIcon,
+  Repeat, SlidersHorizontal, Store, Tags, Truck, TriangleAlert, Users, Warehouse, type LucideIcon,
 } from 'lucide-react'
 import { msg } from '@/i18n'
 
@@ -29,6 +29,7 @@ export const NAV: NavSection[] = [
       { label: msg('Stock levels'), href: '/inventory/stock', icon: PackageSearch, perm: 'inventory.read', keywords: ['on hand', 'available', 'reserved', 'valuation'] },
       { label: msg('Movements'), href: '/inventory/movements', icon: FileStack, perm: 'inventory.read', keywords: ['ledger', 'history'] },
       { label: msg('Low stock'), href: '/inventory/alerts', icon: TriangleAlert, perm: 'inventory.read', keywords: ['reorder', 'alerts', 'replenish'] },
+      { label: msg('New selling prices'), href: '/inventory/prices', icon: Tags, perm: 'inventory.read', keywords: ['margin', 'markup', 'price', 'cost', 'marzh', 'cmim'] },
       { label: msg('Goods receipts'), href: '/inventory/receipts', icon: PackageCheck, perm: 'inventory.read', keywords: ['grn', 'receive', 'import'] },
       { label: msg('Landed costs'), href: '/inventory/landed-costs', icon: Ship, perm: 'procurement.read', keywords: ['customs', 'freight', 'import', 'clearance'] },
       { label: msg('Adjustments'), href: '/inventory/adjustments', icon: SlidersHorizontal, perm: 'inventory.read', keywords: ['opening', 'write-off', 'damage'] },
@@ -47,6 +48,7 @@ export const NAV: NavSection[] = [
       { label: msg('Sales orders'), href: '/sales/orders', icon: ShoppingBag, perm: 'sales.read', keywords: ['so', 'orders', 'porosi'] },
       { label: msg('Deliveries'), href: '/sales/deliveries', icon: Truck, perm: 'sales.read', keywords: ['shipping', 'dispatch', 'flete'] },
       { label: msg('Customer invoices'), href: '/sales/invoices', icon: Receipt, perm: 'invoicing.read', keywords: ['invoice', 'fatura', 'credit note', 'billing'] },
+      { label: msg('Recurring invoices'), href: '/sales/recurring', icon: Repeat, perm: 'invoicing.read', keywords: ['rent', 'subscription', 'qira', 'abonim', 'monthly'] },
       { label: msg('Price lists'), href: '/sales/price-lists', icon: Tags, perm: 'sales.read', keywords: ['pricing', 'wholesale', 'retail', 'discount'] },
       { label: msg('Customers'), href: '/partners?role=customer', icon: Users, perm: 'partners.read', keywords: ['clients', 'partners', 'vendors', 'klient'] },
     ],

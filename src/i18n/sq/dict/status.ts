@@ -34,6 +34,7 @@ export default {
   'enum:lost': 'Humbur',
   'enum:reversed': 'Stornuar',
   'enum:accepted': 'Pranuar',
+  'enum:outdated': 'Zëvendësuar',
   'enum:calculated': 'Llogaritur',
   'enum:planned': 'Planifikuar',
   'enum:released': 'Lëshuar',

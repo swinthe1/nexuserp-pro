@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
-  Ban, Check, CheckCheck, FileText, PackageCheck, PackageOpen, Receipt, RotateCcw, Send, ShoppingCart, Trash2, Truck, Undo2, X,
+  Ban, Check, CheckCheck, FileText, PackageCheck, PackageOpen, Receipt, Repeat, RotateCcw, Send, ShoppingCart, Trash2, Truck, Undo2, X,
 } from 'lucide-react'
 import * as React from 'react'
 import { useForm, useWatch } from 'react-hook-form'
@@ -35,6 +35,7 @@ import { SalesLinesEditor, type LineProgress } from '../components/sales-lines-e
 import { salesDocSchema, type SalesDocValues } from '../schemas'
 import { AccountingTab } from '@/features/finance/components/t-accounts'
 import { ErrorState } from '@/components/error-state'
+import { RepeatInvoiceDialog } from '../recurring'
 import { msg, t, td, tr } from '@/i18n'
 
 type DocKind = Exclude<SalesKind, 'deliveries'>
@@ -84,6 +85,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
   const createInvoice = useCreateInvoice()
   const postInvoice = usePostInvoice()
   const creditNote = useCreditNote()
+  const [repeat, setRepeat] = React.useState(false)
 
   const isCredit = kind === 'invoices' && doc?.document_type === 'credit_note'
   const editable = (!doc || doc.status === 'draft') && can(cfg.writePerm)
@@ -236,6 +238,9 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
     if (doc.status === 'posted' && !isCredit) {
       actions.push(<Button key="cn" variant="outline" loading={creditNote.isPending} onClick={async () => { const cn = await creditNote.mutateAsync(doc.id); toast.success(t('Draft credit note created — adjust the lines, then post it')); navigate(`/sales/invoices/${cn}`) }}><Undo2 /> {t('Credit note')}</Button>)
     }
+    if (!isCredit && can('invoicing.write')) {
+      actions.push(<Button key="repeat" variant="outline" onClick={() => setRepeat(true)}><Repeat /> {t('Repeat')}</Button>)
+    }
     if (doc.status === 'posted' && !isCredit && Number(doc.amount_due) > 0 && can('invoicing.write')) {
       actions.push(<Button key="pay" asChild><Link to={`/finance/payments/new?type=customer_payment&partner=${doc.partner_id}&doc=${doc.id}`}>{t('Record payment')}</Link></Button>)
     }
@@ -370,6 +375,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
           </Tabs>
         ) : body}
       </div>
+      {repeat && doc && <RepeatInvoiceDialog invoice={{ id: doc.id, number: doc.number as string, date: doc.invoice_date as string }} onClose={() => setRepeat(false)} />}
     </Form>
   )
 }

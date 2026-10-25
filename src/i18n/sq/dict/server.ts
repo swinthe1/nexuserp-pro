@@ -560,4 +560,12 @@ export default {
   "This client has no licence yet": "Ky klient nuk ka ende licencë",
   "No licence to apply": "Nuk ka licencë për të vendosur",
   "Cloud copies are not set up on the cloud yet": "Kopjet në cloud ende nuk janë ndezur në serverin cloud",
+  "New selling prices to review": "Çmime të reja shitjeje për t'u shqyrtuar",
+  "The cost changed and the price no longer keeps the target margin.": "Kosto ndryshoi dhe çmimi nuk e ruan më marzhin e synuar.",
+  "Give another price for one item at a time": "Çmim tjetër jepet për një artikull në një kohë",
+  "The price cannot be negative": "Çmimi nuk mund të jetë negativ",
+  "Check the drafts and send them to the customers.": "Kontrolloni draftet dhe dërgojini te klientët.",
+  "Only invoices can repeat, not credit notes": "Vetëm faturat mund të përsëriten, jo notat e kreditit",
+  "Choose a day from 1 to 28": "Zgjidhni një ditë nga 1 deri në 28",
+  "The end comes before the start": "Fundi është para fillimit",
 } satisfies Dict

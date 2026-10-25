@@ -648,3 +648,64 @@ export function useMasterData(table: MasterTable) {
     }),
   }
 }
+
+/* ------------------------------------------------------------------ new selling prices from the cost */
+export type PriceSuggestion = {
+  id: string; variant_id: string; product_id: string; sku: string; name: string; category: string | null
+  cost_before: number | null; cost_after: number; margin_pct: number; basis: 'markup' | 'margin'; tax_rate: number
+  price_now: number | null; price_new: number; gross_now: number | null; gross_new: number; on_hand: number | null
+  status: 'pending' | 'accepted' | 'rejected' | 'outdated'; created_at: string; decided_at: string | null; decided_by_name: string | null
+}
+export function usePriceSuggestions(status: 'pending' | 'all') {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: ['price-suggestions', companyId, status],
+    enabled: !!companyId,
+    queryFn: async () => unwrap(await supabase.rpc('price_suggestions_list', { p_company: companyId!, p_status: status })) as unknown as PriceSuggestion[],
+  })
+}
+export function useDecidePrices() {
+  const { companyId } = useCompany()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (v: { ids: string[]; accept: boolean; gross?: number }) =>
+      unwrap(await supabase.rpc('price_suggestions_decide', { p_company: companyId!, p_ids: v.ids, p_accept: v.accept, p_gross: v.gross })) as number,
+    onSuccess: (n, v) => {
+      toast.success(v.accept ? tn(n, '{n} new price saved', '{n} new prices saved') : tn(n, '{n} suggestion rejected', '{n} suggestions rejected'))
+      void qc.invalidateQueries({ queryKey: ['price-suggestions', companyId] })
+      void qc.invalidateQueries({ queryKey: invKeys.all(companyId!) })
+    },
+    onError: (e) => toast.error(describeError(e)),
+  })
+}
+export type PriceRules = { basis: 'markup' | 'margin'; step: number; down: boolean; min_pct: number; categories: { id: string; name: string; pct: number | null }[] }
+export function usePriceRules() {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: ['price-rules', companyId],
+    enabled: !!companyId,
+    queryFn: async (): Promise<PriceRules> => {
+      const s = unwrap(await supabase.from('company_settings').select('price_margin_basis, price_round_step, price_suggest_down, price_suggest_min_pct').eq('company_id', companyId!).single())
+      const cats = unwrap(await supabase.from('product_categories').select('id, name, target_margin_pct').eq('company_id', companyId!).is('deleted_at', null).order('name'))
+      return { basis: s.price_margin_basis as 'markup' | 'margin', step: Number(s.price_round_step), down: s.price_suggest_down, min_pct: Number(s.price_suggest_min_pct),
+               categories: cats.map((c) => ({ id: c.id, name: c.name, pct: c.target_margin_pct == null ? null : Number(c.target_margin_pct) })) }
+    },
+  })
+}
+export function useSavePriceRules() {
+  const { companyId } = useCompany()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (r: PriceRules & { scan: boolean }) => {
+      unwrap(await supabase.rpc('price_rules_save', { p_company: companyId!, p_basis: r.basis, p_step: r.step, p_down: r.down, p_min_pct: r.min_pct,
+        p_categories: r.categories.map((c) => ({ id: c.id, pct: c.pct == null ? '' : String(c.pct) })) }))
+      return r.scan ? (unwrap(await supabase.rpc('price_suggestions_scan', { p_company: companyId! })) as number) : null
+    },
+    onSuccess: (n) => {
+      toast.success(n == null ? t('Rules saved') : tn(n, 'Rules saved · {n} item to review', 'Rules saved · {n} items to review'))
+      void qc.invalidateQueries({ queryKey: ['price-rules', companyId] })
+      void qc.invalidateQueries({ queryKey: ['price-suggestions', companyId] })
+    },
+    onError: (e) => toast.error(describeError(e)),
+  })
+}

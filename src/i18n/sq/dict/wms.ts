@@ -256,4 +256,5 @@ export default {
   'enum:category': 'Sipas kategorisë',
   'enum:full': 'I plotë',
   'enum:partial_count': 'I pjesshëm',
+  "Change|choice": "Ndrysho",
 } satisfies Dict
