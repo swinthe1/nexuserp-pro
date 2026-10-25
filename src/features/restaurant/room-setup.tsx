@@ -15,8 +15,9 @@ import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { useCategories } from '@/features/inventory/api'
 import { type Station, useSaveRoom, useStations } from './api'
+import { FloorPlanEditor } from './floor-plan'
 
-type AreaRow = { id: string; name: string; sort_order: number; tables: { id: string; name: string; seats: number; sort_order: number; is_active: boolean; deleted_at: string | null }[] }
+type AreaRow = { id: string; name: string; sort_order: number; tables: { id: string; name: string; seats: number; sort_order: number; is_active: boolean; deleted_at: string | null; pos_x: number | null; pos_y: number | null; shape: string }[] }
 
 /** Rooms, tables and where orders go (kitchen, bar). Managers only. */
 export function RoomSetupDialog({ warehouseId, onClose }: { warehouseId: string; onClose: () => void }) {
@@ -26,8 +27,9 @@ export function RoomSetupDialog({ warehouseId, onClose }: { warehouseId: string;
         <DialogHeader><DialogTitle>{t('Set up the room')}</DialogTitle>
           <DialogDescription>{t('Rooms and tables of this place, and the kitchen and bar screens that receive the orders.')}</DialogDescription></DialogHeader>
         <Tabs defaultValue="tables">
-          <TabsList><TabsTrigger value="tables">{t('Rooms and tables')}</TabsTrigger><TabsTrigger value="stations">{t('Kitchen and bar')}</TabsTrigger></TabsList>
+          <TabsList><TabsTrigger value="tables">{t('Rooms and tables')}</TabsTrigger><TabsTrigger value="plan">{t('Floor plan')}</TabsTrigger><TabsTrigger value="stations">{t('Kitchen and bar')}</TabsTrigger></TabsList>
           <TabsContent value="tables" className="mt-4"><Tables warehouseId={warehouseId} /></TabsContent>
+          <TabsContent value="plan" className="mt-4"><Plan warehouseId={warehouseId} /></TabsContent>
           <TabsContent value="stations" className="mt-4"><Stations warehouseId={warehouseId} /></TabsContent>
         </Tabs>
       </DialogContent>
@@ -37,14 +39,37 @@ export function RoomSetupDialog({ warehouseId, onClose }: { warehouseId: string;
 
 const guard = async (fn: () => Promise<void>) => { try { await fn() } catch (e) { toast.error(describeError(e)) } }
 
-function Tables({ warehouseId }: { warehouseId: string }) {
+function useAreas(warehouseId: string) {
   const { companyId } = useCompany()
-  const room = useSaveRoom()
-  const areas = useQuery({
+  return useQuery({
     queryKey: ['restaurant', companyId, 'areas', warehouseId],
-    queryFn: async () => unwrap(await supabase.from('restaurant_areas').select('id, name, sort_order, tables:restaurant_tables(id, name, seats, sort_order, is_active, deleted_at)')
+    queryFn: async () => unwrap(await supabase.from('restaurant_areas').select('id, name, sort_order, tables:restaurant_tables(id, name, seats, sort_order, is_active, deleted_at, pos_x, pos_y, shape)')
       .eq('warehouse_id', warehouseId).is('deleted_at', null).order('sort_order')) as unknown as AreaRow[],
   })
+}
+
+/** Where the tables stand, room by room. */
+function Plan({ warehouseId }: { warehouseId: string }) {
+  const areas = useAreas(warehouseId)
+  const room = useSaveRoom()
+  const [areaId, setAreaId] = React.useState<string | null>(null)
+  const list = areas.data ?? []
+  const area = list.find((a) => a.id === areaId) ?? list[0]
+  if (!area) return <p className="text-[13px] text-muted-foreground">{t('Add a room and its tables first.')}</p>
+  const tables = area.tables.filter((x) => !x.deleted_at && x.is_active).map((x) => ({ id: x.id, name: x.name, seats: x.seats, x: x.pos_x, y: x.pos_y, shape: x.shape }))
+  return (
+    <div className="grid gap-3">
+      {list.length > 1 && (
+        <div className="flex flex-wrap gap-1.5">{list.map((a) => <Button key={a.id} size="sm" variant={a.id === area.id ? 'default' : 'outline'} onClick={() => setAreaId(a.id)}>{a.name}</Button>)}</div>
+      )}
+      <FloorPlanEditor key={area.id} tables={tables} onSave={(id, v) => guard(async () => { await room.updateTable(id, v); void areas.refetch() })} />
+    </div>
+  )
+}
+
+function Tables({ warehouseId }: { warehouseId: string }) {
+  const room = useSaveRoom()
+  const areas = useAreas(warehouseId)
   const [newArea, setNewArea] = React.useState('')
   const [count, setCount] = React.useState<Record<string, string>>({})
   const [seats, setSeats] = React.useState<Record<string, string>>({})

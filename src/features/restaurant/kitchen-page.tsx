@@ -1,10 +1,11 @@
-import { ArrowLeft, Check, CheckCheck, ChefHat, Maximize } from 'lucide-react'
+import { ArrowLeft, Check, CheckCheck, ChefHat, Maximize, Printer } from 'lucide-react'
 import * as React from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/app/auth-provider'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { t, tn } from '@/i18n'
+import { formatDateWith, t, tn } from '@/i18n'
+import { printHtml } from '@/lib/print'
 import { cn, num } from '@/lib/utils'
 import { type KitchenOrder, useKitchen, useSetLineStatus, useStations } from './api'
 
@@ -23,11 +24,24 @@ export function KitchenPage() {
   React.useEffect(() => { const i = setInterval(tick, 20_000); return () => clearInterval(i) }, [])
   // a short sound when a new order arrives
   const seen = React.useRef<Set<string> | null>(null)
+  const [autoPrint, setAutoPrint] = React.useState(() => pref('kitchen.print') === '1')
+  const stationName = (stations.data ?? []).find((s) => s.id === station)?.name ?? t('Kitchen')
   React.useEffect(() => {
-    const ids = new Set((kitchen.data ?? []).flatMap((o) => o.lines.map((l) => l.id)))
+    const orders = kitchen.data ?? []
+    const ids = new Set(orders.flatMap((o) => o.lines.map((l) => l.id)))
     if (seen.current && [...ids].some((id) => !seen.current!.has(id))) beep()
+    // the printer next to this screen prints each new item once (what was there before printing was switched on is not printed)
+    if (autoPrint && seen.current) {
+      const printed = printedSet()
+      const fresh = orders.map((o) => ({ ...o, lines: o.lines.filter((l) => l.status === 'sent' && !printed.has(l.id) && !seen.current!.has(l.id)) })).filter((o) => o.lines.length)
+      if (fresh.length) {
+        printTickets(fresh, stationName)
+        fresh.forEach((o) => o.lines.forEach((l) => printed.add(l.id)))
+        savePrinted(printed)
+      }
+    }
     seen.current = ids
-  }, [kitchen.data])
+  }, [kitchen.data]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!loading && !user) return <Navigate to="/login" replace state={{ from: `/pos/kitchen/${warehouseId}` }} />
   const orders = kitchen.data ?? []
@@ -46,7 +60,10 @@ export function KitchenPage() {
               className={cn('h-9 shrink-0 rounded-full px-4 text-[13px] font-medium', station === s.id ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')}>{s.name}</button>
           ))}
         </nav>
-        <Button variant="ghost" size="sm" className="ml-auto" onClick={() => void document.documentElement.requestFullscreen?.().catch(() => undefined)}><Maximize /> {t('Full screen')}</Button>
+        <Button variant={autoPrint ? 'default' : 'ghost'} size="sm" className="ml-auto" aria-pressed={autoPrint}
+          title={t('Each new order is printed once on this computer\u2019s printer. For printing without the print window, start Chrome with --kiosk-printing.')}
+          onClick={() => setAutoPrint((on) => { setPref('kitchen.print', on ? '0' : '1'); return !on })}><Printer /> {autoPrint ? t('Printing new orders') : t('Print new orders')}</Button>
+        <Button variant="ghost" size="sm" onClick={() => void document.documentElement.requestFullscreen?.().catch(() => undefined)}><Maximize /> {t('Full screen')}</Button>
       </header>
       {kitchen.isLoading ? (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 p-4">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-52" />)}</div>
@@ -106,4 +123,20 @@ function beep() {
     osc.connect(gain); gain.connect(ctx.destination)
     osc.start(); osc.stop(ctx.currentTime + 0.18)
   } catch { /* no sound */ }
+}
+
+const pref = (k: string) => { try { return localStorage.getItem(k) } catch { return null } }
+const setPref = (k: string, v: string) => { try { localStorage.setItem(k, v) } catch { /* ignore */ } }
+const PRINTED = 'kitchen.printed'
+function printedSet() { try { return new Set<string>(JSON.parse(localStorage.getItem(PRINTED) ?? '[]') as string[]) } catch { return new Set<string>() } }
+function savePrinted(s: Set<string>) { try { localStorage.setItem(PRINTED, JSON.stringify([...s].slice(-2000))) } catch { /* ignore */ } }
+const esc = (v: unknown) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
+const TICKET_CSS = `@page{size:80mm auto;margin:3mm 4mm} body{margin:0;font:14px/1.35 ui-monospace,Menlo,Consolas,monospace;color:#000;width:72mm}
+  .big{font-size:20px;font-weight:700} .c{text-align:center} hr{border:0;border-top:1px dashed #000;margin:6px 0} .n{font-size:13px;padding-left:4mm} table{width:100%;border-collapse:collapse} td{padding:1px 0;vertical-align:top}`
+/** one ticket per order, the way the waiter's device prints it */
+function printTickets(orders: KitchenOrder[], station: string) {
+  const when = formatDateWith(new Date(), { hour: '2-digit', minute: '2-digit' })
+  printHtml(orders.map((o, i) => `${i ? '<div style="page-break-before:always"></div>' : ''}<div class="c big">${esc(station)}</div>
+    <div class="c big">${esc(o.table ? t('Table {name}', { name: o.table }) : o.label || o.number)}</div><div class="c">${esc(when)} · ${esc(o.waiter)}</div><hr>
+    <table>${o.lines.map((l) => `<tr><td class="big">${esc(num(l.quantity))} ×</td><td class="big">${esc(l.name)}</td></tr>${l.note ? `<tr><td></td><td class="n">» ${esc(l.note)}</td></tr>` : ''}`).join('')}</table>`).join(''), TICKET_CSS)
 }

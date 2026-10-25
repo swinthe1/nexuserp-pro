@@ -7194,6 +7194,9 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          pos_x: number | null
+          pos_y: number | null
+          shape: string
         }
         Insert: {
           id?: string
@@ -7209,6 +7212,9 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          pos_x?: number | null
+          pos_y?: number | null
+          shape?: string
         }
         Update: {
           id?: string
@@ -7224,6 +7230,9 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          pos_x?: number | null
+          pos_y?: number | null
+          shape?: string
         }
         Relationships: [
           { foreignKeyName: "restaurant_tables_company_id_area_id_fkey"; columns: ["company_id", "area_id"]; isOneToOne: false; referencedRelation: "restaurant_areas"; referencedColumns: ["company_id", "id"] },
@@ -11768,6 +11777,15 @@ export type Database = {
           p_reason: string
         }
         Returns: undefined
+      }
+      restaurant_waiter_report: {
+        Args: {
+          p_company: string
+          p_from: string
+          p_to: string
+          p_warehouse?: string
+        }
+        Returns: Json
       }
       restore_record: {
         Args: {

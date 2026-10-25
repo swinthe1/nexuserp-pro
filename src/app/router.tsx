@@ -83,6 +83,7 @@ const PosHomePage = lazy(() => import('@/features/pos/pages/pos-home-page'), 'Po
 const PosSessionPage = lazy(() => import('@/features/pos/pages/pos-home-page'), 'PosSessionPage')
 const TillPage = lazy(() => import('@/features/pos/pages/till-page'), 'TillPage')
 const LoyaltyPage = lazy(() => import('@/features/loyalty/loyalty-page'), 'LoyaltyPage')
+const WaitersPage = lazy(() => import('@/features/restaurant/waiters-page'), 'WaitersPage')
 const HistoryPage = lazy(() => import('@/features/history/history-page'), 'HistoryPage')
 const FloorPage = lazy(() => import('@/features/restaurant/floor-page'), 'FloorPage')
 const KitchenPage = lazy(() => import('@/features/restaurant/kitchen-page'), 'KitchenPage')
@@ -237,6 +238,7 @@ const router = createBrowserRouter([
         { index: true, element: <PosHomePage /> },
         { path: 'sessions/:id', element: <PosSessionPage /> },
         { path: 'loyalty', element: <LoyaltyPage /> },
+        { path: 'waiters', element: <WaitersPage /> },
       ] },
       { path: 'wms', element: <RequirePerm perm="wms.read" />, children: [
         { index: true, element: <WmsHomePage /> },

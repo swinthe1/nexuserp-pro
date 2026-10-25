@@ -82,6 +82,7 @@ export const NAV: NavSection[] = [
     items: [
       { label: msg('Point of sale'), href: '/pos', icon: Store, perm: 'pos.read', keywords: ['pos', 'till', 'cashier', 'arka', 'z-report', 'register'] },
       { label: msg('Recipes'), href: '/manufacturing/boms', icon: Layers, perm: 'manufacturing.read', keywords: ['receta', 'recipe', 'kit', 'ingredients', 'përbërës', 'kafe', 'restorant'] },
+      { label: msg('Waiters'), href: '/pos/waiters', icon: UsersRound, perm: 'pos.read', keywords: ['kamarier', 'kamarierët', 'waiter', 'restaurant', 'tavolina', 'report'] },
       { label: msg('Loyalty cards'), href: '/pos/loyalty', icon: BadgePercent, perm: 'pos.read', keywords: ['kartela', 'zbritje', 'loyalty', 'points', 'pikë', 'besnikëri', 'discount card'] },
     ],
   },

@@ -61,6 +61,22 @@ select public.restaurant_pay(jsonb_build_object('tab_id', :'tab', 'session_id', 
   'payments', jsonb_build_array(jsonb_build_object('method', 'card', 'amount', 180)))) as pay2 \gset
 select t.ok((:'pay2'::jsonb ->> 'closed')::boolean and (select status from public.table_orders where id = :'tab') = 'paid', 'paying the rest frees the table');
 select t.ok((select table_order_id = :'tab'::uuid and waiter_id is not null from public.pos_orders where id = (:'pay2'::jsonb ->> 'id')::uuid), 'the receipt knows its table and waiter');
+
+-- a discount given by hand when paying a table: the till's limit applies
+update public.restaurant_tables set pos_x = 25, pos_y = 40, shape = 'round' where id = :'t2';
+select t.ok((select tb ->> 'shape' = 'round' and (tb ->> 'x')::numeric = 25 from jsonb_array_elements(public.restaurant_floor(:'reg') -> 'areas' -> 0 -> 'tables') tb where tb ->> 'id' = :'t2'),
+  'the floor plan knows where each table stands');
+select public.restaurant_open(:'reg', :'t2', 2) as tab5 \gset
+select public.restaurant_add(:'tab5', jsonb_build_array(jsonb_build_object('variant_id', :'tea', 'quantity', 1)));
+select t.throws(format($q$select public.restaurant_pay('{"tab_id":"%s","session_id":"%s","client_uuid":"%s","payments":[{"method":"cash","amount":60}],"discounts":[{"variant_id":"%s","discount_pct":50,"manual_pct":50}]}')$q$,
+  :'tab5', :'ses', gen_random_uuid(), :'tea'), 'need a manager', 'a big discount by hand needs a manager');
+select public.restaurant_pay(jsonb_build_object('tab_id', :'tab5', 'session_id', :'ses', 'client_uuid', gen_random_uuid(),
+  'discounts', jsonb_build_array(jsonb_build_object('variant_id', :'tea', 'discount_pct', 10, 'manual_pct', 10)),
+  'payments', jsonb_build_array(jsonb_build_object('method', 'cash', 'amount', 108)))) as pay5 \gset
+select t.ok((:'pay5'::jsonb ->> 'total')::numeric = 108, 'a small discount by hand is taken off the bill');
+select public.restaurant_waiter_report(:'co', current_date, current_date) as wr \gset
+select t.ok((:'wr'::jsonb -> 0 ->> 'bills')::int >= 3 and (:'wr'::jsonb -> 0 ->> 'tables')::int >= 2 and (:'wr'::jsonb -> 0 ->> 'total')::numeric >= 408,
+  'the waiters'' report counts bills, tables and takings');
 reset role;
 select t.ok((select sum(m.quantity) from public.stock_movements m join public.pos_order_lines ol on ol.id = m.source_line_id
               where ol.pos_order_id = (:'pay2'::jsonb ->> 'id')::uuid and ol.variant_id = :'caj' and m.variant_id = :'tea') = 0.1,

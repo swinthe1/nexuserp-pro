@@ -34,7 +34,7 @@ const PAGE_FEATURES: [string, Feature[]][] = [
   ['/oms', ['ecommerce']], ['/ecommerce', ['ecommerce']],
   ['/manufacturing/boms', ['manufacturing', 'restaurant']],
   ['/manufacturing', ['manufacturing']],
-  ['/pos/floor', ['restaurant']], ['/pos/kitchen', ['restaurant']],
+  ['/pos/floor', ['restaurant']], ['/pos/kitchen', ['restaurant']], ['/pos/waiters', ['restaurant']],
   ['/logistics', ['logistics']],
   ['/finance/reports', ['accounting']], ['/finance/journal', ['accounting']], ['/finance/accounts', ['accounting']],
   ['/finance/assets', ['accounting']], ['/finance/cost-centers', ['accounting']],

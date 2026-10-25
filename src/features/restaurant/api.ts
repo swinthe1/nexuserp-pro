@@ -5,7 +5,7 @@ import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 
-export interface FloorTable { id: string; name: string; seats: number }
+export interface FloorTable { id: string; name: string; seats: number; x?: number | null; y?: number | null; shape?: string | null }
 export interface FloorArea { id: string; name: string; tables: FloorTable[] }
 export interface FloorOrder {
   id: string; number: string; table_id: string | null; label: string | null; guests: number; opened_at: string; waiter: string; waiter_id: string
@@ -94,6 +94,9 @@ export const useSetLineStatus = () => useAction(async (a: { lines: string[]; sta
 export const usePayTab = () => useAction(async (p: {
   tab_id: string; session_id: string; client_uuid: string; device_ref?: string; split?: { line_id: string; quantity: number }[]
   payments: { method: string; amount: number }[]
+  /** per line: the card's discount, or a discount given by hand (manual_pct) */
+  discounts?: { line_id: string; variant_id: string; discount_pct: number; manual_pct: number }[]
+  loyalty?: { card_id: string; redeem_points: number } | null
 }) => unwrap(await supabase.rpc('restaurant_pay', { p: p as never })) as unknown as { id: string; number: string; total: number; change: number; closed: boolean }, true)
 
 /* ------------------------------------------------------------------ room setup (managers) */
@@ -109,7 +112,7 @@ export function useSaveRoom() {
     addTables: async (area_id: string, names: string[], seats: number, start: number) => {
       await run(supabase.from('restaurant_tables').insert(names.map((name, i) => ({ company_id: companyId, area_id, name, seats, sort_order: start + i })))); done()
     },
-    updateTable: async (id: string, v: { name?: string; seats?: number; is_active?: boolean }) => { await run(supabase.from('restaurant_tables').update(v).eq('id', id)); done() },
+    updateTable: async (id: string, v: { name?: string; seats?: number; is_active?: boolean; pos_x?: number | null; pos_y?: number | null; shape?: 'square' | 'round' | 'long' }) => { await run(supabase.from('restaurant_tables').update(v).eq('id', id)); done() },
     removeTable: async (id: string) => { await run(supabase.from('restaurant_tables').delete().eq('id', id)); done() },
     saveStation: async (v: { id?: string; warehouse_id: string; name: string; category_ids: string[]; is_default: boolean }) => {
       if (v.id) await run(supabase.from('kitchen_stations').update({ name: v.name, category_ids: v.category_ids, is_default: v.is_default }).eq('id', v.id))

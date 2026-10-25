@@ -1,5 +1,5 @@
 import {
-  ArrowLeft, ArrowRightLeft, ChefHat, Minus, NotebookPen, Plus, Printer, ReceiptText, Search, Send, Settings2, ShoppingBag, Trash2, Undo2, Users, X,
+  ArrowLeft, ArrowRightLeft, ChefHat, CreditCard, Minus, NotebookPen, Plus, Printer, ReceiptText, Search, Send, Settings2, ShoppingBag, Trash2, Undo2, Users, X,
 } from 'lucide-react'
 import * as React from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
@@ -23,6 +23,9 @@ import {
   useAddItems, useChangeLine, useCloseEmpty, useFloor, useMoveTab, useOpenTab, usePayTab, useSend, useSetGuests, useTab, useVoidLine,
 } from './api'
 import { RoomSetupDialog } from './room-setup'
+import { tableBox } from './floor-plan'
+import { quoteLoyalty, type Quote } from '@/features/loyalty/api'
+import { describeError } from '@/lib/errors'
 
 const r2 = (v: number) => Math.sign(v) * Math.round(Math.abs(v) * 100 + 1e-7) / 100
 const lineSum = (l: { quantity: number; unit_price: number }) => r2(num(l.quantity) * num(l.unit_price))
@@ -127,6 +130,8 @@ function Restaurant({ data }: { data: TillData }) {
 function FloorView({ floor, loading, areaId, onOpen, onOpenTab, onSetup }: {
   floor: Floor | undefined; loading: boolean; areaId: string | undefined; onOpen: (table: string) => void; onOpenTab: (id: string) => void; onSetup?: () => void
 }) {
+  const [view, setView] = React.useState<'map' | 'list'>(() => (prefGet('pos.floorview', 'map') === 'list' ? 'list' : 'map'))
+  React.useEffect(() => { prefSet('pos.floorview', view) }, [view])
   if (loading) return <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 p-4">{Array.from({ length: 12 }).map((_, i) => <Skeleton key={i} className="h-32" />)}</div>
   const area = floor?.areas.find((a) => a.id === areaId)
   const byTable = new Map((floor?.orders ?? []).filter((o) => o.table_id).map((o) => [o.table_id!, o]))
@@ -139,10 +144,39 @@ function FloorView({ floor, loading, areaId, onOpen, onOpenTab, onSetup }: {
       {onSetup ? <Button className="mt-4" onClick={onSetup}><Settings2 /> {t('Set up the room')}</Button> : <p className="mt-3 text-[13px]">{t('Ask a manager to set up the room.')}</p>}
     </Centered>
   )
+  const placed = (area?.tables ?? []).filter((tb) => tb.x != null && tb.y != null)
+  const showMap = placed.length > 0 && view === 'map'
+  const loose = showMap ? (area?.tables ?? []).filter((tb) => !placed.includes(tb)) : area?.tables ?? []
   return (
     <div className="min-h-0 flex-1 overflow-y-auto p-4">
+      {placed.length > 0 && (
+        <div className="mb-3 flex justify-end gap-1" role="group" aria-label={t('How the tables are shown')}>
+          <Button size="sm" variant={view === 'map' ? 'default' : 'outline'} onClick={() => setView('map')}>{t('Floor plan')}</Button>
+          <Button size="sm" variant={view === 'list' ? 'default' : 'outline'} onClick={() => setView('list')}>{t('List')}</Button>
+        </div>
+      )}
+      {showMap && (
+        <div className="relative mx-auto mb-4 aspect-[16/10] w-full max-w-6xl rounded-xl border bg-[radial-gradient(circle,hsl(var(--border))_1px,transparent_1px)] [background-size:20px_20px]">
+          {placed.map((tb) => {
+            const o = byTable.get(tb.id)
+            const box = tableBox(tb)
+            return (
+              <button key={tb.id} type="button" onClick={() => (o ? onOpenTab(o.id) : onOpen(tb.id))}
+                style={{ left: `${tb.x}%`, top: `${tb.y}%`, width: `${box.w}%`, height: `${box.h}%` }}
+                className={cn('absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center overflow-hidden border-2 px-1 text-center leading-tight transition-colors',
+                  tb.shape === 'round' ? 'rounded-full' : 'rounded-lg',
+                  o ? (o.ready > 0 ? 'border-success bg-success/10' : o.new > 0 ? 'border-warning bg-warning/10' : 'border-primary bg-primary/10') : 'border-dashed border-foreground/30 bg-card hover:border-primary/60')}
+                aria-label={o ? t('Table {name}, {amount}', { name: tb.name, amount: formatMoney(o.total) }) : t('Table {name}, free', { name: tb.name })}>
+                <span className="text-sm font-semibold sm:text-base">{tb.name}</span>
+                {o && <span className="text-[11px] font-medium tabular sm:text-xs">{formatMoney(o.total)}</span>}
+                {o && <span className="hidden text-[10px] text-muted-foreground sm:block">{ago(o.opened_at)}</span>}
+              </button>
+            )
+          })}
+        </div>
+      )}
       <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
-        {area?.tables.map((tb) => {
+        {loose.map((tb) => {
           const o = byTable.get(tb.id)
           return (
             <button key={tb.id} type="button" onClick={() => (o ? onOpenTab(o.id) : onOpen(tb.id))}
@@ -440,14 +474,54 @@ function MoveDialog({ floor, current, tabId, onClose, onMoved }: { floor: Floor 
 }
 
 /* ------------------------------------------------------------------ paying, all of it or some items */
+type CardState = { quote: Quote; redeem: boolean }
 function PayTabDialog({ data, tab, cashier, onClose, onClosedTab }: { data: TillData; tab: Tab; cashier: string; onClose: () => void; onClosedTab: () => void }) {
   const pay = usePayTab()
   const open = tab.lines.filter((l) => l.status !== 'void' && !l.paid)
   const [qty, setQty] = React.useState<Record<string, number>>(() => Object.fromEntries(open.map((l) => [l.id, num(l.quantity)])))
   const [step, setStep] = React.useState<'choose' | 'pay'>('choose')
+  const [cardCode, setCardCode] = React.useState('')
+  const [card, setCard] = React.useState<CardState | null>(null)
+  const [cardBusy, setCardBusy] = React.useState(false)
+  const [cardError, setCardError] = React.useState<string | null>(null)
+  const [manual, setManual] = React.useState('')
   const chosen = open.filter((l) => (qty[l.id] ?? 0) > 0)
-  const total = r2(chosen.reduce((s, l) => s + r2((qty[l.id] ?? 0) * num(l.unit_price)), 0))
   const everything = open.every((l) => (qty[l.id] ?? 0) === num(l.quantity))
+  const manualPct = card ? 0 : Math.min(Math.max(num(manual), 0), 100)
+
+  // the card's price for what is paid now (asked again when the choice changes)
+  const quoteFor = React.useCallback(async (code: string, redeem: boolean, lines = chosen) => {
+    const ql = lines.map((l) => ({ variant_id: l.variant_id, quantity: qty[l.id] ?? 0, unit_price: num(l.unit_price), manual_pct: 0 }))
+    let q = await quoteLoyalty(data.register.id, code, ql, 0)
+    if (q.usable && redeem && num(q.points_balance) > 0) q = await quoteLoyalty(data.register.id, code, ql, num(q.points_balance))
+    return q
+  }, [chosen, qty, data.register.id])
+  const chosenKey = chosen.map((l) => `${l.id}:${qty[l.id]}`).join(',')
+  React.useEffect(() => {
+    if (!card) return
+    let live = true
+    void quoteFor(card.quote.card_number, card.redeem).then((q) => { if (live) setCard((c) => (c ? { ...c, quote: q } : c)) }).catch(() => {})
+    return () => { live = false }
+  }, [chosenKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const applyCard = async (redeem = false, code = card?.quote.card_number ?? cardCode) => {
+    if (!code.trim()) return
+    setCardBusy(true); setCardError(null)
+    try {
+      const q = await quoteFor(code.trim(), redeem)
+      if (!q.usable) { setCardError(t(q.reason ?? 'This card cannot be used')); setCard(null) }
+      else {
+        setCard({ quote: q, redeem })
+        if (redeem && !(q.redeem_points > 0)) setCardError(t('Not enough points to spend on this sale (at least {n})', { n: q.min_redeem_points }))
+      }
+    } catch (e) { setCardError(navigator.onLine ? describeError(e) : t('The card needs internet')) } finally { setCardBusy(false) }
+  }
+
+  const pctOf = (_l: TabLine, i: number) => (card ? num(card.quote.lines[i]?.pct) : manualPct)
+  const gross = (l: TabLine) => r2((qty[l.id] ?? 0) * num(l.unit_price))
+  const net = (l: TabLine, i: number) => r2(gross(l) * (1 - pctOf(l, i) / 100))
+  const total = r2(chosen.reduce((s, l, i) => s + net(l, i), 0))
+  const discount = r2(chosen.reduce((s, l, i) => s + gross(l) - net(l, i), 0))
 
   const paid = async (tenders: Tender[]) => {
     const client_uuid = crypto.randomUUID()
@@ -455,12 +529,18 @@ function PayTabDialog({ data, tab, cashier, onClose, onClosedTab }: { data: Till
     const res = await pay.mutateAsync({
       tab_id: tab.id, session_id: data.session!.id, client_uuid, device_ref, payments: tenders.map((x) => ({ method: x.method, amount: x.amount })),
       split: everything ? undefined : chosen.map((l) => ({ line_id: l.id, quantity: qty[l.id]! })),
+      discounts: chosen.map((l, i) => ({ line_id: l.id, variant_id: l.variant_id, discount_pct: pctOf(l, i), manual_pct: card ? 0 : manualPct })).filter((d) => d.discount_pct > 0),
+      loyalty: card ? { card_id: card.quote.card_id, redeem_points: card.redeem ? num(card.quote.redeem_points) : 0 } : null,
     })
+    const earned = card && card.quote.kind === 'points' ? Math.floor(total * num(card.quote.points_per_unit)) : 0
+    const spent = card?.redeem ? num(card.quote.redeem_points) : 0
     const receipt: ReceiptData = {
       company: data.company, register: data.register, ref: device_ref, number: res.number, date: new Date(), cashier,
       customer: tab.table ? t('Table {name}', { name: tab.table }) : tab.label, currency: data.company.base_currency,
-      lines: chosen.map((l) => ({ name: l.name, qty: qty[l.id]!, price: num(l.unit_price), discount: 0, total: r2(qty[l.id]! * num(l.unit_price)), rate: data.catalog.find((c) => c.variant_id === l.variant_id)?.tax_rate ?? 0 })),
+      lines: chosen.map((l, i) => ({ name: l.name, qty: qty[l.id]!, price: num(l.unit_price), discount: pctOf(l, i), total: net(l, i), rate: data.catalog.find((c) => c.variant_id === l.variant_id)?.tax_rate ?? 0 })),
       payments: tenders.map((x) => ({ method: x.method, amount: x.amount })), change: num(res.change),
+      loyalty: card ? { holder: card.quote.holder_name, number: card.quote.card_number, discount: discount, redeemed: spent || undefined, earned: earned || undefined,
+                        balance: card.quote.kind === 'points' ? num(card.quote.points_balance) - spent + earned : undefined } : null,
     }
     printReceipt(receipt)
     toast.success(num(res.change) > 0 ? t('Paid · change {amount}', { amount: formatMoney(res.change) }) : t('Paid'))
@@ -474,13 +554,16 @@ function PayTabDialog({ data, tab, cashier, onClose, onClosedTab }: { data: Till
       <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle>{t('What is paid now?')}</DialogTitle>
           <DialogDescription>{t('Everything is ticked. To split the bill, untick or lower what another guest pays.')}</DialogDescription></DialogHeader>
-        <div className="max-h-[50dvh] overflow-y-auto rounded-md border">
+        <div className="max-h-[40dvh] overflow-y-auto rounded-md border">
           {open.map((l) => {
             const q = qty[l.id] ?? 0
+            const ci = chosen.indexOf(l)
+            const pct = ci >= 0 ? pctOf(l, ci) : 0
             return (
               <div key={l.id} className="flex items-center gap-3 border-b px-3 py-2 last:border-0">
                 <Checkbox checked={q > 0} onCheckedChange={(on) => setQty((s) => ({ ...s, [l.id]: on ? num(l.quantity) : 0 }))} aria-label={l.name} />
-                <div className="min-w-0 flex-1"><div className="truncate text-[13px] font-medium">{l.name}</div><div className="text-xs text-muted-foreground tabular">{formatMoney(l.unit_price)}</div></div>
+                <div className="min-w-0 flex-1"><div className="truncate text-[13px] font-medium">{l.name}</div>
+                  <div className="text-xs text-muted-foreground tabular">{formatMoney(l.unit_price)}{pct > 0 && <span className="text-success"> · −{pct}%</span>}</div></div>
                 {num(l.quantity) > 1 && (
                   <div className="flex items-center gap-1">
                     <Button size="icon" variant="outline" className="size-8" aria-label={t('One less')} onClick={() => setQty((s) => ({ ...s, [l.id]: Math.max(0, q - 1) }))}><Minus /></Button>
@@ -488,7 +571,7 @@ function PayTabDialog({ data, tab, cashier, onClose, onClosedTab }: { data: Till
                     <Button size="icon" variant="outline" className="size-8" aria-label={t('One more')} onClick={() => setQty((s) => ({ ...s, [l.id]: Math.min(num(l.quantity), q + 1) }))}><Plus /></Button>
                   </div>
                 )}
-                <span className="w-20 text-right text-[13px] font-semibold tabular">{formatMoney(r2(q * num(l.unit_price)))}</span>
+                <span className="w-20 text-right text-[13px] font-semibold tabular">{formatMoney(ci >= 0 ? net(l, ci) : 0)}</span>
               </div>
             )
           })}
@@ -497,12 +580,41 @@ function PayTabDialog({ data, tab, cashier, onClose, onClosedTab }: { data: Till
           <Button variant="outline" size="sm" onClick={() => setQty(Object.fromEntries(open.map((l) => [l.id, num(l.quantity)])))}>{t('All')}</Button>
           <Button variant="outline" size="sm" onClick={() => setQty(Object.fromEntries(open.map((l) => [l.id, 0])))}>{t('None')}</Button>
         </div>
+
+        {/* discount card, or a discount given by hand */}
+        <div className="grid gap-2 rounded-md border p-3">
+          {card ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
+              <span><CreditCard className="mr-1 inline size-4 text-muted-foreground" /><b>{card.quote.holder_name}</b> · {card.quote.kind === 'points'
+                ? tn(num(card.quote.points_balance), '{n} point', '{n} points') : t('{pct}% off', { pct: num(card.quote.program_pct) })}</span>
+              <span className="flex gap-1.5">
+                {card.quote.kind === 'points' && num(card.quote.points_balance) > 0 && (
+                  <Button size="sm" variant={card.redeem ? 'default' : 'outline'} loading={cardBusy} onClick={() => void applyCard(!card.redeem)}>
+                    {card.redeem && card.quote.redeem_points > 0 ? t('{n} points: −{amount}', { n: card.quote.redeem_points, amount: formatMoney(card.quote.redeem_amount) }) : t('Spend points')}
+                  </Button>)}
+                <Button size="sm" variant="ghost" onClick={() => { setCard(null); setCardCode(''); setCardError(null) }}>{t('Remove the card')}</Button>
+              </span>
+            </div>
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-[1fr_auto_120px]">
+              <Input value={cardCode} onChange={(e) => setCardCode(e.target.value)} placeholder={t('Discount card or phone')} aria-label={t('Discount card or phone')}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void applyCard() } }} />
+              <Button variant="outline" loading={cardBusy} disabled={!cardCode.trim()} onClick={() => void applyCard()}><CreditCard /> {t('Apply')}</Button>
+              <div className="relative">
+                <Input type="number" min="0" max="100" step="any" value={manual} onChange={(e) => setManual(e.target.value)} placeholder={t('Discount')} aria-label={t('Discount in percent')} className="pr-7 text-right" />
+                <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+              </div>
+            </div>
+          )}
+          {cardError && <p className="text-[13px] text-destructive">{cardError}</p>}
+        </div>
+
         <DialogFooter className="items-center sm:justify-between">
-          <span className="text-sm">{everything ? t('Whole bill') : t('Part of the bill')} · <b className="tabular">{formatMoney(total)}</b></span>
+          <span className="text-sm">{everything ? t('Whole bill') : t('Part of the bill')} · <b className="tabular">{formatMoney(total)}</b>
+            {discount > 0 && <span className="text-success"> ({t('{amount} off', { amount: formatMoney(discount) })})</span>}</span>
           <Button size="lg" disabled={total <= 0} onClick={() => setStep('pay')}>{t('Pay {amount}', { amount: formatMoney(total) })}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
-
