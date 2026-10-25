@@ -610,4 +610,5 @@ export default {
   "This company's licence is not active": "Licenca e kësaj kompanie nuk është aktive",
   "Unknown view": "Pamje e panjohur",
   "Person not found": "Personi nuk u gjet",
+  "Unknown publishing key": "Çelës publikimi i panjohur",
 } satisfies Dict

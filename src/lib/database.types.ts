@@ -11576,6 +11576,24 @@ export type Database = {
         }
         Returns: undefined
       }
+      desktop_publish_ticket: {
+        Args: {
+          p_key: string
+        }
+        Returns: Json
+      }
+      desktop_publish_with_key: {
+        Args: {
+          p_key: string
+          p_version: string
+          p_file_name: string
+          p_size: number
+          p_parts: number
+          p_sha256: string
+          p_notes?: string
+        }
+        Returns: undefined
+      }
       desktop_release: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -12254,6 +12272,14 @@ export type Database = {
           p_notes?: string
         }
         Returns: undefined
+      }
+      platform_desktop_publish_key: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      platform_desktop_publish_status: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       platform_desktop_releases: {
         Args: Record<PropertyKey, never>
