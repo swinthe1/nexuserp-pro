@@ -26,7 +26,7 @@ export function LicenseBanner() {
   )
 }
 
-const SUPPORT_KEY = 'nexus.support'
+const SUPPORT_KEY = 'drispro.support'
 /** The platform owner opened this client's company on purpose (kept for the browser tab). */
 export function startSupportVisit(companyId: string) {
   try { sessionStorage.setItem(SUPPORT_KEY, companyId) } catch { /* ignore */ }

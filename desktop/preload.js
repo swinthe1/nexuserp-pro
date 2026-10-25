@@ -1,18 +1,18 @@
-// What the web page can use when it runs inside the Windows program (window.nexusDesktop).
+// What the web page can use when it runs inside the Windows program (window.drisproDesktop).
 const { contextBridge, ipcRenderer } = require('electron')
-contextBridge.exposeInMainWorld('nexusDesktop', {
+contextBridge.exposeInMainWorld('drisproDesktop', {
   isDesktop: true,
-  info: () => ipcRenderer.invoke('nexus:info'),
-  printers: () => ipcRenderer.invoke('nexus:printers'),
+  info: () => ipcRenderer.invoke('drispro:info'),
+  printers: () => ipcRenderer.invoke('drispro:printers'),
   /** kind: 'receipt' and 'kitchen' go straight to the chosen printer; 'document' opens the print window */
-  print: (html, kind) => ipcRenderer.invoke('nexus:print', { html, kind }),
-  openDrawer: () => ipcRenderer.invoke('nexus:drawer'),
-  settings: () => ipcRenderer.invoke('nexus:settings'),
-  saveSettings: (s) => ipcRenderer.invoke('nexus:save-settings', s),
-  setServer: (url) => ipcRenderer.invoke('nexus:set-server', url),
-  retry: () => ipcRenderer.invoke('nexus:retry'),
+  print: (html, kind) => ipcRenderer.invoke('drispro:print', { html, kind }),
+  openDrawer: () => ipcRenderer.invoke('drispro:drawer'),
+  settings: () => ipcRenderer.invoke('drispro:settings'),
+  saveSettings: (s) => ipcRenderer.invoke('drispro:save-settings', s),
+  setServer: (url) => ipcRenderer.invoke('drispro:set-server', url),
+  retry: () => ipcRenderer.invoke('drispro:retry'),
   /** licence code → whose it is, plan, cloud/local allowed */
-  activate: (code) => ipcRenderer.invoke('nexus:activate', code),
-  finishActivation: (a) => ipcRenderer.invoke('nexus:finish-activation', a),
-  reactivate: () => ipcRenderer.invoke('nexus:reactivate'),
+  activate: (code) => ipcRenderer.invoke('drispro:activate', code),
+  finishActivation: (a) => ipcRenderer.invoke('drispro:finish-activation', a),
+  reactivate: () => ipcRenderer.invoke('drispro:reactivate'),
 })

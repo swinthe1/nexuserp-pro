@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · history from the old program (runs after 17)
+-- DrisPRO · history from the old program (runs after 17)
 -- =============================================================================
 \set QUIET on
 \set ON_ERROR_STOP on

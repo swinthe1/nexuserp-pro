@@ -29,8 +29,8 @@ elif ! grep -q '^ADMIN_EMAIL=' .env; then echo "ADMIN_EMAIL=$ADMIN_EMAIL" >> .en
 fi
 grep -q '^LICENCE=.' .env || { sed -i '/^LICENCE=/d' .env; echo "LICENCE=$LICENCE" >> .env; }
 
-pass="$(docker exec nexus-db printenv POSTGRES_PASSWORD)"
-sql() { docker exec -i -e PGPASSWORD="$pass" -e PGOPTIONS='-c client_min_messages=warning' nexus-db psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -q -t -A "$@"; }
+pass="$(docker exec drispro-db printenv POSTGRES_PASSWORD)"
+sql() { docker exec -i -e PGPASSWORD="$pass" -e PGOPTIONS='-c client_min_messages=warning' drispro-db psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -q -t -A "$@"; }
 
 # the administrator's account, made once
 if [ -n "${ADMIN_PASSWORD:-}" ]; then

@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 0300 · Inventory, costing, WMS, OMS
+-- DrisPRO · 0300 · Inventory, costing, WMS, OMS
 --
 -- Source of truth for stock is the immutable stock_movements ledger.
 -- stock_levels (per variant/location/lot) and item_costs (weighted average

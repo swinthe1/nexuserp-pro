@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · price history of every item
+-- DrisPRO · price history of every item
 --   * from the old program: its price levelling documents (Logmicro "nivelimi i çmimeve"),
 --     with the old and new price, the stock at that moment and the change in stock value
 --   * here: each change of the selling price, kept by a trigger (not for a company whose

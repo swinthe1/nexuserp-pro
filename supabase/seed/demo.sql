@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · demo data
+-- DrisPRO · demo data
 --
 -- Ylli Retail sh.p.k. (Tiranë): two shops' worth of retail, a warehouse, a
 -- small coffee roastery, wholesale to hotels and bars, a web shop, delivery

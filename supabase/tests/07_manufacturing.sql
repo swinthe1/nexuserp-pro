@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · Phase 7 manufacturing tests (runs after 01–06; reuses t.ok / t.throws / t.login)
+-- DrisPRO · Phase 7 manufacturing tests (runs after 01–06; reuses t.ok / t.throws / t.login)
 -- Scenario: a roastery. Green coffee (lots) → roasted coffee (sub-assembly, lots) → 1 kg packs (lots).
 -- =============================================================================
 \set QUIET on

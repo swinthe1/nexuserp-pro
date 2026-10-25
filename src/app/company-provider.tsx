@@ -55,7 +55,7 @@ interface CompanyCtx {
 }
 
 const CompanyContext = React.createContext<CompanyCtx | null>(null)
-const KEY = 'nexus.company'
+const KEY = 'drispro.company'
 
 export function matchesPermission(granted: string[], perm: string, superAdmin = false) {
   if (superAdmin) return true
@@ -74,12 +74,12 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase.rpc('get_my_context')
       if (error) throw error
       // kept on the device so offline screens (the POS till) still know the company and permissions
-      try { localStorage.setItem(`nexus.ctx.${user!.id}`, JSON.stringify(data)) } catch { /* ignore */ }
+      try { localStorage.setItem(`drispro.ctx.${user!.id}`, JSON.stringify(data)) } catch { /* ignore */ }
       return data as unknown as MyContext
     },
     initialData: () => {
       if (!user || navigator.onLine) return undefined
-      try { const raw = localStorage.getItem(`nexus.ctx.${user.id}`); return raw ? (JSON.parse(raw) as MyContext) : undefined } catch { return undefined }
+      try { const raw = localStorage.getItem(`drispro.ctx.${user.id}`); return raw ? (JSON.parse(raw) as MyContext) : undefined } catch { return undefined }
     },
   })
 

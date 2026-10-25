@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · Phase 10 tests: clients created by the platform owner, licences (runs after 01–12)
+-- DrisPRO · Phase 10 tests: clients created by the platform owner, licences (runs after 01–12)
 -- =============================================================================
 \set QUIET on
 \set ON_ERROR_STOP on

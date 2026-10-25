@@ -554,9 +554,9 @@ export default {
   "At most 60 pictures at once": "Deri në 60 foto njëherësh",
   "The step needs its id": "Hapit i mungon id-ja",
   "This licence code is not known": "Ky kod licence nuk njihet",
-  "This licence is not active; ask your NexusERP supplier": "Kjo licencë nuk është aktive; pyesni furnitorin e DrisPRO",
+  "This licence is not active; ask your DrisPRO supplier": "Kjo licencë nuk është aktive; pyesni furnitorin e DrisPRO",
   "This licence is for the cloud only": "Kjo licencë është vetëm për cloud",
-  "This licence is used by another server; ask your NexusERP supplier to move it": "Kjo licencë përdoret nga një server tjetër; kërkojini furnitorit të DrisPRO ta kalojë",
+  "This licence is used by another server; ask your DrisPRO supplier to move it": "Kjo licencë përdoret nga një server tjetër; kërkojini furnitorit të DrisPRO ta kalojë",
   "This client has no licence yet": "Ky klient nuk ka ende licencë",
   "No licence to apply": "Nuk ka licencë për të vendosur",
   "Cloud copies are not set up on the cloud yet": "Kopjet në cloud ende nuk janë ndezur në serverin cloud",
@@ -598,6 +598,4 @@ export default {
   "The cloud did not answer in time": "Cloud-i nuk u përgjigj në kohë",
   "The assistant could not answer": "Asistenti nuk mundi të përgjigjet",
   "This licence has used the assistant too much this month": "Kjo licencë e ka përdorur asistentin shumë këtë muaj",
-  "This licence is not active; ask your DrisPRO supplier": "Kjo licencë nuk është aktive; pyesni furnitorin e DrisPRO",
-  "This licence is used by another server; ask your DrisPRO supplier to move it": "Kjo licencë përdoret nga një server tjetër; kërkojini furnitorit të DrisPRO ta kalojë",
 } satisfies Dict

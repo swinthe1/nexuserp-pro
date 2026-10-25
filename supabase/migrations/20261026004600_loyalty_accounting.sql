@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · loyalty points in the books
+-- DrisPRO · loyalty points in the books
 --   points earned are a promise to the customer: their value is set aside as a liability
 --     Dr 6231 Loyalty programme cost      Cr 4191 Loyalty points not yet used
 --   points spent were already given as a discount on the receipt (lower sales), so the

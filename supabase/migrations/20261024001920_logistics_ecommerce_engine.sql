@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 1920 · Logistics & e-commerce engine (Phase 8)
+-- DrisPRO · 1920 · Logistics & e-commerce engine (Phase 8)
 --
 -- Logistics
 --   delivery (picked) → shipment → route stop (own fleet) or carrier hand-off

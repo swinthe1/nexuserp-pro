@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 0200 · Master data
+-- DrisPRO · 0200 · Master data
 -- Chart of accounts, cost centers, fiscal calendar, payment terms, tax codes,
 -- units of measure, price lists, business partners, warehouses & locations,
 -- product catalog (templates, attributes, variants, barcodes), vendor pricing.

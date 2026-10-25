@@ -63,7 +63,7 @@ export function ReceiveScanPage() {
   const ensureLot = useEnsureLot()
   const finish = useFinishReceipt()
   const st = useScanStatus()
-  const storeKey = `nexus.dock.${id}`
+  const storeKey = `drispro.dock.${id}`
   const [entries, setEntries] = React.useState<Entry[] | null>(null)
   const [lotFor, setLotFor] = React.useState<{ variantId: string; qty: number } | null>(null)
   const [qtyFor, setQtyFor] = React.useState<Entry | null>(null)
@@ -200,7 +200,7 @@ export function ReceiveScanPage() {
 }
 
 function LotDialog({ variant, onClose, onLot }: { variant: Entry; vendorId: string | null; onClose: () => void; onLot: (n: string, expiry: string | null) => Promise<void> }) {
-  const lastKey = `nexus.dock.lastlot.${variant.variantId}`
+  const lastKey = `drispro.dock.lastlot.${variant.variantId}`
   const [number, setNumber] = React.useState(() => { try { return localStorage.getItem(lastKey) ?? '' } catch { return '' } })
   const [expiry, setExpiry] = React.useState(variant.expiry ?? '')
   const [busy, setBusy] = React.useState(false)

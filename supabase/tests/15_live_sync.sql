@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · live link tests (runs after 01–14)
+-- DrisPRO · live link tests (runs after 01–14)
 -- =============================================================================
 \set QUIET on
 \set ON_ERROR_STOP on

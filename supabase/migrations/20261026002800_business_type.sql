@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · type of business per client
+-- DrisPRO · type of business per client
 -- The platform administrator picks what the client is (shop, café, restaurant,
 -- wholesaler, manufacturer, services). The type switches off the parts of the menu
 -- that business does not use; the client's admin can switch them back on under

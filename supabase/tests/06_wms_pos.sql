@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · Phase 6 WMS + POS tests (runs after 01–05; reuses t.ok / t.throws / t.login)
+-- DrisPRO · Phase 6 WMS + POS tests (runs after 01–05; reuses t.ok / t.throws / t.login)
 -- =============================================================================
 \set QUIET on
 \set ON_ERROR_STOP on

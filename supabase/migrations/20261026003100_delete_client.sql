@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · delete a client completely (platform administrator only)
+-- DrisPRO · delete a client completely (platform administrator only)
 --
 -- Removes every row of the company in every table (documents, stock, accounting,
 -- users' memberships, licence, live link…), then the company. Accounts of people who

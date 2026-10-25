@@ -5,7 +5,10 @@
 #   bash deploy/coolify/update.sh --setup    # once: remember the Coolify token so the redeploy is automatic
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-ENV=/root/.nexuserp-deploy.env
+ENV=/root/.drispro-deploy.env
+# a server set up under the older name (NexusERP): its settings file and names move over once
+old_env=/root/.nexuserp-deploy.env
+if [ -f "$old_env" ] && [ ! -f "$ENV" ]; then sed 's/^NEXUS_DB=/DRISPRO_DB=/' "$old_env" > "$ENV" && chmod 600 "$ENV" && rm -f "$old_env"; fi
 
 if [ "${1:-}" = "--setup" ]; then
   echo "Coolify: Keys & Tokens -> API tokens -> Create (permission: deploy). Copy the token."
@@ -16,7 +19,7 @@ if [ "${1:-}" = "--setup" ]; then
   db="$(docker ps --format '{{.Names}}' | grep -E '^supabase-db' | head -1 || true)"
   read -rp "Database container [$db]: " c; db="${c:-$db}"
   umask 077
-  printf 'COOLIFY_URL=%q\nCOOLIFY_TOKEN=%q\nCOOLIFY_APP=%q\nNEXUS_DB=%q\n' "$url" "$token" "$uuid" "$db" > "$ENV"
+  printf 'COOLIFY_URL=%q\nCOOLIFY_TOKEN=%q\nCOOLIFY_APP=%q\nDRISPRO_DB=%q\n' "$url" "$token" "$uuid" "$db" > "$ENV"
   echo "Saved in $ENV (readable by root only)."
   exit 0
 fi
@@ -26,7 +29,7 @@ fi
 #   bash deploy/coolify/update.sh --ai         (Anthropic API key, for reading supplier invoices)
 if [ "${1:-}" = "--whatsapp" ] || [ "${1:-}" = "--ai" ]; then
   if [ -f "$ENV" ]; then . "$ENV"; fi
-  db="${NEXUS_DB:-$(docker ps --format '{{.Names}}' | grep -E '^supabase-db' | head -1 || true)}"
+  db="${DRISPRO_DB:-$(docker ps --format '{{.Names}}' | grep -E '^supabase-db' | head -1 || true)}"
   pass="$(docker exec "$db" printenv POSTGRES_PASSWORD)"
   put() { docker exec -i -e PGPASSWORD="$pass" "$db" psql -h 127.0.0.1 -U postgres -d postgres -q -v ON_ERROR_STOP=1 -v k="$1" -v v="$2" >/dev/null <<'SQL'
 insert into app.server_secrets (key, value) values (:'k', :'v') on conflict (key) do update set value = excluded.value;
@@ -43,9 +46,9 @@ SQL
   exit 0
 fi
 
-db_given="${NEXUS_DB:-}"
+db_given="${DRISPRO_DB:-}"
 if [ -f "$ENV" ]; then . "$ENV"; fi
-db="${db_given:-${NEXUS_DB:-}}"
+db="${db_given:-${DRISPRO_DB:-}}"
 
 if [ -z "$db" ]; then db="$(docker ps --format '{{.Names}}' | grep -E '^supabase-db' | head -1 || true)"; fi
 
@@ -57,7 +60,12 @@ if [ "$avail_kb" -lt 1048576 ]; then
 fi
 # the nightly copy is always installed with the newest script; a copy is made before every update
 NO_FIRST=1 bash deploy/coolify/install-backup.sh "$db" >/dev/null
-/usr/local/bin/nexuserp-backup "$db" /root/backups 14 before-update | tail -2 | sed 's/^/    /'
+o=nexuserp
+rm -f "/etc/cron.d/$o-backup" "/usr/local/bin/$o-backup" "/usr/local/bin/$o-restore"
+for f in /root/backups/"$o"-*.dump; do [ -e "$f" ] && mv "$f" "/root/backups/drispro-${f##*/$o-}"; done
+[ -f "/var/log/$o-backup.log" ] && cat "/var/log/$o-backup.log" >> /var/log/drispro-backup.log && rm -f "/var/log/$o-backup.log"
+rm -rf "/root/$o-pro" "/root/$o-pro-deploy.zip"
+/usr/local/bin/drispro-backup "$db" /root/backups 14 before-update | tail -2 | sed 's/^/    /'
 
 echo "==> 2/3 Database"
 NO_DEMO=1 bash deploy/coolify/setup-database.sh $db
@@ -85,7 +93,7 @@ if [ -n "${jwt:-}" ]; then
     mkdir -p /root/drispro-postier && cp deploy/worker/*.mjs /root/drispro-postier/
     docker rm -f drispro-postier >/dev/null 2>&1 || true
     docker run -d --name drispro-postier --restart unless-stopped -v /root/drispro-postier:/worker:ro \
-      -e API_URL="${NEXUS_API:-https://api.erp.dris-ks.com}" -e SERVICE_KEY="$key" -e MODE=cloud \
+      -e API_URL="${DRISPRO_API:-https://api.erp.dris-ks.com}" -e SERVICE_KEY="$key" -e MODE=cloud \
       --entrypoint node "$img" /worker/postier.mjs >/dev/null && echo "    postier (email, WhatsApp, timed work): running"
   fi
 fi
@@ -93,20 +101,20 @@ fi
 echo "==> 3/3 Redeploy in Coolify"
 if [ -z "${COOLIFY_TOKEN:-}" ] || [ -z "${COOLIFY_APP:-}" ]; then
   echo "    Not set up yet: press Redeploy in Coolify yourself this time."
-  echo "    To make it automatic, run once:  bash /root/nexuserp-pro/deploy/coolify/update.sh --setup"
+  echo "    To make it automatic, run once:  bash /root/drispro/deploy/coolify/update.sh --setup"
   exit 0
 fi
 # newer Coolify (4.5+) wants POST, older ones GET
-code=$(curl -s -o /tmp/nexus-deploy.out -w '%{http_code}' -X POST -H "Authorization: Bearer $COOLIFY_TOKEN" \
+code=$(curl -s -o /tmp/drispro-deploy.out -w '%{http_code}' -X POST -H "Authorization: Bearer $COOLIFY_TOKEN" \
   "${COOLIFY_URL%/}/api/v1/deploy?uuid=$COOLIFY_APP&force=false")
 if [ "$code" = "405" ]; then
-  code=$(curl -s -o /tmp/nexus-deploy.out -w '%{http_code}' -H "Authorization: Bearer $COOLIFY_TOKEN" \
+  code=$(curl -s -o /tmp/drispro-deploy.out -w '%{http_code}' -H "Authorization: Bearer $COOLIFY_TOKEN" \
     "${COOLIFY_URL%/}/api/v1/deploy?uuid=$COOLIFY_APP&force=false")
 fi
 if [ "$code" = "200" ] || [ "$code" = "201" ]; then
   echo "    Redeploy started. In 2-3 minutes open the app and press Ctrl+Shift+R."
 else
-  echo "    Coolify answered $code: $(head -c 300 /tmp/nexus-deploy.out)"
-  echo "    Press Redeploy in Coolify yourself, and check the token with: bash /root/nexuserp-pro/deploy/coolify/update.sh --setup"
+  echo "    Coolify answered $code: $(head -c 300 /tmp/drispro-deploy.out)"
+  echo "    Press Redeploy in Coolify yourself, and check the token with: bash /root/drispro/deploy/coolify/update.sh --setup"
   exit 1
 fi

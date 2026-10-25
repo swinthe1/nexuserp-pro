@@ -6,7 +6,7 @@
 # Makes a fresh copy of the current state first (…-before-restore.dump), then restores.
 set -euo pipefail
 container="${1:?usage: restore-database.sh <db-container> <file.dump>}"
-file="${2:?which copy? e.g. /root/backups/nexuserp-2026-10-24_0230.dump}"
+file="${2:?which copy? e.g. /root/backups/drispro-2026-10-24_0230.dump}"
 [ -f "$file" ] || { echo "no such file: $file" >&2; exit 1; }
 pass="$(docker exec "$container" printenv POSTGRES_PASSWORD)"
 user=supabase_admin
@@ -17,16 +17,16 @@ echo "Everything entered after that copy was made will be lost."
 read -r -p "Type RESTORE to continue: " answer
 [ "$answer" = "RESTORE" ] || { echo "Stopped, nothing changed."; exit 1; }
 
-safety="$(dirname "$file")/nexuserp-$(date +%Y-%m-%d_%H%M)-before-restore.dump"
+safety="$(dirname "$file")/drispro-$(date +%Y-%m-%d_%H%M)-before-restore.dump"
 echo "==> first a copy of the current state: $safety"
 docker exec -e PGPASSWORD="$pass" "$container" pg_dump -h 127.0.0.1 -U "$user" -d postgres -Fc --no-owner --no-privileges \
   --exclude-schema=_analytics --exclude-schema=_realtime --exclude-schema=supabase_functions > "$safety"
 
 echo "==> restoring"
-docker exec -e PGPASSWORD="$pass" "$container" psql -h 127.0.0.1 -U "$user" -d postgres -q -c "create schema if not exists extensions; create extension if not exists pgcrypto with schema extensions; create extension if not exists pg_trgm with schema extensions; create extension if not exists btree_gist with schema extensions; create schema if not exists app; create schema if not exists nexus_meta;"
+docker exec -e PGPASSWORD="$pass" "$container" psql -h 127.0.0.1 -U "$user" -d postgres -q -c "create schema if not exists extensions; create extension if not exists pgcrypto with schema extensions; create extension if not exists pg_trgm with schema extensions; create extension if not exists btree_gist with schema extensions; create schema if not exists app; create schema if not exists drispro_meta;"
 keep_acl=(--no-owner --no-privileges); [ "$user" = supabase_admin ] && keep_acl=()
 docker exec -i -e PGPASSWORD="$pass" "$container" pg_restore -h 127.0.0.1 -U "$user" -d postgres --clean --if-exists "${keep_acl[@]}" \
-  --schema=public --schema=app --schema=auth --schema=storage --schema=nexus_meta --single-transaction < "$file"
+  --schema=public --schema=app --schema=auth --schema=storage --schema=drispro_meta --schema=nexus_meta --single-transaction < "$file"
 # sign-in and file storage must own their tables again (an older copy made without owners leaves them to the restorer)
 docker exec -i -e PGPASSWORD="$pass" "$container" psql -h 127.0.0.1 -U "$user" -d postgres -q -v ON_ERROR_STOP=0 >/dev/null 2>&1 <<'SQL' || true
 do $$
@@ -61,7 +61,7 @@ begin
     grant execute on all functions in schema storage to anon, authenticated, service_role;
   end if;
   -- DrisPRO's own schemas belong to postgres, which applies the updates (a restore as supabase_admin would keep them otherwise)
-  foreach s in array array['public', 'app', 'nexus_meta'] loop
+  foreach s in array array['public', 'app', 'drispro_meta', 'nexus' || '_meta'] loop
     if not exists (select 1 from pg_namespace where nspname = s) then continue; end if;
     if pg_get_userbyid((select nspowner from pg_namespace where nspname = s)) = 'supabase_admin' and s <> 'public' then execute format('alter schema %I owner to postgres', s); end if;
     for r in select c.oid::regclass as obj, c.relkind as k from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -78,6 +78,15 @@ begin
       execute format('alter type %s owner to postgres', r.ty);
     end loop;
   end loop;
+  -- a copy made under the older name (NexusERP) brings its bookkeeping as nexus_meta: that one is the true one now
+  if to_regclass('nexus' || '_meta.applied_migrations') is not null then
+    if exists (select 1 from pg_namespace where nspname = 'drispro_meta') then drop schema drispro_meta cascade; end if;
+    execute format('alter schema %I rename to drispro_meta', 'nexus' || '_meta');
+    for r in select p.oid from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname in ('public', 'app') and (case when p.prokind = 'f' then pg_get_functiondef(p.oid) end) like '%nexus' || '_meta.%' loop
+      execute replace(pg_get_functiondef(r.oid), 'nexus' || '_meta.', 'drispro_meta.');
+    end loop;
+  end if;
   if exists (select 1 from pg_roles where rolname = 'dashboard_user') and to_regclass('auth.users') is not null then
     grant all on all tables in schema auth to dashboard_user;
   end if;

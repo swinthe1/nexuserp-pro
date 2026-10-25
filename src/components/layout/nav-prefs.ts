@@ -78,7 +78,7 @@ export function useHiddenSections() {
 
 /* ---------------------------------------------- pages used most on this device */
 
-const USAGE_KEY = 'nexus.nav.usage'
+const USAGE_KEY = 'drispro.nav.usage'
 
 export function recordVisit(href: string) {
   try {

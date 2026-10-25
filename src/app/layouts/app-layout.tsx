@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useHotkey } from '@/hooks/use-hotkey'
 import { t } from '@/i18n'
 
-const KEY = 'nexus.sidebar.collapsed'
+const KEY = 'drispro.sidebar.collapsed'
 
 function FullPageSkeleton() {
   return (

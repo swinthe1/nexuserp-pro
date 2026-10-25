@@ -31,7 +31,7 @@ const KEY_FNS = new Set(['t', 'msg', 'tr'])
 const SKIP_PARENT_FNS = new Set(['t', 'msg', 'tr', 'tn', 'td', 'tEnum', 'tServer', 'cn', 'clsx', 'twMerge', 'cva', 'console', 'require', 'import', 'useQuery', 'eq', 'select', 'order', 'from', 'rpc', 'invalidateQueries', 'setItem', 'getItem', 'querySelector', 'addEventListener', 'Error'])
 
 const hasLetters = (s) => /\p{L}{2,}/u.test(s)
-const KEEP = /^(Excel|CSV|PDF|XLSX|NexusERP( Pro)?|DrisPRO|Ctrl|Shqip|English|SQ|EN|OK|Email|NIPT|NUI|TVSH|IBAN|SWIFT|QR|TCR|NIVF|NSLF|IIC|FIC|DUD|EUR|ALL|USD|kg|km|m³|h)$/
+const KEEP = /^(Excel|CSV|PDF|XLSX|DrisPRO( Pro)?|DrisPRO|Ctrl|Shqip|English|SQ|EN|OK|Email|NIPT|NUI|TVSH|IBAN|SWIFT|QR|TCR|NIVF|NSLF|IIC|FIC|DUD|EUR|ALL|USD|kg|km|m³|h)$/
 const looksLikeCode = (s) => KEEP.test(s.trim()) || /^[A-Z0-9_./%:#-]{1,6}$/.test(s.trim()) || /^[a-z0-9_.:/-]+$/.test(s.trim()) || /^(https?:|mailto:|\/)/.test(s.trim()) || /^[\s\p{P}\p{S}\d]*$/u.test(s)
 
 function walk(dir, out = []) {

@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · when an item last moved, sold and arrived (from the old program, every few
+-- DrisPRO · when an item last moved, sold and arrived (from the old program, every few
 -- hours), so items that have not moved for months can be found and switched off
 -- =============================================================================
 

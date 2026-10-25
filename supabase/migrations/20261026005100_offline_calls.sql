@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · work done without internet, sent later
+-- DrisPRO · work done without internet, sent later
 --   public.offline_call(op, fn, args): one step from a device's outbox. Each step has its own id
 --   (op); a step that arrives twice gives back the first answer and is not done again.
 --   A document made offline is known on the device by the id of the step that created it; later

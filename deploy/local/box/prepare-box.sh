@@ -90,14 +90,14 @@ systemctl enable docker >/dev/null 2>&1 || true
 systemctl restart docker
 # Docker opens its own ports past ufw; DrisPRO only publishes the app port, the rest stays inside
 
-say "7/8 DrisPRO in /opt/nexuserp"
-mkdir -p /opt/nexuserp
-if [ "$src" != /opt/nexuserp ]; then
+say "7/8 DrisPRO in /opt/drispro"
+mkdir -p /opt/drispro
+if [ "$src" != /opt/drispro ]; then
   # keep what is there (.env with the keys, data); bring the new program files
-  tar -C "$src" --exclude=./.env --exclude=./data -cf - . | tar -C /opt/nexuserp -xf -
+  tar -C "$src" --exclude=./.env --exclude=./data -cf - . | tar -C /opt/drispro -xf -
 fi
 install -m 755 "$src/box/drispro-status.sh" /usr/local/bin/drispro-status
-cd /opt/nexuserp
+cd /opt/drispro
 ip="$(hostname -I | awk '{print $1}')"
 PUBLIC_URL="${PUBLIC_URL:-http://$ip$([ "$port" = 80 ] || echo ":$port")}" HTTP_PORT="$port" bash install.sh
 

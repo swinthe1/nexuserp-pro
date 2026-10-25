@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · restaurant, the missing pieces
+-- DrisPRO · restaurant, the missing pieces
 --   * paying a table with a discount card / points (already passed on) and a discount given by
 --     hand, which is checked against the till's discount limit like at the shop till
 --   * the floor plan: where each table stands in its room, and its shape

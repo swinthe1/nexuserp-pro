@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 1910 · HR & payroll engine (Phase 8)
+-- DrisPRO · 1910 · HR & payroll engine (Phase 8)
 --
 -- * Holidays per company (seeded with the 2026 official days, moved days
 --   included) drive working-day counts for leave and payroll.

@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 1000 · Logistics & e-commerce integration
+-- DrisPRO · 1000 · Logistics & e-commerce integration
 -- Shipments carry deliveries to customers (own fleet routes or carriers),
 -- including cash-on-delivery, which is common in AL/XK. Sales channels hold
 -- integration settings; secrets live in Supabase Vault and are referenced by

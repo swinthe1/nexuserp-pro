@@ -3,7 +3,7 @@
 # (Against a Supabase project use `supabase db reset` and then run only
 #  the 01–11 test files — the stub is for vanilla Postgres.)
 #
-#   DATABASE_URL=postgres://postgres@localhost:5432/nexus_test ./supabase/tests/run.sh
+#   DATABASE_URL=postgres://postgres@localhost:5432/drispro_test ./supabase/tests/run.sh
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
 : "${DATABASE_URL:?set DATABASE_URL to an EMPTY test database}"

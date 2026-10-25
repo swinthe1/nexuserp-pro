@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 0600 · Manufacturing
+-- DrisPRO · 0600 · Manufacturing
 -- Multi-level BOMs: a component may itself have a default BOM (sub-assembly);
 -- cycles are rejected by trigger. Work orders consume materials (stock
 -- movements to the production location) and produce finished goods valued at

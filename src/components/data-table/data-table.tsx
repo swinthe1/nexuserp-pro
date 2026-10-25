@@ -107,7 +107,7 @@ export function DataTable<T>({
   columns, data, isLoading, error, getRowId, tableKey, searchPlaceholder, facets = [], initialSorting = [],
   initialHidden = [], initialFilters, bulkActions, toolbar, onRowClick, exportName, empty, server, footer, dense,
 }: DataTableProps<T>) {
-  const storageKey = tableKey ? `nexus.table.${tableKey}.columns` : null
+  const storageKey = tableKey ? `drispro.table.${tableKey}.columns` : null
   const [sorting, setSorting] = React.useState<SortingState>(initialSorting)
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(initialFilters ?? [])
   const [globalFilter, setGlobalFilter] = React.useState('')

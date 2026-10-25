@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · live link from the client's old program (one way: old → NexusERP)
+-- DrisPRO · live link from the client's old program (one way: old → DrisPRO)
 --
 -- An agent on the client's server reads what changed every ~30 seconds and calls
 -- sync_push() with a secret connection key (no user login). The key belongs to one
@@ -9,7 +9,7 @@
 --   stock                   → set to the old program's quantity, per warehouse, with
 --                             one correction adjustment per warehouse and batch
 --   documents               → external_documents: the old program's invoices with
---                             what is still open; they do not touch NexusERP's books
+--                             what is still open; they do not touch DrisPRO's books
 -- A company in training mode never fiscalizes and shows a banner, so staff can
 -- practise on live data while the old program stays the official one.
 -- =============================================================================
@@ -118,7 +118,7 @@ end $$;
 -- -----------------------------------------------------------------------------
 -- 5. Stock and documents from a push
 -- -----------------------------------------------------------------------------
--- p_rows: [{warehouse, sku, qty, cost?}] — the old program's quantity; NexusERP is set to it
+-- p_rows: [{warehouse, sku, qty, cost?}] — the old program's quantity; DrisPRO is set to it
 create or replace function app.sync_stock(p_company uuid, p_rows jsonb)
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare

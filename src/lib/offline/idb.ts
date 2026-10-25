@@ -1,5 +1,6 @@
 /** A tiny IndexedDB wrapper for the offline cache and the outbox (one database, two stores). */
-const DB_NAME = 'nexus-offline'
+import { carryOver } from './carry-over'
+const DB_NAME = 'drispro-offline'
 let dbp: Promise<IDBDatabase> | null = null
 
 function open() {
@@ -10,7 +11,7 @@ function open() {
       if (!d.objectStoreNames.contains('kv')) d.createObjectStore('kv')
       if (!d.objectStoreNames.contains('outbox')) d.createObjectStore('outbox', { keyPath: 'id' })
     }
-    req.onsuccess = () => resolve(req.result)
+    req.onsuccess = () => { void carryOver('nexus' + '-offline', req.result, ['kv', 'outbox']).then(() => resolve(req.result)) }
     req.onerror = () => { dbp = null; reject(req.error) }
   })
   return dbp

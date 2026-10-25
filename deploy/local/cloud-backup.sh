@@ -11,7 +11,7 @@ CLOUD_ANON_KEY="${CLOUD_ANON_KEY:-eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiO
 api="${LICENCE_SERVER:-https://api.erp.dris-ks.com}"
 [ -n "${LICENCE:-}" ] && [ -n "${SERVER_ID:-}" ] || { echo "$(date '+%F %T') no licence yet: no cloud copy"; exit 0; }
 
-latest="$(ls -1t /root/backups/nexuserp-*.dump 2>/dev/null | grep -v before-restore | head -1 || true)"
+latest="$(ls -1t /root/backups/drispro-*.dump 2>/dev/null | grep -v before-restore | head -1 || true)"
 [ -n "$latest" ] || { echo "$(date '+%F %T') no local copy to send"; exit 0; }
 
 rpc() { curl -fsS --max-time 30 -X POST "$api/rest/v1/rpc/$1" -H "apikey: $CLOUD_ANON_KEY" -H "Authorization: Bearer $CLOUD_ANON_KEY" -H 'Content-Type: application/json' -d "$2"; }
@@ -38,5 +38,5 @@ echo "$(date '+%F %T') sent $name to the cloud ($parts parts, $(numfmt --to=iec 
 keep="$(printf '%s' "$ticket" | sed -n 's/.*"keep_days" *: *\([0-9]*\).*/\1/p')"; keep="${keep:-14}"
 cutoff="$(date -u -d "-$keep days" +%Y-%m-%d)"
 list="$(store -X POST "$api/storage/v1/object/list/$bucket" -H 'Content-Type: application/json' -d "{\"prefix\":\"$folder/\",\"limit\":1000}")" || exit 0
-old="$(printf '%s' "$list" | grep -o '"name":"nexuserp-[0-9-]*_[0-9]*[^"]*"' | sed 's/"name":"//; s/"$//' | while read -r n; do d="${n#nexuserp-}"; d="${d:0:10}"; [[ "$d" < "$cutoff" ]] && printf '"%s/%s",' "$folder" "$n"; done || true)"
+old="$(printf '%s' "$list" | grep -oE '"name":"(drispro|nexuserp)-[0-9-]*_[0-9]*[^"]*"' | sed 's/"name":"//; s/"$//' | while read -r n; do d="${n#*-}"; d="${d:0:10}"; [[ "$d" < "$cutoff" ]] && printf '"%s/%s",' "$folder" "$n"; done || true)"
 if [ -n "$old" ]; then store -X DELETE "$api/storage/v1/object/$bucket" -H 'Content-Type: application/json' -d "{\"prefixes\":[${old%,}]}" >/dev/null && echo "    removed copies older than $keep days"; fi

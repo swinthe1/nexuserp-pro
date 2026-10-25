@@ -1,11 +1,11 @@
 # DrisPRO on a local server: the database, sign-in, API, live updates and file storage (the same
 # Supabase pieces as the cloud), and the app itself, all behind one address on port 80.
 # Started and updated by install.sh / update.sh; settings and secrets are in .env next to this file.
-name: nexuserp
+name: drispro
 
 services:
   db:
-    container_name: nexus-db
+    container_name: drispro-db
     image: ghcr.io/supabase/postgres:17.6.1.136
     restart: unless-stopped
     volumes:
@@ -32,7 +32,7 @@ services:
     command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf", "-c", "log_min_messages=fatal"]
 
   auth:
-    container_name: nexus-auth
+    container_name: drispro-auth
     image: ghcr.io/supabase/gotrue:v2.197.0
     restart: unless-stopped
     depends_on: { db: { condition: service_healthy } }
@@ -72,7 +72,7 @@ services:
       GOTRUE_EXTERNAL_PHONE_ENABLED: "false"
 
   rest:
-    container_name: nexus-rest
+    container_name: drispro-rest
     image: ghcr.io/supabase/postgrest:v14.18
     restart: unless-stopped
     depends_on: { db: { condition: service_healthy } }
@@ -89,7 +89,7 @@ services:
 
   realtime:
     # the name is part of how realtime finds its tenant (realtime-dev)
-    container_name: realtime-dev.nexus-realtime
+    container_name: realtime-dev.drispro-realtime
     image: ghcr.io/supabase/realtime:v2.143.3
     restart: unless-stopped
     depends_on: { db: { condition: service_healthy } }
@@ -114,7 +114,7 @@ services:
       DISABLE_HEALTHCHECK_LOGGING: "true"
 
   storage:
-    container_name: nexus-storage
+    container_name: drispro-storage
     image: ghcr.io/supabase/storage-api:v1.81.0
     restart: unless-stopped
     depends_on: { db: { condition: service_healthy }, rest: { condition: service_started } }
@@ -143,7 +143,7 @@ services:
 
   # the app and the one address for everything (port 80 on this server)
   web:
-    container_name: nexus-web
+    container_name: drispro-web
     image: nginx:1.27-alpine
     restart: unless-stopped
     depends_on: [auth, rest, realtime, storage]
@@ -152,12 +152,12 @@ services:
     volumes:
       - ./app:/usr/share/nginx/html:ro
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./nexus-config.js:/etc/nginx/nexus-config.js:ro
+      - ./drispro-config.js:/etc/nginx/drispro-config.js:ro
 
   # the postier: sends the company's email and WhatsApp messages and runs the timed work
   # (Node from the storage image: nothing more to download)
   postier:
-    container_name: nexus-postier
+    container_name: drispro-postier
     image: ghcr.io/supabase/storage-api:v1.81.0
     restart: unless-stopped
     depends_on: [web]
@@ -174,7 +174,7 @@ services:
 
   # optional: reach this server from outside (a Cloudflare tunnel); started when TUNNEL_TOKEN is set
   tunnel:
-    container_name: nexus-tunnel
+    container_name: drispro-tunnel
     image: cloudflare/cloudflared:2025.10.0
     restart: unless-stopped
     profiles: ["tunnel"]

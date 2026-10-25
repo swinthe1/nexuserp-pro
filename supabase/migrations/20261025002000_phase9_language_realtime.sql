@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 2000 · Language and live updates (Phase 9)
+-- DrisPRO · 2000 · Language and live updates (Phase 9)
 --
 -- * Shqip is the default language. profiles.locale is 'sq' or 'en'; people
 --   who never chose a language get Shqip. Text is stored in English by the

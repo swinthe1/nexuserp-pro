@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · restaurant (runs after 16; uses the shop and till T9 from 06/16)
+-- DrisPRO · restaurant (runs after 16; uses the shop and till T9 from 06/16)
 -- =============================================================================
 \set QUIET on
 \set ON_ERROR_STOP on

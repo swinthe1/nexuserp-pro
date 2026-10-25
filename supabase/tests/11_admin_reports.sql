@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · Phase 8 admin, reporting, notifications and search tests (runs after 01–10)
+-- DrisPRO · Phase 8 admin, reporting, notifications and search tests (runs after 01–10)
 -- =============================================================================
 \set QUIET on
 \set ON_ERROR_STOP on

@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · loyalty cards (kartela e zbritjes)
+-- DrisPRO · loyalty cards (kartela e zbritjes)
 --
 -- programs  what a card gives: a fixed discount, points, or a staff discount with a
 --           monthly limit; which categories and stores it applies to; from / until.

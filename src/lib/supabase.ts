@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
 
-// a DrisPRO on a local server says at start where its API is (nexus-config.js); the cloud build has it built in
-const local = (typeof window !== 'undefined' ? (window as unknown as { __NEXUS__?: { url?: string; anonKey?: string } | null }).__NEXUS__ : null) ?? null
+// a DrisPRO on a local server says at start where its API is (drispro-config.js); the cloud build has it built in
+const local = (typeof window !== 'undefined' ? (window as unknown as { __DRISPRO__?: { url?: string; anonKey?: string } | null }).__DRISPRO__ : null) ?? null
 export const supabaseUrl: string = local?.url === 'same-origin' ? window.location.origin : (local?.url || import.meta.env.VITE_SUPABASE_URL)
 export const supabaseAnonKey: string = local?.anonKey || import.meta.env.VITE_SUPABASE_ANON_KEY
 /** this DrisPRO runs on a server of the client (not in the cloud) */

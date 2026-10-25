@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · Phase 4 procurement tests (runs after 01–03; reuses t.ok / t.throws / t.login)
+-- DrisPRO · Phase 4 procurement tests (runs after 01–03; reuses t.ok / t.throws / t.login)
 -- =============================================================================
 \set QUIET on
 \set ON_ERROR_STOP on

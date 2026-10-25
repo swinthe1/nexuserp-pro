@@ -130,8 +130,8 @@ grant execute on function public.automation_settings_save(uuid, jsonb) to authen
 do $$
 begin
   if exists (select 1 from pg_extension where extname = 'pg_cron') then
-    perform cron.schedule('nexuserp-open-tills', '0 5 * * *', 'select app.remind_open_tills()');
-    perform cron.schedule('nexuserp-payroll', '15 5 * * *', 'select public.run_monthly_payroll()');
+    perform cron.schedule('drispro-open-tills', '0 5 * * *', 'select app.remind_open_tills()');
+    perform cron.schedule('drispro-payroll', '15 5 * * *', 'select public.run_monthly_payroll()');
   end if;
 exception when others then
   raise notice 'pg_cron not available (%); schedule app.remind_open_tills() and public.run_monthly_payroll() daily elsewhere', sqlerrm;

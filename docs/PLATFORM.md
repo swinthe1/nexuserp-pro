@@ -14,7 +14,7 @@ DrisPRO is run by one platform administrator (you, the provider). Clients cannot
 ## First time on a server
 
 ```bash
-cd /root/nexuserp-pro
+cd /root/drispro
 bash deploy/coolify/setup-database.sh supabase-db-xxxx         # applies the new migration
 bash deploy/coolify/make-platform-admin.sh you@example.com 'StrongPassword1' 'Your Name' supabase-db-xxxx
 ```

@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · Phase 9 tests: language preference and live updates (runs after 01–11)
+-- DrisPRO · Phase 9 tests: language preference and live updates (runs after 01–11)
 -- =============================================================================
 \set QUIET on
 \set ON_ERROR_STOP on

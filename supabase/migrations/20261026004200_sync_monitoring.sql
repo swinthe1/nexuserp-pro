@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · watching the live link
+-- DrisPRO · watching the live link
 --   * the agent streams its own log here (seen in the app, no remote desktop needed) and
 --     sends a heartbeat even when nothing changed, so silence really means it stopped
 --   * when an active link is silent for 10 minutes the company admins are told, and told
@@ -113,7 +113,7 @@ revoke execute on function public.check_sync_health() from public, anon, authent
 do $$
 begin
   if exists (select 1 from pg_extension where extname = 'pg_cron') then
-    perform cron.schedule('nexuserp-sync-health', '*/5 * * * *', 'select public.check_sync_health()');
+    perform cron.schedule('drispro-sync-health', '*/5 * * * *', 'select public.check_sync_health()');
   end if;
 exception when others then
   raise notice 'pg_cron not available (%); schedule public.check_sync_health() every 5 minutes elsewhere', sqlerrm;

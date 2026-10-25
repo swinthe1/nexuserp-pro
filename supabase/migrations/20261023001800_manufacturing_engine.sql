@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 1800 · Manufacturing engine (Phase 7)
+-- DrisPRO · 1800 · Manufacturing engine (Phase 7)
 --
 --   BOMs ............ multi-level: a component with its own default BOM is a sub-assembly.
 --                     bom_explode (indented tree) and bom_cost (rolled-up material, labour, overhead).

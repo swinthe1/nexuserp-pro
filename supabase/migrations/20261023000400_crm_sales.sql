@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 0400 · CRM & Sales
+-- DrisPRO · 0400 · CRM & Sales
 -- Leads → Opportunities → Quotes → Sales Orders → Deliveries → Invoices
 --
 -- Line amounts are generated columns (tax-exclusive pricing):

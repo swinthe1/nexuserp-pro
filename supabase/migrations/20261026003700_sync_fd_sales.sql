@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · Logmicro tills that do not write sales orders (e.g. Drenas, Fushë Kosovë,
+-- DrisPRO · Logmicro tills that do not write sales orders (e.g. Drenas, Fushë Kosovë,
 -- cafés) record each sale as a stock exit of type 'FD'. It is a till sale, not an adjustment.
 -- =============================================================================
 

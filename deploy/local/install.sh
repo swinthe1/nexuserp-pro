@@ -58,7 +58,7 @@ ANON_KEY=$(jwt anon "$secret")
 SERVICE_ROLE_KEY=$(jwt service_role "$secret")
 DISABLE_SIGNUP=false
 MAILER_AUTOCONFIRM=true
-SMTP_ADMIN_EMAIL=admin@nexuserp.local
+SMTP_ADMIN_EMAIL=admin@drispro.local
 SMTP_HOST=
 SMTP_PORT=587
 SMTP_USER=
@@ -79,7 +79,7 @@ else
 fi
 set -a; . ./.env; set +a
 if [ -n "${TUNNEL_TOKEN_NEW:-}" ]; then sed -i "s|^TUNNEL_TOKEN=.*|TUNNEL_TOKEN=$TUNNEL_TOKEN_NEW|" .env; TUNNEL_TOKEN="$TUNNEL_TOKEN_NEW"; fi
-printf "// made by install.sh: this DrisPRO runs on this server\nwindow.__NEXUS__ = { url: 'same-origin', anonKey: '%s', local: true }\n" "$ANON_KEY" > nexus-config.js
+printf "// made by install.sh: this DrisPRO runs on this server\nwindow.__DRISPRO__ = { url: 'same-origin', anonKey: '%s', local: true }\n" "$ANON_KEY" > drispro-config.js
 mkdir -p data/db data/storage
 
 say "3/7 Starting the services (the first time downloads about 1.5 GB)"
@@ -87,7 +87,7 @@ profiles=(); [ -n "${TUNNEL_TOKEN:-}" ] && profiles=(--profile tunnel)
 docker compose "${profiles[@]}" up -d --remove-orphans
 
 say "4/7 Waiting for the database, sign-in and storage"
-for svc in nexus-db nexus-auth nexus-storage; do
+for svc in drispro-db drispro-auth drispro-storage; do
   for i in $(seq 1 90); do
     st="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$svc" 2>/dev/null || echo missing)"
     [ "$st" = healthy ] && break
@@ -98,8 +98,8 @@ for svc in nexus-db nexus-auth nexus-storage; do
 done
 
 say "5/7 The DrisPRO database"
-NO_DEMO=1 bash deploy/coolify/setup-database.sh nexus-db | grep -v '^   skip' || die "The database could not be made; send the lines above to the developer."
-docker restart nexus-rest nexus-web >/dev/null
+NO_DEMO=1 bash deploy/coolify/setup-database.sh drispro-db | grep -v '^   skip' || die "The database could not be made; send the lines above to the developer."
+docker restart drispro-rest drispro-web >/dev/null
 
 say "6/7 Licence"
 bash "$here/licence.sh" || echo "    !! the licence could not be checked now; the server works and tries again every night"
@@ -107,16 +107,16 @@ bash "$here/licence.sh" || echo "    !! the licence could not be checked now; th
 docker compose "${profiles[@]}" up -d postier >/dev/null 2>&1 || true
 
 say "7/7 Nightly copy of the database (02:30, 14 days kept in /root/backups)"
-NO_FIRST=1 bash deploy/coolify/install-backup.sh nexus-db >/dev/null && echo "    done"
+NO_FIRST=1 bash deploy/coolify/install-backup.sh drispro-db >/dev/null && echo "    done"
 # the licence is checked again every night, after the copy
-cat > /etc/cron.d/nexuserp-licence <<EOF
+cat > /etc/cron.d/drispro-licence <<EOF
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-45 3 * * * root bash $here/licence.sh >> /var/log/nexuserp-licence.log 2>&1
-0 4 * * * root bash $here/cloud-backup.sh >> /var/log/nexuserp-cloud-backup.log 2>&1
-15 4 * * * root bash $here/auto-update.sh >> /var/log/nexuserp-update.log 2>&1
+45 3 * * * root bash $here/licence.sh >> /var/log/drispro-licence.log 2>&1
+0 4 * * * root bash $here/cloud-backup.sh >> /var/log/drispro-cloud-backup.log 2>&1
+15 4 * * * root bash $here/auto-update.sh >> /var/log/drispro-update.log 2>&1
 EOF
-chmod 644 /etc/cron.d/nexuserp-licence
+chmod 644 /etc/cron.d/drispro-licence
 
 echo
 echo "DrisPRO is running: $PUBLIC_URL"

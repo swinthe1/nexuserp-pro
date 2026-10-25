@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 1600 · Finance engine (Phase 5)
+-- DrisPRO · 1600 · Finance engine (Phase 5)
 --
 -- Every operational posting produces a balanced, posted journal entry that
 -- points back to its source document (source_doc_type / source_doc_id) and is

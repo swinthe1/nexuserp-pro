@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · the restaurant without internet
+-- DrisPRO · the restaurant without internet
 --   A waiter's device keeps working when the connection drops: tables are opened, items added,
 --   sent and paid on the device, and each step is sent later, in order. For that the server:
 --   * takes the id the device made up for a new order and for each new item, so a step sent twice

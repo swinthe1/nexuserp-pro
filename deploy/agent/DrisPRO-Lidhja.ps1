@@ -692,7 +692,7 @@ if ($askLater) {
 
 # ---------------------------------------------------------------- vetëm një lidhje njëherësh
 # two links at once read Logmicro at different moments and keep undoing each other's quantities
-$script:single = New-Object System.Threading.Mutex($false, 'Global\NexusERP-Lidhja')
+$script:single = New-Object System.Threading.Mutex($false, 'Global\DrisPRO-Lidhja')
 $owned = $false
 try { $owned = $script:single.WaitOne(0) } catch [System.Threading.AbandonedMutexException] { $owned = $true }
 if (-not $owned) {

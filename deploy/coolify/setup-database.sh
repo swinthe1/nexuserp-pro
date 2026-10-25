@@ -35,17 +35,33 @@ echo "==> Waiting for the database"
 for i in $(seq 1 60); do psql_as postgres -tAc 'select 1' >/dev/null 2>&1 && break; sleep 2; done
 psql_as postgres -tAc 'select 1' >/dev/null
 
-psql_as postgres -c "create schema if not exists nexus_meta; create table if not exists nexus_meta.applied_migrations (name text primary key, applied_at timestamptz not null default now());"
+# a database made under the older name (NexusERP) keeps its bookkeeping in nexus_meta: it is renamed
+# (after a copy is put back, that schema is the true one and replaces a newer, now stale drispro_meta)
+psql_as postgres <<'SQL'
+do $$
+declare v_old text := 'nexus' || '_meta'; r record;
+begin
+  if not exists (select 1 from pg_namespace where nspname = v_old) then return; end if;
+  if to_regclass(v_old || '.applied_migrations') is null then execute format('drop schema %I cascade', v_old); return; end if;
+  if exists (select 1 from pg_namespace where nspname = 'drispro_meta') then execute 'drop schema drispro_meta cascade'; end if;
+  execute format('alter schema %I rename to drispro_meta', v_old);
+  for r in select p.oid from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname in ('public', 'app') and (case when p.prokind = 'f' then pg_get_functiondef(p.oid) end) like '%' || v_old || '.%' loop
+    execute replace(pg_get_functiondef(r.oid), v_old || '.', 'drispro_meta.');
+  end loop;
+end $$;
+SQL
+psql_as postgres -c "create schema if not exists drispro_meta; create table if not exists drispro_meta.applied_migrations (name text primary key, applied_at timestamptz not null default now());"
 
 echo "==> Applying migrations"
 for f in supabase/migrations/*.sql; do
   name="$(basename "$f")"
-  done_already="$(psql_as postgres -tAc "select 1 from nexus_meta.applied_migrations where name = '$name'")"
+  done_already="$(psql_as postgres -tAc "select 1 from drispro_meta.applied_migrations where name = '$name'")"
   if [ "$done_already" = "1" ]; then echo "   skip  $name"; continue; fi
   echo "   apply $name"
   docker cp "$f" "$container:/tmp/$name"
   # one transaction per file, recorded only when it succeeds
-  psql_as postgres -1 -o /dev/null -f "/tmp/$name" -c "insert into nexus_meta.applied_migrations (name) values ('$name')"
+  psql_as postgres -1 -o /dev/null -f "/tmp/$name" -c "insert into drispro_meta.applied_migrations (name) values ('$name')"
   docker exec "$container" rm -f "/tmp/$name"
 done
 

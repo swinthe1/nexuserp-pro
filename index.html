@@ -16,14 +16,22 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>DrisPRO</title>
-    <script src="/nexus-config.js"></script>
+    <script src="/drispro-config.js"></script>
     <script>
+      // settings saved under the older name (NexusERP) are kept once under the new one
+      try {
+        const o = 'nexus' + '.'
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const k = localStorage.key(i)
+          if (k && k.startsWith(o)) { const n = 'drispro.' + k.slice(o.length); if (localStorage.getItem(n) === null) localStorage.setItem(n, localStorage.getItem(k)); localStorage.removeItem(k) }
+        }
+      } catch {}
       // apply theme before paint to avoid a flash
       try {
-        const t = localStorage.getItem('nexus.theme') || 'system'
+        const t = localStorage.getItem('drispro.theme') || 'system'
         const dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
         document.documentElement.classList.toggle('dark', dark)
-        const l = localStorage.getItem('nexus.lang')
+        const l = localStorage.getItem('drispro.lang')
         if (l === 'en' || l === 'sq') document.documentElement.lang = l
       } catch {}
     </script>

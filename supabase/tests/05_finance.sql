@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · Phase 5 finance tests (runs after 01–04; reuses t.ok / t.throws / t.login)
+-- DrisPRO · Phase 5 finance tests (runs after 01–04; reuses t.ok / t.throws / t.login)
 -- =============================================================================
 \set QUIET on
 \set ON_ERROR_STOP on

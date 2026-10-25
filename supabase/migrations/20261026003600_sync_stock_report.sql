@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · the live link says which stock rows it could not place
+-- DrisPRO · the live link says which stock rows it could not place
 -- (unknown item or warehouse), so a full stock check shows the cause, not just a count
 -- =============================================================================
 

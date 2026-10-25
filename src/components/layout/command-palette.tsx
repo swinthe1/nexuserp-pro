@@ -73,7 +73,7 @@ function matches(q: string, ...parts: (string | undefined)[]) {
 }
 
 // pages opened from the palette, newest first, so the empty palette offers them again
-const RECENT_KEY = 'nexus.palette.recent'
+const RECENT_KEY = 'drispro.palette.recent'
 type Recent = { href: string; label: string; kind?: string }
 function readRecent(): Recent[] {
   try { return (JSON.parse(localStorage.getItem(RECENT_KEY) ?? '[]') as Recent[]).slice(0, 6) } catch { return [] }

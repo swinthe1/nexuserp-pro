@@ -44,7 +44,7 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/(rest|auth|storage|functions|realtime)\//],
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         // the local server's address is read fresh each time (kept for offline)
-        globIgnores: ['nexus-config.js'],
+        globIgnores: ['drispro-config.js'],
         cleanupOutdatedCaches: true,
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         runtimeCaching: [
@@ -52,7 +52,7 @@ export default defineConfig({
           { urlPattern: /^https:\/\/fonts\.googleapis\.com\//, handler: 'StaleWhileRevalidate', options: { cacheName: 'google-fonts-css' } },
           { urlPattern: /^https:\/\/fonts\.gstatic\.com\//, handler: 'CacheFirst',
             options: { cacheName: 'google-fonts', expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 }, cacheableResponse: { statuses: [0, 200] } } },
-          { urlPattern: ({ url }) => url.pathname === '/nexus-config.js', handler: 'NetworkFirst', options: { cacheName: 'nexus-config', networkTimeoutSeconds: 3 } },
+          { urlPattern: ({ url }) => url.pathname === '/drispro-config.js', handler: 'NetworkFirst', options: { cacheName: 'drispro-config', networkTimeoutSeconds: 3 } },
           // business data is never cached by the service worker: it is private and must be current
         ],
       },

@@ -34,7 +34,7 @@ const STEPS: Step[] = [
 ]
 
 function useSetup(companyId: string) {
-  const key = `nexus.migration.${companyId}`
+  const key = `drispro.migration.${companyId}`
   const [state, setState] = React.useState<{ cutover: string; program: string }>(() => {
     try { return { cutover: todayISO(), program: '', ...JSON.parse(localStorage.getItem(key) ?? '{}') } } catch { return { cutover: todayISO(), program: '' } }
   })

@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · Phase 11: migration centre (moving a client from another program)
+-- DrisPRO · Phase 11: migration centre (moving a client from another program)
 --
 -- The client's position on the cut-over date comes in from spreadsheets:
 --   * open customer invoices and open vendor bills  → real invoices/bills marked

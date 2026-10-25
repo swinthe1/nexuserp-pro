@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 1940 · Admin, reporting, notifications, search (Phase 8)
+-- DrisPRO · 1940 · Admin, reporting, notifications, search (Phase 8)
 --
 -- Admin: company-specific custom roles, member administration (roles,
 -- suspend, remove — never yourself, never the last admin), approval
@@ -901,7 +901,7 @@ revoke execute on function public.run_daily_reminders(), public.tax_calendar_int
 do $$
 begin
   if exists (select 1 from pg_extension where extname = 'pg_cron') then
-    perform cron.schedule('nexuserp-reminders', '0 6 * * *', 'select public.run_daily_reminders()');
+    perform cron.schedule('drispro-reminders', '0 6 * * *', 'select public.run_daily_reminders()');
   end if;
 exception when others then
   raise notice 'pg_cron not available (%); schedule public.run_daily_reminders() externally', sqlerrm;

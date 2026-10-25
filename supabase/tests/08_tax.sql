@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · Phase 8 tax tests (runs after 01–07; reuses t.ok / t.throws / t.login)
+-- DrisPRO · Phase 8 tax tests (runs after 01–07; reuses t.ok / t.throws / t.login)
 -- Albania: every VAT treatment in one month, expected figures worked out by hand:
 --   sales    20%: 10,000 + EUR 50 × 100 − credit 1,000 = 14,000 (VAT 2,800); 6%: 2,000 (120);
 --            export 3,000; exempt 500

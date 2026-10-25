@@ -23,7 +23,7 @@ export const LOCALES: { key: Locale; label: string; short: string }[] = [
   { key: 'sq', label: 'Shqip', short: 'SQ' },
   { key: 'en', label: 'English', short: 'EN' },
 ]
-const STORAGE_KEY = 'nexus.lang'
+const STORAGE_KEY = 'drispro.lang'
 
 function initialLocale(): Locale {
   try {

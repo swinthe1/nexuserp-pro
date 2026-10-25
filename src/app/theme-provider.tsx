@@ -4,7 +4,7 @@ type Theme = 'light' | 'dark' | 'system'
 interface ThemeCtx { theme: Theme; resolved: 'light' | 'dark'; setTheme: (t: Theme) => void }
 
 const ThemeContext = React.createContext<ThemeCtx | null>(null)
-const KEY = 'nexus.theme'
+const KEY = 'drispro.theme'
 
 function systemDark() {
   return window.matchMedia('(prefers-color-scheme: dark)').matches

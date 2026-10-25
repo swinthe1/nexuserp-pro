@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · fixes found by the live link at Lider Market
+-- DrisPRO · fixes found by the live link at Lider Market
 -- 1. Supabase loads pg_safeupdate for API sessions: "DELETE requires a WHERE clause".
 --    Two functions emptied a temp table with a bare DELETE; they now say "where true".
 --    (app.gl_post is used by every posting, so stock adjustments made through the API failed.)

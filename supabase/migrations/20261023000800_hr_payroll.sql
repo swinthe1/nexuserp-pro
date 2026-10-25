@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 0800 · Human resources & payroll
+-- DrisPRO · 0800 · Human resources & payroll
 -- HR data is protected by hr.* / payroll.* permissions. On top of that,
 -- every employee linked to a login gets self-service policies: read own
 -- record, attendance and (approved) payslips; create and withdraw own leave.

@@ -12,7 +12,7 @@ import { cn, formatQty } from '@/lib/utils'
 import { useLocations, useWarehouses } from '@/features/inventory/api'
 import { useCreatePutaway, useWmsOverview } from '../api'
 
-const WH_KEY = 'nexus.wms.warehouse'
+const WH_KEY = 'drispro.wms.warehouse'
 
 export function WmsHomePage() {
   const navigate = useNavigate()

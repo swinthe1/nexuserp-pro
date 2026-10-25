@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · a light list of items for pickers (no stock sums per row), so a company
+-- DrisPRO · a light list of items for pickers (no stock sums per row), so a company
 -- with tens of thousands of items loads its pickers quickly
 -- =============================================================================
 create or replace view public.v_variant_options with (security_invoker = true) as

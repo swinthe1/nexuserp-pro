@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · the agents send "" for a missing number; treat it as no value
+-- DrisPRO · the agents send "" for a missing number; treat it as no value
 -- ("invalid input syntax for type numeric" on receipts with no tax or paid amount)
 -- =============================================================================
 

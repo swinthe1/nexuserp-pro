@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · stock per store / warehouse (dashboard card "Stoku sipas njësive")
+-- DrisPRO · stock per store / warehouse (dashboard card "Stoku sipas njësive")
 -- For each active warehouse: stock value at average cost, items in stock, items
 -- without a cost (they count as 0 €), items below zero and open low-stock alerts.
 -- Runs as the caller (RLS decides what they see).

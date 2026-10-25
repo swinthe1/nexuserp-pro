@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · Phase 2 inventory engine tests
+-- DrisPRO · Phase 2 inventory engine tests
 -- Runs after 01_rls_and_invariants.sql (reuses its harness: t.ok / t.throws / t.login).
 -- =============================================================================
 \set QUIET on

@@ -1,4 +1,4 @@
-# NexusERP Pro web app: built once, served as static files by nginx.
+# DrisPRO web app: built once, served as static files by nginx.
 # The Supabase address and public (anon) key are baked into the build, so in Coolify
 # set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY as *build* variables.
 FROM node:22-bookworm-slim AS build

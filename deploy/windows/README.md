@@ -13,8 +13,8 @@ Everything runs on this computer: the database, sign-in, the API and live update
 
 ## Start it
 
-1. Unzip `nexuserp-pro-phase9.zip` (or run `Install-DrisPRO.ps1` next to it, which unzips and starts everything).
-2. Open **PowerShell** in the `nexuserp-pro` folder and run:
+1. Unzip `drispro-phase9.zip` (or run `Install-DrisPRO.ps1` next to it, which unzips and starts everything).
+2. Open **PowerShell** in the `drispro` folder and run:
 
    ```powershell
    powershell -ExecutionPolicy Bypass -File deploy\windows\setup-local.ps1

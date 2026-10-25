@@ -1,6 +1,6 @@
 -- =============================================================================
--- NexusERP Pro · licence codes: cloud or the client's own server
---   Each client's licence gets a code (NXS-XXXX-XXXX-XXXX). The NexusERP program asks for it on its
+-- DrisPRO · licence codes: cloud or the client's own server
+--   Each client's licence gets a code (NXS-XXXX-XXXX-XXXX). The DrisPRO program asks for it on its
 --   first start (licence_activate) and then works with our cloud or with a server of the client.
 --   A local server checks its licence here every night (licence_check): plan, users, dates,
 --   suspended or not, and applies it to its own database (app.apply_licence). The first local
@@ -66,7 +66,7 @@ begin
   select * into l from public.licenses where code = upper(btrim(p_code));
   if l.company_id is null then raise exception 'This licence code is not known' using errcode = 'P0002'; end if;
   if l.status <> 'active' or current_date not between l.valid_from and l.valid_until then
-    raise exception 'This licence is not active; ask your NexusERP supplier' using errcode = '42501';
+    raise exception 'This licence is not active; ask your DrisPRO supplier' using errcode = '42501';
   end if;
   return app.licence_payload(l);
 end $$;
@@ -82,7 +82,7 @@ begin
   if l.company_id is null then raise exception 'This licence code is not known' using errcode = 'P0002'; end if;
   if l.deployment = 'cloud' then raise exception 'This licence is for the cloud only' using errcode = '42501'; end if;
   if l.local_server_id is not null and l.local_server_id <> p_server then
-    raise exception 'This licence is used by another server; ask your NexusERP supplier to move it' using errcode = '42501';
+    raise exception 'This licence is used by another server; ask your DrisPRO supplier to move it' using errcode = '42501';
   end if;
   update public.licenses set local_server_id = p_server, local_seen_at = now(), local_url = nullif(btrim(p_url), ''), local_version = nullif(btrim(p_version), '')
    where company_id = l.company_id returning * into l;

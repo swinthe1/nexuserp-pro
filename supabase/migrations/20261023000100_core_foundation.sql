@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 0100 · Core foundation
+-- DrisPRO · 0100 · Core foundation
 --
 -- Tenancy (companies, members, roles, permissions), the RLS helper functions,
 -- the table-registration convention used by every business table, audit log,

@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 1100 · Tax & fiscal compliance (Albania / Kosovo)
+-- DrisPRO · 1100 · Tax & fiscal compliance (Albania / Kosovo)
 --
 -- * Sales Book / Purchase Book (Libri i Shitjeve / Blerjeve) are views over
 --   posted documents, split per VAT rate, in base currency. Credit notes are

@@ -1,6 +1,6 @@
-# Supabase CLI settings for running NexusERP Pro on your own computer (`npx supabase start`).
+# Supabase CLI settings for running DrisPRO on your own computer (`npx supabase start`).
 # Docs: https://supabase.com/docs/guides/local-development/cli/config
-project_id = "nexuserp"
+project_id = "drispro"
 
 [api]
 enabled = true

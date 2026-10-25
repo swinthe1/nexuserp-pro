@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 1310 · Atomic draft save for documents with lines
+-- DrisPRO · 1310 · Atomic draft save for documents with lines
 --
 -- public.save_document(table, header, children) inserts or updates a document
 -- header and REPLACES its child rows in one transaction. It runs as SECURITY

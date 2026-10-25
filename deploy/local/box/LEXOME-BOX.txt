@@ -61,10 +61,10 @@ Kur prishet Box-i
 -----------------
   Mini-PC i ri -> hapat 1 e 2 me të njëjtin kod licence (në Platformë: "Kaloje në server tjetër").
   Pastaj kthehen të dhënat nga cloud-i:
-     cd /opt/nexuserp && sudo bash restore-from-cloud.sh list      (kopjet që janë)
-     cd /opt/nexuserp && sudo bash restore-from-cloud.sh           (merr të fundit)
+     cd /opt/drispro && sudo bash restore-from-cloud.sh list      (kopjet që janë)
+     cd /opt/drispro && sudo bash restore-from-cloud.sh           (merr të fundit)
 
 Siguria
 -------
   Hapen vetëm porta e DrisPRO (80), 22 (ndihma në distancë) dhe 5353 (emri drispro.local).
-  /opt/nexuserp/.env mban çelësat e këtij serveri: mos ia jepni askujt.
+  /opt/drispro/.env mban çelësat e këtij serveri: mos ia jepni askujt.

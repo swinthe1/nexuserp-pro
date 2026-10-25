@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · what each plan includes
+-- DrisPRO · what each plan includes
 --   Basic     one store: till, stock, buying and selling, VAT, cash and bank
 --   Standard  + transfers between stores, full accounting, restaurant, imports, approvals, people & payroll
 --   Pro       + advanced warehouse, production, logistics, web shop, live link with the old program

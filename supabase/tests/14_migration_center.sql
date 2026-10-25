@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · Phase 11 tests: moving a client from another program (runs after 01–13)
+-- DrisPRO · Phase 11 tests: moving a client from another program (runs after 01–13)
 -- =============================================================================
 \set QUIET on
 \set ON_ERROR_STOP on

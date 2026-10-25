@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · Phase 8 logistics, order management and e-commerce tests (runs after 01–09)
+-- DrisPRO · Phase 8 logistics, order management and e-commerce tests (runs after 01–09)
 -- Route day: two orders on a 50 kg van (cash on delivery on one), a failed stop
 -- handed to a carrier, COD settled into the cash box. Replenishment nets stock
 -- against unreserved demand; a store is refilled by transfer. Web orders are

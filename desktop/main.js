@@ -109,12 +109,12 @@ function openDrawer() {
 const fromApp = (e) => { try { const u = new URL(e.senderFrame?.url ?? e.sender.getURL()); return u.origin === origin() || u.protocol === 'file:' } catch { return false } }
 function handle(name, fn) { ipcMain.handle(name, async (e, arg) => { if (!fromApp(e)) throw new Error('not allowed'); return fn(arg, e) }) }
 
-handle('nexus:info', () => ({ version: app.getVersion(), platform: process.platform, server: settings.server }))
-handle('nexus:printers', async (_a, e) => (await e.sender.getPrintersAsync()).map((p) => ({ name: p.name, isDefault: p.isDefault, description: p.description })))
-handle('nexus:print', (a) => printHtml(a))
-handle('nexus:drawer', () => openDrawer())
-handle('nexus:settings', () => { const { bounds, ...s } = settings; return { ...s, autoStart: app.getLoginItemSettings().openAtLogin } })
-handle('nexus:save-settings', (s) => {
+handle('drispro:info', () => ({ version: app.getVersion(), platform: process.platform, server: settings.server }))
+handle('drispro:printers', async (_a, e) => (await e.sender.getPrintersAsync()).map((p) => ({ name: p.name, isDefault: p.isDefault, description: p.description })))
+handle('drispro:print', (a) => printHtml(a))
+handle('drispro:drawer', () => openDrawer())
+handle('drispro:settings', () => { const { bounds, ...s } = settings; return { ...s, autoStart: app.getLoginItemSettings().openAtLogin } })
+handle('drispro:save-settings', (s) => {
   const next = { ...settings }
   for (const k of ['receiptPrinter', 'kitchenPrinter', 'documentPrinter']) if (typeof s?.[k] === 'string') next[k] = s[k]
   if (Number(s?.paperWidth) >= 40 && Number(s?.paperWidth) <= 120) next.paperWidth = Number(s.paperWidth)
@@ -124,7 +124,7 @@ handle('nexus:save-settings', (s) => {
   settings = next; writeSettings(settings)
   return true
 })
-handle('nexus:set-server', async (url) => {
+handle('drispro:set-server', async (url) => {
   let u
   try { u = new URL(String(url)); if (!/^https?:$/.test(u.protocol)) throw new Error() } catch { throw new Error('Adresa nuk është e vlefshme') }
   const ok = await dialog.showMessageBox(win, { type: 'question', buttons: ['Po', 'Jo'], defaultId: 0, message: `Të hapet DrisPRO nga ${u.origin}?` })
@@ -134,7 +134,7 @@ handle('nexus:set-server', async (url) => {
   void win.loadURL(settings.server)
   return true
 })
-handle('nexus:retry', () => { void win.loadURL(settings.server); return true })
+handle('drispro:retry', () => { void win.loadURL(settings.server); return true })
 
 /* ------------------------------------------------------------------ licence and where the data lives */
 async function post(url, body, headers = {}) {
@@ -146,22 +146,24 @@ async function post(url, body, headers = {}) {
 }
 const SERVER_MSG = {
   'This licence code is not known': 'Ky kod licence nuk njihet. Kontrollojeni dhe provoni përsëri.',
-  'This licence is not active; ask your NexusERP supplier': 'Kjo licencë nuk është aktive; pyesni furnitorin e DrisPRO.',
+  'This licence is not active; ask your DrisPRO supplier': 'Kjo licencë nuk është aktive; pyesni furnitorin e DrisPRO.',
 }
-handle('nexus:activate', async (code) => {
+handle('drispro:activate', async (code) => {
   const c = String(code ?? '').trim().toUpperCase()
   if (!/^NXS(-[A-Z0-9]{4}){3}$/.test(c)) throw new Error('Kodi duket kështu: NXS-XXXX-XXXX-XXXX')
   try { return await post(`${LICENCE_API}/rest/v1/rpc/licence_activate`, { p_code: c }, { apikey: LICENCE_KEY, Authorization: `Bearer ${LICENCE_KEY}` }) }
   catch (e) { const m = String(e.message); throw new Error(SERVER_MSG[m] ?? (/fetch failed|ENOTFOUND|ECONN|network/i.test(m) ? 'Aktivizimi kërkon internet një herë. Lidhuni dhe provoni përsëri.' : m)) }
 })
-handle('nexus:finish-activation', async (a) => {
+handle('drispro:finish-activation', async (a) => {
   const lic = await post(`${LICENCE_API}/rest/v1/rpc/licence_activate`, { p_code: a.code }, { apikey: LICENCE_KEY, Authorization: `Bearer ${LICENCE_KEY}` })
   let server = DEFAULT_SERVER
   if (a.mode === 'local') {
     let u
     try { u = new URL(/^https?:\/\//.test(a.server) ? a.server : `http://${a.server}`) } catch { throw new Error('Shkruani adresën e serverit, p.sh. http://192.168.1.20') }
     // it must be a DrisPRO local server
-    const r = await enet.fetch(`${u.origin}/nexus-config.js`).catch(() => null)
+    // (a server not yet updated still answers under the older name)
+    let r = await enet.fetch(`${u.origin}/drispro-config.js`).catch(() => null)
+    if (!r || !r.ok) r = await enet.fetch(`${u.origin}/${'nexus'}-config.js`).catch(() => null)
     const text = r && r.ok ? await r.text() : ''
     if (!/local:\s*true/.test(text)) throw new Error(`Në ${u.origin} nuk u gjet një server lokal i DrisPRO. Kontrolloni adresën dhe që serveri është ndezur.`)
     server = u.origin
@@ -173,7 +175,7 @@ handle('nexus:finish-activation', async (a) => {
   void win.loadURL(settings.server)
   return true
 })
-handle('nexus:reactivate', async () => {
+handle('drispro:reactivate', async () => {
   const ok = await dialog.showMessageBox(win, { type: 'question', buttons: ['Po', 'Jo'], defaultId: 1, message: 'Të ndryshohet licenca ose vendi i të dhënave (Cloud / server lokal)?', detail: 'Të dhënat nuk fshihen; programi thjesht lidhet me serverin që zgjidhni.' })
   if (ok.response !== 0) return false
   settings = { ...settings, licence: '' }; writeSettings(settings)

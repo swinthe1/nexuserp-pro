@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · loyalty cards (runs after 01–15; uses the shop from 06)
+-- DrisPRO · loyalty cards (runs after 01–15; uses the shop from 06)
 -- =============================================================================
 \set QUIET on
 \set ON_ERROR_STOP on

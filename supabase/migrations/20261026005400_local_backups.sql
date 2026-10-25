@@ -53,7 +53,7 @@ begin
   select * into l from public.licenses where code = upper(btrim(p_code)) for update;
   if l.company_id is null then raise exception 'This licence code is not known' using errcode = 'P0002'; end if;
   if l.local_server_id is null or l.local_server_id <> p_server then
-    raise exception 'This licence is used by another server; ask your NexusERP supplier to move it' using errcode = '42501';
+    raise exception 'This licence is used by another server; ask your DrisPRO supplier to move it' using errcode = '42501';
   end if;
   return l;
 end $$;

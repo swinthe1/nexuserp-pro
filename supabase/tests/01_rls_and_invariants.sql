@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · schema test suite
+-- DrisPRO · schema test suite
 -- Runs against a database with the stub + all migrations applied.
 --   psql -v ON_ERROR_STOP=1 -f supabase/tests/01_rls_and_invariants.sql
 -- Every check raises on failure, so a clean run == all assertions passed.

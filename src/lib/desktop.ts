@@ -1,10 +1,10 @@
-/** The Windows program (desktop/) gives the page a few things a browser cannot: see window.nexusDesktop. */
+/** The Windows program (desktop/) gives the page a few things a browser cannot: see window.drisproDesktop. */
 export interface DesktopSettings {
   licence: string; mode: 'cloud' | 'local' | ''; company: string
   server: string; receiptPrinter: string; kitchenPrinter: string; documentPrinter: string; paperWidth: number
   drawer: { mode: 'none' | 'network'; host: string; port: number }; autoStart: boolean; fullScreen: boolean
 }
-export interface NexusDesktop {
+export interface DrisproDesktop {
   isDesktop: true
   info: () => Promise<{ version: string; platform: string; server: string }>
   printers: () => Promise<{ name: string; isDefault: boolean; description: string }[]>
@@ -18,5 +18,7 @@ export interface NexusDesktop {
 }
 export type PrintKind = 'receipt' | 'kitchen' | 'document'
 
-export const desktop: NexusDesktop | undefined = typeof window !== 'undefined' ? (window as unknown as { nexusDesktop?: NexusDesktop }).nexusDesktop : undefined
+// a Windows program installed before the rename still offers itself under its older name
+const w = typeof window !== 'undefined' ? (window as unknown as Record<string, DrisproDesktop | undefined>) : undefined
+export const desktop: DrisproDesktop | undefined = w ? (w.drisproDesktop ?? w['nexus' + 'Desktop']) : undefined
 export const isDesktop = !!desktop

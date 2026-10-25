@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 1300 · Phase 2 — Inventory & advanced costing engine
+-- DrisPRO · 1300 · Phase 2 — Inventory & advanced costing engine
 --
 -- One function moves stock: app.post_stock_move(). Every posting document
 -- (receipt, adjustment, transfer, and later delivery / POS / production)

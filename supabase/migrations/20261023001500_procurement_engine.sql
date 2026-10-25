@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 1500 · Procurement engine (Phase 4)
+-- DrisPRO · 1500 · Procurement engine (Phase 4)
 --
 --   Requisition ──submit──▶ (approval) ──▶ approved ──create_po_from_requisition──▶ PO(s), one per vendor
 --   Replenishment rules ──generate_replenishment──▶ suggestions ──create_pos_from_suggestions──▶ PO(s)

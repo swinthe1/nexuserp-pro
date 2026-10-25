@@ -59,7 +59,7 @@
   $('check').onclick = async () => {
     $('m1').className = 'msg'; $('m1').textContent = 'Po kontrollohet…'; $('check').disabled = true
     try {
-      lic = await window.nexusDesktop.activate(code.value.trim())
+      lic = await window.drisproDesktop.activate(code.value.trim())
       const c = lic.company || {}
       $('who').innerHTML = ''
       const b = document.createElement('b'); b.textContent = c.name || ''
@@ -78,7 +78,7 @@
   $('back').onclick = () => { $('s2').hidden = true; $('s1').hidden = false }
   $('go').onclick = async () => {
     $('m2').className = 'msg'; $('m2').textContent = mode() === 'local' ? 'Po kërkohet serveri…' : ''; $('go').disabled = true
-    try { await window.nexusDesktop.finishActivation({ code: lic.code, mode: mode(), server: addr.value.trim() }) }
+    try { await window.drisproDesktop.finishActivation({ code: lic.code, mode: mode(), server: addr.value.trim() }) }
     catch (e) { $('m2').className = 'msg bad'; $('m2').textContent = clean(e); $('go').disabled = false }
   }
 </script>

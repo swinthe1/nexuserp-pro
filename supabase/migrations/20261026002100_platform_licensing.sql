@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · Phase 10: clients and licences (platform owner controls access)
+-- DrisPRO · Phase 10: clients and licences (platform owner controls access)
 --
 -- * Nobody creates their own company: the platform owner (profiles.is_super_admin)
 --   creates each client company together with its first admin account and licence.

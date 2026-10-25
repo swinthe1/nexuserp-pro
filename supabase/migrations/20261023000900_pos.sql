@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 0900 · Point of sale
+-- DrisPRO · 0900 · Point of sale
 -- Offline-first: the till generates client_uuid for every receipt; the server
 -- enforces UNIQUE(company_id, client_uuid) so replaying a queued sale after
 -- reconnecting is idempotent. Retail prices in AL/XK are tax-inclusive, so

@@ -3,6 +3,8 @@
 # it is downloaded, checked (sha256) and installed with update.sh. The database is copied first.
 # Turn it off with AUTO_UPDATE=false in .env.
 set -euo pipefail
+# read whole before running: the update replaces this very file
+{
 here="$(cd "$(dirname "$0")" && pwd)"
 cd "$here"
 set -a; . ./.env; set +a
@@ -21,5 +23,7 @@ tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
 curl -fsS --max-time 600 -o "$tmp/$file" "$src/$file"
 echo "$sum  $tmp/$file" | sha256sum -c --quiet - || { echo "$(date '+%F %T') the download is damaged; not installed"; exit 1; }
 tar xzf "$tmp/$file" -C "$tmp"
-bash "$tmp/nexuserp-server/update.sh" "$here"
+bash "$tmp/drispro-server/update.sh" "$here"
 echo "$(date '+%F %T') updated to $ver"
+exit 0
+}

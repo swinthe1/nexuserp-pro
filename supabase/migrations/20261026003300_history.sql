@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · history from the old program (Logmicro)
+-- DrisPRO · history from the old program (Logmicro)
 --
 -- An archive, kept apart from the live books: every past sale, till receipt,
 -- purchase, return, transfer and stock count with its lines; payments and cash

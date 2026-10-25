@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · till sales that Logmicro writes only as stock exits ('FD'), with their value,
+-- DrisPRO · till sales that Logmicro writes only as stock exits ('FD'), with their value,
 -- so today's sales per store count every till, not only the ones that write receipts
 -- =============================================================================
 

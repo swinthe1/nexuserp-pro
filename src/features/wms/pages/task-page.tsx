@@ -142,7 +142,7 @@ function PickScreen({ task }: { task: TaskDetail }) {
   const complete = useCompletePickList()
   const st = useScanStatus()
   const active = task.status === 'open' || task.status === 'in_progress'
-  const storeKey = `nexus.pick.${task.id}`
+  const storeKey = `drispro.pick.${task.id}`
   const [picked, setPicked] = React.useState<Record<string, number>>(() => { try { return JSON.parse(localStorage.getItem(storeKey) ?? '{}') } catch { return {} } })
   const [override, setOverride] = React.useState<Record<string, { location?: string; locationCode?: string; lot?: string }>>({})
   React.useEffect(() => { try { localStorage.setItem(storeKey, JSON.stringify(picked)) } catch { /* ignore */ } }, [picked, storeKey])

@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · today's and this month's sales from the old program, for the dashboard
+-- DrisPRO · today's and this month's sales from the old program, for the dashboard
 -- (the live link keeps history_documents current every few seconds)
 -- =============================================================================
 

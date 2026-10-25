@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · migration centre: warehouses and the chart of accounts
+-- DrisPRO · migration centre: warehouses and the chart of accounts
 -- Clients like Lider Market (Logmicro) bring their own stores and account codes.
 --   warehouses: code, name, type (store|warehouse), address, city — matched by code
 --   accounts:   code, name, type (asset|liability|equity|revenue|expense, or the

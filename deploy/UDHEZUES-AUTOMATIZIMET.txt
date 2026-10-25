@@ -27,7 +27,7 @@ Pastaj "Dërgo një email prove". Kur del "Punon", gjithçka tjetër del nga ky 
      Kostoja: rreth 1-3 cent për faturë.
   b) API Keys → Create Key → kopjojeni.
   c) Në server (Hostinger VPS, si zakonisht me Perditeso):
-       bash /root/nexuserp-pro/deploy/coolify/update.sh --ai
+       bash /root/drispro/deploy/coolify/update.sh --ai
      ngjitni çelësin (nuk shfaqet në ekran). Mbaron.
   Serverët lokalë nuk kanë nevojë për çelës: fatura u kalon përmes cloud-it me licencën.
   Kufiri në muaj sipas paketës: Provë 30, Basic 100, Standard 300, Pro 1000 fatura.
@@ -61,7 +61,7 @@ Për mesazhe që dërgohen vetë, Meta kërkon "WhatsApp Business Platform" (jo 
        Përshëndetje {{1}}, ju shkruan {{2}}. Ju kujtojmë që këto fatura janë ende të papaguara: {{3}}. Gjithsej: {{4}}. Nëse i keni paguar, ju lutemi mos e merrni parasysh këtë mesazh. Faleminderit!
 
   f) Në server:
-       bash /root/nexuserp-pro/deploy/coolify/update.sh --whatsapp
+       bash /root/drispro/deploy/coolify/update.sh --whatsapp
      ngjitni token-in, pastaj Phone number ID. Mbaron.
   Meta paguhet për çdo bisedë (për Kosovën rreth 1-5 cent); fatura vjen nga Meta te DrisPRO.
   Serverët lokalë dërgojnë përmes cloud-it, deri në 300 mesazhe në ditë për licencë.

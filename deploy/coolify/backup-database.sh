@@ -3,7 +3,7 @@
 #
 #   bash deploy/coolify/backup-database.sh <db-container> [folder] [days-to-keep]
 #
-# Writes <folder>/nexuserp-YYYY-MM-DD_HHMM.dump (pg_dump custom format, compressed)
+# Writes <folder>/drispro-YYYY-MM-DD_HHMM.dump (pg_dump custom format, compressed)
 # and deletes copies older than [days-to-keep] (default 14). Folder default: /root/backups
 # Restore with restore-database.sh. Install the nightly run with install-backup.sh.
 set -euo pipefail
@@ -14,7 +14,7 @@ kind="${4:-nightly}"
 mkdir -p "$dir"
 chmod 700 "$dir"
 stamp="$(date +%Y-%m-%d_%H%M)"
-out="$dir/nexuserp-$stamp.dump"
+out="$dir/drispro-$stamp.dump"
 tmp="$out.part"
 pass="$(docker exec "$container" printenv POSTGRES_PASSWORD)"
 
@@ -28,7 +28,7 @@ report() { # ok file size message
   free="$(df -B1 --output=avail "$dir" | tail -1 | tr -d ' ')"; total="$(df -B1 --output=size "$dir" | tail -1 | tr -d ' ')"
   docker exec -i -e PGPASSWORD="$pass" "$container" psql -h 127.0.0.1 -U "$user" -d postgres -q -v ON_ERROR_STOP=0 \
     -v ok="$1" -v kind="$kind" -v file="$2" -v size="${3:-0}" -v free="$free" -v total="$total" -v msg="$4" >/dev/null 2>&1 <<'SQL' || true
-insert into nexus_meta.backups (ok, kind, file, size_bytes, disk_free_bytes, disk_total_bytes, message)
+insert into drispro_meta.backups (ok, kind, file, size_bytes, disk_free_bytes, disk_total_bytes, message)
 values (:'ok'::boolean, :'kind', nullif(:'file', ''), nullif(:'size', '0')::bigint, nullif(:'free', '')::bigint, nullif(:'total', '')::bigint, nullif(:'msg', ''));
 SQL
 }
@@ -50,5 +50,5 @@ echo "==> saved $out ($(numfmt --to=iec "$size"))"
 trap - ERR
 report true "$out" "$size" ""
 
-find "$dir" -maxdepth 1 -name 'nexuserp-*.dump' -mtime +"$keep" -print -delete | sed 's/^/    removed old copy /'
-echo "==> copies kept: $(find "$dir" -maxdepth 1 -name 'nexuserp-*.dump' | wc -l)"
+find "$dir" -maxdepth 1 -name 'drispro-*.dump' -mtime +"$keep" -print -delete | sed 's/^/    removed old copy /'
+echo "==> copies kept: $(find "$dir" -maxdepth 1 -name 'drispro-*.dump' | wc -l)"

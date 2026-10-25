@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 1400 · Phase 3 — CRM & Sales engine
+-- DrisPRO · 1400 · Phase 3 — CRM & Sales engine
 --
 -- Leads → Opportunities → Quotes → Sales orders → Deliveries → Invoices
 --

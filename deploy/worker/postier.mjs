@@ -2,7 +2,7 @@
 // DrisPRO · the postier: sends what waits in the outbox and runs the timed work.
 // No packages: Node 18+ only (SMTP over net/tls, WhatsApp and the API over fetch).
 //
-//   API_URL        the DrisPRO API (cloud: https://api.erp.dris-ks.com, local: http://nexus-web)
+//   API_URL        the DrisPRO API (cloud: https://api.erp.dris-ks.com, local: http://drispro-web)
 //   SERVICE_KEY    the service key of that API
 //   MODE           cloud | local
 //   LICENCE, SERVER_ID, LICENCE_SERVER   local only: WhatsApp goes through the cloud with the licence

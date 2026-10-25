@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · a picture for each product
+-- DrisPRO · a picture for each product
 --   kept in the database (small JPEG/PNG, up to 1.5 MB), so it works the same on every
 --   server and comes over the live link from the old program (Logmicro AD_IMAGE).
 --   products.image_path says 'db' when a picture exists, so lists know without loading it.

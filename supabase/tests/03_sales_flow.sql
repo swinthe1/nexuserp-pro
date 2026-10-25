@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · Phase 3 CRM & sales tests (runs after 01 and 02)
+-- DrisPRO · Phase 3 CRM & sales tests (runs after 01 and 02)
 -- =============================================================================
 \set QUIET on
 \set ON_ERROR_STOP on

@@ -192,7 +192,7 @@ grant execute on function public.recurring_update(uuid, jsonb) to authenticated;
 do $$
 begin
   if exists (select 1 from pg_extension where extname = 'pg_cron') then
-    perform cron.schedule('nexuserp-recurring', '30 4 * * *', 'select public.run_recurring_invoices()');
+    perform cron.schedule('drispro-recurring', '30 4 * * *', 'select public.run_recurring_invoices()');
   end if;
 exception when others then
   raise notice 'pg_cron not available (%); schedule public.run_recurring_invoices() daily elsewhere', sqlerrm;

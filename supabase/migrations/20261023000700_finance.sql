@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 0700 · Finance & accounting
+-- DrisPRO · 0700 · Finance & accounting
 --
 -- Every operational posting (receipt, delivery, invoice, bill, payment, POS
 -- session, work order, adjustment, depreciation, payroll) produces ONE

@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { LOCALES, type Locale, setLocale, t, useLocale } from './index'
 
-const PENDING = 'nexus.lang.chosen'
+const PENDING = 'drispro.lang.chosen'
 // set once the person picks a language in this tab, so a slower profile read never overrides their choice
 let choseHere = false
 

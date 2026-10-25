@@ -156,7 +156,7 @@ export function ShippingPage() {
 
 function ShipDialog({ delivery, onClose }: { delivery: DeliveryRow; onClose: () => void }) {
   const confirm = useConfirmShipment()
-  const carriersKey = 'nexus.wms.carriers'
+  const carriersKey = 'drispro.wms.carriers'
   const known: string[] = (() => { try { return JSON.parse(localStorage.getItem(carriersKey) ?? '[]') } catch { return [] } })()
   const [carrier, setCarrier] = React.useState(known[0] ?? '')
   const [tracking, setTracking] = React.useState('')

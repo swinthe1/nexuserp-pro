@@ -35,6 +35,6 @@ mkdir -p /root/backups
 openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass "pass:$key" -in "$tmp/$pick" -out "$dump"
 chmod 600 "$dump"
 echo "==> decrypted into $dump"
-bash deploy/coolify/restore-database.sh nexus-db "$dump"
-docker restart nexus-rest nexus-auth nexus-storage nexus-web >/dev/null
+bash deploy/coolify/restore-database.sh drispro-db "$dump"
+docker restart drispro-rest drispro-auth drispro-storage drispro-web >/dev/null
 echo "==> done: the data of $pick is back on this server"

@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · a customer's own discount from the old program
+-- DrisPRO · a customer's own discount from the old program
 --   the importer (spreadsheet and live link) takes discount_pct: the customer's standing
 --   discount in %, used on every sale to them (business_partners.default_discount_pct).
 --   On an update it changes only when the column is sent, so a sheet without it keeps it.

@@ -48,8 +48,8 @@ Step '4/6 DrisPRO në Ubuntu'
 $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notmatch '^(127|169\.254)\.' -and $_.PrefixOrigin -ne 'WellKnown' } | Sort-Object InterfaceMetric | Select-Object -First 1).IPAddress
 if (-not $ip) { $ip = 'localhost' }
 $src = (wsl.exe -d $Distro -u root -- wslpath -a "$bundle") -replace "`0", ''
-wsl.exe -d $Distro -u root -- bash -c "mkdir -p /opt/nexuserp && cp -r '$($src.Trim())/.' /opt/nexuserp/ && chmod +x /opt/nexuserp/*.sh /opt/nexuserp/deploy/coolify/*.sh"
-wsl.exe -d $Distro -u root -- bash -c "cd /opt/nexuserp && PUBLIC_URL=http://$ip bash install.sh"
+wsl.exe -d $Distro -u root -- bash -c "mkdir -p /opt/drispro && cp -r '$($src.Trim())/.' /opt/drispro/ && chmod +x /opt/drispro/*.sh /opt/drispro/deploy/coolify/*.sh"
+wsl.exe -d $Distro -u root -- bash -c "cd /opt/drispro && PUBLIC_URL=http://$ip bash install.sh"
 if ($LASTEXITCODE -ne 0) { Fail 'Instalimi në Ubuntu nuk përfundoi. Bëni screenshot të kësaj dritareje.' }
 
 Step '5/6 Hyrja nga kompjuterët e tjerë'

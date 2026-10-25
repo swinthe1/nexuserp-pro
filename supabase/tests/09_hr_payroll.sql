@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · Phase 8 HR & payroll tests (runs after 01–08)
+-- DrisPRO · Phase 8 HR & payroll tests (runs after 01–08)
 -- Albania, September 2026: 21 working days (7 Sep is a holiday). Expected payslips:
 --   Eda   100,000                       → SS 9,500  HI 1,700  TAP 9,100   net 79,700
 --   Mark  250,000 + bonus 10,000        → SS 17,710 (capped at 186,416) HI 4,420 TAP 35,900 net 201,970

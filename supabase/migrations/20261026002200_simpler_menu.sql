@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · simpler menu
+-- DrisPRO · simpler menu
 -- * company_settings.hidden_menu_sections: parts of the menu the company does not
 --   use (e.g. Manufacturing in a shop), hidden for everyone in the company.
 -- * save_my_preference(): one key of profiles.preferences (favourites in the menu,

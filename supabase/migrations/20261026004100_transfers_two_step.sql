@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · transfers between stores in two steps
+-- DrisPRO · transfers between stores in two steps
 --   request (optional) → the sending store ships: stock goes "on the road" (still ours, same value)
 --   → the receiving store counts what arrived: missing units are either a loss or go back to the
 --   sender, extra units are added; the difference stays on the document for the manager.

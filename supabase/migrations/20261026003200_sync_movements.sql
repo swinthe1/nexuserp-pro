@@ -1,9 +1,9 @@
 -- =============================================================================
--- NexusERP Pro · live link: the old program's real stock movements
+-- DrisPRO · live link: the old program's real stock movements
 --
 -- Until now the link only sent quantities, so every change showed up as an
 -- "adjustment". Now the agent sends each movement of the old program (Logmicro
--- M_TRANSACTION) with its type and document, and NexusERP records it the same way:
+-- M_TRANSACTION) with its type and document, and DrisPRO records it the same way:
 -- sale, till sale, customer return, receipt from a supplier, return to a supplier,
 -- transfer between stores, stock count, production. The quantity sync stays as a
 -- safety net and only corrects what the movements did not explain.

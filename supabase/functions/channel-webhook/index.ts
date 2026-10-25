@@ -1,4 +1,4 @@
-// NexusERP Pro · channel-webhook (Supabase Edge Function, Deno)
+// DrisPRO · channel-webhook (Supabase Edge Function, Deno)
 //
 // Receives "order created" webhooks from a web shop, checks the signature,
 // maps the platform's order to the normalised payload of

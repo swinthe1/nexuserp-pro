@@ -1,5 +1,5 @@
 {
-  "name": "nexuserp-desktop",
+  "name": "drispro-desktop",
   "productName": "DrisPRO",
   "version": "1.2.0",
   "description": "DrisPRO për Windows: i gjithë aplikacioni, me printim direkt në printerët e kuponëve dhe të kuzhinës.",
@@ -15,12 +15,26 @@
     "electron-builder": "25.1.8"
   },
   "build": {
-    "appId": "com.nexuserp.desktop",
+    "appId": "com.drispro.desktop",
     "productName": "DrisPRO",
     "artifactName": "DrisPRO-Setup-${version}.${ext}",
-    "directories": { "output": "dist", "buildResources": "build" },
-    "files": ["main.js", "preload.js", "offline.html", "activation.html", "package.json"],
-    "win": { "target": ["nsis"], "icon": "build/icon.png" },
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "offline.html",
+      "activation.html",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.png"
+    },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
@@ -28,7 +42,8 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "DrisPRO",
-      "language": "1052"
+      "language": "1052",
+      "guid": "16ba544e-9015-5059-ab77-250c11fafbcc"
     }
   }
 }

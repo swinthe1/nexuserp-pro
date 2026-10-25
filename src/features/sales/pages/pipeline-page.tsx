@@ -35,7 +35,7 @@ type Stage = { id: string; name: string; sort_order: number; probability: number
 export function PipelinePage() {
   const [params, setParams] = useSearchParams()
   const [view, setView] = React.useState<'board' | 'list'>(() => {
-    try { return (localStorage.getItem('nexus.pipeline.view') as 'board' | 'list') ?? 'board' } catch { return 'board' }
+    try { return (localStorage.getItem('drispro.pipeline.view') as 'board' | 'list') ?? 'board' } catch { return 'board' }
   })
   const [mine, setMine] = React.useState(false)
   const { user } = useAuth()
@@ -46,7 +46,7 @@ export function PipelinePage() {
   useRealtimeInvalidate('opportunities', companyId, [['sales', companyId, 'list', 'opportunities']])
   const openId = params.get('open')
   const setOpen = (id: string | null) => setParams((p) => { if (id) p.set('open', id); else p.delete('open'); return p }, { replace: true })
-  const changeView = (v: 'board' | 'list') => { setView(v); try { localStorage.setItem('nexus.pipeline.view', v) } catch { /* private mode */ } }
+  const changeView = (v: 'board' | 'list') => { setView(v); try { localStorage.setItem('drispro.pipeline.view', v) } catch { /* private mode */ } }
 
   const rows = React.useMemo(() => (opps.data ?? []).filter((o) => !mine || o.owner_id === user?.id), [opps.data, mine, user?.id])
   const openRows = rows.filter((o) => o.status === 'open')

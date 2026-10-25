@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 1930 · Order management: replenishment automation (Phase 8)
+-- DrisPRO · 1930 · Order management: replenishment automation (Phase 8)
 --
 -- * Replenishment nets stock against customer demand that is not reserved yet
 --   (open order lines), not only against min / max.
@@ -239,7 +239,7 @@ do $$
 begin
   if exists (select 1 from pg_available_extensions where name = 'pg_cron') then
     create extension if not exists pg_cron;
-    perform cron.schedule('nexuserp-replenishment', '5 * * * *', 'select public.run_scheduled_replenishment()');
+    perform cron.schedule('drispro-replenishment', '5 * * * *', 'select public.run_scheduled_replenishment()');
   end if;
 exception when others then
   raise notice 'pg_cron not available (%); schedule public.run_scheduled_replenishment() hourly elsewhere', sqlerrm;

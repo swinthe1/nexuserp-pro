@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 1900 · Tax & fiscal compliance engine (Phase 8)
+-- DrisPRO · 1900 · Tax & fiscal compliance engine (Phase 8)
 --
 -- * Every posted document is classified into VAT entries (app.vat_entries):
 --   sales invoices / credit notes, POS receipts (daily totals per register),

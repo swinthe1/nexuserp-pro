@@ -6,8 +6,9 @@
 import * as React from 'react'
 import { supabase } from '@/lib/supabase'
 import { describeError } from '@/lib/errors'
+import { carryOver } from '@/lib/offline/carry-over'
 
-const DB_NAME = 'nexus-pos'
+const DB_NAME = 'drispro-pos'
 let dbp: Promise<IDBDatabase> | null = null
 function db() {
   dbp ??= new Promise((resolve, reject) => {
@@ -17,7 +18,7 @@ function db() {
       if (!d.objectStoreNames.contains('kv')) d.createObjectStore('kv')
       if (!d.objectStoreNames.contains('queue')) d.createObjectStore('queue', { keyPath: 'client_uuid' })
     }
-    req.onsuccess = () => resolve(req.result)
+    req.onsuccess = () => { void carryOver('nexus' + '-pos', req.result, ['kv', 'queue']).then(() => resolve(req.result)) }
     req.onerror = () => reject(req.error)
   })
   return dbp

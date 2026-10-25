@@ -23,7 +23,7 @@ param([switch]$KeepData, [switch]$NoDemo, [switch]$Dev, [switch]$NoServe)
 $ErrorActionPreference = 'Continue'
 $root = Resolve-Path (Join-Path $PSScriptRoot '..\..')
 Set-Location $root
-$container = 'supabase_db_nexuserp'
+$container = 'supabase_db_drispro'
 # Supabase CLI, major version 2 (npx downloads it on first use)
 $cli = 'supabase@2'
 

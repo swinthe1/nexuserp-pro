@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 0110 · Global reference data
+-- DrisPRO · 0110 · Global reference data
 -- Currencies, permission catalog, the 14 system roles and their permission
 -- matrix, document types (numbering prefixes + approval statuses) and the
 -- allowed status flow of every document.

@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 0500 · Procurement & purchasing
+-- DrisPRO · 0500 · Procurement & purchasing
 -- Requisitions → Purchase orders → Goods receipts → Vendor bills
 -- Three-way match: each bill line links to its PO line and receipt line;
 -- match_status / variances are computed at bill posting (Phase 4) against the

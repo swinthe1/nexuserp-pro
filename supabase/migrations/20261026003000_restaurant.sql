@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · restaurant and café
+-- DrisPRO · restaurant and café
 --
 -- * a till can work in restaurant mode: tables instead of a single basket
 -- * areas (Salla, Tarraca…) and tables per store; kitchen/bar stations that get

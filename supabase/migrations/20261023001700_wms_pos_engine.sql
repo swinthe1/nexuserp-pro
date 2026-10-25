@@ -1,5 +1,5 @@
 -- =============================================================================
--- NexusERP Pro · 1700 · WMS basics + point of sale (Phase 6)
+-- DrisPRO · 1700 · WMS basics + point of sale (Phase 6)
 --
 -- WMS
 --   * receipts into a non-pickable location (WH/RECEIVING) create a putaway task;
