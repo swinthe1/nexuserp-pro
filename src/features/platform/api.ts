@@ -11,6 +11,8 @@ export interface PlatformClient {
   created_at: string
   plan: string | null
   max_users: number | null
+  extra_features?: string[] | null
+  max_warehouses?: number | null
   valid_from: string | null
   valid_until: string | null
   status: 'active' | 'suspended' | null
@@ -53,6 +55,9 @@ export interface NewClient {
 export interface LicenseInput {
   company: string
   plan: string
+  /** modules added to the plan for this client, and its own store limit (null = the plan's) */
+  extra_features?: string[]
+  max_warehouses?: number | null
   max_users: number
   valid_from: string
   valid_until: string
@@ -86,10 +91,15 @@ export function useCreateClient() {
 export function useSaveLicense() {
   const refresh = useRefresh()
   return useMutation({
-    mutationFn: async (v: LicenseInput) => unwrap(await supabase.rpc('platform_save_license', {
-      p_company: v.company, p_plan: v.plan, p_max_users: v.max_users, p_valid_from: v.valid_from,
-      p_valid_until: v.valid_until, p_status: v.status, p_notes: v.notes ?? undefined,
-    })),
+    mutationFn: async (v: LicenseInput) => {
+      unwrap(await supabase.rpc('platform_save_license', {
+        p_company: v.company, p_plan: v.plan, p_max_users: v.max_users, p_valid_from: v.valid_from,
+        p_valid_until: v.valid_until, p_status: v.status, p_notes: v.notes ?? undefined,
+      }))
+      if (v.extra_features) {
+        unwrap(await supabase.rpc('platform_set_plan_extras', { p_company: v.company, p_extra: v.extra_features, p_max_warehouses: (v.max_warehouses ?? null) as unknown as number }))
+      }
+    },
     onSuccess: refresh,
   })
 }

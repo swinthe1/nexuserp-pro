@@ -110,5 +110,34 @@ update public.company_settings set hidden_menu_sections = array['Manufacturing']
 select t.ok((select hidden_menu_sections from public.company_settings where company_id = :'drita') = array['Manufacturing'], 'the company admin hides unused menu parts');
 reset role;
 
+
+-- plans: what each one includes, enforced on the server
+update public.licenses set plan = 'basic', extra_features = '{}', max_warehouses = null where company_id = :'drita';
+set role authenticated;
+select t.login('olga@drita.xk');
+select t.ok((select jsonb_array_length(c -> 'license' -> 'features') = 0 and (c -> 'license' ->> 'max_warehouses')::int = 1
+               from jsonb_array_elements(public.get_my_context() -> 'companies') c where (c ->> 'id')::uuid = :'drita'), 'the app learns what the Basic plan includes');
+select t.ok(not app.has_permission(:'drita', 'hr.read') and app.has_permission(:'drita', 'sales.write'), 'Basic: no people module, selling as usual');
+select t.throws(format($q$select app.require_feature(%L, 'transfers')$q$, :'drita'), 'not in your plan', 'Basic: no transfers between stores');
+select t.throws(format($q$insert into public.warehouses (company_id, code, name) values (%L, 'S2', 'Second store')$q$, :'drita'), 'plan allows 1', 'Basic: one store');
+reset role;
+set role authenticated;
+select t.login('zoe@platform.io');
+select public.platform_set_plan_extras(:'drita', array['hr', 'nonsense'], 2);
+reset role;
+set role authenticated;
+select t.login('olga@drita.xk');
+select t.ok(app.has_permission(:'drita', 'hr.read'), 'a module added to the plan opens');
+insert into public.warehouses (company_id, code, name) values (:'drita', 'S2', 'Second store');
+select t.ok((select count(*) from public.warehouses where company_id = :'drita' and deleted_at is null) = 2, 'and a raised store limit allows the second store');
+reset role;
+update public.licenses set plan = 'standard' where company_id = :'drita';
+set role authenticated;
+select t.login('olga@drita.xk');
+select t.ok(app.has_feature(:'drita', 'accounting') and not app.has_feature(:'drita', 'wms') and app.has_permission(:'drita', 'manufacturing.read'),
+            'Standard: accounting and the restaurant (recipes open the production tables), no advanced warehouse');
+reset role;
+update public.licenses set plan = 'pro', extra_features = '{}', max_warehouses = null where company_id = :'drita';
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;

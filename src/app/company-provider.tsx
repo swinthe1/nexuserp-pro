@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import * as React from 'react'
 import { useAuth } from '@/app/auth-provider'
+import { moduleAllowed, pageFeatures } from '@/lib/plans'
 import { supabase } from '@/lib/supabase'
 
 export interface CompanySummary {
@@ -11,7 +12,7 @@ export interface CompanySummary {
   logo_path: string | null
   roles: string[]
   permissions: string[]
-  license?: { plan: string; max_users: number; valid_until: string } | null
+  license?: { plan: string; max_users: number; valid_until: string; features?: string[]; max_warehouses?: number | null } | null
   /** practice company: data comes live from the old program, nothing is fiscalized */
   is_training?: boolean
   business_type?: string
@@ -46,6 +47,10 @@ interface CompanyCtx {
   switchCompany: (id: string) => Promise<void>
   /** permission check with the same pattern rules as the database: exact, module.*, *.action, * */
   can: (perm: string) => boolean
+  /** the company's plan includes this feature */
+  hasFeature: (feature: string) => boolean
+  /** the page is in the plan (pages of a feature outside it are closed) */
+  pageAllowed: (path: string) => boolean
   refresh: () => Promise<unknown>
 }
 
@@ -97,10 +102,16 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     await supabase.rpc('switch_company', { p_company: id })
   }, [qc])
 
+  const features = company?.license?.features
   const can = React.useCallback(
-    (perm: string) => matchesPermission(company?.permissions ?? [], perm, ctxQuery.data?.is_super_admin),
-    [company, ctxQuery.data?.is_super_admin],
+    (perm: string) => matchesPermission(company?.permissions ?? [], perm, ctxQuery.data?.is_super_admin) && moduleAllowed(features, perm.split('.')[0]),
+    [company, ctxQuery.data?.is_super_admin, features],
   )
+  const hasFeature = React.useCallback((f: string) => !features || features.includes(f), [features])
+  const pageAllowed = React.useCallback((path: string) => {
+    const need = pageFeatures(path)
+    return !need.length || need.some((f) => hasFeature(f))
+  }, [hasFeature])
 
   const value: CompanyCtx = {
     loading: ctxQuery.isLoading,
@@ -112,6 +123,8 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     blocked: ctxQuery.data?.blocked ?? [],
     switchCompany,
     can,
+    hasFeature,
+    pageAllowed,
     refresh: () => ctxQuery.refetch(),
   }
   return <CompanyContext.Provider value={value}>{children}</CompanyContext.Provider>

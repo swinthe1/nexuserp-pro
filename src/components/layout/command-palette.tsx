@@ -87,7 +87,7 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
   const [query, setQuery] = React.useState('')
   const q = useDebounce(query.trim(), 200)
   const navigate = useNavigate()
-  const { can, companyId } = useCompany()
+  const { can, companyId, pageAllowed } = useCompany()
   const { resolved, setTheme } = useTheme()
   const { user } = useAuth()
   const locale = useLocale()
@@ -115,8 +115,8 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
   }
 
   const navItems = NAV.flatMap((s) => s.items.map((i) => ({ ...i, section: s.label })))
-    .filter((i) => can(i.perm) && matches(query, i.label, t(i.label), i.section, t(i.section), ...(i.keywords ?? [])))
-  const actions = CREATE_ACTIONS.filter((a) => can(a.perm) && matches(query, a.label, t(a.label)))
+    .filter((i) => can(i.perm) && pageAllowed(i.href) && matches(query, i.label, t(i.label), i.section, t(i.section), ...(i.keywords ?? [])))
+  const actions = CREATE_ACTIONS.filter((a) => can(a.perm) && pageAllowed(a.href) && matches(query, a.label, t(a.label)))
   const showRecent = !query && recent.length > 0
 
   return (

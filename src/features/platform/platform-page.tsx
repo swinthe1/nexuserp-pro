@@ -30,12 +30,33 @@ import { formatDate, formatQty as formatInt, todayISO } from '@/lib/utils'
 import { generatePassword, type PlatformClient, type SyncConnection, useCreateClient, useCreateSyncKey, usePlatformClients, useSaveLicense, useSetPassword, useSetSelfService, useSetSyncActive, useSetTraining, useSetBusinessType, useDeleteClient } from './api'
 import { Checkbox } from '@/components/ui/checkbox'
 import { BUSINESS_TYPES, businessTypeLabel } from './business-types'
+import { Label } from '@/components/ui/label'
+import { FEATURES, PLAN_FEATURES, PLAN_STORES, type Feature } from '@/lib/plans'
 
 const PLANS = [
   { value: 'basic', label: msg('Basic') },
   { value: 'standard', label: msg('Standard') },
   { value: 'pro', label: msg('Pro') },
 ]
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function PlanIncludesWatch({ form }: { form: any }) {
+  const plan = (form.watch('plan') as string | undefined) ?? 'pro'
+  return <PlanIncludes plan={plan} />
+}
+
+/** What a plan includes, under the plan picker. */
+function PlanIncludes({ plan }: { plan: string }) {
+  const included = PLAN_FEATURES[plan] ?? PLAN_FEATURES.pro
+  const stores = PLAN_STORES[plan]
+  return (
+    <div className="col-span-2 -mt-1 rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+      <span className="font-medium text-foreground">{t('Till, stock, buying, selling, VAT, cash and bank')}</span>
+      {included.length > 0 && <> + {included.map((f) => t(FEATURES.find((x) => x.key === f)!.label)).join(', ')}</>}
+      {'. '}{stores ? tn(stores, 'Up to {n} store or warehouse.', 'Up to {n} stores or warehouses.') : t('Any number of stores and warehouses.')}
+    </div>
+  )
+}
+
 function planLabel(plan: string | null) {
   if (!plan) return '—'
   if (plan === 'trial') return t('Trial')
@@ -426,6 +447,7 @@ function LicenseFields({ form }: { form: any }) {
         <Button type="button" size="sm" variant="outline" onClick={() => extend(6)}>{t('+6 months')}</Button>
         <Button type="button" size="sm" variant="outline" onClick={() => extend(12)}>{t('+1 year')}</Button>
       </div>
+      <PlanIncludesWatch form={form} />
       <FormField control={form.control} name="notes" render={({ field }: { field: { value?: string | null } }) => (
         <FormItem className="col-span-2"><FormLabel optional>{t('Internal notes')}</FormLabel>
           <FormControl><Textarea rows={2} placeholder={t('Contract number, price, contact person…')} {...field} value={field.value ?? ''} /></FormControl>
@@ -451,7 +473,11 @@ type LicenseValues = z.infer<typeof licenseSchema> & LicenseShape
 function LicenseDialog({ client, onClose }: { client: PlatformClient | null; onClose: () => void }) {
   const save = useSaveLicense()
   const form = useForm<LicenseValues>({ resolver: zodResolver(licenseSchema) })
+  const plan = form.watch('plan') ?? 'pro'
+  const [extras, setExtras] = React.useState<string[]>([])
+  const [maxStores, setMaxStores] = React.useState('')
   React.useEffect(() => {
+    if (client) { setExtras(client.extra_features ?? []); setMaxStores(client.max_warehouses ? String(client.max_warehouses) : '') }
     if (client) form.reset({
       plan: client.plan ?? 'standard', max_users: client.max_users ?? 5, valid_from: client.valid_from ?? todayISO(),
       valid_until: client.valid_until ?? addMonths(todayISO(), 12), status: client.status ?? 'active', notes: client.notes ?? '',
@@ -465,7 +491,8 @@ function LicenseDialog({ client, onClose }: { client: PlatformClient | null; onC
       return
     }
     try {
-      await save.mutateAsync({ company: client.id, ...v })
+      const inPlan = PLAN_FEATURES[v.plan] ?? PLAN_FEATURES.pro
+      await save.mutateAsync({ company: client.id, ...v, extra_features: extras.filter((f) => !inPlan.includes(f as Feature)), max_warehouses: maxStores ? Number(maxStores) : null })
       toast.success(t('Licence saved for {name}', { name: client.name }))
       onClose()
     } catch (e) { form.setError('plan', { message: describeError(e) }) }
@@ -481,6 +508,24 @@ function LicenseDialog({ client, onClose }: { client: PlatformClient | null; onC
         <Form {...form}>
           <form onSubmit={submit} className="grid grid-cols-2 gap-3" noValidate>
             <LicenseFields form={form} />
+            {(PLAN_FEATURES[plan] ?? PLAN_FEATURES.pro).length < FEATURES.length && (
+              <fieldset className="col-span-2 grid gap-2 rounded-md border p-3">
+                <legend className="px-1 text-[13px] font-medium">{t('Extra modules for this client')}</legend>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                  {FEATURES.filter((f) => !(PLAN_FEATURES[plan] ?? []).includes(f.key)).map((f) => (
+                    <label key={f.key} className="flex items-center gap-2 text-[13px]">
+                      <Checkbox checked={extras.includes(f.key)} onCheckedChange={(on) => setExtras((x) => on ? [...x, f.key] : x.filter((k) => k !== f.key))} />
+                      {t(f.label)}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            )}
+            <div className="col-span-2 grid gap-1.5">
+              <Label htmlFor="max-stores" optional>{t('Store limit for this client')}</Label>
+              <Input id="max-stores" type="number" min={1} step={1} className="tabular" value={maxStores} onChange={(e) => setMaxStores(e.target.value)}
+                placeholder={PLAN_STORES[plan] ? t('The plan\u2019s {n}', { n: PLAN_STORES[plan]! }) : t('No limit')} />
+            </div>
             <FormField control={form.control} name="status" render={({ field }) => (
               <FormItem className="col-span-2 flex items-center justify-between gap-3 space-y-0 rounded-md border p-3">
                 <div>

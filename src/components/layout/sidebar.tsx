@@ -90,7 +90,7 @@ function Item({ item, collapsed, onNavigate, active, pinned, onTogglePin }: {
 }
 
 export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
-  const { can } = useCompany()
+  const { can, pageAllowed } = useCompany()
   const activeHref = useActiveHref()
   const hidden = useHiddenSections()
   const { favourites, toggle } = useFavourites()
@@ -101,8 +101,8 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
 
   const sections = React.useMemo(() => NAV
     .filter((s) => ALWAYS_SHOWN.has(s.label) || !hidden.includes(s.label))
-    .map((s) => ({ ...s, items: s.items.filter((i) => can(i.perm)) }))
-    .filter((s) => s.items.length), [can, hidden])
+    .map((s) => ({ ...s, items: s.items.filter((i) => can(i.perm) && pageAllowed(i.href)) }))
+    .filter((s) => s.items.length), [can, pageAllowed, hidden])
   const byHref = React.useMemo(() => new Map(sections.flatMap((s) => s.items).map((i) => [i.href, i])), [sections])
 
   // pinned pages first; until something is pinned, the pages used most on this device

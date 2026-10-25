@@ -207,6 +207,8 @@ export const serverTemplates: [string, string][] = [
   ['Workflow "%" has no steps', 'Rrjedha e miratimit “{0}” nuk ka hapa'],
   ['save_document does not support %', 'Ky dokument nuk mund të ruhet këtu ({0})'],
 
+  ['This is not in your plan (%)', 'Kjo nuk është në paketën tuaj ({0})'],
+  ['Your plan allows % store(s) or warehouse(s); ask your provider for more', 'Paketa juaj lejon {0} njësi; për më shumë kërkoni te ofruesi'],
   // ---------------------------------------------------------------- notifications (titles and bodies)
   ['Approval required: %', 'Kërkohet miratim: {0}'],
   ['Approved: %', 'U miratua: {0}'],

@@ -9,6 +9,7 @@ import { Topbar } from '@/components/layout/topbar'
 import { LicenseBanner, LiveLinkBanner, SupportBanner, TrainingBanner } from '@/components/license-banner'
 import { OfflineBanner } from '@/components/offline-banner'
 import { PageErrorBoundary } from '@/components/page-error-boundary'
+import { PlanLocked } from '@/components/plan-locked'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useHotkey } from '@/hooks/use-hotkey'
@@ -33,7 +34,7 @@ function FullPageSkeleton() {
 
 export function AppLayout() {
   const { user, loading } = useAuth()
-  const { loading: companyLoading, companies, isSuperAdmin } = useCompany()
+  const { loading: companyLoading, companies, isSuperAdmin, pageAllowed } = useCompany()
   const location = useLocation()
   const [collapsed, setCollapsed] = React.useState(() => {
     try { return localStorage.getItem(KEY) === '1' } catch { return false }
@@ -75,7 +76,7 @@ export function AppLayout() {
           <SupportBanner />
           <LicenseBanner />
           <main id="main" className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
-            <PageErrorBoundary key={location.pathname}><Outlet /></PageErrorBoundary>
+            <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
           </main>
         </div>
       </div>

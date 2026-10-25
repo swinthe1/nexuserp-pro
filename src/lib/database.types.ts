@@ -4223,6 +4223,8 @@ export type Database = {
           created_at: string
           updated_at: string
           updated_by: string | null
+          extra_features: string[]
+          max_warehouses: number | null
         }
         Insert: {
           company_id: string
@@ -4235,6 +4237,8 @@ export type Database = {
           created_at?: string
           updated_at?: string
           updated_by?: string | null
+          extra_features?: string[]
+          max_warehouses?: number | null
         }
         Update: {
           company_id?: string
@@ -4247,6 +4251,8 @@ export type Database = {
           created_at?: string
           updated_at?: string
           updated_by?: string | null
+          extra_features?: string[]
+          max_warehouses?: number | null
         }
         Relationships: [
           { foreignKeyName: "licenses_company_id_fkey"; columns: ["company_id"]; isOneToOne: true; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -11451,6 +11457,14 @@ export type Database = {
         Args: {
           p_email: string
           p_password: string
+        }
+        Returns: undefined
+      }
+      platform_set_plan_extras: {
+        Args: {
+          p_company: string
+          p_extra: string[]
+          p_max_warehouses: number
         }
         Returns: undefined
       }
