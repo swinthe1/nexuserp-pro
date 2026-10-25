@@ -11281,6 +11281,12 @@ export type Database = {
         }
         Returns: Json
       }
+      loyalty_liability: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       loyalty_overview: {
         Args: {
           p_company: string

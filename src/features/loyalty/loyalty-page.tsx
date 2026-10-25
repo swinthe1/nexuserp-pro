@@ -29,7 +29,7 @@ import { cn, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
 import { useCategories, useWarehouses } from '@/features/inventory/api'
 import {
   type Card as LoyaltyCard, type LoyaltyKind, type Program, type ProgramInput,
-  useAdjustPoints, useCardHistory, useCards, useIssueCard, useLoyaltyOverview, usePrograms, useSaveProgram, useUpdateCard,
+  useAdjustPoints, useCardHistory, useCards, useIssueCard, useLoyaltyLiability, useLoyaltyOverview, usePrograms, useSaveProgram, useUpdateCard,
 } from './api'
 
 const KINDS: { value: LoyaltyKind; label: string; hint: string }[] = [
@@ -379,6 +379,7 @@ function ReportTab() {
   const [from, setFrom] = React.useState(monthStart)
   const [to, setTo] = React.useState(todayISO())
   const q = useLoyaltyOverview(from, to)
+  const books = useLoyaltyLiability()
   const d = q.data
   const cur = company?.base_currency
   const share = d && num(d.all_sales) > 0 ? Math.round((num(d.card_sales) / num(d.all_sales)) * 100) : 0
@@ -394,7 +395,8 @@ function ReportTab() {
         <StatCard label={t('Sales with a card')} value={`${share}%`} loading={q.isLoading} hint={d ? t('{amount} of {total}', { amount: formatMoney(d.card_sales), total: formatMoney(d.all_sales) }) : undefined} />
         <StatCard label={t('Cards used')} value={d?.cards_used ?? 0} loading={q.isLoading} hint={d ? t('of {n} active cards', { n: d.cards_active }) : undefined} />
         <StatCard label={t('Points not spent yet')} value={formatMoney(d?.points_outstanding_value, cur)} loading={q.isLoading}
-          hint={d ? t('{n} points the company owes its customers', { n: formatNumberWith(num(d.points_outstanding), { maximumFractionDigits: 0 }) }) : undefined} />
+          hint={d ? t('{n} points the company owes its customers', { n: formatNumberWith(num(d.points_outstanding), { maximumFractionDigits: 0 }) })
+            + (books.data ? ` · ${t('in the books: {amount}', { amount: formatMoney(books.data.booked, cur) })}` : '') : undefined} />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <SmallTable title={t('By store')} head={[t('Store'), t('Receipts'), t('Discount')]}

@@ -108,5 +108,16 @@ reset role;
 select t.ok(not exists (select 1 from public.loyalty_ledger l join public.loyalty_cards c on c.id = l.card_id
                          group by c.id, c.points_balance having sum(l.points) <> c.points_balance), 'card balances equal their history');
 
+-- points in the books: earned points are set aside, spent points released
+select t.ok((select sum(jl.credit) - sum(jl.debit) from public.journal_lines jl join public.journal_entries je on je.id = jl.entry_id
+              join public.loyalty_ledger l on l.id = je.source_doc_id
+             where je.source_doc_type = 'loyalty' and l.pos_order_id = (:'s3'::jsonb ->> 'id')::uuid
+               and jl.account_id = (select account_id from public.company_account_defaults d where d.company_id = je.company_id and d.key = 'loyalty_liability')) = -2.65,
+  'on one receipt: 235 points set aside (2.35), 500 spent released (5.00)');
+select t.ok(not exists (select 1 from public.loyalty_ledger l join public.loyalty_cards c on c.id = l.card_id join public.loyalty_programs p on p.id = c.program_id
+                         where p.kind = 'points' and coalesce(p.point_value, 0) > 0 and l.points <> 0
+                           and not exists (select 1 from public.journal_entries je where je.source_doc_type = 'loyalty' and je.source_doc_id = l.id)),
+  'every points movement of a point card is in the books');
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;

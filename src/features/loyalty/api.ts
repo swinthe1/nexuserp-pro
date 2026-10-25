@@ -115,3 +115,13 @@ export async function quoteLoyalty(registerId: string, code: string, lines: { va
 export function phoneKey(v: string) {
   return v.replace(/\D/g, '').replace(/^(00)?(383|355)/, '').replace(/^0+/, '') || null
 }
+
+/** Points still owed to customers, and what the books hold for them (account 4191). */
+export function useLoyaltyLiability() {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: ['loyalty', companyId, 'liability'],
+    enabled: !!companyId,
+    queryFn: async () => unwrap(await supabase.rpc('loyalty_liability', { p_company: companyId })) as unknown as { points: number; value: number; booked: number },
+  })
+}

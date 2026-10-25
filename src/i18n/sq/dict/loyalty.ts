@@ -118,4 +118,5 @@ export default {
   'This card is not valid yet': 'Kjo kartelë nuk vlen ende',
   'This card has expired': 'Kjo kartelë ka skaduar',
   'This card is not valid in this store': 'Kjo kartelë nuk vlen në këtë njësi',
+  "in the books: {amount}": "në libra: {amount}",
 } satisfies Dict
