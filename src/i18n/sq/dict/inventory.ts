@@ -555,4 +555,11 @@ export default {
   "old program": "programi i vjetër",
   "Changed here": "Ndryshuar këtu",
   "Change|price": "Ndryshimi",
+  "This file is not a picture.": "Ky skedar nuk është foto.",
+  "Show the picture": "Shiko foton",
+  "Add a picture": "Shto një foto",
+  "Remove the picture": "Hiqe foton",
+  "Change the picture": "Ndrysho foton",
+  "Picture saved": "Fotoja u ruajt",
+  "Picture removed": "Fotoja u hoq",
 } satisfies Dict

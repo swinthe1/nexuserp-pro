@@ -167,6 +167,33 @@ export function usePriceChanges(productId: string | undefined) {
   })
 }
 
+/** Pictures of the given products, as data: URLs keyed by product id (up to 60 at once). */
+export function useProductImages(productIds: string[]) {
+  const { companyId } = useCompany()
+  const ids = [...new Set(productIds)].sort().slice(0, 60)
+  return useQuery({
+    queryKey: ['inv', companyId, 'images', ids.join(',')],
+    enabled: !!companyId && ids.length > 0,
+    staleTime: 10 * 60_000,
+    queryFn: async () => (unwrap(await supabase.rpc('product_images_get', { p_company: companyId!, p_products: ids })) ?? {}) as Record<string, string>,
+  })
+}
+
+/** Put a picture on a product (a data: URL), or take it off (null). */
+export function useSetProductImage(productId: string) {
+  const qc = useQueryClient()
+  const { companyId } = useCompany()
+  return useMutation({
+    mutationFn: async (data: string | null) => unwrap(await supabase.rpc('product_image_set', { p_product: productId, p_data: data as string })),
+    onSuccess: (_r, data) => {
+      toast.success(data ? t('Picture saved') : t('Picture removed'))
+      void qc.invalidateQueries({ queryKey: ['inv', companyId, 'images'] })
+      void qc.invalidateQueries({ queryKey: invKeys.product(companyId ?? '', productId) })
+    },
+    onError: (e) => toast.error(describeError(e)),
+  })
+}
+
 function useInvalidateInventory() {
   const qc = useQueryClient()
   const { companyId } = useCompany()

@@ -90,5 +90,27 @@ update public.products set sales_price = 10 where company_id = :'co' and id = (s
 select t.ok((select old_price = 9 and new_price = 10 from public.price_changes where company_id = :'co' and source = 'manual'), 'without the link a change of the selling price is kept');
 update public.sync_connections set is_active = true where company_id = :'co';
 
+-- product pictures: from the old program, and one put here by hand is kept
+set role anon;
+select public.sync_images(:'key', '[{"sku":"500","data":"/9j/4AAQSkZJRg==","ext_id":"I:1"},{"sku":"NOPE","data":"/9j/4AAQ"},{"sku":"501","data":"aGVsbG8="}]'::jsonb) as im1 \gset
+reset role;
+select t.ok((:'im1'::jsonb ->> 'saved') = '1' and (:'im1'::jsonb ->> 'skipped') = '2', 'a picture arrives; an unknown item and a file that is not a picture are skipped');
+select t.ok((select image_path from public.products where id = (select product_id from public.product_variants where company_id = :'co' and sku = '500')) = 'db', 'the product knows it has a picture');
+set role authenticated;
+select t.login('zoe@platform.io');
+select t.ok((public.product_images_get(:'co', array[(select product_id from public.product_variants where company_id = :'co' and sku = '500')]) ->> (select product_id::text from public.product_variants where company_id = :'co' and sku = '500')) like 'data:image/jpeg;base64,/9j/%', 'the picture is read as a data URL');
+select public.product_image_set((select product_id from public.product_variants where company_id = :'co' and sku = '500'), 'data:image/png;base64,iVBORw0KGgo=');
+select t.throws($$ select public.product_image_set((select product_id from public.product_variants where sku = '501' limit 1), 'aGVsbG8=') $$, 'Only JPEG', 'a file that is not a picture is refused');
+reset role;
+set role anon;
+select public.sync_images(:'key', '[{"sku":"500","data":"/9j/4AAQSkZJRg==","ext_id":"I:1"}]'::jsonb) as im2 \gset
+reset role;
+select t.ok((select mime from public.product_images where product_id = (select product_id from public.product_variants where company_id = :'co' and sku = '500')) = 'image/png', 'a picture put here by hand is not replaced by the old program''s');
+set role authenticated;
+select t.login('zoe@platform.io');
+select public.product_image_set((select product_id from public.product_variants where company_id = :'co' and sku = '500'), null);
+reset role;
+select t.ok((select image_path from public.products where id = (select product_id from public.product_variants where company_id = :'co' and sku = '500')) is null, 'removing the picture clears the flag');
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;

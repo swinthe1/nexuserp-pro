@@ -6363,6 +6363,55 @@ export type Database = {
           { foreignKeyName: "product_categories_company_id_revenue_account_id_fkey"; columns: ["company_id", "revenue_account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      product_images: {
+        Row: {
+          id: string
+          company_id: string
+          product_id: string
+          mime: string
+          data: string
+          bytes: number
+          source: string
+          ext_id: string | null
+          created_by: string | null
+          updated_at: string
+          created_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          product_id: string
+          mime: string
+          data: string
+          bytes: number
+          source?: string
+          ext_id?: string | null
+          created_by?: string | null
+          updated_at?: string
+          created_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          product_id?: string
+          mime?: string
+          data?: string
+          bytes?: number
+          source?: string
+          ext_id?: string | null
+          created_by?: string | null
+          updated_at?: string
+          created_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "product_images_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "product_images_company_id_product_id_fkey"; columns: ["company_id", "product_id"]; isOneToOne: false; referencedRelation: "products"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "product_images_created_by_fkey"; columns: ["created_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
       product_variants: {
         Row: {
           id: string
@@ -11681,6 +11730,20 @@ export type Database = {
         }
         Returns: Json
       }
+      product_image_set: {
+        Args: {
+          p_product: string
+          p_data: string
+        }
+        Returns: undefined
+      }
+      product_images_get: {
+        Args: {
+          p_company: string
+          p_products: string[]
+        }
+        Returns: Json
+      }
       production_plan: {
         Args: {
           p_company: string
@@ -12146,6 +12209,13 @@ export type Database = {
         Args: {
           p_key: string
           p_kind: string
+          p_rows: Json
+        }
+        Returns: Json
+      }
+      sync_images: {
+        Args: {
+          p_key: string
           p_rows: Json
         }
         Returns: Json

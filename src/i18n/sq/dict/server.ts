@@ -549,4 +549,7 @@ export default {
   "Store not found": "Njësia nuk u gjet",
   "Unknown status": "Status i panjohur",
   "Type the client's name exactly to confirm": "Shkruani saktë emrin e klientit për ta konfirmuar",
+  "The picture is too big (at most 1.5 MB)": "Fotoja është shumë e madhe (deri në 1,5 MB)",
+  "Only JPEG, PNG or WebP pictures": "Vetëm foto JPEG, PNG ose WebP",
+  "At most 60 pictures at once": "Deri në 60 foto njëherësh",
 } satisfies Dict

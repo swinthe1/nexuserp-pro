@@ -35,6 +35,7 @@ import {
   useVariantMutations, useVendors, useWarehouses, type ProductDetail,
 } from '../api'
 import { MovementsTable } from '../components/movements-table'
+import { ProductPhoto } from '../components/product-photo'
 import { VendorPicker } from '../components/pickers'
 import { barcodeSchema } from '../schemas'
 import { msg, t, td, tn } from '@/i18n'
@@ -67,7 +68,7 @@ export function ProductDetailPage() {
     <>
       <PageHeader
         back={{ href: '/inventory/products', label: t('Products') }}
-        title={p.name}
+        title={<span className="flex min-w-0 items-center gap-3"><ProductPhoto productId={p.id} name={p.name} hasImage={p.image_path === 'db'} /><span className="truncate">{p.name}</span></span>}
         meta={<>
           <Badge variant="outline">{p.code}</Badge>
           {!p.is_active && <Badge variant="secondary">{t('Inactive')}</Badge>}

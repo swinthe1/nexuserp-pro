@@ -13,7 +13,7 @@
 param([switch]$Service, [switch]$Full, [switch]$Once)
 
 $ErrorActionPreference = 'Stop'
-$Version = '2.6'
+$Version = '2.7'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $cfgPath = Join-Path $here 'lidhja.json'
 $statePath = Join-Path $here 'lidhja-gjendja.json'
@@ -71,6 +71,7 @@ if (-not $cfg.server -or -not $cfg.database -or -not $cfg.main_price_list) {
 }
 $pushUrl = ($cfg.url.TrimEnd('/')) + '/rest/v1/rpc/sync_push'
 $historyUrl = ($cfg.url.TrimEnd('/')) + '/rest/v1/rpc/sync_history'
+$imagesUrl = ($cfg.url.TrimEnd('/')) + '/rest/v1/rpc/sync_images'
 
 $state = @{ wm = @{}; full_done = $false }
 if ((Test-Path $statePath) -and -not $Full) {
@@ -512,6 +513,56 @@ SELECT l.M_PRICENVLLINE_ID AS id, h.DOCUMENTNO AS num, h.DATENVL AS d, $whCode A
   return $saved
 }
 
+# product pictures (AD_IMAGE, DOCTYPE D_PRODUCT): the newest one per item, up to 400 per round,
+# in small pushes; the next round goes on from where this one stopped (time, then id).
+function Send-Images($db) {
+  $numVal = "CASE WHEN LTRIM(RTRIM(i.VALUE)) NOT LIKE '%[^0-9]%' AND LEN(LTRIM(RTRIM(i.VALUE))) BETWEEN 1 AND 18 THEN CAST(LTRIM(RTRIM(i.VALUE)) AS numeric(18,0)) END"
+  if (-not $state.wm['img_match']) {
+    $c = Query $db @"
+SELECT SUM(CASE WHEN EXISTS (SELECT 1 FROM M_PRODUCT p WITH (NOLOCK) WHERE p.M_PRODUCT_ID = $numVal) THEN 1 ELSE 0 END) AS by_id,
+       SUM(CASE WHEN EXISTS (SELECT 1 FROM M_PRODUCT p WITH (NOLOCK) WHERE p.VALUE = LTRIM(RTRIM(i.VALUE))) THEN 1 ELSE 0 END) AS by_code,
+       COUNT(*) AS n
+  FROM AD_IMAGE i WITH (NOLOCK) WHERE i.DOCTYPE = 'D_PRODUCT' AND ISNULL(i.ISACTIVE, 'Y') = 'Y'
+"@
+    $byId = if ($c.Rows[0].by_id -is [DBNull]) { 0 } else { [long]$c.Rows[0].by_id }
+    $byCode = if ($c.Rows[0].by_code -is [DBNull]) { 0 } else { [long]$c.Rows[0].by_code }
+    $state.wm['img_match'] = $(if ($byId -gt $byCode) { 'id' } else { 'code' })
+    Log ("Fotot: {0} gjithsej; lidhen me artikullin sipas {1} (sipas ID {2}, sipas kodit {3})" -f $c.Rows[0].n, $state.wm['img_match'], $byId, $byCode) 'Cyan'
+  }
+  $on = $(if ($state.wm['img_match'] -eq 'id') { "p.M_PRODUCT_ID = $numVal" } else { 'p.VALUE = LTRIM(RTRIM(i.VALUE))' })
+  $since = if ($state.wm['img']) { SqlTime ([datetime]$state.wm['img']) } else { '1900-01-01T00:00:00.000' }
+  $sinceId = if ($state.wm['img_id']) { [long]$state.wm['img_id'] } else { 0 }
+  $t = Query $db @"
+WITH x AS (
+  SELECT i.AD_IMAGE_ID AS id, i.UPDATED AS upd, p.VALUE AS sku,
+         ROW_NUMBER() OVER (PARTITION BY p.M_PRODUCT_ID ORDER BY i.UPDATED DESC, i.AD_IMAGE_ID DESC) AS rn
+    FROM AD_IMAGE i WITH (NOLOCK) JOIN M_PRODUCT p WITH (NOLOCK) ON $on
+   WHERE i.DOCTYPE = 'D_PRODUCT' AND ISNULL(i.ISACTIVE, 'Y') = 'Y' AND i.IMAGE IS NOT NULL AND DATALENGTH(i.IMAGE) BETWEEN 100 AND 1500000)
+SELECT TOP 400 id, upd, sku FROM x
+ WHERE rn = 1 AND (upd > '$since' OR (upd = '$since' AND id > $sinceId))
+ ORDER BY upd, id
+"@
+  if ($t.Rows.Count -eq 0) { $state.wm['img_more'] = ''; return 0 }
+  $list = @($t.Rows)
+  $saved = 0; $skipped = 0
+  for ($i = 0; $i -lt $list.Count; $i += 25) {
+    $part = @($list[$i..([math]::Min($i + 25, $list.Count) - 1)])
+    $blobs = Query $db ("SELECT AD_IMAGE_ID AS id, IMAGE AS img FROM AD_IMAGE WITH (NOLOCK) WHERE AD_IMAGE_ID IN ({0})" -f (($part | ForEach-Object { [long]$_.id }) -join ','))
+    $data = @{}; foreach ($b in $blobs.Rows) { if (-not ($b.img -is [DBNull])) { $data[[long]$b.id] = [Convert]::ToBase64String([byte[]]$b.img) } }
+    $rows = @($part | Where-Object { $data.ContainsKey([long]$_.id) } | ForEach-Object { @{ sku = (Str $_.sku); data = $data[[long]$_.id]; ext_id = "I:$($cfg.database):$($_.id)" } })
+    if ($rows.Count) {
+      $r = Post-Json $imagesUrl @{ p_key = $cfg.sync_key; p_rows = $rows }
+      $saved += [int]$r.saved; $skipped += [int]$r.skipped
+    }
+    $last = $part[-1]
+    $state.wm['img'] = ([datetime]$last.upd).ToString('yyyy-MM-ddTHH:mm:ss.fff', $inv); $state.wm['img_id'] = [string][long]$last.id
+    Save-State
+  }
+  $state.wm['img_more'] = $(if ($list.Count -ge 400) { '1' } else { '' })
+  Log ("Fotot: {0} u ruajtën, {1} u kapërcyen{2}" -f $saved, $skipped, $(if ($state.wm['img_more']) { ' (vazhdon)' } else { '' })) 'Green'
+  return $saved
+}
+
 function Send-Activity($db) {
   $t = Query $db @"
 WITH t AS (
@@ -569,6 +620,11 @@ function Run-Cycle {
         Check-AllStock $db
         try { Send-Activity $db } catch { Log "Lëvizja e fundit nuk u dërgua: $($_.Exception.Message)" 'Yellow' }
         $state.wm['stockcheck3'] = (Get-Date).ToString('s'); Save-State
+      }
+      # pictures: every hour, or straight on while there are more to send
+      if ($state.wm['img_more'] -or -not $state.wm['img_check'] -or ((Get-Date) - [datetime]$state.wm['img_check']).TotalMinutes -ge 60) {
+        try { $n = Send-Images $db; if ($n) { $sent.foto = $n } } catch { Log "Fotot nuk u dërguan: $($_.Exception.Message)" 'Yellow'; $state.wm['img_more'] = '' }
+        $state.wm['img_check'] = (Get-Date).ToString('s')
       }
       # price levellings: every 30 minutes (the first time all of them)
       if (-not $state.wm['nvl_check'] -or ((Get-Date) - [datetime]$state.wm['nvl_check']).TotalMinutes -ge 30) {
