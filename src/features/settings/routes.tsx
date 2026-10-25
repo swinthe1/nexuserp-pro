@@ -9,10 +9,12 @@ const NumberingPage = lazyPage(() => import('./pages/numbering-page'), 'Numberin
 const AuditPage = lazyPage(() => import('./pages/audit-page'), 'AuditPage')
 const ImportPage = lazyPage(() => import('./pages/import-page'), 'ImportPage')
 const MigrationPage = lazyPage(() => import('./pages/migration-page'), 'MigrationPage')
+const AutomationPage = lazyPage(() => import('./pages/automation-page'), 'AutomationPage')
 const NotificationsPage = lazyPage(() => import('./pages/notifications-page'), 'NotificationsPage')
 
 export const settingsRoutes: RouteObject[] = [
   { path: 'settings/audit', element: <RequirePerm perm="audit.read" />, children: [{ index: true, element: <AuditPage /> }] },
+  { path: 'settings/automation', element: <RequirePerm perm="core.read" />, children: [{ index: true, element: <AutomationPage /> }] },
   { path: 'settings/import', element: <RequirePerm perm="core.read" />, children: [{ index: true, element: <ImportPage /> }] },
   { path: 'settings', element: <RequirePerm perm="admin.read" />, children: [
     { index: true, element: <CompanySettingsPage /> },

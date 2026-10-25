@@ -5,6 +5,12 @@
  * report bucket labels and journal line descriptions.
  */
 export const serverTemplates: [string, string][] = [
+  ['Cash difference at %: % %', 'Diferencë parash në {0}: {1} {2}'],
+  ['Shift % · % · expected %, counted %', 'Turni {0} · {1} · pritej {2}, u numërua {3}'],
+  ['Tills still open since yesterday: %', 'Arka ende të hapura që nga dje: {0}'],
+  ['% — close and count them today.', '{0} — mbylleni dhe numërojini sot.'],
+  ['Payroll for % is ready to check', 'Pagat për {0} janë gati për kontroll'],
+  ['The payroll for % could not be prepared', 'Pagat për {0} nuk u përgatitën dot'],
   ['Recurring invoices made: %', 'Fatura që përsëriten u krijuan: {0}'],
   // ---------------------------------------------------------------- errors (raise exception)
   ['This cannot be done without internet: %', 'Kjo nuk mund të bëhet pa internet: {0}'],

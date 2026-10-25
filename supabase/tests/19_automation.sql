@@ -98,5 +98,32 @@ select public.recurring_update(:'plan', '{"delete": true}');
 select t.ok((select count(*) from public.sales_invoices where recurring_id is null and partner_id = :'acust') = 1 + :'made'::int + :'made4'::int, 'removing the plan keeps the invoices it made');
 reset role;
 
+-- ---------- the till at the end of the day -----------------------------------------------
+select set_config('request.jwt.claim.sub', '', false);
+select id as sess, company_id as sco from public.pos_sessions where status = 'open' limit 1 \gset
+update public.pos_sessions set opened_at = now() - interval '20 hours' where id = :'sess';
+select app.remind_open_tills() as open_tills \gset
+select t.ok(:'open_tills'::int >= 1 and exists (select 1 from public.notifications where company_id = :'sco' and link = '/pos' and title like 'Tills still open since yesterday%'),
+  'a till left open since yesterday is reported in the morning');
+-- (the session of the earlier tests has no balanced sales; the close itself is tested in 06, here only what follows it)
+alter table public.pos_sessions disable trigger trg_11_status_flow;
+alter table public.pos_sessions disable trigger trg_02_system_status;
+update public.pos_sessions set status = 'closed', closed_at = now(), expected_cash = 100, closing_cash_counted = 92 where id = :'sess';
+alter table public.pos_sessions enable trigger trg_11_status_flow;
+alter table public.pos_sessions enable trigger trg_02_system_status;
+select t.ok(exists (select 1 from public.notifications where company_id = :'sco' and link = '/pos/sessions/' || :'sess' and type = 'warning' and title like 'Cash difference at %'),
+  'closing with cash that does not match tells the managers at once');
+
+-- ---------- the month's payroll, prepared by itself ---------------------------------------
+select id as pco from public.companies where name = 'Admin Test' \gset
+update public.company_settings set payroll_auto_day = least(extract(day from current_date)::int, 28), payroll_auto_for = 'current' where company_id = :'pco';
+select public.run_monthly_payroll() as pay_made \gset
+select t.ok(extract(day from current_date) > 28 or (exists (select 1 from public.payroll_runs where company_id = :'pco' and status = 'calculated'
+              and period_start = date_trunc('month', current_date)::date)
+            and exists (select 1 from public.notifications where company_id = :'pco' and title like 'Payroll for % is ready to check')),
+  'on its day the month''s payroll is made and calculated as a draft, and payroll is told');
+select public.run_monthly_payroll() as pay_made2 \gset
+select t.ok((select count(*) from public.payroll_runs where company_id = :'pco' and period_start = date_trunc('month', current_date)::date) <= 1, 'only once a month');
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;

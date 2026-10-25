@@ -568,4 +568,5 @@ export default {
   "Only invoices can repeat, not credit notes": "Vetëm faturat mund të përsëriten, jo notat e kreditit",
   "Choose a day from 1 to 28": "Zgjidhni një ditë nga 1 deri në 28",
   "The end comes before the start": "Fundi është para fillimit",
+  "Made from contracts, attendance and leave. Check it, then approve and post.": "Krijuar nga kontratat, prezenca dhe lejet. Kontrollojini, pastaj miratojini dhe postojini.",
 } satisfies Dict

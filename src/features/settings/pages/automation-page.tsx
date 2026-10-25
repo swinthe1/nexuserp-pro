@@ -1,0 +1,125 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { CalendarClock, Coins, Repeat, Tags, Wallet } from 'lucide-react'
+import * as React from 'react'
+import { Link } from 'react-router-dom'
+import { toast } from 'sonner'
+import { useCompany } from '@/app/company-provider'
+import { PageHeader } from '@/components/page-header'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { describeError, unwrap } from '@/lib/errors'
+import { supabase } from '@/lib/supabase'
+import { t } from '@/i18n'
+
+type Settings = { pos_cash_tolerance: number; payroll_auto_day: number | null; payroll_auto_for: 'previous' | 'current'; payroll_deduct_absence: boolean }
+
+export function useAutomationSettings() {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: ['automation-settings', companyId],
+    enabled: !!companyId,
+    queryFn: async () => unwrap(await supabase.from('company_settings')
+      .select('pos_cash_tolerance, payroll_auto_day, payroll_auto_for, payroll_deduct_absence').eq('company_id', companyId!).single()) as unknown as Settings,
+  })
+}
+export function useSaveAutomation() {
+  const { companyId } = useCompany()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (patch: Record<string, unknown>) => unwrap(await supabase.rpc('automation_settings_save', { p_company: companyId!, p_patch: patch as never })),
+    onSuccess: () => { toast.success(t('Saved')); void qc.invalidateQueries({ queryKey: ['automation-settings', companyId] }) },
+    onError: (e) => toast.error(describeError(e)),
+  })
+}
+
+/** one thing the program does by itself */
+export function AutomationCard({ icon: Icon, title, children, aside }: { icon: React.ComponentType<{ className?: string }>; title: string; children: React.ReactNode; aside?: React.ReactNode }) {
+  return (
+    <Card>
+      <CardContent className="grid gap-3 p-4 sm:grid-cols-[auto_1fr_auto] sm:items-start sm:gap-4">
+        <span className="grid size-9 place-items-center rounded-lg bg-primary/10 text-primary"><Icon className="size-[18px]" /></span>
+        <div className="grid min-w-0 gap-3"><h2 className="text-[15px] font-semibold">{title}</h2>{children}</div>
+        {aside && <div className="sm:pt-0.5">{aside}</div>}
+      </CardContent>
+    </Card>
+  )
+}
+
+export function AutomationPage() {
+  const { can } = useCompany()
+  const q = useAutomationSettings()
+  const save = useSaveAutomation()
+  const s = q.data
+  const [tol, setTol] = React.useState('')
+  React.useEffect(() => { if (s) setTol(String(s.pos_cash_tolerance)) }, [s])
+
+  return (
+    <div className="mx-auto grid max-w-3xl gap-3">
+      <PageHeader title={t('Automations')} description={t('What DrisPRO does by itself, and when. Each one prepares the work; whatever touches money, the law or goods in the shop still waits for a person to confirm.')} />
+
+      {can('inventory.read') && (
+        <AutomationCard icon={Tags} title={t('New selling prices from the cost')} aside={<Button variant="outline" size="sm" asChild><Link to="/inventory/prices">{t('Open')}</Link></Button>}>
+          <p className="text-[13px] text-muted-foreground">{t('When goods arrive at a new cost, the price that keeps the category margin waits for you to accept it. The margins are set on that page.')}</p>
+        </AutomationCard>
+      )}
+
+      {can('invoicing.read') && (
+        <AutomationCard icon={Repeat} title={t('Recurring invoices')} aside={<Button variant="outline" size="sm" asChild><Link to="/sales/recurring">{t('Open')}</Link></Button>}>
+          <p className="text-[13px] text-muted-foreground">{t('Rent, subscriptions and maintenance: made every morning on their day. Start one from an invoice with "Repeat".')}</p>
+        </AutomationCard>
+      )}
+
+      {can('pos.read') && s && (
+        <AutomationCard icon={Wallet} title={t('End of the day at the till')}>
+          <p className="text-[13px] text-muted-foreground">{t('When a till closes with a cash difference, the managers are told at once. Every morning, tills left open since yesterday are reported.')}</p>
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="grid gap-1.5"><Label htmlFor="tol">{t('Tell me when the difference is more than')}</Label>
+              <Input id="tol" type="number" min="0" step="any" className="w-36 text-right tabular" value={tol} onChange={(e) => setTol(e.target.value)} disabled={!can('pos.approve')} /></div>
+            {can('pos.approve') && <Button variant="outline" disabled={tol === String(s.pos_cash_tolerance) || tol === ''} loading={save.isPending}
+              onClick={() => save.mutate({ pos_cash_tolerance: Number(tol) })}>{t('Save')}</Button>}
+          </div>
+        </AutomationCard>
+      )}
+
+      {can('payroll.read') && s && (
+        <AutomationCard icon={CalendarClock} title={t('Monthly payroll')}
+          aside={<Switch checked={s.payroll_auto_day != null} disabled={!can('payroll.write') || save.isPending} aria-label={t('Monthly payroll')}
+            onCheckedChange={(on) => save.mutate({ payroll_auto_day: on ? '1' : '' })} />}>
+          <p className="text-[13px] text-muted-foreground">{t('On the chosen day the payroll is made and calculated from contracts, overtime in attendance and leave, as a draft. Payroll is told to check it; approving and paying stay with you.')}</p>
+          {s.payroll_auto_day != null && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-1.5"><Label>{t('Prepare it on day')}</Label>
+                <Select value={String(s.payroll_auto_day)} disabled={!can('payroll.write')} onValueChange={(v) => save.mutate({ payroll_auto_day: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{Array.from({ length: 28 }, (_, i) => i + 1).map((d) => <SelectItem key={d} value={String(d)}>{d}</SelectItem>)}</SelectContent>
+                </Select></div>
+              <div className="grid gap-1.5"><Label>{t('For')}</Label>
+                <Select value={s.payroll_auto_for} disabled={!can('payroll.write')} onValueChange={(v) => save.mutate({ payroll_auto_for: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="previous">{t('The month before')}</SelectItem>
+                    <SelectItem value="current">{t('The same month')}</SelectItem>
+                  </SelectContent>
+                </Select></div>
+              <label className="flex items-start justify-between gap-3 text-sm sm:col-span-2">
+                <span><span className="block">{t('Count days absent without leave as unpaid')}</span>
+                  <span className="text-xs text-muted-foreground">{t('Only for people whose attendance is kept: a working day with no attendance and no approved leave.')}</span></span>
+                <Switch checked={s.payroll_deduct_absence} disabled={!can('payroll.write')} onCheckedChange={(v) => save.mutate({ payroll_deduct_absence: v })} />
+              </label>
+            </div>
+          )}
+        </AutomationCard>
+      )}
+
+      {can('inventory.read') && (
+        <AutomationCard icon={Coins} title={t('Replenishment')} aside={<Button variant="outline" size="sm" asChild><Link to="/procurement/replenishment">{t('Open')}</Link></Button>}>
+          <p className="text-[13px] text-muted-foreground">{t('Every morning: what to order from whom, from stock levels and open orders, as suggestions or draft purchase orders.')}</p>
+        </AutomationCard>
+      )}
+    </div>
+  )
+}

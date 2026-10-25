@@ -1404,6 +1404,10 @@ export type Database = {
           price_round_step: number
           price_suggest_down: boolean
           price_suggest_min_pct: number
+          pos_cash_tolerance: number
+          payroll_auto_day: number | null
+          payroll_auto_for: string
+          payroll_deduct_absence: boolean
         }
         Insert: {
           id?: string
@@ -1438,6 +1442,10 @@ export type Database = {
           price_round_step?: number
           price_suggest_down?: boolean
           price_suggest_min_pct?: number
+          pos_cash_tolerance?: number
+          payroll_auto_day?: number | null
+          payroll_auto_for?: string
+          payroll_deduct_absence?: boolean
         }
         Update: {
           id?: string
@@ -1472,6 +1480,10 @@ export type Database = {
           price_round_step?: number
           price_suggest_down?: boolean
           price_suggest_min_pct?: number
+          pos_cash_tolerance?: number
+          payroll_auto_day?: number | null
+          payroll_auto_for?: string
+          payroll_deduct_absence?: boolean
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -11011,6 +11023,13 @@ export type Database = {
         }
         Returns: number
       }
+      automation_settings_save: {
+        Args: {
+          p_company: string
+          p_patch: Json
+        }
+        Returns: undefined
+      }
       bom_cost: {
         Args: {
           p_bom: string
@@ -12328,6 +12347,10 @@ export type Database = {
           p_asset?: string
         }
         Returns: Json
+      }
+      run_monthly_payroll: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       run_recurring_invoices: {
         Args: {
