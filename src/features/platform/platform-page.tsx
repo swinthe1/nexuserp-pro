@@ -127,7 +127,7 @@ export function PlatformPage() {
     <div className="min-h-dvh bg-background">
       <header className="flex h-14 items-center gap-3 border-b bg-sidebar px-4 sm:px-6">
         <img src="/favicon.svg" alt="" className="size-7" />
-        <span className="text-sm font-semibold">NexusERP Pro</span>
+        <span className="text-sm font-semibold">DrisPRO</span>
         <span className="hidden text-sm text-muted-foreground sm:inline">{t('Platform')}</span>
         <div className="ml-auto flex items-center gap-2">
           <LanguageToggle />
@@ -316,7 +316,7 @@ function NewClientDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
   })
 
   const welcome = done ? [
-    t('Your NexusERP account is ready.'),
+    t('Your DrisPRO account is ready.'),
     `${t('Address')}: ${window.location.origin}`,
     `${t('Email')}: ${done.owner_email.toLowerCase()}`,
     `${t('Password')}: ${done.owner_password}`,
@@ -572,7 +572,7 @@ function LicenceCodeCard({ companyId }: { companyId: string }) {
         {info && <button type="button" className="text-xs text-primary hover:underline" onClick={() => { void navigator.clipboard?.writeText(info.code); toast.success(t('Code copied')) }}>{t('Copy')}</button>}
       </div>
       <div className="font-mono text-lg font-semibold tracking-wider">{info?.code ?? '…'}</div>
-      <p className="text-xs text-muted-foreground">{t('The client types it when the NexusERP program starts the first time, and chooses where the data lives.')}</p>
+      <p className="text-xs text-muted-foreground">{t('The client types it when the DrisPRO program starts the first time, and chooses where the data lives.')}</p>
       <div className="grid gap-1.5">
         <Label>{t('Where it may run')}</Label>
         <Select value={info?.deployment ?? 'any'} disabled={!info || busy} onValueChange={(v) => void call(v)}>

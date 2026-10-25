@@ -1,4 +1,4 @@
-# Builds NexusERP for Windows (desktop/) and puts the installer on a GitHub release.
+# Builds DrisPRO for Windows (desktop/) and puts the installer on a GitHub release.
 name: Desktop (Windows)
 on:
   push:
@@ -30,14 +30,14 @@ jobs:
         run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         with:
-          name: NexusERP-Setup-${{ steps.v.outputs.version }}
+          name: DrisPRO-Setup-${{ steps.v.outputs.version }}
           path: desktop/dist/*.exe
           if-no-files-found: error
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: desktop-v${{ steps.v.outputs.version }}
-          name: NexusERP për Windows ${{ steps.v.outputs.version }}
-          body: Instaluesi i NexusERP për Windows. Shkarkoni NexusERP-Setup-${{ steps.v.outputs.version }}.exe dhe hapeni.
+          name: DrisPRO për Windows ${{ steps.v.outputs.version }}
+          body: Instaluesi i DrisPRO për Windows. Shkarkoni DrisPRO-Setup-${{ steps.v.outputs.version }}.exe dhe hapeni.
           files: desktop/dist/*.exe
           make_latest: true

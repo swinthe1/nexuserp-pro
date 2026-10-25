@@ -55,7 +55,7 @@ export default {
   '+1 year': '+1 vit',
   'Contract number, price, contact person…': 'Numri i kontratës, çmimi, personi i kontaktit…',
   'Only you see these notes.': 'Këto shënime i shihni vetëm ju.',
-  'Your NexusERP account is ready.': 'Llogaria juaj në NexusERP është gati.',
+  'Your DrisPRO account is ready.': 'Llogaria juaj në DrisPRO është gati.',
   'Change the password after the first sign-in: click your initials at the top right, then Change password.':
     'Ndryshojeni fjalëkalimin pas hyrjes së parë: klikoni inicialet tuaja lart djathtas, pastaj Ndrysho fjalëkalimin.',
   'Send these sign-in details to the client. The password is shown only now.': 'Dërgojini klientit këto të dhëna hyrjeje. Fjalëkalimi shfaqet vetëm tani.',
@@ -200,6 +200,6 @@ export default {
   "Local server only": "Vetëm server lokal",
   "Local server {url}, last check {time}": "Server lokal {url}, kontrolli i fundit {time}",
   "Move to another server": "Kaloje në server tjetër",
-  "The client types it when the NexusERP program starts the first time, and chooses where the data lives.": "Klienti e shkruan kur programi NexusERP hapet për herë të parë dhe zgjedh ku ruhen të dhënat.",
+  "The client types it when the DrisPRO program starts the first time, and chooses where the data lives.": "Klienti e shkruan kur programi DrisPRO hapet për herë të parë dhe zgjedh ku ruhen të dhënat.",
   "Where it may run": "Ku mund të punojë",
 } satisfies Dict

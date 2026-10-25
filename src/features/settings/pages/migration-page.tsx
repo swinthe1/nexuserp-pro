@@ -81,7 +81,7 @@ export function MigrationPage() {
             </Select>
           </div>
           <p className="text-xs text-muted-foreground">
-            {t('Balances, open invoices and stock are taken as they stand on the cut-over date; from that day on the client works only in NexusERP. Export each list from the old program to Excel on that date.')}
+            {t('Balances, open invoices and stock are taken as they stand on the cut-over date; from that day on the client works only in DrisPRO. Export each list from the old program to Excel on that date.')}
           </p>
         </CardContent>
       </Card>

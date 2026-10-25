@@ -42,7 +42,7 @@ export function DesktopSettingsDialog({ open, onOpenChange }: { open: boolean; o
         </Select>
         <Button variant="outline" size="icon" aria-label={t('Print a test page')} onClick={async () => {
           await desktop!.saveSettings(s ?? {})
-          printHtml(`<div class="c big">NexusERP</div><div class="c">${t('Test page')} · ${label}</div><div class="c">${new Date().toLocaleString()}</div>`, TEST_CSS, kind)
+          printHtml(`<div class="c big">DrisPRO</div><div class="c">${t('Test page')} · ${label}</div><div class="c">${new Date().toLocaleString()}</div>`, TEST_CSS, kind)
         }}><Printer /></Button>
       </div>
       <p className="text-xs text-muted-foreground">{hint}</p>
@@ -53,7 +53,7 @@ export function DesktopSettingsDialog({ open, onOpenChange }: { open: boolean; o
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{t('This computer')}</DialogTitle>
-          <DialogDescription>{t('NexusERP for Windows {version}. These choices are kept on this computer only.', { version })}</DialogDescription>
+          <DialogDescription>{t('DrisPRO for Windows {version}. These choices are kept on this computer only.', { version })}</DialogDescription>
         </DialogHeader>
         {!s ? <div className="h-60" /> : (
           <div className="grid max-h-[65dvh] gap-4 overflow-y-auto pr-1">
@@ -84,7 +84,7 @@ export function DesktopSettingsDialog({ open, onOpenChange }: { open: boolean; o
                 </div>
               )}
             </div>
-            <label className="flex items-center justify-between gap-3 text-[13px]"><span className="font-medium">{t('Start NexusERP with Windows')}</span>
+            <label className="flex items-center justify-between gap-3 text-[13px]"><span className="font-medium">{t('Start DrisPRO with Windows')}</span>
               <Switch checked={s.autoStart} onCheckedChange={(v) => set({ autoStart: v })} /></label>
             <label className="flex items-center justify-between gap-3 text-[13px]"><span><span className="font-medium">{t('Full screen')}</span>
               <span className="block text-xs text-muted-foreground">{t('For tills and kitchen screens. F11 switches it any time.')}</span></span>

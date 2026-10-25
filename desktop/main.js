@@ -1,4 +1,4 @@
-// NexusERP for Windows: the whole web application in its own window, plus what a browser cannot do:
+// DrisPRO for Windows: the whole web application in its own window, plus what a browser cannot do:
 // printing straight to the receipt and kitchen printers (no print window), opening the cash drawer of a
 // network printer, starting with Windows, full screen for tills. The application itself comes from the
 // server (always the latest version) and keeps working offline the same way as in the browser.
@@ -34,7 +34,7 @@ function createWindow() {
   const b = settings.bounds
   win = new BrowserWindow({
     width: b?.width ?? 1366, height: b?.height ?? 860, x: b?.x, y: b?.y, minWidth: 900, minHeight: 600,
-    title: 'NexusERP', backgroundColor: '#ffffff', show: false, autoHideMenuBar: true,
+    title: 'DrisPRO', backgroundColor: '#ffffff', show: false, autoHideMenuBar: true,
     icon: path.join(__dirname, 'build', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, spellcheck: false },
   })
@@ -57,7 +57,7 @@ function createWindow() {
 
 function buildMenu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate([
-    { label: 'NexusERP', submenu: [
+    { label: 'DrisPRO', submenu: [
       { label: 'Rifresko', accelerator: 'CmdOrCtrl+R', click: () => win?.webContents.reload() },
       { label: 'Rifresko plotësisht', accelerator: 'CmdOrCtrl+Shift+R', click: () => win?.webContents.reloadIgnoringCache() },
       { label: 'Ekran i plotë', accelerator: 'F11', click: () => win?.setFullScreen(!win.isFullScreen()) },
@@ -127,7 +127,7 @@ handle('nexus:save-settings', (s) => {
 handle('nexus:set-server', async (url) => {
   let u
   try { u = new URL(String(url)); if (!/^https?:$/.test(u.protocol)) throw new Error() } catch { throw new Error('Adresa nuk është e vlefshme') }
-  const ok = await dialog.showMessageBox(win, { type: 'question', buttons: ['Po', 'Jo'], defaultId: 0, message: `Të hapet NexusERP nga ${u.origin}?` })
+  const ok = await dialog.showMessageBox(win, { type: 'question', buttons: ['Po', 'Jo'], defaultId: 0, message: `Të hapet DrisPRO nga ${u.origin}?` })
   if (ok.response !== 0) return false
   settings.server = u.origin; writeSettings(settings)
   if (u.protocol === 'http:') { app.relaunch(); app.exit(0); return true }
@@ -146,7 +146,7 @@ async function post(url, body, headers = {}) {
 }
 const SERVER_MSG = {
   'This licence code is not known': 'Ky kod licence nuk njihet. Kontrollojeni dhe provoni përsëri.',
-  'This licence is not active; ask your NexusERP supplier': 'Kjo licencë nuk është aktive; pyesni furnitorin e NexusERP.',
+  'This licence is not active; ask your NexusERP supplier': 'Kjo licencë nuk është aktive; pyesni furnitorin e DrisPRO.',
 }
 handle('nexus:activate', async (code) => {
   const c = String(code ?? '').trim().toUpperCase()
@@ -160,10 +160,10 @@ handle('nexus:finish-activation', async (a) => {
   if (a.mode === 'local') {
     let u
     try { u = new URL(/^https?:\/\//.test(a.server) ? a.server : `http://${a.server}`) } catch { throw new Error('Shkruani adresën e serverit, p.sh. http://192.168.1.20') }
-    // it must be a NexusERP local server
+    // it must be a DrisPRO local server
     const r = await enet.fetch(`${u.origin}/nexus-config.js`).catch(() => null)
     const text = r && r.ok ? await r.text() : ''
-    if (!/local:\s*true/.test(text)) throw new Error(`Në ${u.origin} nuk u gjet një server lokal i NexusERP. Kontrolloni adresën dhe që serveri është ndezur.`)
+    if (!/local:\s*true/.test(text)) throw new Error(`Në ${u.origin} nuk u gjet një server lokal i DrisPRO. Kontrolloni adresën dhe që serveri është ndezur.`)
     server = u.origin
   } else if (lic.deployment === 'local') throw new Error('Kjo licencë është vetëm për server lokal.')
   settings = { ...settings, licence: lic.code, mode: a.mode, company: lic.company?.name ?? '', server }

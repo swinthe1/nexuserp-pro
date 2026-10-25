@@ -13,8 +13,8 @@ export default defineConfig({
       includeAssets: ['favicon.svg', 'favicon-32.png', 'apple-touch-icon.png'],
       manifest: {
         id: '/',
-        name: 'NexusERP Pro',
-        short_name: 'NexusERP',
+        name: 'DrisPRO',
+        short_name: 'DrisPRO',
         description: 'Shitje, magazinë, blerje, prodhim, financë dhe paga në një vend.',
         lang: 'sq',
         dir: 'ltr',

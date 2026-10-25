@@ -12,7 +12,7 @@ export function AuthLayout() {
         <div className="absolute inset-0 opacity-[0.55] [background-image:linear-gradient(hsl(var(--border))_1px,transparent_1px),linear-gradient(90deg,hsl(var(--border))_1px,transparent_1px)] [background-size:28px_28px]" />
         <div className="relative flex h-full flex-col justify-between p-10">
           <div className="flex items-center gap-2 text-sm font-semibold">
-            <img src="/favicon.svg" alt="" className="size-7" /> NexusERP Pro
+            <img src="/favicon.svg" alt="" className="size-7" /> DrisPRO
           </div>
           <div className="max-w-md">
             <p className="text-3xl font-semibold leading-tight tracking-[-0.02em]">
