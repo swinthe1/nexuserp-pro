@@ -125,5 +125,81 @@ select t.ok(extract(day from current_date) > 28 or (exists (select 1 from public
 select public.run_monthly_payroll() as pay_made2 \gset
 select t.ok((select count(*) from public.payroll_runs where company_id = :'pco' and period_start = date_trunc('month', current_date)::date) <= 1, 'only once a month');
 
+-- ---------- the postier: email from the company's mailbox, WhatsApp through the cloud ----------
+set role authenticated;
+select t.login('ana@auto.xk');
+select public.mail_account_save(:'aco', '{"host":"smtp.auto.xk","port":587,"security":"starttls","username":"shop@auto.xk","password":"s3cret","from_name":"Automatika","from_email":"Shop@Auto.xk"}');
+select t.ok((public.mail_account_get(:'aco') ->> 'has_password')::boolean and public.mail_account_get(:'aco') ->> 'password' is null
+            and public.mail_account_get(:'aco') ->> 'from_email' = 'shop@auto.xk', 'the mailbox is saved; its password never comes back to a screen');
+select public.mail_account_save(:'aco', '{"host":"smtp2.auto.xk","from_email":"shop@auto.xk","password":""}');
+reset role;
+select t.ok((select password = 's3cret' and host = 'smtp2.auto.xk' from app.mail_accounts where company_id = :'aco'), 'saving without a password keeps the old one');
+set role authenticated;
+select t.throws($$ select * from app.mail_accounts $$, 'permission denied', 'nobody reads the mailboxes table directly');
+select public.mail_account_test(:'aco', 'ana@auto.xk') as test_msg \gset
+update public.business_partners set email = 'qira@klient.xk', phone = '044 555 666' where id = :'acust';
+select public.messaging_settings_save(:'aco', '{"summary_hour":"7","summary_emails":["Ana@Auto.xk"],"summary_whatsapp":["+383 44 111 222"],
+  "dunning_enabled":true,"dunning_whatsapp":true,"dunning_steps":["3","15","30","x"]}');
+select t.ok((public.messaging_settings(:'aco') -> 'dunning_steps') = '[3, 15, 30]'::jsonb and (public.messaging_settings(:'aco') ->> 'summary_hour') = '7', 'the settings are saved and cleaned');
+select t.ok((select count(*) from public.dunning_preview(:'aco') where partner_id = :'acust') = 1, 'the reminders of today can be seen before they go');
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+select public.summary_send_now(:'aco') as sums \gset
+select t.ok(:'sums'::int = 2 and exists (select 1 from app.message_outbox where company_id = :'aco' and purpose = 'summary' and channel = 'whatsapp' and to_address = '38344111222'
+            and template ->> 'name' = 'drispro_permbledhja'), 'the morning summary goes by email and to WhatsApp (number written as WhatsApp wants it)');
+select app.run_dunning(:'aco') as dun \gset
+select t.ok(:'dun'::int = 1 and exists (select 1 from app.message_outbox where company_id = :'aco' and purpose = 'dunning' and channel = 'email' and to_address = 'qira@klient.xk'
+              and body_text like '%Qiramarrësi%' and body_text like '%Gjithsej%')
+            and exists (select 1 from app.message_outbox where company_id = :'aco' and purpose = 'dunning' and channel = 'whatsapp' and to_address = '38344555666'),
+  'a customer with overdue invoices gets one reminder listing them, by email and WhatsApp');
+select app.run_dunning(:'aco') as dun2 \gset
+select t.ok(:'dun2'::int = 0, 'and not the same step again');
+set role service_role;
+select public.postier_claim(50) as claimed \gset
+reset role;
+select t.ok(jsonb_array_length(:'claimed'::jsonb) >= 4 and (select bool_and((m -> 'mail' ->> 'pass') = 's3cret') from jsonb_array_elements(:'claimed'::jsonb) m where m ->> 'channel' = 'email' and m ->> 'company' = :'aco'),
+  'the worker gets the messages with the mailbox to send them from');
+set role service_role;
+select public.postier_done(:'test_msg', true, null, 'id-1');
+select public.postier_done((select (m ->> 'id')::uuid from jsonb_array_elements(:'claimed'::jsonb) m where m ->> 'channel' = 'whatsapp' limit 1), false, 'no number');
+reset role;
+select t.ok((select verified_at is not null from app.mail_accounts where company_id = :'aco'), 'a test email that went out marks the mailbox as working');
+select t.ok(exists (select 1 from app.message_outbox where status = 'failed' and last_error = 'no number' and next_try_at > now()), 'a failed message waits and is tried again later');
+set role authenticated;
+select t.throws($$ select public.postier_claim(1) $$, 'permission denied', 'a signed-in person cannot take the outbox');
+reset role;
+select public.automation_tick() as tick \gset
+select t.ok((:'tick'::jsonb ? 'summaries'), 'the tick runs the timed work');
+
+-- purchase orders to the vendor, and WhatsApp from a local server
+set role authenticated;
+select t.login('ana@auto.xk');
+select public.messaging_settings_save(:'aco', '{"po_email_auto":true}');
+insert into public.business_partners (company_id, code, name, is_vendor, email) values (:'aco', 'FURN', 'Furnitori Pije', true, 'porosi@furnitori.xk') returning id as avend \gset
+select id as awh from public.warehouses where company_id = :'aco' limit 1 \gset
+insert into public.purchase_orders (company_id, vendor_id, warehouse_id) values (:'aco', :'avend', :'awh') returning id as apo \gset
+insert into public.purchase_order_lines (company_id, purchase_order_id, line_no, variant_id, description, quantity, unit_price, tax_code_id)
+  values (:'aco', :'apo', 1, :'avar', 'Coca Cola 0.5', 48, 0.42, :'avat');
+select public.submit_purchase_order(:'apo') as po_status \gset
+reset role;
+select t.ok(:'po_status' = 'approved' and exists (select 1 from app.message_outbox where entity_id = :'apo' and to_address = 'porosi@furnitori.xk' and body_text like '%48 × Coca Cola 0.5%'),
+  'an approved purchase order goes to the vendor by email');
+set role authenticated;
+select t.login('ana@auto.xk');
+select public.email_purchase_order(:'apo', 'tjeter@furnitori.xk') as po_msg \gset
+reset role;
+select t.ok((select to_address = 'tjeter@furnitori.xk' and purpose = 'purchase_order' from app.message_outbox where id = :'po_msg'), 'or by hand, to another address');
+select code as alcode from public.licenses where company_id = :'aco' \gset
+select gen_random_uuid() as asrv \gset
+update public.licenses set local_server_id = :'asrv' where company_id = :'aco';
+set role anon;
+select public.licence_whatsapp_relay(:'alcode', :'asrv', jsonb_build_array(jsonb_build_object('id', gen_random_uuid(), 'to', '38344111222', 'text', 'x',
+  'template', jsonb_build_object('name', 'drispro_permbledhja', 'params', '[]'::jsonb)), jsonb_build_object('id', gen_random_uuid(), 'to', 'bad', 'template', '{}'::jsonb))) as relayed \gset
+select t.throws(format($q$select public.licence_whatsapp_relay(%L, %L, '[]')$q$, :'alcode', gen_random_uuid()), 'another server', 'only the licence''s own server can send through the cloud');
+reset role;
+select t.ok((:'relayed'::jsonb ->> 'accepted')::int = 1 and exists (select 1 from app.message_outbox where relay_licence = :'alcode' and channel = 'whatsapp'),
+  'a local server''s WhatsApp messages wait in the cloud outbox (wrong numbers are left out)');
+update public.licenses set local_server_id = null where company_id = :'aco';
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;

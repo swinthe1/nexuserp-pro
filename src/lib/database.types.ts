@@ -1408,6 +1408,17 @@ export type Database = {
           payroll_auto_day: number | null
           payroll_auto_for: string
           payroll_deduct_absence: boolean
+          summary_hour: number | null
+          summary_emails: string[]
+          summary_whatsapp: string[]
+          dunning_enabled: boolean
+          dunning_email: boolean
+          dunning_whatsapp: boolean
+          dunning_steps: number[]
+          dunning_subject: string | null
+          dunning_text: string | null
+          po_email_auto: boolean
+          po_email_text: string | null
         }
         Insert: {
           id?: string
@@ -1446,6 +1457,17 @@ export type Database = {
           payroll_auto_day?: number | null
           payroll_auto_for?: string
           payroll_deduct_absence?: boolean
+          summary_hour?: number | null
+          summary_emails?: string[]
+          summary_whatsapp?: string[]
+          dunning_enabled?: boolean
+          dunning_email?: boolean
+          dunning_whatsapp?: boolean
+          dunning_steps?: number[]
+          dunning_subject?: string | null
+          dunning_text?: string | null
+          po_email_auto?: boolean
+          po_email_text?: string | null
         }
         Update: {
           id?: string
@@ -1484,6 +1506,17 @@ export type Database = {
           payroll_auto_day?: number | null
           payroll_auto_for?: string
           payroll_deduct_absence?: boolean
+          summary_hour?: number | null
+          summary_emails?: string[]
+          summary_whatsapp?: string[]
+          dunning_enabled?: boolean
+          dunning_email?: boolean
+          dunning_whatsapp?: boolean
+          dunning_steps?: number[]
+          dunning_subject?: string | null
+          dunning_text?: string | null
+          po_email_auto?: boolean
+          po_email_text?: string | null
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -11030,6 +11063,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      automation_tick: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       bom_cost: {
         Args: {
           p_bom: string
@@ -11356,6 +11393,13 @@ export type Database = {
         }
         Returns: Json
       }
+      daily_summary: {
+        Args: {
+          p_company: string
+          p_day?: string
+        }
+        Returns: Json
+      }
       decide_approval: {
         Args: {
           p_request_id: string
@@ -11415,6 +11459,19 @@ export type Database = {
           p_proceeds_account?: string
         }
         Returns: Json
+      }
+      dunning_preview: {
+        Args: {
+          p_company: string
+        }
+        Returns: { partner_id: string | null; partner_name: string | null; email: string | null; phone: string | null; step: number | null; total: number | null; invoices: number | null }[]
+      }
+      email_purchase_order: {
+        Args: {
+          p_po: string
+          p_to?: string
+        }
+        Returns: string
       }
       ensure_lot: {
         Args: {
@@ -11628,6 +11685,14 @@ export type Database = {
         }
         Returns: Json
       }
+      licence_whatsapp_relay: {
+        Args: {
+          p_code: string
+          p_server: string
+          p_messages: Json
+        }
+        Returns: Json
+      }
       link_channel_products: {
         Args: {
           p_channel: string
@@ -11724,6 +11789,26 @@ export type Database = {
         }
         Returns: undefined
       }
+      mail_account_get: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
+      mail_account_save: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: undefined
+      }
+      mail_account_test: {
+        Args: {
+          p_company: string
+          p_to: string
+        }
+        Returns: string
+      }
       manufacturing_overview: {
         Args: {
           p_company: string
@@ -11743,6 +11828,32 @@ export type Database = {
           p_wo: string
         }
         Returns: { material_id: string | null; variant_id: string | null; sku: string | null; name: string | null; uom: string | null; tracking: string | null; required: number | null; consumed: number | null; remaining: number | null; available_at_location: number | null; available_in_warehouse: number | null; shortage: number | null; sub_bom_id: string | null; unit_cost: number | null; child_work_order: string | null }[]
+      }
+      message_retry: {
+        Args: {
+          p_id: string
+        }
+        Returns: undefined
+      }
+      messages_list: {
+        Args: {
+          p_company: string
+          p_limit?: number
+        }
+        Returns: { id: string | null; channel: string | null; to_address: string | null; subject: string | null; purpose: string | null; status: string | null; attempts: number | null; last_error: string | null; sent_at: string | null; created_at: string | null }[]
+      }
+      messaging_settings: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
+      messaging_settings_save: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: undefined
       }
       migration_check: {
         Args: {
@@ -12015,6 +12126,26 @@ export type Database = {
           p_override_reason?: string
         }
         Returns: Json
+      }
+      postier_claim: {
+        Args: {
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      postier_config: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      postier_done: {
+        Args: {
+          p_id: string
+          p_ok: boolean
+          p_error?: string
+          p_provider_id?: string
+          p_relayed?: boolean
+        }
+        Returns: undefined
       }
       price_rules_save: {
         Args: {
@@ -12570,6 +12701,12 @@ export type Database = {
           p_limit?: number
         }
         Returns: { location_id: string | null; code: string | null; reason: string | null; on_hand: number | null }[]
+      }
+      summary_send_now: {
+        Args: {
+          p_company: string
+        }
+        Returns: number
       }
       switch_company: {
         Args: {

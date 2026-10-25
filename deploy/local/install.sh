@@ -103,6 +103,8 @@ docker restart nexus-rest nexus-web >/dev/null
 
 say "6/7 Licence"
 bash "$here/licence.sh" || echo "    !! the licence could not be checked now; the server works and tries again every night"
+# the postier reads the licence and the server id written just now
+docker compose "${profiles[@]}" up -d postier >/dev/null 2>&1 || true
 
 say "7/7 Nightly copy of the database (02:30, 14 days kept in /root/backups)"
 NO_FIRST=1 bash deploy/coolify/install-backup.sh nexus-db >/dev/null && echo "    done"

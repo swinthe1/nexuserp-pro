@@ -367,4 +367,8 @@ export default {
   'enum:dismissed': 'Hedhur poshtë',
   'enum:buy': 'Bli',
   'enum:manufacture': 'Prodho',
+  "Email to the vendor": "Dërgoja furnitorit me email",
+  "{number} is on its way to {email}": "{number} po shkon te {email}",
+  "Email {number} to the vendor": "Dërgoja {number} furnitorit me email",
+  "The order goes with its lines and total from the company’s mailbox.": "Porosia shkon me rreshtat dhe totalin nga email-i i kompanisë.",
 } satisfies Dict

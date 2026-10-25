@@ -11,6 +11,7 @@ VITE_SUPABASE_URL=http://local-server VITE_SUPABASE_ANON_KEY=local-server npx vi
 cp deploy/local/docker-compose.yml deploy/local/nginx.conf deploy/local/install.sh deploy/local/licence.sh deploy/local/update.sh deploy/local/auto-update.sh deploy/local/cloud-backup.sh deploy/local/restore-from-cloud.sh deploy/local/LEXOME.txt "$out/"
 cp -r deploy/local/db "$out/db"
 cp -r deploy/local/windows "$out/windows"
+mkdir -p "$out/worker" && cp deploy/worker/*.mjs "$out/worker/"
 cp -r deploy/local/box "$out/box"
 mkdir -p "$out/supabase" "$out/deploy/coolify"
 cp -r supabase/migrations "$out/supabase/migrations"

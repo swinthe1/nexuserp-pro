@@ -21,6 +21,28 @@ if [ "${1:-}" = "--setup" ]; then
   exit 0
 fi
 
+# keys the cloud keeps for everyone, typed here and never shown:
+#   bash deploy/coolify/update.sh --whatsapp   (Meta WhatsApp: token and phone number ID)
+#   bash deploy/coolify/update.sh --ai         (Anthropic API key, for reading supplier invoices)
+if [ "${1:-}" = "--whatsapp" ] || [ "${1:-}" = "--ai" ]; then
+  if [ -f "$ENV" ]; then . "$ENV"; fi
+  db="${NEXUS_DB:-$(docker ps --format '{{.Names}}' | grep -E '^supabase-db' | head -1 || true)}"
+  pass="$(docker exec "$db" printenv POSTGRES_PASSWORD)"
+  put() { docker exec -i -e PGPASSWORD="$pass" "$db" psql -h 127.0.0.1 -U postgres -d postgres -q -v ON_ERROR_STOP=1 -v k="$1" -v v="$2" >/dev/null <<'SQL'
+insert into app.server_secrets (key, value) values (:'k', :'v') on conflict (key) do update set value = excluded.value;
+SQL
+  }
+  if [ "$1" = "--whatsapp" ]; then
+    read -rsp "WhatsApp permanent access token (not shown): " v; echo; [ -n "$v" ] && put whatsapp_token "$v"
+    read -rp "WhatsApp phone number ID: " v; [ -n "$v" ] && put whatsapp_phone_id "$v"
+  else
+    read -rsp "Anthropic API key (not shown): " v; echo; [ -n "$v" ] && put anthropic_api_key "$v"
+  fi
+  docker restart drispro-postier >/dev/null 2>&1 || true
+  echo "Saved. The postier uses it from now on."
+  exit 0
+fi
+
 db_given="${NEXUS_DB:-}"
 if [ -f "$ENV" ]; then . "$ENV"; fi
 db="${db_given:-${NEXUS_DB:-}}"
@@ -48,6 +70,23 @@ if [ -n "$auth" ]; then
     docker exec -i -e PGPASSWORD="$pass" "$db" psql -h 127.0.0.1 -U postgres -d postgres -q -v ON_ERROR_STOP=1 -v s="$jwt" >/dev/null <<'SQL' && echo "    cloud copies of local servers: ready"
 insert into app.server_secrets (key, value) values ('jwt_secret', :'s') on conflict (key) do update set value = excluded.value;
 SQL
+  fi
+fi
+
+# the postier: sends email and WhatsApp and runs the timed work (Node from the storage image)
+if [ -n "${jwt:-}" ]; then
+  store="$(docker ps --format '{{.Names}}' | grep -E '^supabase-storage' | head -1 || true)"
+  img="$([ -n "$store" ] && docker inspect -f '{{.Config.Image}}' "$store" 2>/dev/null || true)"
+  if [ -n "$img" ]; then
+    b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
+    h="$(printf '{"alg":"HS256","typ":"JWT"}' | b64url)"
+    p="$(printf '{"role":"service_role","iss":"supabase","iat":%s,"exp":%s}' "$(date +%s)" "$(( $(date +%s) + 10*365*24*3600 ))" | b64url)"
+    key="$h.$p.$(printf '%s.%s' "$h" "$p" | openssl dgst -sha256 -hmac "$jwt" -binary | b64url)"
+    mkdir -p /root/drispro-postier && cp deploy/worker/*.mjs /root/drispro-postier/
+    docker rm -f drispro-postier >/dev/null 2>&1 || true
+    docker run -d --name drispro-postier --restart unless-stopped -v /root/drispro-postier:/worker:ro \
+      -e API_URL="${NEXUS_API:-https://api.erp.dris-ks.com}" -e SERVICE_KEY="$key" -e MODE=cloud \
+      --entrypoint node "$img" /worker/postier.mjs >/dev/null && echo "    postier (email, WhatsApp, timed work): running"
   fi
 fi
 

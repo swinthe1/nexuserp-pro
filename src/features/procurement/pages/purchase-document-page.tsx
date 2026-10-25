@@ -1,11 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
-  Ban, CheckCheck, ClipboardCheck, FileText, PackageCheck, Receipt, Send, ShieldAlert, Trash2, Undo2,
+  Ban, CheckCheck, ClipboardCheck, FileText, Mail, PackageCheck, Receipt, Send, ShieldAlert, Trash2, Undo2,
 } from 'lucide-react'
 import * as React from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { describeError, unwrap } from '@/lib/errors'
+import { supabase } from '@/lib/supabase'
 import { Can, useCompany } from '@/app/company-provider'
 import { ActivityTimeline } from '@/components/activity-timeline'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -88,6 +91,7 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
   const submit = useSubmitPurchaseOrder()
   const receive = useReceiveOrder()
   const [billOpen, setBillOpen] = React.useState(false)
+  const [emailOpen, setEmailOpen] = React.useState(false)
   const editable = (!doc || doc.status === 'draft') && can('procurement.write')
 
   const form = useForm<PurchaseOrderValues>({
@@ -165,6 +169,9 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
     }
     if (doc.status === 'approved') {
       actions.push(<Button key="sent" variant="outline" onClick={() => setStatus.mutate({ id: doc.id, status: 'sent' }, { onSuccess: () => toast.success(t('Marked as sent')) })}><Send /> {t('Mark as sent')}</Button>)
+    }
+    if (['approved', 'sent', 'partially_received'].includes(doc.status) && can('procurement.write')) {
+      actions.push(<Button key="email" variant="outline" onClick={() => setEmailOpen(true)}><Mail /> {t('Email to the vendor')}</Button>)
     }
   }
   if (doc && ['approved', 'sent', 'partially_received'].includes(doc.status) && remaining.length > 0 && (can('wms.write') || can('procurement.write'))) {
@@ -293,6 +300,7 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
           </Tabs>
         ) : body}
         {doc && <BillFromPoDialog open={billOpen} onOpenChange={setBillOpen} po={doc} />}
+        {doc && emailOpen && <EmailPoDialog poId={doc.id} number={doc.number as string} vendorEmail={(doc as { vendor?: { email: string | null } | null }).vendor?.email ?? ''} onClose={() => setEmailOpen(false)} />}
       </div>
     </Form>
   )
@@ -674,3 +682,25 @@ function OverrideDialog({ open, onOpenChange, onConfirm }: { open: boolean; onOp
   )
 }
 
+
+/* the order to the vendor by email, from the company's mailbox */
+function EmailPoDialog({ poId, number, vendorEmail, onClose }: { poId: string; number: string; vendorEmail: string; onClose: () => void }) {
+  const [to, setTo] = React.useState(vendorEmail)
+  const send = useMutation({
+    mutationFn: async () => unwrap(await supabase.rpc('email_purchase_order', { p_po: poId, p_to: to.trim() })),
+    onSuccess: () => { toast.success(t('{number} is on its way to {email}', { number, email: to.trim() })); onClose() },
+    onError: (e) => toast.error(describeError(e)),
+  })
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader><DialogTitle>{t('Email {number} to the vendor', { number })}</DialogTitle>
+          <DialogDescription>{t('The order goes with its lines and total from the company\u2019s mailbox.')}</DialogDescription></DialogHeader>
+        <form className="grid gap-3" onSubmit={(e) => { e.preventDefault(); send.mutate() }}>
+          <Input type="email" required value={to} onChange={(e) => setTo(e.target.value)} aria-label={t('Email')} autoFocus />
+          <DialogFooter><Button type="button" variant="ghost" onClick={onClose}>{t('Cancel')}</Button><Button type="submit" loading={send.isPending}><Mail /> {t('Send')}</Button></DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}

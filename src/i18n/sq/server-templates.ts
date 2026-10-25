@@ -5,6 +5,7 @@
  * report bucket labels and journal line descriptions.
  */
 export const serverTemplates: [string, string][] = [
+  ['WhatsApp through the cloud: %', 'WhatsApp përmes cloud-it: {0}'],
   ['Cash difference at %: % %', 'Diferencë parash në {0}: {1} {2}'],
   ['Shift % · % · expected %, counted %', 'Turni {0} · {1} · pritej {2}, u numërua {3}'],
   ['Tills still open since yesterday: %', 'Arka ende të hapura që nga dje: {0}'],
