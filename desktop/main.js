@@ -66,6 +66,7 @@ function buildMenu() {
       { label: 'Zvogëlo', accelerator: 'CmdOrCtrl+-', role: 'zoomOut' },
       { label: 'Madhësia normale', accelerator: 'CmdOrCtrl+0', role: 'resetZoom' },
       { type: 'separator' },
+      { label: 'Kontrollo për version të ri', click: () => void checkForUpdate(true) },
       { label: 'Mjetet e zhvilluesit', accelerator: 'CmdOrCtrl+Shift+I', click: () => win?.webContents.toggleDevTools() },
       { label: 'Dil', accelerator: 'Alt+F4', role: 'quit' },
     ] },
@@ -183,8 +184,62 @@ handle('drispro:reactivate', async () => {
   return true
 })
 
+/* ------------------------------------------------------------------ the program updates itself */
+// The pages come from the server and are always new; this checks the program around them (printers,
+// cash drawer). A newer installer is downloaded quietly, checked (size and sha256), and the person is
+// asked once; it installs over this one with the same settings and licence, and the program opens again.
+const crypto = require('crypto')
+const { spawn } = require('child_process')
+const newer = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0) } return false }
+let updating = false
+let declined = ''
+async function checkForUpdate(manual = false) {
+  if (updating || !app.isPackaged) return
+  updating = true
+  try {
+    const r = await enet.fetch(`${LICENCE_API}/rest/v1/rpc/desktop_release`, { method: 'POST', headers: { apikey: LICENCE_KEY, 'Content-Type': 'application/json' }, body: '{}' })
+    const rel = r.ok ? await r.json() : null
+    if (!rel || !newer(rel.version, app.getVersion())) {
+      if (manual) await dialog.showMessageBox(win, { type: 'info', message: `Keni versionin më të ri (${app.getVersion()}).`, buttons: ['Mirë'] })
+      return
+    }
+    if (rel.version === declined && !manual) return
+    const dir = path.join(app.getPath('temp'), 'drispro-update')
+    fs.mkdirSync(dir, { recursive: true })
+    const file = path.join(dir, rel.file_name)
+    let ready = false
+    try { ready = fs.statSync(file).size === rel.size_bytes && crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex') === rel.sha256 } catch { /* not downloaded yet */ }
+    if (!ready) {
+      const hash = crypto.createHash('sha256'); const out = fs.createWriteStream(`${file}.part`); let size = 0
+      for (let i = 0; i < rel.parts; i++) {
+        const p = await enet.fetch(`${LICENCE_API}/storage/v1/object/public/downloads/${rel.path}.part${String(i).padStart(3, '0')}`)
+        if (!p.ok) throw new Error(`part ${i}: ${p.status}`)
+        const buf = Buffer.from(await p.arrayBuffer()); hash.update(buf); size += buf.length
+        await new Promise((res, rej) => out.write(buf, (e) => (e ? rej(e) : res())))
+      }
+      await new Promise((res) => out.end(res))
+      if (size !== rel.size_bytes || hash.digest('hex') !== rel.sha256) { fs.rmSync(`${file}.part`, { force: true }); throw new Error('the download is damaged') }
+      fs.renameSync(`${file}.part`, file)
+    }
+    const a = await dialog.showMessageBox(win, {
+      type: 'question', buttons: ['Po, instaloje tani', 'Më vonë'], defaultId: 0, cancelId: 1,
+      message: `Ka një version të ri të DrisPRO (${rel.version}).`,
+      detail: `Ju keni ${app.getVersion()}. Instalimi zgjat rreth një minutë; programi mbyllet dhe hapet vetë. Cilësimet dhe licenca mbeten.`,
+    })
+    if (a.response !== 0) { declined = rel.version; return }
+    // silent install over this one, then it starts again
+    spawn(file, ['/S', '--force-run'], { detached: true, stdio: 'ignore' }).unref()
+    setTimeout(() => app.quit(), 500)
+  } catch (e) {
+    if (manual) await dialog.showMessageBox(win, { type: 'warning', message: 'Kontrolli për version të ri nuk u bë.', detail: String(e.message || e), buttons: ['Mirë'] })
+  } finally { updating = false }
+}
+
 app.whenReady().then(() => {
   buildMenu()
   createWindow()
+  // a minute after the start (the till is open by then), then every 6 hours
+  setTimeout(() => void checkForUpdate(), 60_000)
+  setInterval(() => void checkForUpdate(), 6 * 3600_000)
 })
 app.on('window-all-closed', () => app.quit())

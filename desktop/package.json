@@ -1,7 +1,7 @@
 {
   "name": "drispro-desktop",
   "productName": "DrisPRO",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "DrisPRO për Windows: i gjithë aplikacioni, me printim direkt në printerët e kuponëve dhe të kuzhinës.",
   "author": "DrisPRO",
   "main": "main.js",
