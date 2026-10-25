@@ -10,6 +10,9 @@ export interface PlatformClient {
   tax_number: string | null
   created_at: string
   plan: string | null
+  licence_code?: string | null
+  deployment?: 'any' | 'cloud' | 'local' | null
+  local_seen_at?: string | null
   max_users: number | null
   extra_features?: string[] | null
   max_warehouses?: number | null

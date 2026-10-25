@@ -13,6 +13,8 @@ ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL \
 RUN test -n "$VITE_SUPABASE_URL" && test -n "$VITE_SUPABASE_ANON_KEY" \
     || (echo "Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY as build variables" && exit 1)
 RUN npx vite build
+# the same version for servers of clients (local servers download it every night from /updates/)
+RUN bash deploy/local/pack-update.sh dist
 
 FROM nginx:1.27-alpine
 COPY deploy/coolify/nginx.conf /etc/nginx/conf.d/default.conf

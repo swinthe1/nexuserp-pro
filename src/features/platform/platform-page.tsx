@@ -205,7 +205,15 @@ export function PlatformPage() {
                         <TableCell className="text-[13px]">{c.admins[0] ?? <span className="text-muted-foreground">—</span>}
                           {c.admins.length > 1 && <span className="text-xs text-muted-foreground"> +{c.admins.length - 1}</span>}</TableCell>
                         <TableCell className={full ? 'text-right tabular text-warning' : 'text-right tabular'}>{formatInt(c.users)} / {c.max_users ?? '—'}</TableCell>
-                        <TableCell>{planLabel(c.plan)}</TableCell>
+                        <TableCell>
+                          <span className="block">{planLabel(c.plan)}</span>
+                          {c.licence_code && (
+                            <button type="button" title={t('Copy')} className="mt-0.5 block font-mono text-[11px] text-muted-foreground hover:text-foreground"
+                              onClick={() => { void navigator.clipboard?.writeText(c.licence_code!); toast.success(t('Code copied')) }}>{c.licence_code}</button>
+                          )}
+                          {c.deployment && c.deployment !== 'any' && <span className="text-[11px] text-muted-foreground">{c.deployment === 'local' ? t('Local server only') : t('Cloud only')}</span>}
+                          {c.local_seen_at && <span className="block text-[11px] text-muted-foreground">{t('Local server')} · {formatDate(c.local_seen_at, true)}</span>}
+                        </TableCell>
                         <TableCell>
                           <div className="flex flex-col items-start gap-1">
                             <Badge variant={s.variant}>{s.label}</Badge>

@@ -21,7 +21,7 @@ if [ "$new" != "$dest" ]; then
   cp -r "$new/deploy/coolify" "$dest/deploy/"
   cp -r "$new/db" "$dest/"
   [ -d "$new/windows" ] && cp -r "$new/windows" "$dest/"
-  cp "$new/docker-compose.yml" "$new/nginx.conf" "$new/install.sh" "$new/licence.sh" "$new/update.sh" "$new/VERSION" "$new/LEXOME.txt" "$dest/" 2>/dev/null || true
+  cp "$new/docker-compose.yml" "$new/nginx.conf" "$new/install.sh" "$new/licence.sh" "$new/update.sh" "$new/auto-update.sh" "$new/VERSION" "$new/LEXOME.txt" "$dest/" 2>/dev/null || true
 fi
 cd "$dest"
 bash install.sh
