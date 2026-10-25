@@ -16,6 +16,8 @@ export interface CompanySummary {
   /** practice company: data comes live from the old program, nothing is fiscalized */
   is_training?: boolean
   business_type?: string
+  /** this person starts in the simple view (a few large buttons, no menus) */
+  simple_view?: boolean
 }
 
 /** A company the person belongs to that is on hold because of its licence */
@@ -51,6 +53,9 @@ interface CompanyCtx {
   hasFeature: (feature: string) => boolean
   /** the page is in the plan (pages of a feature outside it are closed) */
   pageAllowed: (path: string) => boolean
+  /** the simple view is on (the company's setting for this person, or their own choice on this device) */
+  simple: boolean
+  setSimple: (on: boolean) => void
   refresh: () => Promise<unknown>
 }
 
@@ -113,6 +118,16 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     return !need.length || need.some((f) => hasFeature(f))
   }, [hasFeature])
 
+  const viewKey = company && user ? `drispro.view.${user.id}.${company.id}` : null
+  const [viewChoice, setViewChoice] = React.useState<string | null>(null)
+  React.useEffect(() => { try { setViewChoice(viewKey ? localStorage.getItem(viewKey) : null) } catch { setViewChoice(null) } }, [viewKey])
+  const simple = viewChoice === 'simple' ? true : viewChoice === 'full' ? false : !!company?.simple_view
+  const setSimple = React.useCallback((on: boolean) => {
+    const v = on === !!company?.simple_view ? null : on ? 'simple' : 'full'
+    setViewChoice(v)
+    try { if (viewKey) { if (v) localStorage.setItem(viewKey, v); else localStorage.removeItem(viewKey) } } catch { /* private window */ }
+  }, [company?.simple_view, viewKey])
+
   const value: CompanyCtx = {
     loading: ctxQuery.isLoading,
     companies,
@@ -125,6 +140,8 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     can,
     hasFeature,
     pageAllowed,
+    simple,
+    setSimple,
     refresh: () => ctxQuery.refetch(),
   }
   return <CompanyContext.Provider value={value}>{children}</CompanyContext.Provider>

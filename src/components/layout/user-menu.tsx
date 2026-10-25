@@ -1,4 +1,4 @@
-import { Download, KeyRound, Languages, LaptopMinimal, LogOut, Monitor, Moon, ServerCog, Sun, UserRound } from 'lucide-react'
+import { Download, KeyRound, Languages, LaptopMinimal, LayoutGrid, LogOut, Monitor, Moon, PanelLeft, ServerCog, Sun, UserRound } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/app/auth-provider'
@@ -19,7 +19,7 @@ import { isDesktop } from '@/lib/desktop'
 
 export function UserMenu() {
   const { user, signOut } = useAuth()
-  const { company, isSuperAdmin } = useCompany()
+  const { company, isSuperAdmin, simple, setSimple } = useCompany()
   const [pwOpen, setPwOpen] = React.useState(false)
   const [pcOpen, setPcOpen] = React.useState(false)
   const { theme, setTheme } = useTheme()
@@ -41,6 +41,9 @@ export function UserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild><Link to="/hr/me"><UserRound /> {t('My workplace')}</Link></DropdownMenuItem>
         <DropdownMenuItem onSelect={() => setPwOpen(true)}><KeyRound /> {t('Change password')}</DropdownMenuItem>
+        {company && (simple
+          ? <DropdownMenuItem onSelect={() => setSimple(false)}><PanelLeft /> {t('Show all menus')}</DropdownMenuItem>
+          : <DropdownMenuItem onSelect={() => setSimple(true)}><LayoutGrid /> {t('Simple view: large buttons')}</DropdownMenuItem>)}
         {isSuperAdmin && <DropdownMenuItem asChild><Link to="/platform"><ServerCog /> {t('Clients and licences')}</Link></DropdownMenuItem>}
         <DropdownMenuSub>
           <DropdownMenuSubTrigger><Languages /> {t('Language')}: {LOCALES.find((l) => l.key === locale)?.label}</DropdownMenuSubTrigger>

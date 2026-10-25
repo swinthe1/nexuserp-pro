@@ -376,6 +376,32 @@ async function relayLoop() {
   }
 }
 
+/* ------------------------------------------------------------------ PIN sign-in on a shared till */
+// the server has checked the PIN; the sign-in service gives a one-time code that the till turns into a session
+async function pinLoop() {
+  for (;;) {
+    try {
+      const r = await rpc('pin_wait', { p_wait_ms: 6000 })
+      if (!r) continue
+      void (async () => {
+        try {
+          const res = await fetch(`${API}/auth/v1/admin/generate_link`, {
+            method: 'POST', headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'magiclink', email: r.email }),
+          })
+          const j = await res.json().catch(() => ({}))
+          const otp = j.email_otp ?? j.properties?.email_otp
+          if (!res.ok || !otp) throw new Error(j.msg || j.message || j.error_description || `sign-in service ${res.status}`)
+          await rpc('pin_done', { p_id: r.id, p_ok: true, p_otp: otp })
+        } catch (e) {
+          log('PIN sign-in failed', String(e.message || e))
+          await rpc('pin_done', { p_id: r.id, p_ok: false, p_error: String(e.message || e) }).catch(() => {})
+        }
+      })()
+    } catch (e) { log('PIN wait failed', String(e.message || e)); await new Promise((res) => setTimeout(res, 15000)) }
+  }
+}
+
 /* ------------------------------------------------------------------ one round */
 async function round() {
   const batch = await rpc('postier_claim', { p_limit: 20 })
@@ -424,7 +450,7 @@ async function tick() {
 }
 
 log(`postier ${MODE} → ${API}`)
-if (!ONCE) { if (process.env.ASSISTANT !== '0') assistantLoop(); if (MODE === 'cloud') relayLoop() }
+if (!ONCE) { if (process.env.ASSISTANT !== '0') assistantLoop(); pinLoop(); if (MODE === 'cloud') relayLoop() }
 for (;;) {
   try { await tick(); const n = (await round()) + (await readerRound().catch((e) => { log('reading failed', String(e.message || e)); return 0 })); if (ONCE) break; await new Promise((r) => setTimeout(r, n ? 2000 : 20000)) }
   catch (e) { log('round failed', String(e.message || e)); if (ONCE) process.exit(1); await new Promise((r) => setTimeout(r, 30000)) }

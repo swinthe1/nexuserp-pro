@@ -45,6 +45,11 @@ export function AssistantButton() {
 function AssistantLauncher() {
   const [open, setOpen] = React.useState(false)
   React.useEffect(() => {
+    const show = () => setOpen(true)
+    window.addEventListener('drispro:assistant', show)
+    return () => window.removeEventListener('drispro:assistant', show)
+  }, [])
+  React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') { e.preventDefault(); setOpen((o) => !o) }
     }

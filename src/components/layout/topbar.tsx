@@ -4,6 +4,7 @@ import { UserMenu } from '@/components/layout/user-menu'
 import { useCommandPalette } from '@/components/layout/command-palette'
 import { Button } from '@/components/ui/button'
 import { AssistantButton } from '@/features/assistant/assistant'
+import { TillLockButton } from '@/components/layout/till-lock'
 import { t } from '@/i18n'
 import { LanguageMenuButton, LanguageToggle } from '@/i18n/language'
 
@@ -26,6 +27,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
       <div className="ml-auto flex items-center gap-1">
         <LanguageToggle className="hidden sm:inline-flex" />
         <span className="sm:hidden"><LanguageMenuButton /></span>
+        <TillLockButton />
         <AssistantButton />
         <NotificationsButton />
         <UserMenu />

@@ -15,6 +15,7 @@ import { hrRoutes } from '@/features/hr/routes'
 import { logisticsRoutes, ecommerceRoutes } from '@/features/logistics/routes'
 import { reportsRoutes, omsRoutes } from '@/features/reports/routes'
 import { settingsRoutes, notificationsRoutes } from '@/features/settings/routes'
+import { SimpleHome } from '@/features/simple/simple-home'
 
 // Route-level code splitting: each module loads on first visit
 const lazy = <T,>(load: () => Promise<T>, name: keyof T) =>
@@ -106,7 +107,8 @@ const ErrorBoundary = ({ children }: { children: React.ReactNode }) => <PageErro
  * leads the delivery board, employees without other access their own workplace page.
  */
 function Home() {
-  const { can, isSuperAdmin, company } = useCompany()
+  const { can, isSuperAdmin, company, simple } = useCompany()
+  if (simple && company) return <SimpleHome />
   // the platform owner starts on the client list, unless they chose to look inside this client
   if (isSuperAdmin && company && !company.roles.length && !isSupportVisit(company.id)) return <Navigate to="/platform" replace />
   const manager = can('reports.read') && (can('sales.read') || can('finance.read'))

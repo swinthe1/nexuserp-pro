@@ -11,6 +11,8 @@ import { Input } from '@/components/ui/input'
 import { t, tr } from '@/i18n'
 import { describeError } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
+import { getTill } from '@/lib/shared-till'
+import { PinLogin } from './pin-login'
 
 /** Sign-in errors from the auth service, in plain words. */
 function authError(e: unknown): string {
@@ -39,6 +41,14 @@ const loginSchema = z.object({
 })
 
 export function LoginPage() {
+  const [till] = React.useState(getTill)
+  const [withEmail, setWithEmail] = React.useState(false)
+  const toEmail = React.useCallback(() => setWithEmail(true), [])
+  if (till && !withEmail) return <PinLogin till={till} onEmail={toEmail} />
+  return <EmailLogin />
+}
+
+function EmailLogin() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
   const from = (useLocation().state as { from?: string } | null)?.from ?? '/'

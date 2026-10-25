@@ -11,12 +11,13 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { t, td } from '@/i18n'
 import { formatDate, initials } from '@/lib/utils'
 import { type CompanyUser, type RoleRow, useCompanyUsers, useInviteMember, useRoles, useSetMemberRoles, useSetMemberStatus } from '../api'
+import { PinDialog, SharedTillCard, useMemberExtras, useSetView } from '../components/easy-access'
 
 export function UsersPage() {
   const { can } = useCompany()
@@ -28,6 +29,9 @@ export function UsersPage() {
   const [removing, setRemoving] = React.useState<CompanyUser | null>(null)
   const setStatus = useSetMemberStatus()
   const write = can('admin.write')
+  const extras = useMemberExtras()
+  const setView = useSetView()
+  const [pinFor, setPinFor] = React.useState<CompanyUser | null>(null)
 
   const roleOptions = React.useMemo(() => (roles.data ?? []).filter((r) => r.is_assignable).map((r) => ({ value: r.name, label: td(r.name) })), [roles.data])
   const cols = React.useMemo<ColumnDef<CompanyUser>[]>(() => [
@@ -44,6 +48,15 @@ export function UsersPage() {
     { id: 'roles', accessorFn: (u) => u.role_names.map(td).join(', '), filterFn: (row, _id, value: string[]) => !value?.length || row.original.role_names.some((n) => value.includes(n)),
       header: t('Roles'), meta: { label: t('Roles') },
       cell: ({ row: { original: u } }) => <div className="flex flex-wrap gap-1">{u.role_names.map((n) => <Badge key={n} variant="secondary">{td(n)}</Badge>)}</div> },
+    { id: 'easy', header: t('Sign-in and view'), meta: { label: t('Sign-in and view'), noExport: true },
+      cell: ({ row: { original: u } }) => {
+        const x = extras.data?.get(u.member_id)
+        if (!x) return null
+        return <div className="flex flex-wrap gap-1">
+          {x.has_pin && <Badge variant="outline" className={x.pin_locked ? 'border-destructive/40 text-destructive' : ''}>{x.pin_locked ? t('PIN locked') : t('PIN')}</Badge>}
+          {x.simple && <Badge variant="outline" className="border-primary/40 text-primary">{t('Simple view')}</Badge>}
+        </div>
+      } },
     { accessorKey: 'status', filterFn: inFilter, header: t('Status'), meta: { label: t('Status') }, cell: ({ getValue }) => <StatusBadge status={getValue() as string} /> },
     { accessorKey: 'last_sign_in_at', header: ({ column }) => <ColumnHeader column={column} title={t('Last signed in')} />, meta: { label: t('Last signed in') },
       cell: ({ getValue }) => <span className="text-muted-foreground">{getValue() ? formatDate(getValue() as string, true) : t('Never')}</span> },
@@ -56,6 +69,14 @@ export function UsersPage() {
           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon-sm" aria-label={t('Actions for {name}', { name: u.full_name ?? u.email })}><MoreHorizontal /></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onSelect={() => setEditing(u)}>{t('Change roles')}</DropdownMenuItem>
+            {u.user_id && u.status === 'active' && <DropdownMenuItem onSelect={() => setPinFor(u)}>{extras.data?.get(u.member_id)?.has_pin ? t('Change the PIN') : t('Give a PIN for the shared till')}</DropdownMenuItem>}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{t('What they see')}</DropdownMenuLabel>
+            <DropdownMenuRadioGroup value={extras.data?.get(u.member_id)?.view_mode ?? 'auto'} onValueChange={(v) => setView.mutate({ member: u.member_id, mode: v as 'auto' | 'simple' | 'full' })}>
+              <DropdownMenuRadioItem value="auto">{t('Automatic, by their roles')}</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="simple">{t('Simple: large buttons')}</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="full">{t('Full: all menus')}</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
             {!u.is_self && u.status === 'active' && (
               <DropdownMenuItem onSelect={() => void setStatus.mutateAsync({ member: u.member_id, status: 'suspended' }).then(() => toast.success(t('{name} can no longer sign in to this company', { name: u.full_name ?? u.email })))}>
                 {t('Suspend access')}
@@ -68,7 +89,7 @@ export function UsersPage() {
           </DropdownMenuContent>
         </DropdownMenu>
       ) },
-  ], [write, setStatus])
+  ], [write, setStatus, extras.data, setView])
 
   return (
     <>
@@ -77,6 +98,7 @@ export function UsersPage() {
           <Button variant="outline" asChild><Link to="/settings/roles"><ShieldCheck /> {t('Roles and permissions')}</Link></Button>
           <Can perm="admin.write"><Button onClick={() => setInviteOpen(true)}><UserPlus /> {t('Invite a person')}</Button></Can>
         </>} />
+      <SharedTillCard />
       <DataTable tableKey="settings.users" columns={cols} data={users.data} isLoading={users.isLoading} error={users.error} getRowId={(u) => u.member_id}
         exportName={t('users')} searchPlaceholder={t('Name or email…')}
         facets={[
@@ -85,6 +107,7 @@ export function UsersPage() {
         ]}
         empty={{ title: t('Nobody else yet'), description: t('Invite colleagues by email. People without an account join when they sign up with that email.') }} />
       <InviteDialog open={inviteOpen} onOpenChange={(o) => { setInviteOpen(o); if (!o && params.get('invite')) setParams({}, { replace: true }) }} roles={roles.data ?? []} />
+      {pinFor && <PinDialog member={pinFor.member_id} name={pinFor.full_name ?? pinFor.email} hasPin={!!extras.data?.get(pinFor.member_id)?.has_pin} onClose={() => setPinFor(null)} />}
       {editing && <RolesDialog user={editing} roles={roles.data ?? []} onClose={() => setEditing(null)} />}
       <Dialog open={!!removing} onOpenChange={(o) => !o && setRemoving(null)}>
         <DialogContent className="max-w-md">

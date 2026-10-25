@@ -349,5 +349,59 @@ reset role;
 update app.assistant_jobs set started_at = now() - interval '5 minutes', status = 'running' where id = (:'kw'::jsonb ->> 'job')::uuid;
 select app.assistant_cleanup();
 select t.ok((select status = 'failed' and error like '%in time%' from app.assistant_jobs where id = (:'kw'::jsonb ->> 'job')::uuid), 'a question left hanging is given back');
+
+-- ---------- the simple view and the PIN on a shared till -----------------------------------------
+select id as kmem from public.company_members where company_id = :'aco' and user_id = (select id from auth.users where email = 'kasa@auto.xk') \gset
+select id as amem from public.company_members where company_id = :'aco' and user_id = (select id from auth.users where email = 'ana@auto.xk') \gset
+select t.ok(app.member_simple(:'kmem') and not app.member_simple(:'amem'), 'a cashier starts in the simple view, the owner in the full one');
+set role authenticated;
+select t.login('kasa@auto.xk');
+select t.ok(((public.get_my_context() -> 'companies' -> 0 ->> 'simple_view')::boolean), 'the app knows to show the simple view');
+select t.throws(format($q$select public.member_set_pin(%L, '9876')$q$, :'amem'), 'ermission', 'nobody sets another person''s PIN without being administrator');
+select t.login('ana@auto.xk');
+select public.member_set_view(:'kmem', 'full');
+select t.ok(not app.member_simple(:'kmem'), 'the administrator can give the full view to a cashier');
+select public.member_set_view(:'kmem', 'auto');
+select t.throws(format($q$select public.member_set_pin(%L, '12')$q$, :'kmem'), '4 to 6 digits', 'a PIN has 4 to 6 digits');
+select t.throws(format($q$select public.member_set_pin(%L, '1111')$q$, :'kmem'), 'harder to guess', 'an easy PIN is refused');
+select public.member_set_pin(:'kmem', '4826');
+select public.shared_device_register(:'aco', 'Arka 1') as tilltoken \gset
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+set role anon;
+select public.shared_device_people(:'tilltoken') as ppl \gset
+select t.ok(public.shared_device_people('wrong-token') is null, 'an unknown till sees nobody');
+select (public.pin_login(:'tilltoken', :'kmem', '0000') ->> 'error') as e1 \gset
+select public.pin_login(:'tilltoken', :'kmem', '4826') as okreq \gset
+reset role;
+select t.ok(jsonb_array_length(:'ppl'::jsonb -> 'people') = 1 and (:'ppl'::jsonb ->> 'device') = 'Arka 1', 'the till shows only the people who have a PIN');
+select t.ok(:'e1' = 'Wrong PIN' and (select failed from app.member_pins where member_id = :'kmem') = 0, 'a wrong PIN is refused; the right one clears the count');
+set role service_role;
+select public.pin_wait(500) as pw \gset
+select public.pin_done((:'pw'::jsonb ->> 'id')::uuid, true, '123456');
+reset role;
+set role anon;
+select public.pin_login_result((:'okreq'::jsonb ->> 'request')::uuid, :'okreq'::jsonb ->> 'secret') as res1 \gset
+select public.pin_login_result((:'okreq'::jsonb ->> 'request')::uuid, :'okreq'::jsonb ->> 'secret') as res2 \gset
+select (public.pin_login_result((:'okreq'::jsonb ->> 'request')::uuid, 'not-the-secret') ->> 'status') as res3 \gset
+select t.throws($$ select public.pin_wait(10) $$, 'permission denied', 'only the server hands out sign-in codes');
+reset role;
+select t.ok((:'pw'::jsonb ->> 'email') = 'kasa@auto.xk', 'the server asks the sign-in service for the right person');
+select t.ok((:'res1'::jsonb ->> 'otp') = '123456' and (:'res2'::jsonb ->> 'otp') is null and :'res3' = 'failed', 'the till gets the code once, and only with its secret');
+set role anon;
+select public.pin_login(:'tilltoken', :'kmem', '1') ->> 'error' from generate_series(1, 5);
+reset role;
+select t.ok((select locked_until > now() from app.member_pins where member_id = :'kmem'), 'five wrong PINs lock that person for a while');
+set role anon;
+select t.throws(format($q$select public.pin_login(%L, %L, '4826')$q$, :'tilltoken', :'kmem'), 'Too many wrong PINs', 'while locked even the right PIN waits');
+reset role;
+set role authenticated;
+select t.login('ana@auto.xk');
+select public.shared_device_revoke((select id from public.shared_devices(:'aco') limit 1));
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+set role anon;
+select t.throws(format($q$select public.pin_login(%L, %L, '4826')$q$, :'tilltoken', :'kmem'), 'no longer a shared till', 'a till taken off the list signs nobody in');
+reset role;
 \set QUIET off
 select count(*) as assertions_passed from t.results;

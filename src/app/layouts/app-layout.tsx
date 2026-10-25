@@ -6,6 +6,7 @@ import { CommandPaletteProvider } from '@/components/layout/command-palette'
 import { CompanySwitcher } from '@/components/layout/company-switcher'
 import { Sidebar, SidebarNav } from '@/components/layout/sidebar'
 import { Topbar } from '@/components/layout/topbar'
+import { SimpleTopbar } from '@/features/simple/simple-shell'
 import { LicenseBanner, LiveLinkBanner, SupportBanner, TrainingBanner } from '@/components/license-banner'
 import { OfflineBanner } from '@/components/offline-banner'
 import { PageErrorBoundary } from '@/components/page-error-boundary'
@@ -34,7 +35,7 @@ function FullPageSkeleton() {
 
 export function AppLayout() {
   const { user, loading } = useAuth()
-  const { loading: companyLoading, companies, isSuperAdmin, pageAllowed } = useCompany()
+  const { loading: companyLoading, companies, isSuperAdmin, pageAllowed, simple } = useCompany()
   const location = useLocation()
   const [collapsed, setCollapsed] = React.useState(() => {
     try { return localStorage.getItem(KEY) === '1' } catch { return false }
@@ -53,6 +54,22 @@ export function AppLayout() {
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />
   if (companyLoading) return <FullPageSkeleton />
   if (!companies.length) return <Navigate to={isSuperAdmin ? '/platform' : '/onboarding'} replace />
+
+  if (simple) {
+    return (
+      <CommandPaletteProvider>
+        <div className="flex min-h-dvh flex-col">
+          <SimpleTopbar />
+          <OfflineBanner />
+          <TrainingBanner />
+          <LicenseBanner />
+          <main id="main" className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
+            <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
+          </main>
+        </div>
+      </CommandPaletteProvider>
+    )
+  }
 
   return (
     <CommandPaletteProvider>

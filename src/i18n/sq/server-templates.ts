@@ -5,6 +5,7 @@
  * report bucket labels and journal line descriptions.
  */
 export const serverTemplates: [string, string][] = [
+  ['Too many wrong PINs; try again in % minutes', 'Shumë PIN të gabuar; provoni përsëri pas {0} minutash'],
   ['This company has asked % questions this month, the limit of its plan; the assistant starts again on the 1st', 'Kjo kompani ka bërë {0} pyetje këtë muaj, kufiri i paketës; asistenti nis sërish më 1 të muajit'],
   ['This company has read % invoices this month, the limit of its plan; reading starts again on the 1st', 'Kjo kompani ka lexuar {0} fatura këtë muaj, kufiri i paketës; leximi nis sërish më 1 të muajit'],
   ['WhatsApp through the cloud: %', 'WhatsApp përmes cloud-it: {0}'],

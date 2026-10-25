@@ -4,6 +4,7 @@ import { useAuth } from '@/app/auth-provider'
 import { DesktopDownload } from '@/features/auth/desktop-download'
 import { msg, t } from '@/i18n'
 import { LanguageToggle } from '@/i18n/language'
+import { getTill } from '@/lib/shared-till'
 
 /** What the program does, printed as the lines of a till receipt: the thing every shop knows. */
 const LINES = [
@@ -86,7 +87,7 @@ export function AuthLayout() {
         </div>
         <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">
           <Outlet />
-          <DesktopDownload className="mt-10 max-sm:hidden" />
+          {!getTill() && <DesktopDownload className="mt-10 max-sm:hidden" />}
         </div>
       </main>
     </div>

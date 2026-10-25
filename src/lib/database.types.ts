@@ -1342,6 +1342,7 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          view_mode: string
         }
         Insert: {
           id?: string
@@ -1356,6 +1357,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          view_mode?: string
         }
         Update: {
           id?: string
@@ -1370,6 +1372,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          view_mode?: string
         }
         Relationships: [
           { foreignKeyName: "company_members_company_fk"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -12030,6 +12033,26 @@ export type Database = {
         }
         Returns: { material_id: string | null; variant_id: string | null; sku: string | null; name: string | null; uom: string | null; tracking: string | null; required: number | null; consumed: number | null; remaining: number | null; available_at_location: number | null; available_in_warehouse: number | null; shortage: number | null; sub_bom_id: string | null; unit_cost: number | null; child_work_order: string | null }[]
       }
+      member_extras: {
+        Args: {
+          p_company: string
+        }
+        Returns: { member_id: string | null; view_mode: string | null; simple: boolean | null; has_pin: boolean | null; pin_locked: boolean | null }[]
+      }
+      member_set_pin: {
+        Args: {
+          p_member: string
+          p_pin: string
+        }
+        Returns: undefined
+      }
+      member_set_view: {
+        Args: {
+          p_member: string
+          p_mode: string
+        }
+        Returns: undefined
+      }
       message_retry: {
         Args: {
           p_id: string
@@ -12156,6 +12179,36 @@ export type Database = {
           p_run: string
         }
         Returns: { line_no: number | null; employee_id: string | null; personal_number: string | null; last_name: string | null; first_name: string | null; job_title: string | null; department: string | null; paid_days: number | null; gross: number | null; contribution_base: number | null; ss_employee: number | null; health_employee: number | null; ss_employer: number | null; health_employer: number | null; taxable: number | null; income_tax: number | null; net: number | null; employer_cost: number | null; iban: string | null }[]
+      }
+      pin_done: {
+        Args: {
+          p_id: string
+          p_ok: boolean
+          p_otp?: string
+          p_error?: string
+        }
+        Returns: undefined
+      }
+      pin_login: {
+        Args: {
+          p_token: string
+          p_member: string
+          p_pin: string
+        }
+        Returns: Json
+      }
+      pin_login_result: {
+        Args: {
+          p_request: string
+          p_secret: string
+        }
+        Returns: Json
+      }
+      pin_wait: {
+        Args: {
+          p_wait_ms?: number
+        }
+        Returns: Json
       }
       platform_ai_chat_usage: {
         Args: {
@@ -12911,6 +12964,31 @@ export type Database = {
           p_statement: string
         }
         Returns: Json
+      }
+      shared_device_people: {
+        Args: {
+          p_token: string
+        }
+        Returns: Json
+      }
+      shared_device_register: {
+        Args: {
+          p_company: string
+          p_name: string
+        }
+        Returns: string
+      }
+      shared_device_revoke: {
+        Args: {
+          p_id: string
+        }
+        Returns: undefined
+      }
+      shared_devices: {
+        Args: {
+          p_company: string
+        }
+        Returns: { id: string | null; name: string | null; created_at: string | null; last_used_at: string | null }[]
       }
       ship_stock_transfer: {
         Args: {
