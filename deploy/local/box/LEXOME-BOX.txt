@@ -1,0 +1,70 @@
+DrisPRO Box: serveri i lokalit në një mini-PC
+==============================================
+
+Një kompjuter i vogël që rri ndezur gjithë kohën në lokal dhe mban DrisPRO:
+databazën, hyrjen, aplikacionin. Arkat, kompjuterët dhe telefonat punojnë me të
+edhe kur bie interneti. Çdo natë dërgon një kopje të shifruar në cloud-in e DrisPRO.
+
+Çfarë duhet
+-----------
+  Mini-PC: Intel N100/N150 ose më i fortë, 16 GB RAM, SSD NVMe 500 GB, kabëll rrjeti (LAN).
+  Një UPS i vogël (bateri) që ta mbajë ndezur kur ikën rryma.
+  Një USB 8 GB për instalimin e Ubuntu.
+  Lidhje me kabëll në router (jo Wi-Fi).
+
+Para instalimit, në BIOS të mini-PC
+------------------------------------
+  "Restore on AC power loss" / "After power failure" = Power On
+     (kur kthehet rryma, ndizet vetë)
+  Gjumi/Sleep: i ndalur, nëse ka opsion.
+
+1. Ubuntu Server
+----------------
+  Shkarkoni Ubuntu Server 24.04 LTS dhe shkruajeni në USB (me Rufus ose balenaEtcher).
+  Instaloni në mini-PC: gjuha English, rrjeti me kabëll (DHCP), gjithë disku,
+  përdoruesi p.sh. "drispro", dhe zgjidhni "Install OpenSSH server".
+
+2. DrisPRO
+----------
+  Kopjoni nexuserp-server-<versioni>.zip në mini-PC (me USB ose me scp), pastaj:
+
+     sudo apt install -y unzip
+     unzip nexuserp-server-*.zip && cd nexuserp-server
+     sudo LICENCE=NXS-XXXX-XXXX-XXXX bash box/prepare-box.sh
+
+  Kërkon email-in dhe fjalëkalimin e administratorit. Herën e parë shkarkon rreth 1.5 GB.
+  Në fund shkruan adresat: http://drispro.local dhe http://<IP>
+
+  Në router: rezervoni këtë IP për mini-PC (DHCP reservation), që adresa të mos ndryshojë.
+  (Ose jepni vetë adresën: sudo STATIC_IP=192.168.1.20/24 LICENCE=... bash box/prepare-box.sh)
+
+3. Arkat dhe kompjuterët
+------------------------
+  Programi DrisPRO -> kodi i licencës -> "Server lokal" -> http://drispro.local
+  (ose me IP, p.sh. http://192.168.1.20). Telefonat: hapeni adresën në shfletues.
+
+Çfarë bën vetë Box-i
+--------------------
+  02:30  kopje e databazës në Box (14 ditë)
+  03:45  kontroll i licencës
+  04:00  kopja e shifruar në cloud-in e DrisPRO (14 ditë)
+  04:15  versioni i ri i DrisPRO, nëse ka
+  05:00  restart, vetëm kur një përditësim sigurie e kërkon
+  Pa internet punon normalisht; kopja në cloud dhe versionet presin internetin.
+
+Gjendja
+-------
+     sudo drispro-status
+  Tregon shërbimet, kopjen e fundit (në Box dhe në cloud), licencën, diskun, internetin.
+
+Kur prishet Box-i
+-----------------
+  Mini-PC i ri -> hapat 1 e 2 me të njëjtin kod licence (në Platformë: "Kaloje në server tjetër").
+  Pastaj kthehen të dhënat nga cloud-i:
+     cd /opt/nexuserp && sudo bash restore-from-cloud.sh list      (kopjet që janë)
+     cd /opt/nexuserp && sudo bash restore-from-cloud.sh           (merr të fundit)
+
+Siguria
+-------
+  Hapen vetëm porta e DrisPRO (80), 22 (ndihma në distancë) dhe 5353 (emri drispro.local).
+  /opt/nexuserp/.env mban çelësat e këtij serveri: mos ia jepni askujt.
