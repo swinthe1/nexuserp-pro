@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# NexusERP on a local server (Ubuntu/Debian, or Ubuntu inside WSL on Windows).
+# DrisPRO on a local server (Ubuntu/Debian, or Ubuntu inside WSL on Windows).
 #
 #   sudo bash install.sh                    # install or start again (keeps the data)
 #   sudo LICENCE=NXS-XXXX-XXXX-XXXX bash install.sh
@@ -46,7 +46,7 @@ if [ ! -f .env ]; then
   secret="$(openssl rand -hex 32)"
   umask 077
   cat > .env <<EOF
-# NexusERP local server: made once by install.sh. Keep it safe; it holds the keys of this database.
+# DrisPRO local server: made once by install.sh. Keep it safe; it holds the keys of this database.
 PUBLIC_URL=$url
 EXTRA_URLS=$url/**
 HTTP_PORT=$port
@@ -74,7 +74,7 @@ else
 fi
 set -a; . ./.env; set +a
 if [ -n "${TUNNEL_TOKEN_NEW:-}" ]; then sed -i "s|^TUNNEL_TOKEN=.*|TUNNEL_TOKEN=$TUNNEL_TOKEN_NEW|" .env; TUNNEL_TOKEN="$TUNNEL_TOKEN_NEW"; fi
-printf "// made by install.sh: this NexusERP runs on this server\nwindow.__NEXUS__ = { url: 'same-origin', anonKey: '%s', local: true }\n" "$ANON_KEY" > nexus-config.js
+printf "// made by install.sh: this DrisPRO runs on this server\nwindow.__NEXUS__ = { url: 'same-origin', anonKey: '%s', local: true }\n" "$ANON_KEY" > nexus-config.js
 mkdir -p data/db data/storage
 
 say "3/7 Starting the services (the first time downloads about 1.5 GB)"
@@ -92,7 +92,7 @@ for svc in nexus-db nexus-auth nexus-storage; do
   echo "    $svc ready"
 done
 
-say "5/7 The NexusERP database"
+say "5/7 The DrisPRO database"
 NO_DEMO=1 bash deploy/coolify/setup-database.sh nexus-db | grep -v '^   skip' || die "The database could not be made; send the lines above to the developer."
 docker restart nexus-rest nexus-web >/dev/null
 
@@ -110,8 +110,8 @@ EOF
 chmod 644 /etc/cron.d/nexuserp-licence
 
 echo
-echo "NexusERP is running: $PUBLIC_URL"
-echo "Open it on this network (browser or the NexusERP program, choose \"Local server\" and type this address)."
+echo "DrisPRO is running: $PUBLIC_URL"
+echo "Open it on this network (browser or the DrisPRO program, choose \"Local server\" and type this address)."
 echo "Sign in with the administrator: $(grep "^ADMIN_EMAIL=" .env | cut -d= -f2)"
 [ -n "${TUNNEL_TOKEN:-}" ] && echo "From outside: the address of your Cloudflare tunnel."
 exit 0

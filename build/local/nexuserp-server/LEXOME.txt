@@ -1,4 +1,4 @@
-NexusERP në serverin tuaj (server lokal)
+DrisPRO në serverin tuaj (server lokal)
 ========================================
 
 Databaza, hyrja, API-ja dhe aplikacioni punojnë në këtë server. Kompjuterët dhe
@@ -8,7 +8,7 @@ Instalimi (Ubuntu/Debian, ose Ubuntu brenda WSL në Windows):
   1. Kopjoni dosjen nexuserp-server në /opt/nexuserp
   2. cd /opt/nexuserp && sudo bash install.sh
      Kërkon: kodin e licencës (NXS-....), email-in dhe fjalëkalimin e administratorit.
-  3. Në fund shkruan adresën. Hapeni në shfletues ose në programin NexusERP
+  3. Në fund shkruan adresën. Hapeni në shfletues ose në programin DrisPRO
      (zgjidhni "Server lokal" dhe shkruani adresën).
 
 Çdo natë: kopje e databazës në /root/backups (14 ditë) dhe kontroll i licencës.

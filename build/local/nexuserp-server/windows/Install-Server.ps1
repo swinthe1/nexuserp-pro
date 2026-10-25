@@ -1,5 +1,5 @@
 ﻿<#
-  NexusERP server on a Windows computer (Windows 10/11 or Windows Server 2022/2025).
+  DrisPRO server on a Windows computer (Windows 10/11 or Windows Server 2022/2025).
 
   The server runs inside Linux (WSL 2, Ubuntu) on this computer, the same way as on a Linux server:
   database, sign-in, API and the app. Other computers in the shop open it with this computer's address.
@@ -44,7 +44,7 @@ else { Set-Content -Path $wslconfig -Value "[wsl2]`nvmIdleTimeout=-1`n" -Encodin
 wsl.exe --shutdown
 Start-Sleep 3
 
-Step '4/6 NexusERP në Ubuntu'
+Step '4/6 DrisPRO në Ubuntu'
 $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notmatch '^(127|169\.254)\.' -and $_.PrefixOrigin -ne 'WellKnown' } | Sort-Object InterfaceMetric | Select-Object -First 1).IPAddress
 if (-not $ip) { $ip = 'localhost' }
 $src = (wsl.exe -d $Distro -u root -- wslpath -a "$bundle") -replace "`0", ''
@@ -53,7 +53,7 @@ wsl.exe -d $Distro -u root -- bash -c "cd /opt/nexuserp && PUBLIC_URL=http://$ip
 if ($LASTEXITCODE -ne 0) { Fail 'Instalimi në Ubuntu nuk përfundoi. Bëni screenshot të kësaj dritareje.' }
 
 Step '5/6 Hyrja nga kompjuterët e tjerë'
-New-NetFirewallRule -DisplayName 'NexusERP (port 80)' -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow -ErrorAction SilentlyContinue | Out-Null
+New-NetFirewallRule -DisplayName 'DrisPRO (port 80)' -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow -ErrorAction SilentlyContinue | Out-Null
 $keep = "wsl.exe -d $Distro -u root -- bash -c 'sleep infinity'"
 if (-not $mirrored) {
   # the Linux side gets a new address after each start: the forward is renewed at start
@@ -69,9 +69,9 @@ $actions = @(New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoPro
 if (-not $mirrored) { $actions += New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$(Join-Path $bundle 'windows\forward-port.ps1')`"" }
 $trigger = New-ScheduledTaskTrigger -AtStartup
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
-Register-ScheduledTask -TaskName 'NexusERP Server' -Action $actions -Trigger $trigger -Settings $settings -User $cred.UserName -Password $cred.GetNetworkCredential().Password -RunLevel Highest -Force | Out-Null
-Start-ScheduledTask -TaskName 'NexusERP Server'
+Register-ScheduledTask -TaskName 'DrisPRO Server' -Action $actions -Trigger $trigger -Settings $settings -User $cred.UserName -Password $cred.GetNetworkCredential().Password -RunLevel Highest -Force | Out-Null
+Start-ScheduledTask -TaskName 'DrisPRO Server'
 
-Write-Host "`nNexusERP SERVER PUNON: http://$ip" -ForegroundColor Green
-Write-Host 'Në kompjuterët e tjerë: hapni programin NexusERP, zgjidhni "Server lokal" dhe shkruani këtë adresë.'
+Write-Host "`nDrisPRO SERVER PUNON: http://$ip" -ForegroundColor Green
+Write-Host 'Në kompjuterët e tjerë: hapni programin DrisPRO, zgjidhni "Server lokal" dhe shkruani këtë adresë.'
 Read-Host 'Shtypni Enter'

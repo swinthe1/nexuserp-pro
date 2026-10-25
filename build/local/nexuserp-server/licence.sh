@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Checks this server's licence with NexusERP (the cloud) and applies it here: plan, users, dates,
+# Checks this server's licence with DrisPRO (the cloud) and applies it here: plan, users, dates,
 # suspended or not. The first time it also makes the company, owned by the administrator.
 # Runs from install.sh and every night (cron). Without internet nothing changes here and the
 # licence stays as it was until its end date.
