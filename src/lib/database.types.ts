@@ -11415,6 +11415,10 @@ export type Database = {
         }
         Returns: { line_no: number | null; employee_id: string | null; personal_number: string | null; last_name: string | null; first_name: string | null; job_title: string | null; department: string | null; paid_days: number | null; gross: number | null; contribution_base: number | null; ss_employee: number | null; health_employee: number | null; ss_employer: number | null; health_employer: number | null; taxable: number | null; income_tax: number | null; net: number | null; employer_cost: number | null; iban: string | null }[]
       }
+      platform_backup_status: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       platform_clients: {
         Args: Record<PropertyKey, never>
         Returns: Json

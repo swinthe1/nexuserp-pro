@@ -25,10 +25,22 @@ db_given="${NEXUS_DB:-}"
 if [ -f "$ENV" ]; then . "$ENV"; fi
 db="${db_given:-${NEXUS_DB:-}}"
 
-echo "==> 1/2 Database"
+if [ -z "$db" ]; then db="$(docker ps --format '{{.Names}}' | grep -E '^supabase-db' | head -1 || true)"; fi
+
+echo "==> 1/3 Disk and copies"
+avail_kb="$(df -Pk /root | awk 'NR==2 {print $4}')"; use="$(df -P /root | awk 'NR==2 {print $5}')"
+echo "    disk: $(numfmt --to=iec $((avail_kb * 1024))) free ($use used)"
+if [ "$avail_kb" -lt 1048576 ]; then
+  echo "!!  less than 1 GB free: the update stops here. Free some space first (old copies in /root/backups, docker system prune)." >&2; exit 1
+fi
+# the nightly copy is always installed with the newest script; a copy is made before every update
+NO_FIRST=1 bash deploy/coolify/install-backup.sh "$db" >/dev/null
+/usr/local/bin/nexuserp-backup "$db" /root/backups 14 before-update | tail -2 | sed 's/^/    /'
+
+echo "==> 2/3 Database"
 NO_DEMO=1 bash deploy/coolify/setup-database.sh $db
 
-echo "==> 2/2 Redeploy in Coolify"
+echo "==> 3/3 Redeploy in Coolify"
 if [ -z "${COOLIFY_TOKEN:-}" ] || [ -z "${COOLIFY_APP:-}" ]; then
   echo "    Not set up yet: press Redeploy in Coolify yourself this time."
   echo "    To make it automatic, run once:  bash /root/nexuserp-pro/deploy/coolify/update.sh --setup"

@@ -18,5 +18,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 EOF
 chmod 644 /etc/cron.d/nexuserp-backup
 echo "==> installed: every night at 02:30 into /root/backups (14 days kept)"
-echo "==> making the first copy now"
-/usr/local/bin/nexuserp-backup "$container" /root/backups 14
+if [ -z "${NO_FIRST:-}" ]; then
+  echo "==> making the first copy now"
+  /usr/local/bin/nexuserp-backup "$container" /root/backups 14 manual
+fi

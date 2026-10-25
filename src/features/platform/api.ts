@@ -172,3 +172,14 @@ export function useDeleteClient() {
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   })
 }
+
+export interface BackupRow { at: string; ok: boolean; kind: string; file: string | null; size_bytes: number | null; disk_free_bytes: number | null; disk_total_bytes: number | null; message: string | null }
+/** The nightly database copies on the server (reported by the backup script). */
+export function useBackupStatus() {
+  return useQuery({
+    queryKey: ['platform-backups'],
+    refetchInterval: 5 * 60_000,
+    queryFn: async () => unwrap(await supabase.rpc('platform_backup_status')) as unknown as
+      { last_ok: BackupRow | null; last_failed: BackupRow | null; copies_week: number; recent: BackupRow[] },
+  })
+}
