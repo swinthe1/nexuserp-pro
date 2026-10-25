@@ -11573,6 +11573,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      desktop_release: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       dismiss_statement_suggestion: {
         Args: {
           p_line: string
@@ -12186,6 +12190,21 @@ export type Database = {
           p_delete_users?: boolean
         }
         Returns: Json
+      }
+      platform_desktop_publish: {
+        Args: {
+          p_version: string
+          p_file_name: string
+          p_size: number
+          p_parts: number
+          p_sha256: string
+          p_notes?: string
+        }
+        Returns: undefined
+      }
+      platform_desktop_releases: {
+        Args: Record<PropertyKey, never>
+        Returns: { version: string | null; file_name: string | null; size_bytes: number | null; published_at: string | null }[]
       }
       platform_licence_info: {
         Args: {

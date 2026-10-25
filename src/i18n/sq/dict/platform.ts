@@ -219,4 +219,12 @@ export default {
   "about 1–3 cents per question (Claude)": "rreth 1–3 cent për pyetje (Claude)",
   "WhatsApp messages": "Mesazhet në WhatsApp",
   "about 1–5 cents per conversation (Meta)": "rreth 1–5 cent për bisedë (Meta)",
+  "Checking the file…": "Po kontrolloj skedarin…",
+  "Uploading part {i} of {n}…": "Po ngarkoj pjesën {i} nga {n}…",
+  "Version {v} is on the sign-in page now": "Versioni {v} tani del te faqja e hyrjes",
+  "The Windows program": "Programi për Windows",
+  "The sign-in page offers version {v} ({date}). Put a newer installer here and it offers that one.": "Faqja e hyrjes ofron versionin {v} ({date}). Vendosni këtu një instalues më të ri dhe ajo ofron atë.",
+  "Not on the sign-in page yet. Put the installer (DrisPRO-Setup-….exe) here.": "Ende nuk del te faqja e hyrjes. Vendosni këtu instaluesin (DrisPRO-Setup-….exe).",
+  "Installer": "Instaluesi",
+  "Publish": "Publiko",
 } satisfies Dict

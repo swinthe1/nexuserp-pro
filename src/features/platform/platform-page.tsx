@@ -33,6 +33,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { BUSINESS_TYPES, businessTypeLabel } from './business-types'
 import { Label } from '@/components/ui/label'
 import { BackupCard } from './backup-card'
+import { DesktopReleaseCard } from './desktop-release-card'
 import { FEATURES, PAID_MODULES, PLAN_FEATURES, PLAN_STORES, type Feature } from '@/lib/plans'
 
 const PLANS = [
@@ -247,6 +248,7 @@ export function PlatformPage() {
         </div>
 
         <BackupCard />
+        <DesktopReleaseCard />
 
         <div className="mt-6 flex items-start justify-between gap-4 rounded-lg border bg-card p-4">
           <div>
