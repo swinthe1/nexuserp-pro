@@ -191,4 +191,7 @@ export default {
   "…or the total counted": "…ose totali i numëruar",
   "Waiting": "Në pritje",
   "Point of sale": "Arka",
+  "Search products": "Kërko produkte",
+  "Add products": "Shto produkte",
+  "Add from the menu": "Shto nga menyja",
 } satisfies Dict

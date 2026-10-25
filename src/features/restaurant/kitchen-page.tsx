@@ -49,12 +49,12 @@ export function KitchenPage() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-muted/40">
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-card px-3">
+      <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b bg-card px-3 py-2">
         <Button variant="ghost" size="icon" asChild aria-label={t('Back')}><Link to="/pos"><ArrowLeft /></Link></Button>
-        <ChefHat className="size-5 text-primary" />
-        <span className="text-sm font-semibold">{t('Kitchen screen')}</span>
-        <span className="text-[13px] text-muted-foreground">{tn(waiting, '{n} item to prepare', '{n} items to prepare')}</span>
-        <nav className="ml-4 flex gap-1 overflow-x-auto" aria-label={t('Station')}>
+        <ChefHat className="size-5 text-primary max-sm:hidden" />
+        <span className="min-w-0"><span className="block whitespace-nowrap text-sm font-semibold sm:inline">{t('Kitchen screen')}</span>
+        <span className="whitespace-nowrap text-[13px] text-muted-foreground sm:ml-3">{tn(waiting, '{n} item to prepare', '{n} items to prepare')}</span></span>
+        <nav className="ml-4 flex gap-1 overflow-x-auto max-sm:order-last max-sm:ml-0 max-sm:w-full" aria-label={t('Station')}>
           {[{ id: null as string | null, name: t('All') }, ...(stations.data ?? [])].map((s) => (
             <button key={s.id ?? 'all'} type="button" onClick={() => setParams(s.id ? { station: s.id } : {})}
               className={cn('h-9 shrink-0 rounded-full px-4 text-[13px] font-medium', station === s.id ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')}>{s.name}</button>
@@ -62,8 +62,8 @@ export function KitchenPage() {
         </nav>
         <Button variant={autoPrint ? 'default' : 'ghost'} size="sm" className="ml-auto" aria-pressed={autoPrint}
           title={t('Each new order is printed once on this computer\u2019s printer. For printing without the print window, start Chrome with --kiosk-printing.')}
-          onClick={() => setAutoPrint((on) => { setPref('kitchen.print', on ? '0' : '1'); return !on })}><Printer /> {autoPrint ? t('Printing new orders') : t('Print new orders')}</Button>
-        <Button variant="ghost" size="sm" onClick={() => void document.documentElement.requestFullscreen?.().catch(() => undefined)}><Maximize /> {t('Full screen')}</Button>
+          onClick={() => setAutoPrint((on) => { setPref('kitchen.print', on ? '0' : '1'); return !on })}><Printer /> <span className="max-sm:sr-only">{autoPrint ? t('Printing new orders') : t('Print new orders')}</span></Button>
+        <Button variant="ghost" size="sm" className="max-sm:hidden" onClick={() => void document.documentElement.requestFullscreen?.().catch(() => undefined)}><Maximize /> {t('Full screen')}</Button>
       </header>
       {kitchen.isLoading ? (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 p-4">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-52" />)}</div>
@@ -73,7 +73,7 @@ export function KitchenPage() {
             <p className="text-[13px] text-muted-foreground">{t('New orders appear here as soon as a waiter sends them.')}</p></div>
         </div>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] content-start gap-3 p-4">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] content-start gap-3 p-3 sm:p-4">
           {orders.map((o) => <Ticket key={o.id} o={o} onLines={(ids, status) => setStatus.mutate({ lines: ids, status })} />)}
         </div>
       )}

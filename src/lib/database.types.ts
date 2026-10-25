@@ -4234,6 +4234,7 @@ export type Database = {
           local_seen_at: string | null
           local_url: string | null
           local_version: string | null
+          backup_key: string | null
         }
         Insert: {
           company_id: string
@@ -4254,6 +4255,7 @@ export type Database = {
           local_seen_at?: string | null
           local_url?: string | null
           local_version?: string | null
+          backup_key?: string | null
         }
         Update: {
           company_id?: string
@@ -4274,6 +4276,7 @@ export type Database = {
           local_seen_at?: string | null
           local_url?: string | null
           local_version?: string | null
+          backup_key?: string | null
         }
         Relationships: [
           { foreignKeyName: "licenses_company_id_fkey"; columns: ["company_id"]; isOneToOne: true; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -11398,6 +11401,23 @@ export type Database = {
         }
         Returns: Json
       }
+      licence_backup_done: {
+        Args: {
+          p_code: string
+          p_server: string
+          p_file: string
+          p_parts: number
+          p_bytes: number
+        }
+        Returns: undefined
+      }
+      licence_backup_ticket: {
+        Args: {
+          p_code: string
+          p_server: string
+        }
+        Returns: Json
+      }
       licence_check: {
         Args: {
           p_code: string
@@ -11651,6 +11671,12 @@ export type Database = {
           p_company: string
           p_deployment?: string
           p_free_server?: boolean
+        }
+        Returns: Json
+      }
+      platform_local_backups: {
+        Args: {
+          p_company: string
         }
         Returns: Json
       }

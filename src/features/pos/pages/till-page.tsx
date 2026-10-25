@@ -1,5 +1,5 @@
 import {
-  ArrowLeft, BadgePercent, Banknote, Camera, Check, CloudOff, CreditCard, Landmark, LogOut, Minus, Plus, Printer, ReceiptText, RotateCcw, ScanLine, Search, Ticket, Trash2,
+  ArrowLeft, BadgePercent, Banknote, Camera, Check, CloudOff, CreditCard, Ellipsis, Landmark, ListOrdered, LogOut, Minus, Plus, Printer, ReceiptText, RotateCcw, ScanLine, Search, Ticket, Trash2,
   UserRound, Wallet, X,
 } from 'lucide-react'
 import * as React from 'react'
@@ -10,6 +10,8 @@ import { useAuth } from '@/app/auth-provider'
 import { useCompany } from '@/app/company-provider'
 import { CameraScanner, hasCamera, scanFeedback } from '@/components/scan-input'
 import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { usePhone } from '@/hooks/use-phone'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -129,7 +131,11 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   const [camera, setCamera] = React.useState(false)
   const [autoPrint, setAutoPrint] = React.useState(() => prefGet('pos.autoprint', '1') === '1')
   const search = React.useRef<HTMLInputElement>(null)
-  const focusSearch = React.useCallback(() => setTimeout(() => search.current?.focus(), 0), [])
+  // a phone has no scanner gun: giving the field focus would only open the keyboard over the screen
+  const phone = usePhone()
+  const phoneRef = React.useRef(phone); phoneRef.current = phone
+  const [pane, setPane] = React.useState<'products' | 'sale'>('products')
+  const focusSearch = React.useCallback(() => setTimeout(() => { if (!phoneRef.current) search.current?.focus() }, 0), [])
 
   /* ---------- loyalty card: the same rule as the server (app.loyalty_eval) */
   const catOf = React.useMemo(() => new Map(data.catalog.map((c) => [c.variant_id, c.category])), [data.catalog])
@@ -340,7 +346,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     const onUp = (e: PointerEvent) => {
       const t = e.target as HTMLElement
       if (t.closest('input,textarea,select,[role=dialog],[role=listbox],[role=combobox]')) return
-      if (document.querySelector('[role=dialog]')) return
+      if (document.querySelector('[role=dialog]') || phoneRef.current) return
       setTimeout(() => search.current?.focus({ preventScroll: true }), 0)
     }
     window.addEventListener('pointerup', onUp)
@@ -355,16 +361,28 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       {/* ---------- top bar */}
       <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-card px-3">
         <Button variant="ghost" size="icon" asChild aria-label={t('Leave the till')}><Link to="/pos"><ArrowLeft /></Link></Button>
-        <div className="min-w-0">
+        <div className="min-w-0 max-sm:flex-1">
           <div className="truncate text-sm font-semibold">{data.register.name}</div>
           <div className="truncate text-xs text-muted-foreground">{session.number} · {cashier}</div>
         </div>
         <button type="button" onClick={() => setDialog('queue')}
-          className={cn('ml-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
+          className={cn('ml-2 inline-flex shrink-0 whitespace-nowrap max-sm:ml-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
             !sync.online || offline ? 'bg-warning/15 text-warning' : pending.length ? 'bg-primary/10 text-primary' : 'bg-success/10 text-success')}>
           {!sync.online || offline ? <><CloudOff className="size-3.5" /> {t('Offline')}{pending.length ? ` · ${t('{n} to send', { n: pending.length })}` : ''}</>
             : pending.length ? <>{sync.syncing ? t('Sending') : t('Waiting')} · {pending.length}</> : <><Check className="size-3.5" /> {t('All sent')}</>}
         </button>
+        {phone ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label={t('More')}><Ellipsis /></Button></DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-60">
+              <DropdownMenuItem onSelect={() => setDialog('refund')}><RotateCcw /> {t('Refund')}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setDialog('cash')}><Wallet /> {t('Cash in/out')}</DropdownMenuItem>
+              <DropdownMenuCheckboxItem checked={autoPrint} onCheckedChange={() => setAutoPrint((a) => { prefSet('pos.autoprint', a ? '0' : '1'); return !a })}>
+                <Printer className="mr-2 size-4" /> {t('Print a receipt automatically after each sale')}</DropdownMenuCheckboxItem>
+              <DropdownMenuItem onSelect={() => setDialog('close')}><LogOut /> {t('Close till')}</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
         <div className="ml-auto flex items-center gap-1.5">
           <Button variant="ghost" size="sm" onClick={() => setDialog('refund')}><RotateCcw /> {t('Refund')} <Kbd>F9</Kbd></Button>
           <Button variant="ghost" size="sm" onClick={() => setDialog('cash')}><Wallet /> {t('Cash in/out')}</Button>
@@ -372,19 +390,20 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
             title={t('Print a receipt automatically after each sale')}><Printer /> {autoPrint ? t('Auto-print on') : t('Auto-print off')}</Button>
           <Button variant="outline" size="sm" onClick={() => setDialog('close')}><LogOut /> {t('Close till')}</Button>
         </div>
+        )}
       </header>
 
       <div className="flex min-h-0 flex-1">
         {/* ---------- left: search + products */}
-        <section className="flex min-w-0 flex-1 flex-col gap-3 p-3">
+        <section className={cn('flex min-w-0 flex-1 flex-col gap-3 p-3', phone && pane === 'sale' && 'hidden')}>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <ScanLine className="pointer-events-none absolute left-3.5 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
-              <input ref={search} autoFocus value={query} onChange={(e) => { setQuery(e.target.value); setFlash(null) }}
+              <input ref={search} autoFocus={!phone} value={query} onChange={(e) => { setQuery(e.target.value); setFlash(null) }}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submitQuery(query) } }}
                 aria-label={t('Scan or search products')} autoComplete="off" spellCheck={false}
-                placeholder={t('Scan or search · 3* before a scan sells three · Enter on empty pays')}
-                className="h-14 w-full rounded-xl border-2 bg-card pl-11 pr-28 text-lg outline-none transition-colors focus:border-primary focus:ring-4 focus:ring-primary/15" />
+                placeholder={phone ? t('Search products') : t('Scan or search · 3* before a scan sells three · Enter on empty pays')}
+                className="h-14 w-full rounded-xl border-2 bg-card pl-11 pr-28 text-lg max-sm:h-12 max-sm:pr-12 max-sm:text-base outline-none transition-colors focus:border-primary focus:ring-4 focus:ring-primary/15" />
               <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
                 {multiplier && <span className="rounded-md bg-primary px-2 py-1 text-sm font-semibold text-primary-foreground">× {multiplier}</span>}
                 <Kbd>F2</Kbd>
@@ -401,7 +420,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
               </button>
             ))}
           </div>
-          <div className="grid min-h-0 flex-1 auto-rows-[96px] grid-cols-[repeat(auto-fill,minmax(150px,1fr))] content-start gap-2 overflow-y-auto pr-1">
+          <div className="grid min-h-0 flex-1 auto-rows-[96px] grid-cols-[repeat(auto-fill,minmax(150px,1fr))] content-start gap-2 overflow-y-auto pr-1 max-sm:auto-rows-[84px] max-sm:grid-cols-3 max-sm:pr-0">
             {visible.slice(0, 120).map((c) => (
               <button key={c.variant_id} type="button" onClick={() => add(c)}
                 className="flex flex-col justify-between rounded-lg border bg-card p-2.5 text-left transition-[border-color,transform] hover:border-primary/50 active:scale-[0.98]">
@@ -414,10 +433,24 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
             ))}
             {!visible.length && <div className="col-span-full py-12 text-center text-[13px] text-muted-foreground">{t('No product matches. Clear the search with Esc.')}</div>}
           </div>
+          {phone && (
+            <div className="-mx-3 -mb-3 grid grid-cols-[1fr_auto] gap-2 border-t bg-card p-3">
+              <Button variant="outline" className="h-14 justify-between" onClick={() => setPane('sale')}>
+                <span className="flex items-center gap-2"><ListOrdered /> {t('{a} lines · {b} items', { a: lines.length, b: num(itemsCount) })}</span>
+                <span className="text-base font-semibold tabular">{formatMoney(total)}</span>
+              </Button>
+              <Button className="h-14 px-5" disabled={!lines.length} onClick={() => setDialog('pay')}>{t('Pay')}</Button>
+            </div>
+          )}
         </section>
 
         {/* ---------- right: the sale */}
-        <aside className="flex w-[400px] shrink-0 flex-col border-l bg-card xl:w-[440px]">
+        <aside className={cn('flex shrink-0 flex-col bg-card', phone ? (pane === 'sale' ? 'w-full' : 'hidden') : 'w-[400px] border-l xl:w-[440px]')}>
+          {phone && (
+            <div className="border-b px-3 py-2">
+              <Button variant="outline" className="w-full" onClick={() => setPane('products')}><Plus /> {t('Add products')}</Button>
+            </div>
+          )}
           <button type="button" onClick={() => setDialog('customer')} className="flex items-center gap-2 border-b px-4 py-3 text-left hover:bg-muted/50">
             <UserRound className="size-4 text-muted-foreground" />
             <span className="flex-1 truncate text-[13px]">{customerName ?? t('Walk-in customer')}</span>

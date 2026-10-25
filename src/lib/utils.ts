@@ -73,3 +73,9 @@ export function num(v: unknown): number {
   const n = typeof v === 'number' ? v : Number(v)
   return Number.isFinite(n) ? n : 0
 }
+
+/** fields on a phone: 16 px text (iPhone zooms into smaller fields) and 40 px height, unless the field sets its own */
+export function phoneField(className?: string) {
+  const c = className ?? ''
+  return cn(/(^|\s)text-(xs|sm|base|lg|xl|[2-9]xl|\[)/.test(c) ? '' : 'max-sm:text-base', /(^|\s)h-/.test(c) ? '' : 'max-sm:min-h-10')
+}

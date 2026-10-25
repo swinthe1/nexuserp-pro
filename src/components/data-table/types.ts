@@ -12,6 +12,8 @@ declare module '@tanstack/react-table' {
     /** Exclude from export (e.g. action columns) */
     noExport?: boolean
     className?: string
+    /** on a phone the list shows cards: 'title' leads the card, 'amount' sits top right, 'hide' leaves it out */
+    mobile?: 'title' | 'amount' | 'hide'
   }
 }
 

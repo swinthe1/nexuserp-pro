@@ -17,12 +17,13 @@ const buttonVariants = cva(
         link: 'text-primary underline-offset-4 hover:underline',
       },
       size: {
-        default: 'h-9 px-3.5',
-        sm: 'h-8 px-2.5 text-[13px]',
-        xs: 'h-7 px-2 text-xs',
+        // on a phone a finger needs about 40 px: min sizes only grow a button, never shrink a bigger one
+        default: 'h-9 px-3.5 max-sm:min-h-10',
+        sm: 'h-8 px-2.5 text-[13px] max-sm:min-h-9',
+        xs: 'h-7 px-2 text-xs max-sm:min-h-8',
         lg: 'h-10 px-5',
-        icon: 'size-9',
-        'icon-sm': 'size-8',
+        icon: 'size-9 max-sm:min-h-10 max-sm:min-w-10',
+        'icon-sm': 'size-8 max-sm:min-h-10 max-sm:min-w-10',
       },
     },
     defaultVariants: { variant: 'default', size: 'default' },

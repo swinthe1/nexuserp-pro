@@ -16,6 +16,7 @@ import { EmptyState } from '@/components/empty-state'
 import { describeError } from '@/lib/errors'
 import { exportCsv, exportPdf, exportXlsx, type ExportColumn } from '@/lib/export'
 import { cn } from '@/lib/utils'
+import { usePhone } from '@/hooks/use-phone'
 import { FacetedFilter } from './faceted-filter'
 import { Pagination } from './pagination'
 import { SavedViews, useSavedViews } from './saved-views'
@@ -183,6 +184,7 @@ export function DataTable<T>({
   const selectedRows = table.getSelectedRowModel().rows
   const rowCount = server ? server.rowCount : table.getFilteredRowModel().rows.length
   const visibleCols = table.getVisibleLeafColumns().length
+  const phone = usePhone()
 
   const doExport = async (kind: 'csv' | 'xlsx' | 'pdf') => {
     const rows: T[] = (selectedRows.length ? selectedRows : table.getPrePaginationRowModel().rows).map((r: Row<T>) => r.original)
@@ -205,7 +207,7 @@ export function DataTable<T>({
             value={state.globalFilter ?? ''}
             onChange={(e) => table.setGlobalFilter(e.target.value)}
             placeholder={searchPlaceholder ?? t('Search…')}
-            className="h-8 pl-8 text-[13px]"
+            className="h-8 pl-8 text-[13px] max-sm:h-10 max-sm:text-base"
             aria-label={t('Search the list')}
           />
         </div>
@@ -218,7 +220,7 @@ export function DataTable<T>({
             {t('Reset')} <X />
           </Button>
         )}
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2">
           {toolbar}
           {tableKey && (
             <SavedViews
@@ -252,6 +254,16 @@ export function DataTable<T>({
         </div>
       )}
 
+      {phone ? (
+        <PhoneCards table={table} isLoading={isLoading} error={error} onRowClick={onRowClick} selectable={!!bulkActions}
+          emptyNode={filtered ? (
+            <EmptyState compact title={t('Nothing matches these filters')} description={t('Clear the search or filters to see everything.')}
+              action={<Button variant="outline" size="sm" onClick={() => { table.resetColumnFilters(); table.setGlobalFilter('') }}>{t('Clear filters')}</Button>} />
+          ) : (
+            <EmptyState compact title={empty?.title ?? t('Nothing here yet')} description={empty?.description} action={empty?.action} />
+          )}
+          footer={footer && !isLoading ? footer(table) : null} />
+      ) : (
       <div className="overflow-hidden rounded-lg border bg-card">
         <Table>
           <TableHeader>
@@ -314,10 +326,95 @@ export function DataTable<T>({
           {footer && !isLoading && footer(table)}
         </Table>
       </div>
+      )}
       <Pagination table={table} rowCount={rowCount} />
     </div>
   )
 }
 
+/* ------------------------------------------------------------------ phone: one card per row */
+
+// the column's name: meta.label, a string header, or the title given to ColumnHeader
+function columnLabel<T>(table: TanTable<T>, colId: string): string {
+  const col = table.getColumn(colId)
+  if (!col) return ''
+  const d = col.columnDef
+  if (d.meta?.label) return d.meta.label
+  if (typeof d.header === 'string') return d.header
+  if (typeof d.header === 'function') {
+    const h = table.getFlatHeaders().find((x) => x.column.id === colId)
+    try {
+      const el = h ? (d.header as (c: unknown) => unknown)(h.getContext()) : null
+      const title = React.isValidElement(el) ? (el.props as { title?: unknown }).title : null
+      if (typeof title === 'string') return title
+    } catch { /* a header that needs more than its context */ }
+  }
+  return ''
+}
+
+function PhoneCards<T>({ table, isLoading, error, onRowClick, selectable, emptyNode, footer }: {
+  table: TanTable<T>; isLoading?: boolean; error?: unknown; onRowClick?: (row: T) => void; selectable: boolean
+  emptyNode: React.ReactNode; footer: React.ReactNode
+}) {
+  const cols = table.getVisibleLeafColumns().filter((c) => c.id !== '_select' && c.columnDef.meta?.mobile !== 'hide')
+  const labels = Object.fromEntries(cols.map((c) => [c.id, columnLabel(table, c.id)]))
+  // the column a list never hides is its main one (the name, the number)
+  const title = cols.find((c) => c.columnDef.meta?.mobile === 'title') ?? cols.find((c) => c.columnDef.enableHiding === false && labels[c.id]) ?? cols.find((c) => labels[c.id]) ?? cols[0]
+  const rights = cols.filter((c) => c.columnDef.meta?.align === 'right')
+  const amount = cols.find((c) => c.columnDef.meta?.mobile === 'amount') ?? rights[rights.length - 1]
+  const status = cols.find((c) => c !== title && /(^|_)(status|state)$/i.test(c.id))
+  const actions = cols.filter((c) => !labels[c.id] && c !== title)
+  const rest = cols.filter((c) => c !== title && c !== amount && c !== status && !actions.includes(c)).slice(0, 4)
+  const rows = table.getRowModel().rows
+  const cell = (row: Row<T>, colId?: string) => {
+    const c = colId ? row.getVisibleCells().find((x) => x.column.id === colId) : undefined
+    return c ? flexRender(c.column.columnDef.cell, c.getContext()) : null
+  }
+
+  if (isLoading) return <div className="grid gap-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}</div>
+  if (error) return <div className="rounded-lg border bg-card p-6 text-center text-sm text-destructive">{describeError(error)}</div>
+  if (!rows.length) return <div className="rounded-lg border bg-card">{emptyNode}</div>
+  return (
+    <div className="grid gap-2">
+      <ul className="grid gap-2" aria-label={t('List')}>
+        {rows.map((row) => (
+          <li
+            key={row.id}
+            data-state={row.getIsSelected() ? 'selected' : undefined}
+            className={cn('rounded-lg border bg-card p-3 data-[state=selected]:border-primary/50 data-[state=selected]:bg-accent/40', onRowClick && 'cursor-pointer active:bg-secondary')}
+            tabIndex={onRowClick ? 0 : undefined}
+            onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+            onKeyDown={onRowClick ? (e) => { if (e.key === 'Enter') onRowClick(row.original) } : undefined}
+          >
+            <div className="flex items-start gap-3">
+              {selectable && (
+                <span className="-m-2 p-2" onClick={(e) => e.stopPropagation()}>
+                  <Checkbox checked={row.getIsSelected()} onCheckedChange={(v) => row.toggleSelected(!!v)} aria-label={t('Select row')} className="size-5" />
+                </span>
+              )}
+              <div className="min-w-0 flex-1 text-[15px] font-medium [&_*]:whitespace-normal">{cell(row, title?.id)}</div>
+              {amount && <div className="shrink-0 text-right text-[15px] font-semibold tabular">{cell(row, amount.id)}</div>}
+            </div>
+            {(status || rest.length > 0 || actions.length > 0) && (
+              <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
+                {status && <div className="col-span-2">{cell(row, status.id)}</div>}
+                {rest.map((c) => (
+                  <div key={c.id} className="min-w-0 max-w-full">
+                    <div className="text-[11px] text-muted-foreground">{labels[c.id]}</div>
+                    <div className="truncate [&_*]:whitespace-normal">{cell(row, c.id)}</div>
+                  </div>
+                ))}
+                {actions.length > 0 && <div className="col-span-2 flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>{actions.map((c) => <React.Fragment key={c.id}>{cell(row, c.id)}</React.Fragment>)}</div>}
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+      {footer && <div className="overflow-x-auto rounded-lg border bg-card"><Table>{footer}</Table></div>}
+    </div>
+  )
+}
+
 export { ColumnHeader } from './column-header'
+
 import { t } from '@/i18n'

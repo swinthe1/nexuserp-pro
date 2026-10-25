@@ -1,5 +1,5 @@
 import {
-  ArrowLeft, ArrowRightLeft, ChefHat, CreditCard, Minus, NotebookPen, Plus, Printer, ReceiptText, Search, Send, Settings2, ShoppingBag, Trash2, Undo2, Users, X,
+  ArrowLeft, ArrowRightLeft, ChefHat, CreditCard, Ellipsis, ListOrdered, Minus, NotebookPen, Plus, Printer, ReceiptText, Search, Send, Settings2, ShoppingBag, Trash2, Undo2, Users, X,
 } from 'lucide-react'
 import * as React from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
@@ -8,6 +8,8 @@ import { useAuth } from '@/app/auth-provider'
 import { useCompany } from '@/app/company-provider'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { usePhone } from '@/hooks/use-phone'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -84,6 +86,17 @@ function Restaurant({ data }: { data: TillData }) {
   const cashier = (user?.user_metadata?.full_name as string | undefined) ?? user?.email ?? ''
   const areas = floor.data?.areas ?? []
   const current = areas.find((a) => a.id === area) ?? areas[0]
+  const phone = usePhone()
+  const takeaway = () => { const label = prompt(t('Name for the takeaway order (optional)')) ?? undefined; void open(null, label) }
+  const toggleTickets = () => setKitchenPrint((a) => { prefSet('pos.kitchenprint', a ? '0' : '1'); return !a })
+  const areaNav = !tabId && areas.length > 1 && (
+    <nav className={cn('flex gap-1 overflow-x-auto', phone ? 'shrink-0 border-b bg-card px-3 py-2' : 'ml-3')} aria-label={t('Areas')}>
+      {areas.map((a) => (
+        <button key={a.id} type="button" onClick={() => setArea(a.id)}
+          className={cn('h-9 shrink-0 rounded-full px-3.5 text-[13px] font-medium', current?.id === a.id ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')}>{a.name}</button>
+      ))}
+    </nav>
+  )
 
   const open = async (table: string | null, label?: string) => {
     const id = await openTab.mutateAsync({ register: data.register.id, table, guests: 1, label })
@@ -96,27 +109,36 @@ function Restaurant({ data }: { data: TillData }) {
         {tabId
           ? <Button variant="ghost" size="icon" aria-label={t('Back to the floor')} onClick={() => setTabId(null)}><ArrowLeft /></Button>
           : <Button variant="ghost" size="icon" asChild aria-label={t('Leave the floor')}><Link to="/pos"><ArrowLeft /></Link></Button>}
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1 sm:flex-none">
           <div className="truncate text-sm font-semibold">{data.register.name}</div>
           <div className="truncate text-xs text-muted-foreground">{data.session!.number} · {cashier}</div>
         </div>
-        {!tabId && areas.length > 1 && (
-          <nav className="ml-3 flex gap-1 overflow-x-auto" aria-label={t('Areas')}>
-            {areas.map((a) => (
-              <button key={a.id} type="button" onClick={() => setArea(a.id)}
-                className={cn('h-9 shrink-0 rounded-full px-3.5 text-[13px] font-medium', current?.id === a.id ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')}>{a.name}</button>
-            ))}
-          </nav>
-        )}
+        {!phone && areaNav}
+        {phone ? (
+          <div className="ml-auto flex items-center gap-1">
+            {!tabId && <Button variant="outline" size="icon" aria-label={t('Takeaway')} onClick={takeaway}><ShoppingBag /></Button>}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label={t('More')}><Ellipsis /></Button></DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-60">
+                <DropdownMenuItem asChild><a href={`/pos/kitchen/${data.register.warehouse_id}`} target="_blank" rel="noreferrer"><ChefHat /> {t('Kitchen screen')}</a></DropdownMenuItem>
+                <DropdownMenuCheckboxItem checked={kitchenPrint} onCheckedChange={toggleTickets}><Printer className="mr-2 size-4" /> {t('Print a kitchen ticket when items are sent')}</DropdownMenuCheckboxItem>
+                {can('pos.approve') && <DropdownMenuItem onSelect={() => setSetup(true)}><Settings2 /> {t('Set up the room')}</DropdownMenuItem>}
+                <DropdownMenuItem asChild><Link to={`/pos/till/${data.register.id}`}><ReceiptText /> {t('Till and shift')}</Link></DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ) : (
         <div className="ml-auto flex items-center gap-1.5">
-          {!tabId && <Button variant="outline" size="sm" onClick={() => { const label = prompt(t('Name for the takeaway order (optional)')) ?? undefined; void open(null, label) }}><ShoppingBag /> {t('Takeaway')}</Button>}
+          {!tabId && <Button variant="outline" size="sm" onClick={takeaway}><ShoppingBag /> {t('Takeaway')}</Button>}
           <Button variant="ghost" size="sm" asChild><a href={`/pos/kitchen/${data.register.warehouse_id}`} target="_blank" rel="noreferrer"><ChefHat /> {t('Kitchen screen')}</a></Button>
-          <Button variant="ghost" size="sm" aria-pressed={kitchenPrint} onClick={() => setKitchenPrint((a) => { prefSet('pos.kitchenprint', a ? '0' : '1'); return !a })}
+          <Button variant="ghost" size="sm" aria-pressed={kitchenPrint} onClick={toggleTickets}
             title={t('Print a kitchen ticket when items are sent')}><Printer /> {kitchenPrint ? t('Tickets on') : t('Tickets off')}</Button>
           {can('pos.approve') && <Button variant="ghost" size="sm" onClick={() => setSetup(true)}><Settings2 /> {t('Set up the room')}</Button>}
           <Button variant="outline" size="sm" asChild><Link to={`/pos/till/${data.register.id}`}>{t('Till and shift')}</Link></Button>
         </div>
+        )}
       </header>
+      {phone && areaNav}
       <OfflineBanner />
 
       {tabId
@@ -132,8 +154,10 @@ function Restaurant({ data }: { data: TillData }) {
 function FloorView({ floor, loading, areaId, onOpen, onOpenTab, onSetup }: {
   floor: Floor | undefined; loading: boolean; areaId: string | undefined; onOpen: (table: string) => void; onOpenTab: (id: string) => void; onSetup?: () => void
 }) {
-  const [view, setView] = React.useState<'map' | 'list'>(() => (prefGet('pos.floorview', 'map') === 'list' ? 'list' : 'map'))
-  React.useEffect(() => { prefSet('pos.floorview', view) }, [view])
+  const phone = usePhone()
+  // on a phone the plan is too small to tap: the list comes first
+  const [view, setView] = React.useState<'map' | 'list'>(() => (prefGet(phone ? 'pos.floorview.phone' : 'pos.floorview', phone ? 'list' : 'map') === 'list' ? 'list' : 'map'))
+  React.useEffect(() => { prefSet(phone ? 'pos.floorview.phone' : 'pos.floorview', view) }, [view, phone])
   if (loading) return <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 p-4">{Array.from({ length: 12 }).map((_, i) => <Skeleton key={i} className="h-32" />)}</div>
   const area = floor?.areas.find((a) => a.id === areaId)
   const byTable = new Map((floor?.orders ?? []).filter((o) => o.table_id).map((o) => [o.table_id!, o]))
@@ -150,7 +174,7 @@ function FloorView({ floor, loading, areaId, onOpen, onOpenTab, onSetup }: {
   const showMap = placed.length > 0 && view === 'map'
   const loose = showMap ? (area?.tables ?? []).filter((tb) => !placed.includes(tb)) : area?.tables ?? []
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto p-4">
+    <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
       {placed.length > 0 && (
         <div className="mb-3 flex justify-end gap-1" role="group" aria-label={t('How the tables are shown')}>
           <Button size="sm" variant={view === 'map' ? 'default' : 'outline'} onClick={() => setView('map')}>{t('Floor plan')}</Button>
@@ -177,12 +201,12 @@ function FloorView({ floor, loading, areaId, onOpen, onOpenTab, onSetup }: {
           })}
         </div>
       )}
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 max-sm:grid-cols-2 max-sm:gap-2">
         {loose.map((tb) => {
           const o = byTable.get(tb.id)
           return (
             <button key={tb.id} type="button" onClick={() => (o ? onOpenTab(o.id) : onOpen(tb.id))}
-              className={cn('flex h-32 flex-col justify-between rounded-xl border-2 p-3 text-left transition-[border-color,transform] active:scale-[0.98]',
+              className={cn('flex h-32 flex-col justify-between rounded-xl border-2 p-3 text-left max-sm:h-28 transition-[border-color,transform] active:scale-[0.98]',
                 o ? 'border-primary/40 bg-primary/5 hover:border-primary' : 'border-dashed bg-card hover:border-primary/50')}>
               <div className="flex items-start justify-between gap-2">
                 <span className="text-xl font-semibold tracking-[-0.01em]">{tb.name}</span>
@@ -196,7 +220,7 @@ function FloorView({ floor, loading, areaId, onOpen, onOpenTab, onSetup }: {
       {takeaway.length > 0 && (
         <>
           <h2 className="mb-2 mt-6 text-sm font-semibold">{t('Takeaway and bar orders')}</h2>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 max-sm:grid-cols-2 max-sm:gap-2">
             {takeaway.map((o) => (
               <button key={o.id} type="button" onClick={() => onOpenTab(o.id)} className="flex h-28 flex-col justify-between rounded-xl border-2 border-primary/40 bg-primary/5 p-3 text-left hover:border-primary">
                 <span className="truncate text-base font-semibold">{o.label || o.number}</span>
@@ -241,6 +265,9 @@ function TabScreen({ data, tabId, floor, kitchenPrint, onClose, onMoved, cashier
   const [dialog, setDialog] = React.useState<null | 'pay' | 'move' | { note: string } | { void: TabLine }>(null)
   const [busy, setBusy] = React.useState(false)
   const cur = data.company.base_currency
+  const phone = usePhone()
+  // on a phone: the menu fills the screen, the order is its own screen
+  const [pane, setPane] = React.useState<'menu' | 'order'>('menu')
 
   const categories = React.useMemo(() => [...new Set(data.catalog.map((c) => c.category).filter(Boolean))].sort() as string[], [data.catalog])
   const visible = React.useMemo(() => {
@@ -279,15 +306,17 @@ function TabScreen({ data, tabId, floor, kitchenPrint, onClose, onMoved, cashier
     onClose()
   }
 
-  if (tab.isLoading) return <div className="flex flex-1 gap-4 p-4"><Skeleton className="flex-1" /><Skeleton className="w-[420px]" /></div>
+  if (tab.isLoading) return <div className="flex flex-1 gap-4 p-4"><Skeleton className="flex-1" /><Skeleton className="w-[420px] max-sm:hidden" /></div>
   if (!tab.data) return <Centered><p className="text-[13px] text-muted-foreground">{tab.fetchStatus === 'paused' ? t('This order is not on this device yet. It opens when the connection is back.') : t('This order is closed.')}</p><Button className="mt-3" onClick={onClose}>{t('Back to the floor')}</Button></Centered>
   const o = tab.data
   const title = o.table ? t('Table {name}', { name: o.table }) : o.label || o.number
+  const newCount = drafts.reduce((s, d) => s + d.quantity, 0)
+  const unsent = drafts.length > 0 || open.some((l) => l.status === 'new')
 
   return (
     <div className="flex min-h-0 flex-1">
       {/* catalog */}
-      <section className="flex min-w-0 flex-1 flex-col gap-3 p-3">
+      <section className={cn('flex min-w-0 flex-1 flex-col gap-3 p-3', phone && pane === 'order' && 'hidden')}>
         <div className="relative">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('Search the menu')} aria-label={t('Search the menu')}
@@ -301,7 +330,7 @@ function TabScreen({ data, tabId, floor, kitchenPrint, onClose, onMoved, cashier
             </button>
           ))}
         </div>
-        <div className="grid min-h-0 flex-1 auto-rows-[88px] grid-cols-[repeat(auto-fill,minmax(140px,1fr))] content-start gap-2 overflow-y-auto pr-1">
+        <div className="grid min-h-0 flex-1 auto-rows-[88px] grid-cols-[repeat(auto-fill,minmax(140px,1fr))] content-start gap-2 overflow-y-auto pr-1 max-sm:auto-rows-[80px] max-sm:grid-cols-3 max-sm:pr-0">
           {visible.slice(0, 160).map((c) => (
             <button key={c.variant_id} type="button" onClick={() => addDraft(c)}
               className="flex flex-col justify-between rounded-lg border bg-card p-2.5 text-left transition-[border-color,transform] hover:border-primary/50 active:scale-[0.98]">
@@ -310,11 +339,21 @@ function TabScreen({ data, tabId, floor, kitchenPrint, onClose, onMoved, cashier
             </button>
           ))}
         </div>
+        {phone && (
+          <div className="-mx-3 -mb-3 grid grid-cols-[1fr_auto] gap-2 border-t bg-card p-3">
+            <Button variant="outline" className="h-14 justify-between" onClick={() => setPane('order')}>
+              <span className="flex items-center gap-2"><ListOrdered /> {title}{newCount > 0 && <span className="rounded-full bg-warning px-2 text-xs font-semibold text-warning-foreground">+{newCount}</span>}</span>
+              <span className="text-base font-semibold tabular">{formatMoney(due)}</span>
+            </Button>
+            <Button className="h-14 px-5" loading={busy} disabled={!unsent} variant={unsent ? 'default' : 'secondary'} onClick={() => void sendAll()}><Send /> {t('Send')}</Button>
+          </div>
+        )}
       </section>
 
       {/* the order */}
-      <aside className="flex w-[400px] shrink-0 flex-col border-l bg-card xl:w-[440px]">
+      <aside className={cn('flex shrink-0 flex-col bg-card', phone ? (pane === 'order' ? 'w-full' : 'hidden') : 'w-[400px] border-l xl:w-[440px]')}>
         <div className="flex items-center gap-3 border-b px-4 py-3">
+          {phone && <Button variant="outline" size="icon" aria-label={t('Add from the menu')} onClick={() => setPane('menu')}><Plus /></Button>}
           <div className="min-w-0 flex-1">
             <div className="truncate text-lg font-semibold">{title}</div>
             <div className="truncate text-xs text-muted-foreground">{o.number} · {o.waiter || cashier} · {ago(o.opened_at)}</div>
