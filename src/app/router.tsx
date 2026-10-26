@@ -87,6 +87,8 @@ const PosHomePage = lazy(() => import('@/features/pos/pages/pos-home-page'), 'Po
 const PosSessionPage = lazy(() => import('@/features/pos/pages/pos-home-page'), 'PosSessionPage')
 const TillPage = lazy(() => import('@/features/pos/pages/till-page'), 'TillPage')
 const SafePage = lazy(() => import('@/features/safe/safe-page'), 'SafePage')
+const AgentPage = lazy(() => import('@/features/agent/agent-page'), 'AgentPage')
+const AgentsPage = lazy(() => import('@/features/agent/agents-page'), 'AgentsPage')
 const LoyaltyPage = lazy(() => import('@/features/loyalty/loyalty-page'), 'LoyaltyPage')
 const WaitersPage = lazy(() => import('@/features/restaurant/waiters-page'), 'WaitersPage')
 const HistoryPage = lazy(() => import('@/features/history/history-page'), 'HistoryPage')
@@ -189,7 +191,9 @@ const router = createBrowserRouter([
         { path: 'price-lists', element: <PriceListsPage /> },
         { path: 'price-lists/new', element: <PriceListPage key="pl-new" /> },
         { path: 'price-lists/:id', element: <PriceListPage key="pl" /> },
+        { path: 'agents', element: <RequirePerm perm="sales.approve" />, children: [{ index: true, element: <AgentsPage /> }] },
       ] },
+      { path: 'agent', element: <RequirePerm perm="sales.write" />, children: [{ index: true, element: <AgentPage /> }] },
       { path: 'sales/invoices', element: <RequirePerm perm="invoicing.read" />, children: [
         { index: true, element: <SalesListPage key="invoices" kind="invoices" /> },
         { path: 'new', element: <SalesDocumentPage key="invoice-new" kind="invoices" /> },

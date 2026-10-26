@@ -4,7 +4,7 @@ import {
   BadgePercent, ClipboardCheck, Hourglass, PackageOpen, ScanLine, ShoppingBasket,
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, BookOpenText, Building, HandCoins, ListTree, Network, Settings2, Wallet, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, Gauge,
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackagePlus, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
-  Repeat, ScanText, SlidersHorizontal, Store, Tags, Truck, TriangleAlert, Users, Vault, Warehouse, type LucideIcon,
+  Repeat, ScanText, SlidersHorizontal, Store, Tags, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, type LucideIcon,
 } from 'lucide-react'
 import { msg } from '@/i18n'
 
@@ -50,6 +50,8 @@ export const NAV: NavSection[] = [
       { label: msg('Deliveries'), href: '/sales/deliveries', icon: Truck, perm: 'sales.read', keywords: ['shipping', 'dispatch', 'flete'] },
       { label: msg('Customer invoices'), href: '/sales/invoices', icon: Receipt, perm: 'invoicing.read', keywords: ['invoice', 'fatura', 'credit note', 'billing'] },
       { label: msg('Recurring invoices'), href: '/sales/recurring', icon: Repeat, perm: 'invoicing.read', keywords: ['rent', 'subscription', 'qira', 'abonim', 'monthly'] },
+      { label: msg('Agent app'), href: '/agent', icon: Smartphone, perm: 'sales.write', keywords: ['agjent', 'terren', 'field', 'route', 'rruga', 'arkëtim', 'van', 'shitës', 'porosi'] },
+      { label: msg('Field agents'), href: '/sales/agents', icon: MapPinned, perm: 'sales.approve', keywords: ['agjentët', 'terren', 'field sales', 'routes', 'visits', 'vizita', 'gps'] },
       { label: msg('Price lists'), href: '/sales/price-lists', icon: Tags, perm: 'sales.read', keywords: ['pricing', 'wholesale', 'retail', 'discount'] },
       { label: msg('Customers'), href: '/partners?role=customer', icon: Users, perm: 'partners.read', keywords: ['clients', 'partners', 'vendors', 'klient'] },
     ],

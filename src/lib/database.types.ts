@@ -77,6 +77,110 @@ export type Database = {
           { foreignKeyName: "accounts_currency_code_fkey"; columns: ["currency_code"]; isOneToOne: false; referencedRelation: "currencies"; referencedColumns: ["code"] },
         ]
       }
+      agent_route_stops: {
+        Row: {
+          id: string
+          company_id: string
+          agent_id: string
+          weekday: number
+          partner_id: string
+          position: number
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          agent_id: string
+          weekday: number
+          partner_id: string
+          position?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          agent_id?: string
+          weekday?: number
+          partner_id?: string
+          position?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "agent_route_stops_company_id_agent_id_fkey"; columns: ["company_id", "agent_id"]; isOneToOne: false; referencedRelation: "sales_agents"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "agent_route_stops_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "agent_route_stops_company_id_partner_id_fkey"; columns: ["company_id", "partner_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      agent_visits: {
+        Row: {
+          id: string
+          company_id: string
+          agent_id: string
+          partner_id: string
+          visited_at: string
+          outcome: string
+          note: string | null
+          latitude: number | null
+          longitude: number | null
+          accuracy_m: number | null
+          sales_order_id: string | null
+          payment_id: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id: string
+          company_id: string
+          agent_id: string
+          partner_id: string
+          visited_at: string
+          outcome: string
+          note?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          accuracy_m?: number | null
+          sales_order_id?: string | null
+          payment_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          agent_id?: string
+          partner_id?: string
+          visited_at?: string
+          outcome?: string
+          note?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          accuracy_m?: number | null
+          sales_order_id?: string | null
+          payment_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "agent_visits_company_id_agent_id_fkey"; columns: ["company_id", "agent_id"]; isOneToOne: false; referencedRelation: "sales_agents"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "agent_visits_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "agent_visits_company_id_partner_id_fkey"; columns: ["company_id", "partner_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
       approval_actions: {
         Row: {
           id: string
@@ -8033,6 +8137,49 @@ export type Database = {
           { foreignKeyName: "safes_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      sales_agents: {
+        Row: {
+          id: string
+          company_id: string
+          user_id: string
+          warehouse_id: string | null
+          safe_id: string | null
+          is_active: boolean
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          user_id: string
+          warehouse_id?: string | null
+          safe_id?: string | null
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          user_id?: string
+          warehouse_id?: string | null
+          safe_id?: string | null
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "sales_agents_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "sales_agents_company_id_safe_id_fkey"; columns: ["company_id", "safe_id"]; isOneToOne: false; referencedRelation: "safes"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "sales_agents_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
       sales_channels: {
         Row: {
           id: string
@@ -11458,6 +11605,63 @@ export type Database = {
         }
         Returns: string
       }
+      agent_bootstrap: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
+      agent_my_day: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
+      agent_order_submit: {
+        Args: {
+          p: Json
+        }
+        Returns: Json
+      }
+      agent_payment_submit: {
+        Args: {
+          p: Json
+        }
+        Returns: Json
+      }
+      agent_route_save: {
+        Args: {
+          p_agent: string
+          p_weekday: number
+          p_partners: string[]
+        }
+        Returns: number
+      }
+      agent_save: {
+        Args: {
+          p: Json
+        }
+        Returns: string
+      }
+      agent_visit_log: {
+        Args: {
+          p: Json
+        }
+        Returns: Json
+      }
+      agents_day: {
+        Args: {
+          p_company: string
+          p_date?: string
+        }
+        Returns: Json
+      }
+      agents_list: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       ai_find_document: {
         Args: {
           p_company: string
@@ -11507,6 +11711,12 @@ export type Database = {
           p_limit?: number
         }
         Returns: Json
+      }
+      am_i_agent: {
+        Args: {
+          p_company: string
+        }
+        Returns: boolean
       }
       approve_payroll: {
         Args: {

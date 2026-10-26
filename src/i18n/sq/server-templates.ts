@@ -405,4 +405,6 @@ export const serverTemplates: [string, string][] = [
   ["Offline sales of shift % went into shift %", "Shitjet offline të turnit {0} hynë në turnin {1}"],
   ["Goods returned: % · %", "Mall i kthyer: {0} · {1}"],
   ["Bill for %", "Fatura për {0}"],
+  ["Unknown visit result %", "Rezultat i panjohur vizite: {0}"],
+  ["Not a customer of this company: %", "Nuk është klient i kësaj kompanie: {0}"],
 ]
