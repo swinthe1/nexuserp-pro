@@ -49,7 +49,7 @@
       "uninstallerSidebar": "build/uninstallerSidebar.bmp",
       "installerHeader": "build/installerHeader.bmp"
     },
-    "afterSign": "build/adhoc-sign.js",
+    "afterSign": "adhoc-sign.js",
     "mac": {
       "target": [
         {
