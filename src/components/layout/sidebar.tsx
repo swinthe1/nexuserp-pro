@@ -172,9 +172,9 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
 
   return (
     <nav className="flex flex-col gap-3" aria-label={t('Main menu')}>
-      <button type="button" onClick={palette.open}
+      <button type="button" onClick={() => palette.open('pages')}
         className="flex h-8 items-center gap-2 rounded-md border border-sidebar-border bg-background/60 px-2 text-[13px] text-muted-foreground hover:text-foreground">
-        <Search className="size-4" /> <span className="flex-1 text-left">{t('Find a page…')}</span><kbd className="text-2xs">{"Ctrl K"}</kbd>
+        <Search className="size-4" /> <span className="flex-1 text-left">{t('Find a page…')}</span>
       </button>
 
       {quick.length > 0 && (

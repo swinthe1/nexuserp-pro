@@ -264,6 +264,7 @@ export default {
   'Language': 'Gjuha',
   'Open navigation': 'Hap menunë',
   'Search or jump to…': 'Kërko ose shko te…',
+  'No page matches “{q}”.': 'Asnjë faqe nuk përputhet me “{q}”.',
   'Account menu': 'Menuja e llogarisë',
   'My workplace': 'Vendi im i punës',
   'Appearance': 'Pamja',

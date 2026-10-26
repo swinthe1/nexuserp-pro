@@ -17,7 +17,8 @@ import { chooseLocale } from '@/i18n/language'
 import { useAuth } from '@/app/auth-provider'
 import { supabase } from '@/lib/supabase'
 
-const CommandPaletteContext = React.createContext<{ open: () => void }>({ open: () => {} })
+type Mode = 'all' | 'pages'
+const CommandPaletteContext = React.createContext<{ open: (mode?: Mode) => void }>({ open: () => {} })
 export const useCommandPalette = () => React.useContext(CommandPaletteContext)
 
 const RESULT_ICON: Record<string, typeof Boxes> = { product: Boxes, partner: User, warehouse: Warehouse, opportunity: Kanban, lead: Magnet, sales_quote: FileText, sales_order: ShoppingBag, delivery: Truck, sales_invoice: Receipt, purchase_order: ShoppingCart, purchase_requisition: ClipboardList, vendor_bill: FileCheck2, account: ListTree, payment: Landmark, journal_entry: BookOpenText, fixed_asset: Building, work_order: Factory, bom: Layers,
@@ -84,6 +85,8 @@ function pushRecent(r: Recent) {
 
 export function CommandPaletteProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = React.useState(false)
+  // 'pages': only the menu (the sidebar's “Find a page”), no products, customers or documents
+  const [mode, setMode] = React.useState<Mode>('all')
   const [query, setQuery] = React.useState('')
   const q = useDebounce(query.trim(), 200)
   const navigate = useNavigate()
@@ -93,12 +96,12 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
   const locale = useLocale()
   const [recent, setRecent] = React.useState<Recent[]>(readRecent)
 
-  useHotkey('k', () => setOpen((o) => !o), { mod: true })
-  useHotkey('/', () => setOpen(true))
+  useHotkey('k', () => { setMode('all'); setOpen((o) => !o) }, { mod: true })
+  useHotkey('/', () => { setMode('all'); setOpen(true) })
 
   const search = useQuery({
     queryKey: ['global-search', companyId, q],
-    enabled: open && !!companyId && q.length >= 2,
+    enabled: open && mode === 'all' && !!companyId && q.length >= 2,
     staleTime: 10_000,
     queryFn: async () => {
       const { data, error } = await supabase.rpc('global_search', { p_company: companyId, p_query: q })
@@ -115,20 +118,31 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
   }
 
   const navItems = NAV.flatMap((s) => s.items.map((i) => ({ ...i, section: s.label })))
-    .filter((i) => can(i.perm) && pageAllowed(i.href) && matches(query, i.label, t(i.label), i.section, t(i.section), ...(i.keywords ?? [])))
-  const actions = CREATE_ACTIONS.filter((a) => can(a.perm) && pageAllowed(a.href) && matches(query, a.label, t(a.label)))
-  const showRecent = !query && recent.length > 0
+    .filter((i, n, all) => all.findIndex((x) => x.href === i.href) === n &&  can(i.perm) && pageAllowed(i.href) && matches(query, i.label, t(i.label), i.section, t(i.section), ...(i.keywords ?? [])))
+  const actions = mode === 'pages' ? [] : CREATE_ACTIONS.filter((a) => can(a.perm) && pageAllowed(a.href) && matches(query, a.label, t(a.label)))
+  const navPages = navItems.length > 0 && (
+    <CommandGroup heading={t('Go to')}>
+      {navItems.map((i) => (
+        <CommandItem key={i.href} value={`nav-${i.href}`} onSelect={() => go(i.href)}>
+          <i.icon /> {t(i.label)}
+          <CommandShortcut>{t(i.section)}</CommandShortcut>
+        </CommandItem>
+      ))}
+    </CommandGroup>
+  )
+  const showRecent = mode === 'all' && !query && recent.length > 0
+  const results = mode === 'all' ? search.data ?? [] : []
 
   return (
-    <CommandPaletteContext.Provider value={{ open: () => setOpen(true) }}>
+    <CommandPaletteContext.Provider value={{ open: (m = 'all') => { setMode(m); setOpen(true) } }}>
       {children}
       <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQuery('') }}>
         <DialogContent className="top-[18%] max-w-xl translate-y-0 gap-0 overflow-hidden p-0" hideClose>
           <DialogTitle className="sr-only">{t('Search and commands')}</DialogTitle>
           <Command shouldFilter={false} loop>
-            <CommandInput value={query} onValueChange={setQuery} placeholder={t('Search products, documents, customers, or type what you want to do…')} />
+            <CommandInput value={query} onValueChange={setQuery} placeholder={mode === 'pages' ? t('Find a page…') : t('Search products, documents, customers, or type what you want to do…')} />
             <CommandList>
-              <CommandEmpty>{search.isFetching ? t('Searching…') : search.isError ? t('Search is not available right now.') : t('Nothing matches “{q}”.', { q: query })}</CommandEmpty>
+              <CommandEmpty>{mode === 'pages' ? t('No page matches “{q}”.', { q: query }) : search.isFetching ? t('Searching…') : search.isError ? t('Search is not available right now.') : t('Nothing matches “{q}”.', { q: query })}</CommandEmpty>
               {showRecent && (
                 <CommandGroup heading={t('Recently opened')}>
                   {recent.map((r) => (
@@ -139,9 +153,11 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
                   ))}
                 </CommandGroup>
               )}
-              {!!search.data?.length && (
+              {/* a page whose name matches comes before products and documents */}
+              {(query || mode === 'pages') && navPages}
+              {results.length > 0 && (
                 <CommandGroup heading={t('Results')}>
-                  {search.data.map((r) => {
+                  {results.map((r) => {
                     const Icon = RESULT_ICON[r.kind ?? ''] ?? FileText
                     return (
                       <CommandItem key={`${r.kind}-${r.id}`} value={`${r.kind}-${r.id}`} onSelect={() => r.href && go(r.href, { label: r.title ?? '', kind: r.kind ?? undefined })}>
@@ -163,17 +179,8 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
                   ))}
                 </CommandGroup>
               )}
-              {navItems.length > 0 && (
-                <CommandGroup heading={t('Go to')}>
-                  {navItems.map((i) => (
-                    <CommandItem key={i.href} value={`nav-${i.href}`} onSelect={() => go(i.href)}>
-                      <i.icon /> {t(i.label)}
-                      <CommandShortcut>{t(i.section)}</CommandShortcut>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
-              {matches(query, 'theme dark light mode language shqip english gjuha pamja tema', t('Appearance'), t('Language')) && (
+              {!query && mode === 'all' && navPages}
+              {mode === 'all' && matches(query, 'theme dark light mode language shqip english gjuha pamja tema', t('Appearance'), t('Language')) && (
                 <CommandGroup heading={t('Preferences')}>
                   <CommandItem value="theme" onSelect={() => { setTheme(resolved === 'dark' ? 'light' : 'dark'); setOpen(false) }}>
                     {resolved === 'dark' ? <Sun /> : <Moon />} {resolved === 'dark' ? t('Switch to the light look') : t('Switch to the dark look')}
@@ -190,7 +197,7 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
               <span><kbd className="font-sans">↑↓</kbd> {t('move')}</span>
               <span><kbd className="font-sans">↵</kbd> {t('open|verb')}</span>
               <span><kbd className="font-sans">esc</kbd> {t('close|verb')}</span>
-              <span className="ml-auto hidden sm:inline">{t('Scan a barcode to jump to its product')}</span>
+              {mode === 'all' && <span className="ml-auto hidden sm:inline">{t('Scan a barcode to jump to its product')}</span>}
             </div>
           </Command>
         </DialogContent>

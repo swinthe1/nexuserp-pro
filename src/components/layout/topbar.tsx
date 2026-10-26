@@ -17,7 +17,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
         <Menu />
       </Button>
       <button
-        onClick={open}
+        onClick={() => open()}
         className="flex h-8 w-full max-w-md items-center gap-2 rounded-md border bg-card px-2.5 text-[13px] text-muted-foreground shadow-sm transition-colors hover:border-ring/40 hover:text-foreground"
       >
         <Search className="size-4" />
