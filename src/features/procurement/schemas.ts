@@ -15,6 +15,8 @@ export const purchaseLineSchema = z.object({
   po_line_id: optUuid,
   receipt_line_id: optUuid,
   requisition_line_id: optUuid,
+  pack_id: optUuid,
+  pack_qty: z.coerce.number().positive().nullable().optional(),
 })
 export type PurchaseLineValues = z.infer<typeof purchaseLineSchema>
 

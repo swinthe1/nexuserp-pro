@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { ErrorState } from '@/components/error-state'
+import { PackQty, packsFromPieces } from '@/components/pack-qty'
 import { PageHeader } from '@/components/page-header'
 import { SearchSelect } from '@/components/search-select'
 import { Button } from '@/components/ui/button'
@@ -20,6 +21,7 @@ import type { Tables } from '@/lib/database.types'
 import { t, td, tn, tServer } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
 import { findOffline, searchOffline, useScanCatalog, itemOffline } from '@/lib/offline/catalog'
+import { packForScan, usePacks } from '@/lib/packs'
 import { supabase } from '@/lib/supabase'
 import { cn, formatMoney, formatQty, num, todayISO } from '@/lib/utils'
 import { useCurrencies, useWarehouses } from '@/features/inventory/api'
@@ -41,6 +43,8 @@ type Row = {
   qty: string; price: string; d1: string; d2: string; tax: string | null
   /** new selling price with VAT, as typed ('' = keep the current one) */
   gross: string; lot: string; expiry: string
+  /** counted in boxes: the pack and how many */
+  pack?: string | null; pq?: number | null
   /** the margin while it is being typed in its box */
   m?: string | null
 }
@@ -97,12 +101,13 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
     return {
       key: l.id, variant_id: l.variant_id!, sku: it?.sku ?? '', name: l.description, qty: String(l.quantity), price: String(l.unit_price),
       d1: l.discount1_pct != null ? String(num(l.discount1_pct)) : num(l.discount_pct) ? String(num(l.discount_pct)) : '', d2: l.discount2_pct ? String(num(l.discount2_pct)) : '',
-      tax: l.tax_code_id, gross: '', lot: l.lot_number ?? '', expiry: l.expiry_date ?? '',
+      tax: l.tax_code_id, gross: '', lot: l.lot_number ?? '', expiry: l.expiry_date ?? '', pack: l.pack_id, pq: l.pack_qty,
       // the stored new price is net; it becomes gross once the item's VAT is known (below)
       ...(l.sales_price_new != null ? { gross: `net:${l.sales_price_new}` } : {}),
     }
   }))
   const [code, setCode] = React.useState('')
+  const packs = usePacks()
   const [margin, setMargin] = React.useState('')
   const [confirm, setConfirm] = React.useState(false)
   const codeRef = React.useRef<HTMLInputElement>(null)
@@ -167,23 +172,29 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
   const tot = calc.reduce((s, c) => ({ gross: s.gross + c.gross, net: s.net + c.net, vat: s.vat + c.vat, sale: s.sale + c.saleNet * c.qty, cost: s.cost + c.costBase * c.qty }),
     { gross: 0, net: 0, vat: 0, sale: 0, cost: 0 })
 
-  const addItem = (variantId: string) => {
+  const addItem = (variantId: string, perScan = 1) => {
     const it = companyId ? itemOffline(companyId, variantId) : null
     if (!it) return
-    const existing = rows.find((r) => r.variant_id === variantId && !r.lot)
+    const pack = packForScan(packs.byVariant.get(variantId), perScan)
+    const existing = rows.find((r) => r.variant_id === variantId && !r.lot && (r.pack ?? null) === (pack?.id ?? r.pack ?? null))
     if (existing) {
-      setRows((rs) => rs.map((r) => r.key === existing.key ? { ...r, qty: String(num(r.qty) + 1) } : r))
+      setRows((rs) => rs.map((r) => {
+        if (r.key !== existing.key) return r
+        const qty = num(r.qty) + (perScan || 1)
+        return { ...r, qty: String(qty), pq: r.pack ? packsFromPieces(packs.byId.get(r.pack), qty) : null }
+      }))
       setTimeout(() => qtyRefs.current.get(existing.key)?.select(), 0)
       return
     }
     const key = newKey()
-    setRows((rs) => [...rs, { key, variant_id: it.variant_id, sku: it.sku, name: it.name, qty: '1', price: it.cost ? String(it.cost) : '', d1: '', d2: '', tax: null, gross: '', lot: '', expiry: '' }])
+    setRows((rs) => [...rs, { key, variant_id: it.variant_id, sku: it.sku, name: it.name, qty: String(pack ? pack.factor : 1), price: it.cost ? String(it.cost) : '', d1: '', d2: '', tax: null, gross: '', lot: '', expiry: '',
+      pack: pack?.id ?? null, pq: pack ? 1 : null }])
     setTimeout(() => qtyRefs.current.get(key)?.select(), 30)
   }
   const onCode = () => {
     const c = code.trim(); if (!c || !companyId) return
     const hit = findOffline(companyId, c)
-    if (hit?.kind === 'variant') { addItem(hit.item.variant_id); setCode('') }
+    if (hit?.kind === 'variant') { addItem(hit.item.variant_id, num(hit.qty) || 1); setCode('') }
     else {
       const found = searchOffline(companyId, c, 2)
       if (found.length === 1) { addItem(found[0].variant_id); setCode('') } else toast.error(t('No item with the code {code}', { code: c }))
@@ -224,6 +235,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
       discount1_pct: num(c.r.d1), discount2_pct: num(c.r.d2), tax_code_id: c.r.tax,
       sales_price_new: c.newGross != null && c.i ? Math.round(c.newGross / (1 + c.i.sales_tax / 100) * 10000) / 10000 : null,
       lot_number: c.r.lot.trim() || null, expiry_date: c.r.expiry || null,
+      pack_id: c.r.pack ?? null, pack_qty: c.r.pack ? c.r.pq ?? null : null,
     })),
   })
   const problem = !h.vendor_id ? t('Choose the supplier') : !h.vendor_invoice_number.trim() ? t('Write the supplier’s invoice number')
@@ -359,7 +371,10 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
                       )}
                     </td>
                     <td className="px-1 py-1"><Input data-nav ref={(el) => { if (el) qtyRefs.current.set(c.r.key, el); else qtyRefs.current.delete(c.r.key) }} inputMode="decimal"
-                      className="h-8 min-w-[64px] text-right tabular-nums" value={c.r.qty} onChange={(e) => upd(c.r.key, { qty: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Quantity')} /></td>
+                      className="h-8 min-w-[64px] text-right tabular-nums" value={c.r.qty} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Quantity')}
+                      onChange={(e) => upd(c.r.key, { qty: e.target.value, ...(c.r.pack ? { pq: packsFromPieces(packs.byId.get(c.r.pack), e.target.value) } : {}) })} />
+                      <PackQty packs={packs.byVariant.get(c.r.variant_id)} packId={c.r.pack} packQty={c.r.pq} quantity={c.r.qty} uom={c.i?.uom} line={n + 1}
+                        onChange={(v) => upd(c.r.key, { pack: v.pack_id, pq: v.pack_qty, ...(v.quantity ? { qty: String(v.quantity) } : {}) })} /></td>
                     <td className="px-1 py-1"><Input data-nav inputMode="decimal" className={cn('h-8 min-w-[88px] text-right tabular-nums', lastChanged && 'border-amber-500')} value={c.r.price}
                       title={lastChanged ? t('Last time {price}', { price: fmt(num(c.i!.last!.price), 4) }) : undefined}
                       onChange={(e) => upd(c.r.key, { price: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Purchase price')} /></td>

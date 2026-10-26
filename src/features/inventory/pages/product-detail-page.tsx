@@ -1,9 +1,9 @@
 import { ItemCardView } from './item-card-page'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Barcode, Pencil, Plus, ScanLine, Trash2 } from 'lucide-react'
+import { Barcode, Pencil, Plus, ScanLine, Tag, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from 'recharts'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -32,10 +32,11 @@ import type { Tables } from '@/lib/database.types'
 import { describeError } from '@/lib/errors'
 import { formatDate, formatMoney, formatQty, humanize, num } from '@/lib/utils'
 import {
-  useAttributes, useCategories, useCostHistory, usePriceChanges, useProduct, useProductStockLevels, useTaxCodes, useUpdateProduct,
+  useAttributes, useCategories, useCostHistory, usePriceChanges, useProduct, useProductStockLevels, useTaxCodes, useUnits, useUpdateProduct,
   useVariantMutations, useVendors, useWarehouses, type ProductDetail,
 } from '../api'
 import { MovementsTable } from '../components/movements-table'
+import { PacksCard } from '../components/packs-card'
 import { ProductPhoto } from '../components/product-photo'
 import { VendorPicker } from '../components/pickers'
 import { barcodeSchema } from '../schemas'
@@ -47,6 +48,7 @@ export function ProductDetailPage() {
   const { company } = useCompany()
   const product = useProduct(id)
   const levels = useProductStockLevels(id)
+  const units = useUnits()
   const p = product.data
 
   if (product.isLoading) {
@@ -76,7 +78,10 @@ export function ProductDetailPage() {
           {p.tracking !== 'none' && <Badge variant="default">{p.tracking === 'lot' ? t('Tracked by lot') : t('Tracked by serial number')}</Badge>}
         </>}
         description={p.description ?? undefined}
-        actions={<Can perm="inventory.write"><EditProductSheet product={p} /></Can>}
+        actions={<>
+          {p.product_type !== 'service' && <Button variant="outline" asChild><Link to={`/inventory/labels?items=${p.product_variants.map((v) => v.id).join(',')}`}><Tag /> {t('Labels')}</Link></Button>}
+          <Can perm="inventory.write"><EditProductSheet product={p} /></Can>
+        </>}
       />
 
       {p.product_type === 'stockable' && (
@@ -93,6 +98,7 @@ export function ProductDetailPage() {
         <TabsList>
           {p.product_type === 'stockable' && <TabsTrigger value="stock">{t('Stock')}</TabsTrigger>}
           <TabsTrigger value="prices">{t('Price history')}</TabsTrigger>
+          {p.product_type !== 'service' && <TabsTrigger value="packs">{t('Packaging')}</TabsTrigger>}
           <TabsTrigger value="variants">{t('Variants & barcodes')} <Badge variant="secondary">{p.product_variants.length}</Badge></TabsTrigger>
           {p.product_type === 'stockable' && <TabsTrigger value="reorder">{t('Reorder points')}</TabsTrigger>}
           {p.product_type === 'stockable' && <TabsTrigger value="card">{t('Item card')}</TabsTrigger>}
@@ -135,6 +141,7 @@ export function ProductDetailPage() {
 
         <TabsContent value="prices"><PriceHistoryCard productId={p.id} variants={p.product_variants} /></TabsContent>
         <TabsContent value="variants"><VariantsTab product={p} /></TabsContent>
+        <TabsContent value="packs"><PacksCard product={{ id: p.id, sales_price: p.sales_price, uom_code: units.data?.find((u) => u.id === p.uom_id)?.code }} /></TabsContent>
         <TabsContent value="reorder"><ReorderTab product={p} /></TabsContent>
         <TabsContent value="card"><ProductItemCard variants={p.product_variants} /></TabsContent>
         <TabsContent value="movements"><MovementsTable productId={p.id} tableKey="inventory.product-movements" /></TabsContent>
@@ -353,7 +360,7 @@ function VariantsTab({ product }: { product: ProductDetail }) {
                   <div className="flex flex-wrap items-center gap-1">
                     {v.product_barcodes.map((b) => (
                       <Badge key={b.id} variant="outline" className="gap-1 tabular">
-                        <Barcode className="size-3 text-muted-foreground" />{b.barcode}
+                        <Barcode className="size-3 text-muted-foreground" />{b.barcode}{num(b.quantity) > 1 && <span className="text-muted-foreground">×{formatQty(b.quantity)}</span>}
                         {editable && <button className="rounded hover:text-destructive" aria-label={t('Remove barcode {code}', { code: b.barcode })} onClick={() => m.removeBarcode.mutate(b.id)}><Trash2 className="size-3" /></button>}
                       </Badge>
                     ))}

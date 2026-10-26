@@ -14,6 +14,8 @@ export const salesLineSchema = z.object({
   tax_code_id: optUuid,
   price_source: z.enum(['auto', 'manual']).default('manual'),
   sales_order_line_id: optUuid,
+  pack_id: optUuid,
+  pack_qty: z.coerce.number().positive().nullable().optional(),
 })
 export type SalesLineValues = z.infer<typeof salesLineSchema>
 

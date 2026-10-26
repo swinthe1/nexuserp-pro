@@ -103,6 +103,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
       lines: [...doc.lines].sort((a, b) => a.line_no - b.line_no).map((l) => ({
         key: l.id, variant_id: l.variant_id, description: l.description, quantity: l.quantity, unit_price: l.unit_price,
         discount_pct: l.discount_pct, tax_code_id: l.tax_code_id, price_source: 'manual' as const, sales_order_line_id: l.sales_order_line_id ?? null,
+        pack_id: l.pack_id ?? null, pack_qty: l.pack_qty ?? null,
       })),
     } : {
       partner_id: params.get('customer') ?? (undefined as unknown as string), doc_date: todayISO(),
@@ -147,6 +148,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
       lines: v.lines.map((l, i) => ({
         line_no: i + 1, variant_id: l.variant_id ?? null, description: l.description, quantity: l.quantity, unit_price: l.unit_price,
         discount_pct: l.discount_pct, tax_code_id: l.tax_code_id ?? null, sales_order_line_id: l.sales_order_line_id ?? null,
+        pack_id: l.pack_id ?? null, pack_qty: l.pack_qty ?? null,
       })),
     })
   }

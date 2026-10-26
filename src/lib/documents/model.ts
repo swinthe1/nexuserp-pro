@@ -29,7 +29,7 @@ export const PRINT_DEFAULTS: Required<Omit<PrintSettings, 'footer' | 'texts'>> =
 
 export type PrintLine = {
   code: string | null; description: string; uom: string | null; qty: number; price: number | null; discount: number | null
-  tax_rate: number; net: number; tax: number; total: number; lot?: string | null; delivered?: number; location?: string | null; expected?: string | null
+  tax_rate: number; net: number; tax: number; total: number; lot?: string | null; pack?: string | null; delivered?: number; location?: string | null; expected?: string | null
 }
 export type PrintParty = { name: string; legal_name?: string | null; code?: string | null; tax_number?: string | null; vat_number?: string | null; phone?: string | null; email?: string | null; address?: string | null }
 export type PrintDoc = {

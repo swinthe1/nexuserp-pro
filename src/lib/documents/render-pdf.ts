@@ -1,5 +1,5 @@
 /** The same document as a PDF (A4), for downloading and for email attachments. */
-import { getLocale, t } from '@/i18n'
+import { getLocale, t, td } from '@/i18n'
 import { formatDate } from '@/lib/utils'
 import { METHOD, amountInWords, docTitle, isVoucher, partnerLabel, type PrintDoc, settingsOf, showPrices, textKey } from './model'
 
@@ -119,7 +119,7 @@ export async function renderDocPdf(d: PrintDoc) {
     const lots = d.lines.some((l) => l.lot)
     const head = ['#', ...(codes ? [t('Code')] : []), t('Description'), ...(lots ? [t('Lot')] : []), t('Unit'), t('Qty'),
       ...(prices ? [vatCols ? t('Price') : t('Cost'), ...(disc ? [t('Disc.')] : []), ...(vatCols ? [t('VAT')] : []), vatCols ? t('Without VAT') : t('Value'), ...(vatCols ? [t('With VAT')] : [])] : [])]
-    const body = d.lines.map((l, i) => [String(i + 1), ...(codes ? [l.code ?? ''] : []), l.description, ...(lots ? [l.lot ?? ''] : []), l.uom ?? '', qf(l.qty),
+    const body = d.lines.map((l, i) => [String(i + 1), ...(codes ? [l.code ?? ''] : []), l.description, ...(lots ? [l.lot ?? ''] : []), l.uom ? td(l.uom) : '', l.pack ? `${qf(l.qty)}\n${l.pack}` : qf(l.qty),
       ...(prices ? [nf(l.price, Math.max(dec, 2)), ...(disc ? [pf(l.discount)] : []), ...(vatCols ? [pf(l.tax_rate) || '0%'] : []), nf(l.net, dec), ...(vatCols ? [nf(l.total, dec)] : [])] : [])])
     const firstNum = head.indexOf(t('Qty'))
     const columnStyles: Record<number, { halign: 'right' | 'center'; cellWidth?: number }> = { 0: { halign: 'center', cellWidth: 7 } }

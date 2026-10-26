@@ -414,4 +414,5 @@ export const serverTemplates: [string, string][] = [
   ["Bill % is not an open bill of this partner", "Fatura {0} nuk është faturë e hapur e këtij partneri"],
   ["Only % is open on %", "Te {1} janë të hapura vetëm {0}"],
   ["Both sides must be equal: % from invoices, % from bills", "Të dyja anët duhet të jenë të barabarta: {0} nga faturat tona, {1} nga faturat e tyre"],
+  ["Barcode % already belongs to another item", "Barkodi {0} i përket tashmë një artikulli tjetër"],
 ]

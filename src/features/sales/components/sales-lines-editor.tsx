@@ -4,6 +4,7 @@ import { useFieldArray, useWatch, type UseFormReturn } from 'react-hook-form'
 import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
 import { EmptyState } from '@/components/empty-state'
+import { PackQty, packsFromPieces, type PackChange } from '@/components/pack-qty'
 import { SearchSelect } from '@/components/search-select'
 import { Button } from '@/components/ui/button'
 import { FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
@@ -17,6 +18,7 @@ import { fetchPrice, useSellableVariants } from '../api'
 import type { SalesDocValues } from '../schemas'
 import { t, td } from '@/i18n'
 import { describeError } from '@/lib/errors'
+import { packForScan, usePacks } from '@/lib/packs'
 
 export interface LineProgress { ordered?: number; delivered?: number; invoiced?: number; reserved?: number }
 
@@ -40,6 +42,7 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
   const { companyId } = useCompany()
   const variants = useSellableVariants()
   const taxes = useTaxCodes()
+  const packs = usePacks()
   const lines = useFieldArray({ control: form.control, name: 'lines' })
   const watched = useWatch({ control: form.control, name: 'lines' })
   const [partnerId, priceListId, docDate, cur] = useWatch({ control: form.control, name: ['partner_id', 'price_list_id', 'doc_date', 'currency_code'] })
@@ -81,7 +84,12 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
     return { gross: acc.gross + a.gross, sub: acc.sub + a.sub, tax: acc.tax + a.tax, total: acc.total + a.total }
   }, { gross: 0, sub: 0, tax: 0, total: 0 })
 
-  const addLine = () => lines.append({ key: newLineKey(), variant_id: null, description: '', quantity: 1, unit_price: 0, discount_pct: 0, tax_code_id: taxes.data?.find((t) => t.scope !== 'purchase' && num(t.rate) > 0)?.id ?? null, price_source: 'auto', sales_order_line_id: null })
+  const setPack = (i: number, v: PackChange) => {
+    form.setValue(`lines.${i}.pack_id`, v.pack_id, { shouldDirty: true })
+    form.setValue(`lines.${i}.pack_qty`, v.pack_qty, { shouldDirty: true })
+    if (v.quantity) form.setValue(`lines.${i}.quantity`, v.quantity, { shouldDirty: true, shouldValidate: true })
+  }
+  const addLine = () => lines.append({ key: newLineKey(), variant_id: null, description: '', quantity: 1, unit_price: 0, discount_pct: 0, tax_code_id: taxes.data?.find((t) => t.scope !== 'purchase' && num(t.rate) > 0)?.id ?? null, price_source: 'auto', sales_order_line_id: null, pack_id: null, pack_qty: null })
 
   const discount = totals.gross - totals.sub
   const variantLabel = (id?: string | null) => variants.data?.find((v) => v.id === id)
@@ -116,7 +124,8 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
                   <TableRow key={l.key ?? i} className="hover:bg-transparent">
                     <TableCell className="text-[13px] text-muted-foreground">{i + 1}</TableCell>
                     <TableCell><div className="font-medium">{v?.sku ?? l.description}</div>{v && <div className="text-xs text-muted-foreground">{l.description}</div>}</TableCell>
-                    <TableCell className="text-right tabular">{formatQty(l.quantity)} <span className="text-xs text-muted-foreground">{td(v?.uom_code)}</span></TableCell>
+                    <TableCell className="text-right tabular">{formatQty(l.quantity)} <span className="text-xs text-muted-foreground">{td(v?.uom_code)}</span>
+                      {l.pack_id && <PackQty editable={false} packs={l.variant_id ? packs.byVariant.get(l.variant_id) : undefined} packId={l.pack_id} packQty={l.pack_qty} quantity={l.quantity} line={i + 1} onChange={() => undefined} />}</TableCell>
                     <TableCell className="text-right tabular">{formatMoney(l.unit_price)}</TableCell>
                     <TableCell className="text-right tabular">{num(l.discount_pct) ? `${num(l.discount_pct)}%` : '—'}</TableCell>
                     <TableCell className="text-[13px]">{taxName(l.tax_code_id)}</TableCell>
@@ -136,7 +145,7 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
             <TableHeader><TableRow className="hover:bg-transparent">
               <TableHead className="w-8">#</TableHead>
               <TableHead>{t('Item')}</TableHead>
-              <TableHead className="w-24 text-right">{t('Qty')}</TableHead>
+              <TableHead className="w-32 text-right">{t('Qty')}</TableHead>
               <TableHead className="w-32 text-right">{t('Unit price')}</TableHead>
               <TableHead className="w-24 text-right">{t('Disc. %')}</TableHead>
               <TableHead className="w-36">{t('VAT')}</TableHead>
@@ -158,13 +167,15 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
                           <FormItem><FormControl>
                             <SearchSelect value={field.value} options={variantOptions} placeholder={t('Product, or leave empty for a free-text line')} clearable
                               searchPlaceholder={t('Code, name or scan')}
-                              onChange={(val) => { field.onChange(val); if (val) void applyPrice(i, val, num(l?.quantity) || 1, true) }}
+                              onChange={(val) => { field.onChange(val); setPack(i, { pack_id: null, pack_qty: null }); if (val) void applyPrice(i, val, num(l?.quantity) || 1, true) }}
                               onUnmatchedEnter={async (code) => {
                                 const { data } = await supabase.rpc('find_variant_by_code', { p_company: companyId, p_code: code })
                                 const hit = data?.[0]
                                 if (!hit?.variant_id) return void toast.error(t('No product with barcode or code “{code}”', { code }))
                                 field.onChange(hit.variant_id)
                                 form.setValue(`lines.${i}.quantity`, num(hit.units_per_scan) || 1)
+                                const k = packForScan(packs.byVariant.get(hit.variant_id), num(hit.units_per_scan))
+                                setPack(i, k ? { pack_id: k.id, pack_qty: 1 } : { pack_id: null, pack_qty: null })
                                 void applyPrice(i, hit.variant_id, num(hit.units_per_scan) || 1, true)
                               }} />
                           </FormControl></FormItem>
@@ -177,8 +188,11 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
                     <TableCell>
                       <FormField control={form.control} name={`lines.${i}.quantity`} render={({ field }) => (
                         <FormItem><FormControl><Input type="number" step="any" min="0" className={cn('h-9 min-w-[80px] text-right', short && 'border-warning')} aria-label={t('Quantity, line {n}', { n: i + 1 })}
-                          {...field} onBlur={() => { field.onBlur(); if (l?.variant_id && l.price_source === 'auto') void applyPrice(i, l.variant_id, num(field.value) || 1, false) }} /></FormControl><FormMessage /></FormItem>
+                          {...field} onChange={(e) => { field.onChange(e); if (l?.pack_id) form.setValue(`lines.${i}.pack_qty`, packsFromPieces(packs.byId.get(l.pack_id), e.target.value)) }}
+                          onBlur={() => { field.onBlur(); if (l?.variant_id && l.price_source === 'auto') void applyPrice(i, l.variant_id, num(field.value) || 1, false) }} /></FormControl><FormMessage /></FormItem>
                       )} />
+                      <PackQty packs={l?.variant_id ? packs.byVariant.get(l.variant_id) : undefined} packId={l?.pack_id} packQty={l?.pack_qty} quantity={l?.quantity}
+                        uom={v?.uom_code} line={i + 1} onChange={(c) => { setPack(i, c); if (c.quantity && l?.variant_id && l.price_source === 'auto') void applyPrice(i, l.variant_id, c.quantity, false) }} />
                       {short && <p className="mt-1 text-right text-2xs text-warning">{t('only {qty} free', { qty: formatQty(v.available) })}</p>}
                     </TableCell>
                     <TableCell>

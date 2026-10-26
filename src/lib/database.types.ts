@@ -6963,6 +6963,57 @@ export type Database = {
           { foreignKeyName: "product_images_created_by_fkey"; columns: ["created_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
         ]
       }
+      product_packs: {
+        Row: {
+          id: string
+          company_id: string
+          product_id: string
+          name: string
+          factor: number
+          barcode: string | null
+          is_default: boolean
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          product_id: string
+          name: string
+          factor: number
+          barcode?: string | null
+          is_default?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          product_id?: string
+          name?: string
+          factor?: number
+          barcode?: string | null
+          is_default?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "product_packs_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "product_packs_company_id_product_id_fkey"; columns: ["company_id", "product_id"]; isOneToOne: false; referencedRelation: "products"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
       product_variants: {
         Row: {
           id: string
@@ -7298,6 +7349,8 @@ export type Database = {
           created_by: string | null
           updated_at: string
           updated_by: string | null
+          pack_id: string | null
+          pack_qty: number | null
         }
         Insert: {
           id?: string
@@ -7323,6 +7376,8 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          pack_id?: string | null
+          pack_qty?: number | null
         }
         Update: {
           id?: string
@@ -7348,6 +7403,8 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          pack_id?: string | null
+          pack_qty?: number | null
         }
         Relationships: [
           { foreignKeyName: "purchase_order_lines_company_id_purchase_order_id_fkey"; columns: ["company_id", "purchase_order_id"]; isOneToOne: false; referencedRelation: "purchase_orders"; referencedColumns: ["company_id", "id"] },
@@ -7355,6 +7412,7 @@ export type Database = {
           { foreignKeyName: "purchase_order_lines_company_id_tax_code_id_fkey"; columns: ["company_id", "tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "purchase_order_lines_company_id_uom_id_fkey"; columns: ["company_id", "uom_id"]; isOneToOne: false; referencedRelation: "units_of_measure"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "purchase_order_lines_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "purchase_order_lines_pack_fkey"; columns: ["company_id", "pack_id"]; isOneToOne: false; referencedRelation: "product_packs"; referencedColumns: ["company_id", "id"] },
         ]
       }
       purchase_orders: {
@@ -8538,6 +8596,8 @@ export type Database = {
           created_by: string | null
           updated_at: string
           updated_by: string | null
+          pack_id: string | null
+          pack_qty: number | null
         }
         Insert: {
           id?: string
@@ -8563,6 +8623,8 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          pack_id?: string | null
+          pack_qty?: number | null
         }
         Update: {
           id?: string
@@ -8588,6 +8650,8 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          pack_id?: string | null
+          pack_qty?: number | null
         }
         Relationships: [
           { foreignKeyName: "sales_invoice_lines_company_id_account_id_fkey"; columns: ["company_id", "account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["company_id", "id"] },
@@ -8598,6 +8662,7 @@ export type Database = {
           { foreignKeyName: "sales_invoice_lines_company_id_tax_code_id_fkey"; columns: ["company_id", "tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "sales_invoice_lines_company_id_uom_id_fkey"; columns: ["company_id", "uom_id"]; isOneToOne: false; referencedRelation: "units_of_measure"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "sales_invoice_lines_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "sales_invoice_lines_pack_fkey"; columns: ["company_id", "pack_id"]; isOneToOne: false; referencedRelation: "product_packs"; referencedColumns: ["company_id", "id"] },
         ]
       }
       sales_invoices: {
@@ -8753,6 +8818,8 @@ export type Database = {
           created_by: string | null
           updated_at: string
           updated_by: string | null
+          pack_id: string | null
+          pack_qty: number | null
         }
         Insert: {
           id?: string
@@ -8778,6 +8845,8 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          pack_id?: string | null
+          pack_qty?: number | null
         }
         Update: {
           id?: string
@@ -8803,12 +8872,15 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          pack_id?: string | null
+          pack_qty?: number | null
         }
         Relationships: [
           { foreignKeyName: "sales_order_lines_company_id_sales_order_id_fkey"; columns: ["company_id", "sales_order_id"]; isOneToOne: false; referencedRelation: "sales_orders"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "sales_order_lines_company_id_tax_code_id_fkey"; columns: ["company_id", "tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "sales_order_lines_company_id_uom_id_fkey"; columns: ["company_id", "uom_id"]; isOneToOne: false; referencedRelation: "units_of_measure"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "sales_order_lines_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "sales_order_lines_pack_fkey"; columns: ["company_id", "pack_id"]; isOneToOne: false; referencedRelation: "product_packs"; referencedColumns: ["company_id", "id"] },
         ]
       }
       sales_orders: {
@@ -8951,6 +9023,8 @@ export type Database = {
           created_by: string | null
           updated_at: string
           updated_by: string | null
+          pack_id: string | null
+          pack_qty: number | null
         }
         Insert: {
           id?: string
@@ -8972,6 +9046,8 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          pack_id?: string | null
+          pack_qty?: number | null
         }
         Update: {
           id?: string
@@ -8993,12 +9069,15 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          pack_id?: string | null
+          pack_qty?: number | null
         }
         Relationships: [
           { foreignKeyName: "sales_quote_lines_company_id_quote_id_fkey"; columns: ["company_id", "quote_id"]; isOneToOne: false; referencedRelation: "sales_quotes"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "sales_quote_lines_company_id_tax_code_id_fkey"; columns: ["company_id", "tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "sales_quote_lines_company_id_uom_id_fkey"; columns: ["company_id", "uom_id"]; isOneToOne: false; referencedRelation: "units_of_measure"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "sales_quote_lines_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "sales_quote_lines_pack_fkey"; columns: ["company_id", "pack_id"]; isOneToOne: false; referencedRelation: "product_packs"; referencedColumns: ["company_id", "id"] },
         ]
       }
       sales_quotes: {
@@ -10495,6 +10574,8 @@ export type Database = {
           sales_price_new: number | null
           lot_number: string | null
           expiry_date: string | null
+          pack_id: string | null
+          pack_qty: number | null
         }
         Insert: {
           id?: string
@@ -10531,6 +10612,8 @@ export type Database = {
           sales_price_new?: number | null
           lot_number?: string | null
           expiry_date?: string | null
+          pack_id?: string | null
+          pack_qty?: number | null
         }
         Update: {
           id?: string
@@ -10567,6 +10650,8 @@ export type Database = {
           sales_price_new?: number | null
           lot_number?: string | null
           expiry_date?: string | null
+          pack_id?: string | null
+          pack_qty?: number | null
         }
         Relationships: [
           { foreignKeyName: "vendor_bill_lines_company_id_account_id_fkey"; columns: ["company_id", "account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["company_id", "id"] },
@@ -10577,6 +10662,7 @@ export type Database = {
           { foreignKeyName: "vendor_bill_lines_company_id_tax_code_id_fkey"; columns: ["company_id", "tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "vendor_bill_lines_company_id_uom_id_fkey"; columns: ["company_id", "uom_id"]; isOneToOne: false; referencedRelation: "units_of_measure"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "vendor_bill_lines_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "vendor_bill_lines_pack_fkey"; columns: ["company_id", "pack_id"]; isOneToOne: false; referencedRelation: "product_packs"; referencedColumns: ["company_id", "id"] },
         ]
       }
       vendor_bills: {
@@ -12921,6 +13007,29 @@ export type Database = {
         }
         Returns: Json
       }
+      label_items: {
+        Args: {
+          p_company: string
+          p_source: string
+          p_ids?: string[]
+          p_since?: string
+        }
+        Returns: Json
+      }
+      label_settings_save: {
+        Args: {
+          p_company: string
+          p_settings: Json
+        }
+        Returns: undefined
+      }
+      labels_assign_barcodes: {
+        Args: {
+          p_company: string
+          p_variants: string[]
+        }
+        Returns: number
+      }
       leave_balances: {
         Args: {
           p_company: string
@@ -13763,6 +13872,12 @@ export type Database = {
         Args: {
           p_company: string
           p_products: string[]
+        }
+        Returns: Json
+      }
+      product_packs_all: {
+        Args: {
+          p_company: string
         }
         Returns: Json
       }

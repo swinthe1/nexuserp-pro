@@ -1,7 +1,7 @@
 import { DocumentActions } from '@/components/document-actions'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
-  Ban, CheckCheck, ClipboardCheck, FileText, Mail, PackageCheck, Receipt, Send, ShieldAlert, Trash2, Undo2,
+  Ban, CheckCheck, ClipboardCheck, FileText, Mail, PackageCheck, Receipt, Send, ShieldAlert, Tag, Trash2, Undo2,
 } from 'lucide-react'
 import * as React from 'react'
 import { useForm, useWatch } from 'react-hook-form'
@@ -106,6 +106,7 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
       lines: [...doc.lines].sort((a, b) => a.line_no - b.line_no).map((l) => ({
         key: l.id, variant_id: l.variant_id, description: l.description, quantity: l.quantity, unit_price: l.unit_price, discount_pct: l.discount_pct,
         tax_code_id: l.tax_code_id, price_source: 'manual' as const, po_line_id: null, receipt_line_id: null, requisition_line_id: l.requisition_line_id,
+        pack_id: l.pack_id ?? null, pack_qty: l.pack_qty ?? null,
       })),
     } : {
       vendor_id: params.get('vendor') ?? (undefined as unknown as string), doc_date: todayISO(), second_date: '',
@@ -137,6 +138,7 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
     lines: v.lines.map((l, i) => ({
       line_no: i + 1, variant_id: l.variant_id ?? null, description: l.description, quantity: l.quantity, unit_price: l.unit_price,
       discount_pct: l.discount_pct, tax_code_id: l.tax_code_id ?? null, requisition_line_id: l.requisition_line_id ?? null,
+      pack_id: l.pack_id ?? null, pack_qty: l.pack_qty ?? null,
     })),
   })
   const go = (id: string) => navigate(`/procurement/orders/${id}`, { replace: true })
@@ -444,6 +446,7 @@ function BillForm({ doc }: { doc?: BillDoc }) {
       lines: [...doc.lines].sort((a, b) => a.line_no - b.line_no).map((l) => ({
         key: l.id, variant_id: l.variant_id, description: l.description, quantity: l.quantity, unit_price: l.unit_price, discount_pct: l.discount_pct,
         tax_code_id: l.tax_code_id, price_source: 'manual' as const, po_line_id: l.po_line_id, receipt_line_id: l.receipt_line_id, requisition_line_id: null,
+        pack_id: l.pack_id ?? null, pack_qty: l.pack_qty ?? null,
       })),
     } : {
       vendor_id: params.get('vendor') ?? (undefined as unknown as string), vendor_invoice_number: '', doc_date: todayISO(), second_date: '',
@@ -468,6 +471,7 @@ function BillForm({ doc }: { doc?: BillDoc }) {
     lines: v.lines.map((l, i) => ({
       line_no: i + 1, variant_id: l.variant_id ?? null, description: l.description, quantity: l.quantity, unit_price: l.unit_price,
       discount_pct: l.discount_pct, tax_code_id: l.tax_code_id ?? null, po_line_id: l.po_line_id ?? null, receipt_line_id: l.receipt_line_id ?? null,
+      pack_id: l.pack_id ?? null, pack_qty: l.pack_qty ?? null,
     })),
   })
   const go = (id: string) => navigate(`/procurement/bills/${id}`, { replace: true })
@@ -595,6 +599,9 @@ function BillForm({ doc }: { doc?: BillDoc }) {
                 onConfirm={async () => { await del.mutateAsync(doc.id); navigate('/procurement/bills') }} />
             )}
             {doc && editable && <Button variant="ghost" size="sm" onClick={() => setStatus.mutate({ id: doc.id, status: 'cancelled' })}><Ban /> {t('Cancel bill')}</Button>}
+            {doc && !isCredit && doc.status === 'posted' && doc.lines.some((l) => l.variant_id) && (
+              <Button variant="outline" size="sm" asChild><Link to={`/inventory/labels?bill=${doc.id}`}><Tag /> {t('Labels')}</Link></Button>
+            )}
             {editable && <Button variant="outline" onClick={() => void saveOnly()} loading={save.isPending}>{doc ? t('Save draft') : t('Create draft')}</Button>}
             {actions}
           </Can>}

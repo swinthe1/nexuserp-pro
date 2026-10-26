@@ -1,5 +1,5 @@
 /** A printed document as an A4 HTML page (printing goes through printHtml). */
-import { getLocale, t } from '@/i18n'
+import { getLocale, t, td } from '@/i18n'
 import { formatDate } from '@/lib/utils'
 import { METHOD, amountInWords, docTitle, isVoucher, partnerLabel, type PrintDoc, settingsOf, showPrices, textKey } from './model'
 
@@ -14,6 +14,7 @@ export function docCss(accent: string) {
 .top{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;padding-bottom:12px;border-bottom:2px solid ${accent}}
 .top.rev{flex-direction:row-reverse}.co{display:flex;gap:12px;align-items:flex-start}.co img{max-height:64px;max-width:170px;object-fit:contain}
 .co b{font-size:14px;display:block;margin-bottom:2px}.muted{color:#5b6170}.co div div{line-height:1.45}
+.pk{font-size:8.5px;color:#5b6170;white-space:nowrap}
 .title{text-align:right}.top.rev .title{text-align:left}.title h1{margin:0;font-size:20px;color:${accent};letter-spacing:.2px}.title .no{font-size:13px;font-weight:600;margin-top:2px}
 .boxes{display:grid;grid-template-columns:1.2fr 1fr;gap:14px;margin:14px 0}.box{border:1px solid #d9dce3;border-radius:6px;padding:9px 11px;line-height:1.5}
 .box .lbl{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:${accent};font-weight:600;margin-bottom:3px}.box b{font-size:12px}
@@ -108,7 +109,7 @@ export function renderDocHtml(d: PrintDoc): { body: string; css: string } {
     <th>${esc(t('Unit'))}</th><th class="r">${esc(t('Qty'))}</th>
     ${prices ? `<th class="r">${esc(vatCols ? t('Price') : t('Cost'))}</th>${disc ? `<th class="r">${esc(t('Disc.'))}</th>` : ''}${vatCols ? `<th class="r">${esc(t('VAT'))}</th>` : ''}<th class="r">${esc(vatCols ? t('Without VAT') : t('Value'))}</th>${vatCols ? `<th class="r">${esc(t('With VAT'))}</th>` : ''}` : ''}</tr>`
   const rows = d.lines.map((l, i) => `<tr><td class="c">${i + 1}</td>${codes ? `<td>${esc(l.code)}</td>` : ''}<td>${esc(l.description)}</td>${lots ? `<td>${esc(l.lot)}</td>` : ''}
-    <td>${esc(l.uom)}</td><td class="r">${esc(qf(l.qty))}</td>
+    <td>${esc(l.uom ? td(l.uom) : '')}</td><td class="r">${esc(qf(l.qty))}${l.pack ? `<div class="pk">${esc(l.pack)}</div>` : ''}</td>
     ${prices ? `<td class="r">${esc(nf(l.price, Math.max(dec, 2)))}</td>${disc ? `<td class="r">${esc(pf(l.discount))}</td>` : ''}${vatCols ? `<td class="r">${esc(pf(l.tax_rate) || '0%')}</td>` : ''}<td class="r">${esc(nf(l.net, dec))}</td>${vatCols ? `<td class="r">${esc(nf(l.total, dec))}</td>` : ''}` : ''}</tr>`).join('')
   const vat = prices && vatCols && d.vat.length ? `<table class="v"><thead><tr><th>${esc(t('VAT rate'))}</th><th>${esc(t('Base'))}</th><th>${esc(t('VAT'))}</th></tr></thead><tbody>
       ${d.vat.map((v) => `<tr><td>${esc(pf(v.rate) || '0%')}</td><td>${esc(nf(v.base, dec))}</td><td>${esc(nf(v.tax, dec))}</td></tr>`).join('')}</tbody></table>` : '<div></div>'

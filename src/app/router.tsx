@@ -91,6 +91,7 @@ const PurchaseInvoicePage = lazy(() => import('@/features/procurement/pages/purc
 const CardsPage = lazy(() => import('@/features/finance/pages/cards-page'), 'CardsPage')
 const CompensationsPage = lazy(() => import('@/features/finance/pages/compensations-page'), 'CompensationsPage')
 const ItemCardPage = lazy(() => import('@/features/inventory/pages/item-card-page'), 'ItemCardPage')
+const LabelsPage = lazy(() => import('@/features/inventory/pages/labels-page'), 'LabelsPage')
 const AgentPage = lazy(() => import('@/features/agent/agent-page'), 'AgentPage')
 const AgentsPage = lazy(() => import('@/features/agent/agents-page'), 'AgentsPage')
 const LoyaltyPage = lazy(() => import('@/features/loyalty/loyalty-page'), 'LoyaltyPage')
@@ -163,6 +164,7 @@ const router = createBrowserRouter([
         { path: 'stock', element: <StockPage /> },
         { path: 'movements', element: <MovementsPage /> },
         { path: 'item-card', element: <ItemCardPage /> },
+        { path: 'labels', element: <LabelsPage /> },
         { path: 'alerts', element: <AlertsPage /> },
         { path: 'prices', element: <PricesPage /> },
         { path: 'read-invoice', element: <ReadInvoicePage /> },

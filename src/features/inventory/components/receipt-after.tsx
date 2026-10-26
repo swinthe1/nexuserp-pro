@@ -1,6 +1,6 @@
 import { DocumentActions } from '@/components/document-actions'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FileText, Undo2 } from 'lucide-react'
+import { FileText, Tag, Undo2 } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -51,6 +51,7 @@ export function ReceiptAfterActions({ doc, nameOf }: { doc: Receipt; nameOf: (va
     <div className="mb-4 grid gap-3">
       <div className="flex flex-wrap gap-2">
         <DocumentActions id={doc.id} kind="goods_receipt" size="sm" />
+        {doc.lines.length > 0 && <Button size="sm" variant="outline" asChild><Link to={`/inventory/labels?receipt=${doc.id}`}><Tag /> {t('Labels')}</Link></Button>}
         {purchase && !doc.purchase_order_id && doc.vendor_id && can('invoicing.write') && (
           <Button size="sm" variant="outline" loading={bill.isPending} onClick={() => bill.mutate()}><FileText /> {t('Create the vendor bill')}</Button>
         )}
