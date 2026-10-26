@@ -24,6 +24,12 @@ export default {
   'Attendance, salaries, CRM and the VAT return': 'Prezenca, pagat, CRM dhe deklarata e TVSH-së',
   'This morning at the tills': 'Arkat këtë mëngjes',
 
+  // menyja sipas llojit të biznesit
+  '{n} of {total} pages shown': '{n} nga {total} faqe të shfaqura',
+  'Hidden': 'E fshehur',
+  'Click a page to hide it or bring it back. When the platform sets the type of business, the menu starts from what that business uses.':
+    'Klikoni një faqe për ta fshehur ose për ta rikthyer. Kur platforma cakton llojin e biznesit, menyja nis me atë që përdor ai biznes.',
+
   // serveri
   'Only a demo client is filled with sample data': 'Vetëm një klient demo mbushet me të dhëna shembull',
   'No such step': 'Ky hap nuk ekziston',

@@ -143,7 +143,7 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
 
   const sections = React.useMemo(() => NAV
     .filter((s) => ALWAYS_SHOWN.has(s.label) || !hidden.includes(s.label))
-    .map((s) => ({ ...s, items: s.items.filter((i) => can(i.perm) && pageAllowed(i.href)) }))
+    .map((s) => ({ ...s, items: s.items.filter((i) => can(i.perm) && pageAllowed(i.href) && !hidden.includes(i.href)) }))
     .filter((s) => s.items.length), [can, pageAllowed, hidden])
   const byHref = React.useMemo(() => new Map(sections.flatMap((s) => s.items).map((i) => [i.href, i])), [sections])
 

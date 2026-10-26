@@ -128,8 +128,9 @@ select t.login('zoe@platform.io');
 select public.platform_create_client(jsonb_build_object('name', 'Kafe Test', 'country', 'XK', 'owner_email', 'kafe@test.xk',
   'owner_password', 'sekret123', 'business_type', 'cafe')) as cafe \gset
 select t.ok((select business_type = 'cafe' from public.companies where id = :'cafe'), 'a new client gets its type of business');
-select t.ok((select 'Manufacturing' = any(hidden_menu_sections) and 'Sales & CRM' = any(hidden_menu_sections) and not 'Retail' = any(hidden_menu_sections)
-               from public.company_settings where company_id = :'cafe'), 'a café starts without manufacturing and sales pipeline, but with the till');
+select t.ok((select 'Manufacturing' = any(hidden_menu_sections) and '/crm/pipeline' = any(hidden_menu_sections) and not 'Retail' = any(hidden_menu_sections)
+               and not '/sales/promotions' = any(hidden_menu_sections) from public.company_settings where company_id = :'cafe'),
+  'a café starts without manufacturing and sales pipeline, but with the till and its promotions');
 select public.platform_set_business_type(:'cafe', 'wholesale');
 select t.ok((select 'Retail' = any(hidden_menu_sections) and not 'Sales & CRM' = any(hidden_menu_sections) from public.company_settings where company_id = :'cafe'),
   'changing the type changes the menu');

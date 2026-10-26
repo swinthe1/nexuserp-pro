@@ -8,7 +8,7 @@ set role authenticated;
 select t.login('alice@alba.al');
 select t.throws($q$select public.platform_create_demo_client('{"owner_email":"x@y.com","owner_password":"demo12345"}')$q$, 'platform administrator', 'only the platform makes demos');
 select t.login('zoe@platform.io');
-select (public.platform_create_demo_client('{"name":"Market Demo V","owner_email":"demo@market-test.com","owner_password":"demo12345"}') ->> 'company_id') as co \gset
+select (public.platform_create_demo_client('{"name":"Market Demo W","owner_email":"demo@market-test.com","owner_password":"demo12345"}') ->> 'company_id') as co \gset
 select t.ok((select base_currency from public.companies where id = :'co') = 'EUR' and (select country_code from public.companies where id = :'co') = 'XK', 'a Kosovo company in euro');
 select t.login('zoe@platform.io'); select public.platform_demo_fill(:'co', 2);
 select t.login('zoe@platform.io'); select public.platform_demo_fill(:'co', 3);
@@ -24,7 +24,14 @@ select t.ok(:'last', 'the last step says there is nothing left');
 select public.platform_create_client(jsonb_build_object('name', 'Real', 'country', 'XK', 'owner_email', 'alice@alba.al')) as real_co \gset
 select t.throws(format($q$select public.platform_demo_fill(%L, 2)$q$, :'real_co'), 'Only a demo client', 'a real client is not filled');
 
+-- what each type of business is given
+select public.platform_create_client(jsonb_build_object('name', 'Hotel Tipi', 'country', 'XK', 'owner_email', 'alice@alba.al', 'business_type', 'hotel')) as h_co \gset
+select public.platform_create_client(jsonb_build_object('name', 'Market Tipi', 'country', 'XK', 'owner_email', 'alice@alba.al', 'business_type', 'retail')) as r_co \gset
 reset role;
+select t.ok((select not ('Hotel' = any (hidden_menu_sections)) and '/sales/deliveries' = any (hidden_menu_sections) and 'Manufacturing' = any (hidden_menu_sections)
+               from public.company_settings where company_id = :'h_co'), 'a hotel gets the hotel, without deliveries or manufacturing');
+select t.ok((select 'Hotel' = any (hidden_menu_sections) and '/pos/waiters' = any (hidden_menu_sections) and not ('Retail' = any (hidden_menu_sections))
+               from public.company_settings where company_id = :'r_co'), 'a market gets the till, without the hotel or waiters');
 select t.ok((select count(*) from public.products where company_id = :'co' and is_sellable) = 66, 'the catalogue: 66 things on the shelves');
 select t.ok((select count(*) from public.product_barcodes where company_id = :'co') >= 50, 'packaged goods carry barcodes');
 select t.ok((select count(*) from public.purchase_orders where company_id = :'co' and status in ('received', 'closed')) >= 20, 'orders received from the suppliers');

@@ -7,6 +7,7 @@ import * as React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
 import { NAV } from '@/app/nav'
+import { useHiddenSections } from '@/components/layout/nav-prefs'
 import { useTheme } from '@/app/theme-provider'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandShortcut } from '@/components/ui/command'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
@@ -118,8 +119,10 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
     navigate(href)
   }
 
+  const hiddenMenu = useHiddenSections()
   const navItems = NAV.flatMap((s) => s.items.map((i) => ({ ...i, section: s.label })))
-    .filter((i, n, all) => all.findIndex((x) => x.href === i.href) === n &&  can(i.perm) && pageAllowed(i.href) && matches(query, i.label, t(i.label), i.section, t(i.section), ...(i.keywords ?? [])))
+    .filter((i, n, all) => all.findIndex((x) => x.href === i.href) === n &&  can(i.perm) && pageAllowed(i.href)
+      && (i.section === 'Overview' || i.section === 'Company' || !hiddenMenu.includes(i.section)) && !hiddenMenu.includes(i.href) && matches(query, i.label, t(i.label), i.section, t(i.section), ...(i.keywords ?? [])))
   const actions = mode === 'pages' ? [] : CREATE_ACTIONS.filter((a) => can(a.perm) && pageAllowed(a.href) && matches(query, a.label, t(a.label)))
   const navPages = navItems.length > 0 && (
     <CommandGroup heading={t('Go to')}>

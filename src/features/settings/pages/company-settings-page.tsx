@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { NAV } from '@/app/nav'
 import { formatDateWith, t, td } from '@/i18n'
-import { formatDate } from '@/lib/utils'
+import { cn, formatDate } from '@/lib/utils'
 import { type CompanyProfile, type CompanySettings, useCompanyProfile, useCompanySettings, useDirty, useLookups, useSaveCompanyProfile, useSaveCompanySettings } from '../api'
 import { Field, SaveBar, ToggleRow } from '../components/field'
 
@@ -303,26 +303,48 @@ function MenuForm() {
   const writable = can('admin.write')
   if (settings.isLoading) return <Skeleton className="h-64" />
   if (settings.error) return <ErrorState error={settings.error} onRetry={() => void settings.refetch()} />
+  // one list for both: a part of the menu by its name, a single page by its address
   const hidden = settings.data?.hidden_menu_sections ?? []
   const sections = NAV.filter((s) => s.label !== 'Overview' && s.label !== 'Company')
-  const setShown = (label: string, shown: boolean) => {
-    const next = shown ? hidden.filter((h) => h !== label) : [...hidden, label]
+  const toggle = (key: string, shown: boolean, name: string) => {
+    const next = shown ? hidden.filter((h) => h !== key) : [...hidden, key]
     void save.mutateAsync({ hidden_menu_sections: next }).then(() =>
-      toast.success(shown ? t('{part} is back in the menu', { part: t(label) }) : t('{part} is hidden from the menu', { part: t(label) })))
+      toast.success(shown ? t('{part} is back in the menu', { part: name }) : t('{part} is hidden from the menu', { part: name })))
   }
   return (
-    <Card className="max-w-2xl">
+    <Card className="max-w-3xl">
       <CardHeader>
         <CardTitle>{t('Parts of the menu')}</CardTitle>
         <CardDescription>{t('Switch off what this company does not use, for example Manufacturing in a shop. It disappears from everyone\'s menu; nothing is deleted and you can switch it back on at any time. Each person can also pin the pages they use most with the star.')}</CardDescription>
       </CardHeader>
       <CardContent className="divide-y">
-        {sections.map((s) => (
-          <ToggleRow key={s.label} title={t(s.label)}
-            description={s.items.slice(0, 4).map((i) => t(i.label)).join(', ') + (s.items.length > 4 ? '…' : '')}
-            control={<Switch checked={!hidden.includes(s.label)} disabled={!writable || save.isPending} aria-label={t(s.label)}
-              onCheckedChange={(on) => setShown(s.label, on)} />} />
-        ))}
+        {sections.map((s) => {
+          const on = !hidden.includes(s.label)
+          const pages = s.items.filter((i, n, all) => all.findIndex((x) => x.href === i.href) === n)
+          return (
+            <div key={s.label} className="py-1">
+              <ToggleRow title={t(s.label)}
+                description={on ? t('{n} of {total} pages shown', { n: pages.filter((i) => !hidden.includes(i.href)).length, total: pages.length }) : t('Hidden')}
+                control={<Switch checked={on} disabled={!writable || save.isPending} aria-label={t(s.label)} onCheckedChange={(v) => toggle(s.label, v, t(s.label))} />} />
+              {on && (
+                <div className="flex flex-wrap gap-1.5 pb-3">
+                  {pages.map((i) => {
+                    const shown = !hidden.includes(i.href)
+                    return (
+                      <button key={i.href} type="button" disabled={!writable || save.isPending} aria-pressed={shown}
+                        onClick={() => toggle(i.href, !shown, t(i.label))}
+                        className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-60',
+                          shown ? 'border-primary/30 bg-accent text-accent-foreground' : 'border-dashed text-muted-foreground line-through decoration-muted-foreground/50 hover:text-foreground')}>
+                        <i.icon className="size-3.5" />{t(i.label)}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )
+        })}
+        <p className="pt-3 text-xs text-muted-foreground">{t('Click a page to hide it or bring it back. When the platform sets the type of business, the menu starts from what that business uses.')}</p>
       </CardContent>
     </Card>
   )
