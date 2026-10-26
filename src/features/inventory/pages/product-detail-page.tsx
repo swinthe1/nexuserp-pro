@@ -36,6 +36,7 @@ import {
   useVariantMutations, useVendors, useWarehouses, type ProductDetail,
 } from '../api'
 import { MovementsTable } from '../components/movements-table'
+import { CostLayersCard } from '../components/cost-layers-card'
 import { PacksCard } from '../components/packs-card'
 import { ProductPhoto } from '../components/product-photo'
 import { VendorPicker } from '../components/pickers'
@@ -136,7 +137,10 @@ export function ProductDetailPage() {
               )}
             </CardContent>
           </Card>
-          <CostHistoryCard productId={p.id} variants={p.product_variants} />
+          <div className="grid content-start gap-4">
+            <CostHistoryCard productId={p.id} variants={p.product_variants} />
+            <CostLayersCard variantIds={p.product_variants.map((v) => v.id)} />
+          </div>
         </TabsContent>
 
         <TabsContent value="prices"><PriceHistoryCard productId={p.id} variants={p.product_variants} /></TabsContent>

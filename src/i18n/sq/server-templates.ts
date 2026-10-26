@@ -427,4 +427,6 @@ export const serverTemplates: [string, string][] = [
   ["Line %: the promotion gives % %%, not %", "Rreshti {0}: promocioni jep {1} %, jo {2}"],
   ["Night work · % h", "Punë nate · {0} orë"],
   ["Holiday work · % h", "Punë në festë/pushim · {0} orë"],
+  ["The room is already taken on those nights (%)", "Dhoma është e zënë për ato netë ({0})"],
+  ["The stay starts on %", "Qëndrimi fillon më {0}"],
 ]

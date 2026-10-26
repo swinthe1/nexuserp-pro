@@ -4,7 +4,7 @@ import {
   BadgePercent, ClipboardCheck, Hourglass, PackageOpen, ScanLine, ShoppingBasket,
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, BookOpenText, Building, HandCoins, ListTree, Network, Settings2, Wallet, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, Gauge,
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackagePlus, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
-  Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, type LucideIcon,
+  BedDouble, BookUser, CalendarRange, ConciergeBell, Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, type LucideIcon,
 } from 'lucide-react'
 import { msg } from '@/i18n'
 
@@ -94,6 +94,15 @@ export const NAV: NavSection[] = [
       { label: msg('Waiters'), href: '/pos/waiters', icon: UsersRound, perm: 'pos.read', keywords: ['kamarier', 'kamarierët', 'waiter', 'restaurant', 'tavolina', 'report'] },
       { label: msg('Safe|nav'), href: '/safe', icon: Vault, perm: 'pos.approve|finance.read', keywords: ['sefi', 'sef', 'kasaforta', 'cash', 'deposit', 'derdhje', 'para', 'count'] },
       { label: msg('Loyalty cards'), href: '/pos/loyalty', icon: BadgePercent, perm: 'pos.read', keywords: ['kartela', 'zbritje', 'loyalty', 'points', 'pikë', 'besnikëri', 'discount card'] },
+    ],
+  },
+  {
+    label: msg('Hotel'),
+    items: [
+      { label: msg('Front desk'), href: '/hotel', icon: ConciergeBell, perm: 'sales.read', keywords: ['recepsion', 'reception', 'hotel', 'arrivals', 'mbërritje', 'check-in', 'check-out'] },
+      { label: msg('Room calendar'), href: '/hotel/calendar', icon: CalendarRange, perm: 'sales.read', keywords: ['kalendar', 'dhoma', 'rooms', 'availability', 'zënie', 'planner'] },
+      { label: msg('Reservations'), href: '/hotel/reservations', icon: BookUser, perm: 'sales.read', keywords: ['rezervim', 'rezervime', 'booking', 'guest', 'mysafir', 'klient'] },
+      { label: msg('Rooms'), href: '/hotel/rooms', icon: BedDouble, perm: 'sales.read', keywords: ['dhoma', 'housekeeping', 'pastrim', 'room types', 'çmime'] },
     ],
   },
   {

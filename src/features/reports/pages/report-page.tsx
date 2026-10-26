@@ -2,6 +2,7 @@ import { ChevronRight, ExternalLink } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { useAuth } from '@/app/auth-provider'
 import { useCompany } from '@/app/company-provider'
 import { EmptyState } from '@/components/empty-state'
 import { ExportMenu } from '@/components/export-menu'
@@ -17,16 +18,18 @@ import { ErrorState } from '@/components/error-state'
 import { formatDateWith, msg, t, tn, tServer } from '@/i18n'
 import { cn, formatCompact, formatDate, formatMoney, formatQty, num, todayISO, currencyLabel } from '@/lib/utils'
 import { axisTick, iso, tooltipStyle } from '@/features/finance/pages/finance-overview-page'
-import { useReport, type ReportColumn, type ReportRow } from '../api'
+import { type ReportColumn, type ReportRow, type SavedReport, useReport, useSavedReports } from '../api'
+import { PivotTable, SaveReportButton } from '../components/pivot'
 import { DIM_LABEL, canRunReport, reportDef } from '../catalog'
 
 type Step = { dim: string; key: string; label: string }
-type Preset = 'this_month' | 'last_month' | 'this_quarter' | 'ytd' | 'last_year'
+const NO_PIVOT = '__none'
+export type Preset = 'this_month' | 'last_month' | 'this_quarter' | 'ytd' | 'last_year'
 const PRESETS: { value: Preset; label: string }[] = [
   { value: 'this_month', label: msg('This month') }, { value: 'last_month', label: msg('Last month') }, { value: 'this_quarter', label: msg('This quarter') },
   { value: 'ytd', label: msg('Year to date') }, { value: 'last_year', label: msg('Last year') },
 ]
-function presetRange(p: Preset): [string, string] {
+export function presetRange(p: Preset): [string, string] {
   const n = new Date()
   switch (p) {
     case 'this_month': return [iso(new Date(n.getFullYear(), n.getMonth(), 1)), todayISO()]
@@ -35,6 +38,19 @@ function presetRange(p: Preset): [string, string] {
     case 'ytd': return [iso(new Date(n.getFullYear(), 0, 1)), todayISO()]
     case 'last_year': return [iso(new Date(n.getFullYear() - 1, 0, 1)), iso(new Date(n.getFullYear() - 1, 11, 31))]
   }
+}
+/** the address of a saved report, its relative period worked out for today */
+export function savedHref(sr: SavedReport) {
+  const q = new URLSearchParams()
+  const p = sr.params
+  if (p.period && PRESETS.some((x) => x.value === p.period)) { const [f, to] = presetRange(p.period as Preset); q.set('from', f); q.set('to', to) }
+  else { if (p.from) q.set('from', p.from); if (p.to) q.set('to', p.to) }
+  if (p.group_by) q.set('group_by', p.group_by)
+  if (p.pivot_by) q.set('across', p.pivot_by)
+  if (p.measure) q.set('show', p.measure)
+  if (p.trail?.length) q.set('trail', JSON.stringify(p.trail))
+  q.set('saved', sr.id)
+  return `/reports/${sr.report}?${q.toString()}`
 }
 const monthLabel = (m: string) => /^\d{4}-\d{2}$/.test(m) ? formatDateWith(new Date(`${m}-01T00:00:00`), { month: 'short', year: 'numeric' }) : tServer(m)
 
@@ -49,6 +65,7 @@ export function ReportPage() {
   const { key = '' } = useParams()
   const def = reportDef(key)
   const { can, company } = useCompany()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const [ytdFrom, today] = presetRange('ytd')
@@ -57,7 +74,11 @@ export function ReportPage() {
   const trail: Step[] = React.useMemo(() => { try { return JSON.parse(params.get('trail') ?? '[]') as Step[] } catch { return [] } }, [params])
   const groupBy = params.get('group_by') ?? def?.start ?? 'month'
   const filters = React.useMemo(() => Object.fromEntries(trail.map((s) => [s.dim, s.key])), [trail])
-  const report = useReport(key, { from, to, group_by: groupBy, filters }, !!def && canRunReport(can, def))
+  const across = params.get('across') ?? ''
+  const pivotBy = across && across !== groupBy ? across : ''
+  const report = useReport(key, { from, to, group_by: groupBy, pivot_by: pivotBy || undefined, filters }, !!def && canRunReport(can, def))
+  const savedList = useSavedReports()
+  const saved = savedList.data?.find((r) => r.id === params.get('saved')) ?? null
 
   const set = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(params)
@@ -83,6 +104,13 @@ export function ReportPage() {
     set({ trail: JSON.stringify([...trail, step]), group_by: nextDim })
   }
   const measure = cols.find((c) => c.key === def.measure) ?? cols.find((c) => c.type === 'money')
+  const shown = cols.find((c) => c.key === params.get('show')) ?? measure ?? cols[0]
+  const preset = PRESETS.find((p) => { const [f, t2] = presetRange(p.value); return f === from && t2 === to })?.value
+  const saveParams: SavedReport['params'] = {
+    ...(def.asOf ? (params.get('to') ? { to } : { period: 'ytd' }) : preset ? { period: preset } : { from, to }),
+    group_by: groupBy, ...(pivotBy ? { pivot_by: pivotBy, measure: shown?.key } : {}), ...(trail.length ? { trail } : {}),
+  }
+  const colLabel = (k: string | null, l: string | null) => pivotBy === 'month' ? monthLabel(String(l ?? k ?? '')) : l === null ? '—' : tServer(String(l))
   const periodText = def.asOf ? t('As of {date}', { date: formatDate(to) }) : `${formatDate(from)} – ${formatDate(to)}`
   const filterText = trail.map((s) => `${t(DIM_LABEL[s.dim] ?? s.dim)}: ${s.label}`).join(' · ')
   const dimLabel = t(DIM_LABEL[groupBy] ?? groupBy)
@@ -98,10 +126,10 @@ export function ReportPage() {
     <>
       <PageHeader
         back={{ href: '/reports', label: t('Reports') }}
-        title={t(def.title)}
-        description={t(def.question)}
-        actions={<ExportMenu rows={rows} columns={exportCols} filename={`${def.key}-${groupBy}-${to}`} title={t(def.title)}
-          subtitle={[company?.name, periodText, filterText].filter(Boolean).join(' · ')} xlsx={{ totals }} />}
+        title={saved ? saved.name : t(def.title)}
+        description={saved ? t(def.title) : t(def.question)}
+        actions={<div className="flex items-center gap-2"><SaveReportButton report={def.key} params={saveParams} current={saved && saved.owner_id === user?.id ? saved : null} />{!pivotBy && <ExportMenu rows={rows} columns={exportCols} filename={`${def.key}-${groupBy}-${to}`} title={t(def.title)}
+          subtitle={[company?.name, periodText, filterText].filter(Boolean).join(' · ')} xlsx={{ totals }} />}</div>}
       />
       <Card className="mb-4">
         <CardContent className="flex flex-wrap items-end gap-3 p-3">
@@ -126,6 +154,25 @@ export function ReportPage() {
               <SelectContent>{dims.map((d) => <SelectItem key={d} value={d}>{t(DIM_LABEL[d] ?? d)}</SelectItem>)}</SelectContent>
             </Select>
           </div>
+          <div className="grid gap-1">
+            <Label className="text-xs">{t('Across')}</Label>
+            <Select value={pivotBy || NO_PIVOT} onValueChange={(v) => set({ across: v === NO_PIVOT ? null : v })}>
+              <SelectTrigger className="h-8 w-[170px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_PIVOT}>{t('Nothing (a list)')}</SelectItem>
+                {dims.filter((d) => d !== groupBy && d !== 'document').map((d) => <SelectItem key={d} value={d}>{t(DIM_LABEL[d] ?? d)}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          {pivotBy && shown && (
+            <div className="grid gap-1">
+              <Label className="text-xs">{t('Show')}</Label>
+              <Select value={shown.key} onValueChange={(v) => set({ show: v })}>
+                <SelectTrigger className="h-8 w-[170px]"><SelectValue /></SelectTrigger>
+                <SelectContent>{cols.map((c) => <SelectItem key={c.key} value={c.key}>{tServer(c.label)}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -145,7 +192,11 @@ export function ReportPage() {
 
       {report.isError ? <Card><ErrorState error={report.error} title={t('The report could not run')} onRetry={() => void report.refetch()} /></Card>
         : report.isLoading || !data ? <Skeleton className="h-[420px]" />
-        : !rows.length ? <Card><EmptyState title={t('Nothing in this period')} description={t('Try a longer period, or go back a step in the path above.')} /></Card> : (
+        : !rows.length ? <Card><EmptyState title={t('Nothing in this period')} description={t('Try a longer period, or go back a step in the path above.')} /></Card>
+        : pivotBy && data.pivot && shown ? (
+          <PivotTable data={data} measure={shown} rowLabel={rowLabel} colLabel={colLabel} rowHeader={dimLabel} colHeader={t(DIM_LABEL[pivotBy] ?? pivotBy)}
+            exportName={`${def.key}-${groupBy}-${pivotBy}-${to}`} title={saved?.name ?? t(def.title)} subtitle={[company?.name, periodText, filterText].filter(Boolean).join(' · ')} />
+        ) : (
         <>
           {measure && rows.length > 1 && <ReportChart rows={rows} measure={measure} vertical={groupBy !== 'month' && groupBy !== 'age' && groupBy !== 'bucket'} label={rowLabel} onPick={drill} />}
           <Card className={cn(report.isFetching && 'opacity-70 transition-opacity')}>

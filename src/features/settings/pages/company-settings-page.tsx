@@ -1,4 +1,5 @@
 import { PrintSettingsCard } from '../components/print-settings'
+import { CostingMethodField } from '../components/costing-method'
 import { Fingerprint, TriangleAlert } from 'lucide-react'
 import * as React from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -201,8 +202,9 @@ function RulesForm() {
               <Field label={t('Allowed price difference on bills, %')} htmlFor="st-match_price_tolerance_pct" hint={t('Compared with the order and the goods received.')}><Input {...numberInput('match_price_tolerance_pct')} /></Field>
             </div>
             <Separator />
-            <div className="grid gap-4 py-3 sm:grid-cols-3">
-              <Field label={t('Costing method')} hint={t('Fixed: every stock movement updates the average cost.')}><Input value={t('Weighted average')} disabled /></Field>
+            <div className="py-3"><CostingMethodField value={settings.data?.costing_method ?? 'weighted_average'} /></div>
+            <Separator />
+            <div className="grid gap-4 py-3 sm:grid-cols-2">
               <Field label={t('Decimals for amounts')} htmlFor="st-amount_decimals"><Input {...numberInput('amount_decimals', '1')} max={4} /></Field>
               <Field label={t('Decimals for quantities')} htmlFor="st-quantity_decimals"><Input {...numberInput('quantity_decimals', '1')} max={6} /></Field>
             </div>

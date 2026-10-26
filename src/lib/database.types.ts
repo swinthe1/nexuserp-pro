@@ -1968,6 +1968,54 @@ export type Database = {
           { foreignKeyName: "cost_centers_company_id_parent_id_fkey"; columns: ["company_id", "parent_id"]; isOneToOne: false; referencedRelation: "cost_centers"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      cost_layers: {
+        Row: {
+          id: string
+          company_id: string
+          variant_id: string
+          movement_id: string | null
+          layer_at: string
+          qty_in: number
+          qty_left: number
+          unit_cost: number
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          variant_id: string
+          movement_id?: string | null
+          layer_at?: string
+          qty_in: number
+          qty_left: number
+          unit_cost: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          variant_id?: string
+          movement_id?: string | null
+          layer_at?: string
+          qty_in?: number
+          qty_left?: number
+          unit_cost?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "cost_layers_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "cost_layers_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
       crm_pipeline_stages: {
         Row: {
           id: string
@@ -3847,6 +3895,255 @@ export type Database = {
         Relationships: [
           { foreignKeyName: "history_payments_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
           { foreignKeyName: "history_payments_company_id_partner_id_fkey"; columns: ["company_id", "partner_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      hotel_charges: {
+        Row: {
+          id: string
+          company_id: string
+          reservation_id: string
+          charge_date: string
+          description: string
+          variant_id: string | null
+          quantity: number
+          unit_price: number
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          reservation_id: string
+          charge_date?: string
+          description: string
+          variant_id?: string | null
+          quantity?: number
+          unit_price: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          reservation_id?: string
+          charge_date?: string
+          description?: string
+          variant_id?: string | null
+          quantity?: number
+          unit_price?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "hotel_charges_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "hotel_charges_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "hotel_charges_reservation_id_fkey"; columns: ["reservation_id"]; isOneToOne: false; referencedRelation: "hotel_reservations"; referencedColumns: ["id"] },
+        ]
+      }
+      hotel_reservations: {
+        Row: {
+          id: string
+          company_id: string
+          number: string | null
+          status: string
+          room_id: string
+          partner_id: string | null
+          guest_name: string
+          guest_phone: string | null
+          guest_email: string | null
+          guest_document: string | null
+          adults: number
+          children: number
+          check_in: string
+          check_out: string
+          rate: number
+          source: string
+          notes: string | null
+          checked_in_at: string | null
+          checked_out_at: string | null
+          invoice_id: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          number?: string | null
+          status?: string
+          room_id: string
+          partner_id?: string | null
+          guest_name: string
+          guest_phone?: string | null
+          guest_email?: string | null
+          guest_document?: string | null
+          adults?: number
+          children?: number
+          check_in: string
+          check_out: string
+          rate: number
+          source?: string
+          notes?: string | null
+          checked_in_at?: string | null
+          checked_out_at?: string | null
+          invoice_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          number?: string | null
+          status?: string
+          room_id?: string
+          partner_id?: string | null
+          guest_name?: string
+          guest_phone?: string | null
+          guest_email?: string | null
+          guest_document?: string | null
+          adults?: number
+          children?: number
+          check_in?: string
+          check_out?: string
+          rate?: number
+          source?: string
+          notes?: string | null
+          checked_in_at?: string | null
+          checked_out_at?: string | null
+          invoice_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "hotel_reservations_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "hotel_reservations_company_id_partner_id_fkey"; columns: ["company_id", "partner_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "hotel_reservations_company_id_room_id_fkey"; columns: ["company_id", "room_id"]; isOneToOne: false; referencedRelation: "hotel_rooms"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      hotel_room_types: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          capacity: number
+          rate: number
+          variant_id: string | null
+          sort: number
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          tax_code_id: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          capacity?: number
+          rate?: number
+          variant_id?: string | null
+          sort?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          tax_code_id?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string
+          capacity?: number
+          rate?: number
+          variant_id?: string | null
+          sort?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          tax_code_id?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "hotel_room_types_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "hotel_room_types_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "hotel_room_types_tax_code_id_fkey"; columns: ["tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["id"] },
+        ]
+      }
+      hotel_rooms: {
+        Row: {
+          id: string
+          company_id: string
+          number: string
+          room_type_id: string
+          floor: string | null
+          housekeeping: string
+          notes: string | null
+          is_active: boolean
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          number: string
+          room_type_id: string
+          floor?: string | null
+          housekeeping?: string
+          notes?: string | null
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          number?: string
+          room_type_id?: string
+          floor?: string | null
+          housekeeping?: string
+          notes?: string | null
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "hotel_rooms_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "hotel_rooms_company_id_room_type_id_fkey"; columns: ["company_id", "room_type_id"]; isOneToOne: false; referencedRelation: "hotel_room_types"; referencedColumns: ["company_id", "id"] },
         ]
       }
       import_templates: {
@@ -9551,6 +9848,51 @@ export type Database = {
           { foreignKeyName: "sales_quotes_salesperson_profile_fkey"; columns: ["salesperson_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
         ]
       }
+      saved_reports: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          report: string
+          params: Json
+          owner_id: string
+          is_shared: boolean
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          report: string
+          params?: Json
+          owner_id?: string
+          is_shared?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string
+          report?: string
+          params?: Json
+          owner_id?: string
+          is_shared?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "saved_reports_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "saved_reports_owner_id_fkey"; columns: ["owner_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
       shipment_events: {
         Row: {
           id: string
@@ -13038,6 +13380,19 @@ export type Database = {
         }
         Returns: string
       }
+      cost_layers_of: {
+        Args: {
+          p_variant: string
+        }
+        Returns: Json
+      }
+      costing_method_set: {
+        Args: {
+          p_company: string
+          p_method: string
+        }
+        Returns: Json
+      }
       count_item: {
         Args: {
           p_count: string
@@ -13503,6 +13858,33 @@ export type Database = {
           p_company: string
           p_from: string
           p_to: string
+        }
+        Returns: Json
+      }
+      hotel_calendar: {
+        Args: {
+          p_company: string
+          p_from: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      hotel_check_in: {
+        Args: {
+          p_id: string
+        }
+        Returns: undefined
+      }
+      hotel_check_out: {
+        Args: {
+          p_id: string
+        }
+        Returns: string
+      }
+      hotel_today: {
+        Args: {
+          p_company: string
+          p_date?: string
         }
         Returns: Json
       }

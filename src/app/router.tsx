@@ -48,6 +48,10 @@ const DeliveryPage = lazy(() => import('@/features/sales/pages/delivery-page'), 
 const PriceListsPage = lazy(() => import('@/features/sales/pages/price-lists-page'), 'PriceListsPage')
 const PriceListPage = lazy(() => import('@/features/sales/pages/price-lists-page'), 'PriceListPage')
 const PromotionsPage = lazy(() => import('@/features/sales/pages/promotions-page'), 'PromotionsPage')
+const FrontDeskPage = lazy(() => import('@/features/hotel/pages/front-desk-page'), 'FrontDeskPage')
+const HotelCalendarPage = lazy(() => import('@/features/hotel/pages/calendar-page'), 'HotelCalendarPage')
+const ReservationsPage = lazy(() => import('@/features/hotel/pages/reservations-page'), 'ReservationsPage')
+const HotelRoomsPage = lazy(() => import('@/features/hotel/pages/rooms-page'), 'HotelRoomsPage')
 const PartnersPage = lazy(() => import('@/features/sales/pages/partners-page'), 'PartnersPage')
 const PartnerPage = lazy(() => import('@/features/sales/pages/partners-page'), 'PartnerPage')
 const ProcurementOverviewPage = lazy(() => import('@/features/procurement/pages/procurement-overview-page'), 'ProcurementOverviewPage')
@@ -273,6 +277,12 @@ const router = createBrowserRouter([
       ] },
       { path: 'safe', element: <RequirePerm perm="pos.approve|finance.read" />, children: [{ index: true, element: <SafePage /> }] },
       { path: 'history', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <HistoryPage /> }] },
+      { path: 'hotel', element: <RequirePerm perm="sales.read" />, children: [
+        { index: true, element: <FrontDeskPage /> },
+        { path: 'calendar', element: <HotelCalendarPage /> },
+        { path: 'reservations', element: <ReservationsPage /> },
+        { path: 'rooms', element: <HotelRoomsPage /> },
+      ] },
       { path: 'pos', element: <RequirePerm perm="pos.read" />, children: [
         { index: true, element: <PosHomePage /> },
         { path: 'sessions/:id', element: <PosSessionPage /> },

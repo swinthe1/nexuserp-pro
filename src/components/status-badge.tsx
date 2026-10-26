@@ -22,6 +22,11 @@ const TONE: Record<string, BadgeProps['variant']> = {
   closed: 'secondary',
   not_required: 'secondary',
   cancelled: 'destructive',
+  // hotel
+  booked: 'default',
+  checked_in: 'success',
+  checked_out: 'secondary',
+  no_show: 'destructive',
   rejected: 'destructive',
   reversed: 'destructive',
   // CRM & sales
