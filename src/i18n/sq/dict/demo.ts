@@ -30,7 +30,18 @@ export default {
   'Click a page to hide it or bring it back. When the platform sets the type of business, the menu starts from what that business uses.':
     'Klikoni një faqe për ta fshehur ose për ta rikthyer. Kur platforma cakton llojin e biznesit, menyja nis me atë që përdor ai biznes.',
 
+  // programi për Mac
+  'DrisPRO for Mac': 'DrisPRO për Mac',
+  'DrisPRO for Mac {version}. These choices are kept on this computer only.': 'DrisPRO për Mac {version}. Këto zgjedhje ruhen vetëm në këtë kompjuter.',
+  'Start DrisPRO when the Mac starts': 'Hap DrisPRO kur ndizet Mac-u',
+  'For tills and kitchen screens. Ctrl+Cmd+F switches it any time.': 'Për arkat dhe ekranet e kuzhinës. Ctrl+Cmd+F e ndërron në çdo kohë.',
+  'Drag DrisPRO into Applications. The first time, the Mac asks to confirm: System Settings › Privacy & Security › Open Anyway.':
+    'Tërhiqeni DrisPRO te Applications. Herën e parë Mac-u kërkon konfirmim: System Settings › Privacy & Security › Open Anyway.',
+  'The Windows and Mac programs': 'Programet për Windows dhe Mac',
+  'Mac: version {v} ({date}).': 'Mac: versioni {v} ({date}).',
+
   // serveri
   'Only a demo client is filled with sample data': 'Vetëm një klient demo mbushet me të dhëna shembull',
   'No such step': 'Ky hap nuk ekziston',
+  'This is not the installer for that system': 'Ky nuk është instaluesi për atë sistem',
 } satisfies Dict

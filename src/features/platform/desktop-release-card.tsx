@@ -14,7 +14,7 @@ import { formatDate } from '@/lib/utils'
 /** under the storage limit of one file (50 MB) */
 const PART = 45 * 1024 * 1024
 
-type Row = { version: string; file_name: string; size_bytes: number; published_at: string }
+type Row = { platform?: string; version: string; file_name: string; size_bytes: number; published_at: string }
 
 /** The platform owner puts a new Windows installer here; the sign-in page offers the newest one to everyone. */
 export function DesktopReleaseCard() {
@@ -58,16 +58,18 @@ export function DesktopReleaseCard() {
     } catch (e) { toast.error(describeError(e)) } finally { setStep(null) }
   }
 
-  const latest = list.data?.[0]
+  const latest = list.data?.find((r) => (r.platform ?? 'windows') === 'windows')
+  const latestMac = list.data?.find((r) => r.platform === 'mac')
   return (
     <div className="mt-6 rounded-lg border bg-card p-4">
       <div className="flex items-start gap-3">
         <MonitorDown className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">{t('The Windows program')}</p>
+          <p className="text-sm font-medium">{t('The Windows and Mac programs')}</p>
           <p className="mt-0.5 text-[13px] text-muted-foreground">
             {latest ? t('The sign-in page offers version {v} ({date}).', { v: latest.version, date: formatDate(latest.published_at) })
               : t('Not on the sign-in page yet.')}{' '}
+            {latestMac && <>{t('Mac: version {v} ({date}).', { v: latestMac.version, date: formatDate(latestMac.published_at) })}{' '}</>}
             {auto.data ? t('Each new version comes here by itself as soon as it is built.') : t('Turn on publishing by itself once, and every new version comes here without you doing anything.')}
           </p>
         </div>

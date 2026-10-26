@@ -19,12 +19,13 @@ export function DesktopSettingsDialog({ open, onOpenChange }: { open: boolean; o
   const [s, setS] = React.useState<DesktopSettings | null>(null)
   const [printers, setPrinters] = React.useState<{ name: string; isDefault: boolean }[]>([])
   const [version, setVersion] = React.useState('')
+  const [mac, setMac] = React.useState(false)
   const [server, setServer] = React.useState('')
   React.useEffect(() => {
     if (!open || !desktop) return
     void desktop.settings().then((x) => { setS(x); setServer(x.server) })
     void desktop.printers().then(setPrinters)
-    void desktop.info().then((i) => setVersion(i.version))
+    void desktop.info().then((i) => { setVersion(i.version); setMac(i.platform === 'darwin') })
   }, [open])
   if (!desktop) return null
   const set = (patch: Partial<DesktopSettings>) => setS((x) => (x ? { ...x, ...patch } : x))
@@ -53,7 +54,7 @@ export function DesktopSettingsDialog({ open, onOpenChange }: { open: boolean; o
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{t('This computer')}</DialogTitle>
-          <DialogDescription>{t('DrisPRO for Windows {version}. These choices are kept on this computer only.', { version })}</DialogDescription>
+          <DialogDescription>{mac ? t('DrisPRO for Mac {version}. These choices are kept on this computer only.', { version }) : t('DrisPRO for Windows {version}. These choices are kept on this computer only.', { version })}</DialogDescription>
         </DialogHeader>
         {!s ? <div className="h-60" /> : (
           <div className="grid max-h-[65dvh] gap-4 overflow-y-auto pr-1">
@@ -84,10 +85,10 @@ export function DesktopSettingsDialog({ open, onOpenChange }: { open: boolean; o
                 </div>
               )}
             </div>
-            <label className="flex items-center justify-between gap-3 text-[13px]"><span className="font-medium">{t('Start DrisPRO with Windows')}</span>
+            <label className="flex items-center justify-between gap-3 text-[13px]"><span className="font-medium">{mac ? t('Start DrisPRO when the Mac starts') : t('Start DrisPRO with Windows')}</span>
               <Switch checked={s.autoStart} onCheckedChange={(v) => set({ autoStart: v })} /></label>
             <label className="flex items-center justify-between gap-3 text-[13px]"><span><span className="font-medium">{t('Full screen')}</span>
-              <span className="block text-xs text-muted-foreground">{t('For tills and kitchen screens. F11 switches it any time.')}</span></span>
+              <span className="block text-xs text-muted-foreground">{mac ? t('For tills and kitchen screens. Ctrl+Cmd+F switches it any time.') : t('For tills and kitchen screens. F11 switches it any time.')}</span></span>
               <Switch checked={s.fullScreen} onCheckedChange={(v) => set({ fullScreen: v })} /></label>
             {s.licence && (
               <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3 text-[13px]">

@@ -8,7 +8,7 @@ set role authenticated;
 select t.login('alice@alba.al');
 select t.throws($q$select public.platform_create_demo_client('{"owner_email":"x@y.com","owner_password":"demo12345"}')$q$, 'platform administrator', 'only the platform makes demos');
 select t.login('zoe@platform.io');
-select (public.platform_create_demo_client('{"name":"Market Demo W","owner_email":"demo@market-test.com","owner_password":"demo12345"}') ->> 'company_id') as co \gset
+select (public.platform_create_demo_client('{"name":"Market Demo X","owner_email":"demo@market-test.com","owner_password":"demo12345"}') ->> 'company_id') as co \gset
 select t.ok((select base_currency from public.companies where id = :'co') = 'EUR' and (select country_code from public.companies where id = :'co') = 'XK', 'a Kosovo company in euro');
 select t.login('zoe@platform.io'); select public.platform_demo_fill(:'co', 2);
 select t.login('zoe@platform.io'); select public.platform_demo_fill(:'co', 3);
@@ -51,6 +51,14 @@ select t.ok((select sum(jl.debit) = sum(jl.credit) from public.journal_lines jl 
               where jl.company_id = :'co' and e.status in ('posted', 'reversed')), 'the books balance');
 select t.ok((select sum(jl.debit - jl.credit) from public.journal_lines jl join public.journal_entries e on e.id = jl.entry_id
               where jl.company_id = :'co' and e.status in ('posted', 'reversed') and jl.account_id = app.demo_acc(:'co', '701')) < 0, 'sales are booked');
+
+-- the Mac program next to the Windows one
+insert into app.desktop_releases (platform, version, file_name, size_bytes, parts, sha256) values
+  ('windows', '9.0.0', 'DrisPRO-Setup-9.0.0.exe', 10, 1, repeat('a', 64)), ('mac', '9.0.1', 'DrisPRO-9.0.1.dmg', 10, 1, repeat('b', 64));
+select t.ok(public.desktop_release() ->> 'file_name' = 'DrisPRO-Setup-9.0.0.exe' and public.desktop_release('mac') ->> 'path' = 'mac/9.0.1/DrisPRO-9.0.1.dmg',
+  'each system gets its own program');
+select t.ok(not app.desktop_file_ok('mac', 'DrisPRO-Setup.exe') and app.desktop_file_ok('mac-update', 'DrisPRO-1.0.0-mac.zip'), 'a Mac release is a .dmg or a .zip');
+delete from app.desktop_releases where version in ('9.0.0', '9.0.1');
 
 \set QUIET off
 select count(*) as assertions_passed from t.results;

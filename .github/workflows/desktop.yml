@@ -1,7 +1,7 @@
-# The Windows program: built on every change of desktop/ and published to the DrisPRO cloud,
+# The Windows and Mac programs: built on every change of desktop/ and published to the DrisPRO cloud,
 # so the sign-in page always offers the newest one. Needs the repository secret DRISPRO_PUBLISH_KEY
 # (Platform page → The Windows program → Publish by itself).
-name: Windows program
+name: Desktop programs
 on:
   push:
     branches: [main]
@@ -28,3 +28,26 @@ jobs:
           name: DrisPRO-Setup
           path: desktop/dist/DrisPRO-Setup-*.exe
           retention-days: 30
+  mac:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      # one program for both kinds of Mac (Apple Silicon and Intel); signed "ad hoc" until there is an Apple Developer ID
+      - run: npx electron-builder --mac --universal --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - uses: actions/upload-artifact@v5
+        with:
+          name: DrisPRO-Mac
+          path: desktop/dist/DrisPRO-*.dmg
+          retention-days: 30
+      - run: node publish.mjs mac
+        env:
+          DRISPRO_PUBLISH_KEY: ${{ secrets.DRISPRO_PUBLISH_KEY }}

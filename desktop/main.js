@@ -1,4 +1,4 @@
-// DrisPRO for Windows: the whole web application in its own window, plus what a browser cannot do:
+// DrisPRO for Windows and Mac: the whole web application in its own window, plus what a browser cannot do:
 // printing straight to the receipt and kitchen printers (no print window), opening the cash drawer of a
 // network printer, starting with Windows, full screen for tills. The application itself comes from the
 // server (always the latest version) and keeps working offline the same way as in the browser.
@@ -6,6 +6,7 @@ const { app, BrowserWindow, ipcMain, shell, Menu, dialog, net: enet } = require(
 const fs = require('fs')
 const net = require('net')
 const path = require('path')
+const isMac = process.platform === 'darwin'
 
 const DEFAULT_SERVER = 'https://erp.dris-ks.com'
 // where licences are checked (our cloud), with its public key (anon role: only the public licence functions)
@@ -57,18 +58,31 @@ function createWindow() {
 
 function buildMenu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate([
-    { label: 'DrisPRO', submenu: [
+    // on a Mac the first menu carries the program's name; Cmd+C / Cmd+V need the Edit menu to work at all
+    ...(isMac ? [{ label: 'DrisPRO', submenu: [
+      { label: 'Rreth DrisPRO', role: 'about' },
+      { type: 'separator' },
+      { label: 'Fshih DrisPRO', role: 'hide' },
+      { label: 'Fshih të tjerat', role: 'hideOthers' },
+      { type: 'separator' },
+      { label: 'Dil nga DrisPRO', role: 'quit' },
+    ] }] : []),
+    { label: 'Ndrysho', submenu: [
+      { label: 'Zhbëj', role: 'undo' }, { label: 'Ribëj', role: 'redo' }, { type: 'separator' },
+      { label: 'Prit', role: 'cut' }, { label: 'Kopjo', role: 'copy' }, { label: 'Ngjit', role: 'paste' }, { label: 'Zgjidh të gjitha', role: 'selectAll' },
+    ] },
+    { label: isMac ? 'Pamja' : 'DrisPRO', submenu: [
       { label: 'Rifresko', accelerator: 'CmdOrCtrl+R', click: () => win?.webContents.reload() },
       { label: 'Rifresko plotësisht', accelerator: 'CmdOrCtrl+Shift+R', click: () => win?.webContents.reloadIgnoringCache() },
-      { label: 'Ekran i plotë', accelerator: 'F11', click: () => win?.setFullScreen(!win.isFullScreen()) },
+      { label: 'Ekran i plotë', accelerator: isMac ? 'Ctrl+Cmd+F' : 'F11', click: () => win?.setFullScreen(!win.isFullScreen()) },
       { type: 'separator' },
       { label: 'Zmadho', accelerator: 'CmdOrCtrl+=', role: 'zoomIn' },
       { label: 'Zvogëlo', accelerator: 'CmdOrCtrl+-', role: 'zoomOut' },
       { label: 'Madhësia normale', accelerator: 'CmdOrCtrl+0', role: 'resetZoom' },
       { type: 'separator' },
       { label: 'Kontrollo për version të ri', click: () => void checkForUpdate(true) },
-      { label: 'Mjetet e zhvilluesit', accelerator: 'CmdOrCtrl+Shift+I', click: () => win?.webContents.toggleDevTools() },
-      { label: 'Dil', accelerator: 'Alt+F4', role: 'quit' },
+      { label: 'Mjetet e zhvilluesit', accelerator: isMac ? 'Alt+Cmd+I' : 'CmdOrCtrl+Shift+I', click: () => win?.webContents.toggleDevTools() },
+      ...(isMac ? [] : [{ label: 'Dil', accelerator: 'Alt+F4', role: 'quit' }]),
     ] },
   ]))
 }
@@ -197,7 +211,8 @@ async function checkForUpdate(manual = false) {
   if (updating || !app.isPackaged) return
   updating = true
   try {
-    const r = await enet.fetch(`${LICENCE_API}/rest/v1/rpc/desktop_release`, { method: 'POST', headers: { apikey: LICENCE_KEY, 'Content-Type': 'application/json' }, body: '{}' })
+    const r = await enet.fetch(`${LICENCE_API}/rest/v1/rpc/desktop_release`, { method: 'POST', headers: { apikey: LICENCE_KEY, 'Content-Type': 'application/json' },
+      body: isMac ? '{"p_platform":"mac-update"}' : '{}' })
     const rel = r.ok ? await r.json() : null
     if (!rel || !newer(rel.version, app.getVersion())) {
       if (manual) await dialog.showMessageBox(win, { type: 'info', message: `Keni versionin më të ri (${app.getVersion()}).`, buttons: ['Mirë'] })
@@ -227,8 +242,21 @@ async function checkForUpdate(manual = false) {
       detail: `Ju keni ${app.getVersion()}. Instalimi zgjat rreth një minutë; programi mbyllet dhe hapet vetë. Cilësimet dhe licenca mbeten.`,
     })
     if (a.response !== 0) { declined = rel.version; return }
-    // silent install over this one, then it starts again
-    spawn(file, ['/S', '--force-run'], { detached: true, stdio: 'ignore' }).unref()
+    if (isMac) {
+      // the new DrisPRO.app replaces this one once it has closed, then opens again
+      const bundle = path.resolve(process.execPath, '..', '..', '..')
+      const fresh = path.join(dir, 'new')
+      fs.rmSync(fresh, { recursive: true, force: true }); fs.mkdirSync(fresh, { recursive: true })
+      require('child_process').execFileSync('/usr/bin/ditto', ['-x', '-k', file, fresh])
+      const next = path.join(fresh, 'DrisPRO.app')
+      if (!fs.existsSync(next)) throw new Error('the update has no DrisPRO.app')
+      const q = (p) => `'${p.replace(/'/g, `'\\''`)}'`
+      const script = `while kill -0 ${process.pid} 2>/dev/null; do sleep 0.5; done; rm -rf ${q(bundle)} && mv ${q(next)} ${q(bundle)} && xattr -cr ${q(bundle)}; open ${q(bundle)}`
+      spawn('/bin/sh', ['-c', script], { detached: true, stdio: 'ignore' }).unref()
+    } else {
+      // silent install over this one, then it starts again
+      spawn(file, ['/S', '--force-run'], { detached: true, stdio: 'ignore' }).unref()
+    }
     setTimeout(() => app.quit(), 500)
   } catch (e) {
     if (manual) await dialog.showMessageBox(win, { type: 'warning', message: 'Kontrolli për version të ri nuk u bë.', detail: String(e.message || e), buttons: ['Mirë'] })

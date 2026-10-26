@@ -13624,11 +13624,14 @@ export type Database = {
           p_parts: number
           p_sha256: string
           p_notes?: string
+          p_platform?: string
         }
         Returns: undefined
       }
       desktop_release: {
-        Args: Record<PropertyKey, never>
+        Args: {
+          p_platform?: string
+        }
         Returns: Json
       }
       dismiss_statement_suggestion: {
@@ -14470,6 +14473,7 @@ export type Database = {
           p_parts: number
           p_sha256: string
           p_notes?: string
+          p_platform?: string
         }
         Returns: undefined
       }
@@ -14483,7 +14487,7 @@ export type Database = {
       }
       platform_desktop_releases: {
         Args: Record<PropertyKey, never>
-        Returns: { version: string | null; file_name: string | null; size_bytes: number | null; published_at: string | null }[]
+        Returns: { platform: string | null; version: string | null; file_name: string | null; size_bytes: number | null; published_at: string | null }[]
       }
       platform_licence_info: {
         Args: {
