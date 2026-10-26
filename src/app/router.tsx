@@ -88,6 +88,9 @@ const PosSessionPage = lazy(() => import('@/features/pos/pages/pos-home-page'), 
 const TillPage = lazy(() => import('@/features/pos/pages/till-page'), 'TillPage')
 const SafePage = lazy(() => import('@/features/safe/safe-page'), 'SafePage')
 const PurchaseInvoicePage = lazy(() => import('@/features/procurement/pages/purchase-invoice-page'), 'PurchaseInvoicePage')
+const CardsPage = lazy(() => import('@/features/finance/pages/cards-page'), 'CardsPage')
+const CompensationsPage = lazy(() => import('@/features/finance/pages/compensations-page'), 'CompensationsPage')
+const ItemCardPage = lazy(() => import('@/features/inventory/pages/item-card-page'), 'ItemCardPage')
 const AgentPage = lazy(() => import('@/features/agent/agent-page'), 'AgentPage')
 const AgentsPage = lazy(() => import('@/features/agent/agents-page'), 'AgentsPage')
 const LoyaltyPage = lazy(() => import('@/features/loyalty/loyalty-page'), 'LoyaltyPage')
@@ -159,6 +162,7 @@ const router = createBrowserRouter([
         { path: 'products/:id', element: <ProductDetailPage /> },
         { path: 'stock', element: <StockPage /> },
         { path: 'movements', element: <MovementsPage /> },
+        { path: 'item-card', element: <ItemCardPage /> },
         { path: 'alerts', element: <AlertsPage /> },
         { path: 'prices', element: <PricesPage /> },
         { path: 'read-invoice', element: <ReadInvoicePage /> },
@@ -236,6 +240,8 @@ const router = createBrowserRouter([
         { path: 'new', element: <PaymentPage key="pay-new" /> },
         { path: ':id', element: <PaymentPage key="pay" /> },
       ] },
+      { path: 'finance/cards', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <CardsPage /> }] },
+      { path: 'finance/compensations', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <CompensationsPage /> }] },
       { path: 'finance/receivables', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <AgingPage key="ar" kind="ar" /> }] },
       { path: 'finance/payables', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <AgingPage key="ap" kind="ap" /> }] },
       { path: 'finance', element: <RequirePerm perm="finance.read" />, children: [

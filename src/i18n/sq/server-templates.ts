@@ -410,4 +410,8 @@ export const serverTemplates: [string, string][] = [
   ["Line %: % needs a lot number", "Rreshti {0}: {1} kërkon numër loti"],
   ["Line %: % needs an expiry date", "Rreshti {0}: {1} kërkon datë skadimi"],
   ["Only a draft can be completed (this one is %)", "Kompletohet vetëm drafti (ky është {0})"],
+  ["Invoice % is not an open invoice of this partner", "Fatura {0} nuk është faturë e hapur e këtij partneri"],
+  ["Bill % is not an open bill of this partner", "Fatura {0} nuk është faturë e hapur e këtij partneri"],
+  ["Only % is open on %", "Te {1} janë të hapura vetëm {0}"],
+  ["Both sides must be equal: % from invoices, % from bills", "Të dyja anët duhet të jenë të barabarta: {0} nga faturat tona, {1} nga faturat e tyre"],
 ]

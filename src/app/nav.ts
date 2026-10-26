@@ -27,6 +27,7 @@ export const NAV: NavSection[] = [
     items: [
       { label: msg('Products'), href: '/inventory/products', icon: Boxes, perm: 'inventory.read', keywords: ['items', 'sku', 'variants', 'barcode'] },
       { label: msg('Stock levels'), href: '/inventory/stock', icon: PackageSearch, perm: 'inventory.read', keywords: ['on hand', 'available', 'reserved', 'valuation'] },
+      { label: msg('Item card'), href: '/inventory/item-card', icon: FileStack, perm: 'inventory.read', keywords: ['kartela', 'kartela e artikullit', 'item ledger', 'stock card', 'lëvizjet'] },
       { label: msg('Movements'), href: '/inventory/movements', icon: FileStack, perm: 'inventory.read', keywords: ['ledger', 'history'] },
       { label: msg('Low stock'), href: '/inventory/alerts', icon: TriangleAlert, perm: 'inventory.read', keywords: ['reorder', 'alerts', 'replenish'] },
       { label: msg('New selling prices'), href: '/inventory/prices', icon: Tags, perm: 'inventory.read', keywords: ['margin', 'markup', 'price', 'cost', 'marzh', 'cmim'] },
@@ -120,6 +121,8 @@ export const NAV: NavSection[] = [
       { label: msg('Chart of accounts'), href: '/finance/accounts', icon: ListTree, perm: 'finance.read', keywords: ['coa', 'ledger', 'plan kontabel', 'accounts'] },
       { label: msg('Receivables'), href: '/finance/receivables', icon: HandCoins, perm: 'invoicing.read', keywords: ['ar', 'aging', 'debtors', 'overdue'] },
       { label: msg('Payables'), href: '/finance/payables', icon: Wallet, perm: 'invoicing.read', keywords: ['ap', 'aging', 'creditors', 'due'] },
+      { label: msg('Partner cards'), href: '/finance/cards', icon: BookOpenText, perm: 'invoicing.read', keywords: ['kartela', 'kartela e klientit', 'kartela e furnitorit', 'ios', 'konfirmim', 'statement', 'saldo'] },
+      { label: msg('Compensations'), href: '/finance/compensations', icon: ArrowLeftRight, perm: 'invoicing.read', keywords: ['kompensim', 'kompensimi', 'offset', 'netting'] },
       { label: msg('Payments'), href: '/finance/payments', icon: Receipt, perm: 'invoicing.read', keywords: ['receipts', 'pay', 'arkëtim', 'pagesë'] },
       { label: msg('Bank and cash'), href: '/finance/bank', icon: Banknote, perm: 'finance.read', keywords: ['reconciliation', 'statement', 'banka'] },
       { label: msg('Fixed assets'), href: '/finance/assets', icon: Building, perm: 'finance.read', keywords: ['depreciation', 'amortization', 'aktive'] },

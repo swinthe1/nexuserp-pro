@@ -439,12 +439,12 @@ export const SOURCE_HREF: Record<string, string> = {
   sales_invoice: '/sales/invoices/', credit_note: '/sales/invoices/', delivery: '/sales/deliveries/',
   goods_receipt: '/inventory/receipts/', stock_adjustment: '/inventory/adjustments/', stock_transfer: '/inventory/transfers/',
   landed_cost: '/inventory/landed-costs/', vendor_bill: '/procurement/bills/', vendor_credit: '/procurement/bills/',
-  customer_payment: '/finance/payments/', vendor_payment: '/finance/payments/', fixed_asset: '/finance/assets/', pos_session: '/pos/sessions/', work_order: '/manufacturing/orders/',
+  customer_payment: '/finance/payments/', vendor_payment: '/finance/payments/', compensation: '/finance/compensations?c=', fixed_asset: '/finance/assets/', pos_session: '/pos/sessions/', work_order: '/manufacturing/orders/',
 }
 export const SOURCE_LABEL: Record<string, string> = {
   sales_invoice: msg('Invoice'), credit_note: msg('Credit note'), delivery: msg('Delivery'), goods_receipt: msg('Goods receipt'), stock_adjustment: msg('Adjustment'),
   stock_transfer: msg('Transfer|document'), landed_cost: msg('Landed cost'), vendor_bill: msg('Vendor bill'), vendor_credit: msg('Vendor credit'), customer_payment: msg('Receipt|payment'),
-  vendor_payment: msg('Payment'), fixed_asset: msg('Fixed asset'), work_order: msg('Work order'), pos_order: msg('POS receipt'), pos_session: msg('POS session'),
+  vendor_payment: msg('Payment'), compensation: msg('Compensation'), fixed_asset: msg('Fixed asset'), work_order: msg('Work order'), pos_order: msg('POS receipt'), pos_session: msg('POS session'),
 }
 
 /** Name of the kind of document an accounting entry came from, in the current language */

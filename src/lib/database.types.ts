@@ -1738,6 +1738,111 @@ export type Database = {
           { foreignKeyName: "company_settings_company_id_fkey"; columns: ["company_id"]; isOneToOne: true; referencedRelation: "companies"; referencedColumns: ["id"] },
         ]
       }
+      compensation_lines: {
+        Row: {
+          id: string
+          company_id: string
+          compensation_id: string
+          sales_invoice_id: string | null
+          vendor_bill_id: string | null
+          amount: number
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          compensation_id: string
+          sales_invoice_id?: string | null
+          vendor_bill_id?: string | null
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          compensation_id?: string
+          sales_invoice_id?: string | null
+          vendor_bill_id?: string | null
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "compensation_lines_company_id_compensation_id_fkey"; columns: ["company_id", "compensation_id"]; isOneToOne: false; referencedRelation: "compensations"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "compensation_lines_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
+      compensations: {
+        Row: {
+          id: string
+          company_id: string
+          number: string
+          status: string
+          partner_id: string
+          comp_date: string
+          currency_code: string
+          amount: number
+          notes: string | null
+          journal_entry_id: string | null
+          reversal_entry_id: string | null
+          cancelled_at: string | null
+          cancel_reason: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          number: string
+          status?: string
+          partner_id: string
+          comp_date?: string
+          currency_code: string
+          amount: number
+          notes?: string | null
+          journal_entry_id?: string | null
+          reversal_entry_id?: string | null
+          cancelled_at?: string | null
+          cancel_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          number?: string
+          status?: string
+          partner_id?: string
+          comp_date?: string
+          currency_code?: string
+          amount?: number
+          notes?: string | null
+          journal_entry_id?: string | null
+          reversal_entry_id?: string | null
+          cancelled_at?: string | null
+          cancel_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "compensations_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "compensations_company_id_partner_id_fkey"; columns: ["company_id", "partner_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
       cost_centers: {
         Row: {
           id: string
@@ -12219,6 +12324,25 @@ export type Database = {
         }
         Returns: { member_id: string | null; user_id: string | null; email: string | null; full_name: string | null; status: string | null; joined_at: string | null; last_sign_in_at: string | null; role_ids: string[] | null; role_names: string[] | null; is_self: boolean | null; employee_id: string | null }[]
       }
+      compensation_cancel: {
+        Args: {
+          p_id: string
+          p_reason: string
+        }
+        Returns: undefined
+      }
+      compensation_create: {
+        Args: {
+          p: Json
+        }
+        Returns: Json
+      }
+      compensation_print: {
+        Args: {
+          p_id: string
+        }
+        Returns: Json
+      }
       complete_pick_list: {
         Args: {
           p_task: string
@@ -12788,6 +12912,15 @@ export type Database = {
         }
         Returns: string
       }
+      item_card: {
+        Args: {
+          p_variant: string
+          p_warehouse: string
+          p_from: string
+          p_to: string
+        }
+        Returns: Json
+      }
       leave_balances: {
         Args: {
           p_company: string
@@ -13115,6 +13248,14 @@ export type Database = {
         }
         Returns: Json
       }
+      open_items_statement: {
+        Args: {
+          p_partner: string
+          p_side: string
+          p_date: string
+        }
+        Returns: Json
+      }
       open_pos_session: {
         Args: {
           p_register: string
@@ -13129,6 +13270,15 @@ export type Database = {
           p_as_of?: string
         }
         Returns: { partner_id: string | null; partner_name: string | null; not_due: number | null; d1_30: number | null; d31_60: number | null; d61_90: number | null; d90_plus: number | null; unapplied: number | null; total: number | null; oldest_due: string | null; documents: number | null }[]
+      }
+      partner_card: {
+        Args: {
+          p_partner: string
+          p_side: string
+          p_from: string
+          p_to: string
+        }
+        Returns: Json
       }
       pay_payroll: {
         Args: {
@@ -13159,6 +13309,19 @@ export type Database = {
           p_run: string
         }
         Returns: { line_no: number | null; employee_id: string | null; personal_number: string | null; last_name: string | null; first_name: string | null; job_title: string | null; department: string | null; paid_days: number | null; gross: number | null; contribution_base: number | null; ss_employee: number | null; health_employee: number | null; ss_employer: number | null; health_employer: number | null; taxable: number | null; income_tax: number | null; net: number | null; employer_cost: number | null; iban: string | null }[]
+      }
+      pdf_email: {
+        Args: {
+          p_company: string
+          p_to: string
+          p_subject: string
+          p_message: string
+          p_pdf: string
+          p_filename: string
+          p_entity_type: string
+          p_entity_id: string
+        }
+        Returns: string
       }
       pin_done: {
         Args: {

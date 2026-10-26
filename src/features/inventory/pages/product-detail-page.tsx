@@ -1,3 +1,4 @@
+import { ItemCardView } from './item-card-page'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Barcode, Pencil, Plus, ScanLine, Trash2 } from 'lucide-react'
 import * as React from 'react'
@@ -94,6 +95,7 @@ export function ProductDetailPage() {
           <TabsTrigger value="prices">{t('Price history')}</TabsTrigger>
           <TabsTrigger value="variants">{t('Variants & barcodes')} <Badge variant="secondary">{p.product_variants.length}</Badge></TabsTrigger>
           {p.product_type === 'stockable' && <TabsTrigger value="reorder">{t('Reorder points')}</TabsTrigger>}
+          {p.product_type === 'stockable' && <TabsTrigger value="card">{t('Item card')}</TabsTrigger>}
           {p.product_type === 'stockable' && <TabsTrigger value="movements">{t('Movements')}</TabsTrigger>}
           <TabsTrigger value="activity">{t('Activity')}</TabsTrigger>
         </TabsList>
@@ -134,6 +136,7 @@ export function ProductDetailPage() {
         <TabsContent value="prices"><PriceHistoryCard productId={p.id} variants={p.product_variants} /></TabsContent>
         <TabsContent value="variants"><VariantsTab product={p} /></TabsContent>
         <TabsContent value="reorder"><ReorderTab product={p} /></TabsContent>
+        <TabsContent value="card"><ProductItemCard variants={p.product_variants} /></TabsContent>
         <TabsContent value="movements"><MovementsTable productId={p.id} tableKey="inventory.product-movements" /></TabsContent>
         <TabsContent value="activity" className="max-w-2xl"><ActivityTimeline table="products" id={p.id} /></TabsContent>
       </Tabs>
@@ -571,5 +574,20 @@ function RuleDialog({ product, rule, onSave }: {
         </Form>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function ProductItemCard({ variants }: { variants: { id: string; sku: string; name: string }[] }) {
+  const [v, setV] = React.useState(variants[0]?.id ?? '')
+  return (
+    <div className="grid gap-3">
+      {variants.length > 1 && (
+        <Select value={v} onValueChange={setV}>
+          <SelectTrigger className="w-80" aria-label={t('Variant')}><SelectValue /></SelectTrigger>
+          <SelectContent>{variants.map((x) => <SelectItem key={x.id} value={x.id}>{x.sku} · {x.name}</SelectItem>)}</SelectContent>
+        </Select>
+      )}
+      {v && <ItemCardView key={v} variantId={v} />}
+    </div>
   )
 }
