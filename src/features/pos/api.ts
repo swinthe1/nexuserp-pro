@@ -97,7 +97,9 @@ export type TillData = {
   register: Pick<Register, 'id' | 'code' | 'name' | 'company_id' | 'receipt_header' | 'receipt_footer' | 'default_customer_id' | 'location_id' | 'warehouse_id'>
   session: { id: string; number: string; opened_at: string; opening_cash: number } | null
   catalog: CatalogItem[]
-  customers: { id: string; name: string; code: string | null; tax_number: string | null }[]
+  customers: { id: string; name: string; code: string | null; tax_number: string | null; kind?: 'company' | 'individual' }[]
+  /** the law's daily cash limits (null = none) and whether cash above them is refused */
+  cashLimits?: { business: number | null; individual: number | null; block: boolean } | null
   company: { name: string; legal_name: string | null; tax_number: string | null; base_currency: string; address: string | null }
   /** loyalty cards and their rules, kept so discount cards work offline */
   loyalty?: TillLoyalty
@@ -113,12 +115,13 @@ export function useTill(registerId: string | undefined) {
     if (cached) setState({ data: cached, offline: !navigator.onLine, loading: false, error: null })
     try {
       const reg = unwrap(await supabase.from('pos_registers').select('id, code, name, company_id, receipt_header, receipt_footer, default_customer_id, location_id, warehouse_id').eq('id', registerId).single())
-      const [ses, cat, cus, co, loy] = await Promise.all([
+      const [ses, cat, cus, co, loy, lim] = await Promise.all([
         supabase.from('pos_sessions').select('id, number, opened_at, opening_cash').eq('register_id', registerId).eq('status', 'open').maybeSingle(),
         supabase.rpc('pos_catalog', { p_register: registerId }),
-        supabase.from('business_partners').select('id, name, code, tax_number').eq('company_id', reg.company_id).eq('is_customer', true).is('deleted_at', null).order('name').limit(2000),
+        supabase.from('business_partners').select('id, name, code, tax_number, kind').eq('company_id', reg.company_id).eq('is_customer', true).is('deleted_at', null).order('name').limit(2000),
         supabase.from('companies').select('name, legal_name, tax_number, base_currency, address_line1, city').eq('id', reg.company_id).single(),
         supabase.rpc('pos_loyalty_data', { p_register: registerId }),
+        supabase.rpc('pos_cash_limits', { p_register: registerId }),
       ])
       if (cat.error) throw cat.error
       const data: TillData = {
@@ -127,6 +130,7 @@ export function useTill(registerId: string | undefined) {
         customers: (cus.data ?? []) as TillData['customers'],
         company: { name: co.data?.name ?? '', legal_name: co.data?.legal_name ?? null, tax_number: co.data?.tax_number ?? null, base_currency: co.data?.base_currency ?? 'ALL', address: [co.data?.address_line1, co.data?.city].filter(Boolean).join(', ') || null },
         loyalty: loy.error ? cached?.loyalty : (loy.data as unknown as TillLoyalty),
+        cashLimits: lim.error ? cached?.cashLimits ?? null : (lim.data as unknown as TillData['cashLimits']),
         loadedAt: new Date().toISOString(),
       }
       await kvSet(key, data).catch(() => undefined)

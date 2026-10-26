@@ -237,6 +237,22 @@ select t.login('kasa@auto.xk');
 select t.throws(format($q$select public.ai_safes('%s')$q$, :'co'), 'permission', 'the cashier''s assistant does not see the safe');
 select t.login('ana@auto.xk');
 
+
+-- the law's limit at the till: never refused (offline receipts), finance is told
+select public.cash_limits_save(:'co', 500, 2000, false);
+select t.login('kasa@auto.xk');
+select t.ok((public.pos_cash_limits(:'reg') ->> 'individual')::numeric = 2000, 'the till knows the limits');
+select public.pos_submit_order(jsonb_build_object('client_uuid', gen_random_uuid(), 'session_id', :'ses2',
+  'lines', jsonb_build_array(jsonb_build_object('variant_id', :'tea', 'quantity', 25, 'unit_price', 100, 'discount_pct', 0, 'manual_pct', 0)),
+  'payments', jsonb_build_array(jsonb_build_object('method', 'cash', 'amount', 2600)))) as big \gset
+select public.pos_submit_order(jsonb_build_object('client_uuid', gen_random_uuid(), 'session_id', :'ses2', 'partner_id', :'biz',
+  'lines', jsonb_build_array(jsonb_build_object('variant_id', :'tea', 'quantity', 4, 'unit_price', 100, 'discount_pct', 0, 'manual_pct', 0)),
+  'payments', jsonb_build_array(jsonb_build_object('method', 'cash', 'amount', 400)))) as small \gset
+select t.login('ana@auto.xk');
+select t.ok(exists (select 1 from public.notifications where user_id = auth.uid() and title = 'Cash above the legal limit at the till: ' || (:'big'::jsonb ->> 'number'))
+            and not exists (select 1 from public.notifications where title = 'Cash above the legal limit at the till: ' || (:'small'::jsonb ->> 'number')),
+  'a receipt over the limit is reported, one under it is not');
+
 reset role;
 select t.ok(not exists (select 1 from public.safe_movements where status in ('posted','in_transit') and journal_entry_id is null), 'every movement that happened is in the books');
 select t.ok(not exists (select 1 from public.safe_movements m where m.status = 'posted' and m.kind = 'deposit' and m.arrived_entry_id is null), 'every arrived deposit has its bank entry');

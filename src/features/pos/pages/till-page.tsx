@@ -158,6 +158,10 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   const vat = priced.reduce((s, l) => { const t = lineTotal(l); return s + (t - r2(t / (1 + l.rate / 100))) }, 0)
   const itemsCount = lines.reduce((s, l) => s + l.qty, 0)
   const customerName = data.customers.find((c) => c.id === customer)?.name ?? null
+  // the law's cash limit for this receipt: a business customer, or the walk-in / an individual
+  const customerKind = customer && customer !== data.register.default_customer_id ? data.customers.find((c) => c.id === customer)?.kind ?? 'company' : 'individual'
+  const limitValue = customerKind === 'individual' ? data.cashLimits?.individual : data.cashLimits?.business
+  const cashLimit = limitValue ? { limit: num(limitValue), block: !!data.cashLimits?.block, business: customerKind !== 'individual' } : null
 
   const findCard = React.useCallback((code: string, d: TillData = data) => {
     const rows = d.loyalty?.cards ?? []
@@ -522,7 +526,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       </div>
 
       {camera && <CameraScanner onClose={() => setCamera(false)} onCode={(c) => { setCamera(false); submitQuery(c) }} />}
-      {dialog === 'pay' && <PayDialog total={r2(total)} currency={cur} onCancel={() => { setDialog(null); focusSearch() }} onPaid={(t) => finish(t)} />}
+      {dialog === 'pay' && <PayDialog total={r2(total)} currency={cur} cashLimit={cashLimit} onCancel={() => { setDialog(null); focusSearch() }} onPaid={(t) => finish(t)} />}
       {dialog === 'card' && <CardDialog onClose={() => { setDialog(null); focusSearch() }} onCode={async (c) => { if (await applyCardCode(c)) { setDialog(null); focusSearch() } }} error={flash?.tone === 'error' ? flash.text : null} />}
       {dialog === 'customer' && <CustomerDialog data={data} value={customer} onClose={(v) => { if (v !== undefined) setCustomer(v); setDialog(null); focusSearch() }} />}
       {dialog === 'line' && selectedLine && <LineDialog line={selectedLine} canDiscount={(d) => d <= MAX_DISCOUNT || can('pos.approve')}
@@ -549,7 +553,8 @@ export function Kbd({ children, className }: { children: React.ReactNode; classN
 }
 
 /* ================================================================== payment */
-export function PayDialog({ total, currency, onCancel, onPaid }: { total: number; currency: string; onCancel: () => void; onPaid: (t: Tender[]) => Promise<void> }) {
+export function PayDialog({ total, currency, cashLimit, onCancel, onPaid }: { total: number; currency: string; cashLimit?: { limit: number; block: boolean; business: boolean } | null
+  onCancel: () => void; onPaid: (t: Tender[]) => Promise<void> }) {
   const [tenders, setTenders] = React.useState<Tender[]>([])
   const [method, setMethod] = React.useState<Method>('cash')
   const paid = r2(tenders.reduce((s, t) => s + t.amount, 0))
@@ -575,6 +580,11 @@ export function PayDialog({ total, currency, onCancel, onPaid }: { total: number
     const p = r2(next.reduce((s, t) => s + t.amount, 0))
     const cash = next.filter((t) => t.method === 'cash').reduce((s, t) => s + t.amount, 0)
     if (m !== 'cash' && p > total + 0.001) { toast.error(t('Only cash can be more than what is due — change is given in cash')); return }
+    // cash that stays (what was given minus the change) above the law's limit
+    const nonCash = next.filter((x) => x.method !== 'cash').reduce((s, x) => s + x.amount, 0)
+    if (cashLimit?.block && m === 'cash' && Math.min(cash, Math.max(total - nonCash, 0)) > cashLimit.limit + 0.001) {
+      toast.error(t('The law allows at most {limit} in cash here. Take the rest by card or bank.', { limit: formatMoney(cashLimit.limit) })); return
+    }
     setTenders(next)
     if (p >= total - 0.001 && p - total <= cash + 0.001) void complete(next)
   }
@@ -603,6 +613,13 @@ export function PayDialog({ total, currency, onCancel, onPaid }: { total: number
           </DialogTitle>
           <DialogDescription>{remaining > 0 ? <>{t('Still to pay')} <b className="tabular text-foreground">{formatMoney(remaining)}</b>. {t('Pick a method (F5–F8), enter what the customer gives, press Enter.')}</> : <>{t('Paid in full')}{change > 0 ? <> · {t('change')} <b className="tabular text-foreground">{formatMoney(change)}</b></> : ''}.</>}</DialogDescription>
         </DialogHeader>
+        {cashLimit && total > cashLimit.limit && (
+          <p className={cn('rounded-md px-3 py-2 text-[13px]', cashLimit.block ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning')}>
+            {cashLimit.business ? t('With a business the law allows at most {limit} in cash a day.', { limit: formatMoney(cashLimit.limit) })
+              : t('The law allows at most {limit} in cash with one person a day.', { limit: formatMoney(cashLimit.limit) })}{' '}
+            {t('Take the part above it by card or bank.')}
+          </p>
+        )}
         <div className="grid grid-cols-4 gap-2">
           {METHODS.map((m) => (
             <button key={m.id} type="button" onClick={() => { setMethod(m.id); input.current?.focus() }} aria-pressed={method === m.id}

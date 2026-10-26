@@ -12694,6 +12694,12 @@ export type Database = {
         }
         Returns: undefined
       }
+      pos_cash_limits: {
+        Args: {
+          p_register: string
+        }
+        Returns: Json
+      }
       pos_cash_move: {
         Args: {
           p_session: string

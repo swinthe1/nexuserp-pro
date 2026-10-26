@@ -392,4 +392,6 @@ export const serverTemplates: [string, string][] = [
   ["Cash with % is limited by law to % a day; with this payment it would be %. Pay through the bank.", "Paratë në dorë me {0} kufizohen me ligj në {1} në ditë; me këtë pagesë do të bëheshin {2}. Paguani përmes bankës."],
   ["Cash above the legal limit: %", "Para në dorë mbi kufirin ligjor: {0}"],
   ["% · % in one day, the limit is %", "{0} · {1} në një ditë, kufiri është {2}"],
+  ["Cash above the legal limit at the till: %", "Para në dorë mbi kufirin ligjor në arkë: {0}"],
+  ["% · % in cash, the limit is %", "{0} · {1} me para në dorë, kufiri është {2}"],
 ]

@@ -150,4 +150,8 @@ export default {
   "Counts": "Numërime",
   "In the safe": "Në sef",
   "Handovers that did not agree": "Dorëzime pa përputhje",
+  "The law allows at most {limit} in cash here. Take the rest by card or bank.": "Ligji lejon më së shumti {limit} me para në dorë këtu. Pjesën tjetër merreni me kartelë ose bankë.",
+  "With a business the law allows at most {limit} in cash a day.": "Me biznes ligji lejon më së shumti {limit} me para në dorë në ditë.",
+  "The law allows at most {limit} in cash with one person a day.": "Ligji lejon më së shumti {limit} me para në dorë me një person në ditë.",
+  "Take the part above it by card or bank.": "Pjesën mbi kufi merreni me kartelë ose bankë.",
 } satisfies Dict
