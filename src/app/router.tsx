@@ -123,6 +123,7 @@ function Home() {
   return <DashboardPage />
 }
 
+const PortalPage = lazyPage(() => import('@/features/portal/portal-page'), 'PortalPage')
 const PlatformPage = lazyPage(() => import('@/features/platform/platform-page'), 'PlatformPage')
 
 const router = createBrowserRouter([
@@ -136,6 +137,8 @@ const router = createBrowserRouter([
   },
   { path: '/reset-password', element: <div className="mx-auto max-w-sm px-6 py-16"><ResetPasswordPage /></div> },
   { path: '/onboarding', element: <OnboardingPage /> },
+  // the customer's B2B portal: a private link, no account
+  { path: '/b2b', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PortalPage /></React.Suspense></ErrorBoundary> },
   { path: '/platform', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PlatformPage /></React.Suspense></ErrorBoundary> },
   // the till runs full screen, outside the app shell, so it keeps working offline
   { path: '/pos/till/:registerId', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><TillPage /></React.Suspense></ErrorBoundary> },

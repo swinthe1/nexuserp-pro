@@ -181,6 +181,82 @@ export type Database = {
           { foreignKeyName: "agent_visits_company_id_partner_id_fkey"; columns: ["company_id", "partner_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      api_external_refs: {
+        Row: {
+          company_id: string
+          kind: string
+          external_id: string
+          document_id: string
+          created_at: string
+        }
+        Insert: {
+          company_id: string
+          kind: string
+          external_id: string
+          document_id: string
+          created_at?: string
+        }
+        Update: {
+          company_id?: string
+          kind?: string
+          external_id?: string
+          document_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "api_external_refs_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
+      api_keys: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          key_prefix: string
+          key_hash: string
+          scopes: string[]
+          run_as: string
+          is_active: boolean
+          created_at: string
+          last_used_at: string | null
+          calls: number
+          window_start: string | null
+          window_calls: number
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          key_prefix: string
+          key_hash: string
+          scopes: string[]
+          run_as: string
+          is_active?: boolean
+          created_at?: string
+          last_used_at?: string | null
+          calls?: number
+          window_start?: string | null
+          window_calls?: number
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string
+          key_prefix?: string
+          key_hash?: string
+          scopes?: string[]
+          run_as?: string
+          is_active?: boolean
+          created_at?: string
+          last_used_at?: string | null
+          calls?: number
+          window_start?: string | null
+          window_calls?: number
+        }
+        Relationships: [
+          { foreignKeyName: "api_keys_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
       approval_actions: {
         Row: {
           id: string
@@ -1538,6 +1614,8 @@ export type Database = {
           cash_limit_business: number | null
           cash_limit_individual: number | null
           cash_limit_block: boolean
+          portal_auto_confirm: boolean
+          portal_stock: string
         }
         Insert: {
           id?: string
@@ -1590,6 +1668,8 @@ export type Database = {
           cash_limit_business?: number | null
           cash_limit_individual?: number | null
           cash_limit_block?: boolean
+          portal_auto_confirm?: boolean
+          portal_stock?: string
         }
         Update: {
           id?: string
@@ -1642,6 +1722,8 @@ export type Database = {
           cash_limit_business?: number | null
           cash_limit_individual?: number | null
           cash_limit_block?: boolean
+          portal_auto_confirm?: boolean
+          portal_stock?: string
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -5732,6 +5814,69 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      portal_links: {
+        Row: {
+          id: string
+          company_id: string
+          partner_id: string
+          label: string | null
+          key_prefix: string
+          key_hash: string
+          pin_hash: string | null
+          pin_failures: number
+          locked_until: string | null
+          can_order: boolean
+          can_see_invoices: boolean
+          run_as: string
+          is_active: boolean
+          expires_on: string | null
+          created_at: string
+          last_used_at: string | null
+          uses: number
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          partner_id: string
+          label?: string | null
+          key_prefix: string
+          key_hash: string
+          pin_hash?: string | null
+          pin_failures?: number
+          locked_until?: string | null
+          can_order?: boolean
+          can_see_invoices?: boolean
+          run_as: string
+          is_active?: boolean
+          expires_on?: string | null
+          created_at?: string
+          last_used_at?: string | null
+          uses?: number
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          partner_id?: string
+          label?: string | null
+          key_prefix?: string
+          key_hash?: string
+          pin_hash?: string | null
+          pin_failures?: number
+          locked_until?: string | null
+          can_order?: boolean
+          can_see_invoices?: boolean
+          run_as?: string
+          is_active?: boolean
+          expires_on?: string | null
+          created_at?: string
+          last_used_at?: string | null
+          uses?: number
+        }
+        Relationships: [
+          { foreignKeyName: "portal_links_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "portal_links_company_id_partner_id_fkey"; columns: ["company_id", "partner_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
+        ]
       }
       pos_cash_movements: {
         Row: {
@@ -11718,6 +11863,88 @@ export type Database = {
         }
         Returns: boolean
       }
+      api_invoices: {
+        Args: {
+          p_key?: string
+          p_since?: string
+          p_partner_code?: string
+          p_after?: string
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      api_key_create: {
+        Args: {
+          p_company: string
+          p_name: string
+          p_scopes: string[]
+        }
+        Returns: Json
+      }
+      api_key_set_active: {
+        Args: {
+          p_id: string
+          p_active: boolean
+        }
+        Returns: undefined
+      }
+      api_order_create: {
+        Args: {
+          p_key?: string
+          p?: Json
+        }
+        Returns: Json
+      }
+      api_order_get: {
+        Args: {
+          p_key?: string
+          p_number?: string
+          p_external_id?: string
+        }
+        Returns: Json
+      }
+      api_partner_upsert: {
+        Args: {
+          p_key?: string
+          p_rows?: Json
+        }
+        Returns: Json
+      }
+      api_partners: {
+        Args: {
+          p_key?: string
+          p_updated_since?: string
+          p_after?: string
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      api_prices: {
+        Args: {
+          p_key?: string
+          p_partner_code?: string
+          p_skus?: string[]
+          p_quantity?: number
+        }
+        Returns: Json
+      }
+      api_products: {
+        Args: {
+          p_key?: string
+          p_updated_since?: string
+          p_after?: string
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      api_stock: {
+        Args: {
+          p_key?: string
+          p_skus?: string[]
+          p_warehouse?: string
+        }
+        Returns: Json
+      }
       approve_payroll: {
         Args: {
           p_run: string
@@ -13037,6 +13264,70 @@ export type Database = {
       platform_set_self_service: {
         Args: {
           p_on: boolean
+        }
+        Returns: undefined
+      }
+      portal_catalog: {
+        Args: {
+          p_key: string
+          p_pin?: string
+          p_search?: string
+          p_category?: string
+          p_offset?: number
+        }
+        Returns: Json
+      }
+      portal_document: {
+        Args: {
+          p_key: string
+          p_pin: string
+          p_kind: string
+          p_id: string
+        }
+        Returns: Json
+      }
+      portal_home: {
+        Args: {
+          p_key: string
+          p_pin?: string
+        }
+        Returns: Json
+      }
+      portal_images: {
+        Args: {
+          p_key: string
+          p_pin: string
+          p_products: string[]
+        }
+        Returns: Json
+      }
+      portal_link_create: {
+        Args: {
+          p_partner: string
+          p?: Json
+        }
+        Returns: Json
+      }
+      portal_link_set: {
+        Args: {
+          p_id: string
+          p: Json
+        }
+        Returns: undefined
+      }
+      portal_order: {
+        Args: {
+          p_key: string
+          p_pin: string
+          p: Json
+        }
+        Returns: Json
+      }
+      portal_settings_save: {
+        Args: {
+          p_company: string
+          p_auto_confirm: boolean
+          p_stock: string
         }
         Returns: undefined
       }

@@ -10,6 +10,7 @@ const AuditPage = lazyPage(() => import('./pages/audit-page'), 'AuditPage')
 const ImportPage = lazyPage(() => import('./pages/import-page'), 'ImportPage')
 const MigrationPage = lazyPage(() => import('./pages/migration-page'), 'MigrationPage')
 const AutomationPage = lazyPage(() => import('./pages/automation-page'), 'AutomationPage')
+const IntegrationsPage = lazyPage(() => import('@/features/portal/integrations-page'), 'IntegrationsPage')
 const NotificationsPage = lazyPage(() => import('./pages/notifications-page'), 'NotificationsPage')
 
 export const settingsRoutes: RouteObject[] = [
@@ -23,6 +24,7 @@ export const settingsRoutes: RouteObject[] = [
     { path: 'workflows', element: <WorkflowsPage /> },
     { path: 'numbering', element: <NumberingPage /> },
     { path: 'migration', element: <MigrationPage /> },
+    { path: 'integrations', element: <IntegrationsPage /> },
   ] },
 ]
 

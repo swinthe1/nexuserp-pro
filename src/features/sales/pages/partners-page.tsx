@@ -1,3 +1,4 @@
+import { PortalLinks } from '@/features/portal/portal-links'
 import { zodResolver } from '@hookform/resolvers/zod'
 import type { ColumnDef } from '@tanstack/react-table'
 import { FileText, Pencil, Plus, ShoppingCart, Star, Trash2 } from 'lucide-react'
@@ -97,6 +98,7 @@ export function PartnerPage() {
 
 function PartnerView({ partner }: { partner?: PartnerDetail }) {
   const [params] = useSearchParams()
+  const { can } = useCompany()
   if (!partner) {
     return (
       <div className="mx-auto max-w-5xl">
@@ -123,6 +125,7 @@ function PartnerView({ partner }: { partner?: PartnerDetail }) {
           <TabsTrigger value="details">{t('Details')}</TabsTrigger>
           <TabsTrigger value="contacts">{t('Contacts and addresses')}</TabsTrigger>
           {partner.is_customer && <TabsTrigger value="prices">{t('Special prices')}</TabsTrigger>}
+          {partner.is_customer && can('sales.read') && <TabsTrigger value="portal">{t('B2B portal')}</TabsTrigger>}
           {partner.is_vendor && <TabsTrigger value="purchasing">{t('Purchasing')}</TabsTrigger>}
           {partner.is_vendor && <TabsTrigger value="vendor-prices">{t('Vendor prices')}</TabsTrigger>}
           <TabsTrigger value="activity">{t('Activity')}</TabsTrigger>
@@ -131,6 +134,7 @@ function PartnerView({ partner }: { partner?: PartnerDetail }) {
         <TabsContent value="details"><PartnerForm partner={partner} /></TabsContent>
         <TabsContent value="contacts"><ContactsAndAddresses partner={partner} /></TabsContent>
         {partner.is_customer && <TabsContent value="prices"><SpecialPrices partner={partner} /></TabsContent>}
+        {partner.is_customer && can('sales.read') && <TabsContent value="portal"><PortalLinks partner={partner} /></TabsContent>}
         {partner.is_vendor && <TabsContent value="purchasing"><VendorPurchasing vendorId={partner.id} /></TabsContent>}
         {partner.is_vendor && <TabsContent value="vendor-prices"><VendorPricesTable vendorId={partner.id} /></TabsContent>}
         <TabsContent value="activity" className="max-w-2xl"><ActivityTimeline table="business_partners" id={partner.id} /></TabsContent>

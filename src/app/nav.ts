@@ -4,7 +4,7 @@ import {
   BadgePercent, ClipboardCheck, Hourglass, PackageOpen, ScanLine, ShoppingBasket,
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, BookOpenText, Building, HandCoins, ListTree, Network, Settings2, Wallet, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, Gauge,
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackagePlus, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
-  Repeat, ScanText, SlidersHorizontal, Store, Tags, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, type LucideIcon,
+  Repeat, ScanText, SlidersHorizontal, Store, Tags, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, type LucideIcon,
 } from 'lucide-react'
 import { msg } from '@/i18n'
 
@@ -161,6 +161,7 @@ export const NAV: NavSection[] = [
       { label: msg('Automations'), href: '/settings/automation', icon: Zap, perm: 'core.read', keywords: ['automatic', 'schedule', 'automatizim', 'email', 'whatsapp', 'reminders'] },
       { label: msg('Numbering'), href: '/settings/numbering', icon: ListOrdered, perm: 'admin.read', keywords: ['sequences', 'prefix', 'document numbers'] },
       { label: msg('Move from another program'), href: '/settings/migration', icon: ArrowDownToLine, perm: 'admin.write', keywords: ['migration', 'kubit', 'logmicro', 'bilanc', 'pantheon', 'opening balances', 'cut-over', 'kalimi', 'migrimi'] },
+      { label: msg('B2B portal and API'), href: '/settings/integrations', icon: Plug, perm: 'admin.read', keywords: ['api', 'b2b', 'portal', 'portali', 'web shop', 'dyqan online', 'integrim', 'key', 'çelës', 'woocommerce', 'shopify'] },
       { label: msg('Import data'), href: '/settings/import', icon: Import, perm: 'core.read', keywords: ['csv', 'excel', 'upload', 'migration', 'opening balances'] },
       { label: msg('Audit log'), href: '/settings/audit', icon: History, perm: 'audit.read', keywords: ['history', 'changes', 'who changed'] },
       { label: msg('Security'), href: '/settings/roles', icon: ShieldCheck, perm: 'admin.read', keywords: ['roles', 'permission matrix', 'custom role'] },
