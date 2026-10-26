@@ -1,4 +1,4 @@
-import { BadgeDollarSign, BedDouble, Boxes, Building2, Factory, Landmark, LayoutDashboard, type LucideIcon, Percent, ScanLine, ShoppingCart, Store, Truck, Users } from 'lucide-react'
+import { BadgeDollarSign, BedDouble, CalendarClock, Boxes, Building2, Factory, Landmark, LayoutDashboard, type LucideIcon, Percent, ScanLine, ShoppingCart, Store, Truck, Users } from 'lucide-react'
 import { NAV } from '@/app/nav'
 
 /**
@@ -16,6 +16,7 @@ export const MODULES: Record<string, ModuleLook> = {
   'Warehouse|menu': { icon: ScanLine, hue: '32 90%' },
   Retail: { icon: Store, hue: '330 70%' },
   Hotel: { icon: BedDouble, hue: '42 88%' },
+  Appointments: { icon: CalendarClock, hue: '290 58%' },
   Manufacturing: { icon: Factory, hue: '18 82%' },
   Logistics: { icon: Truck, hue: '188 78%' },
   Finance: { icon: Landmark, hue: '172 72%' },

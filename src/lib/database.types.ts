@@ -260,6 +260,99 @@ export type Database = {
           { foreignKeyName: "api_keys_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
         ]
       }
+      appointments: {
+        Row: {
+          id: string
+          company_id: string
+          number: string | null
+          status: string
+          starts_at: string
+          ends_at: string
+          resource_id: string
+          service_id: string | null
+          partner_id: string | null
+          client_name: string
+          client_phone: string | null
+          client_email: string | null
+          card_id: string | null
+          price: number
+          notes: string | null
+          source: string
+          reminded_at: string | null
+          arrived_at: string | null
+          done_at: string | null
+          invoice_id: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          number?: string | null
+          status?: string
+          starts_at: string
+          ends_at: string
+          resource_id: string
+          service_id?: string | null
+          partner_id?: string | null
+          client_name: string
+          client_phone?: string | null
+          client_email?: string | null
+          card_id?: string | null
+          price?: number
+          notes?: string | null
+          source?: string
+          reminded_at?: string | null
+          arrived_at?: string | null
+          done_at?: string | null
+          invoice_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          number?: string | null
+          status?: string
+          starts_at?: string
+          ends_at?: string
+          resource_id?: string
+          service_id?: string | null
+          partner_id?: string | null
+          client_name?: string
+          client_phone?: string | null
+          client_email?: string | null
+          card_id?: string | null
+          price?: number
+          notes?: string | null
+          source?: string
+          reminded_at?: string | null
+          arrived_at?: string | null
+          done_at?: string | null
+          invoice_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "appointments_company_id_card_id_fkey"; columns: ["company_id", "card_id"]; isOneToOne: false; referencedRelation: "client_cards"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "appointments_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "appointments_company_id_partner_id_fkey"; columns: ["company_id", "partner_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "appointments_company_id_resource_id_fkey"; columns: ["company_id", "resource_id"]; isOneToOne: false; referencedRelation: "appt_resources"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "appointments_company_id_service_id_fkey"; columns: ["company_id", "service_id"]; isOneToOne: false; referencedRelation: "appt_services"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
       approval_actions: {
         Row: {
           id: string
@@ -468,6 +561,126 @@ export type Database = {
         Relationships: [
           { foreignKeyName: "approval_workflows_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
           { foreignKeyName: "approval_workflows_doc_type_fkey"; columns: ["doc_type"]; isOneToOne: false; referencedRelation: "document_types"; referencedColumns: ["key"] },
+        ]
+      }
+      appt_resources: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          kind: string
+          user_id: string | null
+          color: string
+          hours: Json
+          sort: number
+          is_active: boolean
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          kind?: string
+          user_id?: string | null
+          color?: string
+          hours?: Json
+          sort?: number
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string
+          kind?: string
+          user_id?: string | null
+          color?: string
+          hours?: Json
+          sort?: number
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "appt_resources_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
+      appt_services: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          duration_min: number
+          price: number
+          tax_code_id: string | null
+          variant_id: string | null
+          color: string | null
+          resource_ids: string[]
+          sort: number
+          is_active: boolean
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          duration_min?: number
+          price?: number
+          tax_code_id?: string | null
+          variant_id?: string | null
+          color?: string | null
+          resource_ids?: string[]
+          sort?: number
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string
+          duration_min?: number
+          price?: number
+          tax_code_id?: string | null
+          variant_id?: string | null
+          color?: string | null
+          resource_ids?: string[]
+          sort?: number
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "appt_services_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "appt_services_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "appt_services_tax_code_id_fkey"; columns: ["tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["id"] },
         ]
       }
       asset_depreciation_lines: {
@@ -1165,6 +1378,57 @@ export type Database = {
           { foreignKeyName: "business_partners_salesperson_profile_fkey"; columns: ["salesperson_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
         ]
       }
+      card_entries: {
+        Row: {
+          id: string
+          company_id: string
+          card_id: string
+          entry_date: string
+          title: string
+          body: string | null
+          attrs: Json
+          appointment_id: string | null
+          invoice_id: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          card_id: string
+          entry_date?: string
+          title: string
+          body?: string | null
+          attrs?: Json
+          appointment_id?: string | null
+          invoice_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          card_id?: string
+          entry_date?: string
+          title?: string
+          body?: string | null
+          attrs?: Json
+          appointment_id?: string | null
+          invoice_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "card_entries_company_id_card_id_fkey"; columns: ["company_id", "card_id"]; isOneToOne: false; referencedRelation: "client_cards"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "card_entries_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
       carriers: {
         Row: {
           id: string
@@ -1437,6 +1701,60 @@ export type Database = {
         }
         Relationships: [
           { foreignKeyName: "cit_returns_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
+      client_cards: {
+        Row: {
+          id: string
+          company_id: string
+          kind: string
+          partner_id: string | null
+          title: string
+          attrs: Json
+          notes: string | null
+          is_active: boolean
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          kind: string
+          partner_id?: string | null
+          title: string
+          attrs?: Json
+          notes?: string | null
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          kind?: string
+          partner_id?: string | null
+          title?: string
+          attrs?: Json
+          notes?: string | null
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "client_cards_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "client_cards_company_id_partner_id_fkey"; columns: ["company_id", "partner_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
         ]
       }
       companies: {
@@ -5460,6 +5778,185 @@ export type Database = {
         Relationships: [
           { foreignKeyName: "member_roles_member_fk"; columns: ["company_id", "member_id"]; isOneToOne: false; referencedRelation: "company_members"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "member_roles_role_id_fkey"; columns: ["role_id"]; isOneToOne: false; referencedRelation: "roles"; referencedColumns: ["id"] },
+        ]
+      }
+      membership_plans: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          months: number
+          days: number
+          visits: number | null
+          price: number
+          tax_code_id: string | null
+          variant_id: string | null
+          sort: number
+          is_active: boolean
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          months?: number
+          days?: number
+          visits?: number | null
+          price?: number
+          tax_code_id?: string | null
+          variant_id?: string | null
+          sort?: number
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string
+          months?: number
+          days?: number
+          visits?: number | null
+          price?: number
+          tax_code_id?: string | null
+          variant_id?: string | null
+          sort?: number
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "membership_plans_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "membership_plans_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "membership_plans_tax_code_id_fkey"; columns: ["tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["id"] },
+        ]
+      }
+      membership_visits: {
+        Row: {
+          id: string
+          company_id: string
+          membership_id: string
+          visited_at: string
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          membership_id: string
+          visited_at?: string
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          membership_id?: string
+          visited_at?: string
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "membership_visits_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "membership_visits_company_id_membership_id_fkey"; columns: ["company_id", "membership_id"]; isOneToOne: false; referencedRelation: "memberships"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      memberships: {
+        Row: {
+          id: string
+          company_id: string
+          number: string | null
+          status: string
+          partner_id: string
+          plan_id: string
+          code: string
+          starts_on: string
+          ends_on: string
+          visits: number | null
+          visits_used: number
+          price: number
+          invoice_id: string | null
+          frozen_on: string | null
+          renewed_by: string | null
+          notes: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          number?: string | null
+          status?: string
+          partner_id: string
+          plan_id: string
+          code: string
+          starts_on: string
+          ends_on: string
+          visits?: number | null
+          visits_used?: number
+          price?: number
+          invoice_id?: string | null
+          frozen_on?: string | null
+          renewed_by?: string | null
+          notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          number?: string | null
+          status?: string
+          partner_id?: string
+          plan_id?: string
+          code?: string
+          starts_on?: string
+          ends_on?: string
+          visits?: number | null
+          visits_used?: number
+          price?: number
+          invoice_id?: string | null
+          frozen_on?: string | null
+          renewed_by?: string | null
+          notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "memberships_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "memberships_company_id_partner_id_fkey"; columns: ["company_id", "partner_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "memberships_company_id_plan_id_fkey"; columns: ["company_id", "plan_id"]; isOneToOne: false; referencedRelation: "membership_plans"; referencedColumns: ["company_id", "id"] },
         ]
       }
       migration_runs: {
@@ -13103,6 +13600,42 @@ export type Database = {
         }
         Returns: string
       }
+      appt_board: {
+        Args: {
+          p_company: string
+          p_from: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      appt_invoice: {
+        Args: {
+          p_id: string
+        }
+        Returns: string
+      }
+      appt_save: {
+        Args: {
+          p: Json
+        }
+        Returns: string
+      }
+      appt_set_status: {
+        Args: {
+          p_id: string
+          p_status: string
+        }
+        Returns: undefined
+      }
+      appt_slots: {
+        Args: {
+          p_company: string
+          p_service: string
+          p_day: string
+          p_resource?: string
+        }
+        Returns: Json
+      }
       assign_to_route: {
         Args: {
           p_route: string
@@ -14317,6 +14850,27 @@ export type Database = {
       member_warehouses: {
         Args: {
           p_company: string
+        }
+        Returns: Json
+      }
+      membership_check_in: {
+        Args: {
+          p_company: string
+          p_code: string
+          p_record?: boolean
+        }
+        Returns: Json
+      }
+      membership_freeze: {
+        Args: {
+          p_id: string
+          p_freeze: boolean
+        }
+        Returns: undefined
+      }
+      membership_sell: {
+        Args: {
+          p: Json
         }
         Returns: Json
       }

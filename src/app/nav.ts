@@ -4,7 +4,7 @@ import {
   BadgePercent, ClipboardCheck, Hourglass, PackageOpen, ScanLine, ShoppingBasket,
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, BookOpenText, Building, HandCoins, ListTree, Network, Settings2, Wallet, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, Gauge,
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackagePlus, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
-  BedDouble, BookUser, CalendarRange, ConciergeBell, Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, ReceiptText, type LucideIcon,
+  BedDouble, BookUser, CalendarRange, ConciergeBell, Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, ReceiptText, IdCard, Settings, CreditCard, type LucideIcon,
 } from 'lucide-react'
 import { msg } from '@/i18n'
 
@@ -94,6 +94,15 @@ export const NAV: NavSection[] = [
       { label: msg('Waiters'), href: '/pos/waiters', icon: UsersRound, perm: 'pos.read', keywords: ['kamarier', 'kamarierët', 'waiter', 'restaurant', 'tavolina', 'report'] },
       { label: msg('Safe|nav'), href: '/safe', icon: Vault, perm: 'pos.approve|finance.read', keywords: ['sefi', 'sef', 'kasaforta', 'cash', 'deposit', 'derdhje', 'para', 'count'] },
       { label: msg('Loyalty cards'), href: '/pos/loyalty', icon: BadgePercent, perm: 'pos.read', keywords: ['kartela', 'zbritje', 'loyalty', 'points', 'pikë', 'besnikëri', 'discount card'] },
+    ],
+  },
+  {
+    label: msg('Appointments'),
+    items: [
+      { label: msg('Appointment calendar'), href: '/appointments', icon: CalendarClock, perm: 'sales.read', keywords: ['termin', 'terminet', 'takim', 'rezervim', 'kalendar', 'booking', 'salon', 'klinikë', 'servis'] },
+      { label: msg('Client cards'), href: '/appointments/cards', icon: IdCard, perm: 'sales.read', keywords: ['kartela', 'pacient', 'automjet', 'targa', 'vetura', 'kafshë', 'historiku', 'vehicle', 'patient', 'pet'] },
+      { label: msg('Memberships'), href: '/appointments/memberships', icon: CreditCard, perm: 'sales.read', keywords: ['anëtarësim', 'abonim', 'palestër', 'gym', 'karta', 'hyrje', 'membership'] },
+      { label: msg('Services and staff'), href: '/appointments/setup', icon: Settings, perm: 'sales.read', keywords: ['shërbime', 'punëtorë', 'orari', 'karrige', 'ngritës'] },
     ],
   },
   {

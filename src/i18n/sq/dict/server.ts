@@ -670,4 +670,11 @@ export default {
   "Choose an expense account": "Zgjidhni një llogari shpenzimi",
   "Give the amount": "Shkruani shumën",
   "This company already has its outside accountant; remove them first": "Kjo kompani e ka tashmë kontabilistin e jashtëm; hiqeni atë fillimisht",
+  "Give the client's name": "Shkruani emrin e klientit",
+  "Appointment not found": "Termini nuk u gjet",
+  "This appointment is already invoiced": "Ky termin është faturuar tashmë",
+  "A cancelled appointment is not invoiced": "Një termin i anuluar nuk faturohet",
+  "Service not found": "Shërbimi nuk u gjet",
+  "Choose a plan": "Zgjidhni një paketë",
+  "Membership not found": "Anëtarësimi nuk u gjet",
 } satisfies Dict

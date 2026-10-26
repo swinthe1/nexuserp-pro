@@ -95,6 +95,11 @@ const SafePage = lazy(() => import('@/features/safe/safe-page'), 'SafePage')
 const PurchaseInvoicePage = lazy(() => import('@/features/procurement/pages/purchase-invoice-page'), 'PurchaseInvoicePage')
 const CardsPage = lazy(() => import('@/features/finance/pages/cards-page'), 'CardsPage')
 const CompensationsPage = lazy(() => import('@/features/finance/pages/compensations-page'), 'CompensationsPage')
+const AppointmentsCalendarPage = lazy(() => import('@/features/appointments/calendar-page'), 'AppointmentsCalendarPage')
+const AppointmentsSetupPage = lazy(() => import('@/features/appointments/setup-page'), 'AppointmentsSetupPage')
+const ClientCardsPage = lazy(() => import('@/features/appointments/cards-page'), 'CardsPage')
+const CardDetailPage = lazy(() => import('@/features/appointments/cards-page'), 'CardDetailPage')
+const MembershipsPage = lazy(() => import('@/features/appointments/memberships-page'), 'MembershipsPage')
 const AccountantPage = lazy(() => import('@/features/accountant/accountant-page'), 'AccountantPage')
 const ExpensesPage = lazy(() => import('@/features/finance/pages/expenses-page'), 'ExpensesPage')
 const YearEndPage = lazy(() => import('@/features/finance/pages/year-end-page'), 'YearEndPage')
@@ -323,6 +328,13 @@ const router = createBrowserRouter([
       ...omsRoutes,
       ...settingsRoutes,
       ...notificationsRoutes,
+      { path: 'appointments', element: <RequirePerm perm="sales.read" />, children: [
+        { index: true, element: <AppointmentsCalendarPage /> },
+        { path: 'setup', element: <AppointmentsSetupPage /> },
+        { path: 'cards', element: <ClientCardsPage /> },
+        { path: 'cards/:id', element: <CardDetailPage /> },
+        { path: 'memberships', element: <MembershipsPage /> },
+      ] },
       { path: 'accountant', element: <RequirePerm perm="core.read" />, children: [{ index: true, element: <AccountantPage /> }] },
       { path: '*', element: <NotFoundPage /> },
     ],

@@ -441,4 +441,6 @@ export const serverTemplates: [string, string][] = [
   ['This expense is already booked as %', 'Ky shpenzim është regjistruar tashmë si {0}'],
   ['This expense is already booked: % from this seller', 'Ky shpenzim është regjistruar tashmë: {0} nga ky shitës'],
   ['You were added to % as their accountant', 'U shtuat te {0} si kontabilist i saj'],
+  ['That time is already taken (%)', 'Ajo orë është e zënë ({0})'],
+  ['Memberships ending in 3 days: %', 'Anëtarësime që mbarojnë pas 3 ditësh: {0}'],
 ]
