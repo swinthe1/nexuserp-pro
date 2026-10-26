@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Download, Loader2, MonitorDown } from 'lucide-react'
+import { Download, Laptop, Loader2, MonitorDown } from 'lucide-react'
 import * as React from 'react'
 import { Button } from '@/components/ui/button'
 import { t } from '@/i18n'
@@ -57,32 +57,47 @@ async function download(rel: DesktopRelease, onProgress: (done: number) => void)
   setTimeout(() => URL.revokeObjectURL(a.href), 60_000)
 }
 
+/** Both programs, side by side: the one for this computer first. */
 export function DesktopDownload({ className }: { className?: string }) {
-  const rel = useDesktopRelease(!isDesktop)
+  const win = useDesktopRelease(!isDesktop, 'windows')
+  const mac = useDesktopRelease(!isDesktop, 'mac')
+  if (isDesktop || (!win.data && !mac.data)) return null
+  const rows = [
+    win.data && { key: 'windows' as const, rel: win.data },
+    mac.data && { key: 'mac' as const, rel: mac.data },
+  ].filter(Boolean) as { key: 'windows' | 'mac'; rel: DesktopRelease }[]
+  if (onMac) rows.reverse()
+  return (
+    <div className={cn('grid gap-2 rounded-xl border bg-card/60 p-3', className)}>
+      {rows.map((r) => <DownloadRow key={r.key} platform={r.key} rel={r.rel} />)}
+    </div>
+  )
+}
+
+function DownloadRow({ platform, rel }: { platform: 'windows' | 'mac'; rel: DesktopRelease }) {
   const [progress, setProgress] = React.useState<number | null>(null)
   const [error, setError] = React.useState(false)
-  if (isDesktop || !rel.data) return null
-  const r = rel.data
   const start = async () => {
     setError(false); setProgress(0)
-    try { await download(r, setProgress) } catch { setError(true) } finally { setProgress(null) }
+    try { await download(rel, setProgress) } catch { setError(true) } finally { setProgress(null) }
   }
-  const pct = progress === null ? 0 : Math.min(100, Math.round((progress / r.size_bytes) * 100))
+  const pct = progress === null ? 0 : Math.min(100, Math.round((progress / rel.size_bytes) * 100))
+  const Icon = platform === 'mac' ? Laptop : MonitorDown
   return (
-    <div className={cn('rounded-xl border bg-card/60 p-4', className)}>
+    <div className="rounded-lg p-1">
       <div className="flex items-center gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary"><MonitorDown className="size-5" /></span>
+        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary"><Icon className="size-5" /></span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">{onMac ? t('DrisPRO for Mac') : t('DrisPRO for Windows')}</p>
-          <p className="text-xs text-muted-foreground">{t('Version {v} · {size} · {date}', { v: r.version, size: mb(r.size_bytes), date: formatDate(r.published_at) })}</p>
+          <p className="text-sm font-medium">{platform === 'mac' ? t('DrisPRO for Mac') : t('DrisPRO for Windows')}</p>
+          <p className="text-xs text-muted-foreground">{t('Version {v} · {size} · {date}', { v: rel.version, size: mb(rel.size_bytes), date: formatDate(rel.published_at) })}</p>
         </div>
         <Button type="button" variant="outline" size="sm" onClick={() => void start()} disabled={progress !== null}>
           {progress !== null ? <><Loader2 className="animate-spin" /> {pct}%</> : <><Download /> {t('Download')}</>}
         </Button>
       </div>
-      {progress !== null && <div className="mt-3 h-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${pct}%` }} /></div>}
-      {onMac && <p className="mt-3 text-xs text-muted-foreground">{t('Drag DrisPRO into Applications. The first time, the Mac asks to confirm: System Settings › Privacy & Security › Open Anyway.')}</p>}
-      {error && <p className="mt-3 text-xs text-destructive">{t('The download did not finish. Check the connection and try again.')}</p>}
+      {progress !== null && <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${pct}%` }} /></div>}
+      {platform === 'mac' && (onMac || progress !== null) && <p className="mt-2 text-xs text-muted-foreground">{t('Drag DrisPRO into Applications. The first time, the Mac asks to confirm: System Settings › Privacy & Security › Open Anyway.')}</p>}
+      {error && <p className="mt-2 text-xs text-destructive">{t('The download did not finish. Check the connection and try again.')}</p>}
     </div>
   )
 }
