@@ -1590,6 +1590,7 @@ export type Database = {
           view_mode: string
           home_tiles: string[] | null
           warehouse_ids: string[] | null
+          external_accountant: boolean
         }
         Insert: {
           id?: string
@@ -1607,6 +1608,7 @@ export type Database = {
           view_mode?: string
           home_tiles?: string[] | null
           warehouse_ids?: string[] | null
+          external_accountant?: boolean
         }
         Update: {
           id?: string
@@ -1624,6 +1626,7 @@ export type Database = {
           view_mode?: string
           home_tiles?: string[] | null
           warehouse_ids?: string[] | null
+          external_accountant?: boolean
         }
         Relationships: [
           { foreignKeyName: "company_members_company_fk"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -12849,6 +12852,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      accountant_overview: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       acknowledge_stock_alert: {
         Args: {
           p_id: string
@@ -13346,7 +13353,7 @@ export type Database = {
         Args: {
           p_company: string
         }
-        Returns: { member_id: string | null; user_id: string | null; email: string | null; full_name: string | null; status: string | null; joined_at: string | null; last_sign_in_at: string | null; role_ids: string[] | null; role_names: string[] | null; is_self: boolean | null; employee_id: string | null }[]
+        Returns: { member_id: string | null; user_id: string | null; email: string | null; full_name: string | null; status: string | null; joined_at: string | null; last_sign_in_at: string | null; role_ids: string[] | null; role_names: string[] | null; is_self: boolean | null; employee_id: string | null; external_accountant: boolean | null }[]
       }
       compensation_cancel: {
         Args: {
@@ -14008,6 +14015,13 @@ export type Database = {
           p_company: string
         }
         Returns: Json
+      }
+      invite_accountant: {
+        Args: {
+          p_company: string
+          p_email: string
+        }
+        Returns: string
       }
       invite_member: {
         Args: {

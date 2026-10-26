@@ -72,6 +72,7 @@ export function useLookups() {
 export type CompanyUser = {
   member_id: string; user_id: string | null; email: string; full_name: string | null; status: string; joined_at: string | null
   last_sign_in_at: string | null; role_ids: string[]; role_names: string[]; is_self: boolean; employee_id: string | null
+  external_accountant?: boolean
 }
 export function useCompanyUsers() {
   const { companyId } = useCompany()
@@ -106,6 +107,10 @@ export function usePermissionCatalog() {
 export const useInviteMember = () => {
   const { companyId } = useCompany()
   return useAction(async (a: { email: string; roles: string[] }) => unwrap(await supabase.rpc('invite_member', { p_company: companyId, p_email: a.email, p_role_keys: a.roles })))
+}
+export const useInviteAccountant = () => {
+  const { companyId } = useCompany()
+  return useAction(async (email: string) => unwrap(await supabase.rpc('invite_accountant', { p_company: companyId, p_email: email })))
 }
 export const useSetMemberRoles = () => useAction(async (a: { member: string; roles: string[] }) =>
   unwrap(await supabase.rpc('set_member_roles', { p_member: a.member, p_role_ids: a.roles })), [['my-context']])

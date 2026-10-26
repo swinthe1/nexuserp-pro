@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { MoreHorizontal, ShieldCheck, UserPlus } from 'lucide-react'
+import { Calculator, MoreHorizontal, ShieldCheck, UserPlus } from 'lucide-react'
 import * as React from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { t, td } from '@/i18n'
 import { formatDate, initials } from '@/lib/utils'
-import { type CompanyUser, type RoleRow, useCompanyUsers, useInviteMember, useRoles, useMemberWarehouses, useSetMemberRoles, useSetMemberStatus, useSetMemberWarehouses } from '../api'
+import { type CompanyUser, type RoleRow, useCompanyUsers, useInviteAccountant, useInviteMember, useRoles, useMemberWarehouses, useSetMemberRoles, useSetMemberStatus, useSetMemberWarehouses } from '../api'
 import { useWarehouses } from '@/features/inventory/api'
 import { PinDialog, SharedTillCard, useMemberExtras, useSetView } from '../components/easy-access'
 
@@ -44,7 +44,8 @@ export function UsersPage() {
         <div className="flex items-center gap-2.5">
           <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-medium">{initials(u.full_name ?? u.email)}</span>
           <span className="min-w-0">
-            <span className="block truncate font-medium">{u.full_name ?? u.email}{u.is_self && <span className="ml-1.5 text-xs font-normal text-muted-foreground">{t('(you)')}</span>}</span>
+            <span className="block truncate font-medium">{u.full_name ?? u.email}{u.is_self && <span className="ml-1.5 text-xs font-normal text-muted-foreground">{t('(you)')}</span>}
+              {u.external_accountant && <Badge variant="outline" className="ml-1.5 border-primary/40 text-primary">{t('Outside accountant · free')}</Badge>}</span>
             <span className="block truncate text-xs text-muted-foreground">{u.email}</span>
           </span>
         </div>
@@ -110,6 +111,7 @@ export function UsersPage() {
           <Can perm="admin.write"><Button onClick={() => setInviteOpen(true)}><UserPlus /> {t('Invite a person')}</Button></Can>
         </>} />
       <SharedTillCard />
+      <OutsideAccountantCard users={users.data ?? []} />
       <DataTable tableKey="settings.users" columns={cols} data={users.data} isLoading={users.isLoading} error={users.error} getRowId={(u) => u.member_id}
         exportName={t('users')} searchPlaceholder={t('Name or email…')}
         facets={[
@@ -248,5 +250,32 @@ function WarehousesDialog({ user, current, onClose }: { user: CompanyUser; curre
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+/** One outside accountant per company, free of the licence's user seats */
+function OutsideAccountantCard({ users }: { users: CompanyUser[] }) {
+  const { can } = useCompany()
+  const invite = useInviteAccountant()
+  const [email, setEmail] = React.useState('')
+  const current = users.find((u) => u.external_accountant && u.status !== 'suspended')
+  return (
+    <div className="mb-5 rounded-lg border bg-card p-4">
+      <div className="flex flex-wrap items-start gap-3">
+        <Calculator className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium">{t('Your accountant, free')}</p>
+          <p className="text-[13px] text-muted-foreground">{current
+            ? t('{name} keeps your books in DrisPRO and does not take a user place of your licence.', { name: current.full_name ?? current.email })
+            : t('Invite the accountant who keeps your books: they work in DrisPRO with the Accountant role and do not take a user place of your licence. If they keep other companies in DrisPRO, they see them all together.')}</p>
+        </div>
+        {!current && can('admin.write') && (
+          <form className="flex w-full gap-2 sm:w-auto" onSubmit={(e) => { e.preventDefault(); void invite.mutateAsync(email.trim()).then(() => { toast.success(t('{email} is your accountant now', { email: email.trim() })); setEmail('') }) }}>
+            <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('The accountant\u2019s email')} aria-label={t('The accountant\u2019s email')} className="sm:w-64" />
+            <Button type="submit" loading={invite.isPending}>{t('Invite')}</Button>
+          </form>
+        )}
+      </div>
+    </div>
   )
 }

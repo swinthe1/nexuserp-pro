@@ -1,0 +1,42 @@
+import type { Dict } from '../index'
+
+/** Kontabilisti i jashtëm dhe klientët e tij */
+export default {
+  'My clients': 'Klientët e mi',
+  'Every company you keep the books of, with what waits in each one. Click a line to open that company at the right page.':
+    'Çdo kompani që ua mbani librat, me atë që pret në secilën. Klikoni një rresht për ta hapur atë kompani në faqen e duhur.',
+  'Find a client': 'Gjej një klient',
+  '{n} company': '{n} kompani',
+  '{n} companies': '{n} kompani',
+  '{n} thing waits for you': '{n} gjë ju pret',
+  '{n} things wait for you': '{n} gjëra ju presin',
+  'nothing waits for you': 'asgjë nuk ju pret',
+  'No companies yet': 'Ende asnjë kompani',
+  'When a company invites you as their accountant, it appears here.': 'Kur një kompani ju fton si kontabilist të saj, shfaqet këtu.',
+  '{n} bank line to match': '{n} rresht banke për t’u lidhur',
+  '{n} bank lines to match': '{n} rreshta banke për t’u lidhur',
+  '{n} receipt to book': '{n} kupon për t’u regjistruar',
+  '{n} receipts to book': '{n} kupona për t’u regjistruar',
+  '{n} supplier invoice read, not received': '{n} faturë furnitori e lexuar, e papranuar',
+  '{n} supplier invoices read, not received': '{n} fatura furnitorësh të lexuara, të papranuara',
+  '{n} vendor bill in draft': '{n} faturë blerjeje në draft',
+  '{n} vendor bills in draft': '{n} fatura blerjeje në draft',
+  '{n} sales invoice in draft': '{n} faturë shitjeje në draft',
+  '{n} sales invoices in draft': '{n} fatura shitjeje në draft',
+  '{amount} overdue from customers': '{amount} borxhe të vonuara të klientëve',
+  'outside accountant': 'kontabilist i jashtëm',
+  'last entry {date}': 'regjistrimi i fundit {date}',
+  '{what} {period} is overdue': '{what} {period} ka kaluar afatin',
+  '{what} {period} due {date}': '{what} {period} me afat {date}',
+  'Nothing waits here': 'Asgjë nuk pret këtu',
+  'Not closed: {periods}': 'Të pambyllura: {periods}',
+  'Open now': 'E hapur tani',
+  'Outside accountant · free': 'Kontabilist i jashtëm · falas',
+  'Your accountant, free': 'Kontabilisti juaj, falas',
+  '{name} keeps your books in DrisPRO and does not take a user place of your licence.': '{name} ua mban librat në DrisPRO dhe nuk zë vend përdoruesi në licencën tuaj.',
+  'Invite the accountant who keeps your books: they work in DrisPRO with the Accountant role and do not take a user place of your licence. If they keep other companies in DrisPRO, they see them all together.':
+    'Ftoni kontabilistin që ua mban librat: punon në DrisPRO me rolin Kontabilist dhe nuk zë vend përdoruesi në licencën tuaj. Nëse mban edhe kompani të tjera në DrisPRO, i sheh të gjitha bashkë.',
+  '{email} is your accountant now': '{email} është tani kontabilisti juaj',
+  'The accountant’s email': 'Emaili i kontabilistit',
+  'Invite': 'Fto',
+} satisfies Dict

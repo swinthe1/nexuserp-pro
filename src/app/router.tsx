@@ -95,6 +95,7 @@ const SafePage = lazy(() => import('@/features/safe/safe-page'), 'SafePage')
 const PurchaseInvoicePage = lazy(() => import('@/features/procurement/pages/purchase-invoice-page'), 'PurchaseInvoicePage')
 const CardsPage = lazy(() => import('@/features/finance/pages/cards-page'), 'CardsPage')
 const CompensationsPage = lazy(() => import('@/features/finance/pages/compensations-page'), 'CompensationsPage')
+const AccountantPage = lazy(() => import('@/features/accountant/accountant-page'), 'AccountantPage')
 const ExpensesPage = lazy(() => import('@/features/finance/pages/expenses-page'), 'ExpensesPage')
 const YearEndPage = lazy(() => import('@/features/finance/pages/year-end-page'), 'YearEndPage')
 const ItemCardPage = lazy(() => import('@/features/inventory/pages/item-card-page'), 'ItemCardPage')
@@ -322,6 +323,7 @@ const router = createBrowserRouter([
       ...omsRoutes,
       ...settingsRoutes,
       ...notificationsRoutes,
+      { path: 'accountant', element: <RequirePerm perm="core.read" />, children: [{ index: true, element: <AccountantPage /> }] },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

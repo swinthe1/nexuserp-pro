@@ -1,4 +1,4 @@
-import { Download, KeyRound, Languages, LaptopMinimal, LayoutGrid, LogOut, Monitor, Moon, PanelLeft, ServerCog, Smartphone, Sparkles, Sun, UserRound } from 'lucide-react'
+import { Download, KeyRound, Languages, LaptopMinimal, LayoutGrid, LogOut, Monitor, Moon, PanelLeft, BriefcaseBusiness, ServerCog, Smartphone, Sparkles, Sun, UserRound } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/app/auth-provider'
@@ -20,7 +20,8 @@ import { AiConnectorDialog } from '@/features/portal/ai-connector'
 
 export function UserMenu() {
   const { user, signOut } = useAuth()
-  const { company, isSuperAdmin, simple, setSimple } = useCompany()
+  const { company, companies, isSuperAdmin, simple, setSimple } = useCompany()
+  const keepsBooks = companies.length > 1 || companies.some((c) => c.roles.includes('accountant'))
   const [pwOpen, setPwOpen] = React.useState(false)
   const [pcOpen, setPcOpen] = React.useState(false)
   const [aiOpen, setAiOpen] = React.useState(false)
@@ -46,6 +47,7 @@ export function UserMenu() {
         {company && (simple
           ? <DropdownMenuItem onSelect={() => setSimple(false)}><PanelLeft /> {t('Show all menus')}</DropdownMenuItem>
           : <DropdownMenuItem onSelect={() => setSimple(true)}><LayoutGrid /> {t('Simple view: large buttons')}</DropdownMenuItem>)}
+        {keepsBooks && <DropdownMenuItem asChild><Link to="/accountant"><BriefcaseBusiness /> {t('My clients')}</Link></DropdownMenuItem>}
         {company && !isDesktop && <DropdownMenuItem asChild><Link to="/notifications?view=settings"><Smartphone /> {t('Notifications on the phone')}</Link></DropdownMenuItem>}
         {company && <DropdownMenuItem onSelect={() => setAiOpen(true)}><Sparkles /> {t('DrisPRO in ChatGPT and Claude')}</DropdownMenuItem>}
         {isSuperAdmin && <DropdownMenuItem asChild><Link to="/platform"><ServerCog /> {t('Clients and licences')}</Link></DropdownMenuItem>}

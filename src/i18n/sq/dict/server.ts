@@ -669,4 +669,5 @@ export default {
   "Who sold it? Give the seller's name": "Kush e shiti? Shkruani emrin e shitësit",
   "Choose an expense account": "Zgjidhni një llogari shpenzimi",
   "Give the amount": "Shkruani shumën",
+  "This company already has its outside accountant; remove them first": "Kjo kompani e ka tashmë kontabilistin e jashtëm; hiqeni atë fillimisht",
 } satisfies Dict
