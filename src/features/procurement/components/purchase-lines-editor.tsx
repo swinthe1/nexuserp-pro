@@ -66,7 +66,8 @@ export function PurchaseLinesEditor({ form: anyForm, editable, currency, progres
   const options = React.useMemo(() => (variants.data ?? []).map((v) => ({
     value: v.id, label: v.sku,
     hint: v.product_type === 'service' ? v.name : `${v.name} · ${t('{qty} on hand', { qty: formatQty(v.on_hand) })}`,
-    keywords: [v.name],
+    // the name, every barcode and each supplier's article number find it
+    keywords: [v.name, ...(v.codes ? v.codes.split(' ') : [])],
   })), [variants.data])
 
   const applyPrice = React.useCallback(async (i: number, variantId: string, quantity: number, setDescription: boolean) => {

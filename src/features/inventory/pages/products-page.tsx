@@ -45,7 +45,7 @@ export function ProductsPage() {
     selectColumn<ProductStockRow>(),
     {
       id: 'product',
-      accessorFn: (r) => `${r.variant_name} ${r.sku} ${r.barcode ?? ''}`,
+      accessorFn: (r) => `${r.variant_name} ${r.sku} ${r.barcode ?? ''} ${r.codes ?? ''}`,
       header: ({ column }) => <ColumnHeader column={column} title={t('Product')} />,
       meta: { label: t('Product'), exportValue: (r) => r.variant_name },
       sortingFn: (a, b) => (a.original.variant_name ?? '').localeCompare(b.original.variant_name ?? ''),
@@ -125,7 +125,7 @@ export function ProductsPage() {
         isLoading={products.isLoading}
         error={products.error}
         getRowId={(r) => r.variant_id!}
-        searchPlaceholder={t('Search name, SKU or barcode')}
+        searchPlaceholder={t('Name, code, barcode or supplier code')}
         initialHidden={['sku', 'barcode', 'on_hand', 'reserved', 'incoming', 'last_received', 'activity']}
         initialSorting={[{ id: 'product', desc: false }]}
         onRowClick={(r) => navigate(`/inventory/products/${r.product_id}`)}

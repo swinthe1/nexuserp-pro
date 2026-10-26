@@ -400,6 +400,20 @@ export const useRunDepreciation = () => {
   return useAction(async (through: string) => unwrap(await supabase.rpc('run_depreciation', { p_company: companyId, p_through: through })) as unknown as
     { lines: number; amount: number; months: number })
 }
+/** depreciation recorded by itself on the first days of every month */
+export function useDepreciationAuto() {
+  const { companyId } = useCompany()
+  const qc = useQueryClient()
+  const key = ['finance', companyId, 'depreciation-auto']
+  const q = useQuery({ queryKey: key, enabled: !!companyId,
+    queryFn: async () => (unwrap(await supabase.from('company_settings').select('depreciation_auto').eq('company_id', companyId).maybeSingle()))?.depreciation_auto ?? false })
+  const set = useMutation({
+    mutationFn: async (on: boolean) => unwrap(await supabase.rpc('set_depreciation_auto', { p_company: companyId, p_on: on })),
+    onSuccess: () => qc.invalidateQueries({ queryKey: key }),
+    onError: (e) => toast.error(describeError(e)),
+  })
+  return { on: q.data ?? false, loading: q.isLoading, set }
+}
 export const useDisposeAsset = () => useAction(async (a: { id: string; date: string; proceeds: number; account?: string | null }) =>
   unwrap(await supabase.rpc('dispose_fixed_asset', { p_id: a.id, p_date: a.date, p_proceeds: a.proceeds, p_proceeds_account: a.account ?? undefined })) as unknown as
   { book_value: number; gain: number })

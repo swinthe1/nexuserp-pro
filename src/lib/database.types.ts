@@ -2009,6 +2009,7 @@ export type Database = {
           print_settings: Json
           payroll_night_pct: number | null
           payroll_holiday_pct: number | null
+          depreciation_auto: boolean
         }
         Insert: {
           id?: string
@@ -2067,6 +2068,7 @@ export type Database = {
           print_settings?: Json
           payroll_night_pct?: number | null
           payroll_holiday_pct?: number | null
+          depreciation_auto?: boolean
         }
         Update: {
           id?: string
@@ -2125,6 +2127,7 @@ export type Database = {
           print_settings?: Json
           payroll_night_pct?: number | null
           payroll_holiday_pct?: number | null
+          depreciation_auto?: boolean
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -13197,6 +13200,7 @@ export type Database = {
           last_movement: string | null
           last_sold: string | null
           last_received: string | null
+          codes: string | null
         }
         Relationships: []
       }
@@ -13316,6 +13320,7 @@ export type Database = {
           uom_code: string | null
           avg_cost: number | null
           sales_price: number | null
+          codes: string | null
         }
         Relationships: []
       }
@@ -16131,6 +16136,13 @@ export type Database = {
           p_company: string
         }
         Returns: Json
+      }
+      set_depreciation_auto: {
+        Args: {
+          p_company: string
+          p_on: boolean
+        }
+        Returns: undefined
       }
       set_member_roles: {
         Args: {

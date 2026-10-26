@@ -435,6 +435,8 @@ export const serverTemplates: [string, string][] = [
   ['Invoiced: %', 'Faturuar: {0}'],
   ['Cash: %', 'Para në arkë: {0}'],
   ['Till differences: %', 'Diferenca në arka: {0}'],
+  ['Depreciation up to % is recorded', 'Amortizimi deri në {0} u regjistrua'],
+  ['Amount: %', 'Shuma: {0}'],
   ['Overdue: %', 'Borxhe të vonuara: {0}'],
   ['Running low: %', 'Artikuj që po mbarojnë: {0}'],
   ['Waiting for approval: %', 'Presin miratim: {0}'],

@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { supabase } from '@/lib/supabase'
@@ -26,7 +27,7 @@ import { msg, t, td, tn } from '@/i18n'
 import { cn, formatDate, formatMoney, formatMonth, humanize, num, todayISO } from '@/lib/utils'
 import { usePartners } from '@/features/sales/api'
 import {
-  useAccounts, useActivateAsset, useAsset, useAssetCategories, useAssets, useBankAccounts, useCostCenters, useDisposeAsset, useRunDepreciation, useSaveAsset,
+  useAccounts, useActivateAsset, useAsset, useAssetCategories, useAssets, useBankAccounts, useCostCenters, useDepreciationAuto, useDisposeAsset, useRunDepreciation, useSaveAsset,
   type AssetRow,
 } from '../api'
 import { AccountingTab } from '../components/t-accounts'
@@ -37,6 +38,7 @@ export function AssetsPage() {
   const navigate = useNavigate()
   const assets = useAssets()
   const run = useRunDepreciation()
+  const auto = useDepreciationAuto()
   const [runOpen, setRunOpen] = React.useState(false)
   const [through, setThrough] = React.useState(monthEnd())
   const live = (assets.data ?? []).filter((a) => a.status === 'active' || a.status === 'fully_depreciated')
@@ -78,6 +80,13 @@ export function AssetsPage() {
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>{t('Run depreciation')}</DialogTitle><DialogDescription>{t('Records every planned month up to the date below, one entry per month. Months already recorded are skipped.')}</DialogDescription></DialogHeader>
           <div className="grid gap-1.5"><Label htmlFor="dep-through">{t('Up to and including')}</Label><Input id="dep-through" type="date" value={through} onChange={(e) => setThrough(e.target.value)} /></div>
+          <div className="flex items-start gap-3 rounded-lg border p-3">
+            <Switch id="dep-auto" checked={auto.on} disabled={auto.loading || auto.set.isPending} onCheckedChange={(v) => auto.set.mutate(v)} />
+            <Label htmlFor="dep-auto" className="grid gap-0.5 font-normal">
+              <span className="font-medium">{t('Record it by itself every month')}</span>
+              <span className="text-xs text-muted-foreground">{t('On the first day of each month the previous month is recorded, and finance gets a notification.')}</span>
+            </Label>
+          </div>
           <DialogFooter><Button variant="ghost" onClick={() => setRunOpen(false)}>{t('Cancel')}</Button>
             <Button loading={run.isPending} onClick={async () => {
               const r = await run.mutateAsync(through)

@@ -452,6 +452,8 @@ export default {
   "Put the asset in service": "Vëreni aktivin në përdorim",
   "Received into": "Arkëtuar në",
   "Record depreciation": "Regjistro amortizimin",
+  "Record it by itself every month": "Regjistroje vetë çdo muaj",
+  "On the first day of each month the previous month is recorded, and finance gets a notification.": "Në ditën e parë të çdo muaji regjistrohet muaji i kaluar dhe financa merr një njoftim.",
   "Record the purchase now": "Regjistro blerjen tani",
   "Recorded {amount} for {n} month": "U regjistrua {amount} për {n} muaj",
   "Recorded {amount} for {n} months": "U regjistrua {amount} për {n} muaj",

@@ -144,6 +144,8 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
   const sections = React.useMemo(() => NAV
     .filter((s) => ALWAYS_SHOWN.has(s.label) || !hidden.includes(s.label))
     .map((s) => ({ ...s, items: s.items.filter((i) => can(i.perm) && pageAllowed(i.href) && !hidden.includes(i.href)) }))
+    // a page shows once: where it first appears among the parts this business sees
+    .map((s, _, all) => ({ ...s, items: s.items.filter((i) => !all.slice(0, all.indexOf(s)).some((p) => p.items.some((x) => x.href === i.href))) }))
     .filter((s) => s.items.length), [can, pageAllowed, hidden])
   const byHref = React.useMemo(() => new Map(sections.flatMap((s) => s.items).map((i) => [i.href, i])), [sections])
 

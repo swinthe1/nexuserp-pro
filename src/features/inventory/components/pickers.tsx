@@ -22,7 +22,7 @@ export const VariantPicker = React.forwardRef<HTMLButtonElement, { value: string
   function VariantPicker({ value, onChange, ...rest }, ref) {
     const { companyId } = useCompany()
     const { data = [] } = useVariantOptions()
-    const options = React.useMemo(() => data.map((v) => ({ value: v.id, label: v.sku, hint: v.name, keywords: [v.name] })), [data])
+    const options = React.useMemo(() => data.map((v) => ({ value: v.id, label: v.sku, hint: v.name, keywords: [v.name, ...(v.codes ? v.codes.split(' ') : [])] })), [data])
     return (
       <SearchSelect
         ref={ref}

@@ -50,7 +50,8 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
   const variantOptions = React.useMemo(() => (variants.data ?? []).map((v) => ({
     value: v.id, label: v.sku,
     hint: v.product_type === 'stockable' ? t('{name} · {qty} available', { name: v.name, qty: formatQty(v.available) }) : v.name,
-    keywords: [v.name],
+    // the name, every barcode and each supplier's article number find it
+    keywords: [v.name, ...(v.codes ? v.codes.split(' ') : [])],
   })), [variants.data])
 
   const applyPrice = React.useCallback(async (i: number, variantId: string, quantity: number, setDescription: boolean) => {

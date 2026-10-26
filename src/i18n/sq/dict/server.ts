@@ -680,4 +680,11 @@ export default {
   "Enter the full address, starting with https://": "Shkruani adresën e plotë, duke filluar me https://",
   "Choose what to send": "Zgjidhni çfarë të dërgohet",
   "A company can have up to 20 webhooks": "Një kompani mund të ketë deri në 20 webhooks",
+  "Discounts given": "Zbritjet e dhëna",
+  "Markup on cost %": "Ngarkesa mbi koston %",
+  "Lines below cost": "Rreshta nën kosto",
+  "No warehouse": "Pa magazinë",
+  "No supplier": "Pa furnitor",
+  "Cost settled when the goods arrived": "Kosto e rregulluar kur erdhi malli",
+  "Depreciation could not be recorded": "Amortizimi nuk u regjistrua dot",
 } satisfies Dict

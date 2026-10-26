@@ -60,7 +60,7 @@ export default {
   'Shipments': 'Transporte',
   'Carriers and fleet': 'Transportuesit dhe mjetet',
   'Web shop': 'Dyqani online',
-  'Finance overview': 'Pasqyra financiare',
+  'Finance overview': 'Përmbledhja e financave',
   'Financial statements': 'Pasqyrat financiare',
   'Journal entries': 'Regjistrime kontabël',
   'Chart of accounts': 'Plani kontabël',
