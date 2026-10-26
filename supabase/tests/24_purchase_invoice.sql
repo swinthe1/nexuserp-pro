@@ -35,7 +35,7 @@ values (:'co', :'bill', 2, :'milk', 'Qumësht', 20, 0.5, :'vat') returning id as
 select t.throws(format($q$select public.purchase_invoice_complete(%L)$q$, :'bill'), 'needs a lot number', 'items kept by lot need their lot');
 update public.vendor_bill_lines set lot_number = 'L-2611', expiry_date = current_date + 20 where id = :'ml';
 
-select t.ok((public.purchase_item_info(:'co', :'ven', array[:'sux']::uuid[]) -> :'sux' ->> 'sales_net')::numeric = 4.6525, 'the screen gets the selling price now');
+select t.ok((public.purchase_item_info(:'co', :'ven', array[:'sux']::uuid[]) -> 'items' -> :'sux' ->> 'sales_net')::numeric = 4.6525, 'the screen gets the selling price now');
 select public.purchase_invoice_complete(:'bill') as r \gset
 select t.ok((:'r'::jsonb ->> 'status') = 'posted' and (:'r'::jsonb ->> 'lines_received')::int = 2, 'one step: received and posted');
 select t.ok((select sum(on_hand) from public.stock_levels where variant_id = :'sux' and warehouse_id = :'wh') = 10, 'the goods are in the warehouse');
@@ -46,7 +46,7 @@ select t.ok((select sales_price from public.products where id = :'p_sux') = 5.08
 select t.ok(exists (select 1 from public.price_changes where variant_id = :'sux' and new_price = 5.0847), 'and recorded among the price changes');
 select t.ok((select payment_status from public.vendor_bills where id = :'bill') = 'paid', 'paid in cash at once');
 select t.ok((select receipt_id is not null and vendor_fiscal_number = '811172824' from public.vendor_bills where id = :'bill'), 'the bill knows its receipt and the fiscal number');
-select t.ok((public.purchase_item_info(:'co', :'ven', array[:'sux']::uuid[]) -> :'sux' -> 'last' ->> 'price')::numeric = 4, 'next time it shows the last price from this supplier');
+select t.ok((public.purchase_item_info(:'co', :'ven', array[:'sux']::uuid[]) -> 'items' -> :'sux' -> 'last' ->> 'price')::numeric = 4, 'next time it shows the last price from this supplier');
 select t.throws(format($q$select public.purchase_invoice_complete(%L)$q$, :'bill'), 'Only a draft', 'it cannot be completed twice');
 
 -- no warehouse: not completed here
