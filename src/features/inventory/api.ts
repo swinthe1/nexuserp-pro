@@ -1,3 +1,4 @@
+import * as React from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
@@ -37,8 +38,25 @@ function useLookup<T>(what: string, fn: (companyId: string) => PromiseLike<{ dat
   })
 }
 
-export const useWarehouses = () =>
+const useAllWarehouses = () =>
   useLookup('warehouses', (c) => supabase.from('warehouses').select('id, code, name, warehouse_type, city, is_active').eq('company_id', c).is('deleted_at', null).order('code'))
+
+/** the warehouses this person works in (null = all of them) */
+export function useMyWarehouseAccess() {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: invKeys.lookups(companyId, 'my-warehouses'), enabled: !!companyId, staleTime: 5 * 60_000,
+    queryFn: async () => unwrap(await supabase.rpc('my_warehouse_access', { p_company: companyId })) as string[] | null,
+  })
+}
+/** The warehouses to choose from: only the ones this person works in, unless `all` (transfers, the warehouse list). */
+export function useWarehouses(opts?: { all?: boolean }) {
+  const q = useAllWarehouses()
+  const acc = useMyWarehouseAccess()
+  const mine = acc.data
+  const data = React.useMemo(() => (!opts?.all && mine?.length && q.data ? q.data.filter((w) => mine.includes(w.id)) : q.data), [q.data, mine, opts?.all])
+  return Object.assign({}, q, { data })
+}
 
 export type LocationRow = Pick<Tables<'warehouse_locations'>, 'id' | 'code' | 'name' | 'location_type' | 'warehouse_id' | 'parent_id' | 'is_pickable' | 'is_active' | 'barcode'>
 export const useLocations = () =>

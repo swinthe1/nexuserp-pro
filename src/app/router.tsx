@@ -93,6 +93,8 @@ const CompensationsPage = lazy(() => import('@/features/finance/pages/compensati
 const YearEndPage = lazy(() => import('@/features/finance/pages/year-end-page'), 'YearEndPage')
 const ItemCardPage = lazy(() => import('@/features/inventory/pages/item-card-page'), 'ItemCardPage')
 const LabelsPage = lazy(() => import('@/features/inventory/pages/labels-page'), 'LabelsPage')
+const PriceLevelsPage = lazy(() => import('@/features/inventory/pages/price-levels-page'), 'PriceLevelsPage')
+const PriceLevelPage = lazy(() => import('@/features/inventory/pages/price-levels-page'), 'PriceLevelPage')
 const AgentPage = lazy(() => import('@/features/agent/agent-page'), 'AgentPage')
 const AgentsPage = lazy(() => import('@/features/agent/agents-page'), 'AgentsPage')
 const LoyaltyPage = lazy(() => import('@/features/loyalty/loyalty-page'), 'LoyaltyPage')
@@ -166,6 +168,9 @@ const router = createBrowserRouter([
         { path: 'movements', element: <MovementsPage /> },
         { path: 'item-card', element: <ItemCardPage /> },
         { path: 'labels', element: <LabelsPage /> },
+        { path: 'levelling', element: <PriceLevelsPage /> },
+        { path: 'levelling/new', element: <PriceLevelPage key="lv-new" /> },
+        { path: 'levelling/:id', element: <PriceLevelPage key="lv" /> },
         { path: 'alerts', element: <AlertsPage /> },
         { path: 'prices', element: <PricesPage /> },
         { path: 'read-invoice', element: <ReadInvoicePage /> },

@@ -81,7 +81,7 @@ export function renderDocHtml(d: PrintDoc): { body: string; css: string } {
   const words = s.show_words && getLocale() === 'sq' ? `<div class="words">${esc(t('In words'))}: ${esc(amountInWords(isVoucher(d) ? d.total : d.total, d.currency))}</div>` : ''
   const docText = d.company.settings?.texts?.[textKey(d)]
   const notes = [d.terms, d.notes, docText].filter(Boolean).map((x) => `<div class="notes">${esc(x)}</div>`).join('')
-  const banks = s.show_banks && d.company.banks.length && ['sales_invoice', 'proforma', 'sales_quote', 'sales_order'].includes(d.kind)
+  const banks = s.show_banks && d.company.banks.length && ['sales_invoice', 'advance_invoice', 'proforma', 'sales_quote', 'sales_order'].includes(d.kind)
     ? `<div class="banks"><b>${esc(t('Bank accounts'))}:</b> ${d.company.banks.map((b) => esc(`${b.bank} · ${b.iban}${b.swift ? ` · ${b.swift}` : ''}${b.currency !== d.company.base_currency ? ` (${b.currency})` : ''}`)).join('<br>')}</div>` : ''
   const fiscal = d.fiscal?.fic ? `<div class="fiscal">NIVF: ${esc(d.fiscal.iic)} · NSLF: ${esc(d.fiscal.fic)}${d.fiscal.tcr ? ` · TCR: ${esc(d.fiscal.tcr)}` : ''}${d.fiscal.business_unit ? ` · ${esc(t('Business unit'))}: ${esc(d.fiscal.business_unit)}` : ''}${d.fiscal.operator ? ` · ${esc(t('Operator'))}: ${esc(d.fiscal.operator)}` : ''}</div>` : ''
   const [signL, signR] = isVoucher(d) ? [d.kind === 'receipt_voucher' ? t('Received by') : t('Paid by'), d.kind === 'receipt_voucher' ? t('Paid by') : t('Received by')]
@@ -119,7 +119,7 @@ export function renderDocHtml(d: PrintDoc): { body: string; css: string } {
       <div><span>${esc(t('Without VAT'))}</span><span>${esc(nf(d.subtotal, dec))}</span></div>
       <div><span>${esc(t('VAT'))}</span><span>${esc(nf(d.tax_total, dec))}</span></div>
       <div class="big"><span>${esc(t('Total'))}</span><span>${esc(nf(d.total, dec))} ${esc(d.currency)}</span></div>
-      ${d.kind === 'sales_invoice' && d.paid ? `<div><span>${esc(t('Paid'))}</span><span>${esc(nf(d.paid, dec))}</span></div><div><b>${esc(t('Still to pay'))}</b><b>${esc(nf(d.due, dec))}</b></div>` : ''}
+      ${(d.kind === 'sales_invoice' || d.kind === 'advance_invoice') && d.paid ? `<div><span>${esc(t('Paid'))}</span><span>${esc(nf(d.paid, dec))}</span></div><div><b>${esc(t('Still to pay'))}</b><b>${esc(nf(d.due, dec))}</b></div>` : ''}
       ${d.currency !== d.company.base_currency && d.total_base ? `<div class="sm"><span>${esc(t('In {currency}', { currency: d.company.base_currency }))}</span><span>${esc(nf(d.total_base, dec))}</span></div>` : ''}
     </div>` : `<div class="tot"><div><span>${esc(t('Lines'))}</span><span>${d.lines.length}</span></div><div><span>${esc(t('Total quantity'))}</span><span>${esc(qf(d.lines.reduce((a, l) => a + Number(l.qty), 0)))}</span></div></div>`
   const body = `${top}<div class="boxes">${partner}${det}</div>

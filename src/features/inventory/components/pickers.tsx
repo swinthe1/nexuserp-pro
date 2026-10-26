@@ -57,8 +57,8 @@ export function LocationPicker({ warehouseId, value, onChange, disabled, ...rest
   return <SearchSelect value={value} onChange={onChange} options={options} placeholder={t('Location')} searchPlaceholder={t('Shelf code or scan')} disabled={disabled || !warehouseId} {...rest} />
 }
 
-export function WarehousePicker({ value, onChange, disabled, ...rest }: { value: string | null | undefined; onChange: (id: string | null) => void; disabled?: boolean; 'aria-invalid'?: boolean }) {
-  const { data = [] } = useWarehouses()
+export function WarehousePicker({ value, onChange, disabled, all, ...rest }: { value: string | null | undefined; onChange: (id: string | null) => void; disabled?: boolean; all?: boolean; 'aria-invalid'?: boolean }) {
+  const { data = [] } = useWarehouses({ all })
   const options = data.filter((w) => w.is_active).map((w) => ({ value: w.id, label: td(w.name), hint: w.code }))
   return <SearchSelect value={value} onChange={onChange} options={options} placeholder={t('Warehouse')} disabled={disabled} {...rest} />
 }

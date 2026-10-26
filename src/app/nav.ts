@@ -31,6 +31,7 @@ export const NAV: NavSection[] = [
       { label: msg('Labels'), href: '/inventory/labels', icon: Tag, perm: 'inventory.read', keywords: ['etiketa', 'etiketat', 'barkod', 'barcode', 'shelf', 'raft', 'çmim', 'printo'] },
       { label: msg('Movements'), href: '/inventory/movements', icon: FileStack, perm: 'inventory.read', keywords: ['ledger', 'history'] },
       { label: msg('Low stock'), href: '/inventory/alerts', icon: TriangleAlert, perm: 'inventory.read', keywords: ['reorder', 'alerts', 'replenish'] },
+      { label: msg('Price levelling'), href: '/inventory/levelling', icon: Tags, perm: 'inventory.read', keywords: ['nivelim', 'nivelimi', 'nivelimi i cmimeve', 'ndryshim cmimi', 'price change', 'repricing'] },
       { label: msg('New selling prices'), href: '/inventory/prices', icon: Tags, perm: 'inventory.read', keywords: ['margin', 'markup', 'price', 'cost', 'marzh', 'cmim'] },
       { label: msg('Goods receipts'), href: '/inventory/receipts', icon: PackageCheck, perm: 'inventory.read', keywords: ['grn', 'receive', 'import'] },
       { label: msg('Invoice from a photo'), href: '/inventory/read-invoice', icon: ScanText, perm: 'inventory.read', keywords: ['ocr', 'scan', 'photo', 'foto', 'fatura', 'ai', 'pdf'] },

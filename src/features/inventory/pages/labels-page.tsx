@@ -23,7 +23,7 @@ import { useCategories } from '../api'
 
 const KEY = 'drispro.labels'
 const loadOpts = (): LabelOptions => { try { return { ...LABEL_DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) ?? '{}'), start: 1 } } catch { return LABEL_DEFAULTS } }
-type Source = 'items' | 'receipt' | 'bill' | 'price_changes' | 'category'
+type Source = 'items' | 'receipt' | 'bill' | 'price_changes' | 'category' | 'price_level'
 
 /** Inventory › Labels: shelf, price and barcode labels for A4 sheets or a label printer. */
 export function LabelsPage() {
@@ -61,8 +61,9 @@ export function LabelsPage() {
   React.useEffect(() => {
     if (started.current || !companyId) return
     started.current = true
-    const r = params.get('receipt'), b = params.get('bill'), v = params.get('items')
-    if (r) add.mutate({ source: 'receipt', ids: [r] })
+    const r = params.get('receipt'), b = params.get('bill'), v = params.get('items'), lv = params.get('level')
+    if (lv) add.mutate({ source: 'price_level', ids: [lv] })
+    else if (r) add.mutate({ source: 'receipt', ids: [r] })
     else if (b) add.mutate({ source: 'bill', ids: [b] })
     else if (v) add.mutate({ source: 'items', ids: v.split(',').filter(Boolean) })
   }, [companyId]) // eslint-disable-line react-hooks/exhaustive-deps

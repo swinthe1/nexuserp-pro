@@ -448,3 +448,20 @@ export function useDirty<T>(initial: T | undefined) {
   const dirty = JSON.stringify(value) !== JSON.stringify(initial)
   return [value, setValue, dirty] as const
 }
+
+/** warehouses each person works in (members not listed work in all) */
+export function useMemberWarehouses() {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: ['member-warehouses', companyId], enabled: !!companyId,
+    queryFn: async () => (unwrap(await supabase.rpc('member_warehouses', { p_company: companyId })) ?? {}) as Record<string, string[]>,
+  })
+}
+export function useSetMemberWarehouses() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (a: { member: string; warehouses: string[] }) => unwrap(await supabase.rpc('member_set_warehouses', { p_member: a.member, p_warehouses: a.warehouses })),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['member-warehouses'] }); void qc.invalidateQueries({ queryKey: ['inv'] }) },
+    onError: (e) => toast.error(describeError(e)),
+  })
+}

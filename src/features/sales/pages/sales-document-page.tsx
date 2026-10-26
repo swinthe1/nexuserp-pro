@@ -1,4 +1,6 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { DocumentActions } from '@/components/document-actions'
+import { AdvanceButton, AdvancesCard } from '../components/advances'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Ban, Check, CheckCheck, FileText, PackageCheck, PackageOpen, Receipt, Repeat, RotateCcw, Send, ShoppingCart, Trash2, Truck, Undo2, X,
@@ -61,7 +63,7 @@ export function SalesDocumentPage({ kind }: { kind: DocKind }) {
   if (id && doc.isLoading) return <Skeleton className="mx-auto h-[480px] max-w-6xl" />
   if (id && doc.isError) return <ErrorState error={doc.error} onRetry={() => void doc.refetch()} />
   if (id && !doc.data) return <EmptyState title={t(CFG[kind].title)} description={t('It may have been deleted.')} action={<Button asChild variant="outline"><Link to={CFG[kind].list}>{t('Back to the list')}</Link></Button>} />
-  return <SalesDocumentForm key={`${doc.data?.id ?? 'new'}-${doc.data?.status ?? ''}`} kind={kind} doc={doc.data} />
+  return <SalesDocumentForm key={`${doc.data?.id ?? 'new'}-${doc.data?.status ?? ''}-${doc.data?.updated_at ?? ''}`} kind={kind} doc={doc.data} />
 }
 
 function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
@@ -104,6 +106,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
         key: l.id, variant_id: l.variant_id, description: l.description, quantity: l.quantity, unit_price: l.unit_price,
         discount_pct: l.discount_pct, tax_code_id: l.tax_code_id, price_source: 'manual' as const, sales_order_line_id: l.sales_order_line_id ?? null,
         pack_id: l.pack_id ?? null, pack_qty: l.pack_qty ?? null,
+        advance_invoice_id: (l as { advance_invoice_id?: string | null }).advance_invoice_id ?? null, account_id: (l as { account_id?: string | null }).account_id ?? null,
       })),
     } : {
       partner_id: params.get('customer') ?? (undefined as unknown as string), doc_date: todayISO(),
@@ -149,6 +152,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
         line_no: i + 1, variant_id: l.variant_id ?? null, description: l.description, quantity: l.quantity, unit_price: l.unit_price,
         discount_pct: l.discount_pct, tax_code_id: l.tax_code_id ?? null, sales_order_line_id: l.sales_order_line_id ?? null,
         pack_id: l.pack_id ?? null, pack_qty: l.pack_qty ?? null,
+        advance_invoice_id: (l as { advance_invoice_id?: string | null }).advance_invoice_id ?? null, account_id: (l as { account_id?: string | null }).account_id ?? null,
       })),
     })
   }
@@ -210,6 +214,9 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
       if (deliverable && (can('wms.write') || can('sales.write'))) {
         actions.push(<Button key="del" variant="outline" loading={createDelivery.isPending} onClick={async () => { const d = await createDelivery.mutateAsync(doc.id); toast.success(t('Delivery created')); navigate(`/sales/deliveries/${d}`) }}><Truck /> {t('Create delivery')}</Button>)
       }
+    }
+    if (['confirmed', 'partially_delivered'].includes(doc.status) && doc.invoice_status !== 'invoiced' && can('invoicing.write')) {
+      actions.push(<AdvanceButton key="adv" order={{ id: doc.id, total: num(doc.total), currency_code: doc.currency_code as string }} />)
     }
     if (['confirmed', 'partially_delivered', 'delivered', 'closed'].includes(doc.status) && doc.invoice_status !== 'invoiced' && can('invoicing.write')) {
       actions.push(<Button key="inv" loading={createInvoice.isPending} onClick={async () => { const i = await createInvoice.mutateAsync(doc.id); toast.success(t('Draft invoice created')); navigate(`/sales/invoices/${i}`) }}><Receipt /> {t('Create invoice')}</Button>)
@@ -347,7 +354,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
       <div className="mx-auto max-w-6xl">
         <PageHeader
           back={{ href: cfg.list, label: kind === 'quotes' ? t('Quotes') : kind === 'orders' ? t('Sales orders') : t('Invoices') }}
-          title={<>{isCredit && <span className="mr-2 text-muted-foreground">{t('Credit note')}</span>}{title}</>}
+          title={<>{isCredit && <span className="mr-2 text-muted-foreground">{t('Credit note')}</span>}{kind === 'invoices' && doc?.is_advance && <span className="mr-2 text-muted-foreground">{t('Advance invoice')}</span>}{title}</>}
           meta={doc && <>
             <StatusBadge status={doc.status} />
             {kind === 'orders' && doc.status !== 'draft' && <StatusBadge status={doc.invoice_status as string} />}
@@ -388,6 +395,7 @@ function SidePanel({ kind, doc, availability, currency, base }: {
   kind: DocKind; doc?: Doc; currency: string; base: string
   availability?: { line_id: string | null; sku: string | null; ordered: number | null; reserved: number | null; delivered: number | null; to_reserve: number | null; available: number | null; incoming: number | null; is_stockable: boolean | null }[]
 }) {
+  const qc = useQueryClient()
   if (!doc) {
     return (
       <Card><CardHeader><CardTitle>{t('How prices are filled in')}</CardTitle></CardHeader>
@@ -421,7 +429,7 @@ function SidePanel({ kind, doc, availability, currency, base }: {
     const q = doc.quote as { id: string; number: string } | null
     if (q) links.push({ label: t('Quote {number}', { number: q.number }), href: `/sales/quotes/${q.id}` })
     ;((doc.deliveries as { id: string; number: string; status: string }[] | null) ?? []).forEach((d) => links.push({ label: d.number, href: `/sales/deliveries/${d.id}`, status: d.status }))
-    ;((doc.invoices as { id: string; number: string; status: string }[] | null) ?? []).forEach((i) => links.push({ label: i.number, href: `/sales/invoices/${i.id}`, status: i.status }))
+    ;((doc.invoices as { id: string; number: string; status: string; deleted_at?: string | null }[] | null) ?? []).filter((i) => !i.deleted_at).forEach((i) => links.push({ label: i.number, href: `/sales/invoices/${i.id}`, status: i.status }))
   }
   if (kind === 'invoices') {
     const o = doc.order as { id: string; number: string } | null
@@ -474,6 +482,10 @@ function SidePanel({ kind, doc, availability, currency, base }: {
             })}
           </CardContent>
         </Card>
+      )}
+      {kind === 'orders' && doc.status !== 'draft' && <AdvancesCard orderId={doc.id} />}
+      {kind === 'invoices' && doc.status === 'draft' && doc.document_type === 'sales_invoice' && !doc.is_advance && (
+        <AdvancesCard partnerId={doc.partner_id as string} draftInvoiceId={doc.id} onDeducted={() => void qc.invalidateQueries({ queryKey: ['sales'] })} />
       )}
       {kind === 'orders' && doc.status === 'draft' && <p className={cn('px-1 text-xs text-muted-foreground')}>{t("Confirming checks the discount limit and the customer's credit, then reserves stock.")}</p>}
     </div>

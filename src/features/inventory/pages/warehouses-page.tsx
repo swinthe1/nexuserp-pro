@@ -36,7 +36,7 @@ const locationSchema = z.object({
 
 export function WarehousesPage() {
   const { company } = useCompany()
-  const warehouses = useWarehouses()
+  const warehouses = useWarehouses({ all: true })
   const locations = useLocations()
   const levels = useStockLevels()
   const wh = useMasterData('warehouses')

@@ -158,6 +158,15 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
                 const amt = l ? lineAmounts(l, rateOf(l.tax_code_id)) : { sub: 0 }
                 const v = variantLabel(l?.variant_id)
                 const short = v && v.product_type === 'stockable' && num(l?.quantity) > num(v.available)
+                if (l?.advance_invoice_id) return (
+                  <TableRow key={f.id} className="bg-muted/30 hover:bg-muted/30">
+                    <TableCell className="text-[13px] text-muted-foreground">{i + 1}</TableCell>
+                    <TableCell colSpan={4} className="text-[13px]"><span className="font-medium">{t('Advance deducted')}</span> · {l.description}</TableCell>
+                    <TableCell className="text-[13px]">{taxName(l.tax_code_id)}</TableCell>
+                    <TableCell className="text-right tabular text-[13px] font-medium">{formatMoney(amt.sub)}</TableCell>
+                    <TableCell><Button type="button" variant="ghost" size="icon-sm" onClick={() => lines.remove(i)} aria-label={t('Remove line {n}', { n: i + 1 })}><Trash2 /></Button></TableCell>
+                  </TableRow>
+                )
                 return (
                   <TableRow key={f.id} className="align-top hover:bg-transparent">
                     <TableCell className="pt-4 text-[13px] text-muted-foreground">{i + 1}</TableCell>

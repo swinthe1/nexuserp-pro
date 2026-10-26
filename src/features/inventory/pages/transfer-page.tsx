@@ -140,13 +140,13 @@ function TransferForm({ doc }: { doc?: TransferDoc }) {
         <Card>
           <CardContent className="grid items-end gap-4 p-4 sm:grid-cols-[1fr_auto_1fr_180px]">
             <FormField control={form.control} name="from_warehouse_id" render={({ field }) => (
-              <FormItem><FormLabel>{t('From')}</FormLabel><FormControl><WarehousePicker value={field.value} disabled={field.disabled} onChange={(v) => {
+              <FormItem><FormLabel>{t('From')}</FormLabel><FormControl><WarehousePicker all value={field.value} disabled={field.disabled} onChange={(v) => {
                 field.onChange(v ?? ''); form.getValues('lines').forEach((_, i) => form.setValue(`lines.${i}.from_location_id`, v ? stockLoc(v) : ''))
               }} /></FormControl><FormMessage /></FormItem>
             )} />
             <ArrowRight className="mb-2.5 hidden size-4 text-muted-foreground sm:block" />
             <FormField control={form.control} name="to_warehouse_id" render={({ field }) => (
-              <FormItem><FormLabel>{t('To')}</FormLabel><FormControl><WarehousePicker value={field.value} disabled={field.disabled} onChange={(v) => {
+              <FormItem><FormLabel>{t('To')}</FormLabel><FormControl><WarehousePicker all value={field.value} disabled={field.disabled} onChange={(v) => {
                 field.onChange(v ?? ''); form.getValues('lines').forEach((_, i) => form.setValue(`lines.${i}.to_location_id`, v ? stockLoc(v) : ''))
               }} /></FormControl><FormMessage /></FormItem>
             )} />

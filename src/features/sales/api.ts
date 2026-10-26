@@ -215,7 +215,7 @@ export function useSalesDocuments<T>(kind: SalesKind) {
 
 const DETAIL_SELECT: Record<SalesKind, string> = {
   quotes: '*, lines:sales_quote_lines(*), opportunity:opportunities(id, name), orders:sales_orders(id, number, status)',
-  orders: '*, lines:sales_order_lines(*), quote:sales_quotes(id, number), deliveries(id, number, status, scheduled_date, total_cost), invoices:sales_invoices(id, number, status, document_type, total)',
+  orders: '*, lines:sales_order_lines(*), quote:sales_quotes(id, number), deliveries(id, number, status, scheduled_date, total_cost), invoices:sales_invoices(id, number, status, document_type, total, deleted_at)',
   invoices: '*, lines:sales_invoice_lines(*), order:sales_orders(id, number)',
   deliveries: '*, lines:delivery_lines(*), order:sales_orders(id, number, status), partner:business_partners(name)',
 }

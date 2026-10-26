@@ -1583,6 +1583,7 @@ export type Database = {
           deleted_by: string | null
           view_mode: string
           home_tiles: string[] | null
+          warehouse_ids: string[] | null
         }
         Insert: {
           id?: string
@@ -1599,6 +1600,7 @@ export type Database = {
           deleted_by?: string | null
           view_mode?: string
           home_tiles?: string[] | null
+          warehouse_ids?: string[] | null
         }
         Update: {
           id?: string
@@ -1615,6 +1617,7 @@ export type Database = {
           deleted_by?: string | null
           view_mode?: string
           home_tiles?: string[] | null
+          warehouse_ids?: string[] | null
         }
         Relationships: [
           { foreignKeyName: "company_members_company_fk"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -6589,6 +6592,119 @@ export type Database = {
           { foreignKeyName: "price_changes_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      price_level_lines: {
+        Row: {
+          id: string
+          company_id: string
+          level_id: string
+          line_no: number
+          variant_id: string
+          old_price: number | null
+          new_price: number
+          quantity: number | null
+          value_change: number | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          level_id: string
+          line_no?: number
+          variant_id: string
+          old_price?: number | null
+          new_price: number
+          quantity?: number | null
+          value_change?: number | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          level_id?: string
+          line_no?: number
+          variant_id?: string
+          old_price?: number | null
+          new_price?: number
+          quantity?: number | null
+          value_change?: number | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "price_level_lines_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "price_level_lines_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "price_level_lines_level_id_fkey"; columns: ["level_id"]; isOneToOne: false; referencedRelation: "price_levels"; referencedColumns: ["id"] },
+        ]
+      }
+      price_levels: {
+        Row: {
+          id: string
+          company_id: string
+          number: string | null
+          status: string
+          level_date: string
+          warehouse_id: string | null
+          notes: string | null
+          value_change: number
+          posted_at: string | null
+          posted_by: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          number?: string | null
+          status?: string
+          level_date?: string
+          warehouse_id?: string | null
+          notes?: string | null
+          value_change?: number
+          posted_at?: string | null
+          posted_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          number?: string | null
+          status?: string
+          level_date?: string
+          warehouse_id?: string | null
+          notes?: string | null
+          value_change?: number
+          posted_at?: string | null
+          posted_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "price_levels_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "price_levels_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "price_levels_posted_by_fkey"; columns: ["posted_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
       price_list_items: {
         Row: {
           id: string
@@ -8676,6 +8792,7 @@ export type Database = {
           updated_by: string | null
           pack_id: string | null
           pack_qty: number | null
+          advance_invoice_id: string | null
         }
         Insert: {
           id?: string
@@ -8703,6 +8820,7 @@ export type Database = {
           updated_by?: string | null
           pack_id?: string | null
           pack_qty?: number | null
+          advance_invoice_id?: string | null
         }
         Update: {
           id?: string
@@ -8730,6 +8848,7 @@ export type Database = {
           updated_by?: string | null
           pack_id?: string | null
           pack_qty?: number | null
+          advance_invoice_id?: string | null
         }
         Relationships: [
           { foreignKeyName: "sales_invoice_lines_company_id_account_id_fkey"; columns: ["company_id", "account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["company_id", "id"] },
@@ -8781,6 +8900,7 @@ export type Database = {
           deleted_by: string | null
           is_opening: boolean
           recurring_id: string | null
+          is_advance: boolean
         }
         Insert: {
           id?: string
@@ -8819,6 +8939,7 @@ export type Database = {
           deleted_by?: string | null
           is_opening?: boolean
           recurring_id?: string | null
+          is_advance?: boolean
         }
         Update: {
           id?: string
@@ -8857,6 +8978,7 @@ export type Database = {
           deleted_by?: string | null
           is_opening?: boolean
           recurring_id?: string | null
+          is_advance?: boolean
         }
         Relationships: [
           { foreignKeyName: "sales_invoices_company_id_billing_address_id_fkey"; columns: ["company_id", "billing_address_id"]; isOneToOne: false; referencedRelation: "partner_addresses"; referencedColumns: ["company_id", "id"] },
@@ -12185,6 +12307,20 @@ export type Database = {
         }
         Returns: string
       }
+      advance_invoice_create: {
+        Args: {
+          p: Json
+        }
+        Returns: string
+      }
+      advance_invoices: {
+        Args: {
+          p_company: string
+          p_order?: string
+          p_partner?: string
+        }
+        Returns: Json
+      }
       agent_bootstrap: {
         Args: {
           p_company: string
@@ -13226,6 +13362,13 @@ export type Database = {
         }
         Returns: string
       }
+      invoice_add_advances: {
+        Args: {
+          p_invoice: string
+          p_any?: boolean
+        }
+        Returns: number
+      }
       item_card: {
         Args: {
           p_variant: string
@@ -13489,6 +13632,19 @@ export type Database = {
         }
         Returns: undefined
       }
+      member_set_warehouses: {
+        Args: {
+          p_member: string
+          p_warehouses: string[]
+        }
+        Returns: undefined
+      }
+      member_warehouses: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       message_retry: {
         Args: {
           p_id: string
@@ -13556,6 +13712,12 @@ export type Database = {
       my_team_leave: {
         Args: Record<PropertyKey, never>
         Returns: { id: string | null; number: string | null; status: string | null; employee_id: string | null; employee: string | null; leave_type: string | null; start_date: string | null; end_date: string | null; days: number | null; reason: string | null; created_at: string | null; remaining: number | null }[]
+      }
+      my_warehouse_access: {
+        Args: {
+          p_company: string
+        }
+        Returns: string[]
       }
       next_partner_code: {
         Args: {
@@ -14007,6 +14169,26 @@ export type Database = {
           p_relayed?: boolean
         }
         Returns: undefined
+      }
+      price_level_items: {
+        Args: {
+          p_company: string
+          p_variants: string[]
+          p_warehouse?: string
+        }
+        Returns: Json
+      }
+      price_level_post: {
+        Args: {
+          p_id: string
+        }
+        Returns: Json
+      }
+      price_level_print: {
+        Args: {
+          p_id: string
+        }
+        Returns: Json
       }
       price_rules_save: {
         Args: {

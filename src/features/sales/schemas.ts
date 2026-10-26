@@ -9,14 +9,17 @@ export const salesLineSchema = z.object({
   variant_id: optUuid,
   description: z.string().trim().min(1, 'Enter a description'),
   quantity: num('Enter a quantity').positive('Must be above 0'),
-  unit_price: num('Enter a price').nonnegative('Cannot be negative'),
+  unit_price: num('Enter a price'),
   discount_pct: num('Enter a discount').min(0).max(100, 'Max 100%'),
   tax_code_id: optUuid,
   price_source: z.enum(['auto', 'manual']).default('manual'),
   sales_order_line_id: optUuid,
   pack_id: optUuid,
   pack_qty: z.coerce.number().positive().nullable().optional(),
-})
+  /** a deduction of an advance invoice: negative, booked to customer advances */
+  advance_invoice_id: optUuid,
+  account_id: optUuid,
+}).refine((l) => l.unit_price >= 0 || !!l.advance_invoice_id, { message: msg('Cannot be negative'), path: ['unit_price'] })
 export type SalesLineValues = z.infer<typeof salesLineSchema>
 
 export const salesDocSchema = z.object({

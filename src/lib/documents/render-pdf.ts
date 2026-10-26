@@ -147,7 +147,7 @@ export async function renderDocPdf(d: PrintDoc) {
     const rows: [string, string, boolean?][] = prices && !vatCols ? [[t('Value'), `${nf(d.total, dec)} ${d.currency}`, true]] : prices ? [
       ...(d.discount_total ? [[t('Discount'), nf(d.discount_total, dec)] as [string, string]] : []),
       [t('Without VAT'), nf(d.subtotal, dec)], [t('VAT'), nf(d.tax_total, dec)], [t('Total'), `${nf(d.total, dec)} ${d.currency}`, true],
-      ...(d.kind === 'sales_invoice' && d.paid ? [[t('Paid'), nf(d.paid, dec)] as [string, string], [t('Still to pay'), nf(d.due, dec), true] as [string, string, boolean]] : []),
+      ...((d.kind === 'sales_invoice' || d.kind === 'advance_invoice') && d.paid ? [[t('Paid'), nf(d.paid, dec)] as [string, string], [t('Still to pay'), nf(d.due, dec), true] as [string, string, boolean]] : []),
     ] : [[t('Lines'), String(d.lines.length)], [t('Total quantity'), qf(d.lines.reduce((a, l) => a + Number(l.qty), 0))]]
     let ty = y + 1
     rows.forEach(([k, v, strong]) => {
@@ -165,7 +165,7 @@ export async function renderDocPdf(d: PrintDoc) {
     const lines = pdf.splitTextToSize(n, R - L); if (y + lines.length * 4 > 270) { pdf.addPage(); y = 16 }
     pdf.text(lines, L, y); y += lines.length * 4 + 2
   }
-  if (s.show_banks && d.company.banks.length && ['sales_invoice', 'proforma', 'sales_quote', 'sales_order'].includes(d.kind)) {
+  if (s.show_banks && d.company.banks.length && ['sales_invoice', 'advance_invoice', 'proforma', 'sales_quote', 'sales_order'].includes(d.kind)) {
     pdf.setFont('helvetica', 'bold'); pdf.text(`${t('Bank accounts')}:`, L, y); pdf.setFont('helvetica', 'normal')
     d.company.banks.forEach((b, i) => pdf.text(`${b.bank} · ${b.iban}${b.swift ? ` · ${b.swift}` : ''}${b.currency !== d.company.base_currency ? ` (${b.currency})` : ''}`, L + 30, y + i * 4))
     y += d.company.banks.length * 4 + 2

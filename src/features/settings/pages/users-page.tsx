@@ -16,7 +16,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { t, td } from '@/i18n'
 import { formatDate, initials } from '@/lib/utils'
-import { type CompanyUser, type RoleRow, useCompanyUsers, useInviteMember, useRoles, useSetMemberRoles, useSetMemberStatus } from '../api'
+import { type CompanyUser, type RoleRow, useCompanyUsers, useInviteMember, useRoles, useMemberWarehouses, useSetMemberRoles, useSetMemberStatus, useSetMemberWarehouses } from '../api'
+import { useWarehouses } from '@/features/inventory/api'
 import { PinDialog, SharedTillCard, useMemberExtras, useSetView } from '../components/easy-access'
 
 export function UsersPage() {
@@ -32,6 +33,9 @@ export function UsersPage() {
   const extras = useMemberExtras()
   const setView = useSetView()
   const [pinFor, setPinFor] = React.useState<CompanyUser | null>(null)
+  const [whFor, setWhFor] = React.useState<CompanyUser | null>(null)
+  const memberWh = useMemberWarehouses()
+  const whs = useWarehouses({ all: true })
 
   const roleOptions = React.useMemo(() => (roles.data ?? []).filter((r) => r.is_assignable).map((r) => ({ value: r.name, label: td(r.name) })), [roles.data])
   const cols = React.useMemo<ColumnDef<CompanyUser>[]>(() => [
@@ -48,6 +52,12 @@ export function UsersPage() {
     { id: 'roles', accessorFn: (u) => u.role_names.map(td).join(', '), filterFn: (row, _id, value: string[]) => !value?.length || row.original.role_names.some((n) => value.includes(n)),
       header: t('Roles'), meta: { label: t('Roles') },
       cell: ({ row: { original: u } }) => <div className="flex flex-wrap gap-1">{u.role_names.map((n) => <Badge key={n} variant="secondary">{td(n)}</Badge>)}</div> },
+    { id: 'warehouses', header: t('Warehouses'), meta: { label: t('Warehouses'), exportValue: (u) => (memberWh.data?.[u.member_id] ?? []).map((id) => whs.data?.find((w) => w.id === id)?.name ?? '').join(', ') || t('All') },
+      cell: ({ row: { original: u } }) => {
+        const ids = memberWh.data?.[u.member_id]
+        return ids?.length ? <div className="flex flex-wrap gap-1">{ids.map((id) => <Badge key={id} variant="outline">{td(whs.data?.find((w) => w.id === id)?.name ?? '…')}</Badge>)}</div>
+          : <span className="text-xs text-muted-foreground">{t('All')}</span>
+      } },
     { id: 'easy', header: t('Sign-in and view'), meta: { label: t('Sign-in and view'), noExport: true },
       cell: ({ row: { original: u } }) => {
         const x = extras.data?.get(u.member_id)
@@ -69,6 +79,7 @@ export function UsersPage() {
           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon-sm" aria-label={t('Actions for {name}', { name: u.full_name ?? u.email })}><MoreHorizontal /></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onSelect={() => setEditing(u)}>{t('Change roles')}</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setWhFor(u)}>{t('Warehouses they work in')}</DropdownMenuItem>
             {u.user_id && u.status === 'active' && <DropdownMenuItem onSelect={() => setPinFor(u)}>{extras.data?.get(u.member_id)?.has_pin ? t('Change the PIN') : t('Give a PIN for the shared till')}</DropdownMenuItem>}
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{t('What they see')}</DropdownMenuLabel>
@@ -89,7 +100,7 @@ export function UsersPage() {
           </DropdownMenuContent>
         </DropdownMenu>
       ) },
-  ], [write, setStatus, extras.data, setView])
+  ], [write, setStatus, extras.data, setView, memberWh.data, whs.data])
 
   return (
     <>
@@ -108,6 +119,7 @@ export function UsersPage() {
         empty={{ title: t('Nobody else yet'), description: t('Invite colleagues by email. For people without an account, the DrisPRO administrator makes one.') }} />
       <InviteDialog open={inviteOpen} onOpenChange={(o) => { setInviteOpen(o); if (!o && params.get('invite')) setParams({}, { replace: true }) }} roles={roles.data ?? []} />
       {pinFor && <PinDialog member={pinFor.member_id} name={pinFor.full_name ?? pinFor.email} hasPin={!!extras.data?.get(pinFor.member_id)?.has_pin} onClose={() => setPinFor(null)} />}
+      {whFor && <WarehousesDialog user={whFor} current={memberWh.data?.[whFor.member_id] ?? []} onClose={() => setWhFor(null)} />}
       {editing && <RolesDialog user={editing} roles={roles.data ?? []} onClose={() => setEditing(null)} />}
       <Dialog open={!!removing} onOpenChange={(o) => !o && setRemoving(null)}>
         <DialogContent className="max-w-md">
@@ -205,6 +217,34 @@ function RolesDialog({ user, roles, onClose }: { user: CompanyUser; roles: RoleR
             onClick={() => void save.mutateAsync({ member: user.member_id, roles: picked.map((k) => idByKey.get(k)!).filter(Boolean) }).then(() => { toast.success(t('Roles saved')); onClose() })}>
             {t('Save roles')}
           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function WarehousesDialog({ user, current, onClose }: { user: CompanyUser; current: string[]; onClose: () => void }) {
+  const whs = useWarehouses({ all: true })
+  const save = useSetMemberWarehouses()
+  const [picked, setPicked] = React.useState<string[]>(current)
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t('Warehouses of {name}', { name: user.full_name ?? user.email })}</DialogTitle>
+          <DialogDescription>{t('Tick the shops and warehouses this person works in. They can then receive, sell, count and move goods only there. With none ticked, they work in all.')}</DialogDescription>
+        </DialogHeader>
+        <div className="grid max-h-[50vh] gap-1 overflow-y-auto rounded-md border p-2">
+          {(whs.data ?? []).filter((w) => w.is_active).map((w) => (
+            <label key={w.id} className="flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted/50">
+              <Checkbox checked={picked.includes(w.id)} onCheckedChange={(on) => setPicked((p) => on === true ? [...p, w.id] : p.filter((x) => x !== w.id))} />
+              <span>{td(w.name)} <span className="text-xs text-muted-foreground">{w.code}</span></span>
+            </label>
+          ))}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>{t('Cancel')}</Button>
+          <Button loading={save.isPending} onClick={() => void save.mutateAsync({ member: user.member_id, warehouses: picked }).then(() => { toast.success(picked.length ? t('Saved: only the ticked warehouses') : t('Saved: all warehouses')); onClose() })}>{t('Save')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

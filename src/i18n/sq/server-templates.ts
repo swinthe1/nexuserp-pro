@@ -423,4 +423,5 @@ export const serverTemplates: [string, string][] = [
   ["Some months of % are locked and cannot be reopened", "Disa muaj të {0} janë kyçur dhe nuk mund të rihapen"],
   ["Only % is left to pay on this bill", "Te kjo faturë kanë mbetur për t’u paguar vetëm {0}"],
   ["The year % is closed; reopen it to change the tax", "Viti {0} është i mbyllur; rihapeni për të ndryshuar tatimin"],
+  ["You do not work in the warehouse %", "Nuk punoni në magazinën {0}"],
 ]
