@@ -128,6 +128,80 @@ select t.login('ana@auto.xk');
 select t.ok(pg_temp.bal(:'co', 'Sefi qendror') = 10, 'the float comes out of the till''s safe');
 select t.throws(format($q$select public.pos_register_set_safe('%s', null)$q$, :'reg'), 'open shift', 'a till changes safe only between shifts');
 
+
+-- ===================== phase 2: control =====================
+select id as ana_m from public.company_members where company_id = :'co' and user_id = auth.uid() \gset
+select m.id as sami_m from public.company_members m join public.profiles p on p.id = m.user_id where m.company_id = :'co' and p.email = 'sami@wms.al' \gset
+select m.id as kasa_m from public.company_members m join public.profiles p on p.id = m.user_id where m.company_id = :'co' and p.email = 'kasa@auto.xk' \gset
+select public.member_set_pin(:'ana_m', '4826');
+select public.safe_move(jsonb_build_object('safe_id', :'ss', 'kind', 'cash_in', 'amount', 3000, 'reason', 'Nga pronari'));
+select t.ok(pg_temp.bal(:'co', 'Sefi i dyqanit') = 3200, 'money put in needs no second person');
+
+-- a second person for big money
+select t.login('sami@wms.al');
+select t.throws(format($q$select public.safe_move('{"safe_id":"%s","kind":"deposit","amount":1500,"bank_account_id":"%s","reason":"x"}')$q$, :'ss', :'bank'),
+  'second person', 'above the limit one person cannot move the money');
+select t.ok((public.safe_witness(:'co', :'ana_m', '0000') ->> 'error') = 'Wrong PIN', 'a wrong PIN of the second person is refused');
+select t.throws(format($q$select public.safe_witness('%s', '%s', '1111')$q$, :'co', :'sami_m'), 'someone else', 'nobody is their own second person');
+select t.throws(format($q$select public.safe_witness('%s', '%s', '1111')$q$, :'co', :'kasa_m'), 'may not handle', 'a cashier cannot be the second person');
+select public.safe_witness(:'co', :'ana_m', '4826') ->> 'token' as wt \gset
+select public.safe_move(jsonb_build_object('safe_id', :'ss', 'kind', 'deposit', 'amount', 1500, 'bank_account_id', :'bank', 'reason', 'Xhiroja', 'reference', 'FL-77', 'witness', :'wt')) as bigdep \gset
+select t.ok((:'bigdep'::jsonb ->> 'status') = 'in_transit', 'with the second person''s PIN it goes');
+select t.throws(format($q$select public.safe_move('{"safe_id":"%s","kind":"deposit","amount":1200,"bank_account_id":"%s","reason":"x","witness":"%s"}')$q$, :'ss', :'bank', :'wt'),
+  'second person', 'a confirmation is good for one movement only');
+select public.safe_move(jsonb_build_object('safe_id', :'ss', 'kind', 'deposit', 'amount', 100, 'bank_account_id', :'bank', 'reason', 'E vogël')) as smalldep \gset
+
+-- the bank statement settles the deposit by itself
+select t.login('ana@auto.xk');
+insert into public.bank_statements (company_id, bank_account_id, statement_date, opening_balance, closing_balance)
+values (:'co', :'bank', current_date, 0, 1500) returning id as stmt \gset
+insert into public.bank_statement_lines (company_id, statement_id, transaction_date, description, amount)
+values (:'co', :'stmt', current_date, 'Derdhje cash FL-77 Sefi', 1500) returning id as sline \gset
+select t.ok((select status = 'posted' and arrived_on = current_date from public.safe_movements where id = (:'bigdep'::jsonb ->> 'id')::uuid),
+  'a deposit on the bank statement arrives by itself');
+select t.ok((select match_status = 'matched' and matched_journal_line_id is not null from public.bank_statement_lines where id = :'sline'), 'and the statement line is matched to it');
+select t.ok((select witnessed_by = auth.uid() from public.safe_movements where id = (:'bigdep'::jsonb ->> 'id')::uuid), 'the movement remembers the second person');
+
+-- every morning
+reset role;
+update public.safe_movements set moved_on = current_date - 5 where id = (:'smalldep'::jsonb ->> 'id')::uuid;
+select app.safe_daily_checks() as n1 \gset
+select app.safe_daily_checks() as n2 \gset
+select t.ok(:n1 >= 1 and exists (select 1 from public.notifications where company_id = :'co' and title like 'Deposit SEF-%is not in the bank yet%'), 'a deposit late for the bank is reported');
+select t.ok((select count(*) from public.notifications where company_id = :'co' and title like 'Deposit SEF-%is not in the bank yet%')
+            = (select count(distinct user_id) from public.notifications where company_id = :'co' and title like 'Deposit SEF-%is not in the bank yet%'), 'and only once');
+set role authenticated;
+select t.login('ana@auto.xk');
+select public.safe_deposit_arrived((:'smalldep'::jsonb ->> 'id')::uuid, current_date);
+select public.safe_save(jsonb_build_object('id', :'ss', 'name', 'Sefi i dyqanit', 'warehouse_id', :'shop', 'approval_limit', 200, 'tolerance', 5, 'max_balance', 500, 'dual_limit', 1000));
+reset role;
+select app.safe_daily_checks();
+select t.ok(exists (select 1 from public.notifications where company_id = :'co' and title like 'Sefi i dyqanit holds %'), 'a safe holding too much asks for the bank');
+set role authenticated;
+
+-- handing over
+select t.login('sami@wms.al');
+select public.safe_handover_start(:'ss', (select user_id from public.company_members where id = :'ana_m'), '{"500":3,"100":1}') as ho1 \gset
+select t.throws(format($q$select public.safe_handover_start('%s', '%s', '{"500":3,"100":1}')$q$, :'ss', (select user_id from public.company_members where id = :'ana_m')),
+  'already being handed', 'one handover at a time');
+select t.throws(format($q$select public.safe_handover_accept('%s', '{"500":3,"100":1}')$q$, :'ho1'), 'Only the person', 'the giver cannot take it');
+select t.login('ana@auto.xk');
+select t.ok((select (h ->> 'to_me')::boolean and not (h ? 'given_total') from jsonb_array_elements(public.safes_overview(:'co') -> 'handovers') h), 'the taker sees it waiting, without the giver''s total');
+select public.safe_handover_accept(:'ho1', '{"500":3,"50":2}') as acc1 \gset
+select t.ok((:'acc1'::jsonb ->> 'difference')::numeric = 0 and (select holder_id = auth.uid() from public.safes where id = :'ss'), 'the counts agree and the taker holds the safe');
+select public.safe_handover_start(:'ss', (select user_id from public.company_members where id = :'sami_m'), '{"500":3,"100":1}') as ho2 \gset
+select t.login('sami@wms.al');
+select t.throws(format($q$select public.safe_handover_accept('%s', '{"500":3,"50":1,"20":2}')$q$, :'ho2'), 'write what happened', 'a taker who counts less must say so');
+select public.safe_handover_accept(:'ho2', '{"500":3,"50":1,"20":2}', 'Mungojnë 10') as acc2 \gset
+select t.ok((:'acc2'::jsonb ->> 'difference')::numeric = -10 and pg_temp.bal(:'co', 'Sefi i dyqanit') = 1590, 'the difference is booked when the safe changes hands');
+select public.safe_handover_start(:'ss', (select user_id from public.company_members where id = :'ana_m'), '{"500":3,"50":1,"20":2}') as ho3 \gset
+select t.login('ana@auto.xk');
+select t.ok(exists (select 1 from public.notifications where company_id = :'co' and title like 'Handover of Sefi i dyqanit does not agree%'), 'and reported');
+select t.throws(format($q$select public.safe_handover_decline('%s')$q$, :'ho3'), 'why you refuse', 'a refusal says why');
+select public.safe_handover_decline(:'ho3', 'Jam me pushim');
+select t.ok((select status = 'declined' from public.safe_handovers where id = :'ho3') and (select holder_id <> auth.uid() from public.safes where id = :'ss'),
+  'refused, the safe stays with the giver');
+
 reset role;
 select t.ok(not exists (select 1 from public.safe_movements where status in ('posted','in_transit') and journal_entry_id is null), 'every movement that happened is in the books');
 select t.ok(not exists (select 1 from public.safe_movements m where m.status = 'posted' and m.kind = 'deposit' and m.arrived_entry_id is null), 'every arrived deposit has its bank entry');

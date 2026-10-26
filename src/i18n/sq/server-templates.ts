@@ -380,4 +380,13 @@ export const serverTemplates: [string, string][] = [
   ["Deposit arrived: %", "Derdhja arriti: {0}"],
   ["Safe count %: cash short", "Numërimi i {0}: mungesë"],
   ["Safe count %: cash over", "Numërimi i {0}: tepricë"],
+  ["Above % a second person confirms with their PIN", "Mbi {0} duhet të konfirmojë një person i dytë me PIN-in e vet"],
+  ["Take over % from %", "Merr {0} nga {1}"],
+  ["Handed over: % to %", "U dorëzua: {0} te {1}"],
+  ["Not taken over: %", "Nuk u mor: {0}"],
+  ["Handover of % does not agree: % %", "Dorëzimi i {0} nuk përputhet: {1} {2}"],
+  ["% counted %, % counted %", "{0} numëroi {1}, {2} numëroi {3}"],
+  ["Deposit % is not in the bank yet: % %", "Derdhja {0} ende nuk është në bankë: {1} {2}"],
+  ["% holds % % — take some to the bank", "{0} ka {1} {2} — çoni një pjesë në bankë"],
+  ["More than %", "Më shumë se {0}"],
 ]

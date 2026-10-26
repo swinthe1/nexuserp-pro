@@ -7797,6 +7797,68 @@ export type Database = {
           { foreignKeyName: "safe_counts_company_id_safe_id_fkey"; columns: ["company_id", "safe_id"]; isOneToOne: false; referencedRelation: "safes"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      safe_handovers: {
+        Row: {
+          id: string
+          company_id: string
+          safe_id: string
+          from_user: string
+          to_user: string
+          status: string
+          given_count_id: string | null
+          given_total: number
+          taken_count_id: string | null
+          taken_total: number | null
+          note: string | null
+          decided_at: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          safe_id: string
+          from_user?: string
+          to_user: string
+          status?: string
+          given_count_id?: string | null
+          given_total: number
+          taken_count_id?: string | null
+          taken_total?: number | null
+          note?: string | null
+          decided_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          safe_id?: string
+          from_user?: string
+          to_user?: string
+          status?: string
+          given_count_id?: string | null
+          given_total?: number
+          taken_count_id?: string | null
+          taken_total?: number | null
+          note?: string | null
+          decided_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "safe_handovers_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "safe_handovers_company_id_given_count_id_fkey"; columns: ["company_id", "given_count_id"]; isOneToOne: false; referencedRelation: "safe_counts"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "safe_handovers_company_id_safe_id_fkey"; columns: ["company_id", "safe_id"]; isOneToOne: false; referencedRelation: "safes"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "safe_handovers_company_id_taken_count_id_fkey"; columns: ["company_id", "taken_count_id"]; isOneToOne: false; referencedRelation: "safe_counts"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
       safe_movements: {
         Row: {
           id: string
@@ -7824,6 +7886,8 @@ export type Database = {
           created_by: string | null
           updated_at: string
           updated_by: string | null
+          witnessed_by: string | null
+          alerted_on: string | null
         }
         Insert: {
           id?: string
@@ -7851,6 +7915,8 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          witnessed_by?: string | null
+          alerted_on?: string | null
         }
         Update: {
           id?: string
@@ -7878,6 +7944,8 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          witnessed_by?: string | null
+          alerted_on?: string | null
         }
         Relationships: [
           { foreignKeyName: "safe_movements_company_id_account_id_fkey"; columns: ["company_id", "account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["company_id", "id"] },
@@ -7907,6 +7975,7 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          dual_limit: number | null
         }
         Insert: {
           id?: string
@@ -7925,6 +7994,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          dual_limit?: number | null
         }
         Update: {
           id?: string
@@ -7943,6 +8013,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          dual_limit?: number | null
         }
         Relationships: [
           { foreignKeyName: "safes_company_id_bank_account_id_fkey"; columns: ["company_id", "bank_account_id"]; isOneToOne: false; referencedRelation: "bank_accounts"; referencedColumns: ["company_id", "id"] },
@@ -13137,6 +13208,30 @@ export type Database = {
         }
         Returns: undefined
       }
+      safe_handover_accept: {
+        Args: {
+          p_id: string
+          p_counts: Json
+          p_note?: string
+        }
+        Returns: Json
+      }
+      safe_handover_decline: {
+        Args: {
+          p_id: string
+          p_note?: string
+        }
+        Returns: undefined
+      }
+      safe_handover_start: {
+        Args: {
+          p_safe: string
+          p_to: string
+          p_counts: Json
+          p_note?: string
+        }
+        Returns: string
+      }
       safe_move: {
         Args: {
           p: Json
@@ -13148,6 +13243,14 @@ export type Database = {
           p: Json
         }
         Returns: string
+      }
+      safe_witness: {
+        Args: {
+          p_company: string
+          p_member: string
+          p_pin: string
+        }
+        Returns: Json
       }
       safes_overview: {
         Args: {

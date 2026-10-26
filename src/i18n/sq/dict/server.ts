@@ -636,4 +636,12 @@ export default {
   "Safe count difference": "Diferencë në numërimin e sefit",
   "Cash on its way to the bank": "Para rrugës për në bankë",
   "Owner drawings": "Tërheqjet e pronarit",
+  "The second person must be someone else": "Personi i dytë duhet të jetë dikush tjetër",
+  "This person may not handle the safe": "Ky person nuk ka të drejtë të merret me sefin",
+  "This person has no PIN yet. The administrator gives one in Settings → Users.": "Ky person nuk ka PIN ende. Administratori e jep te Cilësimet → Përdoruesit.",
+  "Choose who takes the safe": "Zgjidhni kush e merr sefin",
+  "This safe is already being handed over": "Ky sef është tashmë në dorëzim",
+  "Only the person it is handed to can take it": "Vetëm personi të cilit i dorëzohet mund ta marrë",
+  "Only the two people of the handover can stop it": "Dorëzimin mund ta ndalin vetëm dy personat e tij",
+  "Count it and confirm": "Numërojeni dhe konfirmoni",
 } satisfies Dict

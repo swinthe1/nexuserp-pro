@@ -1,4 +1,4 @@
-import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, BookOpenText, Calculator, Check, ChevronDown, Landmark, Plus, Receipt, Settings2, TriangleAlert, Vault, X } from 'lucide-react'
+import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, BookOpenText, Calculator, Check, ChevronDown, Landmark, Plus, Receipt, Settings2, TriangleAlert, UserRoundCheck, Vault, X } from 'lucide-react'
 import * as React from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { EmptyState } from '@/components/empty-state'
@@ -14,14 +14,16 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { msg, t, td, tServer } from '@/i18n'
 import { cn, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
-import { type BookLine, type Safe, type SafeKind, type SafesOverview, useDepositArrived, useSafeBook, useSafeCancel, useSafeDecide, useSafes } from './api'
-import { CountDialog, KIND_LABEL, MoveDialog, RefuseDialog, SafeDialog } from './safe-dialogs'
+import { type BookLine, type Handover, type Safe, type SafeKind, type SafesOverview, useDepositArrived, useHandoverDecline, useSafeBook, useSafeCancel, useSafeDecide, useSafes } from './api'
+import { CountDialog, HandoverDialog, KIND_LABEL, MoveDialog, RefuseDialog, SafeDialog, TakeOverDialog } from './safe-dialogs'
 
 type Open =
   | { kind: 'move'; safe: Safe; move: SafeKind }
   | { kind: 'count'; safe: Safe }
   | { kind: 'settings'; safe: Safe | null; main?: boolean }
   | { kind: 'refuse'; id: string }
+  | { kind: 'handover'; safe: Safe }
+  | { kind: 'takeover'; handover: Handover }
   | null
 
 const BOOK_KIND: Record<BookLine['kind'], string> = {
@@ -38,6 +40,12 @@ export function SafePage() {
   const highlight = params.get('approve')
   const d = q.data
   const close = () => setOpen(null)
+  const askedHandover = params.get('handover')
+  const [shown, setShown] = React.useState(false)
+  React.useEffect(() => {
+    const h = d?.handovers.find((x) => x.id === askedHandover && x.to_me)
+    if (h && !shown) { setShown(true); setOpen({ kind: 'takeover', handover: h }) }
+  }, [d, askedHandover, shown])
 
   React.useEffect(() => { if (!bookSafe && d?.safes.length) setBookSafe(d.safes[0]!.id) }, [d, bookSafe])
 
@@ -60,6 +68,7 @@ export function SafePage() {
           </CardContent></Card>
         ) : (
           <div className="grid gap-6 [&>*]:min-w-0">
+            {d!.handovers.length > 0 && <HandoverList data={d!} onTake={(h) => setOpen({ kind: 'takeover', handover: h })} />}
             {d!.waiting.length > 0 && <WaitingList data={d!} highlight={highlight} onRefuse={(id) => setOpen({ kind: 'refuse', id })} />}
             <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
               {d!.safes.map((s) => <SafeCard key={s.id} safe={s} data={d!} onOpen={setOpen} onBook={() => setBookSafe(s.id)} />)}
@@ -73,6 +82,8 @@ export function SafePage() {
       {open?.kind === 'count' && d && <CountDialog safe={open.safe} data={d} onClose={close} />}
       {open?.kind === 'settings' && d && <SafeDialog safe={open.safe} main={open.main} data={d} onClose={close} />}
       {open?.kind === 'refuse' && <RefuseDialog id={open.id} onClose={close} />}
+      {open?.kind === 'handover' && d && <HandoverDialog safe={open.safe} data={d} onClose={close} />}
+      {open?.kind === 'takeover' && d && <TakeOverDialog handover={open.handover} safe={d.safes.find((s) => s.id === open.handover.safe_id)} data={d} onClose={close} />}
     </>
   )
 }
@@ -82,6 +93,7 @@ function SafeCard({ safe, data, onOpen, onBook }: { safe: Safe; data: SafesOverv
   const full = safe.max_balance != null && num(safe.balance) > num(safe.max_balance)
   const lc = safe.last_count
   const move = (m: SafeKind) => onOpen({ kind: 'move', safe, move: m })
+  const handing = data.handovers.find((h) => h.safe_id === safe.id)
   return (
     <Card className={cn(!safe.is_active && 'opacity-60')}>
       <CardContent className="grid gap-4 p-5">
@@ -94,6 +106,7 @@ function SafeCard({ safe, data, onOpen, onBook }: { safe: Safe; data: SafesOverv
             </p>
           </div>
           {!safe.is_active && <Badge variant="secondary">{t('Not in use')}</Badge>}
+          {handing && <Badge variant="warning">{t('Being handed to {name}', { name: handing.to ?? '' })}</Badge>}
           {data.can.setup && <Button variant="ghost" size="icon" aria-label={t('Settings')} onClick={() => onOpen({ kind: 'settings', safe })}><Settings2 /></Button>}
         </div>
 
@@ -131,11 +144,36 @@ function SafeCard({ safe, data, onOpen, onBook }: { safe: Safe; data: SafesOverv
                 <DropdownMenuItem onSelect={() => move('expense')}><Receipt /> {t(KIND_LABEL.expense)}</DropdownMenuItem>
                 {data.safes.filter((s) => s.is_active).length > 1 && <DropdownMenuItem onSelect={() => move('transfer')}><ArrowLeftRight /> {t(KIND_LABEL.transfer)}</DropdownMenuItem>}
                 <DropdownMenuItem onSelect={() => move('cash_in')}><ArrowDownToLine /> {t(KIND_LABEL.cash_in)}</DropdownMenuItem>
+                {data.people.length > 0 && !handing && <DropdownMenuItem onSelect={() => onOpen({ kind: 'handover', safe })}><UserRoundCheck /> {t('Hand over the safe')}</DropdownMenuItem>}
                 <DropdownMenuItem onSelect={onBook}><BookOpenText /> {t('The safe book')}</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function HandoverList({ data, onTake }: { data: SafesOverview; onTake: (h: Handover) => void }) {
+  const decline = useHandoverDecline()
+  return (
+    <Card className="border-primary/40">
+      <CardContent className="p-0">
+        <p className="border-b px-5 py-3 text-sm font-medium">{t('Safes being handed over')}</p>
+        <ul className="divide-y">
+          {data.handovers.map((h) => (
+            <li key={h.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3">
+              <UserRoundCheck className="size-5 shrink-0 text-primary" />
+              <div className="min-w-[12rem] flex-1 text-[13px]">
+                <p>{h.to_me ? t('{name} hands you {safe}', { name: h.from ?? '', safe: h.safe }) : t('{safe}: from {from} to {to}', { safe: h.safe, from: h.from ?? '', to: h.to ?? '' })}</p>
+                <p className="text-xs text-muted-foreground">{formatDate(h.created_at, true)}</p>
+              </div>
+              {h.to_me && <Button size="sm" onClick={() => onTake(h)}><Calculator /> {t('Count and take it')}</Button>}
+              {!h.to_me && (h.from_me || data.can.approve) && <Button size="sm" variant="ghost" loading={decline.isPending} onClick={() => decline.mutate({ id: h.id })}>{t('Take back')}</Button>}
+            </li>
+          ))}
+        </ul>
       </CardContent>
     </Card>
   )

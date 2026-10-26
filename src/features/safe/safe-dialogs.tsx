@@ -10,10 +10,10 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { useWarehouses } from '@/features/inventory/api'
 import { useMembers } from '@/features/sales/api'
-import { msg, t, td } from '@/i18n'
+import { msg, t, td, tServer } from '@/i18n'
 import { describeError } from '@/lib/errors'
 import { cn, formatMoney, num } from '@/lib/utils'
-import { type Safe, type SafeKind, type SafesOverview, useSafeCount, useSafeDecide, useSafeMove, useSafeSave, useTillSafe } from './api'
+import { type CountResult, type Handover, type Safe, type SafeKind, type SafesOverview, safeWitness, useHandoverAccept, useHandoverDecline, useHandoverStart, useSafeCount, useSafeDecide, useSafeMove, useSafeSave, useTillSafe } from './api'
 
 export const KIND_LABEL: Record<SafeKind, string> = {
   deposit: msg('Deposit in the bank'),
@@ -42,6 +42,7 @@ const toAmount = (v: string) => Math.round(num(v.replace(',', '.')) * 100) / 100
 
 /** One movement of money in or out of a safe. */
 export function MoveDialog({ safe, kind, data, onClose }: { safe: Safe; kind: SafeKind; data: SafesOverview; onClose: () => void }) {
+  const { companyId } = useCompany()
   const move = useSafeMove()
   const [amount, setAmount] = React.useState('')
   const [reason, setReason] = React.useState('')
@@ -49,17 +50,32 @@ export function MoveDialog({ safe, kind, data, onClose }: { safe: Safe; kind: Sa
   const [toSafe, setToSafe] = React.useState('')
   const [account, setAccount] = React.useState('')
   const [reference, setReference] = React.useState('')
+  const [witness, setWitness] = React.useState('')
+  const [pin, setPin] = React.useState('')
+  const [checking, setChecking] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const others = data.safes.filter((s) => s.id !== safe.id && s.is_active)
+  const witnesses = data.people.filter((p) => p.has_pin)
   const amt = toAmount(amount)
   const out = kind !== 'cash_in'
   const waits = (kind === 'withdrawal' || kind === 'expense') && amt > num(safe.approval_limit) && !data.can.approve
+  const dual = out && safe.dual_limit != null && amt > num(safe.dual_limit)
   const ready = amountOk(amount) && reason.trim() && (kind !== 'deposit' || bank) && (kind !== 'transfer' || toSafe) && (kind !== 'expense' || account)
+    && (!dual || (witness && /^\d{4,6}$/.test(pin)))
 
-  const submit = () => {
+  const submit = async () => {
     setError(null)
+    let token: string | undefined
+    if (dual) {
+      setChecking(true)
+      try {
+        const w = await safeWitness(companyId!, witness, pin)
+        if (w.error) { setError(tServer(w.error)); setPin(''); return }
+        token = w.token
+      } catch (e) { setError(describeError(e)); return } finally { setChecking(false) }
+    }
     move.mutate({ safe_id: safe.id, kind, amount: amt, reason: reason.trim(), bank_account_id: kind === 'deposit' ? bank : undefined,
-      to_safe_id: kind === 'transfer' ? toSafe : undefined, account_id: kind === 'expense' ? account : undefined, reference: reference.trim() || undefined }, {
+      to_safe_id: kind === 'transfer' ? toSafe : undefined, account_id: kind === 'expense' ? account : undefined, reference: reference.trim() || undefined, witness: token }, {
       onSuccess: (r) => {
         toast.success(r.status === 'pending' ? t('Sent for approval. The money stays in the safe until it is approved.') : t('Done: {number}', { number: r.number }))
         onClose()
@@ -107,12 +123,25 @@ export function MoveDialog({ safe, kind, data, onClose }: { safe: Safe; kind: Sa
             </div>
           )}
           <div className="grid gap-1.5"><Label htmlFor="sm-reason">{t('Why')}</Label>
-            <Input id="sm-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t(REASON_HINT[kind])} onKeyDown={(e) => { if (e.key === 'Enter' && ready) submit() }} /></div>
+            <Input id="sm-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t(REASON_HINT[kind])} onKeyDown={(e) => { if (e.key === 'Enter' && ready) void submit() }} /></div>
+          {dual && (
+            <div className="grid gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
+              <p className="text-[13px]">{t('Above {limit} a second person confirms. They type their PIN here.', { limit: formatMoney(safe.dual_limit, data.currency) })}</p>
+              {witnesses.length ? (
+                <div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
+                  <Select value={witness} onValueChange={setWitness}><SelectTrigger aria-label={t('Second person')}><SelectValue placeholder={t('Second person')} /></SelectTrigger>
+                    <SelectContent>{witnesses.map((p) => <SelectItem key={p.member_id} value={p.member_id}>{p.name}</SelectItem>)}</SelectContent></Select>
+                  <Input type="password" inputMode="numeric" autoComplete="off" aria-label={t('Their PIN')} placeholder={t('Their PIN')} className="text-center tracking-[0.3em] placeholder:tracking-normal"
+                    value={pin} onChange={(e) => { setPin(e.target.value.replace(/\D/g, '').slice(0, 6)); setError(null) }} />
+                </div>
+              ) : <p className="text-xs text-muted-foreground">{t('Nobody else who handles the safe has a PIN yet. The administrator gives one in Settings → Users.')}</p>}
+            </div>
+          )}
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>{t('Cancel')}</Button>
-          <Button disabled={!ready} loading={move.isPending} onClick={submit}>{waits ? t('Ask for approval') : t(KIND_LABEL[kind])}</Button>
+          <Button disabled={!ready} loading={move.isPending || checking} onClick={() => void submit()}>{waits ? t('Ask for approval') : t(KIND_LABEL[kind])}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -121,34 +150,62 @@ export function MoveDialog({ safe, kind, data, onClose }: { safe: Safe; kind: Sa
 
 const pieceLabel = (p: number, cur: string) => formatMoney(p, cur, p < 1 ? 2 : 0)
 const pieceKey = (p: number) => String(Number(p.toFixed(2)))
+export type Qty = Record<string, string>
+export const countTotal = (pieces: number[], qty: Qty) => pieces.reduce((s, p) => s + p * num(qty[pieceKey(p)]), 0)
+export const countPayload = (qty: Qty) => Object.fromEntries(Object.entries(qty).filter(([, v]) => num(v) > 0).map(([k, v]) => [k, Math.trunc(num(v))]))
 
-/** Counting the safe note by note. The books are shown only after the count, so nobody counts towards a number. */
-export function CountDialog({ safe, data, onClose }: { safe: Safe; data: SafesOverview; onClose: () => void }) {
-  const count = useSafeCount()
-  const [qty, setQty] = React.useState<Record<string, string>>({})
-  const [note, setNote] = React.useState('')
-  const [error, setError] = React.useState<string | null>(null)
-  const [result, setResult] = React.useState<{ number: string; total: number; expected: number; difference: number } | null>(null)
-  const total = data.pieces.reduce((s, p) => s + p * num(qty[pieceKey(p)]), 0)
+/** one line per note and coin, the total underneath */
+export function CountGrid({ data, qty, onChange }: { data: SafesOverview; qty: Qty; onChange: (q: Qty) => void }) {
   const notes = data.pieces.filter((p) => p >= 5)
   const coins = data.pieces.filter((p) => p < 5)
-
-  const submit = () => {
-    setError(null)
-    const counts = Object.fromEntries(Object.entries(qty).filter(([, v]) => num(v) > 0).map(([k, v]) => [k, Math.trunc(num(v))]))
-    count.mutate({ safe: safe.id, counts, note: note.trim() || undefined }, { onSuccess: setResult, onError: (e) => setError(describeError(e)) })
-  }
-
   const row = (p: number) => {
     const k = pieceKey(p)
     return (
       <div key={k} className="grid grid-cols-[6.5rem_1fr_6rem] items-center gap-2">
         <span className="whitespace-nowrap text-right text-sm font-medium tabular-nums">{pieceLabel(p, data.currency)}</span>
         <Input inputMode="numeric" aria-label={t('How many of {piece}', { piece: pieceLabel(p, data.currency) })} className="h-9 text-center tabular-nums"
-          value={qty[k] ?? ''} placeholder="0" onChange={(e) => { setQty((q) => ({ ...q, [k]: e.target.value.replace(/\D/g, '').slice(0, 5) })); setError(null) }} />
+          value={qty[k] ?? ''} placeholder="0" onChange={(e) => onChange({ ...qty, [k]: e.target.value.replace(/\D/g, '').slice(0, 5) })} />
         <span className="whitespace-nowrap text-right text-xs tabular-nums text-muted-foreground">{num(qty[k]) ? formatMoney(p * num(qty[k]), data.currency) : ''}</span>
       </div>
     )
+  }
+  return (
+    <>
+      <div className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
+        <div className="grid content-start gap-2"><p className="text-xs font-medium text-muted-foreground">{t('Notes')}</p>{notes.map(row)}</div>
+        <div className="grid content-start gap-2"><p className="text-xs font-medium text-muted-foreground">{t('Coins')}</p>{coins.map(row)}</div>
+      </div>
+      <div className="flex items-baseline justify-between rounded-lg bg-muted/60 px-4 py-3">
+        <span className="text-sm text-muted-foreground">{t('Counted')}</span>
+        <span className="text-2xl font-semibold tabular-nums">{formatMoney(countTotal(data.pieces, qty), data.currency)}</span>
+      </div>
+    </>
+  )
+}
+
+function ResultBoxes({ cur, a, aLabel, b, bLabel, diff, tolerance }: { cur: string; a: number; aLabel: string; b: number; bLabel: string; diff: number; tolerance: number }) {
+  return (
+    <div className="grid grid-cols-3 gap-2 text-center">
+      <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">{aLabel}</p><p className="mt-1 text-lg font-semibold tabular-nums">{formatMoney(a, cur)}</p></div>
+      <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">{bLabel}</p><p className="mt-1 text-lg font-semibold tabular-nums">{formatMoney(b, cur)}</p></div>
+      <div className={cn('rounded-lg border p-3', diff === 0 ? 'border-success/40 bg-success/5' : Math.abs(diff) > tolerance ? 'border-destructive/40 bg-destructive/5' : 'border-warning/40 bg-warning/5')}>
+        <p className="text-xs text-muted-foreground">{t('Difference')}</p>
+        <p className="mt-1 text-lg font-semibold tabular-nums">{diff > 0 ? '+' : ''}{formatMoney(diff, cur)}</p></div>
+    </div>
+  )
+}
+
+/** Counting the safe note by note. The books are shown only after the count, so nobody counts towards a number. */
+export function CountDialog({ safe, data, onClose }: { safe: Safe; data: SafesOverview; onClose: () => void }) {
+  const count = useSafeCount()
+  const [qty, setQty] = React.useState<Qty>({})
+  const [note, setNote] = React.useState('')
+  const [error, setError] = React.useState<string | null>(null)
+  const [result, setResult] = React.useState<CountResult | null>(null)
+
+  const submit = () => {
+    setError(null)
+    count.mutate({ safe: safe.id, counts: countPayload(qty), note: note.trim() || undefined }, { onSuccess: setResult, onError: (e) => setError(describeError(e)) })
   }
 
   return (
@@ -160,26 +217,13 @@ export function CountDialog({ safe, data, onClose }: { safe: Safe; data: SafesOv
         </DialogHeader>
         {result ? (
           <div className="grid gap-3">
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">{t('You counted')}</p><p className="mt-1 text-lg font-semibold tabular-nums">{formatMoney(result.total, data.currency)}</p></div>
-              <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">{t('The books said')}</p><p className="mt-1 text-lg font-semibold tabular-nums">{formatMoney(result.expected, data.currency)}</p></div>
-              <div className={cn('rounded-lg border p-3', result.difference === 0 ? 'border-success/40 bg-success/5' : Math.abs(result.difference) > num(safe.tolerance) ? 'border-destructive/40 bg-destructive/5' : 'border-warning/40 bg-warning/5')}>
-                <p className="text-xs text-muted-foreground">{t('Difference')}</p>
-                <p className="mt-1 text-lg font-semibold tabular-nums">{result.difference > 0 ? '+' : ''}{formatMoney(result.difference, data.currency)}</p></div>
-            </div>
+            <ResultBoxes cur={data.currency} a={result.total} aLabel={t('You counted')} b={result.expected} bLabel={t('The books said')} diff={result.difference} tolerance={num(safe.tolerance)} />
             <p className="text-sm text-muted-foreground">{result.difference === 0 ? t('The safe matches the books.')
               : t('The difference is booked and the safe now shows what you counted.')}</p>
           </div>
         ) : (
           <div className="grid gap-4">
-            <div className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
-              <div className="grid content-start gap-2"><p className="text-xs font-medium text-muted-foreground">{t('Notes')}</p>{notes.map(row)}</div>
-              <div className="grid content-start gap-2"><p className="text-xs font-medium text-muted-foreground">{t('Coins')}</p>{coins.map(row)}</div>
-            </div>
-            <div className="flex items-baseline justify-between rounded-lg bg-muted/60 px-4 py-3">
-              <span className="text-sm text-muted-foreground">{t('Counted')}</span>
-              <span className="text-2xl font-semibold tabular-nums">{formatMoney(total, data.currency)}</span>
-            </div>
+            <CountGrid data={data} qty={qty} onChange={(q) => { setQty(q); setError(null) }} />
             <div className="grid gap-1.5"><Label htmlFor="sc-note">{t('Note')}</Label>
               <Textarea id="sc-note" rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('Needed when the count does not match the books')} /></div>
             {error && <p className="text-sm text-destructive">{error}</p>}
@@ -190,6 +234,93 @@ export function CountDialog({ safe, data, onClose }: { safe: Safe; data: SafesOv
             <Button variant="ghost" onClick={onClose}>{t('Cancel')}</Button>
             <Button loading={count.isPending} onClick={submit}>{t('Save the count')}</Button>
           </>}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/** The holder counts and names who takes the safe; that person is told and counts again. */
+export function HandoverDialog({ safe, data, onClose }: { safe: Safe; data: SafesOverview; onClose: () => void }) {
+  const start = useHandoverStart()
+  const [to, setTo] = React.useState('')
+  const [qty, setQty] = React.useState<Qty>({})
+  const [note, setNote] = React.useState('')
+  const [error, setError] = React.useState<string | null>(null)
+  const submit = () => {
+    setError(null)
+    start.mutate({ safe: safe.id, to, counts: countPayload(qty), note: note.trim() || undefined }, {
+      onSuccess: () => { toast.success(t('Sent. {name} counts it and confirms.', { name: data.people.find((p) => p.user_id === to)?.name ?? '' })); onClose() },
+      onError: (e) => setError(describeError(e)),
+    })
+  }
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[94vh] max-w-2xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{t('Hand over {safe}', { safe: safe.name })}</DialogTitle>
+          <DialogDescription>{t('Count what you hand over. The other person counts again without seeing your total, and from then on they hold the safe.')}</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4">
+          <div className="grid gap-1.5"><Label>{t('To')}</Label>
+            <Select value={to} onValueChange={setTo}><SelectTrigger><SelectValue placeholder={t('Who takes the safe')} /></SelectTrigger>
+              <SelectContent>{data.people.map((p) => <SelectItem key={p.user_id} value={p.user_id}>{p.name}</SelectItem>)}</SelectContent></Select></div>
+          <CountGrid data={data} qty={qty} onChange={(q) => { setQty(q); setError(null) }} />
+          <div className="grid gap-1.5"><Label htmlFor="ho-note">{t('Note')}</Label>
+            <Textarea id="ho-note" rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('Needed when the count does not match the books')} /></div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>{t('Cancel')}</Button>
+          <Button disabled={!to} loading={start.isPending} onClick={submit}>{t('Hand over')}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/** The person it is handed to counts on their own, then sees whether the two counts agree. */
+export function TakeOverDialog({ handover, safe, data, onClose }: { handover: Handover; safe: Safe | undefined; data: SafesOverview; onClose: () => void }) {
+  const accept = useHandoverAccept()
+  const decline = useHandoverDecline()
+  const [qty, setQty] = React.useState<Qty>({})
+  const [note, setNote] = React.useState('')
+  const [refusing, setRefusing] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+  const [result, setResult] = React.useState<{ given: number; taken: number; difference: number } | null>(null)
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[94vh] max-w-2xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{t('Take over {safe}', { safe: handover.safe })}</DialogTitle>
+          <DialogDescription>{result ? (result.difference === 0 ? t('The two counts agree. You hold the safe now.') : t('The counts do not agree. The difference is booked and reported; you hold the safe now.'))
+            : t('{name} hands it to you. Count it yourself; their total is shown after you save.', { name: handover.from ?? '' })}</DialogDescription>
+        </DialogHeader>
+        {result ? (
+          <ResultBoxes cur={data.currency} a={result.taken} aLabel={t('You counted')} b={result.given} bLabel={t('{name} counted', { name: handover.from ?? '' })} diff={result.difference} tolerance={num(safe?.tolerance)} />
+        ) : refusing ? (
+          <div className="grid gap-1.5"><Label htmlFor="to-why">{t('Why not?')}</Label>
+            <Textarea id="to-why" rows={3} autoFocus value={note} onChange={(e) => setNote(e.target.value)} />
+            {error && <p className="text-sm text-destructive">{error}</p>}</div>
+        ) : (
+          <div className="grid gap-4">
+            <CountGrid data={data} qty={qty} onChange={(q) => { setQty(q); setError(null) }} />
+            <div className="grid gap-1.5"><Label htmlFor="to-note">{t('Note')}</Label>
+              <Textarea id="to-note" rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('Needed when the count does not match the books')} /></div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+          </div>
+        )}
+        <DialogFooter className="gap-2 sm:justify-between">
+          {result ? <><span /><Button onClick={onClose}>{t('Close')}</Button></>
+            : refusing ? <>
+              <Button variant="ghost" onClick={() => setRefusing(false)}>{t('Back')}</Button>
+              <Button variant="destructive" disabled={!note.trim()} loading={decline.isPending}
+                onClick={() => decline.mutate({ id: handover.id, note: note.trim() }, { onSuccess: () => { toast.success(t('Refused')); onClose() } })}>{t('Refuse')}</Button>
+            </> : <>
+              <Button variant="ghost" className="text-destructive" onClick={() => { setRefusing(true); setNote('') }}>{t('I do not take it')}</Button>
+              <Button loading={accept.isPending} onClick={() => accept.mutate({ id: handover.id, counts: countPayload(qty), note: note.trim() || undefined },
+                { onSuccess: setResult, onError: (e) => setError(describeError(e)) })}>{t('Save and take the safe')}</Button>
+            </>}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -232,6 +363,7 @@ export function SafeDialog({ safe, data, main, onClose }: { safe: Safe | null; d
   const [holder, setHolder] = React.useState(safe?.holder_id ?? NONE)
   const [limit, setLimit] = React.useState(String(safe?.approval_limit ?? 200))
   const [tol, setTol] = React.useState(String(safe?.tolerance ?? 5))
+  const [dualLimit, setDualLimit] = React.useState(safe ? (safe.dual_limit != null ? String(safe.dual_limit) : '') : '1000')
   const [max, setMax] = React.useState(safe?.max_balance ? String(safe.max_balance) : '')
   const [active, setActive] = React.useState(safe?.is_active ?? true)
   const [error, setError] = React.useState<string | null>(null)
@@ -239,7 +371,7 @@ export function SafeDialog({ safe, data, main, onClose }: { safe: Safe | null; d
   const submit = () => {
     setError(null)
     save.mutate({ company_id: companyId!, id: safe?.id, name: name.trim(), warehouse_id: wh === NONE ? null : wh, holder_id: holder === NONE ? null : holder,
-      approval_limit: toAmount(limit), tolerance: toAmount(tol), max_balance: amountOk(max) ? toAmount(max) : null, is_active: active, main },
+      approval_limit: toAmount(limit), dual_limit: amountOk(dualLimit) ? toAmount(dualLimit) : null, tolerance: toAmount(tol), max_balance: amountOk(max) ? toAmount(max) : null, is_active: active, main },
     { onSuccess: () => { toast.success(t('Saved')); onClose() }, onError: (e) => setError(describeError(e)) })
   }
 
@@ -265,6 +397,9 @@ export function SafeDialog({ safe, data, main, onClose }: { safe: Safe | null; d
           <div className="grid gap-1.5"><Label htmlFor="sf-limit">{t('Approval above')}</Label>
             <Input id="sf-limit" inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} />
             <p className="text-xs text-muted-foreground">{t('Taking out or paying more than this waits for the owner.')}</p></div>
+          <div className="grid gap-1.5"><Label htmlFor="sf-dual">{t('Second person above')}</Label>
+            <Input id="sf-dual" inputMode="decimal" value={dualLimit} onChange={(e) => setDualLimit(e.target.value)} placeholder={t('never')} />
+            <p className="text-xs text-muted-foreground">{t('Moving more than this needs a second person with their PIN.')}</p></div>
           <div className="grid gap-1.5"><Label htmlFor="sf-tol">{t('Allowed difference')}</Label>
             <Input id="sf-tol" inputMode="decimal" value={tol} onChange={(e) => setTol(e.target.value)} />
             <p className="text-xs text-muted-foreground">{t('A bigger difference in a count needs a note and is reported.')}</p></div>
