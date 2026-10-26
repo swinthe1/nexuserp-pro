@@ -15167,6 +15167,12 @@ export type Database = {
         }
         Returns: Json
       }
+      platform_pricing_save: {
+        Args: {
+          p: Json
+        }
+        Returns: undefined
+      }
       platform_save_license: {
         Args: {
           p_company: string
@@ -15441,6 +15447,21 @@ export type Database = {
         }
         Returns: Json
       }
+      postier_webhook_claim: {
+        Args: {
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      postier_webhook_done: {
+        Args: {
+          p_id: string
+          p_ok: boolean
+          p_status?: number
+          p_error?: string
+        }
+        Returns: undefined
+      }
       price_level_items: {
         Args: {
           p_company: string
@@ -15568,6 +15589,10 @@ export type Database = {
           p_from: string
           p_to: string
         }
+        Returns: Json
+      }
+      public_pricing: {
+        Args: Record<PropertyKey, never>
         Returns: Json
       }
       purchase_invoice_complete: {
@@ -16385,6 +16410,34 @@ export type Database = {
           p_return: string
         }
         Returns: string
+      }
+      webhook_create: {
+        Args: {
+          p_company: string
+          p_url: string
+          p_events: string[]
+          p_description?: string
+        }
+        Returns: Json
+      }
+      webhook_test: {
+        Args: {
+          p_id: string
+        }
+        Returns: undefined
+      }
+      webhook_update: {
+        Args: {
+          p_id: string
+          p: Json
+        }
+        Returns: undefined
+      }
+      webhooks_list: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
       }
       withholding_cancel: {
         Args: {

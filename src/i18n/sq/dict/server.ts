@@ -677,4 +677,7 @@ export default {
   "Service not found": "Shërbimi nuk u gjet",
   "Choose a plan": "Zgjidhni një paketë",
   "Membership not found": "Anëtarësimi nuk u gjet",
+  "Enter the full address, starting with https://": "Shkruani adresën e plotë, duke filluar me https://",
+  "Choose what to send": "Zgjidhni çfarë të dërgohet",
+  "A company can have up to 20 webhooks": "Një kompani mund të ketë deri në 20 webhooks",
 } satisfies Dict

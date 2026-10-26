@@ -21,6 +21,6 @@ $PSQL -f "$DIR/04_procurement.sql" | grep -A2 assertions_passed
 $PSQL -f "$DIR/05_finance.sql" | grep -A2 assertions_passed
 $PSQL -f "$DIR/06_wms_pos.sql" | grep -A2 assertions_passed
 $PSQL -f "$DIR/07_manufacturing.sql" | grep -A2 assertions_passed
-for t in 08_tax 09_hr_payroll 10_logistics_oms 11_admin_reports 12_language_realtime 13_platform_licensing 14_migration_center 15_live_sync 16_loyalty 17_restaurant 18_history 19_automation 20_safe 21_review_fixes 22_agents 23_portal_api 24_purchase_invoice 25_documents 26_cards 27_packs_labels 28_year_end_tax 29_levelling_warehouses_advances 30_payroll_extras_promotions 31_fifo_reports_hotel 32_demo_market 33_mcp 34_push 35_expenses 36_bank_smarter 37_accountant 38_appointments; do
+for t in 08_tax 09_hr_payroll 10_logistics_oms 11_admin_reports 12_language_realtime 13_platform_licensing 14_migration_center 15_live_sync 16_loyalty 17_restaurant 18_history 19_automation 20_safe 21_review_fixes 22_agents 23_portal_api 24_purchase_invoice 25_documents 26_cards 27_packs_labels 28_year_end_tax 29_levelling_warehouses_advances 30_payroll_extras_promotions 31_fifo_reports_hotel 32_demo_market 33_mcp 34_push 35_expenses 36_bank_smarter 37_accountant 38_appointments 39_pricing_webhooks; do
   $PSQL -f "$DIR/$t.sql" | grep -A2 assertions_passed
 done

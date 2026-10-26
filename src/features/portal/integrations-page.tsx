@@ -19,6 +19,8 @@ import { describeError, unwrap } from '@/lib/errors'
 import { supabase, supabaseAnonKey, supabaseUrl } from '@/lib/supabase'
 import { formatDate } from '@/lib/utils'
 import { AiConnectorPanel } from './ai-connector'
+import { CALLS } from './api-calls'
+import { WebhooksCard } from './webhooks-card'
 
 const SCOPES: { key: string; label: string; hint: string }[] = [
   { key: 'catalog.read', label: msg('Products, prices and stock'), hint: msg('read') },
@@ -42,6 +44,7 @@ export function IntegrationsPage() {
           <CardContent><AiConnectorPanel /></CardContent>
         </Card>
         <ApiKeys />
+        <WebhooksCard />
         <ApiDocs />
       </div>
     </>
@@ -182,22 +185,13 @@ function NewKeyDialog({ onClose }: { onClose: () => void }) {
   )
 }
 
-const CALLS: { fn: string; scope: string; what: string; body: string }[] = [
-  { fn: 'api_products', scope: 'catalog.read', what: msg('Products, 200 at a time (up to 500); “next” is the SKU to continue after. With p_updated_since, only what changed (also switched-off ones).'), body: '{"p_updated_since":"2026-10-01T00:00:00Z","p_after":null,"p_limit":200}' }, // i18n-ignore
-  { fn: 'api_stock', scope: 'catalog.read', what: msg('Stock per warehouse: on hand, reserved, available.'), body: '{"p_skus":["33173","33174"],"p_warehouse":null}' }, // i18n-ignore
-  { fn: 'api_prices', scope: 'catalog.read', what: msg('The price a customer gets, by their code (their own price, their price list or the list price).'), body: '{"p_partner_code":"1001","p_skus":["33173"],"p_quantity":1}' }, // i18n-ignore
-  { fn: 'api_partners', scope: 'partners.read', what: msg('Customers and vendors with what customers owe, paged by code.'), body: '{"p_updated_since":null,"p_after":null}' }, // i18n-ignore
-  { fn: 'api_partner_upsert', scope: 'partners.write', what: msg('Create or update by code, with the same columns as the spreadsheet import.'), body: '{"p_rows":[{"code":"1001","name":"Viva Fresh","role":"customer","tax_number":"810000011"}]}' }, // i18n-ignore
-  { fn: 'api_order_create', scope: 'orders.write', what: msg('A sales order at the company’s prices. The same external_id never makes a second order. “confirm”: true confirms it at once.'), body: '{"p":{"external_id":"WEB-1001","partner_code":"1001","confirm":true,"lines":[{"sku":"33173","quantity":2}],"note":"…"}}' }, // i18n-ignore
-  { fn: 'api_order_get', scope: 'orders.read', what: msg('An order by its number or external_id: status, delivered and invoiced quantities.'), body: '{"p_external_id":"WEB-1001"}' }, // i18n-ignore
-  { fn: 'api_invoices', scope: 'invoices.read', what: msg('Posted invoices and what is still open, paged by number.'), body: '{"p_since":"2026-10-01","p_partner_code":null}' }, // i18n-ignore
-]
 
 function ApiDocs() {
   const base = `${supabaseUrl.replace(/\/$/, '')}/rest/v1/rpc`
   return (
     <Card>
-      <CardHeader className="py-3"><CardTitle>{t('How to call it')}</CardTitle></CardHeader>
+      <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 py-3"><CardTitle>{t('How to call it')}</CardTitle>
+        <a href="/api" target="_blank" rel="noreferrer" className="text-[13px] font-medium text-primary hover:underline">{t('The full documentation')}</a></CardHeader>
       <CardContent className="grid gap-4 text-sm">
         <p className="text-[13px] text-muted-foreground">{t('Every call is a POST with JSON. Send the public key in “apikey” and your key in “x-api-key”. Errors come back with an HTTP error code and a message.')}</p>
         <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-[12px] leading-relaxed">{`curl -X POST '${base}/api_products' \\

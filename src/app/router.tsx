@@ -144,6 +144,8 @@ function Home() {
 }
 
 const PortalPage = lazyPage(() => import('@/features/portal/portal-page'), 'PortalPage')
+const PricingPage = lazyPage(() => import('@/features/public/pricing-page'), 'PricingPage')
+const DevelopersPage = lazyPage(() => import('@/features/public/developers-page'), 'DevelopersPage')
 const PlatformPage = lazyPage(() => import('@/features/platform/platform-page'), 'PlatformPage')
 
 const router = createBrowserRouter([
@@ -157,6 +159,11 @@ const router = createBrowserRouter([
   },
   { path: '/reset-password', element: <div className="mx-auto max-w-sm px-6 py-16"><ResetPasswordPage /></div> },
   { path: '/onboarding', element: <OnboardingPage /> },
+  // public pages: the prices and the documentation for developers
+  { path: '/cmimet', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PricingPage /></React.Suspense></ErrorBoundary> },
+  { path: '/pricing', element: <Navigate to="/cmimet" replace /> },
+  { path: '/api', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><DevelopersPage /></React.Suspense></ErrorBoundary> },
+  { path: '/developers', element: <Navigate to="/api" replace /> },
   // the customer's B2B portal: a private link, no account
   { path: '/b2b', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PortalPage /></React.Suspense></ErrorBoundary> },
   { path: '/platform', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PlatformPage /></React.Suspense></ErrorBoundary> },

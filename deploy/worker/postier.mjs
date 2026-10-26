@@ -13,6 +13,7 @@ import tls from 'node:tls'
 import os from 'node:os'
 import crypto from 'node:crypto'
 import { newPushKeys, sendPush } from './push.mjs'
+import { deliver } from './webhooks.mjs'
 
 const API = (process.env.API_URL || '').replace(/\/+$/, '')
 const KEY = process.env.SERVICE_KEY || ''
@@ -498,6 +499,19 @@ async function pushRound() {
   return batch.length
 }
 
+/* ------------------------------------------------------------------ webhooks */
+let hookPause = 0
+async function webhookRound() {
+  if (Date.now() < hookPause) return 0
+  const batch = await rpc('postier_webhook_claim', { p_limit: 50 })
+  await Promise.all(batch.map(async (d) => {
+    const r = await deliver(d, MODE === 'cloud')
+    if (!r.ok) log('webhook not delivered', d.event, new URL(d.url).host, r.error)
+    await rpc('postier_webhook_done', { p_id: d.id, p_ok: r.ok, p_status: r.status ?? null, p_error: r.error ?? null }).catch(() => {})
+  }))
+  return batch.length
+}
+
 let lastTick = 0
 async function tick() {
   if (Date.now() - lastTick < 5 * 60 * 1000) return
@@ -512,6 +526,7 @@ async function tick() {
 log(`postier ${MODE} → ${API}`)
 if (!ONCE) { if (process.env.ASSISTANT !== '0') assistantLoop(); pinLoop(); if (MODE === 'cloud') relayLoop() }
 for (;;) {
-  try { await tick(); const n = (await round()) + (await pushRound().catch((e) => { log('phone notifications failed', String(e.message || e)); pushPause = Date.now() + 10 * 60 * 1000; return 0 })) + (await readerRound().catch((e) => { log('reading failed', String(e.message || e)); return 0 })); if (ONCE) break; await new Promise((r) => setTimeout(r, n ? 2000 : 20000)) }
+  try { await tick(); const n = (await round()) + (await pushRound().catch((e) => { log('phone notifications failed', String(e.message || e)); pushPause = Date.now() + 10 * 60 * 1000; return 0 }))
+    + (await webhookRound().catch((e) => { log('webhooks failed', String(e.message || e)); hookPause = Date.now() + 10 * 60 * 1000; return 0 })) + (await readerRound().catch((e) => { log('reading failed', String(e.message || e)); return 0 })); if (ONCE) break; await new Promise((r) => setTimeout(r, n ? 2000 : 20000)) }
   catch (e) { log('round failed', String(e.message || e)); if (ONCE) process.exit(1); await new Promise((r) => setTimeout(r, 30000)) }
 }

@@ -26,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { msg, t, td, tn } from '@/i18n'
 import { LanguageToggle } from '@/i18n/language'
 import { DemoClientDialog } from './demo-client-dialog'
+import { PricingDialog } from './pricing-dialog'
 import { describeError } from '@/lib/errors'
 import { daysUntil, LICENSE_WARNING_DAYS } from '@/lib/license'
 import { cn, formatDate, formatQty as formatInt, todayISO } from '@/lib/utils'
@@ -101,6 +102,7 @@ export function PlatformPage() {
   const [query, setQuery] = React.useState('')
   const [creating, setCreating] = React.useState(params.get('new') === '1')
   const [demo, setDemo] = React.useState(false)
+  const [pricing, setPricing] = React.useState(false)
   const [editing, setEditing] = React.useState<PlatformClient | null>(null)
   const [password, setPassword] = React.useState<{ email: string } | null>(null)
   const [live, setLive] = React.useState<string | null>(null)
@@ -148,6 +150,7 @@ export function PlatformPage() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setPricing(true)}>{t('Public prices')}</Button>
             <Button variant="outline" onClick={() => setDemo(true)}><Store /> {t('Demo client')}</Button>
             <Button onClick={() => setCreating(true)}><Plus /> {t('New client')}</Button>
           </div>
@@ -274,6 +277,7 @@ export function PlatformPage() {
       </main>
 
       <DemoClientDialog open={demo} onOpenChange={setDemo} />
+      <PricingDialog open={pricing} onOpenChange={setPricing} />
       <NewClientDialog open={creating} onOpenChange={(o) => { setCreating(o); if (!o && params.get('new')) setParams({}, { replace: true }) }} />
       <LicenseDialog client={editing} onClose={() => setEditing(null)} />
       <PasswordDialog target={password} onClose={() => setPassword(null)} />

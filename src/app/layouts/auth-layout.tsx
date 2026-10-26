@@ -65,6 +65,7 @@ export function AuthLayout() {
         <div className="relative flex w-full flex-col justify-between p-12 xl:p-16">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <img src="/favicon.svg" alt="" className="size-7" /> DrisPRO
+            <a href="/cmimet" className="ml-auto font-normal text-white/70 hover:text-white">{t('Prices')}</a>
           </div>
           <div className="grid max-w-4xl items-center gap-14 min-[1400px]:grid-cols-[minmax(0,1fr)_auto]">
             <div className="max-w-md">
