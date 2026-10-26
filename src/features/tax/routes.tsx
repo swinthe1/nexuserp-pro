@@ -7,6 +7,8 @@ const DeclarationsPage = lazyPage(() => import('./pages/declarations-page'), 'De
 const DeclarationPage = lazyPage(() => import('./pages/declarations-page'), 'DeclarationPage')
 const FiscalMonitorPage = lazyPage(() => import('./pages/fiscal-page'), 'FiscalMonitorPage')
 const TaxCodesPage = lazyPage(() => import('./pages/tax-codes-page'), 'TaxCodesPage')
+const WithholdingPage = lazyPage(() => import('./pages/withholding-page'), 'WithholdingPage')
+const IncomeTaxPage = lazyPage(() => import('./pages/income-tax-page'), 'IncomeTaxPage')
 
 export const taxRoutes: RouteObject[] = [
   {
@@ -19,6 +21,8 @@ export const taxRoutes: RouteObject[] = [
       { path: 'declarations/:id', element: <DeclarationPage key="decl" /> },
       { path: 'fiscalization', element: <FiscalMonitorPage /> },
       { path: 'codes', element: <TaxCodesPage /> },
+      { path: 'withholding', element: <WithholdingPage /> },
+      { path: 'income-tax', element: <IncomeTaxPage /> },
     ],
   },
 ]

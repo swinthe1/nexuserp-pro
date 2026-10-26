@@ -415,4 +415,12 @@ export const serverTemplates: [string, string][] = [
   ["Only % is open on %", "Te {1} janë të hapura vetëm {0}"],
   ["Both sides must be equal: % from invoices, % from bills", "Të dyja anët duhet të jenë të barabarta: {0} nga faturat tona, {1} nga faturat e tyre"],
   ["Barcode % already belongs to another item", "Barkodi {0} i përket tashmë një artikulli tjetër"],
+  ["The year % is already closed", "Viti {0} është mbyllur tashmë"],
+  ["The year % has not ended yet", "Viti {0} nuk ka mbaruar ende"],
+  ["Post or delete the draft journal entries of % first", "Postoni ose fshini së pari regjistrimet draft të {0}"],
+  ["The last month of % is locked", "Muaji i fundit i {0} është kyçur"],
+  ["The year % is not closed", "Viti {0} nuk është i mbyllur"],
+  ["Some months of % are locked and cannot be reopened", "Disa muaj të {0} janë kyçur dhe nuk mund të rihapen"],
+  ["Only % is left to pay on this bill", "Te kjo faturë kanë mbetur për t’u paguar vetëm {0}"],
+  ["The year % is closed; reopen it to change the tax", "Viti {0} është i mbyllur; rihapeni për të ndryshuar tatimin"],
 ]

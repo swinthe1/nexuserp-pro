@@ -38,6 +38,7 @@ import {
   useActiveVendors, useBillOrder, usePurchasableVariants, useDeleteProcDocument, useMatchBill, usePostBill, useProcDocument, useReceiveOrder,
   useSaveProcDocument, useSetProcStatus, useSubmitPurchaseOrder, useVendorCredit, type MatchLine,
 } from '../api'
+import { WithholdingCard } from '../components/withholding-card'
 import { MATCH_LABEL, PurchaseLinesEditor, type PurchaseProgress } from '../components/purchase-lines-editor'
 import { billSchema, purchaseOrderSchema, type BillValues, type PurchaseOrderValues } from '../schemas'
 import { AccountingTab } from '@/features/finance/components/t-accounts'
@@ -574,7 +575,10 @@ function BillForm({ doc }: { doc?: BillDoc }) {
             )} />
           </CardContent>
         </Card>
-        <BillSidePanel doc={doc} currency={currency} base={base} matchStatus={matchStatus} vendorId={vendorId} />
+        <div className="grid content-start gap-4">
+          <BillSidePanel doc={doc} currency={currency} base={base} matchStatus={matchStatus} vendorId={vendorId} />
+          {doc && doc.status === 'posted' && doc.document_type === 'vendor_bill' && <WithholdingCard bill={doc} />}
+        </div>
       </div>
       <PurchaseLinesEditor form={form} editable={editable} currency={currency} match={match} />
     </>

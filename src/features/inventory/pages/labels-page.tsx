@@ -165,7 +165,7 @@ function AddItems({ onAdd, busy }: { onAdd: (a: { source: Source; ids?: string[]
   const bills = useQuery({
     queryKey: ['labels-bills', companyId], enabled: !!companyId && mode === 'bill',
     queryFn: async () => unwrap(await supabase.from('vendor_bills').select('id, number, vendor_invoice_number, bill_date, vendor:business_partners(name)')
-      .eq('company_id', companyId!).is('deleted_at', null).eq('document_type', 'bill').order('bill_date', { ascending: false }).order('created_at', { ascending: false }).limit(80)),
+      .eq('company_id', companyId!).is('deleted_at', null).eq('document_type', 'vendor_bill').order('bill_date', { ascending: false }).order('created_at', { ascending: false }).limit(80)),
   })
   const MODES: { id: Source; label: string; icon: typeof Tags }[] = [
     { id: 'items', label: t('Items'), icon: Tags }, { id: 'receipt', label: t('Goods receipt'), icon: FileInput },

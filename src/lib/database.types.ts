@@ -26,6 +26,7 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          tax_nondeductible: boolean
         }
         Insert: {
           id?: string
@@ -48,6 +49,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          tax_nondeductible?: boolean
         }
         Update: {
           id?: string
@@ -70,6 +72,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          tax_nondeductible?: boolean
         }
         Relationships: [
           { foreignKeyName: "accounts_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -1372,6 +1375,62 @@ export type Database = {
         }
         Relationships: [
           { foreignKeyName: "channel_sync_logs_company_id_channel_id_fkey"; columns: ["company_id", "channel_id"]; isOneToOne: false; referencedRelation: "sales_channels"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      cit_returns: {
+        Row: {
+          id: string
+          company_id: string
+          year: number
+          rate: number | null
+          adjustments: Json
+          losses: number
+          advances: number | null
+          notes: string | null
+          tax: number | null
+          journal_entry_id: string | null
+          booked_at: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          year: number
+          rate?: number | null
+          adjustments?: Json
+          losses?: number
+          advances?: number | null
+          notes?: string | null
+          tax?: number | null
+          journal_entry_id?: string | null
+          booked_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          year?: number
+          rate?: number | null
+          adjustments?: Json
+          losses?: number
+          advances?: number | null
+          notes?: string | null
+          tax?: number | null
+          journal_entry_id?: string | null
+          booked_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "cit_returns_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
         ]
       }
       companies: {
@@ -2963,6 +3022,12 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          closed_at: string | null
+          closed_by: string | null
+          result: number | null
+          close_entry_id: string | null
+          carry_entry_id: string | null
+          reopen_reason: string | null
         }
         Insert: {
           id?: string
@@ -2977,6 +3042,12 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          result?: number | null
+          close_entry_id?: string | null
+          carry_entry_id?: string | null
+          reopen_reason?: string | null
         }
         Update: {
           id?: string
@@ -2991,8 +3062,15 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          result?: number | null
+          close_entry_id?: string | null
+          carry_entry_id?: string | null
+          reopen_reason?: string | null
         }
         Relationships: [
+          { foreignKeyName: "fiscal_years_closed_by_fkey"; columns: ["closed_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
           { foreignKeyName: "fiscal_years_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
         ]
       }
@@ -11263,6 +11341,127 @@ export type Database = {
           { foreignKeyName: "warehouses_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
         ]
       }
+      withholding_codes: {
+        Row: {
+          id: string
+          company_id: string
+          code: string
+          name: string
+          rate: number
+          is_active: boolean
+          sort: number
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          code: string
+          name: string
+          rate: number
+          is_active?: boolean
+          sort?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          code?: string
+          name?: string
+          rate?: number
+          is_active?: boolean
+          sort?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "withholding_codes_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
+      withholdings: {
+        Row: {
+          id: string
+          company_id: string
+          bill_id: string
+          vendor_id: string
+          code_id: string
+          wh_date: string
+          base: number
+          rate: number
+          amount: number
+          currency_code: string
+          amount_base: number
+          status: string
+          journal_entry_id: string | null
+          reversal_entry_id: string | null
+          cancel_reason: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          bill_id: string
+          vendor_id: string
+          code_id: string
+          wh_date: string
+          base: number
+          rate: number
+          amount: number
+          currency_code: string
+          amount_base: number
+          status?: string
+          journal_entry_id?: string | null
+          reversal_entry_id?: string | null
+          cancel_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          bill_id?: string
+          vendor_id?: string
+          code_id?: string
+          wh_date?: string
+          base?: number
+          rate?: number
+          amount?: number
+          currency_code?: string
+          amount_base?: number
+          status?: string
+          journal_entry_id?: string | null
+          reversal_entry_id?: string | null
+          cancel_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "withholdings_company_id_bill_id_fkey"; columns: ["company_id", "bill_id"]; isOneToOne: false; referencedRelation: "vendor_bills"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "withholdings_company_id_code_id_fkey"; columns: ["company_id", "code_id"]; isOneToOne: false; referencedRelation: "withholding_codes"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "withholdings_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "withholdings_company_id_vendor_id_fkey"; columns: ["company_id", "vendor_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
       work_centers: {
         Row: {
           id: string
@@ -11966,6 +12165,13 @@ export type Database = {
         }
         Returns: { account_id: string | null; code: string | null; name: string | null; account_type: string | null; account_subtype: string | null; parent_id: string | null; is_postable: boolean | null; cash_flow_category: string | null; opening: number | null; debit: number | null; credit: number | null; closing: number | null }[]
       }
+      account_set_nondeductible: {
+        Args: {
+          p_account: string
+          p_on: boolean
+        }
+        Returns: undefined
+      }
       acknowledge_stock_alert: {
         Args: {
           p_id: string
@@ -12383,6 +12589,28 @@ export type Database = {
       check_sync_health: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      cit_book: {
+        Args: {
+          p_company: string
+          p_year: number
+        }
+        Returns: Json
+      }
+      cit_save: {
+        Args: {
+          p_company: string
+          p_year: number
+          p: Json
+        }
+        Returns: Json
+      }
+      cit_worksheet: {
+        Args: {
+          p_company: string
+          p_year: number
+        }
+        Returns: Json
       }
       clock_attendance: {
         Args: {
@@ -13015,13 +13243,6 @@ export type Database = {
           p_since?: string
         }
         Returns: Json
-      }
-      label_settings_save: {
-        Args: {
-          p_company: string
-          p_settings: Json
-        }
-        Returns: undefined
       }
       labels_assign_barcodes: {
         Args: {
@@ -14678,6 +14899,33 @@ export type Database = {
         }
         Returns: string
       }
+      withholding_cancel: {
+        Args: {
+          p_id: string
+          p_reason: string
+        }
+        Returns: undefined
+      }
+      withholding_create: {
+        Args: {
+          p: Json
+        }
+        Returns: Json
+      }
+      withholding_report: {
+        Args: {
+          p_company: string
+          p_from: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      withholding_setup: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       wms_overview: {
         Args: {
           p_company: string
@@ -14692,6 +14940,26 @@ export type Database = {
           p_to: string
         }
         Returns: { work_center_id: string | null; code: string | null; name: string | null; day: string | null; planned_minutes: number | null; capacity_minutes: number | null; work_orders: number | null }[]
+      }
+      year_close: {
+        Args: {
+          p_year: string
+          p_carry?: boolean
+        }
+        Returns: Json
+      }
+      year_end_check: {
+        Args: {
+          p_year: string
+        }
+        Returns: Json
+      }
+      year_reopen: {
+        Args: {
+          p_year: string
+          p_reason: string
+        }
+        Returns: undefined
       }
     }
     Enums: Record<string, never>

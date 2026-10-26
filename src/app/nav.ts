@@ -4,7 +4,7 @@ import {
   BadgePercent, ClipboardCheck, Hourglass, PackageOpen, ScanLine, ShoppingBasket,
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, BookOpenText, Building, HandCoins, ListTree, Network, Settings2, Wallet, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, Gauge,
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackagePlus, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
-  Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, type LucideIcon,
+  Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, type LucideIcon,
 } from 'lucide-react'
 import { msg } from '@/i18n'
 
@@ -128,6 +128,7 @@ export const NAV: NavSection[] = [
       { label: msg('Bank and cash'), href: '/finance/bank', icon: Banknote, perm: 'finance.read', keywords: ['reconciliation', 'statement', 'banka'] },
       { label: msg('Fixed assets'), href: '/finance/assets', icon: Building, perm: 'finance.read', keywords: ['depreciation', 'amortization', 'aktive'] },
       { label: msg('Cost centers'), href: '/finance/cost-centers', icon: Network, perm: 'finance.read', keywords: ['departments', 'branches', 'projects'] },
+      { label: msg('Year-end close'), href: '/finance/year-end', icon: CalendarCheck, perm: 'finance.read', keywords: ['mbyllja e vitit', 'mbyllje', 'year end', 'closing', 'fitimi i vitit', '109', '108'] },
       { label: msg('Finance setup'), href: '/finance/setup', icon: Settings2, perm: 'finance.read', keywords: ['posting accounts', 'periods', 'close', 'fiscal year', 'journals'] },
     ],
   },
@@ -138,6 +139,8 @@ export const NAV: NavSection[] = [
       { label: msg('Sales and purchase books'), href: '/tax/books', icon: FileSpreadsheet, perm: 'tax.read', keywords: ['libri i shitjes', 'libri i blerjes', 'sales book', 'purchase book', 'vat book'] },
       { label: msg('VAT declarations'), href: '/tax/declarations', icon: ClipboardPen, perm: 'tax.read', keywords: ['vat return', 'deklarata', 'tvsh', 'dpt', 'atk'] },
       { label: msg('Fiscalization'), href: '/tax/fiscalization', icon: Fingerprint, perm: 'tax.read', keywords: ['nivf', 'nslf', 'iic', 'fic', 'cis', 'efiskalizimi', 'qr'] },
+      { label: msg('Withholding tax'), href: '/tax/withholding', icon: Landmark, perm: 'tax.read', keywords: ['tatim në burim', 'tatimi në burim', 'withholding', 'qira', 'rent', 'wht'] },
+      { label: msg('Corporate income tax'), href: '/tax/income-tax', icon: Percent, perm: 'tax.read', keywords: ['tatimi mbi fitimin', 'tatim fitimi', 'cit', 'profit tax', 'deklarata vjetore'] },
       { label: msg('Tax codes'), href: '/tax/codes', icon: Tags, perm: 'tax.read', keywords: ['vat rates', 'exempt', 'reverse charge'] },
     ],
   },
