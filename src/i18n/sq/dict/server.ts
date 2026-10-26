@@ -611,4 +611,5 @@ export default {
   "Unknown view": "Pamje e panjohur",
   "Person not found": "Personi nuk u gjet",
   "Unknown publishing key": "Çelës publikimi i panjohur",
+  "At most 12 buttons": "Më së shumti 12 butona",
 } satisfies Dict

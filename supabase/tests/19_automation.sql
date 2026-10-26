@@ -403,5 +403,15 @@ select set_config('request.jwt.claim.sub', '', false);
 set role anon;
 select t.throws(format($q$select public.pin_login(%L, %L, '4826')$q$, :'tilltoken', :'kmem'), 'no longer a shared till', 'a till taken off the list signs nobody in');
 reset role;
+
+-- ---------- each person arranges their own start buttons ---------------------------------------
+set role authenticated;
+select t.login('kasa@auto.xk');
+select public.my_home_tiles_save(:'aco', array['sell', '/inventory/stock']);
+select t.ok((public.get_my_context() -> 'companies' -> 0 -> 'home_tiles') = '["sell", "/inventory/stock"]'::jsonb, 'a person''s own buttons come with the app');
+select t.throws(format($q$select public.my_home_tiles_save(%L, array['<script>'])$q$, :'aco'), 'At most 12', 'only known kinds of buttons are kept');
+select public.my_home_tiles_save(:'aco', null);
+select t.ok((public.get_my_context() -> 'companies' -> 0 -> 'home_tiles') = 'null'::jsonb, '"As they were" goes back to the buttons of the roles');
+reset role;
 \set QUIET off
 select count(*) as assertions_passed from t.results;

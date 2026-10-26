@@ -18,6 +18,8 @@ export interface CompanySummary {
   business_type?: string
   /** this person starts in the simple view (a few large buttons, no menus) */
   simple_view?: boolean
+  /** the buttons this person put on their start screen (none: chosen by their roles) */
+  home_tiles?: string[] | null
 }
 
 /** A company the person belongs to that is on hold because of its licence */

@@ -1343,6 +1343,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           view_mode: string
+          home_tiles: string[] | null
         }
         Insert: {
           id?: string
@@ -1358,6 +1359,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           view_mode?: string
+          home_tiles?: string[] | null
         }
         Update: {
           id?: string
@@ -1373,6 +1375,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           view_mode?: string
+          home_tiles?: string[] | null
         }
         Relationships: [
           { foreignKeyName: "company_members_company_fk"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -12123,6 +12126,13 @@ export type Database = {
           p_notes?: string
         }
         Returns: string
+      }
+      my_home_tiles_save: {
+        Args: {
+          p_company: string
+          p_tiles: string[]
+        }
+        Returns: undefined
       }
       my_payslip_periods: {
         Args: Record<PropertyKey, never>
