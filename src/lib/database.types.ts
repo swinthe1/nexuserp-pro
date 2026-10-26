@@ -10379,6 +10379,11 @@ export type Database = {
           capitalized_variance: number
           expensed_variance: number
           is_return: boolean
+          discount1_pct: number | null
+          discount2_pct: number | null
+          sales_price_new: number | null
+          lot_number: string | null
+          expiry_date: string | null
         }
         Insert: {
           id?: string
@@ -10410,6 +10415,11 @@ export type Database = {
           capitalized_variance?: number
           expensed_variance?: number
           is_return?: boolean
+          discount1_pct?: number | null
+          discount2_pct?: number | null
+          sales_price_new?: number | null
+          lot_number?: string | null
+          expiry_date?: string | null
         }
         Update: {
           id?: string
@@ -10441,6 +10451,11 @@ export type Database = {
           capitalized_variance?: number
           expensed_variance?: number
           is_return?: boolean
+          discount1_pct?: number | null
+          discount2_pct?: number | null
+          sales_price_new?: number | null
+          lot_number?: string | null
+          expiry_date?: string | null
         }
         Relationships: [
           { foreignKeyName: "vendor_bill_lines_company_id_account_id_fkey"; columns: ["company_id", "account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["company_id", "id"] },
@@ -10490,6 +10505,11 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           is_opening: boolean
+          warehouse_id: string | null
+          receipt_id: string | null
+          vendor_fiscal_number: string | null
+          receive_date: string | null
+          pay_bank_account_id: string | null
         }
         Insert: {
           id?: string
@@ -10527,6 +10547,11 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           is_opening?: boolean
+          warehouse_id?: string | null
+          receipt_id?: string | null
+          vendor_fiscal_number?: string | null
+          receive_date?: string | null
+          pay_bank_account_id?: string | null
         }
         Update: {
           id?: string
@@ -10564,6 +10589,11 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           is_opening?: boolean
+          warehouse_id?: string | null
+          receipt_id?: string | null
+          vendor_fiscal_number?: string | null
+          receive_date?: string | null
+          pay_bank_account_id?: string | null
         }
         Relationships: [
           { foreignKeyName: "vendor_bills_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -10573,6 +10603,8 @@ export type Database = {
           { foreignKeyName: "vendor_bills_company_id_purchase_order_id_fkey"; columns: ["company_id", "purchase_order_id"]; isOneToOne: false; referencedRelation: "purchase_orders"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "vendor_bills_company_id_vendor_id_fkey"; columns: ["company_id", "vendor_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "vendor_bills_currency_code_fkey"; columns: ["currency_code"]; isOneToOne: false; referencedRelation: "currencies"; referencedColumns: ["code"] },
+          { foreignKeyName: "vendor_bills_receipt_fk"; columns: ["company_id", "receipt_id"]; isOneToOne: false; referencedRelation: "goods_receipts"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "vendor_bills_warehouse_fk"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
         ]
       }
       vendor_products: {
@@ -13537,6 +13569,22 @@ export type Database = {
           p_warehouse?: string
         }
         Returns: { variant_id: string | null; sku: string | null; name: string | null; bom_id: string | null; bom_code: string | null; bom_quantity: number | null; on_hand: number | null; reserved: number | null; sales_demand: number | null; component_demand: number | null; min_qty: number | null; max_qty: number | null; in_production: number | null; projected: number | null; suggested: number | null; unit_cost: number | null; lead_minutes: number | null }[]
+      }
+      purchase_invoice_complete: {
+        Args: {
+          p_bill: string
+          p_override_reason?: string
+        }
+        Returns: Json
+      }
+      purchase_item_info: {
+        Args: {
+          p_company: string
+          p_vendor: string
+          p_variants: string[]
+          p_warehouse?: string
+        }
+        Returns: Json
       }
       reader_claim: {
         Args: Record<PropertyKey, never>

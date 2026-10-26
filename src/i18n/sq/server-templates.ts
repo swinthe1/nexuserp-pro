@@ -407,4 +407,7 @@ export const serverTemplates: [string, string][] = [
   ["Bill for %", "Fatura për {0}"],
   ["Unknown visit result %", "Rezultat i panjohur vizite: {0}"],
   ["Not a customer of this company: %", "Nuk është klient i kësaj kompanie: {0}"],
+  ["Line %: % needs a lot number", "Rreshti {0}: {1} kërkon numër loti"],
+  ["Line %: % needs an expiry date", "Rreshti {0}: {1} kërkon datë skadimi"],
+  ["Only a draft can be completed (this one is %)", "Kompletohet vetëm drafti (ky është {0})"],
 ]

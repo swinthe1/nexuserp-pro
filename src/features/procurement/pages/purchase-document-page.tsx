@@ -4,7 +4,7 @@ import {
 } from 'lucide-react'
 import * as React from 'react'
 import { useForm, useWatch } from 'react-hook-form'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { describeError, unwrap } from '@/lib/errors'
@@ -65,6 +65,8 @@ export function PurchaseDocumentPage({ kind }: { kind: Kind }) {
   if (id && doc.isLoading) return <Skeleton className="mx-auto h-[480px] max-w-6xl" />
   if (id && doc.isError) return <ErrorState error={doc.error} onRetry={() => void doc.refetch()} />
   if (id && !doc.data) return <EmptyState title={kind === 'orders' ? t('Purchase order not found') : t('Bill not found')} action={<Link to={kind === 'orders' ? '/procurement/orders' : '/procurement/bills'} className="text-sm text-primary hover:underline">{kind === 'orders' ? t('All purchase orders') : t('All vendor bills')}</Link>} />
+  // a draft that brings goods in is edited on the purchase invoice screen
+  if (kind === 'bills' && doc.data?.status === 'draft' && (doc.data as BillDoc).warehouse_id) return <Navigate to={`/procurement/invoice/${doc.data.id}`} replace />
   const key = `${doc.data?.id ?? 'new'}-${doc.data?.status ?? ''}-${doc.data?.match_status ?? ''}`
   return kind === 'orders'
     ? <PurchaseOrderForm key={key} doc={doc.data as PoDoc | undefined} />
@@ -646,8 +648,9 @@ function BillSidePanel({ doc, currency, base, matchStatus, vendorId }: { doc?: B
           <Row k={t('Added to stock value')}>{formatMoney(capitalized)} {base}</Row>
           {expensed !== 0 && <Row k={t('On goods already sold')}>{formatMoney(expensed)} {base}</Row>}
         </>}
-        {(doc.order || doc.original || (doc.credits?.length ?? 0) > 0) && (
+        {(doc.order || doc.original || doc.receipt_id || (doc.credits?.length ?? 0) > 0) && (
           <div className="mt-1 grid gap-1.5 border-t pt-2">
+            {doc.receipt_id && <DocLink href={`/inventory/receipts/${doc.receipt_id}`} label={t('The goods came in with the receipt')} />}
             {doc.order && <DocLink href={`/procurement/orders/${doc.order.id}`} label={t('Order {number}', { number: doc.order.number })} status={doc.order.status} />}
             {doc.original && <DocLink href={`/procurement/bills/${doc.original.id}`} label={t('Corrects {number}', { number: doc.original.number })} />}
             {doc.credits?.map((c) => <DocLink key={c.id} href={`/procurement/bills/${c.id}`} label={t('Credit note {number}', { number: c.number })} status={c.status} />)}

@@ -87,6 +87,7 @@ const PosHomePage = lazy(() => import('@/features/pos/pages/pos-home-page'), 'Po
 const PosSessionPage = lazy(() => import('@/features/pos/pages/pos-home-page'), 'PosSessionPage')
 const TillPage = lazy(() => import('@/features/pos/pages/till-page'), 'TillPage')
 const SafePage = lazy(() => import('@/features/safe/safe-page'), 'SafePage')
+const PurchaseInvoicePage = lazy(() => import('@/features/procurement/pages/purchase-invoice-page'), 'PurchaseInvoicePage')
 const AgentPage = lazy(() => import('@/features/agent/agent-page'), 'AgentPage')
 const AgentsPage = lazy(() => import('@/features/agent/agents-page'), 'AgentsPage')
 const LoyaltyPage = lazy(() => import('@/features/loyalty/loyalty-page'), 'LoyaltyPage')
@@ -225,6 +226,10 @@ const router = createBrowserRouter([
         { index: true, element: <ProcurementListPage key="bills" kind="bills" /> },
         { path: 'new', element: <PurchaseDocumentPage key="bill-new" kind="bills" /> },
         { path: ':id', element: <PurchaseDocumentPage key="bill" kind="bills" /> },
+      ] },
+      { path: 'procurement/invoice', element: <RequirePerm perm="invoicing.read" />, children: [
+        { path: 'new', element: <PurchaseInvoicePage key="pi-new" /> },
+        { path: ':id', element: <PurchaseInvoicePage key="pi" /> },
       ] },
       { path: 'finance/payments', element: <RequirePerm perm="invoicing.read" />, children: [
         { index: true, element: <PaymentsPage /> },

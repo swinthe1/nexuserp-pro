@@ -137,7 +137,12 @@ export function ProcurementListPage({ kind }: { kind: ProcKind }) {
     { accessorKey: 'status', filterFn: inFilter, header: t('Status'), meta: { label: t('Status'), exportValue: (r) => humanize(r.status) }, cell: ({ getValue }) => <StatusBadge status={getValue() as string} /> },
     ...cfg.columns(base),
   ], [cfg, base])
-  const newButton = <Can perm={cfg.perm}><Button asChild><Link to={`${cfg.href}/new`}><Plus /> {cfg.newLabel}</Link></Button></Can>
+  const newButton = kind === 'bills'
+    ? <Can perm={cfg.perm}>
+        <Button variant="outline" asChild><Link to="/procurement/bills/new"><Plus /> {t('Expense bill (no goods)')}</Link></Button>
+        <Button asChild><Link to="/procurement/invoice/new"><Plus /> {t('Purchase invoice with goods')}</Link></Button>
+      </Can>
+    : <Can perm={cfg.perm}><Button asChild><Link to={`${cfg.href}/new`}><Plus /> {cfg.newLabel}</Link></Button></Can>
 
   return (
     <>

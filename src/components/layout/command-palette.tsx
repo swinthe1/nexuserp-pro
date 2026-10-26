@@ -32,6 +32,7 @@ const CREATE_ACTIONS = [
   { label: msg('New customer'), href: '/partners/new', icon: User, perm: 'partners.write' },
   { label: msg('New purchase order'), href: '/procurement/orders/new', icon: ShoppingCart, perm: 'procurement.write' },
   { label: msg('New requisition'), href: '/procurement/requisitions/new', icon: ClipboardList, perm: 'requisitions.write' },
+  { label: msg('New purchase invoice with goods'), href: '/procurement/invoice/new', icon: PackageCheck, perm: 'invoicing.write' },
   { label: msg('New vendor bill'), href: '/procurement/bills/new', icon: FileCheck2, perm: 'invoicing.write' },
   { label: msg('New vendor'), href: '/partners/new?vendor=1', icon: Factory, perm: 'partners.write' },
   { label: msg('New product'), href: '/inventory/products/new', icon: Boxes, perm: 'inventory.write' },
