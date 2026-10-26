@@ -1,7 +1,7 @@
 {
   "name": "drispro-desktop",
   "productName": "DrisPRO",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "DrisPRO për Windows: i gjithë aplikacioni, me printim direkt në printerët e kuponëve dhe të kuzhinës.",
   "author": "DrisPRO",
   "main": "main.js",
@@ -43,7 +43,10 @@
       "createStartMenuShortcut": true,
       "shortcutName": "DrisPRO",
       "language": "1052",
-      "guid": "16ba544e-9015-5059-ab77-250c11fafbcc"
+      "guid": "16ba544e-9015-5059-ab77-250c11fafbcc",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/uninstallerSidebar.bmp",
+      "installerHeader": "build/installerHeader.bmp"
     }
   }
 }
