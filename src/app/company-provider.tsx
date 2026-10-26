@@ -111,7 +111,8 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
   const features = company?.license?.features
   const can = React.useCallback(
-    (perm: string) => matchesPermission(company?.permissions ?? [], perm, ctxQuery.data?.is_super_admin) && moduleAllowed(features, perm.split('.')[0]),
+    // 'pos.approve|finance.read' = either one is enough
+    (perm: string) => perm.split('|').some((p) => matchesPermission(company?.permissions ?? [], p, ctxQuery.data?.is_super_admin) && moduleAllowed(features, p.split('.')[0])),
     [company, ctxQuery.data?.is_super_admin, features],
   )
   const hasFeature = React.useCallback((f: string) => !features || features.includes(f), [features])

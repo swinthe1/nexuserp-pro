@@ -86,6 +86,7 @@ const LotTracePage = lazy(() => import('@/features/wms/pages/lots-page'), 'LotTr
 const PosHomePage = lazy(() => import('@/features/pos/pages/pos-home-page'), 'PosHomePage')
 const PosSessionPage = lazy(() => import('@/features/pos/pages/pos-home-page'), 'PosSessionPage')
 const TillPage = lazy(() => import('@/features/pos/pages/till-page'), 'TillPage')
+const SafePage = lazy(() => import('@/features/safe/safe-page'), 'SafePage')
 const LoyaltyPage = lazy(() => import('@/features/loyalty/loyalty-page'), 'LoyaltyPage')
 const WaitersPage = lazy(() => import('@/features/restaurant/waiters-page'), 'WaitersPage')
 const HistoryPage = lazy(() => import('@/features/history/history-page'), 'HistoryPage')
@@ -241,6 +242,7 @@ const router = createBrowserRouter([
         { path: 'reports', element: <ReportsPage /> },
         { path: 'setup', element: <FinanceSetupPage /> },
       ] },
+      { path: 'safe', element: <RequirePerm perm="pos.approve|finance.read" />, children: [{ index: true, element: <SafePage /> }] },
       { path: 'history', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <HistoryPage /> }] },
       { path: 'pos', element: <RequirePerm perm="pos.read" />, children: [
         { index: true, element: <PosHomePage /> },

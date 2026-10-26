@@ -5930,6 +5930,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           mode: string
+          safe_id: string | null
         }
         Insert: {
           id?: string
@@ -5954,6 +5955,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           mode?: string
+          safe_id?: string | null
         }
         Update: {
           id?: string
@@ -5978,6 +5980,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           mode?: string
+          safe_id?: string | null
         }
         Relationships: [
           { foreignKeyName: "pos_registers_company_id_cash_account_id_fkey"; columns: ["company_id", "cash_account_id"]; isOneToOne: false; referencedRelation: "bank_accounts"; referencedColumns: ["company_id", "id"] },
@@ -5986,6 +5989,7 @@ export type Database = {
           { foreignKeyName: "pos_registers_company_id_journal_id_fkey"; columns: ["company_id", "journal_id"]; isOneToOne: false; referencedRelation: "journals"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "pos_registers_company_id_location_id_fkey"; columns: ["company_id", "location_id"]; isOneToOne: false; referencedRelation: "warehouse_locations"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "pos_registers_company_id_price_list_id_fkey"; columns: ["company_id", "price_list_id"]; isOneToOne: false; referencedRelation: "price_lists"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "pos_registers_company_id_safe_id_fkey"; columns: ["company_id", "safe_id"]; isOneToOne: false; referencedRelation: "safes"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "pos_registers_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
         ]
       }
@@ -7731,6 +7735,219 @@ export type Database = {
         Relationships: [
           { foreignKeyName: "route_stops_company_id_route_id_fkey"; columns: ["company_id", "route_id"]; isOneToOne: false; referencedRelation: "delivery_routes"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "route_stops_company_id_shipment_id_fkey"; columns: ["company_id", "shipment_id"]; isOneToOne: false; referencedRelation: "shipments"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      safe_counts: {
+        Row: {
+          id: string
+          company_id: string
+          number: string
+          status: string
+          safe_id: string
+          counted_on: string
+          counts: Json
+          total: number
+          expected: number
+          difference: number | null
+          note: string | null
+          counted_by: string
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          number: string
+          status?: string
+          safe_id: string
+          counted_on: string
+          counts: Json
+          total: number
+          expected: number
+          difference?: never
+          note?: string | null
+          counted_by?: string
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          number?: string
+          status?: string
+          safe_id?: string
+          counted_on?: string
+          counts?: Json
+          total?: number
+          expected?: number
+          difference?: never
+          note?: string | null
+          counted_by?: string
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "safe_counts_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "safe_counts_company_id_safe_id_fkey"; columns: ["company_id", "safe_id"]; isOneToOne: false; referencedRelation: "safes"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      safe_movements: {
+        Row: {
+          id: string
+          company_id: string
+          number: string
+          status: string
+          kind: string
+          safe_id: string
+          moved_on: string
+          amount: number
+          to_safe_id: string | null
+          bank_account_id: string | null
+          account_id: string | null
+          reason: string
+          reference: string | null
+          notes_coins: Json | null
+          requested_by: string
+          decided_by: string | null
+          decided_at: string | null
+          decision_note: string | null
+          journal_entry_id: string | null
+          arrived_entry_id: string | null
+          arrived_on: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          number: string
+          status: string
+          kind: string
+          safe_id: string
+          moved_on: string
+          amount: number
+          to_safe_id?: string | null
+          bank_account_id?: string | null
+          account_id?: string | null
+          reason: string
+          reference?: string | null
+          notes_coins?: Json | null
+          requested_by?: string
+          decided_by?: string | null
+          decided_at?: string | null
+          decision_note?: string | null
+          journal_entry_id?: string | null
+          arrived_entry_id?: string | null
+          arrived_on?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          number?: string
+          status?: string
+          kind?: string
+          safe_id?: string
+          moved_on?: string
+          amount?: number
+          to_safe_id?: string | null
+          bank_account_id?: string | null
+          account_id?: string | null
+          reason?: string
+          reference?: string | null
+          notes_coins?: Json | null
+          requested_by?: string
+          decided_by?: string | null
+          decided_at?: string | null
+          decision_note?: string | null
+          journal_entry_id?: string | null
+          arrived_entry_id?: string | null
+          arrived_on?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "safe_movements_company_id_account_id_fkey"; columns: ["company_id", "account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "safe_movements_company_id_arrived_entry_id_fkey"; columns: ["company_id", "arrived_entry_id"]; isOneToOne: false; referencedRelation: "journal_entries"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "safe_movements_company_id_bank_account_id_fkey"; columns: ["company_id", "bank_account_id"]; isOneToOne: false; referencedRelation: "bank_accounts"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "safe_movements_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "safe_movements_company_id_journal_entry_id_fkey"; columns: ["company_id", "journal_entry_id"]; isOneToOne: false; referencedRelation: "journal_entries"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "safe_movements_company_id_safe_id_fkey"; columns: ["company_id", "safe_id"]; isOneToOne: false; referencedRelation: "safes"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "safe_movements_company_id_to_safe_id_fkey"; columns: ["company_id", "to_safe_id"]; isOneToOne: false; referencedRelation: "safes"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      safes: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          bank_account_id: string
+          warehouse_id: string | null
+          holder_id: string | null
+          approval_limit: number
+          tolerance: number
+          max_balance: number | null
+          is_active: boolean
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          bank_account_id: string
+          warehouse_id?: string | null
+          holder_id?: string | null
+          approval_limit?: number
+          tolerance?: number
+          max_balance?: number | null
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string
+          bank_account_id?: string
+          warehouse_id?: string | null
+          holder_id?: string | null
+          approval_limit?: number
+          tolerance?: number
+          max_balance?: number | null
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "safes_company_id_bank_account_id_fkey"; columns: ["company_id", "bank_account_id"]; isOneToOne: false; referencedRelation: "bank_accounts"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "safes_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "safes_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
         ]
       }
       sales_channels: {
@@ -12385,6 +12602,13 @@ export type Database = {
         }
         Returns: Json
       }
+      pos_register_set_safe: {
+        Args: {
+          p_register: string
+          p_safe: string
+        }
+        Returns: undefined
+      }
       pos_session_summary: {
         Args: {
           p_session: string
@@ -12875,6 +13099,61 @@ export type Database = {
           p_any_hour?: boolean
         }
         Returns: number
+      }
+      safe_book: {
+        Args: {
+          p_safe: string
+          p_from: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      safe_cancel: {
+        Args: {
+          p_id: string
+        }
+        Returns: undefined
+      }
+      safe_count: {
+        Args: {
+          p_safe: string
+          p_counts: Json
+          p_note?: string
+        }
+        Returns: Json
+      }
+      safe_decide: {
+        Args: {
+          p_id: string
+          p_approve: boolean
+          p_note?: string
+        }
+        Returns: Json
+      }
+      safe_deposit_arrived: {
+        Args: {
+          p_id: string
+          p_on?: string
+        }
+        Returns: undefined
+      }
+      safe_move: {
+        Args: {
+          p: Json
+        }
+        Returns: Json
+      }
+      safe_save: {
+        Args: {
+          p: Json
+        }
+        Returns: string
+      }
+      safes_overview: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
       }
       sales_order_availability: {
         Args: {
