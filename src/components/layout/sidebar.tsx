@@ -1,7 +1,8 @@
-import { BadgeDollarSign, Boxes, Building2, ChevronRight, Factory, Landmark, type LucideIcon, PanelLeftClose, PanelLeftOpen, Percent, ScanLine, Search, ShoppingCart, Star, Store, Truck, Users } from 'lucide-react'
+import { ChevronRight, PanelLeftClose, PanelLeftOpen, Search, Star } from 'lucide-react'
 import * as React from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
+import { moduleLook } from '@/app/modules'
 import { NAV, type NavItem } from '@/app/nav'
 import { useCommandPalette } from '@/components/layout/command-palette'
 import { CompanySwitcher } from '@/components/layout/company-switcher'
@@ -36,10 +37,15 @@ function useActiveHref() {
 
 const ALWAYS_SHOWN = new Set(['Overview', 'Company'])
 
-/** one icon per section for the narrow menu; its pages open beside it */
-const SECTION_ICON: Record<string, LucideIcon> = {
-  'Inventory|menu': Boxes, 'Sales & CRM': BadgeDollarSign, Purchasing: ShoppingCart, 'Warehouse|menu': ScanLine, Retail: Store,
-  Manufacturing: Factory, Logistics: Truck, Finance: Landmark, 'Tax|menu': Percent, People: Users, Company: Building2,
+/** a section's own icon in its own colour (app/modules.ts) */
+function SectionIcon({ label, className }: { label: string; className?: string }) {
+  const look = moduleLook(label)
+  const Icon = look.icon
+  return (
+    <span aria-hidden style={{ '--mod': look.hue } as React.CSSProperties} className={cn('mod-chip flex size-6 shrink-0 items-center justify-center rounded-md', className)}>
+      <Icon className="size-3.5" strokeWidth={2} />
+    </span>
+  )
 }
 
 function SectionFlyout({ label, items, activeHref, onNavigate }: { label: string; items: NavItem[]; activeHref: string | null; onNavigate?: () => void }) {
@@ -47,15 +53,14 @@ function SectionFlyout({ label, items, activeHref, onNavigate }: { label: string
   const timer = React.useRef<number | undefined>(undefined)
   const show = () => { window.clearTimeout(timer.current); setOpen(true) }
   const hide = () => { window.clearTimeout(timer.current); timer.current = window.setTimeout(() => setOpen(false), 160) }
-  const Icon = SECTION_ICON[label] ?? Boxes
   const active = items.some((i) => i.href === activeHref)
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button type="button" aria-label={t(label)} onMouseEnter={show} onMouseLeave={hide}
           className={cn('flex h-9 w-full items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
-            active && 'bg-card text-primary shadow-sm ring-1 ring-border', open && !active && 'bg-secondary text-foreground')}>
-          <Icon className="size-[18px]" />
+            active && 'bg-secondary ring-1 ring-primary/40', open && !active && 'bg-secondary text-foreground')}>
+          <SectionIcon label={label} className="size-7" />
         </button>
       </PopoverTrigger>
       <PopoverContent side="right" align="start" sideOffset={10} className="w-60 p-1.5" onMouseEnter={show} onMouseLeave={hide}
@@ -88,8 +93,8 @@ function Item({ item, collapsed, onNavigate, active, pinned, onTogglePin }: {
       aria-current={active ? 'page' : undefined}
       className={
         cn(
-          'group/item flex h-8 min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 text-[13px] font-medium text-sidebar-foreground transition-colors hover:bg-secondary hover:text-foreground',
-          active && 'relative bg-secondary text-foreground before:absolute before:-left-2.5 before:top-1.5 before:h-5 before:w-[3px] before:rounded-r-full before:bg-primary',
+          'group/item flex h-8 min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 text-[13px] font-medium text-sidebar-foreground transition-colors hover:bg-secondary hover:text-foreground',
+          active && 'bg-primary/15 font-semibold text-white ring-1 ring-inset ring-primary/25',
           collapsed && 'h-9 flex-none justify-center px-0',
         )
       }
@@ -202,13 +207,15 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
             <button type="button" aria-expanded={expanded} aria-controls={id}
               disabled={section.label === activeSection}
               onClick={() => toggleSection(section.label)}
-              className="flex h-7 items-center gap-1 rounded-md px-2 text-xs font-medium text-muted-foreground/90 hover:bg-secondary hover:text-foreground disabled:cursor-default disabled:hover:bg-transparent disabled:hover:text-muted-foreground/90">
-              <ChevronRight className={cn('size-3.5 transition-transform', expanded && 'rotate-90')} />
+              className={cn('flex h-8 items-center gap-2 rounded-lg px-1.5 text-[13px] font-semibold text-sidebar-foreground hover:bg-secondary hover:text-foreground disabled:cursor-default disabled:hover:bg-transparent',
+                expanded && 'text-foreground')}>
+              <SectionIcon label={section.label} />
               <span className="flex-1 text-left">{t(section.label)}</span>
-              {!expanded && <span className="text-2xs font-normal text-muted-foreground/70">{section.items.length}</span>}
+              {!expanded && <span className="text-2xs font-medium text-muted-foreground/80">{section.items.length}</span>}
+              <ChevronRight className={cn('size-3.5 text-muted-foreground transition-transform', expanded && 'rotate-90')} />
             </button>
             {expanded && (
-              <div id={id} className="flex flex-col gap-0.5">
+              <div id={id} className="ml-[18px] flex flex-col gap-0.5 border-l border-sidebar-border pl-2">
                 {section.items.map((i) => <Item key={i.href} item={i} collapsed={false} onNavigate={onNavigate} active={i.href === activeHref} {...pinProps(i)} />)}
               </div>
             )}

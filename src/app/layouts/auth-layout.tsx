@@ -30,7 +30,7 @@ function Receipt() {
             <li key={l} className="flex items-baseline gap-2">
               <span>{t(l)}</span>
               <span className="mb-[3px] flex-1 border-b border-dotted border-[#b7bbc4]" />
-              <Check className="size-3.5 translate-y-[2px] text-[#2f5bd3]" strokeWidth={3} />
+              <Check className="size-3.5 translate-y-[2px] text-[#0E8A5F]" strokeWidth={3} />
             </li>
           ))}
         </ul>
@@ -56,7 +56,10 @@ export function AuthLayout() {
         .auth-receipt { animation: auth-print 1.1s cubic-bezier(.2,.7,.2,1) both .15s; }
         @media (prefers-reduced-motion: reduce) { .auth-receipt { animation: none; } }
       `}</style>
-      <aside className="relative hidden overflow-hidden bg-[#121a2e] text-white lg:flex">
+      <aside className="relative hidden overflow-hidden bg-[hsl(196_48%_11%)] text-white lg:flex">
+        {/* light through the leaves: a green and a sky glow */}
+        <div aria-hidden className="pointer-events-none absolute -left-40 -top-40 size-[520px] rounded-full bg-[#11A06E]/25 blur-[120px]" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-48 right-0 size-[560px] rounded-full bg-[#1583C8]/25 blur-[130px]" />
         {/* the slot of the till the receipt comes out of */}
         <div className="absolute inset-x-0 top-0 h-px bg-white/10" />
         <div className="relative flex w-full flex-col justify-between p-12 xl:p-16">
@@ -65,7 +68,7 @@ export function AuthLayout() {
           </div>
           <div className="grid max-w-4xl items-center gap-14 min-[1400px]:grid-cols-[minmax(0,1fr)_auto]">
             <div className="max-w-md">
-              <h2 className="text-[2.6rem] font-semibold leading-[1.08] tracking-[-0.03em]">
+              <h2 className="text-[2.6rem] font-bold leading-[1.08] tracking-[-0.03em]">
                 {t('Stock, sales, purchasing and accounting — all in one place.')}
               </h2>
               <p className="mt-5 max-w-sm text-[15px] leading-relaxed text-white/65">

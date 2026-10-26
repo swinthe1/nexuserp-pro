@@ -4,92 +4,113 @@
 
 @layer base {
   :root {
-    --background: 220 20% 98%;
-    --foreground: 224 16% 12%;
+    /* DrisPRO — "dris" is the oak: an oak green to act, a sky blue to inform, ink for the menu */
+    --background: 160 20% 97.5%;
+    --foreground: 200 28% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 224 16% 12%;
+    --card-foreground: 200 28% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 224 16% 12%;
-    --primary: 222 62% 47%;           /* Adriatic blue #2B59C3 */
+    --popover-foreground: 200 28% 12%;
+    --primary: 158 82% 30%;           /* oak green #0E8A5F */
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 94%;
-    --secondary-foreground: 224 16% 16%;
-    --muted: 220 14% 95%;
-    --muted-foreground: 220 9% 44%;
-    --accent: 221 40% 95%;
-    --accent-foreground: 222 62% 32%;
-    --destructive: 0 72% 42%;
+    --secondary: 165 18% 94%;
+    --secondary-foreground: 200 28% 16%;
+    --muted: 165 16% 95%;
+    --muted-foreground: 200 10% 42%;
+    --accent: 158 48% 94%;
+    --accent-foreground: 158 80% 24%;
+    --info: 204 82% 48%;              /* sky blue #1F8FDB */
+    --info-foreground: 0 0% 100%;
+    --destructive: 354 70% 46%;
     --destructive-foreground: 0 0% 100%;
-    --success: 142 64% 30%;
+    --success: 152 68% 31%;
     --success-foreground: 0 0% 100%;
-    --warning: 32 92% 36%;
+    --warning: 32 92% 40%;
     --warning-foreground: 0 0% 100%;
-    --border: 220 13% 89%;
-    --input: 220 13% 86%;
-    --ring: 222 62% 47%;
-    --radius: 0.5rem;
-    --sidebar: 220 20% 96%;
-    --sidebar-foreground: 224 12% 28%;
-    --sidebar-border: 220 13% 89%;
+    --border: 165 14% 88%;
+    --input: 165 12% 83%;
+    --ring: 158 82% 34%;
+    --radius: 0.625rem;
+    --sidebar: 196 48% 12%;
+    --sidebar-foreground: 190 20% 84%;
+    --sidebar-border: 196 36% 18%;
+    --shadow-card: 0 1px 2px hsl(200 30% 15% / 0.05), 0 2px 6px -2px hsl(200 30% 15% / 0.06);
   }
   .dark {
-    color-scheme: dark;
-    --background: 222 18% 6%;
-    --foreground: 220 14% 92%;
-    --card: 222 16% 9%;
-    --card-foreground: 220 14% 92%;
-    --popover: 222 16% 10%;
-    --popover-foreground: 220 14% 92%;
-    --primary: 221 70% 62%;
-    --primary-foreground: 222 30% 8%;
-    --secondary: 222 13% 15%;
-    --secondary-foreground: 220 14% 90%;
-    --muted: 222 13% 13%;
-    --muted-foreground: 220 9% 60%;
-    --accent: 222 30% 17%;
-    --accent-foreground: 221 80% 82%;
-    --destructive: 0 70% 56%;
+    --background: 200 30% 6.5%;
+    --foreground: 180 12% 92%;
+    --card: 198 26% 9.5%;
+    --card-foreground: 180 12% 92%;
+    --popover: 198 26% 10.5%;
+    --popover-foreground: 180 12% 92%;
+    --primary: 155 62% 46%;
+    --primary-foreground: 196 48% 8%;
+    --secondary: 198 20% 15%;
+    --secondary-foreground: 180 12% 90%;
+    --muted: 198 20% 13%;
+    --muted-foreground: 190 10% 62%;
+    --accent: 158 30% 15%;
+    --accent-foreground: 152 60% 70%;
+    --info: 204 85% 62%;
+    --info-foreground: 200 40% 8%;
+    --destructive: 354 70% 58%;
     --destructive-foreground: 0 0% 100%;
-    --success: 142 55% 46%;
-    --success-foreground: 222 30% 8%;
+    --success: 152 55% 48%;
+    --success-foreground: 196 48% 8%;
     --warning: 36 90% 55%;
-    --warning-foreground: 222 30% 8%;
-    --border: 222 12% 17%;
-    --input: 222 12% 21%;
-    --ring: 221 70% 62%;
-    --sidebar: 222 18% 7.5%;
-    --sidebar-foreground: 220 10% 72%;
-    --sidebar-border: 222 12% 14%;
+    --warning-foreground: 200 30% 8%;
+    --border: 198 18% 17%;
+    --input: 198 18% 21%;
+    --ring: 155 62% 46%;
+    --sidebar: 196 48% 9%;
+    --sidebar-foreground: 190 20% 82%;
+    --sidebar-border: 196 36% 15%;
+    --shadow-card: 0 1px 2px hsl(0 0% 0% / 0.3);
   }
 }
 
-/* The menu: a deep blue band, the same in the light and the dark look. Everything inside
+/* The menu: an ink band, the same in the light and the dark look. Everything inside
    it reads the colours from here, so the menu needs no colours of its own. */
 @layer base {
   .sidebar-navy {
     color-scheme: dark;
-    --background: 222 52% 10%;
+    --background: 196 48% 9%;
     --foreground: 0 0% 100%;
-    --card: 220 44% 22%;
+    --card: 196 40% 18%;
     --card-foreground: 0 0% 100%;
-    --popover: 222 47% 14%;
+    --popover: 196 45% 13%;
     --popover-foreground: 0 0% 100%;
-    --primary: 213 94% 70%;
-    --primary-foreground: 222 55% 12%;
-    --secondary: 222 40% 19%;
+    --primary: 152 64% 56%;
+    --primary-foreground: 196 48% 10%;
+    --secondary: 196 38% 17%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 222 40% 17%;
-    --muted-foreground: 219 22% 66%;
-    --accent: 222 40% 19%;
+    --muted: 196 38% 15%;
+    --muted-foreground: 190 16% 64%;
+    --accent: 196 38% 17%;
     --accent-foreground: 0 0% 100%;
+    --info: 204 85% 65%;
     --warning: 40 95% 60%;
-    --border: 222 36% 24%;
-    --input: 222 36% 26%;
-    --ring: 213 94% 70%;
-    --sidebar: 222 54% 13%;
-    --sidebar-foreground: 220 30% 86%;
-    --sidebar-border: 222 40% 20%;
+    --border: 196 32% 21%;
+    --input: 196 32% 24%;
+    --ring: 152 64% 56%;
+    --sidebar: 196 48% 12%;
+    --sidebar-foreground: 190 22% 84%;
+    --sidebar-border: 196 36% 18%;
   }
+}
+
+/* module colours: a hue from app/modules.ts, a lightness that suits the background */
+@layer base {
+  :root { --mod-l: 38%; }
+  .dark, .sidebar-navy { --mod-l: 68%; }
+}
+@layer components {
+  .mod-chip {
+    color: hsl(var(--mod) var(--mod-l));
+    background: hsl(var(--mod) var(--mod-l) / 0.12);
+    box-shadow: inset 0 0 0 1px hsl(var(--mod) var(--mod-l) / 0.2);
+  }
+  .dark .mod-chip, .sidebar-navy .mod-chip { background: hsl(var(--mod) var(--mod-l) / 0.16); }
 }
 
 @layer base {
@@ -97,10 +118,12 @@
   html { -webkit-text-size-adjust: 100%; }
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: 'ss01', 'cv11';
+    font-feature-settings: 'tnum' 0;
+    letter-spacing: -0.003em;
   }
   /* all figures line up in tables and KPIs */
   .tabular, td, th, input[type='number'] { font-variant-numeric: tabular-nums; }
+  h1, h2, h3 { letter-spacing: -0.015em; }
   :focus-visible { @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background; }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }

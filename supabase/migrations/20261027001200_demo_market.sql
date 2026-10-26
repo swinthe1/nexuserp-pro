@@ -32,6 +32,8 @@ do $$ begin
   end if;
   if position('app.clock()' in pg_get_functiondef('public.post_delivery'::regproc)) = 0 then
     perform app._patch_function('public.post_delivery', 'v_at := now();', 'v_at := app.clock();');
+  end if;
+  if position('done_at = app.clock()' in pg_get_functiondef('public.post_delivery'::regproc)) = 0 then
     perform app._patch_function('public.post_delivery', 'done_at = now(),', 'done_at = app.clock(),');
   end if;
   if position('app.clock()' in pg_get_functiondef('public.pos_cash_move'::regproc)) = 0 then

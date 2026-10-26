@@ -5,15 +5,15 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg text-sm font-semibold transition-[color,background-color,box-shadow,transform] active:translate-y-px disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90',
+        default: 'bg-primary text-primary-foreground shadow-[inset_0_1px_0_hsl(0_0%_100%/0.16),0_1px_2px_hsl(var(--primary)/0.35)] hover:bg-primary/90 hover:shadow-[inset_0_1px_0_hsl(0_0%_100%/0.16),0_3px_8px_-2px_hsl(var(--primary)/0.45)]',
         destructive: 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',
-        outline: 'border border-input bg-card shadow-sm hover:bg-secondary',
+        outline: 'border border-input bg-card shadow-[0_1px_2px_hsl(200_30%_15%/0.05)] hover:border-primary/35 hover:bg-accent hover:text-accent-foreground',
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-        ghost: 'hover:bg-secondary hover:text-foreground',
+        ghost: 'font-medium hover:bg-secondary hover:text-foreground',
         link: 'text-primary underline-offset-4 hover:underline',
       },
       size: {

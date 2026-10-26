@@ -18,7 +18,7 @@ export default defineConfig({
         description: 'Shitje, magazinë, blerje, prodhim, financë dhe paga në një vend.',
         lang: 'sq',
         dir: 'ltr',
-        theme_color: '#2B59C3',
+        theme_color: '#0E8A5F',
         background_color: '#ffffff',
         display: 'standalone',
         display_override: ['window-controls-overlay', 'standalone'],

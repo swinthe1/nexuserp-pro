@@ -303,7 +303,7 @@ export function DataTable<T>({
                 {row.getVisibleCells().map((cell) => (
                   <TableCell
                     key={cell.id}
-                    className={cn(dense && 'h-8 py-1', cell.column.columnDef.meta?.align === 'right' && 'text-right tabular', cell.column.columnDef.meta?.className)}
+                    className={cn('whitespace-nowrap', dense && 'h-8 py-1', cell.column.columnDef.meta?.align === 'right' && 'text-right tabular', cell.column.columnDef.meta?.className)}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
