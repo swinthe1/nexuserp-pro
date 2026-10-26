@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowDownToLine, ArrowRight, Cable, Copy, Download, GraduationCap, KeyRound, LogOut, MoreHorizontal, Plus, Search, ServerCog, Shapes, Trash2 } from 'lucide-react'
+import { ArrowDownToLine, ArrowRight, Cable, Copy, Download, GraduationCap, KeyRound, LogOut, MoreHorizontal, Plus, Search, ServerCog, Shapes, Trash2, UserPlus } from 'lucide-react'
 import * as React from 'react'
 import { supabase, supabaseAnonKey, supabaseUrl } from '@/lib/supabase'
 import { useForm } from 'react-hook-form'
@@ -23,12 +23,12 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
-import { msg, t, tn } from '@/i18n'
+import { msg, t, td, tn } from '@/i18n'
 import { LanguageToggle } from '@/i18n/language'
 import { describeError } from '@/lib/errors'
 import { daysUntil, LICENSE_WARNING_DAYS } from '@/lib/license'
 import { cn, formatDate, formatQty as formatInt, todayISO } from '@/lib/utils'
-import { generatePassword, type PlatformClient, type SyncConnection, useCreateClient, useCreateSyncKey, usePlatformClients, useSaveLicense, useSetPassword, useSetSelfService, useSetSyncActive, useSetTraining, useSetBusinessType, useDeleteClient } from './api'
+import { generatePassword, type PlatformClient, type SyncConnection, useCreateClient, useCreateSyncKey, usePlatformClients, useSaveLicense, useSetPassword, useSetSelfService, useSetSyncActive, useSetTraining, useSetBusinessType, useDeleteClient, useCreateAccount } from './api'
 import { Checkbox } from '@/components/ui/checkbox'
 import { BUSINESS_TYPES, businessTypeLabel } from './business-types'
 import { Label } from '@/components/ui/label'
@@ -153,6 +153,8 @@ export function PlatformPage() {
           <Count value={counts.soon} label={tn(LICENSE_WARNING_DAYS, 'Ending within {n} day', 'Ending within {n} days')} tone={counts.soon ? 'warning' : undefined} />
           <Count value={counts.off} label={t('Expired or paused')} tone={counts.off ? 'destructive' : undefined} />
         </div>
+
+        <PendingAccounts clients={list} />
 
         <div className="rounded-lg border bg-card">
           <div className="flex items-center gap-2 border-b p-3">
@@ -690,6 +692,79 @@ function AiReadsCard({ companyId, chat = false }: { companyId: string; chat?: bo
 }
 
 /* ------------------------------------------------------------------ new password */
+
+/** People a client's administrator invited: the platform administrator makes their account. */
+function PendingAccounts({ clients }: { clients: PlatformClient[] }) {
+  const rows = clients.flatMap((c) => (c.pending ?? []).map((p) => ({ ...p, company: c.name })))
+  const [target, setTarget] = React.useState<(typeof rows)[number] | null>(null)
+  // the dialog stays open after the account is made (the row is gone by then) to show the password
+  return (
+    <>
+    {rows.length > 0 && <div className="mb-4 rounded-lg border border-primary/30 bg-card">
+      <div className="border-b px-4 py-3">
+        <p className="text-sm font-medium">{tn(rows.length, '{n} person waits for an account', '{n} people wait for an account')}</p>
+        <p className="text-xs text-muted-foreground">{t('Invited by their company\'s administrator. Make the account and hand over the email and password.')}</p>
+      </div>
+      <ul className="divide-y">
+        {rows.map((r) => (
+          <li key={r.member_id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 text-[13px]">
+            <div className="min-w-[14rem] flex-1">
+              <p className="font-medium">{r.email}</p>
+              <p className="text-xs text-muted-foreground">{[r.company, r.roles.map((x) => td(x)).join(', '), formatDate(r.invited_at)].filter(Boolean).join(' · ')}</p>
+            </div>
+            <Button size="sm" onClick={() => setTarget(r)}><UserPlus /> {t('Make the account')}</Button>
+          </li>
+        ))}
+      </ul>
+    </div>}
+    {target && <CreateAccountDialog target={target} onClose={() => setTarget(null)} />}
+    </>
+  )
+}
+
+function CreateAccountDialog({ target, onClose }: { target: { member_id: string; email: string; company: string }; onClose: () => void }) {
+  const create = useCreateAccount()
+  const [name, setName] = React.useState('')
+  const [pw, setPw] = React.useState(generatePassword)
+  const [error, setError] = React.useState<string | null>(null)
+  const [done, setDone] = React.useState(false)
+  const text = `${t('Address')}: ${window.location.origin}\n${t('Email')}: ${target.email}\n${t('Password')}: ${pw}`
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t('Account for {email}', { email: target.email })}</DialogTitle>
+          <DialogDescription>{done ? t('Send these to the person. They can change the password after signing in.') : t('{company} invited this person. They join the company as soon as the account is made.', { company: target.company })}</DialogDescription>
+        </DialogHeader>
+        {done ? (
+          <>
+            <pre className="whitespace-pre-wrap rounded-md border bg-muted/40 p-3 font-sans text-sm">{text}</pre>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => void copy(text)}><Copy /> {t('Copy')}</Button>
+              <Button onClick={onClose}>{t('Done')}</Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <div className="grid gap-3">
+            <div className="grid gap-1.5"><label htmlFor="ca-name" className="text-sm font-medium">{t('Full name')}</label>
+              <Input id="ca-name" value={name} onChange={(e) => setName(e.target.value)} autoFocus /></div>
+            <div className="grid gap-1.5"><label htmlFor="ca-pw" className="text-sm font-medium">{t('Password')}</label>
+              <div className="flex gap-2">
+                <Input id="ca-pw" className="font-mono" value={pw} onChange={(e) => setPw(e.target.value)} />
+                <Button type="button" variant="outline" onClick={() => setPw(generatePassword())}>{t('Generate')}</Button>
+              </div></div>
+            {error && <p className="text-[13px] text-destructive">{error}</p>}
+            <DialogFooter className="mt-1">
+              <Button variant="outline" onClick={onClose}>{t('Cancel')}</Button>
+              <Button disabled={pw.length < 8} loading={create.isPending}
+                onClick={() => create.mutate({ member: target.member_id, password: pw, name: name.trim() }, { onSuccess: () => setDone(true), onError: (e) => setError(describeError(e)) })}>{t('Make the account')}</Button>
+            </DialogFooter>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 function PasswordDialog({ target, onClose }: { target: { email: string } | null; onClose: () => void }) {
   const setPw = useSetPassword()

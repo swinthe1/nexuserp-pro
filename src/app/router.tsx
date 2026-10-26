@@ -3,7 +3,7 @@ import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
 import { AppLayout } from '@/app/layouts/app-layout'
 import { AuthLayout } from '@/app/layouts/auth-layout'
 import { PageErrorBoundary } from '@/components/page-error-boundary'
-import { ForgotPasswordPage, LoginPage, ResetPasswordPage, SignupPage } from '@/features/auth/auth-pages'
+import { ForgotPasswordPage, LoginPage, ResetPasswordPage } from '@/features/auth/auth-pages'
 import { OnboardingPage } from '@/features/auth/onboarding-page'
 import { isSupportVisit } from '@/components/license-banner'
 import { lazyPage } from '@/app/require-perm'
@@ -128,7 +128,7 @@ const router = createBrowserRouter([
     element: <AuthLayout />,
     children: [
       { path: '/login', element: <LoginPage /> },
-      { path: '/signup', element: <SignupPage /> },
+      { path: '/signup', element: <Navigate to="/login" replace /> },
       { path: '/forgot-password', element: <ForgotPasswordPage /> },
     ],
   },

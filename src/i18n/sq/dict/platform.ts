@@ -241,4 +241,11 @@ export default {
   "offered now": "ofrohet tani",
   "on · last used {date}": "i ndezur · përdorur së fundi {date}",
   "on · waiting for the first build": "i ndezur · pret ndërtimin e parë",
+  "{n} person waits for an account": "{n} person pret llogari",
+  "{n} people wait for an account": "{n} persona presin llogari",
+  "Invited by their company's administrator. Make the account and hand over the email and password.": "I ka ftuar administratori i kompanisë së tyre. Krijoni llogarinë dhe jepuni emailin dhe fjalëkalimin.",
+  "Make the account": "Krijo llogarinë",
+  "Account for {email}": "Llogari për {email}",
+  "Send these to the person. They can change the password after signing in.": "Dërgojani këto personit. Fjalëkalimin mund ta ndryshojë pasi të hyjë.",
+  "{company} invited this person. They join the company as soon as the account is made.": "{company} e ka ftuar këtë person. Hyn në kompani sapo të krijohet llogaria.",
 } satisfies Dict

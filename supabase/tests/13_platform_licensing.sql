@@ -48,10 +48,10 @@ select public.invite_member(:'drita', 'arben@drita.xk', array['cashier']);
 select t.throws($$ select public.invite_member('$$ || :'drita' || $$', 'blerta@drita.xk', array['cashier']) $$, 'licence allows 2 users', 'invitations stop at the user limit');
 select t.throws($$ select public.create_company('Second', 'XK') $$, 'Only the platform administrator', 'client admins cannot open more companies');
 
--- sign-up through the auth service: only invited emails
+-- nobody signs up by themselves: the platform administrator makes the accounts
 reset role;
-select t.ok(app.signup_allowed('ARBEN@drita.xk'), 'an invited email may sign up');
-select t.ok(not app.signup_allowed('stranger@web.xk'), 'an unknown email may not');
+select t.ok(not app.signup_allowed('ARBEN@drita.xk'), 'not even an invited email signs up by itself');
+select t.ok(not app.signup_allowed('stranger@web.xk'), 'nor an unknown one');
 do $$ begin
   if not exists (select 1 from pg_roles where rolname = 'supabase_auth_admin') then create role supabase_auth_admin nologin; end if;
 end $$;
@@ -62,10 +62,21 @@ grant execute on all functions in schema t to supabase_auth_admin;
 grant insert, select on t.results to supabase_auth_admin;
 grant usage on sequence t.results_n_seq to supabase_auth_admin;
 set session authorization supabase_auth_admin;
-select t.throws($$ insert into auth.users (email) values ('stranger@web.xk') $$, 'invitation only', 'the auth service cannot create uninvited accounts');
-insert into auth.users (email) values ('arben@drita.xk');
+select t.throws($$ insert into auth.users (email) values ('stranger@web.xk') $$, 'platform administrator', 'the auth service cannot create accounts');
+select t.throws($$ insert into auth.users (email) values ('arben@drita.xk') $$, 'platform administrator', 'not for an invited person either');
 reset session authorization;
-select t.ok((select status from public.company_members where invited_email = 'arben@drita.xk') = 'active', 'the invited person joins on sign-up');
+select t.ok(exists (select 1 from public.notifications n join public.profiles p on p.id = n.user_id where p.is_super_admin and n.title = 'Make an account for arben@drita.xk'),
+  'the platform administrator is told of the invitation');
+set role authenticated;
+select t.login('olga@drita.xk');
+select t.throws(format($q$select public.platform_create_account('%s', 'sekret123')$q$, (select id from public.company_members where invited_email = 'arben@drita.xk')),
+  'platform', 'a client''s administrator cannot make accounts');
+select t.login('zoe@platform.io');
+select t.ok(exists (select 1 from jsonb_array_elements(public.platform_clients() -> 'clients') c, jsonb_array_elements(c -> 'pending') pe where pe ->> 'email' = 'arben@drita.xk'),
+  'the invitation waits on the Platform page');
+select public.platform_create_account((select id from public.company_members where invited_email = 'arben@drita.xk'), 'sekret123', 'Arben');
+reset role;
+select t.ok((select status from public.company_members where invited_email = 'arben@drita.xk') = 'active', 'the account made, the invited person is in the company');
 
 -- licence ends: the client loses access, the data stays, the platform owner still gets in
 set role authenticated;

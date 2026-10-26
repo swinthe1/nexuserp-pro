@@ -644,4 +644,7 @@ export default {
   "Only the person it is handed to can take it": "Vetëm personi të cilit i dorëzohet mund ta marrë",
   "Only the two people of the handover can stop it": "Dorëzimin mund ta ndalin vetëm dy personat e tij",
   "Count it and confirm": "Numërojeni dhe konfirmoni",
+  "Accounts are made by the platform administrator": "Llogaritë i krijon administratori i platformës",
+  "Invitation not found": "Ftesa nuk u gjet",
+  "This person already has an account": "Ky person e ka tashmë llogarinë",
 } satisfies Dict

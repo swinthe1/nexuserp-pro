@@ -394,4 +394,5 @@ export const serverTemplates: [string, string][] = [
   ["% · % in one day, the limit is %", "{0} · {1} në një ditë, kufiri është {2}"],
   ["Cash above the legal limit at the till: %", "Para në dorë mbi kufirin ligjor në arkë: {0}"],
   ["% · % in cash, the limit is %", "{0} · {1} me para në dorë, kufiri është {2}"],
+  ["Make an account for %", "Krijo llogari për {0}"],
 ]

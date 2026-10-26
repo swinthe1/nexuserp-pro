@@ -22,6 +22,8 @@ export interface PlatformClient {
   notes: string | null
   users: number
   admins: string[]
+  /** invited people still without an account */
+  pending?: { member_id: string; email: string; invited_at: string; roles: string[] }[]
   last_activity: string | null
   is_training?: boolean
   business_type?: string
@@ -104,6 +106,15 @@ export function useSaveLicense() {
       }
     },
     onSuccess: refresh,
+  })
+}
+
+export function useCreateAccount() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (v: { member: string; password: string; name?: string }) =>
+      unwrap(await supabase.rpc('platform_create_account', { p_member: v.member, p_password: v.password, p_name: (v.name || null) as unknown as string })) as string,
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: KEY }) },
   })
 }
 

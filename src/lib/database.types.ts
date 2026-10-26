@@ -12588,6 +12588,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      platform_create_account: {
+        Args: {
+          p_member: string
+          p_password: string
+          p_name?: string
+        }
+        Returns: string
+      }
       platform_create_client: {
         Args: {
           p: Json

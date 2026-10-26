@@ -8,7 +8,7 @@ import { useAuth } from '@/app/auth-provider'
 import { Button } from '@/components/ui/button'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { t, tr } from '@/i18n'
+import { t } from '@/i18n'
 import { describeError } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { getTill } from '@/lib/shared-till'
@@ -65,7 +65,7 @@ function EmailLogin() {
 
   return (
     <>
-      <Heading title={t('Sign in')} sub={tr('Invited by your company? {link}', { link: <Link to="/signup" className="text-primary hover:underline">{t('Create your account')}</Link> })} />
+      <Heading title={t('Sign in')} sub={t('Accounts are made by the DrisPRO administrator. Ask your company\'s administrator if you do not have one.')} />
       <Form {...form}>
         <form onSubmit={onSubmit} className="grid gap-4" noValidate>
           <FormField control={form.control} name="email" render={({ field }) => (
@@ -88,48 +88,9 @@ function EmailLogin() {
   )
 }
 
-const signupSchema = z.object({
-  fullName: z.string().trim().min(2, 'Enter your name'),
-  email: z.string().trim().email('Enter a valid email address'),
+const passwordSchema = z.object({
   password: z.string().min(8, 'Use at least 8 characters').regex(/[0-9]/, 'Include at least one number'),
 })
-
-export function SignupPage() {
-  const { signUp } = useAuth()
-  const [sentTo, setSentTo] = React.useState<string | null>(null)
-  const form = useForm<z.infer<typeof signupSchema>>({ resolver: zodResolver(signupSchema), defaultValues: { fullName: '', email: '', password: '' } })
-  const onSubmit = form.handleSubmit(async (v) => {
-    try {
-      const { needsConfirmation } = await signUp(v.email, v.password, v.fullName)
-      if (needsConfirmation) setSentTo(v.email)
-    } catch (e) {
-      form.setError('email', { message: authError(e) })
-    }
-  })
-  if (sentTo) {
-    return <Heading title={t('Check your inbox')} sub={tr('We sent a confirmation link to {email}. Open it to finish creating your account.', { email: <span className="font-medium text-foreground">{sentTo}</span> })} />
-  }
-  return (
-    <>
-      <Heading title={t('Create your account')} sub={tr('Already have one? {link}', { link: <Link to="/login" className="text-primary hover:underline">{t('Sign in')}</Link> })} />
-      <Form {...form}>
-        <form onSubmit={onSubmit} className="grid gap-4" noValidate>
-          <FormField control={form.control} name="fullName" render={({ field }) => (
-            <FormItem><FormLabel>{t('Full name')}</FormLabel><FormControl><Input autoComplete="name" autoFocus {...field} /></FormControl><FormMessage /></FormItem>
-          )} />
-          <FormField control={form.control} name="email" render={({ field }) => (
-            <FormItem><FormLabel>{t('Work email')}</FormLabel><FormControl><Input type="email" autoComplete="email" {...field} /></FormControl><FormMessage /></FormItem>
-          )} />
-          <FormField control={form.control} name="password" render={({ field }) => (
-            <FormItem><FormLabel>{t('Password')}</FormLabel><FormControl><Input type="password" autoComplete="new-password" {...field} /></FormControl><FormMessage /></FormItem>
-          )} />
-          <Button type="submit" loading={form.formState.isSubmitting} className="mt-1">{t('Create account')}</Button>
-          <p className="text-xs text-muted-foreground">{t('Accounts are by invitation. Use the email your company invited, and you join it automatically.')}</p>
-        </form>
-      </Form>
-    </>
-  )
-}
 
 export function ForgotPasswordPage() {
   const { sendPasswordReset } = useAuth()
@@ -156,7 +117,7 @@ export function ForgotPasswordPage() {
 
 export function ResetPasswordPage() {
   const navigate = useNavigate()
-  const form = useForm<{ password: string }>({ resolver: zodResolver(signupSchema.pick({ password: true })), defaultValues: { password: '' } })
+  const form = useForm<{ password: string }>({ resolver: zodResolver(passwordSchema), defaultValues: { password: '' } })
   const onSubmit = form.handleSubmit(async (v) => {
     const { error } = await supabase.auth.updateUser({ password: v.password })
     if (error) return form.setError('password', { message: authError(error) })

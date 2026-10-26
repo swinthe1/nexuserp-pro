@@ -105,7 +105,7 @@ export function UsersPage() {
           { columnId: 'status', title: t('Status'), options: [{ value: 'active', label: t('Active') }, { value: 'invited', label: t('Invited') }, { value: 'suspended', label: t('Suspended') }] },
           { columnId: 'roles', title: t('Role'), options: roleOptions },
         ]}
-        empty={{ title: t('Nobody else yet'), description: t('Invite colleagues by email. People without an account join when they sign up with that email.') }} />
+        empty={{ title: t('Nobody else yet'), description: t('Invite colleagues by email. For people without an account, the DrisPRO administrator makes one.') }} />
       <InviteDialog open={inviteOpen} onOpenChange={(o) => { setInviteOpen(o); if (!o && params.get('invite')) setParams({}, { replace: true }) }} roles={roles.data ?? []} />
       {pinFor && <PinDialog member={pinFor.member_id} name={pinFor.full_name ?? pinFor.email} hasPin={!!extras.data?.get(pinFor.member_id)?.has_pin} onClose={() => setPinFor(null)} />}
       {editing && <RolesDialog user={editing} roles={roles.data ?? []} onClose={() => setEditing(null)} />}
@@ -167,7 +167,7 @@ function InviteDialog({ open, onOpenChange, roles }: { open: boolean; onOpenChan
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{t('Invite a person')}</DialogTitle>
-          <DialogDescription>{t('If they already have an account they get access now; otherwise when they sign up with this email.')}</DialogDescription>
+          <DialogDescription>{t('If they already have an account they get access now; otherwise the DrisPRO administrator makes their account and gives you the password.')}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
           <div className="grid gap-1.5"><Label htmlFor="inv-email">{t('Email')}</Label>
