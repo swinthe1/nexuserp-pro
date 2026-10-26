@@ -41,7 +41,7 @@ export default defineConfig({
       },
       workbox: {
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/(rest|auth|storage|functions|realtime)\//],
+        navigateFallbackDenylist: [/^\/(rest|auth|storage|functions|realtime|mcp)\//],
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         // the local server's address is read fresh each time (kept for offline)
         globIgnores: ['drispro-config.js'],

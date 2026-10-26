@@ -12888,6 +12888,25 @@ export type Database = {
         }
         Returns: Json
       }
+      ai_connector_create: {
+        Args: {
+          p_company: string
+          p_can_draft?: boolean
+        }
+        Returns: Json
+      }
+      ai_connector_revoke: {
+        Args: {
+          p_id: string
+        }
+        Returns: undefined
+      }
+      ai_connectors: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       ai_find_document: {
         Args: {
           p_company: string
@@ -14176,6 +14195,11 @@ export type Database = {
           p_wo: string
         }
         Returns: { material_id: string | null; variant_id: string | null; sku: string | null; name: string | null; uom: string | null; tracking: string | null; required: number | null; consumed: number | null; remaining: number | null; available_at_location: number | null; available_in_warehouse: number | null; shortage: number | null; sub_bom_id: string | null; unit_cost: number | null; child_work_order: string | null }[]
+      }
+      mcp_http: {
+        Args: {
+        }
+        Returns: Json
       }
       member_extras: {
         Args: {

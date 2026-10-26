@@ -1,4 +1,4 @@
-import { Download, KeyRound, Languages, LaptopMinimal, LayoutGrid, LogOut, Monitor, Moon, PanelLeft, ServerCog, Sun, UserRound } from 'lucide-react'
+import { Download, KeyRound, Languages, LaptopMinimal, LayoutGrid, LogOut, Monitor, Moon, PanelLeft, ServerCog, Sparkles, Sun, UserRound } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/app/auth-provider'
@@ -16,12 +16,14 @@ import { useInstallApp } from '@/components/pwa-prompts'
 import { initials } from '@/lib/utils'
 import { DesktopSettingsDialog } from '@/components/desktop-settings'
 import { isDesktop } from '@/lib/desktop'
+import { AiConnectorDialog } from '@/features/portal/ai-connector'
 
 export function UserMenu() {
   const { user, signOut } = useAuth()
   const { company, isSuperAdmin, simple, setSimple } = useCompany()
   const [pwOpen, setPwOpen] = React.useState(false)
   const [pcOpen, setPcOpen] = React.useState(false)
+  const [aiOpen, setAiOpen] = React.useState(false)
   const { theme, setTheme } = useTheme()
   const locale = useLocale()
   const { canInstall, install } = useInstallApp()
@@ -44,6 +46,7 @@ export function UserMenu() {
         {company && (simple
           ? <DropdownMenuItem onSelect={() => setSimple(false)}><PanelLeft /> {t('Show all menus')}</DropdownMenuItem>
           : <DropdownMenuItem onSelect={() => setSimple(true)}><LayoutGrid /> {t('Simple view: large buttons')}</DropdownMenuItem>)}
+        {company && <DropdownMenuItem onSelect={() => setAiOpen(true)}><Sparkles /> {t('DrisPRO in ChatGPT and Claude')}</DropdownMenuItem>}
         {isSuperAdmin && <DropdownMenuItem asChild><Link to="/platform"><ServerCog /> {t('Clients and licences')}</Link></DropdownMenuItem>}
         <DropdownMenuSub>
           <DropdownMenuSubTrigger><Languages /> {t('Language')}: {LOCALES.find((l) => l.key === locale)?.label}</DropdownMenuSubTrigger>
@@ -71,6 +74,7 @@ export function UserMenu() {
     </DropdownMenu>
     <ChangePasswordDialog open={pwOpen} onOpenChange={setPwOpen} />
     <DesktopSettingsDialog open={pcOpen} onOpenChange={setPcOpen} />
+    <AiConnectorDialog open={aiOpen} onOpenChange={setAiOpen} />
     </>
   )
 }

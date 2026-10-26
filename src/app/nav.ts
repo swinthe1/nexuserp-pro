@@ -179,7 +179,7 @@ export const NAV: NavSection[] = [
       { label: msg('Automations'), href: '/settings/automation', icon: Zap, perm: 'core.read', keywords: ['automatic', 'schedule', 'automatizim', 'email', 'whatsapp', 'reminders'] },
       { label: msg('Numbering'), href: '/settings/numbering', icon: ListOrdered, perm: 'admin.read', keywords: ['sequences', 'prefix', 'document numbers'] },
       { label: msg('Move from another program'), href: '/settings/migration', icon: ArrowDownToLine, perm: 'admin.write', keywords: ['migration', 'kubit', 'logmicro', 'bilanc', 'pantheon', 'opening balances', 'cut-over', 'kalimi', 'migrimi'] },
-      { label: msg('B2B portal and API'), href: '/settings/integrations', icon: Plug, perm: 'admin.read', keywords: ['api', 'b2b', 'portal', 'portali', 'web shop', 'dyqan online', 'integrim', 'key', 'çelës', 'woocommerce', 'shopify'] },
+      { label: msg('B2B portal and API'), href: '/settings/integrations', icon: Plug, perm: 'admin.read', keywords: ['api', 'b2b', 'portal', 'portali', 'web shop', 'dyqan online', 'integrim', 'key', 'çelës', 'woocommerce', 'shopify', 'chatgpt', 'claude', 'mcp', 'ai'] },
       { label: msg('Import data'), href: '/settings/import', icon: Import, perm: 'core.read', keywords: ['csv', 'excel', 'upload', 'migration', 'opening balances'] },
       { label: msg('Audit log'), href: '/settings/audit', icon: History, perm: 'audit.read', keywords: ['history', 'changes', 'who changed'] },
       { label: msg('Security'), href: '/settings/roles', icon: ShieldCheck, perm: 'admin.read', keywords: ['roles', 'permission matrix', 'custom role'] },

@@ -18,6 +18,7 @@ import { msg, t } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase, supabaseAnonKey, supabaseUrl } from '@/lib/supabase'
 import { formatDate } from '@/lib/utils'
+import { AiConnectorPanel } from './ai-connector'
 
 const SCOPES: { key: string; label: string; hint: string }[] = [
   { key: 'catalog.read', label: msg('Products, prices and stock'), hint: msg('read') },
@@ -36,6 +37,10 @@ export function IntegrationsPage() {
       <PageHeader title={t('B2B portal and API')} description={t('Let customers order on their own, and connect a web shop or another program to DrisPRO.')} />
       <div className="grid max-w-4xl gap-4">
         <PortalSettings />
+        <Card>
+          <CardHeader className="py-3"><CardTitle>{t('ChatGPT and Claude')}</CardTitle></CardHeader>
+          <CardContent><AiConnectorPanel /></CardContent>
+        </Card>
         <ApiKeys />
         <ApiDocs />
       </div>
@@ -96,7 +101,7 @@ function ApiKeys() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['api-keys', companyId] }),
     onError: (e) => toast.error(describeError(e)),
   })
-  const scopeLabel = (k: string) => { const s = SCOPES.find((x) => x.key === k); return s ? `${t(s.label)} (${t(s.hint)})` : k }
+  const scopeLabel = (k: string) => { if (k.startsWith('ai.')) return k === 'ai.read' ? t('ChatGPT and Claude (read)') : t('ChatGPT and Claude (drafts)'); const s = SCOPES.find((x) => x.key === k); return s ? `${t(s.label)} (${t(s.hint)})` : k }
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-3 space-y-0 py-3">
