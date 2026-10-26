@@ -1,4 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
+import { CashLimitWarning } from '../components/cash-limits'
 import { ArrowDownLeft, ArrowUpRight, Trash2, Undo2, Wand2 } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -156,6 +157,7 @@ function PaymentForm({ payment }: { payment?: PaymentDetail }) {
           <div className="grid gap-1.5"><Label htmlFor="p-amount">{t('Amount ({cur})', { cur: currency })}</Label><Input id="p-amount" type="number" step="any" className="tabular text-right" value={amount} disabled={!editable} onChange={(e) => setAmount(e.target.value)} /></div>
           <div className="grid gap-1.5"><Label htmlFor="p-ref">{t('Bank reference')}</Label><Input id="p-ref" value={reference} disabled={!editable} onChange={(e) => setReference(e.target.value)} /></div>
           <div className="grid gap-1.5 sm:col-span-2"><Label htmlFor="p-notes">{t('Notes')}</Label><Input id="p-notes" value={notes} disabled={!editable} onChange={(e) => setNotes(e.target.value)} /></div>
+          {editable && <div className="sm:col-span-3 empty:hidden"><CashLimitWarning partnerId={partnerId} amount={num(amount)} date={date} bankId={bankId} method={method} exclude={payment?.id} /></div>}
         </CardContent>
       </Card>
       <Card>

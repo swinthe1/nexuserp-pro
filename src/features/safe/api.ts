@@ -100,3 +100,12 @@ export const useHandoverAccept = () => useSafeMutation(async (v: { id: string; c
 
 export const useHandoverDecline = () => useSafeMutation(async (v: { id: string; note?: string }) =>
   unwrap(await supabase.rpc('safe_handover_decline', { p_id: v.id, p_note: v.note ?? null as unknown as string })), { toastErrors: true })
+
+export type PersonDiff = { user_id: string; name: string | null; shifts: number; shift_diff: number; shift_short: number; counts: number; count_diff: number; handovers_off: number; total: number }
+export function useSafeDifferences(from: string, to: string) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...safeKeys.all(companyId), 'differences', from, to], enabled: !!companyId,
+    queryFn: async () => unwrap(await supabase.rpc('safe_differences', { p_company: companyId!, p_from: from, p_to: to })) as unknown as PersonDiff[],
+  })
+}

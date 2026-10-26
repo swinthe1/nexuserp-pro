@@ -297,6 +297,8 @@ const ASSISTANT_TOOLS = [
       + 'receivables: bucket, customer, document. filters: {dimension: key} using a "key" from an earlier result of the same report. Dates default to this year.',
     input_schema: { type: 'object', properties: { report: { type: 'string' }, from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' },
       group_by: { type: 'string' }, filters: { type: 'object' } }, required: ['report'] } },
+  { name: 'safes', description: 'The cash safes: balance of each and in total, who holds it, the last count and its difference, money waiting for approval, deposits on their way to the bank, safes being handed over, the last movements and this month\'s cash differences by person (tills and counts).',
+    input_schema: { type: 'object', properties: {} } },
 ]
 
 function assistantSystem(job) {

@@ -389,4 +389,7 @@ export const serverTemplates: [string, string][] = [
   ["Deposit % is not in the bank yet: % %", "Derdhja {0} ende nuk është në bankë: {1} {2}"],
   ["% holds % % — take some to the bank", "{0} ka {1} {2} — çoni një pjesë në bankë"],
   ["More than %", "Më shumë se {0}"],
+  ["Cash with % is limited by law to % a day; with this payment it would be %. Pay through the bank.", "Paratë në dorë me {0} kufizohen me ligj në {1} në ditë; me këtë pagesë do të bëheshin {2}. Paguani përmes bankës."],
+  ["Cash above the legal limit: %", "Para në dorë mbi kufirin ligjor: {0}"],
+  ["% · % in one day, the limit is %", "{0} · {1} në një ditë, kufiri është {2}"],
 ]

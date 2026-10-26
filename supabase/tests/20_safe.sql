@@ -202,6 +202,41 @@ select public.safe_handover_decline(:'ho3', 'Jam me pushim');
 select t.ok((select status = 'declined' from public.safe_handovers where id = :'ho3') and (select holder_id <> auth.uid() from public.safes where id = :'ss'),
   'refused, the safe stays with the giver');
 
+
+-- ===================== phase 3: the law's cash limits, differences, the assistant =====================
+select t.ok((public.cash_limits(:'co') ->> 'business')::numeric = 500 and (public.cash_limits(:'co') ->> 'individual')::numeric = 2000,
+  'a Kosovo company starts with the legal limits: 500 between businesses, 2,000 with individuals');
+select id as cashbox from public.bank_accounts where company_id = :'co' and account_kind = 'cash' and id = (select bank_account_id from public.safes where id = :'cs') \gset
+insert into public.business_partners (company_id, code, name, is_customer, kind) values (:'co', 'BIZ1', 'Market Dardania', true, 'company') returning id as biz \gset
+insert into public.business_partners (company_id, code, name, is_customer, kind) values (:'co', 'IND1', 'Blerim Gashi', true, 'individual') returning id as ind \gset
+insert into public.payments (company_id, document_type, partner_id, method, amount, currency_code, bank_account_id, payment_date)
+values (:'co', 'customer_payment', :'biz', 'cash', 400, 'EUR', :'cashbox', current_date) returning id as cp1 \gset
+select public.post_payment(:'cp1');
+select t.ok(not (public.cash_limit_preview(:'co', :'biz', 50, current_date, :'cashbox', 'cash') ->> 'over')::boolean, 'under the limit nothing is said');
+select t.ok((public.cash_limit_preview(:'co', :'biz', 150, current_date, :'cashbox', 'cash') ->> 'total')::numeric = 550, 'payments on the same day add up');
+select t.ok(public.cash_limit_preview(:'co', :'biz', 150, current_date, :'bank', 'bank_transfer') is null, 'through the bank there is no limit');
+insert into public.payments (company_id, document_type, partner_id, method, amount, currency_code, bank_account_id, payment_date)
+values (:'co', 'customer_payment', :'biz', 'cash', 150, 'EUR', :'cashbox', current_date) returning id as cp2 \gset
+select public.post_payment(:'cp2');
+select t.ok(exists (select 1 from public.notifications where user_id = auth.uid() and title = 'Cash above the legal limit: Market Dardania'), 'split cash above the limit is reported');
+select public.cash_limits_save(:'co', 500, 2000, true);
+insert into public.payments (company_id, document_type, partner_id, method, amount, currency_code, bank_account_id, payment_date)
+values (:'co', 'customer_payment', :'ind', 'cash', 2500, 'EUR', :'cashbox', current_date) returning id as cp3 \gset
+select t.throws(format($q$select public.post_payment('%s')$q$, :'cp3'), 'limited by law', 'when the company chooses, cash above the limit is refused');
+select t.ok((select status = 'draft' from public.payments where id = :'cp3'), 'and the payment stays a draft');
+select public.cash_limits_save(:'co', 300, 2000, false);
+select t.ok((public.cash_limits(:'co') ->> 'business')::numeric = 300, 'the announced 300 limit can be set as soon as it is in force');
+
+select public.safe_differences(:'co', current_date - 1, current_date) as diffs \gset
+select t.ok(exists (select 1 from jsonb_array_elements(:'diffs'::jsonb) d where d ->> 'name' = 'Sami Shop Manager' and (d ->> 'count_diff')::numeric <= -10
+                                                                          and (d ->> 'handovers_off')::int = 1), 'differences by person: counts and handovers');
+select public.ai_safes(:'co') as ais \gset
+select t.ok((:'ais'::jsonb ->> 'total')::numeric = (select sum(app_bal) from (select (s ->> 'balance')::numeric as app_bal from jsonb_array_elements(public.safes_overview(:'co') -> 'safes') s) x)
+            and jsonb_array_length(:'ais'::jsonb -> 'recent_movements') > 0, 'the assistant sees the safes, their total and the last movements');
+select t.login('kasa@auto.xk');
+select t.throws(format($q$select public.ai_safes('%s')$q$, :'co'), 'permission', 'the cashier''s assistant does not see the safe');
+select t.login('ana@auto.xk');
+
 reset role;
 select t.ok(not exists (select 1 from public.safe_movements where status in ('posted','in_transit') and journal_entry_id is null), 'every movement that happened is in the books');
 select t.ok(not exists (select 1 from public.safe_movements m where m.status = 'posted' and m.kind = 'deposit' and m.arrived_entry_id is null), 'every arrived deposit has its bank entry');

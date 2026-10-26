@@ -1431,6 +1431,9 @@ export type Database = {
           dunning_text: string | null
           po_email_auto: boolean
           po_email_text: string | null
+          cash_limit_business: number | null
+          cash_limit_individual: number | null
+          cash_limit_block: boolean
         }
         Insert: {
           id?: string
@@ -1480,6 +1483,9 @@ export type Database = {
           dunning_text?: string | null
           po_email_auto?: boolean
           po_email_text?: string | null
+          cash_limit_business?: number | null
+          cash_limit_individual?: number | null
+          cash_limit_block?: boolean
         }
         Update: {
           id?: string
@@ -1529,6 +1535,9 @@ export type Database = {
           dunning_text?: string | null
           po_email_auto?: boolean
           po_email_text?: string | null
+          cash_limit_business?: number | null
+          cash_limit_individual?: number | null
+          cash_limit_block?: boolean
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -11363,6 +11372,12 @@ export type Database = {
         }
         Returns: Json
       }
+      ai_safes: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       ai_search: {
         Args: {
           p_company: string
@@ -11549,6 +11564,33 @@ export type Database = {
           p_wo: string
         }
         Returns: string
+      }
+      cash_limit_preview: {
+        Args: {
+          p_company: string
+          p_partner: string
+          p_amount: number
+          p_date: string
+          p_bank: string
+          p_method: string
+          p_exclude?: string
+        }
+        Returns: Json
+      }
+      cash_limits: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
+      cash_limits_save: {
+        Args: {
+          p_company: string
+          p_business: number
+          p_individual: number
+          p_block: boolean
+        }
+        Returns: undefined
       }
       check_sync_health: {
         Args: Record<PropertyKey, never>
@@ -13207,6 +13249,14 @@ export type Database = {
           p_on?: string
         }
         Returns: undefined
+      }
+      safe_differences: {
+        Args: {
+          p_company: string
+          p_from: string
+          p_to: string
+        }
+        Returns: Json
       }
       safe_handover_accept: {
         Args: {

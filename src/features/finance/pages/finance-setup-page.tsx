@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ErrorState } from '@/components/error-state'
 import { msg, t, td, tn } from '@/i18n'
 import { formatDate, formatMonth, humanize, todayISO } from '@/lib/utils'
+import { CashLimits } from '../components/cash-limits'
 import { useAccountDefaults, useAccounts, useAssetCategories, useCreateFiscalYear, useFiscalYears, useJournals, useSaveAccountDefault, useSetPeriodStatus } from '../api'
 
 /** Which account each automatic posting uses — grouped the way an accountant reads them */
@@ -45,6 +46,8 @@ const GROUPS: { title: string; keys: [string, string, string][] }[] = [
   ] },
   { title: msg('Cash, bank and currency'), keys: [
     ['cash', msg('Cash|account'), ''], ['bank', msg('Bank'), ''], ['pos_cash', msg('POS cash drawers'), ''], ['card_clearing', msg('Card payments in transit'), ''],
+    ['cash_in_transit', msg('Cash on its way to the bank'), msg('Deposits from the safe until they are on the bank statement')],
+    ['owner_drawings', msg('Owner drawings'), msg('Money the owner takes from the safe')],
     ['bank_charges', msg('Bank charges'), msg('Suggested when booking statement fees')],
     ['cash_difference', msg('Cash over and short'), msg('POS closing differences')],
     ['rounding', msg('Rounding'), msg('Cent differences on automatic entries')],
@@ -66,11 +69,12 @@ export function FinanceSetupPage() {
     <>
       <PageHeader title={t('Finance setup')} description={t('Which accounts automatic entries use, the journals, and which months are still open.')} />
       <Tabs defaultValue="accounts">
-        <TabsList><TabsTrigger value="accounts">{t('Posting accounts')}</TabsTrigger><TabsTrigger value="periods">{t('Accounting months')}</TabsTrigger><TabsTrigger value="journals">{t('Journals')}</TabsTrigger><TabsTrigger value="assets">{t('Asset categories')}</TabsTrigger></TabsList>
+        <TabsList><TabsTrigger value="accounts">{t('Posting accounts')}</TabsTrigger><TabsTrigger value="periods">{t('Accounting months')}</TabsTrigger><TabsTrigger value="journals">{t('Journals')}</TabsTrigger><TabsTrigger value="assets">{t('Asset categories')}</TabsTrigger><TabsTrigger value="cash">{t('Cash limits')}</TabsTrigger></TabsList>
         <TabsContent value="accounts"><PostingAccounts /></TabsContent>
         <TabsContent value="periods"><Periods /></TabsContent>
         <TabsContent value="journals"><Journals /></TabsContent>
         <TabsContent value="assets"><AssetCategories /></TabsContent>
+        <TabsContent value="cash"><CashLimits /></TabsContent>
       </Tabs>
     </>
   )

@@ -12,9 +12,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { msg, t, td, tServer } from '@/i18n'
+import { msg, t, td, tn, tServer } from '@/i18n'
 import { cn, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
-import { type BookLine, type Handover, type Safe, type SafeKind, type SafesOverview, useDepositArrived, useHandoverDecline, useSafeBook, useSafeCancel, useSafeDecide, useSafes } from './api'
+import { type BookLine, type Handover, type Safe, type SafeKind, type SafesOverview, useDepositArrived, useHandoverDecline, useSafeDifferences, useSafeBook, useSafeCancel, useSafeDecide, useSafes } from './api'
 import { CountDialog, HandoverDialog, KIND_LABEL, MoveDialog, RefuseDialog, SafeDialog, TakeOverDialog } from './safe-dialogs'
 
 type Open =
@@ -70,10 +70,12 @@ export function SafePage() {
           <div className="grid gap-6 [&>*]:min-w-0">
             {d!.handovers.length > 0 && <HandoverList data={d!} onTake={(h) => setOpen({ kind: 'takeover', handover: h })} />}
             {d!.waiting.length > 0 && <WaitingList data={d!} highlight={highlight} onRefuse={(id) => setOpen({ kind: 'refuse', id })} />}
+            <Totals data={d!} />
             <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
               {d!.safes.map((s) => <SafeCard key={s.id} safe={s} data={d!} onOpen={setOpen} onBook={() => setBookSafe(s.id)} />)}
             </div>
             {d!.on_the_way.length > 0 && <OnTheWayList data={d!} />}
+            <DifferencesCard data={d!} />
             {bookSafe && <SafeBookCard data={d!} safeId={bookSafe} onSafe={setBookSafe} />}
           </div>
         )}
@@ -231,6 +233,68 @@ function OnTheWayList({ data }: { data: SafesOverview }) {
             </li>
           ))}
         </ul>
+      </CardContent>
+    </Card>
+  )
+}
+
+function Totals({ data }: { data: SafesOverview }) {
+  const total = data.safes.reduce((s, x) => s + num(x.balance), 0)
+  const onWay = data.on_the_way.reduce((s, x) => s + num(x.amount), 0)
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-8 gap-y-1 text-[13px] text-muted-foreground">
+      <span>{tn(data.safes.length, 'In {n} safe', 'In {n} safes')} <span className="ml-1 text-base font-semibold text-foreground tabular-nums">{formatMoney(total, data.currency)}</span></span>
+      {onWay > 0 && <span>{t('On the way to the bank')} <span className="ml-1 font-medium text-foreground tabular-nums">{formatMoney(onWay, data.currency)}</span></span>}
+      {data.waiting.length > 0 && <span>{tn(data.waiting.length, '{n} waits for approval', '{n} wait for approval')}</span>}
+    </div>
+  )
+}
+
+function DifferencesCard({ data }: { data: SafesOverview }) {
+  const [from, setFrom] = React.useState(monthStart)
+  const [to, setTo] = React.useState(todayISO)
+  const q = useSafeDifferences(from, to)
+  const cur = data.currency
+  const money = (v: number) => (num(v) === 0 ? <span className="text-muted-foreground">0</span>
+    : <span className={num(v) < 0 ? 'text-destructive' : 'text-success'}>{num(v) > 0 ? '+' : ''}{formatMoney(v, cur)}</span>)
+  return (
+    <Card>
+      <CardContent className="p-0">
+        <div className="flex flex-wrap items-center gap-3 border-b px-5 py-3">
+          <div className="mr-auto">
+            <p className="text-sm font-medium">{t('Differences by person')}</p>
+            <p className="text-xs text-muted-foreground">{t('Till shifts they closed, safe counts they made and handovers they took that did not agree.')}</p>
+          </div>
+          <div className="flex items-center gap-2 text-[13px]">
+            <Label htmlFor="sd-from" className="text-muted-foreground">{t('From')}</Label><Input id="sd-from" type="date" className="h-8 w-[140px]" value={from} onChange={(e) => setFrom(e.target.value)} />
+            <Label htmlFor="sd-to" className="text-muted-foreground">{t('To')}</Label><Input id="sd-to" type="date" className="h-8 w-[140px]" value={to} onChange={(e) => setTo(e.target.value)} />
+          </div>
+        </div>
+        {q.isLoading ? <Skeleton className="m-4 h-24" /> : q.isError ? <ErrorState error={q.error} onRetry={() => void q.refetch()} /> : !q.data?.length
+          ? <p className="px-5 py-8 text-center text-[13px] text-muted-foreground">{t('No shifts or counts in these days.')}</p> : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>{t('Person')}</TableHead><TableHead className="text-right">{t('Shifts')}</TableHead><TableHead className="text-right">{t('At the till')}</TableHead>
+                <TableHead className="text-right">{t('Counts')}</TableHead><TableHead className="text-right">{t('In the safe')}</TableHead>
+                <TableHead className="text-right">{t('Handovers that did not agree')}</TableHead><TableHead className="text-right">{t('Total')}</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {q.data.map((p) => (
+                  <TableRow key={p.user_id}>
+                    <TableCell className="font-medium">{p.name ?? '—'}</TableCell>
+                    <TableCell className="text-right tabular-nums">{p.shifts}</TableCell>
+                    <TableCell className="whitespace-nowrap text-right tabular-nums">{money(p.shift_diff)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{p.counts}</TableCell>
+                    <TableCell className="whitespace-nowrap text-right tabular-nums">{money(p.count_diff)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{p.handovers_off || ''}</TableCell>
+                    <TableCell className="whitespace-nowrap text-right font-medium tabular-nums">{money(p.total)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
