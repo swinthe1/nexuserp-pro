@@ -113,6 +113,32 @@ select t.ok((:'ref'::jsonb ->> 'total')::numeric = -1200, 'a refund gives back w
 select t.throws(format($q$select public.pos_submit_order('{"client_uuid":"%s","session_id":"%s","is_refund":true,"refund_of_id":"%s","lines":[{"variant_id":"%s","quantity":-5,"unit_price":1200}],"payments":[{"method":"cash","amount":-6000}]}')$q$,
   gen_random_uuid(), :'ses', :'sale'::jsonb ->> 'id', :'tea'), 'more than what is left', 'not more than was sold');
 
+
+-- ---------- a bill for a receipt without an order, and goods back to the vendor ------------------
+select t.login('alice@alba.al');
+create or replace function pg_temp.grni(p_co uuid) returns numeric language sql as $$
+  select coalesce(sum(jl.debit - jl.credit), 0) from public.journal_lines jl join public.journal_entries e on e.id = jl.entry_id
+   where jl.company_id = p_co and e.status = 'posted'
+     and jl.account_id = (select account_id from public.company_account_defaults where company_id = p_co and key = 'grni') $$;
+select pg_temp.grni(:'co') as grni0 \gset
+select public.create_bill_from_receipt(:'gr') as rbill \gset
+select t.ok((select count(*) = 1 and bool_and(receipt_line_id is not null) from public.vendor_bill_lines where bill_id = :'rbill'), 'a bill made from the receipt points at its lines');
+select t.throws(format($q$select public.create_bill_from_receipt(%L)$q$, :'gr'), 'already has a bill', 'one bill per receipt');
+select public.post_vendor_bill(:'rbill');
+select t.ok(pg_temp.grni(:'co') = :'grni0'::numeric + 20000, 'the bill clears what the receipt put in goods received not invoiced');
+select (select on_hand from public.stock_levels where variant_id = :'tea' and location_id = :'stock') as before_ret \gset
+select public.return_to_vendor(:'gr', jsonb_build_array(jsonb_build_object('receipt_line_id', (select id from public.goods_receipt_lines where receipt_id = :'gr'), 'quantity', 5)), 'Paketim i dëmtuar') as vret \gset
+select t.ok((select on_hand from public.stock_levels where variant_id = :'tea' and location_id = :'stock') = :'before_ret'::numeric - 5, 'the goods leave the stock');
+select t.ok(pg_temp.grni(:'co') = :'grni0'::numeric + 20000 + 2000, 'at the cost they came in at, waiting for the vendor''s credit');
+select t.throws(format($q$select public.return_to_vendor(%L, '[{"receipt_line_id":"%s","quantity":46}]', 'x')$q$, :'gr', (select id from public.goods_receipt_lines where receipt_id = :'gr')),
+  'can still go back', 'not more than came in');
+select public.vendor_credit_from_return(:'vret') as vcr \gset
+select t.ok((select original_bill_id = :'rbill'::uuid from public.vendor_bills where id = :'vcr')
+            and (select bool_and(is_return) and sum(quantity) = 5 from public.vendor_bill_lines where bill_id = :'vcr'), 'the credit for those goods is prepared against their bill');
+select public.post_vendor_bill(:'vcr');
+select t.ok(pg_temp.grni(:'co') = :'grni0'::numeric + 20000, 'posting the credit clears what the return left');
+select t.ok((select amount_due from public.vendor_bills where id = :'rbill') = 24000 - 2400, 'and the bill owes that much less');
+
 -- ---------- payroll: a raise in the middle of the month --------------------------------------
 select t.login('alice@alba.al');
 insert into public.employees (company_id, first_name, last_name, hire_date) values (:'xk', 'Drita', 'Raise', '2024-01-01') returning id as drita \gset

@@ -95,7 +95,9 @@ export function syncNow(): Promise<void> {
           if (/SESSION_CLOSED/.test(msg)) {
             const { data: open } = await supabase.from('pos_sessions').select('id').eq('register_id', it.register_id).eq('status', 'open').maybeSingle()
             if (open && open.id !== it.payload.session_id) {
-              await tx('queue', 'readwrite', (s) => s.put({ ...it, payload: { ...it.payload, session_id: open.id }, attempts: it.attempts + 1 }))
+              // it remembers the shift it was sold in, so the two counts can be explained
+              const from = (it.payload as { moved_from_session_id?: string }).moved_from_session_id ?? it.payload.session_id
+              await tx('queue', 'readwrite', (s) => s.put({ ...it, payload: { ...it.payload, session_id: open.id, moved_from_session_id: from }, attempts: it.attempts + 1 }))
               continue
             }
           }

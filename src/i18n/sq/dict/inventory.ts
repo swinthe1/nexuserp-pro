@@ -630,4 +630,13 @@ export default {
   "This month’s {n} invoices are used up; reading starts again on the 1st. Receive goods by hand meanwhile.": "Faturat e këtij muaji ({n}) mbaruan; leximi nis sërish më 1 të muajit. Deri atëherë pranoni mallin me dorë.",
   "{used} of {limit} invoices read this month": "{used} nga {limit} fatura të lexuara këtë muaj",
   "A return comes back at the average cost": "Kthimi hyn me koston mesatare",
+  "Draft credit note created": "U krijua drafti i notës së kreditit",
+  "Create the vendor bill": "Krijo faturën e furnitorit",
+  "Return to the vendor": "Kthe te furnitori",
+  "Create the credit note": "Krijo notën e kreditit",
+  "The goods left the stock. Create the credit note when the vendor confirms it.": "Malli doli nga stoku. Krijoni notën e kreditit kur ta konfirmojë furnitori.",
+  "The goods leave the stock at the cost they came in at, and the order expects them again. Then the credit note for them is prepared.": "Malli del nga stoku me koston me të cilën hyri, dhe porosia i pret sërish. Pastaj përgatitet nota e kreditit për të.",
+  "Already returned": "Kthyer më parë",
+  "Return now": "Kthe tani",
+  "e.g. damaged packaging": "p.sh. paketim i dëmtuar",
 } satisfies Dict

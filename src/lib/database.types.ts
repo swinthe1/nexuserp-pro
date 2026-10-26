@@ -5784,6 +5784,7 @@ export type Database = {
           points_redeemed: number
           table_order_id: string | null
           waiter_id: string | null
+          moved_from_session_id: string | null
         }
         Insert: {
           id?: string
@@ -5821,6 +5822,7 @@ export type Database = {
           points_redeemed?: number
           table_order_id?: string | null
           waiter_id?: string | null
+          moved_from_session_id?: string | null
         }
         Update: {
           id?: string
@@ -5858,6 +5860,7 @@ export type Database = {
           points_redeemed?: number
           table_order_id?: string | null
           waiter_id?: string | null
+          moved_from_session_id?: string | null
         }
         Relationships: [
           { foreignKeyName: "pos_orders_cashier_profile_fkey"; columns: ["cashier_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
@@ -10083,6 +10086,7 @@ export type Database = {
           updated_by: string | null
           capitalized_variance: number
           expensed_variance: number
+          is_return: boolean
         }
         Insert: {
           id?: string
@@ -10113,6 +10117,7 @@ export type Database = {
           updated_by?: string | null
           capitalized_variance?: number
           expensed_variance?: number
+          is_return?: boolean
         }
         Update: {
           id?: string
@@ -10143,6 +10148,7 @@ export type Database = {
           updated_by?: string | null
           capitalized_variance?: number
           expensed_variance?: number
+          is_return?: boolean
         }
         Relationships: [
           { foreignKeyName: "vendor_bill_lines_company_id_account_id_fkey"; columns: ["company_id", "account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["company_id", "id"] },
@@ -10339,6 +10345,122 @@ export type Database = {
           { foreignKeyName: "vendor_products_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "vendor_products_company_id_vendor_id_fkey"; columns: ["company_id", "vendor_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "vendor_products_currency_code_fkey"; columns: ["currency_code"]; isOneToOne: false; referencedRelation: "currencies"; referencedColumns: ["code"] },
+        ]
+      }
+      vendor_return_lines: {
+        Row: {
+          id: string
+          company_id: string
+          return_id: string
+          receipt_line_id: string
+          po_line_id: string | null
+          variant_id: string
+          lot_id: string | null
+          location_id: string
+          quantity: number
+          unit_cost: number
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          return_id: string
+          receipt_line_id: string
+          po_line_id?: string | null
+          variant_id: string
+          lot_id?: string | null
+          location_id: string
+          quantity: number
+          unit_cost: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          return_id?: string
+          receipt_line_id?: string
+          po_line_id?: string | null
+          variant_id?: string
+          lot_id?: string | null
+          location_id?: string
+          quantity?: number
+          unit_cost?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "vendor_return_lines_company_id_return_id_fkey"; columns: ["company_id", "return_id"]; isOneToOne: false; referencedRelation: "vendor_returns"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      vendor_returns: {
+        Row: {
+          id: string
+          company_id: string
+          number: string
+          status: string
+          receipt_id: string
+          vendor_id: string | null
+          purchase_order_id: string | null
+          warehouse_id: string
+          return_date: string
+          reason: string
+          total_cost: number
+          vendor_credit_id: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          number: string
+          status?: string
+          receipt_id: string
+          vendor_id?: string | null
+          purchase_order_id?: string | null
+          warehouse_id: string
+          return_date: string
+          reason: string
+          total_cost?: number
+          vendor_credit_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          number?: string
+          status?: string
+          receipt_id?: string
+          vendor_id?: string | null
+          purchase_order_id?: string | null
+          warehouse_id?: string
+          return_date?: string
+          reason?: string
+          total_cost?: number
+          vendor_credit_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "vendor_returns_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "vendor_returns_company_id_purchase_order_id_fkey"; columns: ["company_id", "purchase_order_id"]; isOneToOne: false; referencedRelation: "purchase_orders"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "vendor_returns_company_id_receipt_id_fkey"; columns: ["company_id", "receipt_id"]; isOneToOne: false; referencedRelation: "goods_receipts"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "vendor_returns_company_id_vendor_credit_id_fkey"; columns: ["company_id", "vendor_credit_id"]; isOneToOne: false; referencedRelation: "vendor_bills"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "vendor_returns_company_id_vendor_id_fkey"; columns: ["company_id", "vendor_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
         ]
       }
       warehouse_locations: {
@@ -11715,6 +11837,12 @@ export type Database = {
           p_po: string
           p_vendor_invoice_number: string
           p_bill_date?: string
+        }
+        Returns: string
+      }
+      create_bill_from_receipt: {
+        Args: {
+          p_receipt: string
         }
         Returns: string
       }
@@ -13169,6 +13297,14 @@ export type Database = {
         }
         Returns: Json
       }
+      return_to_vendor: {
+        Args: {
+          p_receipt: string
+          p_lines: Json
+          p_reason: string
+        }
+        Returns: string
+      }
       reverse_journal_entry: {
         Args: {
           p_id: string
@@ -13668,6 +13804,12 @@ export type Database = {
           p_refund?: number
         }
         Returns: Json
+      }
+      vendor_credit_from_return: {
+        Args: {
+          p_return: string
+        }
+        Returns: string
       }
       wms_overview: {
         Args: {

@@ -22,6 +22,7 @@ import {
   useCurrencies, useDocument, useLocations, usePostDocument, useReceivablePurchaseOrders, useSaveDocument, useVariantOptions,
 } from '../api'
 import { DocumentShell, LinesCard, SummaryCard } from '../components/document-shell'
+import { ReceiptAfterActions } from '../components/receipt-after'
 import { LocationPicker, LotPicker, VariantPicker, VendorPicker, WarehousePicker } from '../components/pickers'
 import { receiptSchema, type ReceiptFormValues } from '../schemas'
 import { t, tEnum, tr } from '@/i18n'
@@ -163,7 +164,7 @@ function ReceiptForm({ doc }: { doc?: ReceiptDoc }) {
         onPost={onPost}
         postLabel={t('Receive goods')}
         postConfirm={<>{t('Stock is added to the selected locations and the weighted average cost of each product is recalculated. Posted receipts can\'t be edited.')}</>}
-        banner={posted && doc.is_import && (
+        banner={<>{posted && <ReceiptAfterActions doc={doc} nameOf={(v) => variants.data?.find((x) => x.id === v)?.name ?? ''} />}{posted && doc.is_import && (
           <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-warning/40 bg-warning/5 px-4 py-3 text-[13px]">
             <Globe2 className="size-4 text-warning" />
             <span className="flex-1">
@@ -175,7 +176,7 @@ function ReceiptForm({ doc }: { doc?: ReceiptDoc }) {
               </Can>
             )}
           </div>
-        )}
+        )}</>}
         lines={
         <LinesCard
             title={t('Products received')}

@@ -146,14 +146,23 @@ function PartnerOverview({ partner }: { partner: PartnerDetail }) {
   const base = company?.base_currency ?? 'ALL'
   const posted = (act.data?.invoices ?? []).filter((i) => i.status === 'posted')
   const sign = (i: { document_type: string }) => (i.document_type === 'credit_note' ? -1 : 1)
-  const open = posted.reduce((s, i) => s + sign(i) * num(i.amount_due), 0)
-  const overdue = posted.filter((i) => i.document_type !== 'credit_note' && i.payment_status !== 'paid' && i.due_date < new Date().toISOString().slice(0, 10)).reduce((s, i) => s + num(i.amount_due), 0)
+  // amounts in different currencies are never added together: one total per currency
+  const perCurrency = (rows: typeof posted, f: (i: (typeof posted)[number]) => number) => {
+    const m = new Map<string, number>()
+    for (const i of rows) m.set(i.currency_code ?? base, (m.get(i.currency_code ?? base) ?? 0) + f(i))
+    return m
+  }
+  const show = (m: Map<string, number>) => [...m].filter(([, v]) => Math.abs(v) >= 0.005).map(([c, v]) => `${formatMoney(v)} ${c}`).join(' + ') || `${formatMoney(0)} ${base}`
+  const openBy = perCurrency(posted, (i) => sign(i) * num(i.amount_due))
+  const open = openBy.get(base) ?? 0
+  const overdueBy = perCurrency(posted.filter((i) => i.document_type !== 'credit_note' && i.payment_status !== 'paid' && i.due_date < new Date().toISOString().slice(0, 10)), (i) => num(i.amount_due))
+  const overdue = [...overdueBy.values()].reduce((s, v) => s + v, 0)
   const openOrders = (act.data?.orders ?? []).filter((o) => ['pending_approval', 'confirmed', 'partially_delivered'].includes(o.status))
   const limit = partner.credit_limit
   return (
     <div className="grid gap-4">
       <div className="grid gap-3 sm:grid-cols-3">
-        <Metric label={t('Still to pay')} value={`${formatMoney(open)} ${base}`} hint={overdue > 0 ? <span className="text-destructive">{t('{amount} overdue', { amount: formatMoney(overdue) })}</span> : t('Nothing overdue')} />
+        <Metric label={t('Still to pay')} value={show(openBy)} hint={overdue > 0 ? <span className="text-destructive">{t('{amount} overdue', { amount: show(overdueBy) })}</span> : t('Nothing overdue')} />
         <Metric label={t('Open orders')} value={openOrders.length} hint={t('{amount} not fully invoiced yet', { amount: formatMoney(openOrders.reduce((s, o) => s + num(o.total), 0)) })} />
         <Metric label={t('Credit limit')} value={limit == null ? t('No limit') : `${formatMoney(limit)} ${base}`}
           hint={limit != null ? t('{amount} still available', { amount: formatMoney(Math.max(0, limit - open - openOrders.reduce((s, o) => s + num(o.total), 0))) }) : t('Orders are never blocked for credit')} />

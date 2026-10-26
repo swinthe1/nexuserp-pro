@@ -401,4 +401,8 @@ export const serverTemplates: [string, string][] = [
   ["Line %: this item is not on receipt %", "Rreshti {0}: ky artikull nuk është në kuponin {1}"],
   ["Line %: the price % is far under the till price %; a manager must sell it", "Rreshti {0}: çmimi {1} është shumë nën çmimin e arkës {2}; duhet ta shesë një menaxher"],
   ["Sold under the till price: %", "U shit nën çmimin e arkës: {0}"],
+  ["Only % of this item can still go back", "Nga ky artikull mund të kthehen edhe vetëm {0}"],
+  ["Offline sales of shift % went into shift %", "Shitjet offline të turnit {0} hynë në turnin {1}"],
+  ["Goods returned: % · %", "Mall i kthyer: {0} · {1}"],
+  ["Bill for %", "Fatura për {0}"],
 ]
