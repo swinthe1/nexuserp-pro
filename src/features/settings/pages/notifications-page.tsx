@@ -1,4 +1,4 @@
-import { Bell, CheckCheck, Info, Mail, Stamp, TriangleAlert } from 'lucide-react'
+import { Bell, CheckCheck, Info, Mail, Smartphone, Stamp, TriangleAlert } from 'lucide-react'
 import * as React from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
@@ -16,6 +16,7 @@ import { formatDateWith, msg, t, tServer } from '@/i18n'
 import { cn, formatDate } from '@/lib/utils'
 import { NOTIFICATION_CATEGORIES, type NotificationRow, useMarkNotifications, useNotificationCounts, useNotificationPrefs, useNotificationsFeed, useSaveNotificationPref } from '../api'
 import { ToggleRow } from '../components/field'
+import { PushCard } from '../components/push-card'
 
 const ICON: Record<string, typeof Bell> = { alert: TriangleAlert, approval: Stamp, info: Info }
 
@@ -124,6 +125,10 @@ function Preferences() {
                 control={<div className="flex items-center gap-4">
                   <Switch checked={c.key === 'approvals' || (get(c.key)?.in_app ?? true)} disabled={c.key === 'approvals'} aria-label={t('{category} in the app', { category: t(c.label) })}
                     onCheckedChange={(v) => void save.mutateAsync({ category: c.key, in_app: v })} />
+                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground" title={t('On your phone')}>
+                    <Smartphone className="size-3.5" />
+                    <Switch checked={get(c.key)?.push ?? true} aria-label={t('{category} on the phone', { category: t(c.label) })} onCheckedChange={(v) => void save.mutateAsync({ category: c.key, push: v })} />
+                  </label>
                   <label className="flex items-center gap-1.5 text-xs text-muted-foreground" title={t('Email copies')}>
                     <Mail className="size-3.5" />
                     <Switch checked={get(c.key)?.email ?? false} aria-label={t('{category} by email', { category: t(c.label) })} onCheckedChange={(v) => void save.mutateAsync({ category: c.key, email: v })} />
@@ -133,10 +138,13 @@ function Preferences() {
           ))}
         </CardContent>
       </Card>
-      <Card className="h-fit">
-        <CardHeader><CardTitle className="flex items-center gap-2"><Mail className="size-4" /> {t('Email copies')}</CardTitle>
-          <CardDescription>{t('Your choice is saved now. Emails start arriving once your administrator connects a mail service.')}</CardDescription></CardHeader>
-      </Card>
+      <div className="grid h-fit gap-4 max-lg:order-first">
+        <PushCard />
+        <Card className="h-fit">
+          <CardHeader><CardTitle className="flex items-center gap-2"><Mail className="size-4" /> {t('Email copies')}</CardTitle>
+            <CardDescription>{t('Your choice is saved now. Emails start arriving once your administrator connects a mail service.')}</CardDescription></CardHeader>
+        </Card>
+      </div>
     </div>
   )
 }

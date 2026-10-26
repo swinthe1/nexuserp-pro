@@ -662,4 +662,8 @@ export default {
   "This receipt belongs to an order: bill the order": "Ky pranim i përket një porosie: faturoni porosinë",
   "This receipt already has a bill": "Ky pranim e ka tashmë faturën",
   "That shift was closed before they were sent: its count is short by them and this shift is over by them.": "Ai turn u mbyll para se të dërgoheshin: numërimi i tij del me mungesë sa to, dhe ky turn me tepricë sa to.",
+  "Notifications work on this device": "Njoftimet punojnë në këtë pajisje",
+  "From now on DrisPRO tells you here what needs you.": "Tani e tutje DrisPRO ju lajmëron këtu për çdo gjë që kërkon vëmendjen tuaj.",
+  "This browser gave no usable address for notifications": "Ky shfletues nuk dha një adresë të vlefshme për njoftimet",
+  "Sign in first": "Hyni fillimisht",
 } satisfies Dict

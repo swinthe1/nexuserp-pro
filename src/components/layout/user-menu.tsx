@@ -1,4 +1,4 @@
-import { Download, KeyRound, Languages, LaptopMinimal, LayoutGrid, LogOut, Monitor, Moon, PanelLeft, ServerCog, Sparkles, Sun, UserRound } from 'lucide-react'
+import { Download, KeyRound, Languages, LaptopMinimal, LayoutGrid, LogOut, Monitor, Moon, PanelLeft, ServerCog, Smartphone, Sparkles, Sun, UserRound } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/app/auth-provider'
@@ -46,6 +46,7 @@ export function UserMenu() {
         {company && (simple
           ? <DropdownMenuItem onSelect={() => setSimple(false)}><PanelLeft /> {t('Show all menus')}</DropdownMenuItem>
           : <DropdownMenuItem onSelect={() => setSimple(true)}><LayoutGrid /> {t('Simple view: large buttons')}</DropdownMenuItem>)}
+        {company && !isDesktop && <DropdownMenuItem asChild><Link to="/notifications?view=settings"><Smartphone /> {t('Notifications on the phone')}</Link></DropdownMenuItem>}
         {company && <DropdownMenuItem onSelect={() => setAiOpen(true)}><Sparkles /> {t('DrisPRO in ChatGPT and Claude')}</DropdownMenuItem>}
         {isSuperAdmin && <DropdownMenuItem asChild><Link to="/platform"><ServerCog /> {t('Clients and licences')}</Link></DropdownMenuItem>}
         <DropdownMenuSub>

@@ -5516,6 +5516,7 @@ export type Database = {
           category: string
           in_app: boolean
           email: boolean
+          push: boolean
         }
         Insert: {
           user_id: string
@@ -5523,6 +5524,7 @@ export type Database = {
           category: string
           in_app?: boolean
           email?: boolean
+          push?: boolean
         }
         Update: {
           user_id?: string
@@ -5530,6 +5532,7 @@ export type Database = {
           category?: string
           in_app?: boolean
           email?: boolean
+          push?: boolean
         }
         Relationships: [
           { foreignKeyName: "notification_preferences_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -8313,6 +8316,42 @@ export type Database = {
           { foreignKeyName: "purchase_requisitions_decider_profile_fkey"; columns: ["decided_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
           { foreignKeyName: "purchase_requisitions_requester_profile_fkey"; columns: ["requested_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
         ]
+      }
+      push_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          label: string | null
+          created_at: string
+          last_sent_at: string | null
+          failures: number
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          label?: string | null
+          created_at?: string
+          last_sent_at?: string | null
+          failures?: number
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          endpoint?: string
+          p256dh?: string
+          auth?: string
+          label?: string | null
+          created_at?: string
+          last_sent_at?: string | null
+          failures?: number
+        }
+        Relationships: []
       }
       recurring_invoices: {
         Row: {
@@ -14779,6 +14818,28 @@ export type Database = {
         }
         Returns: undefined
       }
+      postier_push_claim: {
+        Args: {
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      postier_push_done: {
+        Args: {
+          p_id: string
+          p_ok: boolean
+          p_error?: string
+          p_gone?: boolean
+        }
+        Returns: undefined
+      }
+      postier_push_keys: {
+        Args: {
+          p_public?: string
+          p_private?: string
+        }
+        Returns: Json
+      }
       price_level_items: {
         Args: {
           p_company: string
@@ -14923,6 +14984,32 @@ export type Database = {
           p_warehouse?: string
         }
         Returns: Json
+      }
+      push_public_key: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      push_subscribe: {
+        Args: {
+          p_endpoint: string
+          p_p256dh: string
+          p_auth: string
+          p_label?: string
+        }
+        Returns: string
+      }
+      push_test: {
+        Args: {
+          p_company: string
+        }
+        Returns: number
+      }
+      push_unsubscribe: {
+        Args: {
+          p_id?: string
+          p_endpoint?: string
+        }
+        Returns: undefined
       }
       reader_claim: {
         Args: Record<PropertyKey, never>

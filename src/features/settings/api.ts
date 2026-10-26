@@ -334,6 +334,8 @@ export function useAgentLog(connectionId: string | null, problemsOnly: boolean) 
 export type NotificationRow = Pick<Tables<'notifications'>, 'id' | 'type' | 'category' | 'title' | 'body' | 'link' | 'read_at' | 'created_at' | 'entity_type'>
 export const NOTIFICATION_CATEGORIES = [
   { key: 'approvals', label: msg('Approvals'), description: msg('Documents waiting for your decision. Always delivered.') },
+  { key: 'summary', label: msg('Morning summary'), description: msg('Every morning, yesterday in one line: sales, cash, overdue debts, low stock. For owners and administrators.') },
+  { key: 'cash', label: msg('Cash and tills'), description: msg('Differences when a till is closed, the safe, money waiting for approval.') },
   { key: 'people', label: msg('People'), description: msg('Leave requests and decisions, payslips, contracts ending.') },
   { key: 'tax', label: msg('Tax'), description: msg('VAT and payroll deadlines, problems with fiscalization.') },
   { key: 'stock', label: msg('Stock and purchasing'), description: msg('Low stock, lots about to expire, reorder suggestions.') },
@@ -421,8 +423,8 @@ export const useSaveNotificationPref = () => {
   const { user } = useAuth()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (a: { category: string; in_app?: boolean; email?: boolean }) => unwrap(await supabase.from('notification_preferences')
-      .upsert({ user_id: user!.id, company_id: companyId, category: a.category, ...('in_app' in a ? { in_app: a.in_app } : {}), ...('email' in a ? { email: a.email } : {}) },
+    mutationFn: async (a: { category: string; in_app?: boolean; email?: boolean; push?: boolean }) => unwrap(await supabase.from('notification_preferences')
+      .upsert({ user_id: user!.id, company_id: companyId, category: a.category, ...('in_app' in a ? { in_app: a.in_app } : {}), ...('email' in a ? { email: a.email } : {}), ...('push' in a ? { push: a.push } : {}) },
               { onConflict: 'user_id,company_id,category' })),
     onMutate: async (a) => {
       const key = ['notification-prefs', companyId, user?.id]
@@ -430,9 +432,9 @@ export const useSaveNotificationPref = () => {
       const prev = qc.getQueryData<NotificationPref[]>(key)
       qc.setQueryData<NotificationPref[]>(key, (rows = []) => {
         const has = rows.some((r) => r.category === a.category)
-        const patch = { ...('in_app' in a ? { in_app: a.in_app! } : {}), ...('email' in a ? { email: a.email! } : {}) }
+        const patch = { ...('in_app' in a ? { in_app: a.in_app! } : {}), ...('email' in a ? { email: a.email! } : {}), ...('push' in a ? { push: a.push! } : {}) }
         return has ? rows.map((r) => (r.category === a.category ? { ...r, ...patch } : r))
-          : [...rows, { user_id: user!.id, company_id: companyId, category: a.category, in_app: true, email: false, ...patch } as NotificationPref]
+          : [...rows, { user_id: user!.id, company_id: companyId, category: a.category, in_app: true, email: false, push: true, ...patch } as NotificationPref]
       })
       return { prev, key }
     },

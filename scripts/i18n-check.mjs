@@ -154,3 +154,9 @@ if (conflicts.length) { console.log(`\nDictionary problems (${conflicts.length})
 if (listUnused) { const unused = Object.keys(dict).filter((k) => !used.has(k) && !k.startsWith('enum:') && !k.startsWith('data:')); console.log(`\nUnused keys (${unused.length}) — fine for data/server text:`); if (verbose) unused.forEach((k) => console.log('  ' + k)) }
 console.log(`\nTotal: ${totalUntr} untranslated, ${totalMissing} missing keys, ${Object.keys(dict).length} dictionary entries, ${conflicts.length} dictionary problems`)
 process.exitCode = totalUntr || totalMissing || conflicts.length ? 1 : 0
+// the phone notifications carry their own copy of the database texts
+{
+  const { spawnSync } = await import('node:child_process')
+  const r = spawnSync(process.execPath, [new URL('./push-texts.mjs', import.meta.url).pathname, '--check'], { encoding: 'utf8' })
+  if (r.status !== 0) { console.log(r.stdout.trim()); process.exitCode = 1 }
+}

@@ -111,6 +111,9 @@ export function tServer(message: string | null | undefined): string {
   if (current === 'en') return message
   const m = message.replace(/^ERROR:\s*/, '').trim()
   if (sq[m]) return sq[m]
+  // a line of parts ("Receipts: 74 · Cash: 620,71 €"): each part on its own, when each one is known
+  const parts = m.includes(' · ') ? m.split(' · ').map((x) => sq[x] ?? matchPattern(x)) : null
+  if (parts && parts.every(Boolean)) return parts.join(' · ')
   return matchPattern(m) ?? m
 }
 

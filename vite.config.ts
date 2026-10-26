@@ -40,6 +40,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // phone notifications (public/push-sw.js)
+        importScripts: ['push-sw.js'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/(rest|auth|storage|functions|realtime|mcp)\//],
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],

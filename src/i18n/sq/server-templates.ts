@@ -429,4 +429,13 @@ export const serverTemplates: [string, string][] = [
   ["Holiday work · % h", "Punë në festë/pushim · {0} orë"],
   ["The room is already taken on those nights (%)", "Dhoma është e zënë për ato netë ({0})"],
   ["The stay starts on %", "Qëndrimi fillon më {0}"],
+  // ---------------------------------------------------------------- the morning summary (notifications)
+  ['Sales on %: %', 'Shitjet më {0}: {1}'],
+  ['Receipts: %', 'Kupona: {0}'],
+  ['Invoiced: %', 'Faturuar: {0}'],
+  ['Cash: %', 'Para në arkë: {0}'],
+  ['Till differences: %', 'Diferenca në arka: {0}'],
+  ['Overdue: %', 'Borxhe të vonuara: {0}'],
+  ['Running low: %', 'Artikuj që po mbarojnë: {0}'],
+  ['Waiting for approval: %', 'Presin miratim: {0}'],
 ]
