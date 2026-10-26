@@ -28,7 +28,7 @@
       } catch {}
       // apply theme before paint to avoid a flash
       try {
-        const t = localStorage.getItem('drispro.theme') || 'system'
+        const t = localStorage.getItem('drispro.theme') || 'light'
         const dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
         document.documentElement.classList.toggle('dark', dark)
         const l = localStorage.getItem('drispro.lang')

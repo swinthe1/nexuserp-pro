@@ -12,7 +12,7 @@ function systemDark() {
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = React.useState<Theme>(() => {
-    try { return (localStorage.getItem(KEY) as Theme) || 'system' } catch { return 'system' }
+    try { return (localStorage.getItem(KEY) as Theme) || 'light' } catch { return 'light' }
   })
   const [sysDark, setSysDark] = React.useState(systemDark)
 

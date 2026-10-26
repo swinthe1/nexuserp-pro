@@ -79,7 +79,7 @@ export function AppLayout() {
       <div className="flex min-h-dvh">
         <Sidebar collapsed={collapsed} onToggle={toggle} />
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetContent side="left" className="w-[280px] gap-3 bg-sidebar p-3">
+          <SheetContent side="left" className="sidebar-navy w-[280px] gap-3 border-sidebar-border bg-sidebar p-3 text-sidebar-foreground">
             <SheetTitle className="sr-only">{t('Main menu')}</SheetTitle>
             <div className="pr-8"><CompanySwitcher /></div>
             <div className="overflow-y-auto"><SidebarNav onNavigate={() => setMobileOpen(false)} /></div>

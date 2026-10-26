@@ -89,7 +89,7 @@ function Item({ item, collapsed, onNavigate, active, pinned, onTogglePin }: {
       className={
         cn(
           'group/item flex h-8 min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 text-[13px] font-medium text-sidebar-foreground transition-colors hover:bg-secondary hover:text-foreground',
-          active && 'bg-card text-foreground shadow-sm ring-1 ring-border',
+          active && 'relative bg-secondary text-foreground before:absolute before:-left-2.5 before:top-1.5 before:h-5 before:w-[3px] before:rounded-r-full before:bg-primary',
           collapsed && 'h-9 flex-none justify-center px-0',
         )
       }
@@ -223,7 +223,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
   return (
     <aside
       className={cn(
-        'sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-200 lg:flex print:!hidden',
+        'sidebar-navy sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 lg:flex print:!hidden',
         collapsed ? 'w-[60px]' : 'w-[244px]',
       )}
     >

@@ -14441,11 +14441,24 @@ export type Database = {
         }
         Returns: string
       }
+      platform_create_demo_client: {
+        Args: {
+          p: Json
+        }
+        Returns: Json
+      }
       platform_delete_client: {
         Args: {
           p_company: string
           p_confirm_name: string
           p_delete_users?: boolean
+        }
+        Returns: Json
+      }
+      platform_demo_fill: {
+        Args: {
+          p_company: string
+          p_step: number
         }
         Returns: Json
       }
