@@ -12821,6 +12821,12 @@ export type Database = {
       }
     }
     Functions: {
+      accept_all_statement_suggestions: {
+        Args: {
+          p_statement: string
+        }
+        Returns: Json
+      }
       accept_statement_suggestion: {
         Args: {
           p_line: string

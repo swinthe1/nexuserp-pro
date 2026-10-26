@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { Ban, BookCheck, Check, Landmark, Link2, Plus, Undo2, Upload, Wallet, Wand2 } from 'lucide-react'
+import { Ban, BookCheck, Check, CheckCheck, Landmark, Link2, Plus, Undo2, Upload, Wallet, Wand2 } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -28,7 +28,7 @@ import { cn, formatDate, formatMoney, humanize, num, todayISO } from '@/lib/util
 import { usePartners } from '@/features/sales/api'
 import { type BankFile, readBankFile } from '../bank-formats'
 import {
-  finKeys, useAcceptSuggestion, useAccountBalances, useAccountDefaults, useAccounts, useAutoMatch, useDismissSuggestion, useBankAccounts, useBookStatementLine, useCreateStatement, useJournals, useMatchCandidates,
+  finKeys, useAcceptAllSuggestions, useAcceptSuggestion, useAccountBalances, useAccountDefaults, useAccounts, useAutoMatch, useDismissSuggestion, useBankAccounts, useBookStatementLine, useCreateStatement, useJournals, useMatchCandidates,
   useReconcileStatement, useSaveBankAccount, useStatement, useStatements, useUpdateStatementLine, type StatementLine, type StatementRow,
 } from '../api'
 
@@ -278,13 +278,15 @@ export function StatementPage() {
   const update = useUpdateStatementLine()
   const [matchLine, setMatchLine] = React.useState<StatementLine | null>(null)
   const [bookLine, setBookLine] = React.useState<StatementLine | null>(null)
-  const [filter, setFilter] = React.useState<'all' | 'unmatched'>('all')
+  const [filter, setFilter] = React.useState<'all' | 'unmatched' | 'suggested'>('all')
+  const acceptAll = useAcceptAllSuggestions()
   if (st.isLoading) return <Skeleton className="h-96" />
   if (st.isError) return <ErrorState error={st.error} onRetry={() => void st.refetch()} />
   if (!st.data) return <EmptyState title={t('Statement not found')} action={<Button variant="outline" asChild><Link to="/finance/bank">{t('Back to bank and cash')}</Link></Button>} />
   const s = st.data
   const open = s.status === 'open'
-  const lines = s.lines.filter((l) => filter === 'all' || l.match_status === 'unmatched')
+  const lines = s.lines.filter((l) => filter === 'all' || (l.match_status === 'unmatched' && (filter === 'unmatched' || !!l.suggestion)))
+  const suggested = s.lines.filter((l) => l.match_status === 'unmatched' && l.suggestion).length
   const sum = s.lines.reduce((t, l) => t + num(l.amount), 0)
   const unmatched = s.lines.filter((l) => l.match_status === 'unmatched').length
   const matched = s.lines.length - unmatched
@@ -299,6 +301,10 @@ export function StatementPage() {
         description={s.reference ?? undefined}
         actions={open && <Can perm="finance.write">
           <Button variant="outline" loading={autoMatch.isPending} disabled={!unmatched} onClick={async () => { const r = await autoMatch.mutateAsync(s.id); toast.success(r.matched + r.settled + r.suggested ? matchMessage(r) : t('No new matches found')) }}><Wand2 /> {t('Match automatically')}</Button>
+          {suggested > 0 && <Button variant="outline" loading={acceptAll.isPending} onClick={async () => {
+            const r = await acceptAll.mutateAsync(s.id)
+            toast.success(tn(r.accepted, '{n} suggestion accepted', '{n} suggestions accepted') + (r.failed ? ` · ${tn(r.failed, '{n} could not be settled', '{n} could not be settled')}` : ''))
+          }}><CheckCheck /> {t('Accept all ({n})', { n: suggested })}</Button>}
           <Button loading={reconcile.isPending} disabled={!!unmatched || !balanced} onClick={async () => { await reconcile.mutateAsync(s.id); toast.success(t('Statement reconciled')) }}><BookCheck /> {t('Reconcile')}</Button>
         </Can>} />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -313,6 +319,7 @@ export function StatementPage() {
           <div className="flex rounded-md border p-0.5" role="group" aria-label={t('Filter')}>
             <Button size="sm" className="h-7" variant={filter === 'all' ? 'secondary' : 'ghost'} onClick={() => setFilter('all')}>{t('All')}</Button>
             <Button size="sm" className="h-7" variant={filter === 'unmatched' ? 'secondary' : 'ghost'} onClick={() => setFilter('unmatched')}>{t('To do ({n})', { n: unmatched })}</Button>
+            {suggested > 0 && <Button size="sm" className="h-7" variant={filter === 'suggested' ? 'secondary' : 'ghost'} onClick={() => setFilter('suggested')}>{t('To check ({n})', { n: suggested })}</Button>}
           </div>
         </CardHeader>
         <CardContent className="overflow-x-auto p-0">
@@ -360,20 +367,27 @@ export function StatementPage() {
   )
 }
 
-type Suggested = { partner_id: string; docs: { id: string; number: string; amount: number }[]; reason: 'number' | 'account' | 'account_all' | 'name' | 'amount'; error?: string }
+type Suggested = { partner_id?: string; docs?: { id: string; number: string; amount: number }[]; account_id?: string; account?: string; memo?: string
+  reason: 'number' | 'numbers' | 'account' | 'account_all' | 'learned' | 'name' | 'combination' | 'oldest' | 'amount' | 'learned_account' | 'fees'; error?: string }
 /** what a line probably pays, waiting for one tap */
 function Suggestion({ line, open }: { line: StatementLine; open: boolean }) {
   const { can } = useCompany()
   const accept = useAcceptSuggestion()
   const dismiss = useDismissSuggestion()
   const sg = line.suggestion as unknown as Suggested
-  const why = { number: t('its number is in the text'), account: t('from their account'), account_all: t('all their open invoices'), name: t('the name and amount fit'), amount: t('the only one with this amount') }[sg.reason]
+  const why = {
+    number: t('its number is in the text'), numbers: t('their numbers are in the text'), account: t('from their account'), account_all: t('all their open invoices'),
+    learned: t('the payer you chose before'), name: t('the name and amount fit'), combination: t('their invoices that add up to it'), oldest: t('less than they owe: the oldest first'),
+    amount: t('the only one with this amount'), learned_account: t('as you recorded it before'), fees: t('looks like a bank charge'),
+  }[sg.reason]
+  const what = sg.account ? <b>{sg.account.replace(/^(\S+) (.*)$/, (_, c: string, n: string) => `${c} ${td(n)}`)}</b>
+    : <b>{(sg.docs ?? []).map((d) => (sg.reason === 'oldest' && d.amount ? `${d.number} (${formatMoney(d.amount)})` : d.number)).join(', ')}</b>
   return (
     <div className="grid gap-1">
-      <span className="text-[13px]">{t('Probably')} <b>{sg.docs.map((d) => d.number).join(', ')}</b> <span className="text-muted-foreground">· {why}</span></span>
+      <span className="text-[13px]">{t('Probably')} {what} <span className="text-muted-foreground">· {why}</span></span>
       {sg.error && <span className="text-xs text-destructive">{tServer(sg.error)}</span>}
       {open && can('finance.write') && <span className="flex gap-1">
-        <Button size="xs" loading={accept.isPending} onClick={() => accept.mutate(line.id, { onSuccess: () => toast.success(t('Payment recorded and matched')) })}><Check /> {t('Accept')}</Button>
+        <Button size="xs" loading={accept.isPending} onClick={() => accept.mutate(line.id, { onSuccess: () => toast.success(sg.account ? t('Recorded') : t('Payment recorded and matched')) })}><Check /> {t('Accept')}</Button>
         <Button size="xs" variant="ghost" disabled={dismiss.isPending} onClick={() => dismiss.mutate(line.id)}>{t('Not this')}</Button>
       </span>}
     </div>

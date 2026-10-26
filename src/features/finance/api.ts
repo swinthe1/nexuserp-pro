@@ -337,6 +337,7 @@ export async function matchAll(id: string) {
 }
 export const useAutoMatch = () => useAction(matchAll)
 export const useAcceptSuggestion = () => useAction(async (line: string) => unwrap(await supabase.rpc('accept_statement_suggestion', { p_line: line })))
+export const useAcceptAllSuggestions = () => useAction(async (statement: string) => unwrap(await supabase.rpc('accept_all_statement_suggestions', { p_statement: statement })) as unknown as { accepted: number; failed: number })
 export const useDismissSuggestion = () => useAction(async (line: string) => unwrap(await supabase.rpc('dismiss_statement_suggestion', { p_line: line })))
 export const useBookStatementLine = () => useAction(async (a: { line: string; account: string; memo?: string; partner?: string | null }) =>
   unwrap(await supabase.rpc('book_statement_line', { p_line: a.line, p_account: a.account, p_memo: a.memo, p_partner: a.partner ?? undefined })))
