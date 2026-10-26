@@ -438,4 +438,6 @@ export const serverTemplates: [string, string][] = [
   ['Overdue: %', 'Borxhe të vonuara: {0}'],
   ['Running low: %', 'Artikuj që po mbarojnë: {0}'],
   ['Waiting for approval: %', 'Presin miratim: {0}'],
+  ['This expense is already booked as %', 'Ky shpenzim është regjistruar tashmë si {0}'],
+  ['This expense is already booked: % from this seller', 'Ky shpenzim është regjistruar tashmë: {0} nga ky shitës'],
 ]

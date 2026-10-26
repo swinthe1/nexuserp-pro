@@ -205,6 +205,32 @@ const PROMPT = 'This is a supplier invoice (or delivery note) received by a shop
   + 'Read it and call record_invoice. Use numbers with a dot for decimals. If a price on the invoice includes VAT, give unit_price without VAT. '
   + 'Leave out lines that are not goods (subtotals, transport notes). Do not guess values that are not printed.'
 
+const EXPENSE_TOOL = {
+  name: 'record_expense',
+  description: 'Record a receipt or bill for a business expense (fuel, electricity, water, phone, rent, a restaurant, repairs, supplies...).',
+  input_schema: {
+    type: 'object',
+    properties: {
+      vendor_name: { type: 'string', description: 'the seller as printed' },
+      vendor_tax_number: { type: 'string', description: 'NUI / NIPT / fiscal number of the seller' },
+      number: { type: 'string', description: 'receipt or invoice number' },
+      date: { type: 'string', description: 'YYYY-MM-DD' },
+      due_date: { type: 'string', description: 'YYYY-MM-DD, only when printed' },
+      total: { type: 'number', description: 'the total to pay, with VAT' },
+      vat: { type: 'array', description: 'one entry per VAT rate printed', items: { type: 'object', properties: {
+        rate: { type: 'number' }, net: { type: 'number', description: 'amount without VAT' }, vat: { type: 'number' }, gross: { type: 'number' } }, required: ['rate'] } },
+      currency: { type: 'string' },
+      description: { type: 'string', description: 'what was bought, a few words in the language of the receipt (e.g. "Naftë 42 L", "Rryma, shtator 2026")' },
+      category: { type: 'string', enum: ['fuel', 'utilities', 'telecom', 'rent', 'supplies', 'repairs', 'meals', 'transport', 'bank_fees', 'advertising', 'insurance', 'professional', 'other'] },
+      paid: { type: 'string', enum: ['cash', 'card', 'bank', 'unpaid'], description: 'how it was paid, if the receipt shows it; a bill with a due date is unpaid' },
+    },
+    required: ['vendor_name', 'total', 'category'],
+  },
+}
+const EXPENSE_PROMPT = 'This is a receipt or bill for a business expense of a company in Kosovo or Albania (it may be a fiscal coupon, a utility bill, an invoice); '
+  + 'it may be in Albanian, Serbian or English. Read it and call record_expense. Use numbers with a dot for decimals. Give the VAT per rate as printed '
+  + '(Kosovo: 18% and 8%; Albania: 20%, 10%, 6%). Do not guess values that are not printed.'
+
 async function readInvoice(doc) {
   if (!waConfig) waConfig = await rpc('postier_config')
   const key = waConfig?.anthropic_api_key || process.env.ANTHROPIC_API_KEY
@@ -215,8 +241,11 @@ async function readInvoice(doc) {
   const r = await fetch(`${process.env.ANTHROPIC_API || 'https://api.anthropic.com'}/v1/messages`, {
     method: 'POST',
     headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: waConfig?.ai_model || 'claude-sonnet-5-5', max_tokens: 4096, tools: [INVOICE_TOOL], tool_choice: { type: 'tool', name: 'record_invoice' },
-      messages: [{ role: 'user', content: [block, { type: 'text', text: PROMPT }] }] }),
+    body: JSON.stringify(doc.kind === 'expense'
+      ? { model: waConfig?.ai_model || 'claude-sonnet-5-5', max_tokens: 2048, tools: [EXPENSE_TOOL], tool_choice: { type: 'tool', name: 'record_expense' },
+          messages: [{ role: 'user', content: [block, { type: 'text', text: EXPENSE_PROMPT }] }] }
+      : { model: waConfig?.ai_model || 'claude-sonnet-5-5', max_tokens: 4096, tools: [INVOICE_TOOL], tool_choice: { type: 'tool', name: 'record_invoice' },
+          messages: [{ role: 'user', content: [block, { type: 'text', text: PROMPT }] }] }),
   })
   const j = await r.json().catch(() => ({}))
   if (!r.ok) throw new Error(j?.error?.message || `AI ${r.status}`)
@@ -234,13 +263,13 @@ async function readerRound() {
     try {
       if (MODE === 'local') {
         if (!LICENCE || !SERVER_ID) throw new Error('This server has no licence yet')
-        const relay = await rpc('licence_read_submit', { p_code: LICENCE, p_server: SERVER_ID, p_file: doc.file, p_mime: doc.mime, p_name: doc.name }, LICENCE_SERVER, CLOUD_ANON_KEY)
+        const relay = await rpc('licence_read_submit', { p_code: LICENCE, p_server: SERVER_ID, p_file: doc.file, p_mime: doc.mime, p_name: doc.name, ...(doc.kind === 'expense' ? { p_kind: 'expense' } : {}) }, LICENCE_SERVER, CLOUD_ANON_KEY)
         await rpc('reader_done', { p_id: doc.id, p_ok: true, p_relay_id: relay })
         log('invoice handed to the cloud', doc.name ?? '')
       } else {
         const { result, usage } = await readInvoice(doc)
         await rpc('reader_done', { p_id: doc.id, p_ok: true, p_result: result, p_input_tokens: usage.input_tokens ?? null, p_output_tokens: usage.output_tokens ?? null })
-        log('invoice read', doc.name ?? '', result?.vendor_name ?? '', (result?.lines || []).length, 'lines')
+        log(doc.kind === 'expense' ? 'expense read' : 'invoice read', doc.name ?? '', result?.vendor_name ?? '', (result?.lines || []).length, 'lines')
       }
     } catch (e) {
       log('invoice not read', doc.name ?? '', String(e.message || e))

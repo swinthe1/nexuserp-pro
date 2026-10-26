@@ -666,4 +666,7 @@ export default {
   "From now on DrisPRO tells you here what needs you.": "Tani e tutje DrisPRO ju lajmëron këtu për çdo gjë që kërkon vëmendjen tuaj.",
   "This browser gave no usable address for notifications": "Ky shfletues nuk dha një adresë të vlefshme për njoftimet",
   "Sign in first": "Hyni fillimisht",
+  "Who sold it? Give the seller's name": "Kush e shiti? Shkruani emrin e shitësit",
+  "Choose an expense account": "Zgjidhni një llogari shpenzimi",
+  "Give the amount": "Shkruani shumën",
 } satisfies Dict

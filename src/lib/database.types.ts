@@ -13726,6 +13726,7 @@ export type Database = {
           p_file: string
           p_mime: string
           p_name?: string
+          p_kind?: string
         }
         Returns: string
       }
@@ -13795,6 +13796,31 @@ export type Database = {
           p_vendor?: string
         }
         Returns: string
+      }
+      expense_book: {
+        Args: {
+          p_read: string
+          p: Json
+        }
+        Returns: Json
+      }
+      expense_pay_accounts: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
+      expense_read_get: {
+        Args: {
+          p_id: string
+        }
+        Returns: Json
+      }
+      expense_reads: {
+        Args: {
+          p_company: string
+        }
+        Returns: { id: string | null; file_name: string | null; status: string | null; error: string | null; vendor: string | null; number: string | null; date: string | null; total: number | null; category: string | null; bill_id: string | null; bill_number: string | null; created_at: string | null }[]
       }
       finance_overview: {
         Args: {
@@ -14088,6 +14114,7 @@ export type Database = {
           p_file: string
           p_mime: string
           p_name?: string
+          p_kind?: string
         }
         Returns: string
       }

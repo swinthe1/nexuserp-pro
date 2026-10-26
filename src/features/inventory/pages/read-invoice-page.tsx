@@ -16,6 +16,7 @@ import { cn, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
 import { t, tn, tServer } from '@/i18n'
 import { VariantPicker, VendorPicker, WarehousePicker } from '../components/pickers'
 import { useWarehouses } from '../api'
+import { shrink } from '@/lib/shrink-image'
 
 type ReadLine = { code?: string; barcode?: string; name: string; quantity: number; unit?: string; unit_price?: number; discount_pct?: number; vat_rate?: number; line_total?: number
   variant_id: string | null; matched_by: 'learned' | 'vendor_code' | 'barcode' | 'code' | 'name' | null; variant_name: string | null; variant_sku: string | null }
@@ -23,21 +24,6 @@ type ReadResult = { vendor_name?: string; vendor_tax_number?: string; number?: s
   notes?: string; lines: ReadLine[]; vendor_id: string | null; vendor_match_name: string | null }
 type Read = { id: string; status: 'queued' | 'reading' | 'done' | 'failed'; error: string | null; file_name: string | null; receipt_id: string | null; created_at: string; result: ReadResult | null }
 type ReadRow = { id: string; file_name: string | null; status: string; error: string | null; vendor: string | null; number: string | null; total: number | null; receipt_id: string | null; created_at: string }
-
-/* a phone photo is several MB: make it 2000 px at most, which reads just as well and costs less */
-async function shrink(file: File): Promise<{ data: string; mime: string }> {
-  const toB64 = (b: Blob) => new Promise<string>((ok, bad) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1] ?? ''); r.onerror = bad; r.readAsDataURL(b) })
-  if (file.type === 'application/pdf') return { data: await toB64(file), mime: 'application/pdf' }
-  try {
-    const bmp = await createImageBitmap(file)
-    const k = Math.min(1, 2000 / Math.max(bmp.width, bmp.height))
-    if (k === 1 && file.size < 2_500_000 && /image\/(jpeg|png|webp)/.test(file.type)) return { data: await toB64(file), mime: file.type }
-    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k)
-    c.getContext('2d')!.drawImage(bmp, 0, 0, c.width, c.height)
-    const blob = await new Promise<Blob>((ok, bad) => c.toBlob((b) => (b ? ok(b) : bad(new Error('image'))), 'image/jpeg', 0.85))
-    return { data: await toB64(blob), mime: 'image/jpeg' }
-  } catch { return { data: await toB64(file), mime: file.type || 'image/jpeg' } }
-}
 
 export function ReadInvoicePage() {
   const { companyId } = useCompany()

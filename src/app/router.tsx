@@ -95,6 +95,7 @@ const SafePage = lazy(() => import('@/features/safe/safe-page'), 'SafePage')
 const PurchaseInvoicePage = lazy(() => import('@/features/procurement/pages/purchase-invoice-page'), 'PurchaseInvoicePage')
 const CardsPage = lazy(() => import('@/features/finance/pages/cards-page'), 'CardsPage')
 const CompensationsPage = lazy(() => import('@/features/finance/pages/compensations-page'), 'CompensationsPage')
+const ExpensesPage = lazy(() => import('@/features/finance/pages/expenses-page'), 'ExpensesPage')
 const YearEndPage = lazy(() => import('@/features/finance/pages/year-end-page'), 'YearEndPage')
 const ItemCardPage = lazy(() => import('@/features/inventory/pages/item-card-page'), 'ItemCardPage')
 const LabelsPage = lazy(() => import('@/features/inventory/pages/labels-page'), 'LabelsPage')
@@ -254,6 +255,7 @@ const router = createBrowserRouter([
         { path: 'new', element: <PaymentPage key="pay-new" /> },
         { path: ':id', element: <PaymentPage key="pay" /> },
       ] },
+      { path: 'finance/expenses', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <ExpensesPage /> }] },
       { path: 'finance/cards', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <CardsPage /> }] },
       { path: 'finance/compensations', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <CompensationsPage /> }] },
       { path: 'finance/receivables', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <AgingPage key="ar" kind="ar" /> }] },

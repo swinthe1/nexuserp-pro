@@ -4,7 +4,7 @@ import {
   BadgePercent, ClipboardCheck, Hourglass, PackageOpen, ScanLine, ShoppingBasket,
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, BookOpenText, Building, HandCoins, ListTree, Network, Settings2, Wallet, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, Gauge,
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackagePlus, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
-  BedDouble, BookUser, CalendarRange, ConciergeBell, Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, type LucideIcon,
+  BedDouble, BookUser, CalendarRange, ConciergeBell, Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, ReceiptText, type LucideIcon,
 } from 'lucide-react'
 import { msg } from '@/i18n'
 
@@ -132,6 +132,7 @@ export const NAV: NavSection[] = [
       { label: msg('Journal entries'), href: '/finance/journal', icon: BookOpenText, perm: 'finance.read', keywords: ['gl', 'general ledger', 'manual entry', 'ditar'] },
       { label: msg('Chart of accounts'), href: '/finance/accounts', icon: ListTree, perm: 'finance.read', keywords: ['coa', 'ledger', 'plan kontabel', 'accounts'] },
       { label: msg('Receivables'), href: '/finance/receivables', icon: HandCoins, perm: 'invoicing.read', keywords: ['ar', 'aging', 'debtors', 'overdue'] },
+      { label: msg('Expenses'), href: '/finance/expenses', icon: ReceiptText, perm: 'invoicing.read', keywords: ['shpenzime', 'shpenzim', 'karburant', 'naftë', 'rryma', 'kupon', 'faturë', 'foto', 'receipt', 'fuel', 'expense'] },
       { label: msg('Payables'), href: '/finance/payables', icon: Wallet, perm: 'invoicing.read', keywords: ['ap', 'aging', 'creditors', 'due'] },
       { label: msg('Partner cards'), href: '/finance/cards', icon: BookOpenText, perm: 'invoicing.read', keywords: ['kartela', 'kartela e klientit', 'kartela e furnitorit', 'ios', 'konfirmim', 'statement', 'saldo'] },
       { label: msg('Compensations'), href: '/finance/compensations', icon: ArrowLeftRight, perm: 'invoicing.read', keywords: ['kompensim', 'kompensimi', 'offset', 'netting'] },
