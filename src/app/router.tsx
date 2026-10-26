@@ -47,6 +47,7 @@ const SalesDocumentPage = React.lazy(() => import('@/features/sales/pages/sales-
 const DeliveryPage = lazy(() => import('@/features/sales/pages/delivery-page'), 'DeliveryPage')
 const PriceListsPage = lazy(() => import('@/features/sales/pages/price-lists-page'), 'PriceListsPage')
 const PriceListPage = lazy(() => import('@/features/sales/pages/price-lists-page'), 'PriceListPage')
+const PromotionsPage = lazy(() => import('@/features/sales/pages/promotions-page'), 'PromotionsPage')
 const PartnersPage = lazy(() => import('@/features/sales/pages/partners-page'), 'PartnersPage')
 const PartnerPage = lazy(() => import('@/features/sales/pages/partners-page'), 'PartnerPage')
 const ProcurementOverviewPage = lazy(() => import('@/features/procurement/pages/procurement-overview-page'), 'ProcurementOverviewPage')
@@ -207,6 +208,7 @@ const router = createBrowserRouter([
         { path: 'price-lists', element: <PriceListsPage /> },
         { path: 'price-lists/new', element: <PriceListPage key="pl-new" /> },
         { path: 'price-lists/:id', element: <PriceListPage key="pl" /> },
+        { path: 'promotions', element: <PromotionsPage /> },
         { path: 'agents', element: <RequirePerm perm="sales.approve" />, children: [{ index: true, element: <AgentsPage /> }] },
       ] },
       { path: 'agent', element: <RequirePerm perm="sales.write" />, children: [{ index: true, element: <AgentPage /> }] },

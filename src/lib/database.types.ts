@@ -593,6 +593,8 @@ export type Database = {
           created_by: string | null
           updated_at: string
           updated_by: string | null
+          night_hours: number | null
+          holiday_hours: number | null
         }
         Insert: {
           id?: string
@@ -609,6 +611,8 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          night_hours?: number | null
+          holiday_hours?: number | null
         }
         Update: {
           id?: string
@@ -625,6 +629,8 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          night_hours?: number | null
+          holiday_hours?: number | null
         }
         Relationships: [
           { foreignKeyName: "attendance_records_company_id_employee_id_fkey"; columns: ["company_id", "employee_id"]; isOneToOne: false; referencedRelation: "employees"; referencedColumns: ["company_id", "id"] },
@@ -1680,6 +1686,8 @@ export type Database = {
           portal_stock: string
           print_logo: string | null
           print_settings: Json
+          payroll_night_pct: number | null
+          payroll_holiday_pct: number | null
         }
         Insert: {
           id?: string
@@ -1736,6 +1744,8 @@ export type Database = {
           portal_stock?: string
           print_logo?: string | null
           print_settings?: Json
+          payroll_night_pct?: number | null
+          payroll_holiday_pct?: number | null
         }
         Update: {
           id?: string
@@ -1792,6 +1802,8 @@ export type Database = {
           portal_stock?: string
           print_logo?: string | null
           print_settings?: Json
+          payroll_night_pct?: number | null
+          payroll_holiday_pct?: number | null
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -2583,6 +2595,76 @@ export type Database = {
           rejected_status?: string | null
         }
         Relationships: []
+      }
+      employee_deductions: {
+        Row: {
+          id: string
+          company_id: string
+          employee_id: string
+          kind: string
+          name: string
+          amount: number | null
+          percent: number | null
+          total: number | null
+          starts_on: string
+          ends_on: string | null
+          partner_id: string | null
+          is_active: boolean
+          notes: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          employee_id: string
+          kind: string
+          name: string
+          amount?: number | null
+          percent?: number | null
+          total?: number | null
+          starts_on?: string
+          ends_on?: string | null
+          partner_id?: string | null
+          is_active?: boolean
+          notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          employee_id?: string
+          kind?: string
+          name?: string
+          amount?: number | null
+          percent?: number | null
+          total?: number | null
+          starts_on?: string
+          ends_on?: string | null
+          partner_id?: string | null
+          is_active?: boolean
+          notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "employee_deductions_company_id_employee_id_fkey"; columns: ["company_id", "employee_id"]; isOneToOne: false; referencedRelation: "employees"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "employee_deductions_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "employee_deductions_company_id_partner_id_fkey"; columns: ["company_id", "partner_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
+        ]
       }
       employees: {
         Row: {
@@ -6126,14 +6208,15 @@ export type Database = {
           discount_pct: number
           tax_code_id: string | null
           tax_rate: number
-          line_total: number | null
-          line_subtotal: number | null
-          tax_amount: number | null
           unit_cost: number | null
           created_at: string
           created_by: string | null
           updated_at: string
           updated_by: string | null
+          promotion_id: string | null
+          line_total: number | null
+          line_subtotal: number | null
+          tax_amount: number | null
         }
         Insert: {
           id?: string
@@ -6149,14 +6232,15 @@ export type Database = {
           discount_pct?: number
           tax_code_id?: string | null
           tax_rate?: number
-          line_total?: never
-          line_subtotal?: never
-          tax_amount?: never
           unit_cost?: number | null
           created_at?: string
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          promotion_id?: string | null
+          line_total?: never
+          line_subtotal?: never
+          tax_amount?: never
         }
         Update: {
           id?: string
@@ -6172,14 +6256,15 @@ export type Database = {
           discount_pct?: number
           tax_code_id?: string | null
           tax_rate?: number
-          line_total?: never
-          line_subtotal?: never
-          tax_amount?: never
           unit_cost?: number | null
           created_at?: string
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          promotion_id?: string | null
+          line_total?: never
+          line_subtotal?: never
+          tax_amount?: never
         }
         Relationships: [
           { foreignKeyName: "pos_order_lines_company_id_lot_id_fkey"; columns: ["company_id", "lot_id"]; isOneToOne: false; referencedRelation: "lots"; referencedColumns: ["company_id", "id"] },
@@ -7481,6 +7566,89 @@ export type Database = {
         }
         Relationships: [
           { foreignKeyName: "profiles_last_company_fk"; columns: ["last_company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
+      promotions: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          kind: string
+          value: number | null
+          buy_qty: number | null
+          get_qty: number | null
+          min_qty: number
+          variant_ids: string[]
+          category_ids: string[]
+          starts_on: string | null
+          ends_on: string | null
+          weekdays: number[] | null
+          time_from: string | null
+          time_to: string | null
+          channels: string[]
+          warehouse_ids: string[] | null
+          is_active: boolean
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          kind: string
+          value?: number | null
+          buy_qty?: number | null
+          get_qty?: number | null
+          min_qty?: number
+          variant_ids?: string[]
+          category_ids?: string[]
+          starts_on?: string | null
+          ends_on?: string | null
+          weekdays?: number[] | null
+          time_from?: string | null
+          time_to?: string | null
+          channels?: string[]
+          warehouse_ids?: string[] | null
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string
+          kind?: string
+          value?: number | null
+          buy_qty?: number | null
+          get_qty?: number | null
+          min_qty?: number
+          variant_ids?: string[]
+          category_ids?: string[]
+          starts_on?: string | null
+          ends_on?: string | null
+          weekdays?: number[] | null
+          time_from?: string | null
+          time_to?: string | null
+          channels?: string[]
+          warehouse_ids?: string[] | null
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "promotions_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
         ]
       }
       public_holidays: {
@@ -13190,6 +13358,18 @@ export type Database = {
         }
         Returns: string
       }
+      employee_advance_pay: {
+        Args: {
+          p: Json
+        }
+        Returns: string
+      }
+      employee_deductions_list: {
+        Args: {
+          p_employee: string
+        }
+        Returns: Json
+      }
       ensure_lot: {
         Args: {
           p_variant: string
@@ -14070,6 +14250,12 @@ export type Database = {
         }
         Returns: Json
       }
+      pos_promotions: {
+        Args: {
+          p_register: string
+        }
+        Returns: Json
+      }
       pos_register_set_safe: {
         Args: {
           p_register: string
@@ -14290,6 +14476,14 @@ export type Database = {
           p_warehouse?: string
         }
         Returns: { variant_id: string | null; sku: string | null; name: string | null; bom_id: string | null; bom_code: string | null; bom_quantity: number | null; on_hand: number | null; reserved: number | null; sales_demand: number | null; component_demand: number | null; min_qty: number | null; max_qty: number | null; in_production: number | null; projected: number | null; suggested: number | null; unit_cost: number | null; lead_minutes: number | null }[]
+      }
+      promotion_results: {
+        Args: {
+          p_company: string
+          p_from: string
+          p_to: string
+        }
+        Returns: Json
       }
       purchase_invoice_complete: {
         Args: {

@@ -3,6 +3,7 @@ import {
   UserRound, Wallet, X,
 } from 'lucide-react'
 import * as React from 'react'
+import { bestPromo } from '../promotions'
 import { openCashDrawer } from '@/lib/print'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -41,7 +42,7 @@ const METHODS = [
 type Method = (typeof METHODS)[number]['id']
 
 type Line = { key: string; variant_id: string; name: string; sku: string; price: number; qty: number; discount: number; rate: number; barcode: string | null }
-type PricedLine = Line & { card?: boolean }
+type PricedLine = Line & { card?: boolean; promo?: { id: string; name: string } }
 export type Tender = { method: Method; amount: number }
 type AppliedCard = { id: string; number: string; holder: string; program: TillProgram; points: number; monthUsed: number }
 type Redeem = { points: number; amount: number; pct: Record<string, number> }
@@ -139,19 +140,27 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
 
   /* ---------- loyalty card: the same rule as the server (app.loyalty_eval) */
   const catOf = React.useMemo(() => new Map(data.catalog.map((c) => [c.variant_id, c.category])), [data.catalog])
+  // promotions first: a line the cashier did not discount by hand takes the best one running now
+  const [clock, setClock] = React.useState(() => Date.now())
+  React.useEffect(() => { const id = setInterval(() => setClock(Date.now()), 60_000); return () => clearInterval(id) }, [])
+  const promoted = React.useMemo<PricedLine[]>(() => lines.map((l) => {
+    if (l.qty <= 0 || l.discount !== 0 || !data.promotions?.length) return l
+    const b = bestPromo(data.promotions, l.variant_id, l.price, l.qty, new Date(clock))
+    return b ? { ...l, discount: b.pct, promo: { id: b.id, name: b.name } } : l
+  }), [lines, data.promotions, clock])
   const priced = React.useMemo<PricedLine[]>(() => {
-    if (!card || !cardUsable(card.program)) return lines
+    if (!card || !cardUsable(card.program)) return promoted
     const p = card.program
     const excluded = new Set(p.excluded_categories)
     const eligible = (l: Line) => l.qty > 0 && l.discount === 0 && !excluded.has(catOf.get(l.variant_id) ?? '\u0000')
     let pct = num(p.discount_pct)
     if (p.monthly_limit != null) {
       const left = Math.max(num(p.monthly_limit) - card.monthUsed, 0)
-      const d = lines.filter(eligible).reduce((s, l) => s + r2(l.qty * l.price) * pct / 100, 0)
+      const d = promoted.filter(eligible).reduce((s, l) => s + r2(l.qty * l.price) * pct / 100, 0)
       if (d > left) pct = d > 0 ? Math.floor(pct * left / d * 100) / 100 : 0
     }
-    return lines.map((l) => (eligible(l) ? { ...l, discount: redeem?.pct[l.key] ?? pct, card: true } : l))
-  }, [lines, card, redeem, catOf])
+    return promoted.map((l) => (eligible(l) ? { ...l, discount: redeem?.pct[l.key] ?? pct, card: true } : l))
+  }, [promoted, card, redeem, catOf])
   const cardSaving = priced.filter((l) => l.card).reduce((s, l) => s + r2(l.qty * l.price) - lineTotal(l), 0)
 
   const total = priced.reduce((s, l) => s + lineTotal(l), 0)
@@ -282,7 +291,9 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     const isOffline = !navigator.onLine || !sync.online
     const payload = {
       client_uuid, session_id: session.id, order_at: created_at, device_ref, offline: isOffline, partner_id: customer, is_refund: !!refund, refund_of_id: refund?.of.id ?? null,
-      lines: saleLines.map((l) => ({ variant_id: l.variant_id, quantity: l.qty, unit_price: l.price, discount_pct: l.discount, manual_pct: l.card ? 0 : l.discount, barcode: l.barcode, description: l.name })),
+      // a promotion's line counts as discounted already, so the card does not add to it (the server checks the promotion)
+      lines: saleLines.map((l) => ({ variant_id: l.variant_id, quantity: l.qty, unit_price: l.price, discount_pct: l.discount, manual_pct: l.card ? 0 : l.discount,
+        promotion_id: l.promo?.id ?? null, barcode: l.barcode, description: l.name })),
       payments: tenders.map((t) => ({ method: t.method, amount: t.amount })),
       loyalty: usedCard ? { card_id: usedCard.id, redeem_points: redeem?.points ?? 0 } : null,
     }
@@ -496,7 +507,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
                 className={cn('grid cursor-pointer grid-cols-[1fr_auto] gap-x-3 border-b px-4 py-2.5', selected === l.key ? 'bg-primary/5 ring-1 ring-inset ring-primary/30' : 'hover:bg-muted/40')}>
                 <div className="min-w-0">
                   <div className="truncate text-[13px] font-medium">{l.name}</div>
-                  <div className="text-xs text-muted-foreground tabular">{num(l.qty)} × {formatMoney(l.price)}{l.discount ? <span className="text-primary"> · −{l.discount}%{l.card ? ` ${t('card')}` : ''}</span> : null}</div>
+                  <div className="text-xs text-muted-foreground tabular">{num(l.qty)} × {formatMoney(l.price)}{l.discount ? <span className="text-primary"> · −{Math.round(l.discount * 100) / 100}%{l.card ? ` ${t('card')}` : ''}{(l as PricedLine).promo ? ` ${(l as PricedLine).promo!.name}` : ''}</span> : null}</div>
                 </div>
                 <div className="text-right text-[15px] font-semibold tabular">{formatMoney(lineTotal(l))}</div>
                 {selected === l.key && (

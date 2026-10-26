@@ -11,6 +11,7 @@ const GROUPS: { type: string; title: string; sign: 1 | -1 }[] = [
   { type: 'earning', title: msg('Earnings'), sign: 1 },
   { type: 'employee_contribution', title: msg('Employee contributions'), sign: -1 },
   { type: 'tax', title: msg('Income tax'), sign: -1 },
+  { type: 'deduction', title: msg('Deductions from pay'), sign: -1 },
   { type: 'employer_contribution', title: msg('Paid by the employer (not deducted)'), sign: 1 },
 ]
 const monthOf = (d: string | undefined) => d ? formatMonth(`${d}T00:00:00`) : ''
@@ -25,6 +26,11 @@ type Line = PayslipRow['lines'][number]
 export function payslipLineName(l: Line, slip: Pick<PayslipRow, 'paid_days' | 'working_days' | 'overtime_hours'>) {
   if (l.code === 'BASIC') return t('Basic salary · {paid} of {days} days', { paid: formatQty(slip.paid_days), days: formatQty(slip.working_days) })
   if (l.code === 'OVERTIME') return t('Overtime · {h} h', { h: formatQty(slip.overtime_hours) })
+  if (l.code === 'NIGHT' || l.code === 'HOLIDAY') {
+    const h = /· ([\d.]+) h/.exec(l.name)?.[1] ?? ''
+    return l.code === 'NIGHT' ? t('Night work · {h} h', { h: formatQty(h) }) : t('Holiday and rest-day work · {h} h', { h: formatQty(h) })
+  }
+  if (l.code?.startsWith('DED:')) return l.name
   if (l.code === 'TAX') return l.name.includes('secondary') ? t('Income tax (secondary employer)|payslip') : t('Income tax|payslip')
   const k = l.code ? LINE_NAMES[l.code] : undefined
   return k ? t(k) : tServer(l.name)

@@ -55,6 +55,7 @@ export const NAV: NavSection[] = [
       { label: msg('Recurring invoices'), href: '/sales/recurring', icon: Repeat, perm: 'invoicing.read', keywords: ['rent', 'subscription', 'qira', 'abonim', 'monthly'] },
       { label: msg('Agent app'), href: '/agent', icon: Smartphone, perm: 'sales.write', keywords: ['agjent', 'terren', 'field', 'route', 'rruga', 'arkëtim', 'van', 'shitës', 'porosi'] },
       { label: msg('Field agents'), href: '/sales/agents', icon: MapPinned, perm: 'sales.approve', keywords: ['agjentët', 'terren', 'field sales', 'routes', 'visits', 'vizita', 'gps'] },
+      { label: msg('Promotions'), href: '/sales/promotions', icon: Percent, perm: 'sales.read', keywords: ['promocion', 'promocione', 'aksion', 'zbritje', '3 me 2', 'offer', 'sale', 'happy hour'] },
       { label: msg('Price lists'), href: '/sales/price-lists', icon: Tags, perm: 'sales.read', keywords: ['pricing', 'wholesale', 'retail', 'discount'] },
       { label: msg('Customers'), href: '/partners?role=customer', icon: Users, perm: 'partners.read', keywords: ['clients', 'partners', 'vendors', 'klient'] },
     ],

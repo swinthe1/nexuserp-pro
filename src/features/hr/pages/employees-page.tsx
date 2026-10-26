@@ -20,6 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { DeductionsCard } from '../components/deductions-card'
 import { ErrorState } from '@/components/error-state'
 import { msg, t, td } from '@/i18n'
 import { formatDateWith } from '@/i18n/format'
@@ -158,12 +159,14 @@ function EmployeeForm({ emp }: { emp?: EmployeeRow }) {
         <Tabs defaultValue="profile">
           <TabsList><TabsTrigger value="profile">{t('Profile')}</TabsTrigger><TabsTrigger value="contract">{t('Contract')}</TabsTrigger>
             <TabsTrigger value="leave">{t('Leave')}</TabsTrigger><TabsTrigger value="attendance">{t('Attendance')}</TabsTrigger>
-            {can('payroll.read') && <TabsTrigger value="payslips">{t('Payslips')}</TabsTrigger>}</TabsList>
+            {can('payroll.read') && <TabsTrigger value="payslips">{t('Payslips')}</TabsTrigger>}
+            {can('payroll.read') && <TabsTrigger value="deductions">{t('Deductions')}</TabsTrigger>}</TabsList>
           <TabsContent value="profile">{profileForm}</TabsContent>
           <TabsContent value="contract"><ContractCard employeeId={emp.id} /></TabsContent>
           <TabsContent value="leave"><EmployeeLeave employeeId={emp.id} /></TabsContent>
           <TabsContent value="attendance"><EmployeeAttendance employeeId={emp.id} /></TabsContent>
           {can('payroll.read') && <TabsContent value="payslips"><EmployeePayslips employeeId={emp.id} /></TabsContent>}
+          {can('payroll.read') && <TabsContent value="deductions"><DeductionsCard employeeId={emp.id} /></TabsContent>}
         </Tabs>
       )}
     </div>

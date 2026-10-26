@@ -16,7 +16,8 @@ import { t } from '@/i18n'
 import { MessagingSettings } from '../components/messaging'
 import { AutomationCard } from '../components/automation-card'
 
-type Settings = { pos_cash_tolerance: number; payroll_auto_day: number | null; payroll_auto_for: 'previous' | 'current'; payroll_deduct_absence: boolean }
+type Settings = { pos_cash_tolerance: number; payroll_auto_day: number | null; payroll_auto_for: 'previous' | 'current'; payroll_deduct_absence: boolean
+  payroll_night_pct: number | null; payroll_holiday_pct: number | null }
 
 export function useAutomationSettings() {
   const { companyId } = useCompany()
@@ -24,7 +25,7 @@ export function useAutomationSettings() {
     queryKey: ['automation-settings', companyId],
     enabled: !!companyId,
     queryFn: async () => unwrap(await supabase.from('company_settings')
-      .select('pos_cash_tolerance, payroll_auto_day, payroll_auto_for, payroll_deduct_absence').eq('company_id', companyId!).single()) as unknown as Settings,
+      .select('pos_cash_tolerance, payroll_auto_day, payroll_auto_for, payroll_deduct_absence, payroll_night_pct, payroll_holiday_pct').eq('company_id', companyId!).single()) as unknown as Settings,
   })
 }
 export function useSaveAutomation() {
@@ -38,7 +39,7 @@ export function useSaveAutomation() {
 }
 
 export function AutomationPage() {
-  const { can } = useCompany()
+  const { can, company } = useCompany()
   const q = useAutomationSettings()
   const save = useSaveAutomation()
   const s = q.data
@@ -98,6 +99,13 @@ export function AutomationPage() {
                   <span className="text-xs text-muted-foreground">{t('Only for people whose attendance is kept: a working day with no attendance and no approved leave.')}</span></span>
                 <Switch checked={s.payroll_deduct_absence} disabled={!can('payroll.write')} onCheckedChange={(v) => save.mutate({ payroll_deduct_absence: v })} />
               </label>
+              <div className="grid gap-1.5"><Label htmlFor="pr-night">{t('Night work premium %')}</Label>
+                <Input id="pr-night" type="number" step="1" min="0" max="200" className="w-28 text-right" defaultValue={s.payroll_night_pct ?? ''} placeholder="20" disabled={!can('payroll.write')}
+                  onBlur={(e) => { if (e.target.value !== String(s.payroll_night_pct ?? '')) save.mutate({ payroll_night_pct: e.target.value }) }} /></div>
+              <div className="grid gap-1.5"><Label htmlFor="pr-hol">{t('Holiday and rest-day premium %')}</Label>
+                <Input id="pr-hol" type="number" step="1" min="0" max="200" className="w-28 text-right" defaultValue={s.payroll_holiday_pct ?? ''} placeholder={company?.country_code === 'XK' ? '50' : '25'} disabled={!can('payroll.write')}
+                  onBlur={(e) => { if (e.target.value !== String(s.payroll_holiday_pct ?? '')) save.mutate({ payroll_holiday_pct: e.target.value }) }} /></div>
+              <p className="text-xs text-muted-foreground sm:col-span-2">{t('Hours worked between 22:00 and 06:00, and on public holidays or rest days, come from attendance and are paid this much extra. Empty: the usual rate of the law (night 20 %; holidays 25 % in Albania, 50 % in Kosovo).')}</p>
             </div>
           )}
         </AutomationCard>

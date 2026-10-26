@@ -1,3 +1,4 @@
+import type { TillPromo } from './promotions'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as React from 'react'
 import { toast } from 'sonner'
@@ -103,6 +104,8 @@ export type TillData = {
   company: { name: string; legal_name: string | null; tax_number: string | null; base_currency: string; address: string | null }
   /** loyalty cards and their rules, kept so discount cards work offline */
   loyalty?: TillLoyalty
+  /** promotions running on this till (kept for offline) */
+  promotions?: TillPromo[]
   loadedAt: string
 }
 /** Loads the till from the server when online and keeps a copy on the device; falls back to the copy offline */
@@ -115,13 +118,14 @@ export function useTill(registerId: string | undefined) {
     if (cached) setState({ data: cached, offline: !navigator.onLine, loading: false, error: null })
     try {
       const reg = unwrap(await supabase.from('pos_registers').select('id, code, name, company_id, receipt_header, receipt_footer, default_customer_id, location_id, warehouse_id').eq('id', registerId).single())
-      const [ses, cat, cus, co, loy, lim] = await Promise.all([
+      const [ses, cat, cus, co, loy, lim, promo] = await Promise.all([
         supabase.from('pos_sessions').select('id, number, opened_at, opening_cash').eq('register_id', registerId).eq('status', 'open').maybeSingle(),
         supabase.rpc('pos_catalog', { p_register: registerId }),
         supabase.from('business_partners').select('id, name, code, tax_number, kind').eq('company_id', reg.company_id).eq('is_customer', true).is('deleted_at', null).order('name').limit(2000),
         supabase.from('companies').select('name, legal_name, tax_number, base_currency, address_line1, city').eq('id', reg.company_id).single(),
         supabase.rpc('pos_loyalty_data', { p_register: registerId }),
         supabase.rpc('pos_cash_limits', { p_register: registerId }),
+        supabase.rpc('pos_promotions', { p_register: registerId }),
       ])
       if (cat.error) throw cat.error
       const data: TillData = {
@@ -131,6 +135,7 @@ export function useTill(registerId: string | undefined) {
         company: { name: co.data?.name ?? '', legal_name: co.data?.legal_name ?? null, tax_number: co.data?.tax_number ?? null, base_currency: co.data?.base_currency ?? 'ALL', address: [co.data?.address_line1, co.data?.city].filter(Boolean).join(', ') || null },
         loyalty: loy.error ? cached?.loyalty : (loy.data as unknown as TillLoyalty),
         cashLimits: lim.error ? cached?.cashLimits ?? null : (lim.data as unknown as TillData['cashLimits']),
+        promotions: promo.error ? cached?.promotions ?? [] : (promo.data as unknown as TillPromo[]),
         loadedAt: new Date().toISOString(),
       }
       await kvSet(key, data).catch(() => undefined)

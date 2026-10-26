@@ -424,4 +424,7 @@ export const serverTemplates: [string, string][] = [
   ["Only % is left to pay on this bill", "Te kjo faturë kanë mbetur për t’u paguar vetëm {0}"],
   ["The year % is closed; reopen it to change the tax", "Viti {0} është i mbyllur; rihapeni për të ndryshuar tatimin"],
   ["You do not work in the warehouse %", "Nuk punoni në magazinën {0}"],
+  ["Line %: the promotion gives % %%, not %", "Rreshti {0}: promocioni jep {1} %, jo {2}"],
+  ["Night work · % h", "Punë nate · {0} orë"],
+  ["Holiday work · % h", "Punë në festë/pushim · {0} orë"],
 ]
