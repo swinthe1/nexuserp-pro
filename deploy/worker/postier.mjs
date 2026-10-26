@@ -232,6 +232,63 @@ const EXPENSE_PROMPT = 'This is a receipt or bill for a business expense of a co
   + 'it may be in Albanian, Serbian or English. Read it and call record_expense. Use numbers with a dot for decimals. Give the VAT per rate as printed '
   + '(Kosovo: 18% and 8%; Albania: 20%, 10%, 6%). Do not guess values that are not printed.'
 
+const Z_TOOL = {
+  name: 'record_z_report',
+  description: 'Record the daily Z report (fiscal closing report) of a fiscal cash register.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      z_number: { type: 'string', description: 'the number of the Z report (Z nr., Raporti Z nr.)' },
+      device: { type: 'string', description: 'the fiscal number or serial of the cash register, as printed' },
+      seller_tax_number: { type: 'string', description: 'NUI / NIPT of the business, as printed' },
+      date: { type: 'string', description: 'the day the report closes, YYYY-MM-DD' },
+      total: { type: 'number', description: 'total sales of the day, with VAT' },
+      receipts: { type: 'number', description: 'number of receipts (kuponë), if printed' },
+      vat: { type: 'array', description: 'one entry per VAT rate or group printed (A, B, C… with their percent)', items: { type: 'object', properties: {
+        rate: { type: 'number' }, net: { type: 'number', description: 'amount without VAT' }, vat: { type: 'number' }, gross: { type: 'number', description: 'amount with VAT' } }, required: ['rate'] } },
+      cash: { type: 'number', description: 'paid in cash (para në dorë, cash), if printed' },
+      card: { type: 'number', description: 'paid by card (kartelë), if printed' },
+      other: { type: 'number', description: 'paid any other way (cheque, voucher, credit), if printed' },
+      refunds: { type: 'number', description: 'refunds or cancelled receipts, if printed' },
+    },
+    required: ['z_number', 'total'],
+  },
+}
+const Z_PROMPT = 'This is the daily Z report of a fiscal cash register in Kosovo or Albania (Albanian, Serbian or English). Read it and call record_z_report. '
+  + 'Give the sales per VAT rate as printed (Kosovo: 18%, 8%, 0%; Albania: 20%, 10%, 6%, 0%); the groups are often labelled A, B, C with their percent. '
+  + 'Use numbers with a dot for decimals. Do not guess values that are not printed.'
+
+const ASSET_TOOL = {
+  name: 'record_asset_invoice',
+  description: 'Record a supplier invoice for a fixed asset (a vehicle, a machine, computers, furniture, a building or works on it).',
+  input_schema: {
+    type: 'object',
+    properties: {
+      vendor_name: { type: 'string', description: 'the seller as printed' },
+      vendor_tax_number: { type: 'string', description: 'NUI / NIPT / fiscal number of the seller' },
+      number: { type: 'string', description: 'invoice number' },
+      date: { type: 'string', description: 'YYYY-MM-DD' },
+      due_date: { type: 'string', description: 'YYYY-MM-DD, only when printed' },
+      total: { type: 'number', description: 'the total to pay, with VAT' },
+      vat: { type: 'array', description: 'one entry per VAT rate printed', items: { type: 'object', properties: {
+        rate: { type: 'number' }, net: { type: 'number', description: 'amount without VAT' }, vat: { type: 'number' }, gross: { type: 'number' } }, required: ['rate'] } },
+      currency: { type: 'string' },
+      asset_name: { type: 'string', description: 'a short name for the asset, in the language of the invoice (e.g. "Kombi Ford Transit 2022", "Laptop Dell Latitude 5540")' },
+      asset_type: { type: 'string', enum: ['vehicle', 'machine', 'it', 'furniture', 'building', 'other'] },
+      serial_number: { type: 'string', description: 'serial number, chassis (VIN) or registration plate, if printed' },
+    },
+    required: ['vendor_name', 'total', 'asset_name'],
+  },
+}
+const ASSET_PROMPT = 'This is a supplier invoice for a fixed asset bought by a company in Kosovo or Albania (Albanian, Serbian or English). '
+  + 'Read it and call record_asset_invoice. Give the VAT per rate as printed. Use numbers with a dot for decimals. Do not guess values that are not printed.'
+
+const READERS = {
+  expense: { tool: EXPENSE_TOOL, prompt: EXPENSE_PROMPT, tokens: 2048 },
+  z_report: { tool: Z_TOOL, prompt: Z_PROMPT, tokens: 2048 },
+  asset: { tool: ASSET_TOOL, prompt: ASSET_PROMPT, tokens: 2048 },
+}
+
 async function readInvoice(doc) {
   if (!waConfig) waConfig = await rpc('postier_config')
   const key = waConfig?.anthropic_api_key || process.env.ANTHROPIC_API_KEY
@@ -242,11 +299,8 @@ async function readInvoice(doc) {
   const r = await fetch(`${process.env.ANTHROPIC_API || 'https://api.anthropic.com'}/v1/messages`, {
     method: 'POST',
     headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify(doc.kind === 'expense'
-      ? { model: waConfig?.ai_model || 'claude-sonnet-5-5', max_tokens: 2048, tools: [EXPENSE_TOOL], tool_choice: { type: 'tool', name: 'record_expense' },
-          messages: [{ role: 'user', content: [block, { type: 'text', text: EXPENSE_PROMPT }] }] }
-      : { model: waConfig?.ai_model || 'claude-sonnet-5-5', max_tokens: 4096, tools: [INVOICE_TOOL], tool_choice: { type: 'tool', name: 'record_invoice' },
-          messages: [{ role: 'user', content: [block, { type: 'text', text: PROMPT }] }] }),
+    body: JSON.stringify(((rd) => ({ model: waConfig?.ai_model || 'claude-sonnet-5-5', max_tokens: rd.tokens, tools: [rd.tool], tool_choice: { type: 'tool', name: rd.tool.name },
+      messages: [{ role: 'user', content: [block, { type: 'text', text: rd.prompt }] }] }))(READERS[doc.kind] || { tool: INVOICE_TOOL, prompt: PROMPT, tokens: 4096 })),
   })
   const j = await r.json().catch(() => ({}))
   if (!r.ok) throw new Error(j?.error?.message || `AI ${r.status}`)
@@ -264,13 +318,13 @@ async function readerRound() {
     try {
       if (MODE === 'local') {
         if (!LICENCE || !SERVER_ID) throw new Error('This server has no licence yet')
-        const relay = await rpc('licence_read_submit', { p_code: LICENCE, p_server: SERVER_ID, p_file: doc.file, p_mime: doc.mime, p_name: doc.name, ...(doc.kind === 'expense' ? { p_kind: 'expense' } : {}) }, LICENCE_SERVER, CLOUD_ANON_KEY)
+        const relay = await rpc('licence_read_submit', { p_code: LICENCE, p_server: SERVER_ID, p_file: doc.file, p_mime: doc.mime, p_name: doc.name, ...(READERS[doc.kind] ? { p_kind: doc.kind } : {}) }, LICENCE_SERVER, CLOUD_ANON_KEY)
         await rpc('reader_done', { p_id: doc.id, p_ok: true, p_relay_id: relay })
         log('invoice handed to the cloud', doc.name ?? '')
       } else {
         const { result, usage } = await readInvoice(doc)
         await rpc('reader_done', { p_id: doc.id, p_ok: true, p_result: result, p_input_tokens: usage.input_tokens ?? null, p_output_tokens: usage.output_tokens ?? null })
-        log(doc.kind === 'expense' ? 'expense read' : 'invoice read', doc.name ?? '', result?.vendor_name ?? '', (result?.lines || []).length, 'lines')
+        log(`${doc.kind || 'invoice'} read`, doc.name ?? '', result?.vendor_name ?? result?.z_number ?? '', (result?.lines || []).length, 'lines')
       }
     } catch (e) {
       log('invoice not read', doc.name ?? '', String(e.message || e))

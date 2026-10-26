@@ -9,6 +9,7 @@ const FiscalMonitorPage = lazyPage(() => import('./pages/fiscal-page'), 'FiscalM
 const TaxCodesPage = lazyPage(() => import('./pages/tax-codes-page'), 'TaxCodesPage')
 const WithholdingPage = lazyPage(() => import('./pages/withholding-page'), 'WithholdingPage')
 const IncomeTaxPage = lazyPage(() => import('./pages/income-tax-page'), 'IncomeTaxPage')
+const SmallBusinessPage = lazyPage(() => import('./pages/small-business-page'), 'SmallBusinessPage')
 
 export const taxRoutes: RouteObject[] = [
   {
@@ -23,6 +24,7 @@ export const taxRoutes: RouteObject[] = [
       { path: 'codes', element: <TaxCodesPage /> },
       { path: 'withholding', element: <WithholdingPage /> },
       { path: 'income-tax', element: <IncomeTaxPage /> },
+      { path: 'small-business', element: <SmallBusinessPage /> },
     ],
   },
 ]

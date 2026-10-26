@@ -102,6 +102,8 @@ const CardDetailPage = lazy(() => import('@/features/appointments/cards-page'), 
 const MembershipsPage = lazy(() => import('@/features/appointments/memberships-page'), 'MembershipsPage')
 const AccountantPage = lazy(() => import('@/features/accountant/accountant-page'), 'AccountantPage')
 const ExpensesPage = lazy(() => import('@/features/finance/pages/expenses-page'), 'ExpensesPage')
+const AssetInvoicesPage = lazy(() => import('@/features/finance/pages/expenses-page'), 'AssetInvoicesPage')
+const ZReportsPage = lazy(() => import('@/features/finance/pages/zreports-page'), 'ZReportsPage')
 const YearEndPage = lazy(() => import('@/features/finance/pages/year-end-page'), 'YearEndPage')
 const ItemCardPage = lazy(() => import('@/features/inventory/pages/item-card-page'), 'ItemCardPage')
 const LabelsPage = lazy(() => import('@/features/inventory/pages/labels-page'), 'LabelsPage')
@@ -269,6 +271,8 @@ const router = createBrowserRouter([
         { path: ':id', element: <PaymentPage key="pay" /> },
       ] },
       { path: 'finance/expenses', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <ExpensesPage /> }] },
+      { path: 'finance/z-reports', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <ZReportsPage /> }] },
+      { path: 'finance/asset-invoices', element: <RequirePerm perm="finance.read" />, children: [{ index: true, element: <AssetInvoicesPage /> }] },
       { path: 'finance/cards', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <CardsPage /> }] },
       { path: 'finance/compensations', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <CompensationsPage /> }] },
       { path: 'finance/receivables', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <AgingPage key="ar" kind="ar" /> }] },

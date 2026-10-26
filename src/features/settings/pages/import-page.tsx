@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
@@ -12,7 +13,8 @@ const BASIC: ImportKind[] = ['products', 'partners', 'employees', 'opening_stock
 export function ImportPage() {
   const { can } = useCompany()
   const kinds = KINDS.filter((k) => (BASIC as string[]).includes(k.key) && can(k.perm))
-  const [kindKey, setKindKey] = React.useState<string | null>(null)
+  const [params] = useSearchParams()
+  const [kindKey, setKindKey] = React.useState<string | null>(params.get('kind'))
   const kind = kinds.find((k) => k.key === kindKey) ?? null
   if (!kinds.length) return <EmptyState title={t('Nothing you can import')} description={t('Importing needs the right to change products, customers and vendors, employees or stock.')} />
   return (

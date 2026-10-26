@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { Pencil, Plus, Settings2 } from 'lucide-react'
+import { Pencil, Plus, Settings2, Upload } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -56,7 +56,7 @@ export function EmployeesPage() {
       <PageHeader title={t('Employees')} description={t('Everyone who works here, with their department, manager and contract.')}
         actions={<>
           <Button variant="outline" asChild><Link to="/hr/setup"><Settings2 /> {t('HR setup')}</Link></Button>
-          <Can perm="hr.write"><Button asChild><Link to="/hr/employees/new"><Plus /> {t('New employee')}</Link></Button></Can>
+          <Can perm="hr.write"><Button variant="outline" asChild><Link to="/settings/import?kind=employees"><Upload /> {t('Import')}</Link></Button><Button asChild><Link to="/hr/employees/new"><Plus /> {t('New employee')}</Link></Button></Can>
         </>} />
       <DataTable tableKey="hr.employees" columns={cols} data={emps.data} isLoading={emps.isLoading} error={emps.error} getRowId={(r) => r.id} exportName="employees"
         searchPlaceholder={t('Name, number, email…')} onRowClick={(r) => navigate(`/hr/employees/${r.id}`)} initialHidden={['email', 'phone', 'personal_number']}

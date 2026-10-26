@@ -1,5 +1,5 @@
 import {
-  Bell, CalendarDays, CalendarClock, ClipboardPen, Contact, FileBarChart, FileSpreadsheet, Fingerprint, Globe, History, Import, KeyRound, Archive, ListOrdered,
+  Bell, Printer, CalendarDays, CalendarClock, ClipboardPen, Contact, FileBarChart, FileSpreadsheet, Fingerprint, Globe, History, Import, KeyRound, Archive, ListOrdered,
   MapPinned, PackageCheck as PackageDone, Route, ShieldCheck, UserRound, UsersRound, Workflow, Zap,
   BadgePercent, ClipboardCheck, Hourglass, PackageOpen, ScanLine, ShoppingBasket,
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, BookOpenText, Building, HandCoins, ListTree, Network, Settings2, Wallet, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, Gauge,
@@ -140,6 +140,9 @@ export const NAV: NavSection[] = [
       { label: msg('Sales book'), href: '/tax/books', icon: FileSpreadsheet, perm: 'tax.read', keywords: ['libri i shitjes', 'libri i shitjeve', 'sales book', 'vat book', 'tvsh'] },
       { label: msg('Purchase book'), href: '/tax/books?book=purchase', icon: FileSpreadsheet, perm: 'tax.read', keywords: ['libri i blerjes', 'libri i blerjeve', 'purchase book', 'vat book', 'tvsh'] },
       { label: msg('VAT declarations'), href: '/tax/declarations', icon: ClipboardPen, perm: 'tax.read', keywords: ['vat return', 'deklarata', 'tvsh', 'dpt', 'atk'] },
+      { label: msg('Small business tax'), href: '/tax/small-business', icon: BadgePercent, perm: 'tax.read', keywords: ['biznes i vogël', 'biznes i vogel', '3%', '9%', 'tremujor', 'qarkullim', 'small business', 'turnover tax'] },
+      { label: msg('Z reports'), href: '/finance/z-reports', icon: Printer, perm: 'invoicing.read', keywords: ['z raport', 'z-raporti', 'raporti z', 'arka fiskale', 'kasa', 'fiscal register', 'z report'] },
+      { label: msg('Assets from invoices'), href: '/finance/asset-invoices', icon: Building, perm: 'finance.read', keywords: ['mjete themelore', 'faturë', 'foto', 'investim', 'veturë', 'kompjuter', 'asset invoice'] },
       { label: msg('Financial statements'), href: '/finance/reports', icon: BarChart3, perm: 'finance.read', keywords: ['p&l', 'profit and loss', 'balance sheet', 'cash flow', 'trial balance', 'bilanc', 'comparison'] },
       { label: msg('Journal entries'), href: '/finance/journal', icon: BookOpenText, perm: 'finance.read', keywords: ['gl', 'general ledger', 'manual entry', 'ditar'] },
       { label: msg('Chart of accounts'), href: '/finance/accounts', icon: ListTree, perm: 'finance.read', keywords: ['coa', 'ledger', 'plan kontabel', 'accounts'] },

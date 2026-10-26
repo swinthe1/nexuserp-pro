@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Eye, EyeOff } from 'lucide-react'
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
@@ -28,9 +29,9 @@ function authError(e: unknown): string {
 
 function Heading({ title, sub }: { title: string; sub: React.ReactNode }) {
   return (
-    <div className="mb-6">
-      <h1 className="text-xl font-semibold tracking-[-0.01em]">{title}</h1>
-      <p className="mt-1 text-sm text-muted-foreground">{sub}</p>
+    <div className="mb-7">
+      <h2 className="text-2xl font-semibold tracking-[-0.02em]">{title}</h2>
+      <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{sub}</p>
     </div>
   )
 }
@@ -53,6 +54,7 @@ function EmailLogin() {
   const navigate = useNavigate()
   const from = (useLocation().state as { from?: string } | null)?.from ?? '/'
   const form = useForm<z.infer<typeof loginSchema>>({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '' } })
+  const [show, setShow] = React.useState(false)
 
   const onSubmit = form.handleSubmit(async (v) => {
     try {
@@ -65,23 +67,29 @@ function EmailLogin() {
 
   return (
     <>
-      <Heading title={t('Sign in')} sub={t('Accounts are made by the DrisPRO administrator. Ask your company\'s administrator if you do not have one.')} />
+      <Heading title={t('Welcome back')} sub={t('Sign in with your work email. Accounts are made by the administrator of your company.')} />
       <Form {...form}>
         <form onSubmit={onSubmit} className="grid gap-4" noValidate>
           <FormField control={form.control} name="email" render={({ field }) => (
-            <FormItem><FormLabel>{t('Work email')}</FormLabel><FormControl><Input type="email" autoComplete="email" autoFocus {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>{t('Work email')}</FormLabel><FormControl><Input type="email" autoComplete="email" inputMode="email" autoFocus className="h-11" placeholder={t('name@company.com')} {...field} /></FormControl><FormMessage /></FormItem>
           )} />
           <FormField control={form.control} name="password" render={({ field }) => (
             <FormItem>
               <div className="flex items-center justify-between">
                 <FormLabel>{t('Password')}</FormLabel>
-                <Link to="/forgot-password" className="text-xs text-muted-foreground hover:text-foreground">{t('Forgot password?')}</Link>
+                <Link to="/forgot-password" className="text-xs font-medium text-primary hover:underline">{t('Forgot password?')}</Link>
               </div>
-              <FormControl><Input type="password" autoComplete="current-password" {...field} /></FormControl>
+              <div className="relative">
+                <FormControl><Input type={show ? 'text' : 'password'} autoComplete="current-password" className="h-11 pr-11" {...field} /></FormControl>
+                <button type="button" onClick={() => setShow((v) => !v)} aria-label={show ? t('Hide password') : t('Show password')} aria-pressed={show}
+                  className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-r-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
               <FormMessage />
             </FormItem>
           )} />
-          <Button type="submit" loading={form.formState.isSubmitting} className="mt-1">{t('Sign in')}</Button>
+          <Button type="submit" size="lg" loading={form.formState.isSubmitting} className="mt-2 h-11 w-full text-[15px]">{t('Sign in')}</Button>
         </form>
       </Form>
     </>
@@ -106,9 +114,9 @@ export function ForgotPasswordPage() {
       <Form {...form}>
         <form onSubmit={onSubmit} className="grid gap-4" noValidate>
           <FormField control={form.control} name="email" render={({ field }) => (
-            <FormItem><FormLabel>{t('Work email')}</FormLabel><FormControl><Input type="email" autoFocus {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>{t('Work email')}</FormLabel><FormControl><Input type="email" autoFocus className="h-11" {...field} /></FormControl><FormMessage /></FormItem>
           )} />
-          <Button type="submit" loading={form.formState.isSubmitting}>{t('Send reset link')}</Button>
+          <Button type="submit" size="lg" className="h-11 w-full" loading={form.formState.isSubmitting}>{t('Send reset link')}</Button>
         </form>
       </Form>
     </>
@@ -130,9 +138,9 @@ export function ResetPasswordPage() {
       <Form {...form}>
         <form onSubmit={onSubmit} className="grid gap-4" noValidate>
           <FormField control={form.control} name="password" render={({ field }) => (
-            <FormItem><FormLabel>{t('New password')}</FormLabel><FormControl><Input type="password" autoComplete="new-password" autoFocus {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>{t('New password')}</FormLabel><FormControl><Input type="password" autoComplete="new-password" autoFocus className="h-11" {...field} /></FormControl><FormMessage /></FormItem>
           )} />
-          <Button type="submit" loading={form.formState.isSubmitting}>{t('Update password')}</Button>
+          <Button type="submit" size="lg" className="h-11 w-full" loading={form.formState.isSubmitting}>{t('Update password')}</Button>
         </form>
       </Form>
     </>

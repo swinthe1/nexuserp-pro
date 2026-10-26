@@ -2,7 +2,7 @@ import { PartnerCards } from '@/features/finance/pages/cards-page'
 import { PortalLinks } from '@/features/portal/portal-links'
 import { zodResolver } from '@hookform/resolvers/zod'
 import type { ColumnDef } from '@tanstack/react-table'
-import { FileText, Pencil, Plus, ShoppingCart, Star, Trash2 } from 'lucide-react'
+import { FileText, Pencil, Plus, ShoppingCart, Star, Trash2, Upload } from 'lucide-react'
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -68,7 +68,7 @@ export function PartnersPage() {
     { accessorKey: 'credit_limit', header: ({ column }) => <ColumnHeader column={column} title={t('Credit limit')} />, meta: { label: t('Credit limit'), align: 'right' }, cell: ({ getValue }) => getValue() == null ? '—' : <span className="tabular">{formatMoney(getValue() as number)}</span> },
   ], [])
   const lists = [...new Set((partners.data ?? []).map((p) => (p.price_list as { name: string } | null)?.name).filter(Boolean).map((n) => td(n)))] as string[]
-  const newButton = <Can perm="partners.write"><Button asChild><Link to={role === 'vendor' ? '/partners/new?vendor=1' : '/partners/new'}><Plus /> {role === 'vendor' ? t('New vendor') : t('New customer')}</Link></Button></Can>
+  const newButton = <Can perm="partners.write"><Button variant="outline" asChild><Link to="/settings/import?kind=partners"><Upload /> {t('Import')}</Link></Button><Button asChild><Link to={role === 'vendor' ? '/partners/new?vendor=1' : '/partners/new'}><Plus /> {role === 'vendor' ? t('New vendor') : t('New customer')}</Link></Button></Can>
   return (
     <>
       <PageHeader title={role === 'vendor' ? t('Vendors') : role === 'customer' ? t('Customers') : t('Customers and vendors')}

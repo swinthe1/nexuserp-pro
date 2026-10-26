@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { Ban, CheckCircle2, Plus, Trash2 } from 'lucide-react'
+import { Ban, CheckCircle2, Plus, Trash2, Upload } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Can, useCompany } from '@/app/company-provider'
@@ -116,7 +116,7 @@ export function ProductsPage() {
       <PageHeader
         title={t('Products')}
         description={t('Every sellable and stocked item, one row per variant (SKU). Average cost updates automatically on every receipt.')}
-        actions={<Can perm="inventory.write"><Button asChild><Link to="/inventory/products/new"><Plus /> {t('New product')}</Link></Button></Can>}
+        actions={<Can perm="inventory.write"><Button variant="outline" asChild><Link to="/settings/import?kind=products"><Upload /> {t('Import')}</Link></Button><Button asChild><Link to="/inventory/products/new"><Plus /> {t('New product')}</Link></Button></Can>}
       />
       <DataTable
         tableKey="inventory.products"

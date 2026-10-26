@@ -111,6 +111,23 @@ function profitAndLoss(accounts: BalanceRow[], cols: Bal[]) {
     { kind: 'section', label: msg('Other income and expenses'), values: [] }, ...oi.rows, ...oe.rows.map((r) => ({ ...r, values: neg(r.values) })),
     { kind: 'subtotal', label: msg('Net other income'), values: add(oi.totals, neg(oe.totals)) })
   rows.push({ kind: 'total', label: msg('Net profit'), values: net })
+  // the usual profit measures, from the same accounts: tax (69), interest (661 / 761), depreciation
+  const sumOf = (pick: (a: BalanceRow) => boolean, val: (b?: BalanceRow) => number) => cols.map((c) => accounts.filter((a) => a.is_postable && pick(a)).reduce((s, a) => s + val(c.get(a.account_id)), 0))
+  const isInterest = (a: BalanceRow) => /interest|interes|kamat/i.test(a.name)
+  const tax = sumOf((a) => a.account_type === 'expense' && a.code.startsWith('69'), mvt)
+  const interest = add(sumOf((a) => a.account_type === 'expense' && (a.code.startsWith('661') || isInterest(a)), mvt),
+    neg(sumOf((a) => a.account_type === 'revenue' && (a.code.startsWith('761') || isInterest(a)), (b) => -mvt(b))))
+  const dep = sumOf((a) => a.account_type === 'expense' && (a.account_subtype === 'depreciation' || a.code.startsWith('68')), mvt)
+  const ebt = add(net, tax)
+  const ebit = add(ebt, interest)
+  const ebitda = add(ebit, dep)
+  rows.push(
+    { kind: 'section', label: msg('Profit measures'), values: [] },
+    { kind: 'account', label: msg('EBITDA: profit before interest, tax, depreciation and amortisation'), values: ebitda, depth: 1 },
+    { kind: 'account', label: msg('EBIT: profit before interest and tax'), values: ebit, depth: 1 },
+    { kind: 'account', label: msg('EBT: profit before tax'), values: ebt, depth: 1 },
+    { kind: 'account', label: msg('EAT: profit after tax'), values: net, depth: 1 },
+  )
   return { rows, revenue: rev.totals, gross, net }
 }
 

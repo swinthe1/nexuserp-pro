@@ -2010,6 +2010,7 @@ export type Database = {
           payroll_night_pct: number | null
           payroll_holiday_pct: number | null
           depreciation_auto: boolean
+          small_business_rate: number | null
         }
         Insert: {
           id?: string
@@ -2069,6 +2070,7 @@ export type Database = {
           payroll_night_pct?: number | null
           payroll_holiday_pct?: number | null
           depreciation_auto?: boolean
+          small_business_rate?: number | null
         }
         Update: {
           id?: string
@@ -2128,6 +2130,7 @@ export type Database = {
           payroll_night_pct?: number | null
           payroll_holiday_pct?: number | null
           depreciation_auto?: boolean
+          small_business_rate?: number | null
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -13641,6 +13644,13 @@ export type Database = {
         }
         Returns: Json
       }
+      asset_book: {
+        Args: {
+          p_read: string
+          p: Json
+        }
+        Returns: Json
+      }
       assign_to_route: {
         Args: {
           p_route: string
@@ -14370,8 +14380,9 @@ export type Database = {
       expense_reads: {
         Args: {
           p_company: string
+          p_kind?: string
         }
-        Returns: { id: string | null; file_name: string | null; status: string | null; error: string | null; vendor: string | null; number: string | null; date: string | null; total: number | null; category: string | null; bill_id: string | null; bill_number: string | null; created_at: string | null }[]
+        Returns: { id: string | null; file_name: string | null; status: string | null; error: string | null; vendor: string | null; number: string | null; date: string | null; total: number | null; category: string | null; bill_id: string | null; bill_number: string | null; created_at: string | null; asset_id: string | null }[]
       }
       finance_overview: {
         Args: {
@@ -16137,6 +16148,12 @@ export type Database = {
         }
         Returns: Json
       }
+      seed_expense_items: {
+        Args: {
+          p_company: string
+        }
+        Returns: number
+      }
       set_depreciation_auto: {
         Args: {
           p_company: string
@@ -16173,6 +16190,13 @@ export type Database = {
           p_hour?: number
         }
         Returns: Json
+      }
+      set_small_business_rate: {
+        Args: {
+          p_company: string
+          p_rate: number
+        }
+        Returns: undefined
       }
       set_training_mode: {
         Args: {
@@ -16233,6 +16257,13 @@ export type Database = {
           p_tracking: string
         }
         Returns: string
+      }
+      small_business_tax: {
+        Args: {
+          p_company: string
+          p_year: number
+        }
+        Returns: Json
       }
       start_route: {
         Args: {
@@ -16512,6 +16543,25 @@ export type Database = {
           p_reason: string
         }
         Returns: undefined
+      }
+      zreport_book: {
+        Args: {
+          p_read: string
+          p: Json
+        }
+        Returns: Json
+      }
+      zreport_read_get: {
+        Args: {
+          p_id: string
+        }
+        Returns: Json
+      }
+      zreport_reads: {
+        Args: {
+          p_company: string
+        }
+        Returns: { id: string | null; file_name: string | null; status: string | null; error: string | null; z_number: string | null; device: string | null; date: string | null; total: number | null; invoice_id: string | null; invoice_number: string | null; created_at: string | null }[]
       }
     }
     Enums: Record<string, never>

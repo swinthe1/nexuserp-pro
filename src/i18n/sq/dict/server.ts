@@ -687,4 +687,7 @@ export default {
   "No supplier": "Pa furnitor",
   "Cost settled when the goods arrived": "Kosto e rregulluar kur erdhi malli",
   "Depreciation could not be recorded": "Amortizimi nuk u regjistrua dot",
+  "Choose the kind of asset": "Zgjidhni llojin e mjetit",
+  "Give the asset a name": "Jepini mjetit një emër",
+  "Give the number of the Z report": "Shkruani numrin e Z-raportit",
 } satisfies Dict
