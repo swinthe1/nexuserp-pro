@@ -82,20 +82,35 @@ SQL
 fi
 
 # the postier: sends email and WhatsApp and runs the timed work (Node from the storage image)
-if [ -n "${jwt:-}" ]; then
+# Its key must be the service key the API gateway (Kong) knows, exactly: a key signed here is refused (401).
+svc=""
+for c in $(docker ps --format '{{.Names}}' | grep -E '^supabase-(kong|studio|rest|storage)' || true); do
+  for v in SUPABASE_SERVICE_KEY SERVICE_ROLE_KEY SERVICE_KEY; do
+    svc="$(docker exec "$c" printenv "$v" 2>/dev/null || true)"; [ -n "$svc" ] && break 2
+  done
+done
+if [ -z "$svc" ] && [ -n "${jwt:-}" ]; then
+  b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
+  h="$(printf '{"alg":"HS256","typ":"JWT"}' | b64url)"
+  p="$(printf '{"role":"service_role","iss":"supabase","iat":%s,"exp":%s}' "$(date +%s)" "$(( $(date +%s) + 10*365*24*3600 ))" | b64url)"
+  svc="$h.$p.$(printf '%s.%s' "$h" "$p" | openssl dgst -sha256 -hmac "$jwt" -binary | b64url)"
+fi
+if [ -n "$svc" ]; then
   store="$(docker ps --format '{{.Names}}' | grep -E '^supabase-storage' | head -1 || true)"
   img="$([ -n "$store" ] && docker inspect -f '{{.Config.Image}}' "$store" 2>/dev/null || true)"
   if [ -n "$img" ]; then
-    b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
-    h="$(printf '{"alg":"HS256","typ":"JWT"}' | b64url)"
-    p="$(printf '{"role":"service_role","iss":"supabase","iat":%s,"exp":%s}' "$(date +%s)" "$(( $(date +%s) + 10*365*24*3600 ))" | b64url)"
-    key="$h.$p.$(printf '%s.%s' "$h" "$p" | openssl dgst -sha256 -hmac "$jwt" -binary | b64url)"
-    mkdir -p /root/drispro-postier && cp deploy/worker/*.mjs /root/drispro-postier/
+    mkdir -p /root/drispro-postier && rm -f /root/drispro-postier/*.mjs && cp deploy/worker/*.mjs /root/drispro-postier/
     docker rm -f drispro-postier >/dev/null 2>&1 || true
     docker run -d --name drispro-postier --restart unless-stopped -v /root/drispro-postier:/worker:ro \
-      -e API_URL="${DRISPRO_API:-https://api.erp.dris-ks.com}" -e SERVICE_KEY="$key" -e MODE=cloud \
-      --entrypoint node "$img" /worker/postier.mjs >/dev/null && echo "    postier (email, WhatsApp, timed work): running"
+      -e API_URL="${DRISPRO_API:-https://api.erp.dris-ks.com}" -e SERVICE_KEY="$svc" -e MODE=cloud \
+      --entrypoint node "$img" /worker/postier.mjs >/dev/null && echo "    postier (email, WhatsApp, phone notifications, webhooks, AI): running"
+    sleep 8
+    if docker logs --tail 20 drispro-postier 2>&1 | grep -q ' 401 '; then
+      echo "!!  the postier is refused by the API (401): send a screenshot of: docker logs --tail 20 drispro-postier" >&2
+    fi
   fi
+else
+  echo "!!  the service key was not found: the postier was not started" >&2
 fi
 
 echo "==> 3/3 Redeploy in Coolify"
