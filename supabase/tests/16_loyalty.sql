@@ -86,7 +86,7 @@ select public.loyalty_quote(:'reg', :'snum', jsonb_build_array(jsonb_build_objec
 select t.ok((:'q3'::jsonb ->> 'month_left')::numeric = 2 and (:'q3'::jsonb -> 'lines' -> 0 ->> 'pct')::numeric < 1, 'the staff card stops at its monthly limit');
 select t.throws(format($q$select public.pos_submit_order('{"client_uuid":"%s","session_id":"%s","loyalty":{"card_id":"%s"},"lines":[{"variant_id":"%s","quantity":2,"unit_price":120,"discount_pct":20,"manual_pct":0}],"payments":[{"method":"cash","amount":192}]}')$q$,
   gen_random_uuid(), :'ses', :'sid', :'tea'), 'the card gives', 'over the limit is refused online');
-select public.pos_submit_order(jsonb_build_object('client_uuid', gen_random_uuid(), 'session_id', :'ses', 'offline', true, 'loyalty', jsonb_build_object('card_id', :'sid'),
+select public.pos_submit_order(jsonb_build_object('client_uuid', gen_random_uuid(), 'session_id', :'ses', 'offline', true, 'order_at', (now() - interval '1 hour')::text, 'loyalty', jsonb_build_object('card_id', :'sid'),
   'lines', jsonb_build_array(jsonb_build_object('variant_id', :'tea', 'quantity', 1, 'unit_price', 120, 'discount_pct', 20, 'manual_pct', 0)),
   'payments', jsonb_build_array(jsonb_build_object('method', 'cash', 'amount', 96)))) as s6 \gset
 select t.ok((:'s6'::jsonb ->> 'total')::numeric = 96, 'a sale made offline keeps the card discount it was sold with');

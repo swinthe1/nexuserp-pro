@@ -210,7 +210,10 @@ select public.create_vendor_credit(:'b1') as vc \gset
 select t.ok((select (number like 'VCN-2026-%', document_type, original_bill_id, vendor_invoice_number) = (true, 'vendor_credit', :'b1'::uuid, 'CR-F-778')
                from public.vendor_bills where id = :'vc'), 'credit note in its own series');
 select public.post_vendor_bill(:'vc');
-select t.ok((select qty_billed from public.purchase_order_lines where purchase_order_id = :'po1' and variant_id = :'cof') = 0, 'credit reverses the billed quantity');
+select t.ok((select qty_billed from public.purchase_order_lines where purchase_order_id = :'po1' and variant_id = :'cof') > 0,
+  'a credit is money back, not goods back: the order is not opened for billing again');
+select t.ok((select amount_due from public.vendor_bills where id = :'b1') = 0 and (select payment_status from public.vendor_bills where id = :'vc') = 'paid',
+  'the credit settles the bill it corrects');
 select public.create_vendor_credit(:'b1') as vc2 \gset
 select t.throws(format($q$select public.post_vendor_bill(%L)$q$, :'vc2'), 'exceed the original bill', 'credits cannot exceed the bill');
 
@@ -243,7 +246,7 @@ select t.login('alice@alba.al');
 select public.procurement_overview(:'co', date_trunc('month', current_date)::date, current_date) as ov \gset
 select t.ok((:'ov'::jsonb ->> 'spend')::numeric = 165000, 'spend = bills net of credits (21,840 + 2,000 + 120,000 + 40,000 + 5,000 − 23,840)');
 select t.ok((:'ov'::jsonb ->> 'bill_count')::int = 3, 'bill count excludes credit notes');
-select t.ok((:'ov'::jsonb ->> 'to_bill_value')::numeric = 23600, 'received but not billed: PO1 again after its credit note');
+select t.ok((:'ov'::jsonb ->> 'to_bill_value')::numeric = 0, 'received but not billed: nothing (a credit note does not reopen PO1)');
 select t.ok(exists (select 1 from public.global_search(:'co', 'F-778') where kind = 'vendor_bill'), 'vendor bills found by the vendor invoice number');
 
 reset role;

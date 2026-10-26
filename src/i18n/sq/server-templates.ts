@@ -395,4 +395,10 @@ export const serverTemplates: [string, string][] = [
   ["Cash above the legal limit at the till: %", "Para në dorë mbi kufirin ligjor në arkë: {0}"],
   ["% · % in cash, the limit is %", "{0} · {1} me para në dorë, kufiri është {2}"],
   ["Make an account for %", "Krijo llogari për {0}"],
+  ["A % document cannot be deleted; cancel or reverse it with its own action", "Një dokument {0} nuk fshihet; anulojeni ose kthejeni me veprimin e vet"],
+  ["A % document cannot be changed any more; use its actions (credit note, reverse, cancel)", "Një dokument {0} nuk ndryshohet më; përdorni veprimet e tij (notë krediti, kthim, anulim)"],
+  ["No exchange rate for % on %; add it in Finance → Currencies first", "Nuk ka kurs këmbimi për {0} më {1}; shtojeni fillimisht te Financa → Monedhat"],
+  ["Line %: this item is not on receipt %", "Rreshti {0}: ky artikull nuk është në kuponin {1}"],
+  ["Line %: the price % is far under the till price %; a manager must sell it", "Rreshti {0}: çmimi {1} është shumë nën çmimin e arkës {2}; duhet ta shesë një menaxher"],
+  ["Sold under the till price: %", "U shit nën çmimin e arkës: {0}"],
 ]

@@ -208,7 +208,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
         actions.push(<Button key="del" variant="outline" loading={createDelivery.isPending} onClick={async () => { const d = await createDelivery.mutateAsync(doc.id); toast.success(t('Delivery created')); navigate(`/sales/deliveries/${d}`) }}><Truck /> {t('Create delivery')}</Button>)
       }
     }
-    if (['confirmed', 'partially_delivered', 'delivered'].includes(doc.status) && doc.invoice_status !== 'invoiced' && can('invoicing.write')) {
+    if (['confirmed', 'partially_delivered', 'delivered', 'closed'].includes(doc.status) && doc.invoice_status !== 'invoiced' && can('invoicing.write')) {
       actions.push(<Button key="inv" loading={createInvoice.isPending} onClick={async () => { const i = await createInvoice.mutateAsync(doc.id); toast.success(t('Draft invoice created')); navigate(`/sales/invoices/${i}`) }}><Receipt /> {t('Create invoice')}</Button>)
     }
     if (doc.status === 'partially_delivered') {

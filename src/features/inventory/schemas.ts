@@ -114,7 +114,7 @@ export const receiptSchema = z.object({
   })).min(1, msg('Add at least one line')),
 }).superRefine((r, ctx) => {
   r.lines.forEach((l, i) => {
-    if (!l.po_line_id && l.unit_price === null) ctx.addIssue({ code: 'custom', path: ['lines', i, 'unit_price'], message: msg('Enter the unit price') })
+    if (!l.po_line_id && l.unit_price === null && r.receipt_type !== 'customer_return') ctx.addIssue({ code: 'custom', path: ['lines', i, 'unit_price'], message: msg('Enter the unit price') })
   })
   if (r.is_import && !r.customs_declaration_number) {
     ctx.addIssue({ code: 'custom', path: ['customs_declaration_number'], message: msg('Enter the customs declaration number') })

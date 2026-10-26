@@ -647,4 +647,9 @@ export default {
   "Accounts are made by the platform administrator": "Llogaritë i krijon administratori i platformës",
   "Invitation not found": "Ftesa nuk u gjet",
   "This person already has an account": "Ky person e ka tashmë llogarinë",
+  "Accounting months are opened and closed in Finance setup": "Muajt kontabël hapen dhe mbyllen te Cilësimet e financës",
+  "Received and billed quantities are counted by receipts and bills": "Sasitë e pranuara dhe të faturuara i numërojnë pranimet dhe faturat",
+  "Only a sales manager changes the credit limit and the discount of a customer": "Kufirin e kreditit dhe zbritjen e klientit i ndryshon vetëm menaxheri i shitjes",
+  "Only the server runs this for every company": "Këtë për të gjitha kompanitë e bën vetëm serveri",
+  "SESSION_CLOSED: open the till first; paying needs an open shift": "Hapni fillimisht arkën; pagesa kërkon turn të hapur",
 } satisfies Dict

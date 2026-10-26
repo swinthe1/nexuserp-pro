@@ -103,7 +103,7 @@ export function AutomationPage() {
         </AutomationCard>
       )}
 
-      <MessagingSettings />
+      {can('admin.read') && <MessagingSettings />}
 
       {can('inventory.read') && (
         <AutomationCard icon={Coins} title={t('Replenishment')} aside={<Button variant="outline" size="sm" asChild><Link to="/procurement/replenishment">{t('Open')}</Link></Button>}>

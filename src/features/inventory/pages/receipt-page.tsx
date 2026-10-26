@@ -74,6 +74,7 @@ function ReceiptForm({ doc }: { doc?: ReceiptDoc }) {
     },
   })
   const lines = useFieldArray({ control: form.control, name: 'lines' })
+  const isReturn = form.watch('receipt_type') === 'customer_return'
   const [warehouseId, poId, currency, rate, isImport, watchedLines] = useWatch({
     control: form.control, name: ['warehouse_id', 'purchase_order_id', 'currency_code', 'exchange_rate', 'is_import', 'lines'],
   })
@@ -233,8 +234,10 @@ function ReceiptForm({ doc }: { doc?: ReceiptDoc }) {
                         <TableCell>
                           <FormField control={form.control} name={`lines.${i}.unit_price`} render={({ field }) => (
                             <FormItem><FormControl>
-                              <Input type="number" step="any" min="0" className="h-9 min-w-[88px] text-right" name={field.name} aria-label={t('Unit price, line {n}', { n: i + 1 })} value={field.value ?? ''} onChange={field.onChange} disabled={field.disabled}
-                                placeholder={pl ? formatMoney(num(pl.unit_price) * (1 - num(pl.discount_pct) / 100)) : '0.00'} />
+                              <Input type="number" step="any" min="0" className="h-9 min-w-[88px] text-right" name={field.name} aria-label={t('Unit price, line {n}', { n: i + 1 })}
+                                value={isReturn ? '' : field.value ?? ''} onChange={field.onChange} disabled={field.disabled || isReturn}
+                                title={isReturn ? t('A return comes back at the average cost') : undefined}
+                                placeholder={isReturn ? t('Average cost') : pl ? formatMoney(num(pl.unit_price) * (1 - num(pl.discount_pct) / 100)) : '0.00'} />
                             </FormControl><FormMessage /></FormItem>
                           )} />
                         </TableCell>

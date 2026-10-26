@@ -262,7 +262,7 @@ select t.ok((:'got'::jsonb ->> 'status') = 'done' and (:'got'::jsonb -> 'result'
 select public.doc_read_to_receipt(:'rd', jsonb_build_object('vendor_id', :'avend', 'warehouse_id', :'awh', 'number', 'F-77', 'lines',
   jsonb_build_array(jsonb_build_object('variant_id', :'avar', 'quantity', 24, 'unit_cost', 0.41, 'code', 'KK-05', 'name', 'Coca-Cola 0,5L')))) as rrec \gset
 select t.ok((select status = 'draft' and vendor_delivery_note = 'F-77' from public.goods_receipts where id = :'rrec')
-            and (select quantity = 24 and unit_cost = 0.41 from public.goods_receipt_lines where receipt_id = :'rrec'), 'a draft goods receipt is made from it, to check and post');
+            and (select quantity = 24 and unit_price = 0.41 and unit_cost is null from public.goods_receipt_lines where receipt_id = :'rrec'), 'a draft goods receipt is made from it, to check and post (the price in the invoice''s currency)');
 select t.throws(format($q$select public.doc_read_to_receipt(%L, '{}')$q$, :'rd'), 'already made', 'only once per invoice');
 select public.doc_read_submit(:'aco', encode(decode(repeat('ee', 600), 'hex'), 'base64'), 'image/png', 'fatura2.png') as rd2 \gset
 reset role;

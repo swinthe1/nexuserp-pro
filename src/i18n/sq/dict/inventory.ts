@@ -629,4 +629,5 @@ export default {
   "vendor’s code": "kodi i furnitorit",
   "This month’s {n} invoices are used up; reading starts again on the 1st. Receive goods by hand meanwhile.": "Faturat e këtij muaji ({n}) mbaruan; leximi nis sërish më 1 të muajit. Deri atëherë pranoni mallin me dorë.",
   "{used} of {limit} invoices read this month": "{used} nga {limit} fatura të lexuara këtë muaj",
+  "A return comes back at the average cost": "Kthimi hyn me koston mesatare",
 } satisfies Dict

@@ -103,13 +103,13 @@ insert into public.payment_allocations (company_id, payment_id, sales_invoice_id
 select t.ok(:'rcp_no' like 'RCP-2026-%', 'customer receipts are numbered');
 select t.throws(format($q$update public.payments set status = 'posted' where id = %L$q$, :'rcp'), 'set by its own action', 'payments post only through posting');
 select public.post_payment(:'rcp');
-select t.ok((select (payment_status, amount_paid) = ('partially_paid', 50000.00) from public.sales_invoices where id = :'inv'), 'invoice partially paid');
+select t.ok((select (payment_status, amount_paid) = ('partially_paid', 57200.00) from public.sales_invoices where id = :'inv'), 'invoice partially paid (50,000 paid + 7,200 credited)');
 select t.ok(pg_temp.bal(:'co', '5121') = 50000 and pg_temp.bal(:'co', '411') = 72000 - 50000 + 120000 - 7200, 'Dr bank / Cr receivable');
 select t.throws(format($q$
   with p as (insert into public.payments (company_id, document_type, partner_id, method, amount, bank_account_id) values (%1$L, 'customer_payment', %2$L, 'cash', 30000, %3$L) returning id)
   insert into public.payment_allocations (company_id, payment_id, sales_invoice_id, amount) select %1$L::uuid, p.id, %4$L::uuid, 30000 from p;
   select public.post_payment((select id from public.payments where amount = 30000 and status = 'draft'));$q$, :'co', :'cust', :'cashbox', :'inv'),
-  'more than its open amount', 'over-allocation rejected (22,000 still open)');
+  'more than its open amount', 'over-allocation rejected (14,800 still open)');
 delete from public.payments where amount = 30000 and status = 'draft';
 
 -- EUR receipt at a better rate: exchange gain
@@ -136,7 +136,7 @@ select t.ok(pg_temp.bal(:'co', '401') = 0 and (select payment_status from public
 
 -- reversal restores the invoice balance
 select public.reverse_payment(:'rcp', 'Bounced transfer');
-select t.ok((select (payment_status, amount_paid) = ('unpaid', 0.00) from public.sales_invoices where id = :'inv'), 'reversed receipt reopens the invoice');
+select t.ok((select (payment_status, amount_paid) = ('partially_paid', 7200.00) from public.sales_invoices where id = :'inv'), 'reversed receipt reopens the invoice (the credit note stays applied)');
 select t.ok(pg_temp.bal(:'co', '5121') = 122400 - 73200, 'bank back to the EUR receipt minus the vendor payment');
 select t.ok((select status from public.journal_entries where id = (select journal_entry_id from public.payments where id = :'rcp')) = 'reversed',
             'original entry marked reversed');

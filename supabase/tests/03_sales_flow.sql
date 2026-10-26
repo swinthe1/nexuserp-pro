@@ -92,7 +92,10 @@ select t.ok((select (count(*), sum(line_total)) = (2::bigint, 25152.00) from pub
 select t.ok((select number from public.sales_orders where id = :'so') like 'SO-2026-%', 'orders are numbered');
 
 -- ---------- confirmation checks ---------------------------------------------------------
+select t.throws(format($q$update public.business_partners set credit_limit = 99999999 where id = %L$q$, :'cust_a'), 'sales manager', 'a sales rep cannot raise a credit limit');
+select t.login('mia@shop.al');
 update public.business_partners set credit_limit = 10000 where id = :'cust_a';
+select t.login('sam@shop.al');
 select t.throws(format($q$select public.confirm_sales_order(%L)$q$, :'so'), 'credit limit exceeded', 'credit limit blocks a sales rep');
 select t.ok((select status from public.sales_orders where id = :'so') = 'draft', 'blocked order stays draft');
 
@@ -148,7 +151,7 @@ select public.post_sales_invoice(:'inv');
 select t.ok((select (status, fiscal_status, total) = ('posted', 'pending', 25152.00) from public.sales_invoices where id = :'inv'), 'invoice posted and queued for fiscalization');
 select t.ok(exists (select 1 from public.fiscalization_records where source_doc_id = :'inv' and status = 'pending' and country_code = 'AL'), 'fiscalization record created');
 select t.ok((select (status, invoice_status) = ('closed', 'invoiced') from public.sales_orders where id = :'so'), 'delivered + invoiced order closes itself');
-select t.throws(format($q$select public.create_invoice_from_order(%L)$q$, :'so'), 'only confirmed orders', 'closed orders cannot be invoiced again');
+select t.throws(format($q$select public.create_invoice_from_order(%L)$q$, :'so'), 'Nothing to invoice', 'a closed order with everything invoiced has nothing more to invoice');
 
 select public.create_credit_note(:'inv') as cn \gset
 select t.ok((select number from public.sales_invoices where id = :'cn') like 'CN-2026-%', 'credit notes have their own series');

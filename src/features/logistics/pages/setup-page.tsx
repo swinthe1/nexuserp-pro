@@ -51,10 +51,10 @@ export function LogisticsSetupPage() {
   return (
     <>
       <PageHeader title={t('Carriers and fleet')} description={t('Who carries our parcels: our own vans and drivers, and the courier companies we hand parcels to.')} />
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-2 [&>*]:min-w-0">
         <Card className="self-start">
-          <CardHeader className="flex-row items-start justify-between gap-2 space-y-0 pb-2">
-            <div><CardTitle>{t('Carriers')}</CardTitle><CardDescription>{t("The tracking link turns a tracking number into the carrier's tracking page.")}</CardDescription></div>
+          <CardHeader className="flex-row flex-wrap items-start justify-between gap-2 space-y-0 pb-2">
+            <div className="min-w-0 flex-1"><CardTitle>{t('Carriers')}</CardTitle><CardDescription>{t("The tracking link turns a tracking number into the carrier's tracking page.")}</CardDescription></div>
             <Can perm="logistics.write"><Button size="sm" onClick={() => setCarrier('new')}><Plus /> {t('Add carrier')}</Button></Can>
           </CardHeader>
           <CardContent className="overflow-x-auto p-0">
@@ -76,8 +76,8 @@ export function LogisticsSetupPage() {
           </CardContent>
         </Card>
         <Card className="self-start">
-          <CardHeader className="flex-row items-start justify-between gap-2 space-y-0 pb-2">
-            <div><CardTitle>{t('Vehicles')}</CardTitle><CardDescription>{t('Capacity is checked when shipments are put on a route; the usual driver is suggested.')}</CardDescription></div>
+          <CardHeader className="flex-row flex-wrap items-start justify-between gap-2 space-y-0 pb-2">
+            <div className="min-w-0 flex-1"><CardTitle>{t('Vehicles')}</CardTitle><CardDescription>{t('Capacity is checked when shipments are put on a route; the usual driver is suggested.')}</CardDescription></div>
             <Can perm="logistics.write"><Button size="sm" onClick={() => setVehicle('new')}><Plus /> {t('Add vehicle')}</Button></Can>
           </CardHeader>
           <CardContent className="overflow-x-auto p-0">

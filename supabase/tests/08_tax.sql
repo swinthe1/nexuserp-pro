@@ -76,7 +76,7 @@ select public.post_sales_invoice(:'cn1');
 create or replace function pg_temp.bill(p_co uuid, p_vendor uuid, p_no text, p_acc uuid, p_amount numeric, p_tax uuid) returns uuid language plpgsql as $$
 declare v uuid;
 begin
-  insert into public.vendor_bills (company_id, vendor_id, vendor_invoice_number, currency_code) values (p_co, p_vendor, p_no, 'ALL') returning id into v;
+  insert into public.vendor_bills (company_id, vendor_id, vendor_invoice_number, currency_code) values (p_co, p_vendor, p_no, (select base_currency from public.companies where id = p_co)) returning id into v;
   insert into public.vendor_bill_lines (company_id, bill_id, line_no, description, account_id, quantity, unit_price, tax_code_id)
   values (p_co, v, 1, p_no, p_acc, 1, p_amount, p_tax);
   perform public.post_vendor_bill(v);

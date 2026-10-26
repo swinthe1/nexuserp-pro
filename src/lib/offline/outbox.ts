@@ -92,7 +92,10 @@ export function flush(): Promise<void> {
     const blocked = new Set(state.items.filter((i) => i.status === 'failed' && i.chain).map((i) => i.chain!))
     try {
       for (const it of state.items) {
-        if (it.status !== 'pending' || it.user_id !== me) continue
+        // a step of someone else (shared till) still waiting holds back the later steps of the same table:
+        // paying a table before its offline orders are in would leave those orders unbilled
+        if (it.status === 'pending' && it.user_id !== me) { if (it.chain) blocked.add(it.chain); continue }
+        if (it.status !== 'pending') continue
         if (it.chain && blocked.has(it.chain)) continue
         const { data, error } = await supabase.rpc(it.fn as never, it.args as never)
         if (error) {
