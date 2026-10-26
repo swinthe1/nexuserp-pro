@@ -1,3 +1,4 @@
+import { DocumentActions } from '@/components/document-actions'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Ban, Check, CheckCheck, FileText, PackageCheck, PackageOpen, Receipt, Repeat, RotateCcw, Send, ShoppingCart, Trash2, Truck, Undo2, X,
@@ -351,7 +352,8 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
             {kind === 'invoices' && doc.status === 'posted' && <StatusBadge status={doc.payment_status as string} />}
           </>}
           description={doc ? t('Created {date}', { date: formatDate(doc.created_at, true) }) : undefined}
-          actions={<Can perm={kind === 'orders' ? 'sales.read' : cfg.writePerm}>
+          actions={<>{doc && <DocumentActions id={doc.id} kind={kind === 'quotes' ? 'sales_quote' : kind === 'orders' ? 'sales_order' : 'sales_invoice'}
+            alt={kind === 'quotes' ? [{ kind: 'proforma_quote', label: t('pro forma') }] : kind === 'orders' ? [{ kind: 'proforma', label: t('pro forma') }] : undefined} />}<Can perm={kind === 'orders' ? 'sales.read' : cfg.writePerm}>
             {doc && editable && (
               <ConfirmDialog trigger={<Button variant="ghost" size="sm" className="text-destructive"><Trash2 /> {t('Delete')}</Button>} title={t('Delete draft {number}?', { number: doc.number })}
                 description={t('The draft disappears from the lists. Its number is not used again.')} confirmLabel={t('Delete draft')} destructive
@@ -359,7 +361,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
             )}
             {editable && <Button variant={doc ? 'outline' : 'default'} onClick={() => void saveOnly()} loading={save.isPending}>{doc ? t('Save draft') : t('Create draft')}</Button>}
             {actions}
-          </Can>}
+          </Can></>}
         />
         {doc?.status === 'pending_approval' && (
           <div className="mb-4 rounded-lg border border-warning/40 bg-warning/5 px-4 py-3 text-[13px]">

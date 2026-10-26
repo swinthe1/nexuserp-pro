@@ -1,3 +1,4 @@
+import { DocumentActions } from '@/components/document-actions'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Ban, CheckCheck, ClipboardCheck, FileText, Mail, PackageCheck, Receipt, Send, ShieldAlert, Trash2, Undo2,
@@ -280,6 +281,7 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
           </>}
           description={doc ? `${doc.vendor?.name ?? ''} · ${t('created {date}', { date: formatDate(doc.created_at, true) })}` : undefined}
           actions={<Can perm="procurement.read">
+            {doc && <DocumentActions id={doc.id} kind="purchase_order" />}
             {doc && editable && (
               <ConfirmDialog trigger={<Button variant="ghost" size="sm" className="text-destructive"><Trash2 /> {t('Delete')}</Button>} title={t('Delete draft {number}?', { number: doc.number })}
                 description={t('The draft disappears from lists. Its number is not reused.')} confirmLabel={t('Delete draft')} destructive

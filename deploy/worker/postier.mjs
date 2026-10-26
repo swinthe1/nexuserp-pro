@@ -90,7 +90,7 @@ class Smtp {
     return r.text
   }
   async cmd(line, code) { this.sock.write(line + '\r\n'); return this.expect(code) }
-  async send({ from, fromName, to, replyTo, subject, text, html }) {
+  async send({ from, fromName, to, replyTo, subject, text, html, attachments }) {
     await this.cmd(`MAIL FROM:<${from}>`, 250)
     for (const r of to) await this.cmd(`RCPT TO:<${r}>`, 250)
     await this.cmd('DATA', 354)
@@ -106,14 +106,24 @@ class Smtp {
       `Date: ${new Date().toUTCString().replace('GMT', '+0000')}`,
       `Message-ID: <${crypto.randomUUID()}@${domain}>`,
       'MIME-Version: 1.0',
-      `Content-Type: multipart/alternative; boundary="${b}"`,
     ].filter(Boolean)
-    const body = [
-      ...head, '',
+    const alt = [
+      `Content-Type: multipart/alternative; boundary="${b}"`, '',
       `--${b}`, 'Content-Type: text/plain; charset=UTF-8', 'Content-Transfer-Encoding: base64', '', b64(text || ''),
       ...(html ? [`--${b}`, 'Content-Type: text/html; charset=UTF-8', 'Content-Transfer-Encoding: base64', '', b64(html)] : []),
-      `--${b}--`, '',
-    ].join('\r\n')
+      `--${b}--`,
+    ]
+    // a document (PDF) goes as an attachment: the message becomes multipart/mixed
+    const files = Array.isArray(attachments) ? attachments.filter((a) => a && a.data) : []
+    const m = 'm_' + crypto.randomBytes(12).toString('hex')
+    const wrap = (data) => String(data).replace(/\s+/g, '').replace(/.{76}/g, '$&\r\n')
+    const body = (files.length ? [
+      ...head, `Content-Type: multipart/mixed; boundary="${m}"`, '',
+      `--${m}`, ...alt,
+      ...files.flatMap((f) => [`--${m}`, `Content-Type: ${f.mime || 'application/octet-stream'}; name="${enc(f.name || 'document.pdf')}"`,
+        'Content-Transfer-Encoding: base64', `Content-Disposition: attachment; filename="${enc(f.name || 'document.pdf')}"`, '', wrap(f.data)]),
+      `--${m}--`, '',
+    ] : [...head, ...alt, '']).join('\r\n')
     this.sock.write(body.replace(/\r\n\./g, '\r\n..') + '\r\n.\r\n')
     const r = await this.expect(250)
     return r.trim().slice(4, 120)
@@ -126,7 +136,7 @@ async function sendEmail(m) {
   const c = new Smtp(m.mail)
   try {
     await c.connect()
-    return await c.send({ from: m.mail.from, fromName: m.mail.from_name, replyTo: m.mail.reply_to, to: [m.to], subject: m.subject, text: m.text, html: m.html })
+    return await c.send({ from: m.mail.from, fromName: m.mail.from_name, replyTo: m.mail.reply_to, to: [m.to], subject: m.subject, text: m.text, html: m.html, attachments: m.attachments })
   } finally { await c.quit() }
 }
 

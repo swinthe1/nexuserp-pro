@@ -1,3 +1,4 @@
+import { DocumentActions } from '@/components/document-actions'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Ban, PackageCheck, Trash2, Truck, Undo2 } from 'lucide-react'
 import * as React from 'react'
@@ -101,7 +102,7 @@ function DeliveryForm({ doc }: { doc: Delivery }) {
           title={doc.number}
           meta={<StatusBadge status={doc.status} />}
           description={t('To {customer} · from {warehouse}', { customer: doc.partner?.name ?? t('customer'), warehouse: warehouse?.name ? td(warehouse.name) : t('the warehouse') })}
-          actions={<Can perm="wms.write">
+          actions={<><DocumentActions id={doc.id} kind="delivery" /><Can perm="wms.write">
             {doc.status === 'draft' && (
               <ConfirmDialog trigger={<Button variant="ghost" size="sm" className="text-destructive"><Trash2 /> {t('Delete')}</Button>} title={t('Delete {number}?', { number: doc.number })}
                 description={t("Nothing has left the warehouse yet; the order's reservations stay in place.")} confirmLabel={t('Delete')} destructive
@@ -124,7 +125,7 @@ function DeliveryForm({ doc }: { doc: Delivery }) {
                   toast.success(t('Delivery completed'), { description: t('Cost of goods {amount}', { amount: formatMoney(r.cost, company?.base_currency) }) })
                 }} />
             )}
-          </Can>}
+          </Can></>}
         />
         <Tabs defaultValue="document">
           <TabsList><TabsTrigger value="document">{t('Document')}</TabsTrigger><TabsTrigger value="accounting">{t('Accounting')}</TabsTrigger><TabsTrigger value="activity">{t('Activity')}</TabsTrigger></TabsList>

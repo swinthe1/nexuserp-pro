@@ -1,3 +1,4 @@
+import { DocumentActions } from '@/components/document-actions'
 import type { ColumnDef } from '@tanstack/react-table'
 import { CashLimitWarning } from '../components/cash-limits'
 import { ArrowDownLeft, ArrowUpRight, Trash2, Undo2, Wand2 } from 'lucide-react'
@@ -217,7 +218,7 @@ function PaymentForm({ payment }: { payment?: PaymentDetail }) {
       <PageHeader back={{ href: '/finance/payments', label: t('Payments') }} title={title}
         meta={payment && <StatusBadge status={payment.status} />}
         description={payment ? t(isReceipt ? 'Received from {name} · {amount}' : 'Paid to {name} · {amount}', { name: payment.partner?.name ?? '', amount: formatMoney(payment.amount, payment.currency_code) }) : undefined}
-        actions={<Can perm="invoicing.write">
+        actions={<>{payment && payment.status !== 'draft' && <DocumentActions id={payment.id} kind="payment" />}<Can perm="invoicing.write">
           {payment && editable && <ConfirmDialog trigger={<Button variant="ghost" className="text-destructive"><Trash2 /> {t('Delete')}</Button>} title={t('Delete {doc}?', { doc: payment.number })} description={t('The draft is removed.')} confirmLabel={t('Delete')} destructive
             onConfirm={async () => { await del.mutateAsync(payment.id); navigate('/finance/payments') }} />}
           {editable && <Button variant="outline" loading={save.isPending} disabled={!partnerId || !bankId || !num(amount)} onClick={async () => { const id = await persist(); toast.success(t('Draft saved')); if (!payment) navigate(`/finance/payments/${id}`, { replace: true }) }}>{t('Save draft')}</Button>}
@@ -234,7 +235,7 @@ function PaymentForm({ payment }: { payment?: PaymentDetail }) {
               }} />
           )}
           {payment?.status === 'posted' && <Button variant="outline" onClick={() => setReverseOpen(true)}><Undo2 /> {t('Reverse')}</Button>}
-        </Can>} />
+        </Can></>} />
       {payment?.status === 'pending_approval' && <div className="mb-4 rounded-lg border border-warning/40 bg-warning/5 px-4 py-3 text-[13px]">{tr('Waiting for approval. See {link}.', { link: <Link to="/approvals" className="text-primary hover:underline">{t('Approvals')}</Link> })}</div>}
       {payment ? (
         <Tabs defaultValue="payment">

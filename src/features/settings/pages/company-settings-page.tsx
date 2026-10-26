@@ -1,3 +1,4 @@
+import { PrintSettingsCard } from '../components/print-settings'
 import { Fingerprint, TriangleAlert } from 'lucide-react'
 import * as React from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -33,11 +34,13 @@ export function CompanySettingsPage() {
         <TabsList>
           <TabsTrigger value="company">{t('Company')}</TabsTrigger>
           <TabsTrigger value="rules">{t('Defaults and rules')}</TabsTrigger>
+          <TabsTrigger value="print">{t('Printed documents')}</TabsTrigger>
           <TabsTrigger value="fiscal">{t('Fiscalization')}</TabsTrigger>
           <TabsTrigger value="menu">{t('Menu')}</TabsTrigger>
         </TabsList>
         <TabsContent value="company"><CompanyProfileForm /></TabsContent>
         <TabsContent value="rules"><RulesForm /></TabsContent>
+        <TabsContent value="print"><PrintSettingsCard /></TabsContent>
         <TabsContent value="fiscal"><FiscalForm /></TabsContent>
         <TabsContent value="menu"><MenuForm /></TabsContent>
       </Tabs>

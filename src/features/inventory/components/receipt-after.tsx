@@ -1,3 +1,4 @@
+import { DocumentActions } from '@/components/document-actions'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { FileText, Undo2 } from 'lucide-react'
 import * as React from 'react'
@@ -41,17 +42,19 @@ export function ReceiptAfterActions({ doc, nameOf }: { doc: Receipt; nameOf: (va
     onSuccess: (id) => { void qc.invalidateQueries({ queryKey: ['vendor-returns', doc.id] }); toast.success(t('Draft credit note created')); navigate(`/procurement/bills/${id}`) },
     onError: (e) => toast.error(describeError(e)),
   })
-  if (doc.status !== 'done' || doc.receipt_type !== 'purchase') return null
+  if (doc.status !== 'done') return null
+  const purchase = doc.receipt_type === 'purchase'
   const returned = new Map<string, number>()
   for (const r of returns.data ?? []) for (const l of r.lines) returned.set(l.receipt_line_id, (returned.get(l.receipt_line_id) ?? 0) + num(l.quantity))
 
   return (
     <div className="mb-4 grid gap-3">
       <div className="flex flex-wrap gap-2">
-        {!doc.purchase_order_id && doc.vendor_id && can('invoicing.write') && (
+        <DocumentActions id={doc.id} kind="goods_receipt" size="sm" />
+        {purchase && !doc.purchase_order_id && doc.vendor_id && can('invoicing.write') && (
           <Button size="sm" variant="outline" loading={bill.isPending} onClick={() => bill.mutate()}><FileText /> {t('Create the vendor bill')}</Button>
         )}
-        {can('inventory.write') && (
+        {purchase && can('inventory.write') && (
           <Button size="sm" variant="outline" onClick={() => setReturning(true)}><Undo2 /> {t('Return to the vendor')}</Button>
         )}
       </div>

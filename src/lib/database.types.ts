@@ -1616,6 +1616,8 @@ export type Database = {
           cash_limit_block: boolean
           portal_auto_confirm: boolean
           portal_stock: string
+          print_logo: string | null
+          print_settings: Json
         }
         Insert: {
           id?: string
@@ -1670,6 +1672,8 @@ export type Database = {
           cash_limit_block?: boolean
           portal_auto_confirm?: boolean
           portal_stock?: string
+          print_logo?: string | null
+          print_settings?: Json
         }
         Update: {
           id?: string
@@ -1724,6 +1728,8 @@ export type Database = {
           cash_limit_block?: boolean
           portal_auto_confirm?: boolean
           portal_stock?: string
+          print_logo?: string | null
+          print_settings?: Json
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -12578,6 +12584,25 @@ export type Database = {
         }
         Returns: { id: string | null; file_name: string | null; status: string | null; error: string | null; vendor: string | null; number: string | null; total: number | null; receipt_id: string | null; created_at: string | null }[]
       }
+      document_email: {
+        Args: {
+          p_kind: string
+          p_id: string
+          p_to: string
+          p_subject: string
+          p_message: string
+          p_pdf: string
+          p_filename: string
+        }
+        Returns: string
+      }
+      document_print: {
+        Args: {
+          p_kind: string
+          p_id: string
+        }
+        Returns: Json
+      }
       dunning_preview: {
         Args: {
           p_company: string
@@ -13522,6 +13547,21 @@ export type Database = {
           p_company: string
         }
         Returns: number
+      }
+      print_company_preview: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
+      print_settings_save: {
+        Args: {
+          p_company: string
+          p_settings: Json
+          p_logo?: string
+          p_clear_logo?: boolean
+        }
+        Returns: undefined
       }
       process_fiscal_queue: {
         Args: {
