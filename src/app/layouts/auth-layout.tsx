@@ -70,7 +70,6 @@ function Brand({ className }: { className?: string }) {
 function FooterLinks({ className }: { className?: string }) {
   return (
     <nav className={cn('flex flex-wrap items-center gap-x-4 gap-y-1 text-xs', className)} aria-label="DrisPRO">
-      <a href="/cmimet" className="hover:underline">{t('Prices')}</a>
       <a href="/api" className="hover:underline">{t('For developers')}</a>
       <span>© {new Date().getFullYear()} DrisPRO</span>
     </nav>
@@ -95,7 +94,6 @@ export function AuthLayout() {
           <div className="flex items-center gap-6">
             <Brand />
             <nav className="ml-auto flex items-center gap-6 text-sm text-white/70">
-              <a href="/cmimet" className="hover:text-white">{t('Prices')}</a>
               <a href="/api" className="hover:text-white">{t('For developers')}</a>
             </nav>
           </div>
