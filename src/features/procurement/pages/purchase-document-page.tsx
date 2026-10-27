@@ -10,6 +10,7 @@ import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
+import { useRegistryRemote } from '@/lib/registry'
 import { Can, useCompany } from '@/app/company-provider'
 import { ActivityTimeline } from '@/components/activity-timeline'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -116,6 +117,7 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
     },
   })
   const [vendorId, currency] = useWatch({ control: form.control, name: ['vendor_id', 'currency_code'] })
+  const registry = useRegistryRemote('vendor', (id) => onVendor(id))
   const vendor = vendors.data?.find((v) => v.id === vendorId)
 
   React.useEffect(() => {
@@ -216,7 +218,7 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
           <CardContent className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
             <FormField control={form.control} name="vendor_id" render={({ field }) => (
               <FormItem className="sm:col-span-2 lg:col-span-1"><FormLabel>{t('Vendor')}</FormLabel>
-                <FormControl><SearchSelect value={field.value} onChange={onVendor} disabled={!editable} placeholder={t('Choose a vendor')}
+                <FormControl><SearchSelect value={field.value} onChange={onVendor} disabled={!editable} placeholder={t('Choose a vendor')} remote={registry}
                   options={(vendors.data ?? []).filter((v) => v.is_active || v.id === field.value).map((v) => ({ value: v.id, label: v.name, hint: v.tax_number ?? v.code, keywords: [v.code] }))} /></FormControl>
                 {vendor && <FormDescription>{[vendor.email, vendor.phone].filter(Boolean).join(' · ') || vendor.code}</FormDescription>}
                 <FormMessage /></FormItem>
@@ -462,6 +464,7 @@ function BillForm({ doc }: { doc?: BillDoc }) {
     form.setValue('payment_term_id', v.payment_term_id)
     form.setValue('currency_code', v.currency_code ?? base)
   }
+  const registry = useRegistryRemote('vendor', (id) => onVendor(id))
 
   const persist = async (v: BillValues) => save.mutateAsync({
     header: {
@@ -549,7 +552,7 @@ function BillForm({ doc }: { doc?: BillDoc }) {
           <CardContent className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
             <FormField control={form.control} name="vendor_id" render={({ field }) => (
               <FormItem className="sm:col-span-2 lg:col-span-1"><FormLabel>{t('Vendor')}</FormLabel>
-                <FormControl><SearchSelect value={field.value} onChange={onVendor} disabled={!editable || !!doc?.purchase_order_id} placeholder={t('Choose a vendor')}
+                <FormControl><SearchSelect value={field.value} onChange={onVendor} disabled={!editable || !!doc?.purchase_order_id} placeholder={t('Choose a vendor')} remote={registry}
                   options={(vendors.data ?? []).map((v) => ({ value: v.id, label: v.name, hint: v.tax_number ?? v.code }))} /></FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="vendor_invoice_number" render={({ field }) => (

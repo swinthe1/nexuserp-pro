@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
 import * as React from 'react'
+import { useRegistryRemote } from '@/lib/registry'
 import { ensureScanCatalog, findOffline } from '@/lib/offline/catalog'
 import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
@@ -65,8 +66,9 @@ export function WarehousePicker({ value, onChange, disabled, all, ...rest }: { v
 
 export function VendorPicker({ value, onChange, disabled, ...rest }: { value: string | null | undefined; onChange: (id: string | null) => void; disabled?: boolean; 'aria-invalid'?: boolean }) {
   const { data = [] } = useVendors()
+  const registry = useRegistryRemote('vendor', (id) => onChange(id))
   const options = data.map((v) => ({ value: v.id, label: v.name, hint: v.tax_number ?? v.code }))
-  return <SearchSelect value={value} onChange={onChange} options={options} placeholder={t('Vendor')} clearable disabled={disabled} {...rest} />
+  return <SearchSelect value={value} onChange={onChange} options={options} placeholder={t('Vendor')} clearable disabled={disabled} remote={registry} {...rest} />
 }
 
 export function LotPicker({ variantId, value, onChange, disabled, allowCreate }: {

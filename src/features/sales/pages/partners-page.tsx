@@ -6,6 +6,9 @@ import { FileText, Pencil, Plus, ShoppingCart, Star, Trash2, Upload } from 'luci
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { registryFill } from '@/lib/registry'
+import { SearchSelect } from '@/components/search-select'
+import { RegistryLine } from '../components/registry-card'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Can, useCompany } from '@/app/company-provider'
@@ -120,6 +123,7 @@ function PartnerView({ partner }: { partner?: PartnerDetail }) {
             <Button asChild><Link to={`/sales/orders/new?customer=${partner.id}`}><ShoppingCart /> {t('New order')}</Link></Button>
           </Can>}
         </>} />
+      <RegistryLine partnerId={partner.id} />
       <Tabs defaultValue={partner.is_customer ? 'overview' : 'purchasing'}>
         <TabsList>
           {partner.is_customer && <TabsTrigger value="overview">{t('Overview')}</TabsTrigger>}
@@ -249,6 +253,20 @@ function PartnerForm({ partner }: { partner?: PartnerDetail }) {
   return (
     <Form {...form}>
       <form onSubmit={submit} className="grid gap-4">
+        {!partner && writable && <Card><CardContent className="grid gap-1.5 p-4">
+          <span className="text-sm font-medium">{t('Find it in the business register (ARBK)')}</span>
+          <SearchSelect value={null} onChange={() => {}} options={[]} placeholder={t('NUI or name of the business')} emptyText={t('Type the NUI or at least 3 letters of the name.')}
+            remote={registryFill((b) => {
+              const o = { shouldDirty: true }
+              form.setValue('name', b.trade_name || b.name, o); form.setValue('legal_name', b.name, o); form.setValue('tax_number', b.nui, o)
+              form.setValue('kind', b.legal_form === 'Biznes individual' && !b.trade_name ? 'individual' : 'company', o)
+              if (b.phone) form.setValue('phone', b.phone, o)
+              if (b.email) form.setValue('email', b.email, o)
+              if (!form.getValues('notes')) form.setValue('notes', [b.legal_form, b.activity, b.city].filter(Boolean).join(' · '), o)
+              if (!b.active) toast.warning(t('{name} is {status} in the business register', { name: b.name, status: b.status ?? '' }))
+            })} />
+          <span className="text-xs text-muted-foreground">{t('The official name, NUI and details are filled in from the register.')}</span>
+        </CardContent></Card>}
         <Card>
           <CardHeader><CardTitle>{t('Basic details')}</CardTitle></CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

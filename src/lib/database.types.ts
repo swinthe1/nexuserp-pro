@@ -1378,6 +1378,66 @@ export type Database = {
           { foreignKeyName: "business_partners_salesperson_profile_fkey"; columns: ["salesperson_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
         ]
       }
+      business_registry: {
+        Row: {
+          nui: string
+          name: string
+          trade_name: string | null
+          legal_form: string | null
+          activity: string | null
+          sector: string | null
+          employees: number | null
+          size: string | null
+          city: string | null
+          status: string | null
+          registered: string | null
+          dissolved_on: string | null
+          phone: string | null
+          email: string | null
+          address: string | null
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          nui: string
+          name: string
+          trade_name?: string | null
+          legal_form?: string | null
+          activity?: string | null
+          sector?: string | null
+          employees?: number | null
+          size?: string | null
+          city?: string | null
+          status?: string | null
+          registered?: string | null
+          dissolved_on?: string | null
+          phone?: string | null
+          email?: string | null
+          address?: string | null
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          nui?: string
+          name?: string
+          trade_name?: string | null
+          legal_form?: string | null
+          activity?: string | null
+          sector?: string | null
+          employees?: number | null
+          size?: string | null
+          city?: string | null
+          status?: string | null
+          registered?: string | null
+          dissolved_on?: string | null
+          phone?: string | null
+          email?: string | null
+          address?: string | null
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       card_entries: {
         Row: {
           id: string
@@ -15029,6 +15089,20 @@ export type Database = {
         }
         Returns: Json
       }
+      partner_from_registry: {
+        Args: {
+          p_company: string
+          p_nui: string
+          p_role?: string
+        }
+        Returns: string
+      }
+      partner_registry: {
+        Args: {
+          p_partner: string
+        }
+        Returns: Json
+      }
       pay_payroll: {
         Args: {
           p_run: string
@@ -15753,6 +15827,19 @@ export type Database = {
         Args: {
           p_id: string
           p_refund?: number
+        }
+        Returns: Json
+      }
+      registry_get: {
+        Args: {
+          p_nui: string
+        }
+        Returns: Json
+      }
+      registry_search: {
+        Args: {
+          p_q: string
+          p_limit?: number
         }
         Returns: Json
       }

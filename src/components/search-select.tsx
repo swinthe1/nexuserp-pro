@@ -20,11 +20,23 @@ export const SearchSelect = React.forwardRef<HTMLButtonElement, {
   className?: string
   /** handle Enter on a query that matches nothing (e.g. a scanned barcode) */
   onUnmatchedEnter?: (query: string) => void
+  /** more results searched elsewhere as the person types (e.g. the business register); shown under their own heading */
+  remote?: { heading: string; search: (query: string) => Promise<SearchOption[]>; onSelect: (option: SearchOption) => void }
   'aria-invalid'?: boolean
   id?: string
-}>(function SearchSelect({ value, onChange, options, placeholder, searchPlaceholder, emptyText, disabled, clearable, className, onUnmatchedEnter, ...rest }, ref) {
+}>(function SearchSelect({ value, onChange, options, placeholder, searchPlaceholder, emptyText, disabled, clearable, className, onUnmatchedEnter, remote, ...rest }, ref) {
   const [open, setOpen] = React.useState(false)
   const [query, setQuery] = React.useState('')
+  const [found, setFound] = React.useState<SearchOption[]>([])
+  const searchRef = React.useRef(remote?.search)
+  searchRef.current = remote?.search
+  React.useEffect(() => {
+    const q = query.trim()
+    if (!open || !searchRef.current || q.length < 3) { setFound([]); return }
+    let live = true
+    const h = setTimeout(() => { void searchRef.current!(q).then((r) => { if (live) setFound(r) }).catch(() => { if (live) setFound([]) }) }, 250)
+    return () => { live = false; clearTimeout(h) }
+  }, [query, open])
   const selected = options.find((o) => o.value === value)
   const q = query.trim().toLowerCase()
   const filtered = q
@@ -63,7 +75,7 @@ export const SearchSelect = React.forwardRef<HTMLButtonElement, {
             onValueChange={setQuery}
             placeholder={searchPlaceholder ?? t('Search…')}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && filtered.length === 0 && query.trim() && onUnmatchedEnter) {
+              if (e.key === 'Enter' && filtered.length === 0 && found.length === 0 && query.trim() && onUnmatchedEnter) {
                 e.preventDefault()
                 onUnmatchedEnter(query.trim())
                 setOpen(false)
@@ -72,7 +84,7 @@ export const SearchSelect = React.forwardRef<HTMLButtonElement, {
             }}
           />
           <CommandList>
-            <CommandEmpty>{emptyText ?? t('No match.')}</CommandEmpty>
+            {!found.length && <CommandEmpty>{emptyText ?? t('No match.')}</CommandEmpty>}
             <CommandGroup>
               {filtered.map((o) => (
                 <CommandItem key={o.value} value={o.value} onSelect={() => { onChange(o.value); setOpen(false); setQuery('') }}>
@@ -82,6 +94,16 @@ export const SearchSelect = React.forwardRef<HTMLButtonElement, {
                 </CommandItem>
               ))}
             </CommandGroup>
+            {remote && found.length > 0 && (
+              <CommandGroup heading={remote.heading}>
+                {found.map((o) => (
+                  <CommandItem key={`r:${o.value}`} value={`r:${o.value}`} onSelect={() => { remote.onSelect(o); setOpen(false); setQuery('') }}>
+                    <span className="truncate">{o.label}</span>
+                    {o.hint && <span className="ml-auto truncate text-xs text-muted-foreground">{o.hint}</span>}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>

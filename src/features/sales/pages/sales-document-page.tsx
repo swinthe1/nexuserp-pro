@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
+import { useRegistryRemote } from '@/lib/registry'
 import { DocumentActions } from '@/components/document-actions'
 import { AdvanceButton, AdvancesCard } from '../components/advances'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -131,6 +132,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
     if (c.salesperson_id) form.setValue('salesperson_id', c.salesperson_id)
     if (c.currency_code) form.setValue('currency_code', c.currency_code)
   }
+  const registry = useRegistryRemote('customer', (id) => onCustomer(id))
 
   const persist = async (v: SalesDocValues) => {
     const header: Record<string, unknown> = {
@@ -268,7 +270,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
           <CardContent className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
             <FormField control={form.control} name="partner_id" render={({ field }) => (
               <FormItem className="sm:col-span-2 lg:col-span-1"><FormLabel>{t('Customer')}</FormLabel>
-                <FormControl><SearchSelect value={field.value} onChange={onCustomer} disabled={!editable} placeholder={t('Choose a customer')}
+                <FormControl><SearchSelect value={field.value} onChange={onCustomer} disabled={!editable} placeholder={t('Choose a customer')} remote={registry}
                   options={(customers.data ?? []).map((c) => ({ value: c.id, label: c.name, hint: c.tax_number ?? c.code, keywords: [c.code] }))} /></FormControl>
                 {partner && <FormDescription>{[partner.email, partner.phone].filter(Boolean).join(' · ') || partner.code}{num(partner.default_discount_pct) > 0 && ` · ${t('{pct}% customer discount', { pct: partner.default_discount_pct })}`}</FormDescription>}
                 <FormMessage /></FormItem>

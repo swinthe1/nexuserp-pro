@@ -23,6 +23,7 @@ import { describeError, unwrap } from '@/lib/errors'
 import { findOffline, searchOffline, useScanCatalog, itemOffline } from '@/lib/offline/catalog'
 import { packForScan, usePacks } from '@/lib/packs'
 import { supabase } from '@/lib/supabase'
+import { useRegistryRemote } from '@/lib/registry'
 import { cn, formatMoney, formatQty, num, todayISO } from '@/lib/utils'
 import { useCurrencies, useWarehouses } from '@/features/inventory/api'
 import { useBankAccounts } from '@/features/finance/api'
@@ -115,6 +116,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
 
   // defaults from the first warehouse and the vendor
   React.useEffect(() => { if (!h.warehouse_id && warehouses.data?.length) set('warehouse_id', warehouses.data.find((w) => w.is_active)?.id ?? '') }, [warehouses.data]) // eslint-disable-line react-hooks/exhaustive-deps
+  const registry = useRegistryRemote('vendor', (id) => set('vendor_id', id))
   const vendor = vendors.data?.find((v) => v.id === h.vendor_id)
   React.useEffect(() => {
     if (!vendor || doc) return
@@ -280,7 +282,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
       <Card className="mb-4">
         <CardContent className="grid gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-4">
           <div className="grid gap-1.5 sm:col-span-2"><Label>{t('Supplier')}</Label>
-            <SearchSelect value={h.vendor_id || null} onChange={(v) => set('vendor_id', v ?? '')} placeholder={t('Choose the supplier')}
+            <SearchSelect value={h.vendor_id || null} onChange={(v) => set('vendor_id', v ?? '')} placeholder={t('Choose the supplier')} remote={registry}
               options={(vendors.data ?? []).filter((v) => v.is_active || v.id === h.vendor_id).map((v) => ({ value: v.id, label: v.name, hint: [v.code, v.tax_number].filter(Boolean).join(' · ') }))} /></div>
           <div className="grid gap-1.5"><Label htmlFor="pi-no">{t('Supplier’s invoice no.')}</Label><Input id="pi-no" value={h.vendor_invoice_number} onChange={(e) => set('vendor_invoice_number', e.target.value)} /></div>
           <div className="grid gap-1.5"><Label htmlFor="pi-fiscal">{t('Fiscal number')}</Label><Input id="pi-fiscal" value={h.vendor_fiscal_number} onChange={(e) => set('vendor_fiscal_number', e.target.value)} placeholder={t('From the supplier’s fiscal invoice')} /></div>

@@ -693,4 +693,5 @@ export default {
   "Value at selling prices": "Vlera me çmimet e shitjes",
   "Margin when sold": "Marzha kur të shitet",
   "The stamp must be a picture smaller than 500 KB": "Vula duhet të jetë foto më e vogël se 500 KB",
+  "Check before selling on credit or paying in advance.": "Kontrolloni para se t'i shisni me afat ose t'i paguani paradhënie.",
 } satisfies Dict
