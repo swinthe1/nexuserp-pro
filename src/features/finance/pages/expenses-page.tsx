@@ -35,6 +35,7 @@ type Result = {
   paid?: 'cash' | 'card' | 'bank' | 'unpaid'; vendor_id: string | null; vendor_match_name: string | null; account_id: string | null
   account_how: 'learned' | 'history' | 'category'; cost_center_id: string | null; lines: VatLine[]; already: { id: string; number: string } | null
   asset_name?: string; asset_type?: string; serial_number?: string; category_id?: string | null
+  contact_diff?: Partial<Record<'phone' | 'email' | 'iban', { now: string; invoice: string }>> | null
 }
 type Kind = 'expense' | 'asset'
 type Read = { id: string; status: 'queued' | 'reading' | 'done' | 'failed'; error: string | null; file_name: string | null; bill_id: string | null; bill_number: string | null
@@ -209,6 +210,7 @@ function Review({ id, kind, onDone }: { id: string | null; kind: Kind; onDone: (
       <div className="grid gap-4">
         {booked && <div className="rounded-md border border-success/40 bg-success/5 px-4 py-3 text-[13px]">{t('Booked as {number}.', { number: q.data!.bill_number })} <Link className="font-medium text-primary hover:underline" to={`/procurement/bills/${q.data!.bill_id}`}>{t('Open it')}</Link>
           {q.data?.asset_id && <> · <Link className="font-medium text-primary hover:underline" to={`/finance/assets/${q.data.asset_id}`}>{t('Asset {asset}', { asset: q.data.asset_number ?? '' })}</Link></>}</div>}
+        {r?.contact_diff && f.vendor === r.vendor_id && Object.keys(r.contact_diff).length > 0 && !booked && <ContactDiff partnerId={r.vendor_id!} diff={r.contact_diff} />}
         {r?.already && !booked && <div className="rounded-md border border-warning/40 bg-warning/10 px-4 py-3 text-[13px]">{t('This receipt seems booked already as {number}.', { number: r.already.number })} <Link className="font-medium text-primary hover:underline" to={`/procurement/bills/${r.already.id}`}>{t('Open it')}</Link></div>}
         <Card><CardContent className="grid gap-4 p-4 sm:grid-cols-2">
           <div className="grid gap-1.5 sm:col-span-2"><Label>{t('Seller')}</Label>
@@ -279,6 +281,27 @@ function Review({ id, kind, onDone }: { id: string | null; kind: Kind; onDone: (
           <Button size="lg" loading={book.isPending} disabled={!ready || booked} onClick={() => book.mutate()}>{kind === 'asset' ? t('Book the asset') : t('Book the expense')}</Button>
         </div>
       </div>
+    </div>
+  )
+}
+
+const CONTACT_LABEL: Record<string, string> = { phone: msg('Phone'), email: msg('E-mail'), iban: msg('IBAN') }
+
+/** the invoice prints a different phone, e-mail or IBAN than the supplier card: take it with one click */
+function ContactDiff({ partnerId, diff }: { partnerId: string; diff: NonNullable<Result['contact_diff']> }) {
+  const [done, setDone] = React.useState(false)
+  const apply = useMutation({
+    mutationFn: async () => unwrap(await supabase.rpc('partner_contact_apply', { p_partner: partnerId,
+      p: Object.fromEntries(Object.entries(diff).map(([k, v]) => [k, v!.invoice])) as never })),
+    onSuccess: () => { setDone(true); toast.success(t('The supplier card is updated')) },
+    onError: (e) => toast.error(describeError(e)),
+  })
+  if (done) return null
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-info/40 bg-info/5 px-4 py-3 text-[13px]">
+      <span className="font-medium">{t('The invoice shows other details of the supplier:')}</span>
+      {Object.entries(diff).map(([k, v]) => <span key={k}>{t(CONTACT_LABEL[k] ?? k)}: <s className="text-muted-foreground">{v!.now}</s> → <b>{v!.invoice}</b></span>)}
+      <Button size="sm" variant="outline" className="ml-auto" loading={apply.isPending} onClick={() => apply.mutate()}>{t('Update the supplier card')}</Button>
     </div>
   )
 }

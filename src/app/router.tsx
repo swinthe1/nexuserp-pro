@@ -149,6 +149,7 @@ function Home() {
 
 const PortalPage = lazyPage(() => import('@/features/portal/portal-page'), 'PortalPage')
 const DevelopersPage = lazyPage(() => import('@/features/public/developers-page'), 'DevelopersPage')
+const PartnerInfoPage = lazyPage(() => import('@/features/public/partner-info-page'), 'PartnerInfoPage')
 const PlatformPage = lazyPage(() => import('@/features/platform/platform-page'), 'PlatformPage')
 
 const router = createBrowserRouter([
@@ -167,6 +168,7 @@ const router = createBrowserRouter([
   { path: '/cmimet', element: <Navigate to="/login" replace /> },
   { path: '/pricing', element: <Navigate to="/login" replace /> },
   { path: '/api', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><DevelopersPage /></React.Suspense></ErrorBoundary> },
+  { path: '/te-dhenat/:token', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PartnerInfoPage /></React.Suspense></ErrorBoundary> },
   { path: '/developers', element: <Navigate to="/api" replace /> },
   // the customer's B2B portal: a private link, no account
   { path: '/b2b', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PortalPage /></React.Suspense></ErrorBoundary> },

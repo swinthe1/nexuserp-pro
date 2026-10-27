@@ -9,6 +9,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { registryFill } from '@/lib/registry'
 import { SearchSelect } from '@/components/search-select'
 import { RegistryLine } from '../components/registry-card'
+import { AskDetailsButton } from '../components/ask-details'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Can, useCompany } from '@/app/company-provider'
@@ -117,6 +118,7 @@ function PartnerView({ partner }: { partner?: PartnerDetail }) {
         meta={<>{partner.is_customer && <Badge variant="outline">{t('Customer')}</Badge>}{partner.is_vendor && <Badge variant="outline">{t('Vendor')}</Badge>}{!partner.is_active && <Badge variant="secondary">{t('Inactive')}</Badge>}</>}
         description={[partner.code, partner.tax_number && `NIPT ${partner.tax_number}`, partner.email, partner.phone].filter(Boolean).join(' · ')}
         actions={<>
+          <Can perm="partners.write"><AskDetailsButton partnerId={partner.id} /></Can>
           {partner.is_vendor && <Can perm="procurement.write"><Button variant={partner.is_customer ? 'outline' : 'default'} asChild><Link to={`/procurement/orders/new?vendor=${partner.id}`}><ShoppingCart /> {t('New purchase order')}</Link></Button></Can>}
           {partner.is_customer && <Can perm="sales.write">
             <Button variant="outline" asChild><Link to={`/sales/quotes/new?customer=${partner.id}`}><FileText /> {t('New quote')}</Link></Button>

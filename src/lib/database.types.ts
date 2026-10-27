@@ -15089,6 +15089,13 @@ export type Database = {
         }
         Returns: Json
       }
+      partner_contact_apply: {
+        Args: {
+          p_partner: string
+          p: Json
+        }
+        Returns: undefined
+      }
       partner_from_registry: {
         Args: {
           p_company: string
@@ -15096,6 +15103,25 @@ export type Database = {
           p_role?: string
         }
         Returns: string
+      }
+      partner_info_form: {
+        Args: {
+          p_token: string
+        }
+        Returns: Json
+      }
+      partner_info_request: {
+        Args: {
+          p_partner: string
+        }
+        Returns: Json
+      }
+      partner_info_submit: {
+        Args: {
+          p_token: string
+          p: Json
+        }
+        Returns: undefined
       }
       partner_registry: {
         Args: {

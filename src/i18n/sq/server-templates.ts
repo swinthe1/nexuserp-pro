@@ -437,6 +437,7 @@ export const serverTemplates: [string, string][] = [
   ['Till differences: %', 'Diferenca në arka: {0}'],
   ['Depreciation up to % is recorded', 'Amortizimi deri në {0} u regjistrua'],
   ['Amount: %', 'Shuma: {0}'],
+  ['% sent their details', '{0} dërgoi të dhënat e veta'],
   ['% is % in the business register', '{0} është {1} në regjistrin e bizneseve'],
   ['NUI % is not in the business register', 'NUI {0} nuk është në regjistrin e bizneseve'],
   ['This invoice is already booked as %', 'Kjo faturë është regjistruar tashmë si {0}'],

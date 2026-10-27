@@ -694,4 +694,9 @@ export default {
   "Margin when sold": "Marzha kur të shitet",
   "The stamp must be a picture smaller than 500 KB": "Vula duhet të jetë foto më e vogël se 500 KB",
   "Check before selling on credit or paying in advance.": "Kontrolloni para se t'i shisni me afat ose t'i paguani paradhënie.",
+  "Address, phone and e-mail are on the partner card now.": "Adresa, telefoni dhe emaili janë tani te kartela e partnerit.",
+  "This link is not valid": "Kjo lidhje nuk është e vlefshme",
+  "This link has expired; ask for a new one": "Kjo lidhje ka skaduar; kërkoni një të re",
+  "The details were sent already. Thank you!": "Të dhënat janë dërguar tashmë. Faleminderit!",
+  "Check the e-mail address": "Kontrolloni adresën e emailit",
 } satisfies Dict
