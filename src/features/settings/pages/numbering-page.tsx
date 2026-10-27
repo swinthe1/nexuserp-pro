@@ -1,3 +1,4 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Pencil } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
@@ -14,6 +15,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ErrorState } from '@/components/error-state'
 import { t, td } from '@/i18n'
 import { humanize } from '@/lib/utils'
+import { unwrap } from '@/lib/errors'
+import { supabase } from '@/lib/supabase'
 import { type NumberingRow, useNumbering, useSaveNumbering } from '../api'
 import { Field } from '../components/field'
 
@@ -70,6 +73,12 @@ export function NumberingPage() {
 
 function NumberingDialog({ row, onClose }: { row: NumberingRow; onClose: () => void }) {
   const save = useSaveNumbering()
+  const { companyId } = useCompany()
+  const qc = useQueryClient()
+  const locs = useQuery({ queryKey: ['numbering-locations', companyId], enabled: !!companyId,
+    queryFn: async () => unwrap(await supabase.rpc('numbering_location_types', { p_company: companyId! })) as string[] })
+  const [loc, setLoc] = React.useState<boolean | null>(null)
+  const withLoc = loc ?? (locs.data ?? []).includes(row.doc_type)
   const [prefix, setPrefix] = React.useState(row.prefix)
   const [year, setYear] = React.useState(row.include_year)
   const [padding, setPadding] = React.useState(row.padding)
@@ -90,6 +99,10 @@ function NumberingDialog({ row, onClose }: { row: NumberingRow; onClose: () => v
           </Field>
           <Field label={t('Digits')} htmlFor="num-pad"><Input id="num-pad" type="number" min={2} max={10} className="tabular" value={padding} onChange={(e) => setPadding(Math.min(10, Math.max(2, Number(e.target.value) || 2)))} /></Field>
           <Field label={t('Year in the number')} htmlFor="num-year"><Switch id="num-year" checked={year} onCheckedChange={setYear} /></Field>
+          <Field label={t('Store or warehouse code in the number')} htmlFor="num-loc" className="sm:col-span-2"
+            hint={t('Each store counts on its own, e.g. {example}.', { example: `${prefix}${year ? `${new Date().getFullYear()}-` : ''}01-${'1'.padStart(padding, '0')}` })}>
+            <Switch id="num-loc" checked={withLoc} onCheckedChange={setLoc} />
+          </Field>
           <Field label={t('Start again from 1')} htmlFor="num-reset">
             <Select value={reset} onValueChange={setReset}>
               <SelectTrigger id="num-reset"><SelectValue /></SelectTrigger>
@@ -101,12 +114,18 @@ function NumberingDialog({ row, onClose }: { row: NumberingRow; onClose: () => v
             <Input id="num-next" type="number" min={row.next_value} className="tabular" value={next} onChange={(e) => setNext(Number(e.target.value) || 1)} />
           </Field>
         </div>
-        <p className="rounded-md bg-muted px-3 py-2 text-[13px]">{t('Next:')} <span className="font-mono font-medium">{preview(prefix, year, padding, next)}</span></p>
+        <p className="rounded-md bg-muted px-3 py-2 text-[13px]">{t('Next:')} <span className="font-mono font-medium">{withLoc ? preview(prefix, year, padding, next).replace(/(\d+)$/, '01-$1') : preview(prefix, year, padding, next)}</span></p>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{t('Cancel')}</Button>
           <Button disabled={tooLow || badPrefix} loading={save.isPending}
             onClick={() => void save.mutateAsync({ doc_type: row.doc_type, prefix: prefix.trim(), include_year: year, padding, reset_policy: reset,
-              next_value: next !== row.next_value ? next : null }).then(() => { toast.success(t('Numbering saved')); onClose() })}>
+              next_value: next !== row.next_value ? next : null }).then(async () => {
+                if (loc !== null) {
+                  unwrap(await supabase.rpc('set_numbering_location', { p_company: companyId!, p_doc_type: row.doc_type, p_on: loc }))
+                  void qc.invalidateQueries({ queryKey: ['numbering-locations', companyId] })
+                }
+                toast.success(t('Numbering saved')); onClose()
+              })}>
             {t('Save numbering')}
           </Button>
         </DialogFooter>

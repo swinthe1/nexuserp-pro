@@ -40,24 +40,32 @@ export function PrintSettingsCard() {
   })
   const [s, setS] = React.useState<PrintSettings | null>(null)
   const [logo, setLogo] = React.useState<string | null | undefined>(undefined)   // undefined = unchanged
+  const [stamp, setStamp] = React.useState<string | null | undefined>(undefined)
   React.useEffect(() => { if (co.data && !s) setS({ ...PRINT_DEFAULTS, ...(co.data.settings ?? {}) }) }, [co.data]) // eslint-disable-line react-hooks/exhaustive-deps
   const save = useMutation({
-    mutationFn: async () => unwrap(await supabase.rpc('print_settings_save', {
-      p_company: companyId!, p_settings: s as unknown as Json, p_logo: logo ?? undefined, p_clear_logo: logo === null,
-    })),
-    onSuccess: () => { setLogo(undefined); void qc.invalidateQueries({ queryKey: ['print-company', companyId] }); toast.success(t('Saved')) },
+    mutationFn: async () => {
+      unwrap(await supabase.rpc('print_settings_save', { p_company: companyId!, p_settings: s as unknown as Json, p_logo: logo ?? undefined, p_clear_logo: logo === null }))
+      if (stamp !== undefined) unwrap(await supabase.rpc('print_stamp_save', { p_company: companyId!, p_stamp: (stamp ?? null) as string, p_clear: stamp === null }))
+    },
+    onSuccess: () => { setLogo(undefined); setStamp(undefined); void qc.invalidateQueries({ queryKey: ['print-company', companyId] }); toast.success(t('Saved')) },
     onError: (e) => toast.error(describeError(e)),
   })
   const fileRef = React.useRef<HTMLInputElement>(null)
+  const stampRef = React.useRef<HTMLInputElement>(null)
+  const pickStamp = async (f: File | undefined) => {
+    if (!f) return
+    try { setStamp(await shrinkImage(f)) } catch { toast.error(t('This file is not a picture')) }
+  }
   const pick = async (f: File | undefined) => {
     if (!f) return
     try { setLogo(await shrinkImage(f)) } catch { toast.error(t('This file is not a picture')) }
   }
   if (!co.data || !s) return null
   const set = (patch: Partial<PrintSettings>) => setS((x) => ({ ...x!, ...patch }))
-  const sample = sampleDoc({ ...co.data, logo: logo === undefined ? co.data.logo : logo, settings: s })
+  const curStamp = stamp === undefined ? co.data.stamp ?? null : stamp
+  const sample = sampleDoc({ ...co.data, logo: logo === undefined ? co.data.logo : logo, stamp: curStamp, settings: s })
   const { body, css } = renderDocHtml(sample)
-  const dirty = logo !== undefined || JSON.stringify(s) !== JSON.stringify({ ...PRINT_DEFAULTS, ...(co.data.settings ?? {}) })
+  const dirty = logo !== undefined || stamp !== undefined || JSON.stringify(s) !== JSON.stringify({ ...PRINT_DEFAULTS, ...(co.data.settings ?? {}) })
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_540px]">
@@ -82,7 +90,26 @@ export function PrintSettingsCard() {
                 <SelectTrigger className="h-8 w-32" aria-label={t('Logo on the')}><SelectValue /></SelectTrigger>
                 <SelectContent><SelectItem value="left">{t('left')}</SelectItem><SelectItem value="right">{t('right')}</SelectItem></SelectContent>
               </Select>
+              <Label className="ml-2 font-normal text-muted-foreground">{t('Size')}</Label>
+              <div className="flex rounded-md border p-0.5" role="radiogroup" aria-label={t('Size of the logo')}>
+                {(['s', 'm', 'l'] as const).map((z) => (
+                  <button key={z} type="button" role="radio" aria-checked={(s.logo_size ?? 'm') === z} disabled={ro} onClick={() => set({ logo_size: z })}
+                    className={cn('h-7 w-8 rounded text-xs font-medium uppercase', (s.logo_size ?? 'm') === z ? 'bg-secondary text-foreground' : 'text-muted-foreground')}>{z}</button>
+                ))}
+              </div>
             </div>
+          </div>
+          <div className="grid gap-2">
+            <Label>{t('Stamp and signature')}</Label>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="grid h-16 w-40 place-items-center overflow-hidden rounded-md border bg-white">
+                {curStamp ? <img src={curStamp} alt="" className="max-h-14 max-w-36 object-contain" /> : <span className="text-[12px] text-muted-foreground">{t('No stamp')}</span>}
+              </div>
+              <input ref={stampRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => void pickStamp(e.target.files?.[0])} />
+              <Button variant="outline" size="sm" disabled={ro} onClick={() => stampRef.current?.click()}><ImageUp /> {t('Choose a picture')}</Button>
+              {curStamp && <Button variant="ghost" size="sm" disabled={ro} onClick={() => setStamp(null)}><Trash2 /> {t('Remove')}</Button>}
+            </div>
+            <p className="text-[12px] text-muted-foreground">{t('A photo or scan of the stamp with the signature, on a white background. It is printed over the line of the issuer.')}</p>
           </div>
           <div className="grid gap-2">
             <Label>{t('Colour')}</Label>
@@ -98,12 +125,20 @@ export function PrintSettingsCard() {
             {([
               ['show_codes', t('Item codes')], ['show_discount', t('Discount column')], ['show_banks', t('Bank accounts (on invoices and offers)')],
               ['show_signatures', t('Places to sign')], ['show_words', t('Amount in words')], ['delivery_prices', t('Prices on delivery notes')],
+              ['show_stamp', t('Stamp and signature')], ['show_swift', t('SWIFT with the bank accounts')],
             ] as [keyof PrintSettings, string][]).map(([k, label]) => (
               <label key={k} className="flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
                 <span>{label}</span><Switch disabled={ro} checked={!!s[k]} onCheckedChange={(v) => set({ [k]: v })} />
               </label>
             ))}
           </div>
+          {s.show_banks && <div className="flex flex-wrap items-center gap-2 text-sm">
+            <Label className="font-normal text-muted-foreground">{t('Bank accounts')}</Label>
+            <Select value={s.banks_layout ?? 'list'} onValueChange={(v) => set({ banks_layout: v as 'list' | 'row' })} disabled={ro}>
+              <SelectTrigger className="h-8 w-56" aria-label={t('Bank accounts')}><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="list">{t('One under the other')}</SelectItem><SelectItem value="row">{t('Side by side on one line')}</SelectItem></SelectContent>
+            </Select>
+          </div>}
           <div className="grid gap-3">
             <Label>{t('Text under each document')}</Label>
             {TEXTS.map((x) => (

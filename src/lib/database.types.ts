@@ -2011,6 +2011,7 @@ export type Database = {
           payroll_holiday_pct: number | null
           depreciation_auto: boolean
           small_business_rate: number | null
+          print_stamp: string | null
         }
         Insert: {
           id?: string
@@ -2071,6 +2072,7 @@ export type Database = {
           payroll_holiday_pct?: number | null
           depreciation_auto?: boolean
           small_business_rate?: number | null
+          print_stamp?: string | null
         }
         Update: {
           id?: string
@@ -2131,6 +2133,7 @@ export type Database = {
           payroll_holiday_pct?: number | null
           depreciation_auto?: boolean
           small_business_rate?: number | null
+          print_stamp?: string | null
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -2906,6 +2909,7 @@ export type Database = {
           created_by: string | null
           updated_at: string
           updated_by: string | null
+          include_location: boolean
         }
         Insert: {
           id?: string
@@ -2919,6 +2923,7 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          include_location?: boolean
         }
         Update: {
           id?: string
@@ -2932,6 +2937,7 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          include_location?: boolean
         }
         Relationships: [
           { foreignKeyName: "document_sequences_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -14971,6 +14977,12 @@ export type Database = {
         }
         Returns: string
       }
+      numbering_location_types: {
+        Args: {
+          p_company: string
+        }
+        Returns: string[]
+      }
       numbering_overview: {
         Args: {
           p_company: string
@@ -15543,6 +15555,14 @@ export type Database = {
           p_settings: Json
           p_logo?: string
           p_clear_logo?: boolean
+        }
+        Returns: undefined
+      }
+      print_stamp_save: {
+        Args: {
+          p_company: string
+          p_stamp: string
+          p_clear?: boolean
         }
         Returns: undefined
       }
@@ -16172,6 +16192,14 @@ export type Database = {
         Args: {
           p_member: string
           p_status: string
+        }
+        Returns: undefined
+      }
+      set_numbering_location: {
+        Args: {
+          p_company: string
+          p_doc_type: string
+          p_on: boolean
         }
         Returns: undefined
       }

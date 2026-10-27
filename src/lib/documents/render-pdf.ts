@@ -43,7 +43,7 @@ export async function renderDocPdf(d: PrintDoc) {
   const logo = d.company.logo ? await logoPng(d.company.logo) : null
   let cx = right ? R : L
   if (logo) {
-    const h = 18, w = Math.min(48, (logo.w / logo.h) * h)
+    const h = s.logo_size === 's' ? 13 : s.logo_size === 'l' ? 25 : 18, w = Math.min(h * 2.7, (logo.w / logo.h) * h)
     pdf.addImage(logo.data, 'JPEG', right ? R - w : L, y, w, h, undefined, 'FAST')
     cx = right ? R - w - 4 : L + w + 4
   }
@@ -166,19 +166,31 @@ export async function renderDocPdf(d: PrintDoc) {
     pdf.text(lines, L, y); y += lines.length * 4 + 2
   }
   if (s.show_banks && d.company.banks.length && ['sales_invoice', 'advance_invoice', 'proforma', 'sales_quote', 'sales_order'].includes(d.kind)) {
+    const bankText = (b: PrintDoc['company']['banks'][number]) => `${b.bank} · ${b.iban}${b.swift && s.show_swift ? ` · SWIFT ${b.swift}` : ''}${b.currency !== d.company.base_currency ? ` (${b.currency})` : ''}`
     pdf.setFont('helvetica', 'bold'); pdf.text(`${t('Bank accounts')}:`, L, y); pdf.setFont('helvetica', 'normal')
-    d.company.banks.forEach((b, i) => pdf.text(`${b.bank} · ${b.iban}${b.swift ? ` · ${b.swift}` : ''}${b.currency !== d.company.base_currency ? ` (${b.currency})` : ''}`, L + 30, y + i * 4))
-    y += d.company.banks.length * 4 + 2
+    if (s.banks_layout === 'row') {
+      const lines = pdf.splitTextToSize(d.company.banks.map(bankText).join('   |   '), R - L - 30)
+      pdf.text(lines, L + 30, y); y += lines.length * 4 + 2
+    } else {
+      d.company.banks.forEach((b, i) => pdf.text(bankText(b), L + 30, y + i * 4))
+      y += d.company.banks.length * 4 + 2
+    }
   }
   if (d.fiscal?.fic) {
     pdf.setFontSize(7.5); pdf.setTextColor(...gray)
     const f = pdf.splitTextToSize(`NIVF: ${d.fiscal.iic} · NSLF: ${d.fiscal.fic}${d.fiscal.tcr ? ` · TCR: ${d.fiscal.tcr}` : ''}`, R - L)
     pdf.text(f, L, y); y += f.length * 3.4 + 2
   }
+  const stamp = s.show_stamp && d.company.stamp && !isVoucher(d) && d.kind !== 'goods_receipt' ? await logoPng(d.company.stamp) : null
+  if (!s.show_signatures && stamp) {
+    y += 6; if (y + 28 > 272) { pdf.addPage(); y = 20 }
+    const h = 24, w = Math.min(50, (stamp.w / stamp.h) * h); pdf.addImage(stamp.data, 'JPEG', L, y, w, h, undefined, 'FAST'); y += h + 2
+  }
   if (s.show_signatures) {
     const [sl, sr] = isVoucher(d) ? [d.kind === 'receipt_voucher' ? t('Received by') : t('Paid by'), d.kind === 'receipt_voucher' ? t('Paid by') : t('Received by')]
       : d.kind === 'goods_receipt' ? [t('Delivered by'), t('Received by')] : [t('Issued by'), t('Received by')]
-    y = Math.max(y + 14, 0); if (y > 272) { pdf.addPage(); y = 30 }
+    y = Math.max(y + (stamp ? 30 : 14), 0); if (y > 272) { pdf.addPage(); y = 40 }
+    if (stamp) { const h = 24, w = Math.min(50, (stamp.w / stamp.h) * h); pdf.addImage(stamp.data, 'JPEG', L + 35 - w / 2, y - h + 4, w, h, undefined, 'FAST') }
     pdf.setDrawColor(138, 143, 156); pdf.setLineWidth(0.25)
     pdf.line(L, y, L + 70, y); pdf.line(R - 70, y, R, y)
     pdf.setFontSize(8.5); pdf.setTextColor(...gray); pdf.text(sl, L + 35, y + 4, { align: 'center' }); pdf.text(sr, R - 35, y + 4, { align: 'center' })

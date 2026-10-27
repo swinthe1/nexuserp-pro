@@ -19,12 +19,19 @@ export type PrintSettings = {
   show_words?: boolean
   /** a delivery note shows prices (otherwise only quantities) */
   delivery_prices?: boolean
+  /** the company stamp and signature over the line of the issuer */
+  show_stamp?: boolean
+  show_swift?: boolean
+  /** bank accounts one under the other, or side by side on one line */
+  banks_layout?: 'list' | 'row'
+  logo_size?: 's' | 'm' | 'l'
   footer?: string
   /** a text printed under each kind of document (terms of a quote, a note on invoices…) */
   texts?: Partial<Record<string, string>>
 }
 export const PRINT_DEFAULTS: Required<Omit<PrintSettings, 'footer' | 'texts'>> = {
   accent: '#1f3a8a', logo_position: 'left', show_codes: true, show_discount: true, show_banks: true, show_signatures: true, show_words: true, delivery_prices: false,
+  show_stamp: true, show_swift: true, banks_layout: 'list', logo_size: 'm',
 }
 
 export type PrintLine = {
@@ -44,7 +51,7 @@ export type PrintDoc = {
   partner_id?: string | null; partner: PrintParty | null
   lines: PrintLine[]; vat: { rate: number; base: number; tax: number }[]
   fiscal?: { iic: string | null; fic: string | null; tcr: string | null; business_unit: string | null; operator: string | null; qr_url: string | null } | null
-  company: PrintParty & { website?: string | null; business_number?: string | null; country: string; base_currency: string; logo: string | null; footer: string | null
+  company: PrintParty & { website?: string | null; business_number?: string | null; country: string; base_currency: string; logo: string | null; stamp?: string | null; footer: string | null
     settings: PrintSettings; decimals: number; banks: { bank: string; iban: string; swift: string | null; currency: string }[] }
   printed_by: string | null; printed_at: string
 }

@@ -12,7 +12,7 @@ export function docCss(accent: string) {
   return `@page{size:A4;margin:14mm 12mm 14mm 12mm}
 *{box-sizing:border-box}body{font-family:Inter,'Segoe UI',Arial,sans-serif;font-size:10.5px;color:#1a1d24;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .top{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;padding-bottom:12px;border-bottom:2px solid ${accent}}
-.top.rev{flex-direction:row-reverse}.co{display:flex;gap:12px;align-items:flex-start}.co img{max-height:64px;max-width:170px;object-fit:contain}
+.top.rev{flex-direction:row-reverse}.co{display:flex;gap:12px;align-items:flex-start}.co img{max-height:var(--logo-h,64px);max-width:calc(var(--logo-h,64px) * 2.7);object-fit:contain}
 .co b{font-size:14px;display:block;margin-bottom:2px}.muted{color:#5b6170}.co div div{line-height:1.45}
 .pk{font-size:8.5px;color:#5b6170;white-space:nowrap}
 .title{text-align:right}.top.rev .title{text-align:left}.title h1{margin:0;font-size:20px;color:${accent};letter-spacing:.2px}.title .no{font-size:13px;font-weight:600;margin-top:2px}
@@ -29,7 +29,8 @@ table.v th:first-child,table.v td:first-child{text-align:left}table.v td{padding
 .tot .big{border-top:1.5px solid ${accent};margin-top:4px;padding-top:6px;font-size:14px;font-weight:700;color:${accent}}
 .words{margin-top:10px;font-style:italic}.notes{margin-top:10px;white-space:pre-wrap;line-height:1.5}
 .banks{margin-top:10px;font-size:9.5px;line-height:1.5}.fiscal{margin-top:8px;font-size:9px;color:#5b6170;word-break:break-all}
-.sign{display:grid;grid-template-columns:1fr 1fr;gap:60px;margin-top:38px}.sign div{border-top:1px solid #8a8f9c;padding-top:4px;text-align:center;color:#5b6170;font-size:9.5px}
+.sign{display:grid;grid-template-columns:1fr 1fr;gap:60px;margin-top:38px}.sign div{border-top:1px solid #8a8f9c;padding-top:4px;text-align:center;color:#5b6170;font-size:9.5px;position:relative}.sign div.nostroke{border-top:0}.sign.has-stamp{margin-top:84px}
+.stamp{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);max-height:80px;max-width:160px;object-fit:contain;margin-bottom:-14px;mix-blend-mode:multiply}
 .foot{margin-top:18px;padding-top:6px;border-top:1px solid #e6e8ee;font-size:9px;color:#6b7080;display:flex;justify-content:space-between;gap:12px}
 .amount{font-size:22px;font-weight:700;color:${accent}}.vbox{border:1px solid #d9dce3;border-radius:6px;padding:12px 14px;margin-top:14px;line-height:1.7}
 tr{page-break-inside:avoid}`
@@ -77,16 +78,17 @@ export function renderDocHtml(d: PrintDoc): { body: string; css: string } {
       ${d.deliver_to ? `<div class="sm">${esc(t('Deliver to'))}: ${esc(d.deliver_to)}</div>` : ''}
       <div class="muted">${esc([p.code, p.phone, p.email].filter(Boolean).join(' · '))}</div></div>` : '<div></div>'
   const det = `<div class="box"><div class="kv">${details(d).map(([k, v]) => `<span>${esc(k)}</span><span>${esc(v)}</span>`).join('')}</div></div>`
-  const top = `<div class="top${s.logo_position === 'right' ? ' rev' : ''}">${companyBlock(d)}<div class="title"><h1>${esc(docTitle(d))}</h1><div class="no">${esc(d.number)}</div></div></div>`
+  const top = `<div class="top${s.logo_position === 'right' ? ' rev' : ''}" style="--logo-h:${s.logo_size === 's' ? 44 : s.logo_size === 'l' ? 88 : 64}px">${companyBlock(d)}<div class="title"><h1>${esc(docTitle(d))}</h1><div class="no">${esc(d.number)}</div></div></div>`
   const words = s.show_words && getLocale() === 'sq' ? `<div class="words">${esc(t('In words'))}: ${esc(amountInWords(isVoucher(d) ? d.total : d.total, d.currency))}</div>` : ''
   const docText = d.company.settings?.texts?.[textKey(d)]
   const notes = [d.terms, d.notes, docText].filter(Boolean).map((x) => `<div class="notes">${esc(x)}</div>`).join('')
   const banks = s.show_banks && d.company.banks.length && ['sales_invoice', 'advance_invoice', 'proforma', 'sales_quote', 'sales_order'].includes(d.kind)
-    ? `<div class="banks"><b>${esc(t('Bank accounts'))}:</b> ${d.company.banks.map((b) => esc(`${b.bank} · ${b.iban}${b.swift ? ` · ${b.swift}` : ''}${b.currency !== d.company.base_currency ? ` (${b.currency})` : ''}`)).join('<br>')}</div>` : ''
+    ? `<div class="banks"><b>${esc(t('Bank accounts'))}:</b>${s.banks_layout === 'row' ? ' ' : '<br>'}${d.company.banks.map((b) => esc(`${b.bank} · ${b.iban}${b.swift && s.show_swift ? ` · SWIFT ${b.swift}` : ''}${b.currency !== d.company.base_currency ? ` (${b.currency})` : ''}`)).join(s.banks_layout === 'row' ? ' &nbsp;|&nbsp; ' : '<br>')}</div>` : ''
   const fiscal = d.fiscal?.fic ? `<div class="fiscal">NIVF: ${esc(d.fiscal.iic)} · NSLF: ${esc(d.fiscal.fic)}${d.fiscal.tcr ? ` · TCR: ${esc(d.fiscal.tcr)}` : ''}${d.fiscal.business_unit ? ` · ${esc(t('Business unit'))}: ${esc(d.fiscal.business_unit)}` : ''}${d.fiscal.operator ? ` · ${esc(t('Operator'))}: ${esc(d.fiscal.operator)}` : ''}</div>` : ''
   const [signL, signR] = isVoucher(d) ? [d.kind === 'receipt_voucher' ? t('Received by') : t('Paid by'), d.kind === 'receipt_voucher' ? t('Paid by') : t('Received by')]
     : d.kind === 'goods_receipt' ? [t('Delivered by'), t('Received by')] : [t('Issued by'), t('Received by')]
-  const sign = s.show_signatures ? `<div class="sign"><div>${esc(signL)}</div><div>${esc(signR)}</div></div>` : ''
+  const stamp = s.show_stamp && d.company.stamp && !isVoucher(d) && d.kind !== 'goods_receipt' ? `<img class="stamp" src="${esc(d.company.stamp)}" alt="">` : ''
+  const sign = s.show_signatures ? `<div class="sign${stamp ? ' has-stamp' : ''}"><div>${stamp}${esc(signL)}</div><div>${esc(signR)}</div></div>` : stamp ? `<div class="sign has-stamp"><div class="nostroke">${stamp}</div><div class="nostroke"></div></div>` : ''
   const foot = `<div class="foot"><span>${esc(d.company.footer || s.footer || '')}</span><span>${esc(t('Printed {date}', { date: formatDate(d.printed_at, true) }))}${d.printed_by ? ` · ${esc(d.printed_by)}` : ''}</span></div>`
 
   if (isVoucher(d)) {

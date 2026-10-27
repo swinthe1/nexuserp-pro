@@ -103,6 +103,8 @@ const MembershipsPage = lazy(() => import('@/features/appointments/memberships-p
 const AccountantPage = lazy(() => import('@/features/accountant/accountant-page'), 'AccountantPage')
 const ExpensesPage = lazy(() => import('@/features/finance/pages/expenses-page'), 'ExpensesPage')
 const AssetInvoicesPage = lazy(() => import('@/features/finance/pages/expenses-page'), 'AssetInvoicesPage')
+const CashBookPage = lazy(() => import('@/features/finance/pages/ledger-shortcuts'), 'CashBookPage')
+const AccountCardPage = lazy(() => import('@/features/finance/pages/ledger-shortcuts'), 'AccountCardPage')
 const ZReportsPage = lazy(() => import('@/features/finance/pages/zreports-page'), 'ZReportsPage')
 const YearEndPage = lazy(() => import('@/features/finance/pages/year-end-page'), 'YearEndPage')
 const ItemCardPage = lazy(() => import('@/features/inventory/pages/item-card-page'), 'ItemCardPage')
@@ -281,6 +283,8 @@ const router = createBrowserRouter([
         { index: true, element: <FinanceOverviewPage /> },
         { path: 'accounts', element: <AccountsPage /> },
         { path: 'accounts/:id', element: <AccountLedgerPage /> },
+        { path: 'cash-book', element: <CashBookPage /> },
+        { path: 'account-card', element: <AccountCardPage /> },
         { path: 'journal', element: <JournalEntriesPage /> },
         { path: 'journal/new', element: <JournalEntryPage key="je-new" /> },
         { path: 'journal/:id', element: <JournalEntryPage key="je" /> },

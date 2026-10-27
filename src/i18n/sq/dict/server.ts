@@ -690,4 +690,7 @@ export default {
   "Choose the kind of asset": "Zgjidhni llojin e mjetit",
   "Give the asset a name": "Jepini mjetit një emër",
   "Give the number of the Z report": "Shkruani numrin e Z-raportit",
+  "Value at selling prices": "Vlera me çmimet e shitjes",
+  "Margin when sold": "Marzha kur të shitet",
+  "The stamp must be a picture smaller than 500 KB": "Vula duhet të jetë foto më e vogël se 500 KB",
 } satisfies Dict
