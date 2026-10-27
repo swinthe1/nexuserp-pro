@@ -35,6 +35,8 @@ export const NAV: NavSection[] = [
       { label: msg('Invoice from a photo'), href: '/inventory/read-invoice', icon: ScanText, perm: 'inventory.read', keywords: ['ocr', 'scan', 'photo', 'foto', 'fatura', 'ai', 'pdf'] },
       { label: msg('Landed costs'), href: '/inventory/landed-costs', icon: Ship, perm: 'procurement.read', keywords: ['customs', 'freight', 'import', 'clearance'] },
       { label: msg('Adjustments'), href: '/inventory/adjustments', icon: SlidersHorizontal, perm: 'inventory.read', keywords: ['opening', 'write-off', 'damage'] },
+      { label: msg('Cycle counts'), href: '/wms/counts', icon: ClipboardCheck, perm: 'wms.read', keywords: ['inventory count', 'stocktake', 'inventarizim', 'inventarizimi', 'numërimi', 'regjistrimi i mallit'] },
+      { label: msg('Lots & expiry'), href: '/wms/lots', icon: Hourglass, perm: 'inventory.read', keywords: ['batch', 'serial', 'traceability', 'recall', 'fefo', 'expiry'] },
       { label: msg('Transfers'), href: '/inventory/transfers', icon: ArrowLeftRight, perm: 'inventory.read', keywords: ['move', 'warehouse'] },
       { label: msg('Warehouses'), href: '/inventory/warehouses', icon: Warehouse, perm: 'inventory.read', keywords: ['locations', 'bins'] },
       { label: msg('Inventory setup'), href: '/inventory/setup', icon: PackagePlus, perm: 'inventory.read', keywords: ['categories', 'units', 'attributes'] },
@@ -80,8 +82,6 @@ export const NAV: NavSection[] = [
       { label: msg('Pick'), href: '/wms/picking', icon: ShoppingBasket, perm: 'wms.read', keywords: ['picking', 'pick list', 'orders'] },
       { label: msg('Ship'), href: '/wms/shipping', icon: Truck, perm: 'wms.read', keywords: ['shipping', 'dispatch', 'tracking', 'carrier'] },
       { label: msg('Move stock'), href: '/wms/move', icon: ArrowLeftRight, perm: 'wms.read', keywords: ['bin to bin', 'relocate', 'internal transfer'] },
-      { label: msg('Cycle counts'), href: '/wms/counts', icon: ClipboardCheck, perm: 'wms.read', keywords: ['inventory count', 'stocktake', 'inventarizim'] },
-      { label: msg('Lots & expiry'), href: '/wms/lots', icon: Hourglass, perm: 'inventory.read', keywords: ['batch', 'serial', 'traceability', 'recall', 'fefo', 'expiry'] },
     ],
   },
   {

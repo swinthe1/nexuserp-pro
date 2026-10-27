@@ -50,6 +50,10 @@ export function AppointmentDialog({ board, appt, initial, open, onOpenChange }: 
   const cards = useQuery({ queryKey: ['appointments', 'cards-of', f?.partner_id], enabled: !!f?.partner_id,
     queryFn: async () => unwrap(await supabase.from('client_cards').select('id, kind, title').eq('partner_id', f!.partner_id!).is('deleted_at', null).order('title')) as unknown as { id: string; kind: CardKind; title: string }[] })
 
+  // the free times of the day for this service and person (whole service fits, nothing overlaps)
+  const slots = useQuery({ queryKey: ['appointments', 'slots', f?.service_id, f?.day, f?.resource_id], enabled: open && !!f?.service_id && !!f?.day && !!f?.resource_id,
+    queryFn: async () => unwrap(await supabase.rpc('appt_slots', { p_company: companyId!, p_service: f!.service_id!, p_day: f!.day, p_resource: f!.resource_id })) as unknown as
+      { resource_id: string; starts_at: string; ends_at: string }[] })
   const save = useApptAction(async (x: Form) => unwrap(await supabase.rpc('appt_save', { p: {
     id: appt?.id ?? null, company_id: companyId, resource_id: x.resource_id, service_id: x.service_id, starts_at: toIso(x.day, x.time),
     ends_at: new Date(new Date(`${x.day}T${x.time}:00`).getTime() + x.duration * 60000).toISOString(), partner_id: x.partner_id, client_name: x.client_name,
@@ -85,6 +89,18 @@ export function AppointmentDialog({ board, appt, initial, open, onOpenChange }: 
             <div className="grid gap-1.5"><Label htmlFor="at">{t('Time')}</Label><Input id="at" type="time" step={300} value={f.time} onChange={(e) => set({ time: e.target.value })} /></div>
             <div className="grid gap-1.5"><Label htmlFor="am">{t('Minutes')}</Label><Input id="am" type="number" min={5} step={5} value={f.duration} onChange={(e) => set({ duration: num(e.target.value) })} /></div>
           </div>
+          {editable && f.service_id && slots.data && (
+            <div className="grid gap-1.5 sm:col-span-2">
+              <Label>{t('Free times')}</Label>
+              {slots.data.length === 0 ? <p className="text-[13px] text-muted-foreground">{t('No free time left on this day for this service.')}</p> : (
+                <div className="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto">
+                  {slots.data.map((x) => { const tm = localTime(new Date(x.starts_at)); return (
+                    <Button key={x.starts_at} type="button" size="xs" variant={tm === f.time ? 'default' : 'outline'} className="tabular-nums" onClick={() => set({ time: tm })}>{tm}</Button>
+                  ) })}
+                </div>
+              )}
+            </div>
+          )}
           <div className="grid gap-1.5 sm:col-span-2"><Label>{t('Client')}</Label>
             <SearchSelect value={f.partner_id} clearable placeholder={t('A client on file (or write a new one below)')}
               onChange={(v) => { const c = customers.data?.find((x) => x.id === v); set({ partner_id: v, card_id: null, client_name: c?.name ?? f.client_name, client_phone: c?.phone ?? f.client_phone, client_email: c?.email ?? f.client_email }) }}

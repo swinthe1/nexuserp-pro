@@ -1,6 +1,8 @@
-import { ChevronDown, ChevronRight, History } from 'lucide-react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { ChevronDown, ChevronRight, History, RotateCcw } from 'lucide-react'
 import * as React from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { toast } from 'sonner'
 import { EmptyState } from '@/components/empty-state'
 import { ExportMenu } from '@/components/export-menu'
 import { PageHeader } from '@/components/page-header'
@@ -13,7 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ErrorState } from '@/components/error-state'
-import { msg, t, tn } from '@/i18n'
+import { msg, t, tn, tServer } from '@/i18n'
+import { describeError, unwrap } from '@/lib/errors'
+import { supabase } from '@/lib/supabase'
 import { formatDate, humanize } from '@/lib/utils'
 import { AUDIT_PAGE, type AuditRow, useAuditFeed, useAuditPeople } from '../api'
 
@@ -136,8 +140,9 @@ export function AuditPage() {
                         <TableRow className="hover:bg-transparent">
                           <TableCell colSpan={6} className="bg-muted/30 p-0">
                             <Diff row={r} />
-                            <div className="px-6 pb-3">
+                            <div className="flex flex-wrap items-center gap-4 px-6 pb-3">
                               <Button variant="link" size="sm" className="h-auto p-0" onClick={() => { set('record', r.record_id); setOpen(null) }}>{t('Full history of this record')}</Button>
+                              {r.action === 'UPDATE' && r.changed_fields?.includes('deleted_at') && r.new_data?.deleted_at != null && <RestoreButton table={r.table_name} id={r.record_id} />}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -184,4 +189,15 @@ function Diff({ row }: { row: AuditRow }) {
       </table>
     </div>
   )
+}
+
+/** Undo a removal: the record comes back as it was (needs the right to delete in that area). */
+function RestoreButton({ table, id }: { table: string; id: string }) {
+  const qc = useQueryClient()
+  const restore = useMutation({
+    mutationFn: async () => unwrap(await supabase.rpc('restore_record', { p_table: table, p_id: id })),
+    onSuccess: () => { toast.success(t('Brought back')); void qc.invalidateQueries() },
+    onError: (e) => toast.error(tServer(describeError(e))),
+  })
+  return <Button variant="outline" size="sm" loading={restore.isPending} onClick={() => restore.mutate()}><RotateCcw /> {t('Bring it back')}</Button>
 }

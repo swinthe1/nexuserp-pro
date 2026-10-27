@@ -219,6 +219,8 @@ select t.ok(exists (select 1 from public.business_partners where code = 'C0002')
 select t.login('alice@alba.al');
 select public.restore_record('business_partners', (select id from public.business_partners where code = 'C0002' and company_id = :'company_a'));
 select t.ok((select deleted_at is null from public.business_partners where code = 'C0002'), 'restore_record un-deletes');
+select t.throws(format($q$select public.restore_record('business_partners', %L)$q$, (select id from public.business_partners where code = 'C0002' and company_id = :'company_a')),
+                'not removed', 'a record that is there cannot be brought back twice');
 select t.login('carol@alba.al');
 select t.throws(format($q$select public.restore_record('business_partners', %L)$q$, :'customer_id'),
                 'permission denied', 'restore requires <module>.delete');

@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Bot, Play, RefreshCw, ShoppingCart, X } from 'lucide-react'
+import { ArrowLeftRight, Bot, Factory, Play, RefreshCw, ShoppingCart, X } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -24,7 +24,7 @@ import { msg, t, td, tn } from '@/i18n'
 import { cn, formatDate, formatMoney, formatQty, num } from '@/lib/utils'
 import { useWarehouses } from '@/features/inventory/api'
 import {
-  procKeys, useActiveVendors, useAutomationSettings, useCreateTransfers, useGenerateReplenishment, useOrderSuggestions, useReplenishmentRuns, useRunReplenishment,
+  procKeys, useActiveVendors, useAutomationSettings, useCreateTransfers, useCreateWorkOrders, useGenerateReplenishment, useOrderSuggestions, useReplenishmentRuns, useRunReplenishment,
   useSaveAutomation, useSuggestions, useUpdateSuggestion, type RunAction, type RunResult, type SuggestionRow,
 } from '../api'
 
@@ -45,6 +45,7 @@ export function ReplenishmentPage() {
   const generate = useGenerateReplenishment()
   const order = useOrderSuggestions()
   const transfer = useCreateTransfers()
+  const makeWos = useCreateWorkOrders()
   const update = useUpdateSuggestion()
   const [warehouse, setWarehouse] = React.useState<string>('all')
   const [selected, setSelected] = React.useState<Set<string>>(new Set())
@@ -54,12 +55,13 @@ export function ReplenishmentPage() {
 
   const open = (suggestions.data ?? []).filter((s) => s.status === 'open' && (warehouse === 'all' || s.warehouse_id === warehouse))
   const recent = (suggestions.data ?? []).filter((s) => s.status === 'converted').slice(0, 12)
-  const selectable = open.filter((s) => s.replenish_method === 'buy' || s.replenish_method === 'transfer')
+  const selectable = open
   const allSelected = selectable.length > 0 && selectable.every((s) => selected.has(s.id))
   const toggle = (id: string) => setSelected((cur) => { const n = new Set(cur); if (n.has(id)) n.delete(id); else n.add(id); return n })
   const generatedAt = open[0]?.generated_at
   const selBuy = open.filter((s) => selected.has(s.id) && s.replenish_method === 'buy')
   const selTransfer = open.filter((s) => selected.has(s.id) && s.replenish_method === 'transfer')
+  const selMake = open.filter((s) => selected.has(s.id) && s.replenish_method === 'manufacture')
   const vendorCount = new Set(selBuy.map((s) => `${s.vendor_id}|${s.warehouse_id}`)).size
 
   return (
@@ -98,6 +100,14 @@ export function ReplenishmentPage() {
                   toast.success(tn(r.length, '{n} draft transfer created', '{n} draft transfers created'), { description: r.map((x) => x.number).join(', ') })
                   if (r.length === 1) navigate(`/inventory/transfers/${r[0]!.id}`)
                 }}><ArrowLeftRight /> {t('Create transfers')}{selTransfer.length ? ` (${selTransfer.length})` : ''}</Button>
+              </Can>
+              <Can perm="manufacturing.write">
+                <Button variant="outline" size="sm" disabled={!selMake.length} loading={makeWos.isPending} onClick={async () => {
+                  const r = await makeWos.mutateAsync(selMake.map((s) => s.id))
+                  setSelected(new Set())
+                  toast.success(tn(r.length, '{n} work order created', '{n} work orders created'), { description: r.map((x) => x.number).join(', ') })
+                  if (r.length === 1) navigate(`/manufacturing/orders/${r[0]!.id}`)
+                }}><Factory /> {t('Create work orders')}{selMake.length ? ` (${selMake.length})` : ''}</Button>
               </Can>
               <Can perm="procurement.write">
                 <Button size="sm" disabled={!selBuy.length} loading={order.isPending} onClick={async () => {
@@ -164,7 +174,7 @@ function SuggestionLine({ s, selected, onToggle, onChange, vendors, writable }: 
   const method = s.replenish_method
   return (
     <TableRow className="hover:bg-transparent">
-      <TableCell><Checkbox aria-label={t('Select {number}', { number: s.variant?.sku })} checked={selected} disabled={method === 'manufacture'} onCheckedChange={onToggle} /></TableCell>
+      <TableCell><Checkbox aria-label={t('Select {number}', { number: s.variant?.sku })} checked={selected} onCheckedChange={onToggle} /></TableCell>
       <TableCell><div className="font-medium">{s.variant?.sku}</div><div className="text-xs text-muted-foreground">{s.variant?.name}</div></TableCell>
       <TableCell className="text-[13px]">{td(s.warehouse?.name)}</TableCell>
       <TableCell className="text-right tabular">{formatQty(s.on_hand)}</TableCell>

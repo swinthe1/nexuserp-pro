@@ -293,6 +293,8 @@ export function useProcurementOverview(from: string, to: string, enabled = true)
 
 export const useCreateTransfers = () => useRpcAction(async (ids: string[]) =>
   unwrap(await supabase.rpc('create_transfers_from_suggestions', { p_ids: ids })) as unknown as { id: string; number: string }[])
+export const useCreateWorkOrders = () => useRpcAction(async (ids: string[]) =>
+  unwrap(await supabase.rpc('create_wos_from_suggestions', { p_ids: ids })) as unknown as { id: string; number: string }[])
 
 export type RunAction = 'suggest' | 'draft_po' | 'submit_po'
 export interface RunResult {
