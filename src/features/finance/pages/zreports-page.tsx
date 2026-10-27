@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Camera, FileText, Loader2, PenLine, Plus, Printer, Sparkles, Trash2, TriangleAlert } from 'lucide-react'
+import { Loader2, Plus, Printer, Sparkles, Trash2, TriangleAlert } from 'lucide-react'
 import * as React from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
+import { PhotoCard, ReadsList, usePhotoSubmit } from '@/components/photo-reads'
 import { PageHeader } from '@/components/page-header'
 import { SearchSelect } from '@/components/search-select'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -14,9 +14,8 @@ import { Label } from '@/components/ui/label'
 import { useTaxCodes } from '@/features/tax/api'
 import { t, td, tServer } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
-import { shrink } from '@/lib/shrink-image'
 import { supabase } from '@/lib/supabase'
-import { cn, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
+import { cn, formatMoney, num, todayISO } from '@/lib/utils'
 
 type Line = { rate: number; net: number; vat: number; tax_code_id: string | null }
 type Result = { z_number?: string; device?: string; date?: string; total?: number; receipts?: number; cash?: number; card?: number; other?: number
@@ -30,7 +29,6 @@ type PayAccount = { id: string; name: string; kind: 'cash' | 'bank' }
 /** The Z report of a client's own fiscal register: photographed, read, booked as the day's sales. */
 export function ZReportsPage() {
   const { companyId } = useCompany()
-  const qc = useQueryClient()
   const [params, setParams] = useSearchParams()
   const id = params.get('id')
   const list = useQuery({
@@ -38,75 +36,23 @@ export function ZReportsPage() {
     refetchInterval: (q) => ((q.state.data as Row[] | undefined)?.some((r) => r.status === 'queued' || r.status === 'reading') ? 3000 : false),
     queryFn: async () => unwrap(await supabase.rpc('zreport_reads', { p_company: companyId! })) as unknown as Row[],
   })
-  const send = useMutation({
-    mutationFn: async (files: File[]) => {
-      let last = ''
-      for (const file of files) {
-        if (!/^(image\/|application\/pdf)/.test(file.type)) throw new Error(t('Choose a photo or a PDF'))
-        const f = await shrink(file)
-        last = unwrap(await supabase.rpc('doc_read_submit', { p_company: companyId!, p_file: f.data, p_mime: f.mime, p_name: file.name, p_kind: 'z_report' })) as string
-      }
-      return { last, n: files.length }
-    },
-    onSuccess: (r) => { if (r.n === 1) setParams({ id: r.last }); else toast.success(t('{n} Z reports are being read', { n: r.n })); void qc.invalidateQueries({ queryKey: ['zreport-reads', companyId] }) },
-    onError: (e) => toast.error(describeError(e)),
-  })
-  const pick = (capture: boolean) => {
-    const inp = document.createElement('input')
-    inp.type = 'file'; inp.accept = 'image/*,application/pdf'
-    if (capture) inp.setAttribute('capture', 'environment'); else inp.multiple = true
-    inp.onchange = () => { const f = Array.from(inp.files ?? []); if (f.length) send.mutate(f) }
-    inp.click()
-  }
+  const { send, pick } = usePhotoSubmit({ kind: 'z_report', invalidate: [['zreport-reads', companyId]], onOne: (x) => setParams({ id: x }),
+    manyMessage: (n) => t('{n} Z reports are being read', { n }) })
   return (
     <div className="mx-auto grid max-w-5xl gap-4">
       <PageHeader title={t('Z reports')} description={t('For a business with its own fiscal cash register: photograph the Z report of the day and DrisPRO books the sales by VAT rate, with the cash and the card amounts. It goes into the sales book.')} />
-      <Card>
-        <CardContent className="flex flex-col items-center gap-3 p-5 text-center sm:flex-row sm:text-left">
-          <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><Printer className="size-6" /></span>
-          <div className="flex-1"><div className="font-medium">{t('A new Z report')}</div>
-            <div className="text-[13px] text-muted-foreground">{t('The whole report in the photo, flat and with light. Several days at once from the gallery.')}</div></div>
-          <div className="flex flex-wrap justify-center gap-2">
-            <Button size="lg" loading={send.isPending} onClick={() => pick(true)}><Camera /> {t('Take a photo')}</Button>
-            <Button size="lg" variant="outline" disabled={send.isPending} onClick={() => pick(false)}><FileText /> {t('Choose files')}</Button>
-            <Button size="lg" variant="ghost" onClick={() => setParams({ id: 'new' })}><PenLine /> {t('Without a photo')}</Button>
-          </div>
-        </CardContent>
-      </Card>
-      {id ? <Review key={id} id={id === 'new' ? null : id} onDone={() => setParams({})} /> : <Recent rows={list.data ?? []} onOpen={(x) => setParams({ id: x })} />}
+      <PhotoCard icon={Printer} busy={send.isPending} onPick={pick} onManual={() => setParams({ id: 'new' })} title={t('A new Z report')}
+        hint={t('The whole report in the photo, flat and with light. Several days at once from the gallery.')} />
+      {id ? <Review key={id} id={id === 'new' ? null : id} onDone={() => setParams({})} /> : <ReadsList bookedLabel={t('Booked|expense')} onOpen={(x) => setParams({ id: x })}
+        items={(list.data ?? []).map((r) => ({ ...r, booked: !!r.invoice_id,
+          title: <>{r.z_number ? t('Z report {number}', { number: r.z_number }) : r.file_name ?? t('Z report')}{r.device ? <span className="font-normal text-muted-foreground"> · {r.device}</span> : null}</> }))} />}
     </div>
   )
 }
 
-function Recent({ rows, onOpen }: { rows: Row[]; onOpen: (id: string) => void }) {
-  if (!rows.length) return null
-  const waiting = rows.filter((r) => r.status === 'done' && !r.invoice_id).length
-  const label: Record<string, string> = { queued: t('Waiting'), reading: t('Reading'), done: t('To check'), failed: t('Not read') }
-  return (
-    <Card><CardContent className="p-0">
-      {waiting > 0 && <div className="border-b bg-info/5 px-4 py-2 text-[13px] font-medium text-info">{t('{n} read and waiting for you to book them', { n: waiting })}</div>}
-      <ul className="divide-y">
-        {rows.map((r) => (
-          <li key={r.id}>
-            <button type="button" onClick={() => onOpen(r.id)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted/40">
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium">{r.z_number ? t('Z report {number}', { number: r.z_number }) : r.file_name ?? t('Z report')}{r.device ? <span className="font-normal text-muted-foreground"> · {r.device}</span> : null}</div>
-                <div className="truncate text-xs text-muted-foreground">{r.date ? formatDate(r.date) : formatDate(r.created_at, true)}{r.error ? ` · ${tServer(r.error)}` : ''}</div>
-              </div>
-              {r.total != null && <span className="text-sm font-semibold tabular">{formatMoney(r.total)}</span>}
-              {r.invoice_id ? <Badge variant="outline" className="border-success/40 text-success">{t('Booked|expense')}</Badge>
-                : <span className={cn('w-20 text-right text-xs font-medium', r.status === 'failed' ? 'text-destructive' : r.status === 'done' ? 'text-info' : 'text-muted-foreground')}>{label[r.status] ?? r.status}</span>}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </CardContent></Card>
-  )
-}
-
 function Review({ id, onDone }: { id: string | null; onDone: () => void }) {
-  const { companyId } = useCompany()
   const qc = useQueryClient()
+  const { companyId } = useCompany()
   const taxes = useTaxCodes()
   const q = useQuery({
     queryKey: ['zreport-read', id], enabled: !!id,

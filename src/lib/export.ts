@@ -19,11 +19,13 @@ function download(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
+/** A table (first row the headings) as a CSV file Excel opens with ë and ç intact. */
+export function downloadCsv(name: string, rows: (string | number | null | undefined)[][]) {
+  download(new Blob(['\ufeff' + rows.map((r) => r.map(escapeCsv).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' }), `${name}.csv`)
+}
+
 export function exportCsv<T>(rows: T[], columns: ExportColumn<T>[], filename: string) {
-  const lines = [columns.map((c) => escapeCsv(c.header)).join(',')]
-  for (const r of rows) lines.push(columns.map((c) => escapeCsv(c.value(r))).join(','))
-  // BOM so Excel opens UTF-8 (ë, ç) correctly
-  download(new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }), `${filename}.csv`)
+  downloadCsv(filename, [columns.map((c) => c.header), ...rows.map((r) => columns.map((c) => c.value(r)))])
 }
 
 export async function exportPdf<T>(rows: T[], columns: ExportColumn<T>[], filename: string, title: string, subtitle?: string) {

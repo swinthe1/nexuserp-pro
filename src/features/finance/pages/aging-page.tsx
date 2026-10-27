@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { ErrorState } from '@/components/error-state'
 import { msg, t, tn } from '@/i18n'
 import { cn, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
+import { downloadCsv } from '@/lib/export'
 import { useAging, type AgingRow } from '../api'
 
 const BUCKETS = [
@@ -23,12 +24,6 @@ const BUCKETS = [
   { key: 'd61_90', label: msg('61–90 days') },
   { key: 'd90_plus', label: msg('Over 90 days') },
 ] as const
-
-export function downloadCsv(name: string, rows: (string | number | null | undefined)[][]) {
-  const csv = rows.map((r) => r.map((c) => { const s = c == null ? '' : String(c); return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s }).join(',')).join('\n')
-  const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }))
-  const a = document.createElement('a'); a.href = url; a.download = `${name}.csv`; a.click(); URL.revokeObjectURL(url)
-}
 
 export function AgingPage({ kind }: { kind: 'ar' | 'ap' }) {
   const navigate = useNavigate()

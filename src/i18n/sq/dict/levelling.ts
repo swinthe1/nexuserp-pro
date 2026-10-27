@@ -64,4 +64,7 @@ export default {
   'Enter the amount of the advance': 'Shkruani shumën e paradhënies',
   'The advance is more than the order': 'Paradhënia është më e madhe se porosia',
   'Invoice not found': 'Fatura nuk u gjet',
+  'New prices from the cost': 'Çmimet e reja nga kostoja',
+  'Every item that came in, went out or moved, with the document behind it. Choose an item to see its card with the quantity and the value after each movement.': 'Çdo artikull që hyri, doli ose lëvizi, me dokumentin përkatës. Zgjidhni një artikull për të parë kartelën e tij me sasinë dhe vlerën pas çdo lëvizjeje.',
+  'When goods arrive at a new cost, DrisPRO works out the price that keeps the target margin of the category, VAT included and rounded like your shelf prices. Accepted prices are saved as one price levelling; nothing changes by itself.': 'Kur malli vjen me kosto të re, DrisPRO llogarit çmimin që ruan marzhën e synuar të kategorisë, me TVSH dhe të rrumbullakuar si çmimet në raft. Çmimet e pranuara ruhen si një nivelim i çmimeve; asgjë nuk ndryshon vetvetiu.',
 } satisfies Dict

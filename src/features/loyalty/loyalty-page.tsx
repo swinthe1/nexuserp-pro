@@ -22,7 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { formatNumberWith, msg, t, td, tn } from '@/i18n'
-import { ean13Svg } from '@/lib/ean13'
+import { labelledBarcodeSvg } from '@/lib/barcode'
 import { describeError } from '@/lib/errors'
 import { printHtml } from '@/lib/print'
 import { cn, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
@@ -56,7 +56,7 @@ function programRule(p: Pick<Program, 'kind' | 'discount_pct' | 'points_per_unit
 
 export function printLoyaltyCard(company: string, card: { card_number: string; holder_name: string }, programName: string) {
   printHtml(`<div class="card"><div class="co">${esc(company)}</div><div class="pg">${esc(programName)}</div>
-    <div class="hn">${esc(card.holder_name)}</div><div class="bc">${ean13Svg(card.card_number, { module: 1.6, height: 46 })}</div></div>`,
+    <div class="hn">${esc(card.holder_name)}</div><div class="bc">${labelledBarcodeSvg(card.card_number, { module: 1.6, height: 46 })}</div></div>`,
   `@page{size:85.6mm 54mm;margin:0} body{margin:0;font:12px/1.3 system-ui,sans-serif;color:#000}
    .card{width:85.6mm;height:54mm;box-sizing:border-box;padding:4mm 5mm;display:flex;flex-direction:column}
    .co{font-weight:700;font-size:15px} .pg{font-size:11px;margin-top:1mm} .hn{margin-top:auto;font-size:12px;font-weight:600}
@@ -154,7 +154,7 @@ function IssueCardDialog({ open, onClose }: { open: boolean; onClose: () => void
               <div className="text-sm font-semibold">{company?.name}</div>
               <div className="text-xs text-muted-foreground">{done.program}</div>
               <div className="mt-4 text-[13px] font-medium">{done.holder_name}</div>
-              <div className="mt-1 [&_svg]:h-auto [&_svg]:w-56" dangerouslySetInnerHTML={{ __html: ean13Svg(done.card_number, { module: 2, height: 50 }) }} />
+              <div className="mt-1 [&_svg]:h-auto [&_svg]:w-56" dangerouslySetInnerHTML={{ __html: labelledBarcodeSvg(done.card_number, { module: 2, height: 50 }) }} />
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => printLoyaltyCard(company?.name ?? '', done, done.program)}><Printer /> {t('Print card')}</Button>

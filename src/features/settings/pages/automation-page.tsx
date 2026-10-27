@@ -51,7 +51,7 @@ export function AutomationPage() {
       <PageHeader title={t('Automations')} description={t('What DrisPRO does by itself, and when. Each one prepares the work; whatever touches money, the law or goods in the shop still waits for a person to confirm.')} />
 
       {can('inventory.read') && (
-        <AutomationCard icon={Tags} title={t('New selling prices from the cost')} aside={<Button variant="outline" size="sm" asChild><Link to="/inventory/prices">{t('Open')}</Link></Button>}>
+        <AutomationCard icon={Tags} title={t('New selling prices from the cost')} aside={<Button variant="outline" size="sm" asChild><Link to="/inventory/levelling?tab=suggestions">{t('Open')}</Link></Button>}>
           <p className="text-[13px] text-muted-foreground">{t('When goods arrive at a new cost, the price that keeps the category margin waits for you to accept it. The margins are set on that page.')}</p>
         </AutomationCard>
       )}

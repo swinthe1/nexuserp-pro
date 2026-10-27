@@ -26,7 +26,7 @@ import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { t, td, tn, tServer } from '@/i18n'
 import { cn, formatDate, formatMoney, humanize, num, todayISO } from '@/lib/utils'
 import { usePartners } from '@/features/sales/api'
-import { type BankFile, readBankFile } from '../bank-formats'
+import { type BankFile, parseAmount, parseDate, readBankFile } from '../bank-formats'
 import {
   finKeys, useAcceptAllSuggestions, useAcceptSuggestion, useAccountBalances, useAccountDefaults, useAccounts, useAutoMatch, useDismissSuggestion, useBankAccounts, useBookStatementLine, useCreateStatement, useJournals, useMatchCandidates,
   useReconcileStatement, useSaveBankAccount, useStatement, useStatements, useUpdateStatementLine, type StatementLine, type StatementRow,
@@ -34,24 +34,7 @@ import {
 
 type BankAccount = NonNullable<ReturnType<typeof useBankAccounts>['data']>[number]
 
-/* ------------------------------------------------------------ CSV parsing */
-function parseAmount(s: string) {
-  let t = s.replace(/\s| /g, '').replace(/[^\d,.\-+()]/g, '')
-  const neg = /^\(.*\)$/.test(t); t = t.replace(/[()]/g, '')
-  // "1.234,56" → European; "1,234.56" → English; "12,5" → decimal comma
-  if (t.includes(',') && t.includes('.')) t = t.lastIndexOf(',') > t.lastIndexOf('.') ? t.replace(/\./g, '').replace(',', '.') : t.replace(/,/g, '')
-  else if (t.includes(',')) t = /,\d{1,2}$/.test(t) ? t.replace(',', '.') : t.replace(/,/g, '')
-  const v = Number(t)
-  return Number.isFinite(v) ? (neg ? -v : v) : NaN
-}
-function parseDate(s: string) {
-  const t = s.trim()
-  let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(t)
-  if (m) return `${m[1]}-${m[2]!.padStart(2, '0')}-${m[3]!.padStart(2, '0')}`
-  m = /^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})$/.exec(t)
-  if (m) { const y = m[3]!.length === 2 ? `20${m[3]}` : m[3]; return `${y}-${m[2]!.padStart(2, '0')}-${m[1]!.padStart(2, '0')}` }
-  return null
-}
+/* ------------------------------------------------------------ pasted rows (the amounts and dates read as in statement files) */
 export type ParsedLine = { transaction_date: string; description: string; amount: number; reference: string | null; counterparty_name: string | null }
 /** date; description; amount [; reference [; counterparty]] — or separate debit/credit columns: date; description; out; in */
 export function parseStatement(text: string): { lines: ParsedLine[]; errors: number[] } {

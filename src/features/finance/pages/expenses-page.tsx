@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Camera, Check, FileText, ListPlus, Loader2, PenLine, Plus, ReceiptText, Sparkles, Trash2, TriangleAlert } from 'lucide-react'
+import { Check, ListPlus, Loader2, Plus, ReceiptText, Sparkles, Trash2, TriangleAlert } from 'lucide-react'
 import * as React from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Can, useCompany } from '@/app/company-provider'
+import { PhotoCard, ReadsList, usePhotoSubmit } from '@/components/photo-reads'
 import { PageHeader } from '@/components/page-header'
 import { SearchSelect } from '@/components/search-select'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -15,9 +15,8 @@ import { VendorPicker } from '@/features/inventory/components/pickers'
 import { useTaxCodes } from '@/features/tax/api'
 import { msg, t, td, tServer } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
-import { shrink } from '@/lib/shrink-image'
 import { supabase } from '@/lib/supabase'
-import { cn, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
+import { cn, formatMoney, num, todayISO } from '@/lib/utils'
 import { useAccounts, useAssetCategories } from '../api'
 
 const CATEGORIES: { key: string; label: string }[] = [
@@ -51,7 +50,6 @@ export function AssetInvoicesPage() { return <ReadsPage kind="asset" /> }
 
 function ReadsPage({ kind }: { kind: Kind }) {
   const { companyId } = useCompany()
-  const qc = useQueryClient()
   const [params, setParams] = useSearchParams()
   const id = params.get('id')
   const list = useQuery({
@@ -59,83 +57,32 @@ function ReadsPage({ kind }: { kind: Kind }) {
     refetchInterval: (q) => ((q.state.data as Row[] | undefined)?.some((r) => r.status === 'queued' || r.status === 'reading') ? 3000 : false),
     queryFn: async () => unwrap(await supabase.rpc('expense_reads', { p_company: companyId!, p_kind: kind })) as unknown as Row[],
   })
-  const send = useMutation({
-    mutationFn: async (files: File[]) => {
-      let last = ''
-      for (const file of files) {
-        if (!/^(image\/|application\/pdf)/.test(file.type)) throw new Error(t('Choose a photo or a PDF'))
-        const f = await shrink(file)
-        last = unwrap(await supabase.rpc('doc_read_submit', { p_company: companyId!, p_file: f.data, p_mime: f.mime, p_name: file.name, p_kind: kind })) as string
-      }
-      return { last, n: files.length }
-    },
-    onSuccess: (r) => { if (r.n === 1) setParams({ id: r.last }); else toast.success(t('{n} receipts are being read', { n: r.n })); void qc.invalidateQueries({ queryKey: ['expense-reads', companyId, kind] }) },
-    onError: (e) => toast.error(describeError(e)),
-  })
+  const { send, pick } = usePhotoSubmit({ kind, invalidate: [['expense-reads', companyId, kind]], onOne: (x) => setParams({ id: x }),
+    manyMessage: (n) => t('{n} receipts are being read', { n }) })
   const seed = useMutation({
     mutationFn: async () => unwrap(await supabase.rpc('seed_expense_items', { p_company: companyId! })) as number,
     onSuccess: (n) => toast.success(n ? t('{n} expense items added (rent, electricity, fuel…), each with its account and VAT. Pick them on purchase invoices.', { n }) : t('The expense items are there already.')),
     onError: (e) => toast.error(describeError(e)),
   })
-  const pick = (capture: boolean) => {
-    const inp = document.createElement('input')
-    inp.type = 'file'; inp.accept = 'image/*,application/pdf'
-    if (capture) inp.setAttribute('capture', 'environment'); else inp.multiple = true
-    inp.onchange = () => { const f = Array.from(inp.files ?? []); if (f.length) send.mutate(f) }
-    inp.click()
-  }
   return (
     <div className="mx-auto grid max-w-5xl gap-4">
       {kind === 'asset'
         ? <PageHeader title={t('Assets from invoices')} description={t('A vehicle, a machine, computers: photograph the invoice and DrisPRO books it as an investment, makes the fixed asset and plans its depreciation.')} />
         : <PageHeader title={t('Expenses')} description={t('Fuel, electricity, phone, a meal with a client: photograph the receipt and DrisPRO reads it, proposes where it goes and books it. It learns from what you choose.')}
             actions={<Can perm="inventory.write"><Button variant="outline" loading={seed.isPending} onClick={() => seed.mutate()}><ListPlus /> {t('Ready-made expense items')}</Button></Can>} />}
-      <Card>
-        <CardContent className="flex flex-col items-center gap-3 p-5 text-center sm:flex-row sm:text-left">
-          <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><ReceiptText className="size-6" /></span>
-          <div className="flex-1"><div className="font-medium">{kind === 'asset' ? t('A new asset invoice') : t('A new expense')}</div>
-            <div className="text-[13px] text-muted-foreground">{kind === 'asset' ? t('The whole invoice in the photo, or the PDF. Several at once from the gallery.') : t('The whole receipt in the photo, flat and with light. Several at once from the gallery.')}</div></div>
-          <div className="flex flex-wrap justify-center gap-2">
-            <Button size="lg" loading={send.isPending} onClick={() => pick(true)}><Camera /> {t('Take a photo')}</Button>
-            <Button size="lg" variant="outline" disabled={send.isPending} onClick={() => pick(false)}><FileText /> {t('Choose files')}</Button>
-            <Button size="lg" variant="ghost" onClick={() => setParams({ id: 'new' })}><PenLine /> {t('Without a photo')}</Button>
-          </div>
-        </CardContent>
-      </Card>
-      {id ? <Review key={id} kind={kind} id={id === 'new' ? null : id} onDone={() => setParams({})} /> : <Recent rows={list.data ?? []} onOpen={(x) => setParams({ id: x })} />}
+      <PhotoCard icon={ReceiptText} busy={send.isPending} onPick={pick} onManual={() => setParams({ id: 'new' })}
+        title={kind === 'asset' ? t('A new asset invoice') : t('A new expense')}
+        hint={kind === 'asset' ? t('The whole invoice in the photo, or the PDF. Several at once from the gallery.') : t('The whole receipt in the photo, flat and with light. Several at once from the gallery.')} />
+      {id ? <Review key={id} kind={kind} id={id === 'new' ? null : id} onDone={() => setParams({})} /> : <ReadsList bookedLabel={t('Booked|expense')} onOpen={(x) => setParams({ id: x })}
+        items={(list.data ?? []).map((r) => ({ ...r, booked: !!r.bill_id, extra: r.number,
+          title: <>{r.vendor ?? r.file_name ?? t('Receipt')}{r.category ? <span className="font-normal text-muted-foreground"> · {catLabel(r.category) || r.category}</span> : null}</> }))} />}
     </div>
   )
 }
 
-function Recent({ rows, onOpen }: { rows: Row[]; onOpen: (id: string) => void }) {
-  if (!rows.length) return null
-  const waiting = rows.filter((r) => r.status === 'done' && !r.bill_id).length
-  const label: Record<string, string> = { queued: t('Waiting'), reading: t('Reading'), done: t('To check'), failed: t('Not read') }
-  return (
-    <Card><CardContent className="p-0">
-      {waiting > 0 && <div className="border-b bg-info/5 px-4 py-2 text-[13px] font-medium text-info">{t('{n} read and waiting for you to book them', { n: waiting })}</div>}
-      <ul className="divide-y">
-        {rows.map((r) => (
-          <li key={r.id}>
-            <button type="button" onClick={() => onOpen(r.id)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted/40">
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium">{r.vendor ?? r.file_name ?? t('Receipt')}{r.category ? <span className="font-normal text-muted-foreground"> · {catLabel(r.category) || r.category}</span> : null}</div>
-                <div className="truncate text-xs text-muted-foreground">{r.date ? formatDate(r.date) : formatDate(r.created_at, true)}{r.number ? ` · ${r.number}` : ''}{r.error ? ` · ${tServer(r.error)}` : ''}</div>
-              </div>
-              {r.total != null && <span className="text-sm font-semibold tabular">{formatMoney(r.total)}</span>}
-              {r.bill_id ? <Badge variant="outline" className="border-success/40 text-success">{t('Booked|expense')}</Badge>
-                : <span className={cn('w-20 text-right text-xs font-medium', r.status === 'failed' ? 'text-destructive' : r.status === 'done' ? 'text-info' : 'text-muted-foreground')}>{label[r.status] ?? r.status}</span>}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </CardContent></Card>
-  )
-}
-
 function Review({ id, kind, onDone }: { id: string | null; kind: Kind; onDone: () => void }) {
-  const { companyId } = useCompany()
   const qc = useQueryClient()
+  const { companyId } = useCompany()
   const accounts = useAccounts()
   const cats = useAssetCategories()
   const taxes = useTaxCodes()

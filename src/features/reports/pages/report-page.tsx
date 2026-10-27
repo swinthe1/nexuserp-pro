@@ -16,10 +16,10 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import type { XlsxColumn } from '@/lib/export'
 import { ErrorState } from '@/components/error-state'
 import { formatDateWith, msg, t, tn, tServer } from '@/i18n'
-import { cn, formatCompact, formatDate, formatMoney, formatQty, num, todayISO, currencyLabel } from '@/lib/utils'
+import { cn, formatCompact, formatDate, formatMoney, num, todayISO, currencyLabel } from '@/lib/utils'
 import { axisTick, iso, tooltipStyle } from '@/features/finance/pages/finance-overview-page'
 import { type ReportColumn, type ReportRow, type SavedReport, useReport, useSavedReports } from '../api'
-import { PivotTable, SaveReportButton } from '../components/pivot'
+import { formatMeasure, PivotTable, SaveReportButton } from '../components/pivot'
 import { DIM_LABEL, canRunReport, reportDef } from '../catalog'
 
 type Step = { dim: string; key: string; label: string }
@@ -54,12 +54,7 @@ export function savedHref(sr: SavedReport) {
 }
 const monthLabel = (m: string) => /^\d{4}-\d{2}$/.test(m) ? formatDateWith(new Date(`${m}-01T00:00:00`), { month: 'short', year: 'numeric' }) : tServer(m)
 
-function fmt(c: ReportColumn, v: unknown) {
-  if (v === null || v === undefined) return '—'
-  if (c.type === 'money') return formatMoney(num(v))
-  if (c.type === 'pct') return `${formatQty(num(v))}%`
-  return formatQty(num(v))
-}
+const fmt = (c: ReportColumn, v: unknown) => formatMeasure(c, v, '—')
 
 export function ReportPage() {
   const { key = '' } = useParams()

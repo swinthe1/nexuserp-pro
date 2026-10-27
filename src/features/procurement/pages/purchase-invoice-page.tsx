@@ -51,7 +51,7 @@ type Row = {
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100
-const fmt = (n: number, d = 2) => n.toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d })
+const fmt = (n: number, d = 2) => formatMoney(n, undefined, d)
 /** the due date from the invoice date and the payment terms */
 const dueFrom = (date: string, days?: number | null) => {
   const d = new Date(`${date}T12:00:00`); d.setDate(d.getDate() + (days ?? 0)); return d.toISOString().slice(0, 10)

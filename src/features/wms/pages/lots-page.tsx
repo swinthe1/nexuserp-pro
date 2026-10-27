@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/error-state'
 import { t, tn } from '@/i18n'
 import { cn, formatDate, formatQty, humanize } from '@/lib/utils'
-import { downloadCsv } from '@/features/finance/pages/aging-page'
+import { downloadCsv } from '@/lib/export'
 import { DOC_HREF, useLotsList, useLotTrace } from '../api'
 import { LotGenealogy } from '@/features/manufacturing/components/lot-genealogy'
 

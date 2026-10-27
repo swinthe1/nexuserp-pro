@@ -14395,13 +14395,6 @@ export type Database = {
         }
         Returns: { partner_id: string | null; partner_name: string | null; email: string | null; phone: string | null; step: number | null; total: number | null; invoices: number | null }[]
       }
-      email_purchase_order: {
-        Args: {
-          p_po: string
-          p_to?: string
-        }
-        Returns: string
-      }
       employee_advance_pay: {
         Args: {
           p: Json
@@ -15853,12 +15846,6 @@ export type Database = {
         Args: {
           p_id: string
           p_refund?: number
-        }
-        Returns: Json
-      }
-      registry_get: {
-        Args: {
-          p_nui: string
         }
         Returns: Json
       }

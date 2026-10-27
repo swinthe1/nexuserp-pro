@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Check, Percent, Plus, Save, Tag, Trash2 } from 'lucide-react'
 import * as React from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { t, td } from '@/i18n'
 import type { PrintDoc } from '@/lib/documents/model'
@@ -26,7 +27,8 @@ import { describeError, unwrap } from '@/lib/errors'
 import { searchOffline, useScanCatalog } from '@/lib/offline/catalog'
 import { supabase } from '@/lib/supabase'
 import { cn, formatDate, formatMoney, formatQty, num, todayISO } from '@/lib/utils'
-import { useCategories, usePriceRules, useWarehouses } from '../api'
+import { useCategories, usePriceRules, usePriceSuggestions, useWarehouses } from '../api'
+import { PriceSuggestions } from './prices-page'
 
 type Level = { id: string; number: string | null; status: string; level_date: string; warehouse_id: string | null; notes: string | null; value_change: number; posted_at: string | null
   warehouse: { name: string } | null; lines: { id: string; variant_id: string; line_no: number; old_price: number | null; new_price: number; quantity: number | null; value_change: number | null }[] }
@@ -36,10 +38,13 @@ type Row = Item & { gross: string }
 const r2 = (n: number) => Math.round(n * 100) / 100
 const gross = (net: number, vat: number) => r2(net * (1 + vat / 100))
 
-/** Inventory › Price levelling: documents that change many selling prices at once. */
+/** Inventory › Price levelling: documents that change many selling prices at once, and the new prices worked out from the cost waiting for a yes. */
 export function PriceLevelsPage() {
   const { companyId, can } = useCompany()
   const navigate = useNavigate()
+  const [params, setParams] = useSearchParams()
+  const tab = params.get('tab') === 'suggestions' ? 'suggestions' : 'documents'
+  const waiting = usePriceSuggestions('pending').data?.length ?? 0
   const q = useQuery({ queryKey: ['inv', companyId, 'levels'], enabled: !!companyId,
     queryFn: async () => unwrap(await supabase.from('price_levels').select('id, number, status, level_date, value_change, notes, warehouse:warehouses(name), lines:price_level_lines(count)')
       .eq('company_id', companyId!).is('deleted_at', null).order('level_date', { ascending: false }).order('created_at', { ascending: false }).limit(500)) })
@@ -57,8 +62,17 @@ export function PriceLevelsPage() {
     <>
       <PageHeader title={t('Price levelling')} description={t('Change the selling prices of many items at once, as one document: the stock on hand and the value of the change are recorded, and new labels can be printed.')}
         actions={can('inventory.write') && <Button asChild><Link to="/inventory/levelling/new"><Plus /> {t('New levelling')}</Link></Button>} />
-      <DataTable tableKey="inventory.levels" columns={cols} data={q.data} isLoading={q.isLoading} error={q.error} getRowId={(r) => r.id} onRowClick={(r) => navigate(`/inventory/levelling/${r.id}`)}
-        exportName={t('price-levelling')} empty={{ title: t('No levelling yet'), description: t('Start one to change several prices together.') }} />
+      <Tabs value={tab} onValueChange={(v) => setParams(v === 'suggestions' ? { tab: v } : {}, { replace: true })}>
+        <TabsList className="mb-3">
+          <TabsTrigger value="documents">{t('Documents')}</TabsTrigger>
+          <TabsTrigger value="suggestions">{t('New prices from the cost')}{waiting > 0 && <span className="ml-1.5 rounded-full bg-primary px-1.5 text-[11px] text-primary-foreground tabular-nums">{waiting}</span>}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="documents">
+          <DataTable tableKey="inventory.levels" columns={cols} data={q.data} isLoading={q.isLoading} error={q.error} getRowId={(r) => r.id} onRowClick={(r) => navigate(`/inventory/levelling/${r.id}`)}
+            exportName={t('price-levelling')} empty={{ title: t('No levelling yet'), description: t('Start one to change several prices together.') }} />
+        </TabsContent>
+        <TabsContent value="suggestions"><PriceSuggestions /></TabsContent>
+      </Tabs>
     </>
   )
 }

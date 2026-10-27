@@ -173,7 +173,7 @@ export function DashboardPage() {
         <Card>
           <CardHeader className="flex-row items-center justify-between space-y-0">
             <CardTitle>{t('Latest stock movements')}</CardTitle>
-            <Button variant="ghost" size="sm" asChild><Link to="/inventory/movements">{t('All movements')} <ArrowRight /></Link></Button>
+            <Button variant="ghost" size="sm" asChild><Link to="/inventory/item-card">{t('All movements')} <ArrowRight /></Link></Button>
           </CardHeader>
           <CardContent className="p-0">
             {recent.isLoading && <div className="grid gap-2 p-4">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-6" />)}</div>}

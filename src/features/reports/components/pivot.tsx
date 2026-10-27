@@ -20,12 +20,14 @@ const MAX_COLS = 24
 type Cell = number | null
 type PivotRow = { key: string; label: string; cells: Record<string, Cell>; total: Cell }
 
-function fmt(c: ReportColumn, v: Cell) {
-  if (v === null || v === undefined) return ''
-  if (c.type === 'money') return formatMoney(v)
-  if (c.type === 'pct') return `${formatQty(v)}%`
-  return formatQty(v)
+/** a report value as the column shows it (money, percent or a quantity); `empty` for no value */
+export function formatMeasure(c: ReportColumn, v: unknown, empty = '') {
+  if (v === null || v === undefined) return empty
+  if (c.type === 'money') return formatMoney(num(v))
+  if (c.type === 'pct') return `${formatQty(num(v))}%`
+  return formatQty(num(v))
 }
+const fmt = (c: ReportColumn, v: Cell) => formatMeasure(c, v)
 
 /** rows by the first grouping, columns by the second, one measure in the cells */
 export function PivotTable({ data, measure, rowLabel, colLabel, rowHeader, colHeader, exportName, title, subtitle }: {

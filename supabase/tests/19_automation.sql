@@ -57,6 +57,11 @@ reset role;
 select t.ok((select round(sales_price * (1 + :avat_rate / 100.0), 2) = :'sug_gross'::numeric from public.products where id = :'aprod'),
   'accepting it changes the selling price');
 select t.ok(exists (select 1 from public.price_changes where variant_id = :'avar'), 'and the price history keeps the change');
+select t.ok((select l.status = 'posted' and l.number like 'NIV-%' and c.doc_number = l.number
+               from public.price_level_lines pl join public.price_levels l on l.id = pl.level_id
+               join public.price_changes c on c.variant_id = pl.variant_id
+              where pl.variant_id = :'avar' order by c.created_at desc limit 1),
+  'as a posted price levelling, the same document as every other price change');
 update public.item_costs set avg_cost = 0.80 where variant_id = :'avar';
 select id as sug2 from public.price_suggestions where variant_id = :'avar' and status = 'pending' \gset
 set role authenticated;
@@ -194,9 +199,10 @@ select t.ok(:'po_status' = 'approved' and exists (select 1 from app.message_outb
   'an approved purchase order goes to the vendor by email');
 set role authenticated;
 select t.login('ana@auto.xk');
-select public.email_purchase_order(:'apo', 'tjeter@furnitori.xk') as po_msg \gset
+select public.document_email('purchase_order', :'apo', 'tjeter@furnitori.xk', null, 'Porosia', 'JVBERi0xLjQ=', 'porosia.pdf') as po_msg \gset
 reset role;
-select t.ok((select to_address = 'tjeter@furnitori.xk' and purpose = 'purchase_order' from app.message_outbox where id = :'po_msg'), 'or by hand, to another address');
+select t.ok((select to_address = 'tjeter@furnitori.xk' and entity_id = :'apo' and attachments -> 0 ->> 'name' = 'porosia.pdf' from app.message_outbox where id = :'po_msg'),
+  'or by hand, to another address, as the same PDF as every other document');
 select code as alcode from public.licenses where company_id = :'aco' \gset
 select gen_random_uuid() as asrv \gset
 update public.licenses set local_server_id = :'asrv' where company_id = :'aco';

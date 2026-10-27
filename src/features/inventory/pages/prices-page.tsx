@@ -4,7 +4,6 @@ import * as React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Can, useCompany } from '@/app/company-provider'
 import { ColumnHeader, DataTable, inFilter, selectColumn } from '@/components/data-table/data-table'
-import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -17,7 +16,8 @@ import { type PriceRules, type PriceSuggestion, useDecidePrices, usePriceRules, 
 
 const pctChange = (s: PriceSuggestion) => (s.gross_now ? ((s.gross_new - s.gross_now) / s.gross_now) * 100 : null)
 
-export function PricesPage() {
+/** The prices worked out from a new cost, waiting for a yes: shown as a tab of Price levelling. */
+export function PriceSuggestions() {
   const navigate = useNavigate()
   const { can } = useCompany()
   const [show, setShow] = React.useState<'pending' | 'all'>('pending')
@@ -77,14 +77,13 @@ export function PricesPage() {
 
   return (
     <>
-      <PageHeader
-        title={t('New selling prices')}
-        description={t('When goods arrive at a new cost, DrisPRO works out the price that keeps the target margin of the category, VAT included and rounded like your shelf prices. Accept it and the price changes; nothing changes by itself.')}
-        actions={<>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="max-w-2xl text-sm text-muted-foreground">{t('When goods arrive at a new cost, DrisPRO works out the price that keeps the target margin of the category, VAT included and rounded like your shelf prices. Accepted prices are saved as one price levelling; nothing changes by itself.')}</p>
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setShow((s) => (s === 'pending' ? 'all' : 'pending'))}>{show === 'pending' ? t('Show decided ones') : t('Only waiting ones')}</Button>
           <Can perm="inventory.write"><Button variant="outline" onClick={() => setRules(true)}><Settings2 /> {t('Margin rules')}</Button></Can>
-        </>}
-      />
+        </div>
+      </div>
       <DataTable
         tableKey="inventory.price-suggestions"
         columns={columns}

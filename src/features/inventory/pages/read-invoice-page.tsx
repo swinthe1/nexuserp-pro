@@ -1,22 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Camera, Check, FileText, Loader2, ScanText, Sparkles, TriangleAlert } from 'lucide-react'
+import { Check, Loader2, ScanText, Sparkles, TriangleAlert } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
+import { PhotoCard, ReadsList, usePhotoSubmit } from '@/components/photo-reads'
 import { PageHeader } from '@/components/page-header'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
-import { cn, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
+import { cn, formatMoney, num, todayISO } from '@/lib/utils'
 import { t, tn, tServer } from '@/i18n'
 import { VariantPicker, VendorPicker, WarehousePicker } from '../components/pickers'
 import { useWarehouses } from '../api'
-import { shrink } from '@/lib/shrink-image'
 
 type ReadLine = { code?: string; barcode?: string; name: string; quantity: number; unit?: string; unit_price?: number; discount_pct?: number; vat_rate?: number; line_total?: number
   variant_id: string | null; matched_by: 'learned' | 'vendor_code' | 'barcode' | 'code' | 'name' | null; variant_name: string | null; variant_sku: string | null }
@@ -27,80 +26,34 @@ type ReadRow = { id: string; file_name: string | null; status: string; error: st
 
 export function ReadInvoicePage() {
   const { companyId } = useCompany()
-  const qc = useQueryClient()
   const [params, setParams] = useSearchParams()
   const id = params.get('id')
   const list = useQuery({ queryKey: ['doc-reads', companyId], enabled: !!companyId, refetchInterval: (q) => ((q.state.data as ReadRow[] | undefined)?.some((r) => r.status === 'queued' || r.status === 'reading') ? 3000 : false),
     queryFn: async () => unwrap(await supabase.rpc('doc_reads_list', { p_company: companyId! })) as unknown as ReadRow[] })
-  const send = useMutation({
-    mutationFn: async (file: File) => {
-      if (!/^(image\/|application\/pdf)/.test(file.type)) throw new Error(t('Choose a photo or a PDF of the invoice'))
-      const f = await shrink(file)
-      return unwrap(await supabase.rpc('doc_read_submit', { p_company: companyId!, p_file: f.data, p_mime: f.mime, p_name: file.name })) as string
-    },
-    onSuccess: (newId) => { setParams({ id: newId }); void qc.invalidateQueries({ queryKey: ['doc-reads', companyId] }); void qc.invalidateQueries({ queryKey: ['ai-usage', companyId] }) },
-    onError: (e) => toast.error(describeError(e)),
-  })
+  const { send, pick } = usePhotoSubmit({ kind: 'invoice', invalidate: [['doc-reads', companyId], ['ai-usage', companyId]], onOne: (x) => setParams({ id: x }) })
   const usage = useQuery({ queryKey: ['ai-usage', companyId], enabled: !!companyId,
     queryFn: async () => unwrap(await supabase.rpc('ai_reads_usage', { p_company: companyId! })) as unknown as { used: number; limit: number } })
   const full = !!usage.data && usage.data.used >= usage.data.limit
-  const pick = (capture: boolean) => {
-    const inp = document.createElement('input')
-    inp.type = 'file'; inp.accept = 'image/*,application/pdf'
-    if (capture) inp.setAttribute('capture', 'environment')
-    inp.onchange = () => { const f = inp.files?.[0]; if (f) send.mutate(f) }
-    inp.click()
-  }
   return (
     <div className="mx-auto grid max-w-5xl gap-4">
       <PageHeader title={t('Invoice from a photo')} back={{ href: '/inventory/receipts', label: t('Goods receipts') }}
         description={t('Photograph the supplier’s invoice or choose its PDF. DrisPRO reads the vendor and the lines and finds your items; you check them and a draft receipt is made.')} />
-      <Card>
-        <CardContent className="flex flex-col items-center gap-3 p-6 text-center sm:flex-row sm:text-left">
-          <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><ScanText className="size-6" /></span>
-          <div className="flex-1"><div className="font-medium">{t('A new invoice')}</div>
-            <div className="text-[13px] text-muted-foreground">{t('The whole page in the photo, flat and with light. A PDF from the vendor is read best.')}</div>
-            {usage.data && <div className={cn('mt-1 text-xs', full ? 'font-medium text-destructive' : 'text-muted-foreground')}>
-              {full ? t('This month\u2019s {n} invoices are used up; reading starts again on the 1st. Receive goods by hand meanwhile.', { n: usage.data.limit })
-                : t('{used} of {limit} invoices read this month', { used: usage.data.used, limit: usage.data.limit })}</div>}</div>
-          <div className="flex flex-wrap justify-center gap-2">
-            <Button size="lg" loading={send.isPending} disabled={full} onClick={() => pick(true)}><Camera /> {t('Take a photo')}</Button>
-            <Button size="lg" variant="outline" disabled={send.isPending || full} onClick={() => pick(false)}><FileText /> {t('Choose a file')}</Button>
-          </div>
-        </CardContent>
-      </Card>
-      {id ? <ReadReview key={id} id={id} onDone={() => setParams({})} /> : <RecentReads rows={list.data ?? []} onOpen={(x) => setParams({ id: x })} />}
+      <PhotoCard icon={ScanText} busy={send.isPending} disabled={full} multiple={false} onPick={(c) => pick(c, false)} title={t('A new invoice')}
+        hint={t('The whole page in the photo, flat and with light. A PDF from the vendor is read best.')}
+        extra={usage.data && <div className={cn('mt-1 text-xs', full ? 'font-medium text-destructive' : 'text-muted-foreground')}>
+          {full ? t('This month\u2019s {n} invoices are used up; reading starts again on the 1st. Receive goods by hand meanwhile.', { n: usage.data.limit })
+            : t('{used} of {limit} invoices read this month', { used: usage.data.used, limit: usage.data.limit })}</div>} />
+      {id ? <ReadReview key={id} id={id} onDone={() => setParams({})} /> : <ReadsList bookedLabel={t('Receipt made')} doneLabel={t('Read')} showWaiting={false} onOpen={(x) => setParams({ id: x })}
+        items={(list.data ?? []).map((r) => ({ ...r, date: null, booked: !!r.receipt_id, extra: r.total != null ? formatMoney(r.total) : null, total: null,
+          title: <>{r.vendor ?? r.file_name ?? t('Invoice')}{r.number ? ` · ${r.number}` : ''}</> }))} />}
     </div>
   )
 }
 
-function RecentReads({ rows, onOpen }: { rows: ReadRow[]; onOpen: (id: string) => void }) {
-  if (!rows.length) return null
-  const label: Record<string, string> = { queued: t('Waiting'), reading: t('Reading'), done: t('Read'), failed: t('Not read') }
-  return (
-    <Card><CardContent className="p-0">
-      <ul className="divide-y">
-        {rows.map((r) => (
-          <li key={r.id}>
-            <button type="button" onClick={() => onOpen(r.id)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted/40">
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium">{r.vendor ?? r.file_name ?? t('Invoice')}{r.number ? ` · ${r.number}` : ''}</div>
-                <div className="truncate text-xs text-muted-foreground">{formatDate(r.created_at, true)}{r.total != null ? ` · ${formatMoney(r.total)}` : ''}{r.error ? ` · ${tServer(r.error)}` : ''}</div>
-              </div>
-              {r.receipt_id ? <Badge variant="outline" className="border-success/40 text-success">{t('Receipt made')}</Badge>
-                : <span className={cn('text-xs font-medium', r.status === 'failed' ? 'text-destructive' : r.status === 'done' ? 'text-primary' : 'text-muted-foreground')}>{label[r.status] ?? r.status}</span>}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </CardContent></Card>
-  )
-}
-
 function ReadReview({ id, onDone }: { id: string; onDone: () => void }) {
+  const qc = useQueryClient()
   const navigate = useNavigate()
   const { companyId } = useCompany()
-  const qc = useQueryClient()
   const warehouses = useWarehouses()
   const q = useQuery({ queryKey: ['doc-read', id], refetchInterval: (x) => (['queued', 'reading'].includes((x.state.data as Read | undefined)?.status ?? 'queued') ? 2500 : false),
     queryFn: async () => unwrap(await supabase.rpc('doc_read_get', { p_id: id })) as unknown as Read })

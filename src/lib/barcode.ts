@@ -98,6 +98,27 @@ export function barsSvg(b: Bars) {
     barRuns(b).map(([x, n]) => `<rect x="${x + q}" y="0" width="${n}" height="10"/>`).join('') + '</g></svg>'
 }
 
+/** A barcode with its digits under the bars, at a fixed size (module = width of one bar in px): loyalty cards and other printed cards.
+ *  EAN-13 numbers get the usual long guard bars and digit groups; anything else is drawn as Code 128. */
+export function labelledBarcodeSvg(code: string, { module = 2, height = 60 } = {}): string {
+  const b = encode(code)
+  if (!b) return ''
+  const quiet = (b.kind === 'code128' ? 10 : 11) * module
+  const w = b.modules.length * module + quiet * 2
+  const ean = b.kind === 'ean13'
+  const guard = (i: number) => ean && (i < 3 || (i >= 45 && i < 50) || i >= 92)
+  const bars = barRuns(b).map(([x, n]) => `<rect x="${quiet + x * module}" y="0" width="${n * module}" height="${guard(x) ? height + 8 : height}"/>`).join('')
+  const fs = 10 * module / 2 + 4
+  const y = height + 8 + fs * 0.4
+  const c = b.text
+  const text = ean
+    ? `<text x="${quiet - 3 * module}" y="${y}" font-size="${fs}" text-anchor="end">${c[0]}</text>`
+      + `<text x="${quiet + 24 * module}" y="${y}" font-size="${fs}" text-anchor="middle" letter-spacing="${module}">${c.slice(1, 7)}</text>`
+      + `<text x="${quiet + 71 * module}" y="${y}" font-size="${fs}" text-anchor="middle" letter-spacing="${module}">${c.slice(7)}</text>`
+    : `<text x="${w / 2}" y="${y}" font-size="${fs}" text-anchor="middle">${c.replace(/[<>&"]/g, '')}</text>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${height + 12 + fs}" width="${w}" height="${height + 12 + fs}" font-family="monospace" fill="#000">${bars}${text}</svg>`
+}
+
 /** draws the bars into a PDF (jsPDF) in the box x, y, w, h (mm) */
 type PdfLike = { rect: (x: number, y: number, w: number, h: number, style?: string | null) => unknown; setFillColor: (ch1: string) => unknown }
 export function drawBarsPdf(pdf: PdfLike,

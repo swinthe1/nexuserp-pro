@@ -16,7 +16,7 @@ import { ErrorState } from '@/components/error-state'
 import { formatDateWith, msg, t, td } from '@/i18n'
 import { cn, formatCompact, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
 import { fetchBalances, finKeys, useCostCenters, useFiscalStartMonth, type BalanceRow } from '../api'
-import { downloadCsv } from './aging-page'
+import { downloadCsv } from '@/lib/export'
 import { axisTick, iso, tooltipStyle } from './finance-overview-page'
 
 /* ------------------------------------------------------------------ periods */

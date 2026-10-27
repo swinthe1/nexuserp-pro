@@ -27,11 +27,9 @@ const ProductsPage = lazy(() => import('@/features/inventory/pages/products-page
 const ProductNewPage = lazy(() => import('@/features/inventory/pages/product-new-page'), 'ProductNewPage')
 const ProductDetailPage = lazy(() => import('@/features/inventory/pages/product-detail-page'), 'ProductDetailPage')
 const StockPage = lazy(() => import('@/features/inventory/pages/stock-page'), 'StockPage')
-const MovementsPage = lazy(() => import('@/features/inventory/pages/movements-page'), 'MovementsPage')
 const AlertsPage = lazy(() => import('@/features/inventory/pages/alerts-page'), 'AlertsPage')
 const RecurringPage = lazy(() => import('@/features/sales/recurring'), 'RecurringPage')
 const ReadInvoicePage = lazy(() => import('@/features/inventory/pages/read-invoice-page'), 'ReadInvoicePage')
-const PricesPage = lazy(() => import('@/features/inventory/pages/prices-page'), 'PricesPage')
 const ReceiptPage = lazy(() => import('@/features/inventory/pages/receipt-page'), 'ReceiptPage')
 const AdjustmentPage = lazy(() => import('@/features/inventory/pages/adjustment-page'), 'AdjustmentPage')
 const TransferPage = lazy(() => import('@/features/inventory/pages/transfer-page'), 'TransferPage')
@@ -190,14 +188,14 @@ const router = createBrowserRouter([
         { path: 'products/new', element: <ProductNewPage /> },
         { path: 'products/:id', element: <ProductDetailPage /> },
         { path: 'stock', element: <StockPage /> },
-        { path: 'movements', element: <MovementsPage /> },
+        { path: 'movements', element: <Navigate to="/inventory/item-card" replace /> },
         { path: 'item-card', element: <ItemCardPage /> },
         { path: 'labels', element: <LabelsPage /> },
         { path: 'levelling', element: <PriceLevelsPage /> },
         { path: 'levelling/new', element: <PriceLevelPage key="lv-new" /> },
         { path: 'levelling/:id', element: <PriceLevelPage key="lv" /> },
         { path: 'alerts', element: <AlertsPage /> },
-        { path: 'prices', element: <PricesPage /> },
+        { path: 'prices', element: <Navigate to="/inventory/levelling?tab=suggestions" replace /> },
         { path: 'read-invoice', element: <ReadInvoicePage /> },
         { path: 'receipts', element: <DocumentsPage kind="receipts" /> },
         { path: 'receipts/new', element: <ReceiptPage /> },

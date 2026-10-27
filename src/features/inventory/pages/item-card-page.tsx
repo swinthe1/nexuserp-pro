@@ -1,9 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import { PackageSearch } from 'lucide-react'
 import * as React from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
-import { EmptyState } from '@/components/empty-state'
 import { ErrorState } from '@/components/error-state'
 import { PageHeader } from '@/components/page-header'
 import { SearchSelect } from '@/components/search-select'
@@ -19,6 +17,7 @@ import { fetchItemCard, itemCardStatement, MOVEMENT } from '@/lib/documents/stat
 import { formatDate, formatMoney, formatQty, todayISO } from '@/lib/utils'
 import { SOURCE_HREF } from '@/features/finance/api'
 import { useWarehouses } from '../api'
+import { MovementsTable } from '../components/movements-table'
 
 const yearStart = () => `${new Date().getFullYear()}-01-01`
 const HREF: Record<string, string> = { ...SOURCE_HREF, pos_order: '/pos/sessions/', vendor_return: '/inventory/receipts/' }
@@ -33,12 +32,17 @@ export function ItemCardPage() {
     .map((i) => ({ value: i.variant_id, label: i.name, hint: i.sku, keywords: i.barcodes.map(([b]) => b) })), [companyId, catalog.ready, catalog.count]) // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <>
-      <PageHeader title={t('Item card')} description={t('Every movement of an item with the quantity and the value after each: goods in, sales, returns, transfers, counts.')} />
+      <PageHeader title={t('Item card')} description={t('Every item that came in, went out or moved, with the document behind it. Choose an item to see its card with the quantity and the value after each movement.')} />
       <div className="mb-4 max-w-md">
         <SearchSelect value={id} onChange={(v) => { const n = new URLSearchParams(params); if (v) n.set('v', v); else n.delete('v'); setParams(n, { replace: true }) }}
           placeholder={t('Choose an item (name, code or barcode)')} options={options} />
       </div>
-      {id ? <ItemCardView key={id} variantId={id} /> : <EmptyState icon={PackageSearch} title={t('Choose an item')} />}
+      {id ? <ItemCardView key={id} variantId={id} /> : (
+        <div className="grid gap-2">
+          <h2 className="text-sm font-semibold">{t('All movements')}</h2>
+          <MovementsTable />
+        </div>
+      )}
     </>
   )
 }
