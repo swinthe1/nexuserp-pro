@@ -38,7 +38,7 @@ export function ItemCardPage() {
           placeholder={t('Choose an item (name, code or barcode)')} options={options} />
       </div>
       {id ? <ItemCardView key={id} variantId={id} /> : (
-        <div className="grid gap-2">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2">
           <h2 className="text-sm font-semibold">{t('All movements')}</h2>
           <MovementsTable />
         </div>
