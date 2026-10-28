@@ -99,6 +99,7 @@ const ClientCardsPage = lazy(() => import('@/features/appointments/cards-page'),
 const CardDetailPage = lazy(() => import('@/features/appointments/cards-page'), 'CardDetailPage')
 const MembershipsPage = lazy(() => import('@/features/appointments/memberships-page'), 'MembershipsPage')
 const AccountantPage = lazy(() => import('@/features/accountant/accountant-page'), 'AccountantPage')
+const BooksCheckPage = lazy(() => import('@/features/accountant/books-check-page'), 'BooksCheckPage')
 const ExpensesPage = lazy(() => import('@/features/finance/pages/expenses-page'), 'ExpensesPage')
 const AssetInvoicesPage = lazy(() => import('@/features/finance/pages/expenses-page'), 'AssetInvoicesPage')
 const CashBookPage = lazy(() => import('@/features/finance/pages/ledger-shortcuts'), 'CashBookPage')
@@ -351,6 +352,7 @@ const router = createBrowserRouter([
         { path: 'memberships', element: <MembershipsPage /> },
       ] },
       { path: 'accountant', element: <RequirePerm perm="core.read" />, children: [{ index: true, element: <AccountantPage /> }] },
+      { path: 'check', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <BooksCheckPage /> }] },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

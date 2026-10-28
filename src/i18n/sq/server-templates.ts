@@ -252,6 +252,7 @@ export const serverTemplates: [string, string][] = [
   ['PRL-% is %', 'PRL-{0} është {1}'],
   ['Contract of % ends % %', 'Kontrata e {0} mbaron më {1} {2}'],
   ['Lot % (%) expires % %', 'Loti {0} ({1}) skadon më {2} {3}'],
+  ['% things to check in the books', '{0} gjëra për t’u kontrolluar në libra'],
   ['% on hand', '{0} gjendje'],
 
   ['Live link back: %', 'Lidhja live u rikthye: {0}'],

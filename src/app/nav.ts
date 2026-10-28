@@ -1,6 +1,6 @@
 import {
   Bell, Printer, CalendarDays, CalendarClock, ClipboardPen, Contact, FileBarChart, FileSpreadsheet, Fingerprint, Globe, History, Import, KeyRound, Archive, ListOrdered,
-  MapPinned, PackageCheck as PackageDone, Route, UserRound, UsersRound, Workflow, Zap,
+  MapPinned, PackageCheck as PackageDone, Route, ShieldCheck, UserRound, UsersRound, Workflow, Zap,
   BadgePercent, ClipboardCheck, Hourglass, PackageOpen, ScanLine, ShoppingBasket,
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, BookOpenText, Building, HandCoins, ListTree, Network, Settings2, Wallet, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, Gauge,
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackagePlus, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
@@ -27,6 +27,7 @@ export const NAV: NavSection[] = [
     label: msg('Overview'),
     items: [
       { label: msg('Dashboard'), href: '/', icon: LayoutDashboard, perm: 'core.read', keywords: ['home', 'kpi'], always: true },
+      { label: msg('Books check'), href: '/check', icon: ShieldCheck, perm: 'invoicing.read', keywords: ['kontrolli', 'gabime', 'gabimet', 'mistakes', 'check', 'kujdestari', 'pa faturë', 'minus', 'nui'] },
       { label: msg('Approvals|menu'), href: '/approvals', icon: Gauge, perm: 'core.read', keywords: ['approve', 'pending', 'inbox'] },
       { label: msg('Notifications'), href: '/notifications', icon: Bell, perm: 'core.read', keywords: ['alerts', 'inbox', 'reminders', 'njoftime'], always: true },
     ],

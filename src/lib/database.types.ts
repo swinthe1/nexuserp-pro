@@ -13860,6 +13860,12 @@ export type Database = {
         }
         Returns: string
       }
+      books_check: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       calculate_payroll: {
         Args: {
           p_run: string

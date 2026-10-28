@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { AlarmClock, ArrowRight, Boxes, ClipboardCheck, Landmark, PackageCheck, Ship, TrendingUp, TriangleAlert, Users, Wallet } from 'lucide-react'
+import { AlarmClock, ArrowRight, Boxes, ClipboardCheck, Landmark, PackageCheck, ShieldAlert, Ship, TrendingUp, TriangleAlert, Users, Wallet } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useAuth } from '@/app/auth-provider'
+import { useBooksCheck } from '@/features/accountant/books-check-page'
 import { useCompany } from '@/app/company-provider'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
@@ -14,7 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/error-state'
 import { useRealtimeInvalidate } from '@/hooks/use-realtime'
-import { formatDateWith, formatNumberWith, t, td } from '@/i18n'
+import { formatDateWith, formatNumberWith, t, td, tn } from '@/i18n'
 import { unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { formatCompact, formatDate, formatMoney, formatQty, humanize, num, todayISO } from '@/lib/utils'
@@ -78,6 +79,7 @@ export function DashboardPage() {
   return (
     <>
       <PageHeader title={greeting(firstName)} description={`${company?.name ?? ''} · ${formatDate(new Date())}`} />
+      <BooksCheckBanner />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard icon={Boxes} hue="152 68%" label={t('Stock value')} value={formatMoney(inv.data?.stock_value, cur)} loading={inv.isLoading} href="/inventory/stock" hint={t('{n} products in stock', { n: inv.data?.active_skus ?? 0 })} />
@@ -194,5 +196,20 @@ export function DashboardPage() {
         </Card>
       </div>
     </>
+  )
+}
+
+/** the morning look at the books: one line when something slipped through */
+function BooksCheckBanner() {
+  const q = useBooksCheck()
+  const n = (q.data ?? []).filter((c) => c.code !== 'guard_waved').reduce((s, c) => s + c.count, 0)
+  if (!n) return null
+  return (
+    <Link to="/check" className="mb-4 flex items-center gap-3 rounded-lg border border-warning/40 bg-warning/5 px-4 py-3 text-sm hover:bg-warning/10">
+      <ShieldAlert className="size-5 shrink-0 text-warning" />
+      <span className="flex-1"><span className="font-medium">{tn(n, '{n} thing to check in the books', '{n} things to check in the books')}</span>
+        <span className="text-muted-foreground"> · {t('goods without invoice, items below zero, partners without NUI…')}</span></span>
+      <ArrowRight className="size-4 text-muted-foreground" />
+    </Link>
   )
 }
