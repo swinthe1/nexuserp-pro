@@ -3,6 +3,7 @@ import { CheckCheck, PackagePlus, Percent, Save, ScanBarcode, Sparkles, Trash2 }
 import * as React from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
+import { useGuard } from '@/components/guard'
 import { useCompany } from '@/app/company-provider'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { ErrorState } from '@/components/error-state'
@@ -251,12 +252,16 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
       if (!doc) navigate(`/procurement/invoice/${id}`, { replace: true })
     } catch { /* the error is shown by the save */ }
   }
+  const guard = useGuard()
   const complete = useMutation({
     mutationFn: async () => {
       const id = await save.mutateAsync(payload())
+      // the guard: what looks unusual against earlier invoices, before anything is posted
+      if (!(await guard.check('vendor_bill', id))) return { id, r: null }
       return { id, r: unwrap(await supabase.rpc('purchase_invoice_complete', { p_bill: id })) as unknown as { number: string; receipt: string | null; prices_changed: number; payment_status: string | null } }
     },
     onSuccess: async ({ id, r }) => {
+      if (!r) { setConfirm(false); if (!doc) navigate(`/procurement/invoice/${id}`, { replace: true }); return }
       await qc.invalidateQueries({ queryKey: ['proc'] })
       toast.success(t('Invoice {number} posted', { number: r.number }) + (r.receipt ? ` · ${t('goods in with {receipt}', { receipt: r.receipt })}` : '')
         + (r.prices_changed ? ` · ${tn(r.prices_changed, '{n} price changed', '{n} prices changed')}` : ''))
@@ -463,6 +468,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
         </Dialog>
       )}
       <p className="mt-3 text-[12px] text-muted-foreground">{t('Transport, customs and other costs are added afterwards with')} <Link className="underline" to="/inventory/landed-costs">{t('Landed costs')}</Link>.</p>
+      {guard.dialog}
     </div>
   )
 }

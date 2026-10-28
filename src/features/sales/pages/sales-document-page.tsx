@@ -11,6 +11,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Can, useCompany } from '@/app/company-provider'
+import { useGuard } from '@/components/guard'
 import { isOfflineId } from '@/lib/offline/step'
 import { ActivityTimeline } from '@/components/activity-timeline'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -88,6 +89,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
   const createDelivery = useCreateDelivery()
   const createInvoice = useCreateInvoice()
   const postInvoice = usePostInvoice()
+  const guard = useGuard()
   const creditNote = useCreditNote()
   const [repeat, setRepeat] = React.useState(false)
 
@@ -242,6 +244,8 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
         confirmLabel={t('Post')}
         onConfirm={async () => {
           const id = await saveFirst(); if (!id) throw new Error('invalid')
+          // the guard: what looks unusual against earlier invoices, before anything is posted
+          if (!(await guard.check('sales_invoice', id))) { if (!doc) go(id); return }
           await postInvoice.mutateAsync(id).catch((e) => { if (!doc) go(id); throw e }); toast.success(isCredit ? t('Credit note posted') : t('Invoice posted')); go(id)
         }} />)
     }
@@ -389,6 +393,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
         ) : body}
       </div>
       {repeat && doc && <RepeatInvoiceDialog invoice={{ id: doc.id, number: doc.number as string, date: doc.invoice_date as string }} onClose={() => setRepeat(false)} />}
+      {guard.dialog}
     </Form>
   )
 }

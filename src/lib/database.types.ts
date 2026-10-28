@@ -14370,6 +14370,13 @@ export type Database = {
         }
         Returns: { id: string | null; file_name: string | null; status: string | null; error: string | null; vendor: string | null; number: string | null; total: number | null; receipt_id: string | null; created_at: string | null }[]
       }
+      document_checks: {
+        Args: {
+          p_kind: string
+          p_id: string
+        }
+        Returns: Json
+      }
       document_email: {
         Args: {
           p_kind: string
@@ -14526,6 +14533,14 @@ export type Database = {
           p_limit?: number
         }
         Returns: { kind: string | null; id: string | null; title: string | null; subtitle: string | null; href: string | null }[]
+      }
+      guard_ack: {
+        Args: {
+          p_kind: string
+          p_id: string
+          p_codes: string[]
+        }
+        Returns: undefined
       }
       history_balances: {
         Args: {

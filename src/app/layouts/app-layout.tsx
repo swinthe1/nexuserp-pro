@@ -11,6 +11,7 @@ import { LicenseBanner, LiveLinkBanner, SupportBanner, TrainingBanner } from '@/
 import { OfflineBanner } from '@/components/offline-banner'
 import { PageErrorBoundary } from '@/components/page-error-boundary'
 import { PlanLocked } from '@/components/plan-locked'
+import { GuardHost } from '@/components/guard'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useHotkey } from '@/hooks/use-hotkey'
@@ -65,6 +66,7 @@ export function AppLayout() {
           <LicenseBanner />
           <main id="main" className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
             <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
+            <GuardHost />
           </main>
         </div>
       </CommandPaletteProvider>
@@ -94,6 +96,7 @@ export function AppLayout() {
           <LicenseBanner />
           <main id="main" className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
             <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
+            <GuardHost />
           </main>
         </div>
       </div>
