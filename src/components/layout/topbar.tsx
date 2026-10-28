@@ -1,4 +1,5 @@
 import { Menu, Search } from 'lucide-react'
+import { NewMenu } from '@/components/layout/new-menu'
 import { NotificationsButton } from '@/components/layout/notifications'
 import { UserMenu } from '@/components/layout/user-menu'
 import { useCommandPalette } from '@/components/layout/command-palette'
@@ -25,6 +26,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
         <kbd className="hidden rounded-md border bg-card px-1.5 text-2xs font-semibold sm:inline">{isMac ? '⌘' : 'Ctrl'} K</kbd>{/* i18n-ignore */}
       </button>
       <div className="ml-auto flex items-center gap-1">
+        <NewMenu />
         <LanguageToggle className="hidden sm:inline-flex" />
         <span className="sm:hidden"><LanguageMenuButton /></span>
         <TillLockButton />

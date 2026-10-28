@@ -54,7 +54,7 @@ function useCatalog() {
     for (const s of NAV) {
       for (const i of s.items) {
         if (i.href === '/' || !can(i.perm) || !pageAllowed(i.href)) continue
-        out.push({ key: i.href, icon: i.icon, label: i.label, hint: s.label, to: i.href, tone: PAGE_TONE, group: s.label })
+        out.push({ key: i.href, icon: i.icon, label: i.label, hint: s.title ?? s.label, to: i.href, tone: PAGE_TONE, group: s.title ?? s.label })
       }
     }
     return out

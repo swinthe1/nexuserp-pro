@@ -323,9 +323,9 @@ function MenuForm() {
           const pages = s.items.filter((i, n, all) => all.findIndex((x) => x.href === i.href) === n)
           return (
             <div key={s.label} className="py-1">
-              <ToggleRow title={t(s.label)}
+              <ToggleRow title={t(s.title ?? s.label)}
                 description={on ? t('{n} of {total} pages shown', { n: pages.filter((i) => !hidden.includes(i.href)).length, total: pages.length }) : t('Hidden')}
-                control={<Switch checked={on} disabled={!writable || save.isPending} aria-label={t(s.label)} onCheckedChange={(v) => toggle(s.label, v, t(s.label))} />} />
+                control={<Switch checked={on} disabled={!writable || save.isPending} aria-label={t(s.title ?? s.label)} onCheckedChange={(v) => toggle(s.label, v, t(s.title ?? s.label))} />} />
               {on && (
                 <div className="flex flex-wrap gap-1.5 pb-3">
                   {pages.map((i) => {

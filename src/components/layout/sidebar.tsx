@@ -37,6 +37,20 @@ function useActiveHref() {
 
 const ALWAYS_SHOWN = new Set(['Overview', 'Company'])
 
+/*
+ * The short menu: a person whose job is one part (the till, the warehouse, field sales) sees the pages
+ * of the work they do, not every page they may open. Whoever sees the numbers (reports, finance) or runs
+ * the company sees the whole menu. One click shows everything; the choice is kept on this device.
+ */
+const FULL_KEY = 'drispro.menu.full'
+function useFullMenu() {
+  const [full, setFull] = React.useState(() => { try { return localStorage.getItem(FULL_KEY) === '1' } catch { return false } })
+  const set = (v: boolean) => { setFull(v); try { localStorage.setItem(FULL_KEY, v ? '1' : '0') } catch { /* private window */ } }
+  return [full, set] as const
+}
+const writes = (perm: string) => perm.split('|').map((p) => p.replace(/\.read$/, '.write'))
+
+
 /** a section's own icon in its own colour (app/modules.ts) */
 function SectionIcon({ label, className }: { label: string; className?: string }) {
   const look = moduleLook(label)
@@ -48,7 +62,7 @@ function SectionIcon({ label, className }: { label: string; className?: string }
   )
 }
 
-function SectionFlyout({ label, items, activeHref, onNavigate }: { label: string; items: NavItem[]; activeHref: string | null; onNavigate?: () => void }) {
+function SectionFlyout({ label, title, items, activeHref, onNavigate }: { label: string; title?: string; items: NavItem[]; activeHref: string | null; onNavigate?: () => void }) {
   const [open, setOpen] = React.useState(false)
   const timer = React.useRef<number | undefined>(undefined)
   const show = () => { window.clearTimeout(timer.current); setOpen(true) }
@@ -57,7 +71,7 @@ function SectionFlyout({ label, items, activeHref, onNavigate }: { label: string
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button type="button" aria-label={t(label)} onMouseEnter={show} onMouseLeave={hide}
+        <button type="button" aria-label={t(title ?? label)} onMouseEnter={show} onMouseLeave={hide}
           className={cn('flex h-9 w-full items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
             active && 'bg-secondary ring-1 ring-primary/40', open && !active && 'bg-secondary text-foreground')}>
           <SectionIcon label={label} className="size-7" />
@@ -65,7 +79,7 @@ function SectionFlyout({ label, items, activeHref, onNavigate }: { label: string
       </PopoverTrigger>
       <PopoverContent side="right" align="start" sideOffset={10} className="w-60 p-1.5" onMouseEnter={show} onMouseLeave={hide}
         onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
-        <p className="px-2 pb-1 pt-1 text-xs font-medium text-muted-foreground">{t(label)}</p>
+        <p className="px-2 pb-1 pt-1 text-xs font-medium text-muted-foreground">{t(title ?? label)}</p>
         <div className="flex flex-col gap-0.5">
           {items.map((i) => (
             <NavLink key={i.href} to={i.href} onClick={() => { setOpen(false); onNavigate?.() }}
@@ -138,15 +152,19 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
   const { favourites, toggle } = useFavourites()
   const { open, set: setOpen } = useOpenSections()
   const palette = useCommandPalette()
+  const [fullMenu, setFullMenu] = useFullMenu()
+  const focused = !can('reports.read') && !can('finance.read') && !can('admin.read')
+  const short = focused && !fullMenu
+  const mine = React.useCallback((i: NavItem) => !short || !!i.always || (i.focus ? i.focus.some(can) : writes(i.perm).some(can)), [short, can])
 
   React.useEffect(() => { if (activeHref) recordVisit(activeHref) }, [activeHref])
 
   const sections = React.useMemo(() => NAV
     .filter((s) => ALWAYS_SHOWN.has(s.label) || !hidden.includes(s.label))
-    .map((s) => ({ ...s, items: s.items.filter((i) => can(i.perm) && pageAllowed(i.href) && !hidden.includes(i.href)) }))
+    .map((s) => ({ ...s, items: s.items.filter((i) => can(i.perm) && pageAllowed(i.href) && !hidden.includes(i.href) && mine(i)) }))
     // a page shows once: where it first appears among the parts this business sees
     .map((s, _, all) => ({ ...s, items: s.items.filter((i) => !all.slice(0, all.indexOf(s)).some((p) => p.items.some((x) => x.href === i.href))) }))
-    .filter((s) => s.items.length), [can, pageAllowed, hidden])
+    .filter((s) => s.items.length), [can, pageAllowed, hidden, mine])
   const byHref = React.useMemo(() => new Map(sections.flatMap((s) => s.items).map((i) => [i.href, i])), [sections])
 
   // pinned pages first; until something is pinned, the pages used most on this device
@@ -171,7 +189,7 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
           </div>
         )}
         {sections.filter((s) => s.label !== 'Overview').map((section) => (
-          <SectionFlyout key={section.label} label={section.label} items={section.items} activeHref={activeHref} onNavigate={onNavigate} />
+          <SectionFlyout key={section.label} label={section.label} title={section.title} items={section.items} activeHref={activeHref} onNavigate={onNavigate} />
         ))}
       </nav>
     )
@@ -212,7 +230,7 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
               className={cn('flex h-8 items-center gap-2 rounded-lg px-1.5 text-[13px] font-semibold text-sidebar-foreground hover:bg-secondary hover:text-foreground disabled:cursor-default disabled:hover:bg-transparent',
                 expanded && 'text-foreground')}>
               <SectionIcon label={section.label} />
-              <span className="flex-1 text-left">{t(section.label)}</span>
+              <span className="flex-1 text-left">{t(section.title ?? section.label)}</span>
               {!expanded && <span className="text-2xs font-medium text-muted-foreground/80">{section.items.length}</span>}
               <ChevronRight className={cn('size-3.5 text-muted-foreground transition-transform', expanded && 'rotate-90')} />
             </button>
@@ -224,6 +242,12 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
           </div>
         )
       })}
+      {focused && (
+        <button type="button" onClick={() => setFullMenu(!fullMenu)}
+          className="mt-1 h-8 rounded-md px-2 text-left text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground">
+          {fullMenu ? t('Only my work') : t('Show the whole menu')}
+        </button>
+      )}
     </nav>
   )
 }
