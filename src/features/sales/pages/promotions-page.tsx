@@ -32,7 +32,7 @@ const KIND: Record<Promo['kind'], string> = { percent: msg('% off'), fixed_price
 const DAYS = [msg('Mon|day'), msg('Tue|day'), msg('Wed|day'), msg('Thu|day'), msg('Fri|day'), msg('Sat|day'), msg('Sun|day')]
 
 export const describePromo = (p: Pick<Promo, 'kind' | 'value' | 'buy_qty' | 'get_qty'>) =>
-  p.kind === 'percent' ? t('−{pct}%', { pct: num(p.value) }) : p.kind === 'fixed_price' ? t('for {price}', { price: formatMoney(p.value) })
+  p.kind === 'percent' ? t('−{pct}%', { pct: num(p.value) }) : p.kind === 'fixed_price' ? t('for {price} with VAT', { price: formatMoney(p.value) })
     : t('{n} for the price of {m}', { n: num(p.buy_qty) + num(p.get_qty), m: num(p.buy_qty) })
 
 /** Sales › Promotions: % off, a special price, "3 for 2" — on the till and on sales documents, for a time. */
@@ -100,7 +100,7 @@ function Results() {
           <table className="w-full text-[13px]">
             <thead className="bg-muted/40 text-left text-xs text-muted-foreground"><tr><th className="px-3 py-2 font-medium">{t('Promotion')}</th>
               <th className="px-3 py-2 text-right font-medium">{t('Receipts')}</th><th className="px-3 py-2 text-right font-medium">{t('Pieces')}</th>
-              <th className="px-3 py-2 text-right font-medium">{t('Discount given')}</th><th className="px-3 py-2 text-right font-medium">{t('Takings')}</th></tr></thead>
+              <th className="px-3 py-2 text-right font-medium">{t('Discount given (with VAT)')}</th><th className="px-3 py-2 text-right font-medium">{t('Takings (with VAT)')}</th></tr></thead>
             <tbody>{q.data.map((r) => (
               <tr key={r.id} className="border-t"><td className="px-3 py-2 font-medium">{r.name}</td><td className="px-3 py-2 text-right tabular-nums">{r.receipts}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{formatQty(r.qty)}</td><td className="px-3 py-2 text-right tabular-nums">{formatMoney(r.discount)}</td>

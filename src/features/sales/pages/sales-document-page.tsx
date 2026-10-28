@@ -150,7 +150,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
     const kindName = kind === 'quotes' ? t('Quote') : kind === 'orders' ? t('Sales order') : t('Invoice')
     return save.mutateAsync({
       header,
-      label: t('{kind}: {n} lines, {amount}', { kind: kindName, n: v.lines.length,
+      label: t('{kind}: {n} lines, {amount} without VAT', { kind: kindName, n: v.lines.length,
         amount: v.lines.reduce((sum, l) => sum + Number(l.quantity || 0) * Number(l.unit_price || 0) * (1 - Number(l.discount_pct || 0) / 100), 0).toFixed(2) }),
       lines: v.lines.map((l, i) => ({
         line_no: i + 1, variant_id: l.variant_id ?? null, description: l.description, quantity: l.quantity, unit_price: l.unit_price,
@@ -419,12 +419,12 @@ function SidePanel({ kind, doc, availability, currency, base }: {
     )
   }
   const rows: [React.ReactNode, React.ReactNode][] = [
-    [t('Net'), `${formatMoney(doc.subtotal)} ${currency}`],
+    [t('Amount without VAT'), `${formatMoney(doc.subtotal)} ${currency}`],
     [t('VAT'), `${formatMoney(doc.tax_total)} ${currency}`],
-    [t('Total'), <span className="text-base">{formatMoney(doc.total)} {currency}</span>],
+    [t('Total with VAT'), <span className="text-base">{formatMoney(doc.total)} {currency}</span>],
   ]
-  if (currency !== base) rows.push([t('Total ({currency})', { currency: base }), formatMoney(doc.total_base)])
-  if (kind === 'invoices' && doc.status === 'posted') rows.push([t('Still to pay'), `${formatMoney(doc.amount_due as number)} ${currency}`])
+  if (currency !== base) rows.push([t('Total with VAT ({currency})', { currency: base }), formatMoney(doc.total_base)])
+  if (kind === 'invoices' && doc.status === 'posted') rows.push([t('Still to pay (with VAT)'), `${formatMoney(doc.amount_due as number)} ${currency}`])
 
   const links: { label: string; href: string; status?: string }[] = []
   if (kind === 'quotes') {

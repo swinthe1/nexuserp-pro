@@ -75,7 +75,7 @@ function DayTab({ onSetup }: { onSetup: () => void }) {
               <Table>
                 <TableHeader><TableRow>
                   <TableHead>{t('Time')}</TableHead><TableHead>{t('Agent')}</TableHead><TableHead>{t('Customer')}</TableHead><TableHead>{t('Result')}</TableHead>
-                  <TableHead className="text-right">{t('Amount')}</TableHead><TableHead>{t('Where')}</TableHead>
+                  <TableHead className="text-right">{t('Amount (with VAT)')}</TableHead><TableHead>{t('Where')}</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
                   {visits.map((v) => (
@@ -125,7 +125,7 @@ function AgentCard({ a, currency, selected, onSelect }: { a: DayAgent; currency:
       </p>
       {a.planned > 0 && <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, (a.planned_visited / a.planned) * 100)}%` }} /></div>}
       <dl className="mt-3 grid grid-cols-3 gap-2 text-[13px]">
-        <div><dt className="flex items-center gap-1 text-muted-foreground"><ShoppingBag className="size-3.5" />{t('Orders')}</dt><dd className="font-semibold tabular-nums">{a.orders} · {formatMoney(a.orders_total, currency, 0)}</dd></div>
+        <div><dt className="flex items-center gap-1 text-muted-foreground"><ShoppingBag className="size-3.5" />{t('Orders, with VAT')}</dt><dd className="font-semibold tabular-nums">{a.orders} · {formatMoney(a.orders_total, currency, 0)}</dd></div>
         <div><dt className="flex items-center gap-1 text-muted-foreground"><Banknote className="size-3.5" />{t('Collected|cash')}</dt><dd className="font-semibold tabular-nums">{formatMoney(a.collected, currency, 0)}</dd></div>
         <div><dt className="text-muted-foreground">{t('In the bag')}</dt><dd className="font-semibold tabular-nums">{a.cash == null ? '—' : formatMoney(a.cash, currency, 0)}</dd></div>
       </dl>

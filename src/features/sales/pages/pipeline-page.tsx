@@ -57,7 +57,7 @@ export function PipelinePage() {
     <>
       <PageHeader
         title={t('Pipeline')}
-        description={opps.data ? tr('{n} open deals worth {total}, {weighted} expected by probability.', { n: openRows.length, total: <span className="tabular font-medium text-foreground">{formatMoney(total)}</span>, weighted: <span className="tabular font-medium text-foreground">{formatMoney(weighted)}</span> }) : t('Deals in progress, by stage.')}
+        description={opps.data ? tr('{n} open deals worth {total} without VAT, {weighted} expected by probability.', { n: openRows.length, total: <span className="tabular font-medium text-foreground">{formatMoney(total)}</span>, weighted: <span className="tabular font-medium text-foreground">{formatMoney(weighted)}</span> }) : t('Deals in progress, by stage.')}
         actions={<>
           <Button variant={mine ? 'secondary' : 'ghost'} size="sm" onClick={() => setMine((m) => !m)} aria-pressed={mine}>{t('My deals')}</Button>
           <div className="flex rounded-md border p-0.5" role="group" aria-label={t('View|mode')}>
@@ -195,8 +195,8 @@ function OpportunityList({ stages, rows, onOpen }: { stages: Stage[]; rows: Oppo
     { id: 'owner', accessorFn: (r) => r.owner?.full_name ?? '', filterFn: inFilter, header: t('Owner'), meta: { label: t('Owner') } },
     { accessorKey: 'expected_close_date', header: ({ column }) => <ColumnHeader column={column} title={t('Close date')} />, meta: { label: t('Expected close') }, cell: ({ getValue }) => formatDate(getValue() as string) },
     { accessorKey: 'probability', header: ({ column }) => <ColumnHeader column={column} title={t('Prob.')} />, meta: { label: t('Probability %'), align: 'right' }, cell: ({ getValue }) => `${Number(getValue())}%` },
-    { accessorKey: 'expected_value', header: ({ column }) => <ColumnHeader column={column} title={t('Value')} />, meta: { label: t('Value'), align: 'right' }, cell: ({ row: { original: r } }) => <span className="tabular">{formatMoney(r.expected_value)} <span className="text-muted-foreground">{r.currency_code}</span></span> },
-    { accessorKey: 'weighted_value', header: ({ column }) => <ColumnHeader column={column} title={t('Expected|value')} />, meta: { label: t('Expected by probability'), align: 'right' }, cell: ({ getValue }) => <span className="tabular">{formatMoney(getValue() as number)}</span> },
+    { accessorKey: 'expected_value', header: ({ column }) => <ColumnHeader column={column} title={t('Value (without VAT)')} />, meta: { label: t('Value (without VAT)'), align: 'right' }, cell: ({ row: { original: r } }) => <span className="tabular">{formatMoney(r.expected_value)} <span className="text-muted-foreground">{r.currency_code}</span></span> },
+    { accessorKey: 'weighted_value', header: ({ column }) => <ColumnHeader column={column} title={t('Expected|value')} />, meta: { label: t('Expected by probability (without VAT)'), align: 'right' }, cell: ({ getValue }) => <span className="tabular">{formatMoney(getValue() as number)}</span> },
   ], [stageName])
   const owners = [...new Set(rows.map((r) => r.owner?.full_name).filter(Boolean))] as string[]
   return (
@@ -210,7 +210,7 @@ function OpportunityList({ stages, rows, onOpen }: { stages: Stage[]; rows: Oppo
       ]}
       footer={(tbl) => {
         const r = tbl.getFilteredRowModel().rows.map((x) => x.original)
-        return <span className="tabular">{t('{n} deals · {total} total · {weighted} expected', { n: r.length, total: formatMoney(r.reduce((s, o) => s + Number(o.expected_value), 0)), weighted: formatMoney(r.reduce((s, o) => s + Number(o.weighted_value ?? 0), 0)) })}</span>
+        return <span className="tabular">{t('{n} deals · {total} total · {weighted} expected, without VAT', { n: r.length, total: formatMoney(r.reduce((s, o) => s + Number(o.expected_value), 0)), weighted: formatMoney(r.reduce((s, o) => s + Number(o.weighted_value ?? 0), 0)) })}</span>
       }}
       empty={{ title: t('No deals yet'), description: t('Convert a qualified lead, or add a deal directly.') }}
     />
@@ -301,7 +301,7 @@ function OpportunityForm({ opp, stages, onDone }: { opp?: OpportunityRow; stages
                   </Select></FormItem>
               )} />
               <FormField control={form.control} name="expected_value" render={({ field }) => (
-                <FormItem><FormLabel>{t('Value ({currency})', { currency: opp?.currency_code ?? company?.base_currency ?? '' })}</FormLabel><FormControl><Input type="number" step="any" className="tabular" disabled={!writable} {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>{t('Value ({currency}, without VAT)', { currency: opp?.currency_code ?? company?.base_currency ?? '' })}</FormLabel><FormControl><Input type="number" step="any" className="tabular" disabled={!writable} {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="expected_close_date" render={({ field }) => (
                 <FormItem><FormLabel optional>{t('Expected close')}</FormLabel><FormControl><Input type="date" disabled={!writable} {...field} /></FormControl></FormItem>
@@ -321,7 +321,7 @@ function OpportunityForm({ opp, stages, onDone }: { opp?: OpportunityRow; stages
                 {quotes.data.map((q) => (
                   <li key={q.id}><Link to={`/sales/quotes/${q.id}`} className="flex items-center justify-between gap-2 px-3 py-2 text-[13px] hover:bg-secondary">
                     <span className="font-medium">{q.number}</span><span className="text-muted-foreground">{formatDate(q.quote_date)}</span>
-                    <StatusBadge status={q.status} /><span className="tabular">{formatMoney(q.total)} {q.currency_code}</span>
+                    <StatusBadge status={q.status} /><span className="tabular">{formatMoney(q.total)} {q.currency_code} <span className="text-2xs text-muted-foreground">{t('with VAT')}</span></span>
                   </Link></li>
                 ))}
               </ul>

@@ -218,7 +218,7 @@ function CustomerScreen({ boot, customer: c, onBack, onOrder }: { boot: AgentBoo
   const waitingCash = waiting.filter((w) => w.fn === 'agent_payment_submit' && w.status !== 'failed').reduce((s, w) => s + num(waitingArgs(w).amount), 0)
   const creditLeft = c.credit_limit != null ? num(c.credit_limit) - num(c.exposure) : null
   const today = [...boot.day.visits.filter((v) => v.partner_id === c.id && !['order', 'payment'].includes(v.outcome)).map((v) => ({ key: v.id, at: v.at, text: t(OUTCOME[v.outcome]), note: v.note })),
-    ...boot.day.orders.filter((o) => o.partner_id === c.id).map((o) => ({ key: o.id, at: '', text: `${o.number} · ${formatMoney(o.total, o.currency)}`, note: o.status === 'draft' ? t('Waits for the manager') : null })),
+    ...boot.day.orders.filter((o) => o.partner_id === c.id).map((o) => ({ key: o.id, at: '', text: `${o.number} · ${formatMoney(o.total, o.currency)} ${t('with VAT')}`, note: o.status === 'draft' ? t('Waits for the manager') : null })),
     ...boot.day.payments.filter((p) => p.partner_id === c.id).map((p) => ({ key: p.id, at: '', text: `${p.number} · ${formatMoney(p.amount, p.currency)}`, note: t('Collected|cash') }))]
   const dest = c.address?.lat != null ? `${c.address.lat},${c.address.lng}` : [c.address?.line1, c.address?.city].filter(Boolean).join(', ')
 
@@ -246,7 +246,7 @@ function CustomerScreen({ boot, customer: c, onBack, onOrder }: { boot: AgentBoo
 
       <section className="mb-3 rounded-xl border bg-card p-4" aria-labelledby="debt-h">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 id="debt-h" className="text-sm text-muted-foreground">{due - waitingCash < 0 ? t('Paid in advance') : t('Owes')}</h2>
+          <h2 id="debt-h" className="text-sm text-muted-foreground">{due - waitingCash < 0 ? t('Paid in advance') : t('Owes (with VAT)')}</h2>
           <p className={cn('text-2xl font-semibold tabular-nums', late > 0 && 'text-destructive')}>{formatMoney(Math.abs(due - waitingCash), cur)}</p>
         </div>
         {late > 0 && <p className="mt-0.5 text-right text-[13px] text-destructive">{t('{amount} overdue', { amount: formatMoney(late, cur) })}</p>}
@@ -283,7 +283,7 @@ function CustomerScreen({ boot, customer: c, onBack, onOrder }: { boot: AgentBoo
 
       {c.orders.length > 0 && (
         <section className="mb-3 rounded-xl border bg-card p-4">
-          <h2 className="mb-2 text-sm text-muted-foreground">{t('Last orders')}</h2>
+          <h2 className="mb-2 text-sm text-muted-foreground">{t('Last orders, with VAT')}</h2>
           <ul className="divide-y text-[13px]">
             {c.orders.map((o) => (
               <li key={o.id} className="flex justify-between gap-3 py-2"><span><span className="font-medium">{o.number}</span> <span className="text-muted-foreground">· {formatDate(o.date)}</span></span>
@@ -469,7 +469,7 @@ function OrderScreen({ boot, customer: c, onBack, onDone }: { boot: AgentBoot; c
     try { localStorage.removeItem(draftKey(companyId, c.id)) } catch { /* ignore */ }
     if (r.offline) toast.success(t('Order saved on the phone; it goes when there is internet'))
     else if (r.held) toast.warning(t('Order {number} waits for the manager: {why}', { number: r.number, why: tServer(r.held) }))
-    else toast.success(t('Order {number} sent · {amount}', { number: r.number, amount: formatMoney(r.total, r.currency) }))
+    else toast.success(t('Order {number} sent · {amount} with VAT', { number: r.number, amount: formatMoney(r.total, r.currency) }))
     onDone()
   }
 
@@ -521,7 +521,7 @@ function OrderScreen({ boot, customer: c, onBack, onDone }: { boot: AgentBoot; c
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>{t('Send the order')}</DialogTitle>
-              <DialogDescription>{t('{name} · {n} products · {amount}', { name: c.name, n: priced.length, amount: formatMoney(total, boot.currency) })}</DialogDescription>
+              <DialogDescription>{t('{name} · {n} products · {amount} with VAT', { name: c.name, n: priced.length, amount: formatMoney(total, boot.currency) })}</DialogDescription>
             </DialogHeader>
             <ul className="max-h-[40vh] divide-y overflow-y-auto text-[13px]">
               {priced.map((x) => (
@@ -552,7 +552,7 @@ function ItemRow({ item, qty, price, disc, onQty, onEdit }: { item: AgentItem; q
       <button type="button" className="min-w-0 flex-1 text-left" onClick={onEdit}>
         <span className="block truncate text-sm font-medium">{item.name}</span>
         <span className="block truncate text-[12px] text-muted-foreground">
-          {formatMoney(price)}{disc > 0 && <span className="text-emerald-700 dark:text-emerald-400"> −{disc}%</span>} · <span className={cn(low && 'text-amber-700 dark:text-amber-400')}>{t('{n} in stock', { n: formatQty(item.available) })}</span>
+          {t('{price} without VAT', { price: formatMoney(price) })}{disc > 0 && <span className="text-emerald-700 dark:text-emerald-400"> −{disc}%</span>} · <span className={cn(low && 'text-amber-700 dark:text-amber-400')}>{t('{n} in stock', { n: formatQty(item.available) })}</span>
         </span>
       </button>
       <div className="flex items-center gap-1">
@@ -579,7 +579,7 @@ function LineDialog({ boot, item, line, base, onSave, onClose }: {
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>{item.name}</DialogTitle>
-          <DialogDescription>{item.sku} · {formatMoney(base.price, boot.currency)}{item.uom ? ` / ${item.uom}` : ''} · {t('{n} in stock', { n: formatQty(item.available) })}</DialogDescription>
+          <DialogDescription>{item.sku} · {t('{price} without VAT', { price: formatMoney(base.price, boot.currency) })}{item.uom ? ` / ${item.uom}` : ''} · {t('{n} in stock', { n: formatQty(item.available) })}</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
           <div className="grid gap-1.5"><Label htmlFor="l-qty">{t('Quantity')}</Label><Input id="l-qty" inputMode="decimal" type="number" min="0" step="any" className="h-11" value={qty} onChange={(e) => setQty(e.target.value)} /></div>

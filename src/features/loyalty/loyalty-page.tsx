@@ -49,7 +49,7 @@ const LEDGER: Record<string, string> = {
 function programRule(p: Pick<Program, 'kind' | 'discount_pct' | 'points_per_unit' | 'point_value' | 'monthly_limit'>) {
   const parts: string[] = []
   if (num(p.discount_pct) > 0) parts.push(t('{pct}% off', { pct: num(p.discount_pct) }))
-  if (p.kind === 'points') parts.push(t('{n} points per {amount} · 1 point = {value}', { n: num(p.points_per_unit), amount: formatMoney(1), value: formatMoney(p.point_value, undefined, 4) }))
+  if (p.kind === 'points') parts.push(t('{n} points per {amount} spent with VAT · 1 point = {value}', { n: num(p.points_per_unit), amount: formatMoney(1), value: formatMoney(p.point_value, undefined, 4) }))
   if (p.monthly_limit != null) parts.push(t('up to {amount} a month', { amount: formatMoney(p.monthly_limit) }))
   return parts.join(' · ')
 }
@@ -315,7 +315,7 @@ function ProgramDialog({ program, onClose }: { program: Program | 'new' | null; 
     try { await save.mutateAsync({ ...v, monthly_limit: limit.trim() === '' ? null : num(limit) }); onClose() } catch (x) { setErr(describeError(x)) }
   }
   const example = v.kind === 'points' && v.points_per_unit > 0 && v.point_value > 0
-    ? t('Spending {spend} earns {pts} points, worth {value} off a later purchase.', { spend: formatMoney(100), pts: Math.floor(100 * v.points_per_unit), value: formatMoney(Math.floor(100 * v.points_per_unit) * v.point_value) })
+    ? t('Spending {spend} with VAT earns {pts} points, worth {value} off a later purchase.', { spend: formatMoney(100), pts: Math.floor(100 * v.points_per_unit), value: formatMoney(Math.floor(100 * v.points_per_unit) * v.point_value) })
     : null
   return (
     <Dialog open={!!program} onOpenChange={(o) => !o && onClose()}>
@@ -335,7 +335,7 @@ function ProgramDialog({ program, onClose }: { program: Program | 'new' | null; 
             <div className="grid gap-1.5"><Label htmlFor="lp-pct" optional={v.kind === 'points'}>{t('Discount %')}</Label>
               <Input id="lp-pct" inputMode="decimal" className="text-right tabular" value={String(v.discount_pct)} onChange={(e) => setV({ ...v, discount_pct: num(e.target.value.replace(',', '.')) })} /></div>
             {v.kind === 'points' && <>
-              <div className="grid gap-1.5"><Label htmlFor="lp-ppu">{t('Points for {amount}', { amount: formatMoney(1) })}</Label>
+              <div className="grid gap-1.5"><Label htmlFor="lp-ppu">{t('Points for {amount} with VAT', { amount: formatMoney(1) })}</Label>
                 <Input id="lp-ppu" inputMode="decimal" className="text-right tabular" value={String(v.points_per_unit)} onChange={(e) => setV({ ...v, points_per_unit: num(e.target.value.replace(',', '.')) })} /></div>
               <div className="grid gap-1.5"><Label htmlFor="lp-val">{t('One point is worth')}</Label>
                 <Input id="lp-val" inputMode="decimal" className="text-right tabular" value={String(v.point_value)} onChange={(e) => setV({ ...v, point_value: num(e.target.value.replace(',', '.')) })} /></div>
@@ -391,20 +391,20 @@ function ReportTab() {
       </div>
       {q.error && <ErrorState error={q.error} onRetry={() => void q.refetch()} />}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label={t('Discount given with cards')} value={formatMoney(d?.discount, cur)} loading={q.isLoading} />
-        <StatCard label={t('Sales with a card')} value={`${share}%`} loading={q.isLoading} hint={d ? t('{amount} of {total}', { amount: formatMoney(d.card_sales), total: formatMoney(d.all_sales) }) : undefined} />
+        <StatCard label={t('Discount given with cards (with VAT)')} value={formatMoney(d?.discount, cur)} loading={q.isLoading} />
+        <StatCard label={t('Sales with a card')} value={`${share}%`} loading={q.isLoading} hint={d ? t('{amount} of {total}, with VAT', { amount: formatMoney(d.card_sales), total: formatMoney(d.all_sales) }) : undefined} />
         <StatCard label={t('Cards used')} value={d?.cards_used ?? 0} loading={q.isLoading} hint={d ? t('of {n} active cards', { n: d.cards_active }) : undefined} />
         <StatCard label={t('Points not spent yet')} value={formatMoney(d?.points_outstanding_value, cur)} loading={q.isLoading}
           hint={d ? t('{n} points the company owes its customers', { n: formatNumberWith(num(d.points_outstanding), { maximumFractionDigits: 0 }) })
             + (books.data ? ` · ${t('in the books: {amount}', { amount: formatMoney(books.data.booked, cur) })}` : '') : undefined} />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
-        <SmallTable title={t('By store')} head={[t('Store'), t('Receipts'), t('Discount')]}
+        <SmallTable title={t('By store')} head={[t('Store'), t('Receipts'), t('Discount (with VAT)')]}
           rows={(d?.by_store ?? []).map((r) => [td(r.name), String(r.receipts), formatMoney(r.discount ?? 0)])} />
-        <SmallTable title={t('By type of card')} head={[t('Type'), t('Cards'), t('Discount')]}
+        <SmallTable title={t('By type of card')} head={[t('Type'), t('Cards'), t('Discount (with VAT)')]}
           rows={(d?.by_program ?? []).map((r) => [r.name, String(r.cards), formatMoney(r.discount ?? 0)])} />
       </div>
-      <SmallTable title={t('Best customers')} head={[t('Customer'), t('Receipts'), t('Spent')]}
+      <SmallTable title={t('Best customers')} head={[t('Customer'), t('Receipts'), t('Spent (with VAT)')]}
         rows={(d?.top_customers ?? []).map((r) => [`${r.holder_name} · ${r.card_number}`, String(r.receipts), formatMoney(r.spent)])} />
     </div>
   )

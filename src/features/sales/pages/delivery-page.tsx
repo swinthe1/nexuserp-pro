@@ -122,7 +122,7 @@ function DeliveryForm({ doc }: { doc: Delivery }) {
                 confirmLabel={t('Complete delivery')}
                 onConfirm={async () => {
                   const r = await saveThen(() => post.mutateAsync(doc.id)) as { cost: number }
-                  toast.success(t('Delivery completed'), { description: t('Cost of goods {amount}', { amount: formatMoney(r.cost, company?.base_currency) }) })
+                  toast.success(t('Delivery completed'), { description: t('Cost of goods {amount}, without VAT', { amount: formatMoney(r.cost, company?.base_currency) }) })
                 }} />
             )}
           </Can></>}
@@ -150,7 +150,7 @@ function DeliveryForm({ doc }: { doc: Delivery }) {
                   <Row k={t('Order|sales')}>{doc.order ? <Link className="text-primary hover:underline" to={`/sales/orders/${doc.order.id}`}>{doc.order.number}</Link> : '—'}</Row>
                   <Row k={t('Lines')}>{lines.fields.length}</Row>
                   <Row k={t('Units')}>{formatQty(units)}</Row>
-                  {doc.status === 'done' && <><Row k={t('Shipped')}>{formatDate(doc.done_at, true)}</Row><Row k={t('Cost of goods')}>{formatMoney(doc.total_cost)} {company?.base_currency}</Row></>}
+                  {doc.status === 'done' && <><Row k={t('Shipped')}>{formatDate(doc.done_at, true)}</Row><Row k={t('Cost of goods (without VAT)')}>{formatMoney(doc.total_cost)} {company?.base_currency}</Row></>}
                 </CardContent>
               </Card>
             </div>
@@ -160,7 +160,7 @@ function DeliveryForm({ doc }: { doc: Delivery }) {
                 <Table>
                   <TableHeader><TableRow>
                     <TableHead>{t('Product')}</TableHead><TableHead className="w-[200px]">{t('Pick from')}</TableHead><TableHead className="w-[200px]">{t('Lot')}</TableHead>
-                    <TableHead className="w-[120px] text-right">{t('Quantity')}</TableHead>{doc.status === 'done' && <TableHead className="text-right">{t('Unit cost')}</TableHead>}<TableHead className="w-10" />
+                    <TableHead className="w-[120px] text-right">{t('Quantity')}</TableHead>{doc.status === 'done' && <TableHead className="text-right">{t('Unit cost (without VAT)')}</TableHead>}<TableHead className="w-10" />
                   </TableRow></TableHeader>
                   <TableBody>
                     {lines.fields.map((f, i) => {

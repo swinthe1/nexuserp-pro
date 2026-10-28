@@ -69,7 +69,7 @@ export function PartnersPage() {
     { accessorKey: 'phone', header: t('Phone'), meta: { label: t('Phone') }, cell: ({ getValue }) => (getValue() as string) || '—' },
     { id: 'price_list', accessorFn: (p) => td((p.price_list as { name: string } | null)?.name ?? ''), filterFn: inFilter, header: t('Price list'), meta: { label: t('Price list') }, cell: ({ getValue }) => (getValue() as string) || <span className="text-muted-foreground">{t('Default')}</span> },
     { id: 'salesperson', accessorFn: (p) => (p.salesperson as { full_name: string | null } | null)?.full_name ?? '', filterFn: inFilter, header: t('Salesperson'), meta: { label: t('Salesperson') } },
-    { accessorKey: 'credit_limit', header: ({ column }) => <ColumnHeader column={column} title={t('Credit limit')} />, meta: { label: t('Credit limit'), align: 'right' }, cell: ({ getValue }) => getValue() == null ? '—' : <span className="tabular">{formatMoney(getValue() as number)}</span> },
+    { accessorKey: 'credit_limit', header: ({ column }) => <ColumnHeader column={column} title={t('Credit limit (with VAT)')} />, meta: { label: t('Credit limit (with VAT)'), align: 'right' }, cell: ({ getValue }) => getValue() == null ? '—' : <span className="tabular">{formatMoney(getValue() as number)}</span> },
   ], [])
   const lists = [...new Set((partners.data ?? []).map((p) => (p.price_list as { name: string } | null)?.name).filter(Boolean).map((n) => td(n)))] as string[]
   const newButton = <Can perm="partners.write"><Button variant="outline" asChild><Link to="/settings/import?kind=partners"><Upload /> {t('Import')}</Link></Button><Button asChild><Link to={role === 'vendor' ? '/partners/new?vendor=1' : '/partners/new'}><Plus /> {role === 'vendor' ? t('New vendor') : t('New customer')}</Link></Button></Can>
@@ -175,17 +175,17 @@ function PartnerOverview({ partner }: { partner: PartnerDetail }) {
   return (
     <div className="grid gap-4">
       <div className="grid gap-3 sm:grid-cols-3">
-        <Metric label={t('Still to pay')} value={show(openBy)} hint={overdue > 0 ? <span className="text-destructive">{t('{amount} overdue', { amount: show(overdueBy) })}</span> : t('Nothing overdue')} />
-        <Metric label={t('Open orders')} value={openOrders.length} hint={t('{amount} not fully invoiced yet', { amount: formatMoney(openOrders.reduce((s, o) => s + num(o.total), 0)) })} />
-        <Metric label={t('Credit limit')} value={limit == null ? t('No limit') : `${formatMoney(limit)} ${base}`}
+        <Metric label={t('Still to pay (with VAT)')} value={show(openBy)} hint={overdue > 0 ? <span className="text-destructive">{t('{amount} overdue', { amount: show(overdueBy) })}</span> : t('Nothing overdue')} />
+        <Metric label={t('Open orders')} value={openOrders.length} hint={t('{amount} with VAT, not fully invoiced yet', { amount: formatMoney(openOrders.reduce((s, o) => s + num(o.total), 0)) })} />
+        <Metric label={t('Credit limit (with VAT)')} value={limit == null ? t('No limit') : `${formatMoney(limit)} ${base}`}
           hint={limit != null ? t('{amount} still available', { amount: formatMoney(Math.max(0, limit - open - openOrders.reduce((s, o) => s + num(o.total), 0))) }) : t('Orders are never blocked for credit')} />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
-        <DocList title={t('Orders')} empty={t('No orders yet.')} rows={(act.data?.orders ?? []).map((o) => ({ id: o.id, href: `/sales/orders/${o.id}`, number: o.number, date: o.order_date, status: o.status, amount: `${formatMoney(o.total)} ${o.currency_code}` }))} />
-        <DocList title={t('Invoices')} empty={t('No invoices yet.')} rows={(act.data?.invoices ?? []).map((i) => ({ id: i.id, href: `/sales/invoices/${i.id}`, number: i.number, date: i.invoice_date, status: i.status === 'posted' ? i.payment_status : i.status, amount: `${formatMoney(sign(i) * num(i.total))} ${i.currency_code}` }))} />
+        <DocList title={t('Orders, total with VAT')} empty={t('No orders yet.')} rows={(act.data?.orders ?? []).map((o) => ({ id: o.id, href: `/sales/orders/${o.id}`, number: o.number, date: o.order_date, status: o.status, amount: `${formatMoney(o.total)} ${o.currency_code}` }))} />
+        <DocList title={t('Invoices, total with VAT')} empty={t('No invoices yet.')} rows={(act.data?.invoices ?? []).map((i) => ({ id: i.id, href: `/sales/invoices/${i.id}`, number: i.number, date: i.invoice_date, status: i.status === 'posted' ? i.payment_status : i.status, amount: `${formatMoney(sign(i) * num(i.total))} ${i.currency_code}` }))} />
       </div>
       {!!act.data?.opportunities.length && (
-        <DocList title={t('Deals')} empty="" rows={act.data.opportunities.map((o) => ({ id: o.id, href: `/crm/pipeline?open=${o.id}`, number: o.name, date: null, status: o.status, amount: `${formatMoney(o.expected_value)} ${o.currency_code}` }))} />
+        <DocList title={t('Deals, without VAT')} empty="" rows={act.data.opportunities.map((o) => ({ id: o.id, href: `/crm/pipeline?open=${o.id}`, number: o.name, date: null, status: o.status, amount: `${formatMoney(o.expected_value)} ${o.currency_code}` }))} />
       )}
     </div>
   )
@@ -313,7 +313,7 @@ function PartnerForm({ partner }: { partner?: PartnerDetail }) {
                     <SelectContent>{(terms.data ?? []).map((x) => <SelectItem key={x.id} value={x.id}>{td(x.name)}</SelectItem>)}</SelectContent></Select></FormItem>
               )} />
               <FormField control={form.control} name="credit_limit" render={({ field }) => (
-                <FormItem><FormLabel optional>{t('Credit limit ({currency})', { currency: company?.base_currency ?? '' })}</FormLabel><FormControl><Input type="number" step="any" className="tabular" placeholder={t('No limit')} disabled={!writable} {...field} value={field.value ?? ''} /></FormControl>
+                <FormItem><FormLabel optional>{t('Credit limit ({currency}, with VAT)', { currency: company?.base_currency ?? '' })}</FormLabel><FormControl><Input type="number" step="any" className="tabular" placeholder={t('No limit')} disabled={!writable} {...field} value={field.value ?? ''} /></FormControl>
                   <FormDescription>{t('Orders above it need a sales manager to confirm.')}</FormDescription><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="currency_code" render={({ field }) => (
@@ -426,7 +426,7 @@ function SpecialPrices({ partner }: { partner: PartnerDetail }) {
       <CardContent className="overflow-x-auto p-0">
         {partner.prices.length ? (
           <Table>
-            <TableHeader><TableRow><TableHead>{t('Product')}</TableHead><TableHead className="text-right">{t('From qty')}</TableHead><TableHead className="text-right">{t('Price')}</TableHead><TableHead className="text-right">{t('Discount')}</TableHead><TableHead>{t('Valid')}</TableHead><TableHead className="w-20" /></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>{t('Product')}</TableHead><TableHead className="text-right">{t('From qty')}</TableHead><TableHead className="text-right">{t('Price (without VAT)')}</TableHead><TableHead className="text-right">{t('Discount')}</TableHead><TableHead>{t('Valid')}</TableHead><TableHead className="w-20" /></TableRow></TableHeader>
             <TableBody>
               {partner.prices.map((p) => (
                 <TableRow key={p.id}>
@@ -470,7 +470,7 @@ function PriceDialog({ open, initial, onClose, onSave }: { open: boolean; initia
             <Button type="button" size="sm" className="h-7 flex-1" variant={mode === 'discount' ? 'secondary' : 'ghost'} onClick={() => setMode('discount')} aria-pressed={mode === 'discount'}>{t('Discount on the list price')}</Button>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            {mode === 'price' && <div className="grid gap-1.5"><Label htmlFor="pp-price">{t('Price')}</Label><Input id="pp-price" type="number" step="any" className="tabular" value={price} onChange={(e) => setPrice(e.target.value)} /></div>}
+            {mode === 'price' && <div className="grid gap-1.5"><Label htmlFor="pp-price">{t('Price (without VAT)')}</Label><Input id="pp-price" type="number" step="any" className="tabular" value={price} onChange={(e) => setPrice(e.target.value)} /></div>}
             <div className="grid gap-1.5"><Label htmlFor="pp-disc">{t('Discount %')}</Label><Input id="pp-disc" type="number" step="any" className="tabular" value={disc} onChange={(e) => setDisc(e.target.value)} /></div>
             <div className="grid gap-1.5"><Label htmlFor="pp-min">{t('From quantity')}</Label><Input id="pp-min" type="number" step="any" className="tabular" value={minQty} onChange={(e) => setMinQty(e.target.value)} /></div>
             <div className="grid gap-1.5"><Label htmlFor="pp-from">{t('Valid from')}</Label><Input id="pp-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>

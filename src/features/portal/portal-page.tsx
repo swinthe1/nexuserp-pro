@@ -128,7 +128,7 @@ function Portal({ portalKey, pin, home, refresh }: { portalKey: string; pin: str
           </div>
           {home.can_see_invoices && (
             <dl className="flex gap-5 text-right text-[13px]">
-              <div><dt className="text-muted-foreground">{home.owed < 0 ? t('Paid in advance') : t('You owe')}</dt><dd className="text-base font-semibold tabular-nums">{formatMoney(Math.abs(home.owed), home.company.currency)}</dd></div>
+              <div><dt className="text-muted-foreground">{home.owed < 0 ? t('Paid in advance') : t('You owe (with VAT)')}</dt><dd className="text-base font-semibold tabular-nums">{formatMoney(Math.abs(home.owed), home.company.currency)}</dd></div>
               {home.overdue > 0 && <div><dt className="text-muted-foreground">{t('Overdue')}</dt><dd className="text-base font-semibold tabular-nums text-destructive">{formatMoney(home.overdue, home.company.currency)}</dd></div>}
             </dl>
           )}
@@ -235,7 +235,7 @@ function CatalogTab({ portalKey, pin, home, cart, setQty, onCart }: {
                       <p className="text-[12px] text-muted-foreground">{i.sku}{i.uom ? ` · ${i.uom}` : ''}</p>
                       <div className="mt-auto flex items-end justify-between gap-2 pt-1.5">
                         <div>
-                          <p className="font-semibold tabular-nums">{i.gross == null ? '—' : formatMoney(i.gross, cur)}</p>
+                          <p className="font-semibold tabular-nums">{i.gross == null ? '—' : <>{formatMoney(i.gross, cur)} <span className="text-[12px] font-normal text-muted-foreground">{t('with VAT')}</span></>}</p>
                           {num(i.discount) > 0 && <p className="text-[12px] text-emerald-700 dark:text-emerald-400">−{num(i.discount)}%</p>}
                           <StockBadge s={i.stock} />
                         </div>
@@ -261,7 +261,7 @@ function CatalogTab({ portalKey, pin, home, cart, setQty, onCart }: {
       {inCart.length > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-card/95 p-3 backdrop-blur" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
           <div className="mx-auto flex max-w-5xl items-center gap-3">
-            <p className="min-w-0 flex-1 text-sm"><span className="text-muted-foreground">{tn(inCart.length, '{n} product', '{n} products')} · </span><span className="font-semibold tabular-nums">{formatMoney(total, cur)}</span></p>
+            <p className="min-w-0 flex-1 text-sm"><span className="text-muted-foreground">{tn(inCart.length, '{n} product', '{n} products')} · </span><span className="font-semibold tabular-nums">{t('{amount} with VAT', { amount: formatMoney(total, cur) })}</span></p>
             <Button className="h-11" onClick={onCart}><ShoppingCart /> {t('Go to the cart')}</Button>
           </div>
         </div>
@@ -306,7 +306,7 @@ function CartTab({ portalKey, pin, cur, cart, setQty, onSent, onShop }: {
           <li key={l.item.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 p-3">
             <div className="min-w-0 basis-full sm:basis-auto sm:flex-1">
               <p className="text-sm font-medium">{l.item.name}</p>
-              <p className="text-[12px] text-muted-foreground">{l.item.sku} · {formatMoney(l.item.gross, cur)}</p>
+              <p className="text-[12px] text-muted-foreground">{l.item.sku} · {t('{price} with VAT', { price: formatMoney(l.item.gross, cur) })}</p>
             </div>
             <div className="flex items-center gap-1">
               <Button size="icon" variant="outline" className="size-9" aria-label={t('One less')} onClick={() => setQty(l.item, l.qty - 1)}><Minus /></Button>
@@ -323,7 +323,7 @@ function CartTab({ portalKey, pin, cur, cart, setQty, onSent, onShop }: {
         <dl className="grid gap-1 text-sm">
           <div className="flex justify-between"><dt className="text-muted-foreground">{t('Without VAT')}</dt><dd className="tabular-nums">{formatMoney(net, cur)}</dd></div>
           <div className="flex justify-between"><dt className="text-muted-foreground">{t('VAT')}</dt><dd className="tabular-nums">{formatMoney(total - net, cur)}</dd></div>
-          <div className="flex justify-between border-t pt-1 text-base font-semibold"><dt>{t('Total')}</dt><dd className="tabular-nums">{formatMoney(total, cur)}</dd></div>
+          <div className="flex justify-between border-t pt-1 text-base font-semibold"><dt>{t('Total with VAT')}</dt><dd className="tabular-nums">{formatMoney(total, cur)}</dd></div>
         </dl>
         <div className="grid gap-1.5"><Label htmlFor="p-when">{t('Wanted by')}</Label><Input id="p-when" type="date" value={when} onChange={(e) => setWhen(e.target.value)} /></div>
         <div className="grid gap-1.5"><Label htmlFor="p-ref">{t('Your order number')}</Label><Input id="p-ref" value={ref} maxLength={80} onChange={(e) => setRef(e.target.value)} /></div>
@@ -346,7 +346,7 @@ function OrdersTab({ home, onOpen }: { home: Home; onOpen: (id: string) => void 
             <span className="text-[13px] text-muted-foreground">{formatDate(o.date)}</span>
             <Badge variant={['draft', 'pending_approval'].includes(o.status) ? 'warning' : o.status === 'delivered' || o.status === 'closed' ? 'success' : 'secondary'}>
               {t(ORDER_STATUS[o.status] ?? o.status)}</Badge>
-            <span className="ml-auto font-medium tabular-nums">{formatMoney(o.total, o.currency)}</span>
+            <span className="ml-auto font-medium tabular-nums">{formatMoney(o.total, o.currency)} <span className="text-[12px] font-normal text-muted-foreground">{t('with VAT')}</span></span>
           </button>
         </li>
       ))}
@@ -368,7 +368,7 @@ function InvoicesTab({ home, onOpen }: { home: Home; onOpen: (id: string) => voi
               <span className="font-medium">{i.number}</span>
               <span className="text-[13px] text-muted-foreground">{formatDate(i.date)}{i.type === 'credit_note' && ` · ${t('Credit note')}`}</span>
               <span className="ml-auto text-right">
-                <span className="block font-medium tabular-nums">{formatMoney(i.total, i.currency)}</span>
+                <span className="block font-medium tabular-nums">{formatMoney(i.total, i.currency)} <span className="text-[12px] font-normal text-muted-foreground">{t('with VAT')}</span></span>
                 <span className={cn('block text-[12px]', i.open > 0 ? late ? 'text-destructive' : 'text-muted-foreground' : 'text-emerald-700 dark:text-emerald-400')}>
                   {i.open > 0 ? (late ? t('{amount} overdue since {date}', { amount: formatMoney(i.open, i.currency), date: formatDate(i.due) }) : t('{amount} open', { amount: formatMoney(i.open, i.currency) })) : t('Paid')}
                 </span>
@@ -414,7 +414,7 @@ function DocumentView({ portalKey, pin, home, kind, id, onBack }: { portalKey: s
                 <thead><tr className="border-b text-left text-[12px] text-muted-foreground">
                   <th className="py-2 font-medium">{t('Product')}</th><th className="py-2 text-right font-medium">{t('Qty')}</th>
                   {d.type === 'order' && <th className="py-2 text-right font-medium">{t('Delivered')}</th>}
-                  <th className="py-2 text-right font-medium">{t('Price')}</th><th className="py-2 text-right font-medium">{t('VAT')}</th><th className="py-2 text-right font-medium">{t('Total')}</th>
+                  <th className="py-2 text-right font-medium">{t('Price (without VAT)')}</th><th className="py-2 text-right font-medium">{t('VAT')}</th><th className="py-2 text-right font-medium">{t('Total (with VAT)')}</th>
                 </tr></thead>
                 <tbody>
                   {d.lines.map((l, n) => (
@@ -433,8 +433,8 @@ function DocumentView({ portalKey, pin, home, kind, id, onBack }: { portalKey: s
             <dl className="ml-auto mt-4 grid max-w-xs gap-1 text-sm">
               <div className="flex justify-between"><dt className="text-muted-foreground">{t('Without VAT')}</dt><dd className="tabular-nums">{formatMoney(d.subtotal, d.currency)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted-foreground">{t('VAT')}</dt><dd className="tabular-nums">{formatMoney(d.tax, d.currency)}</dd></div>
-              <div className="flex justify-between border-t pt-1 font-semibold"><dt>{t('Total')}</dt><dd className="tabular-nums">{formatMoney(d.total, d.currency)}</dd></div>
-              {d.open != null && d.type !== 'order' && <div className="flex justify-between"><dt className="text-muted-foreground">{t('Still to pay')}</dt><dd className="tabular-nums">{formatMoney(d.open, d.currency)}</dd></div>}
+              <div className="flex justify-between border-t pt-1 font-semibold"><dt>{t('Total with VAT')}</dt><dd className="tabular-nums">{formatMoney(d.total, d.currency)}</dd></div>
+              {d.open != null && d.type !== 'order' && <div className="flex justify-between"><dt className="text-muted-foreground">{t('Still to pay (with VAT)')}</dt><dd className="tabular-nums">{formatMoney(d.open, d.currency)}</dd></div>}
             </dl>
             {d.note && <p className="mt-4 text-[13px] text-muted-foreground">{d.note}</p>}
             {d.type !== 'order' && <p className="mt-6 text-[12px] text-muted-foreground print:block">{t('This is a copy for your records. The fiscal invoice is the one handed over with the goods.')}</p>}

@@ -60,22 +60,22 @@ export function SalesOverviewPage() {
         </>}
       />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label={t('Sales')} value={formatMoney(d?.revenue)} loading={ov.isLoading} href="/sales/invoices" hint={tn(d?.invoice_count ?? 0, '{n} invoice', '{n} invoices')} />
-        <StatCard label={t('Gross margin')} value={margin == null ? '—' : `${pct(margin, 1)}%`} loading={ov.isLoading} hint={d ? t('{profit} after {cost} cost of goods', { profit: formatMoney(d.revenue - d.cogs), cost: formatMoney(d.cogs) }) : undefined} tone={margin != null && margin < 15 ? 'warning' : 'default'} />
-        <StatCard label={t('Orders taken')} value={formatMoney(d?.orders_value)} loading={ov.isLoading} href="/sales/orders" hint={tn(d?.orders_count ?? 0, '{n} confirmed order', '{n} confirmed orders')} />
-        <StatCard label={t('Overdue invoices')} value={formatMoney(d?.overdue_amount)} loading={ov.isLoading} tone={d?.overdue_count ? 'destructive' : 'default'} href="/sales/invoices" hint={t('{n} past the due date', { n: d?.overdue_count ?? 0 })} />
+        <StatCard label={t('Sales (without VAT)')} value={formatMoney(d?.revenue)} loading={ov.isLoading} href="/sales/invoices" hint={tn(d?.invoice_count ?? 0, '{n} invoice', '{n} invoices')} />
+        <StatCard label={t('Gross margin')} value={margin == null ? '—' : `${pct(margin, 1)}%`} loading={ov.isLoading} hint={d ? t('{profit} after {cost} cost of goods, without VAT', { profit: formatMoney(d.revenue - d.cogs), cost: formatMoney(d.cogs) }) : undefined} tone={margin != null && margin < 15 ? 'warning' : 'default'} />
+        <StatCard label={t('Orders taken (without VAT)')} value={formatMoney(d?.orders_value)} loading={ov.isLoading} href="/sales/orders" hint={tn(d?.orders_count ?? 0, '{n} confirmed order', '{n} confirmed orders')} />
+        <StatCard label={t('Overdue invoices (with VAT)')} value={formatMoney(d?.overdue_amount)} loading={ov.isLoading} tone={d?.overdue_count ? 'destructive' : 'default'} href="/sales/invoices" hint={t('{n} past the due date', { n: d?.overdue_count ?? 0 })} />
       </div>
       <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label={t('To deliver and invoice')} value={formatMoney(d?.backlog)} loading={ov.isLoading} hint={t('Value of open orders not invoiced yet')} />
+        <StatCard label={t('To deliver and invoice (without VAT)')} value={formatMoney(d?.backlog)} loading={ov.isLoading} hint={t('Open orders, the part not delivered yet')} />
         <StatCard label={t('Quotes turned into orders')} value={quoteConv == null ? '—' : `${pct(quoteConv, 0)}%`} loading={ov.isLoading} href="/sales/quotes" hint={t('{done} of {sent} sent', { done: d?.quotes_converted ?? 0, sent: d?.quotes_sent ?? 0 })} />
         <StatCard label={t('Deals won')} value={winRate == null ? '—' : `${pct(winRate, 0)}%`} loading={ov.isLoading} href="/crm/pipeline" hint={t('{won} won · {lost} lost', { won: d?.won ?? 0, lost: d?.lost ?? 0 })} />
-        <StatCard label={t('Open deals')} value={formatMoney(pipeline.reduce((s, p) => s + num(p.value), 0))} loading={ov.isLoading} href="/crm/pipeline" hint={t('{amount} expected by probability', { amount: formatMoney(pipeline.reduce((s, p) => s + num(p.weighted), 0)) })} />
+        <StatCard label={t('Open deals (without VAT)')} value={formatMoney(pipeline.reduce((s, p) => s + num(p.value), 0))} loading={ov.isLoading} href="/crm/pipeline" hint={t('{amount} expected by probability', { amount: formatMoney(pipeline.reduce((s, p) => s + num(p.weighted), 0)) })} />
       </div>
 
       {ov.isError && <Card className="mt-4"><ErrorState error={ov.error} onRetry={() => void ov.refetch()} /></Card>}
       <div className="mt-4 grid gap-4 grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_380px]">
         <Card>
-          <CardHeader><CardTitle>{t('Sales by month')}</CardTitle><CardDescription>{t('Last 12 months, {currency}', { currency: cur })}</CardDescription></CardHeader>
+          <CardHeader><CardTitle>{t('Sales by month')}</CardTitle><CardDescription>{t('Last 12 months, {currency} without VAT', { currency: cur })}</CardDescription></CardHeader>
           <CardContent>
             {ov.isLoading ? <Skeleton className="h-64" /> : (
               <div className="h-64">
@@ -84,7 +84,7 @@ export function SalesOverviewPage() {
                     <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
                     <XAxis dataKey="month" tick={axisTick} tickLine={false} axisLine={false} />
                     <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatCompact(v)} width={52} />
-                    <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }} formatter={(v: number) => [formatMoney(v, cur), t('Sales')]} />
+                    <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }} formatter={(v: number) => [formatMoney(v, cur), t('Sales (without VAT)')]} />
                     <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -94,7 +94,7 @@ export function SalesOverviewPage() {
         </Card>
         <Card>
           <CardHeader className="flex-row items-center justify-between space-y-0">
-            <div><CardTitle>{t('Sales pipeline')}</CardTitle><CardDescription>{t('Open deals by stage')}</CardDescription></div>
+            <div><CardTitle>{t('Sales pipeline')}</CardTitle><CardDescription>{t('Open deals by stage, without VAT')}</CardDescription></div>
             <Button variant="ghost" size="sm" asChild><Link to="/crm/pipeline">{t('Open board')} <ArrowRight /></Link></Button>
           </CardHeader>
           <CardContent className="grid gap-3">
@@ -115,9 +115,9 @@ export function SalesOverviewPage() {
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
-         <RankCard title={t('Top customers')} loading={ov.isLoading} rows={(d?.top_customers ?? []).map((c) => ({ key: c.id, label: c.name, href: `/partners/${c.id}`, value: num(c.revenue) }))} />
-        <RankCard title={t('Top products')} loading={ov.isLoading} rows={(d?.top_products ?? []).map((p) => ({ key: p.sku, label: p.sku, sub: t('{name} · {qty} sold', { name: p.name, qty: formatQty(p.quantity) }), value: num(p.revenue) }))} />
-        <RankCard title={t('By salesperson')} loading={ov.isLoading} rows={(d?.by_salesperson ?? []).map((s) => ({ key: s.name, label: s.name, sub: tn(s.invoices, '{n} invoice', '{n} invoices'), value: num(s.revenue) }))} />
+         <RankCard title={t('Top customers (without VAT)')} loading={ov.isLoading} rows={(d?.top_customers ?? []).map((c) => ({ key: c.id, label: c.name, href: `/partners/${c.id}`, value: num(c.revenue) }))} />
+        <RankCard title={t('Top products (without VAT)')} loading={ov.isLoading} rows={(d?.top_products ?? []).map((p) => ({ key: p.sku, label: p.sku, sub: t('{name} · {qty} sold', { name: p.name, qty: formatQty(p.quantity) }), value: num(p.revenue) }))} />
+        <RankCard title={t('By salesperson (without VAT)')} loading={ov.isLoading} rows={(d?.by_salesperson ?? []).map((s) => ({ key: s.name, label: s.name, sub: tn(s.invoices, '{n} invoice', '{n} invoices'), value: num(s.revenue) }))} />
       </div>
     </>
   )

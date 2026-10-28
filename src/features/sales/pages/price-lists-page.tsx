@@ -85,6 +85,7 @@ function PriceListForm({ pl }: { pl?: Tables<'price_lists'> & { items: Tables<'p
   const items = useFieldArray({ control: form.control, name: 'items' })
   const watched = useWatch({ control: form.control, name: 'items' })
   const cur = useWatch({ control: form.control, name: 'currency_code' })
+  const withTax = useWatch({ control: form.control, name: 'prices_include_tax' })
   const cost = React.useMemo(() => new Map((variants.data ?? []).map((v) => [v.id, v.avg_cost])), [variants.data])
   const basePrice = React.useMemo(() => new Map((sellable.data ?? []).map((v) => [v.id, v.sales_price])), [sellable.data])
 
@@ -148,8 +149,8 @@ function PriceListForm({ pl }: { pl?: Tables<'price_lists'> & { items: Tables<'p
               <Table>
                 <TableHeader><TableRow>
                   <TableHead className="min-w-[220px]">{t('Product')}</TableHead><TableHead className="w-[110px] text-right">{t('From qty')}</TableHead>
-                  <TableHead className="w-[140px] text-right">{t('Price ({currency})', { currency: cur })}</TableHead><TableHead className="w-[100px] text-right">{t('Discount %')}</TableHead>
-                  <TableHead className="text-right">{t('Standard price')}</TableHead><TableHead className="text-right">{t('Margin')}</TableHead><TableHead className="w-10" />
+                  <TableHead className="w-[140px] text-right">{withTax ? t('Price ({currency}, with VAT)', { currency: cur }) : t('Price ({currency}, without VAT)', { currency: cur })}</TableHead><TableHead className="w-[100px] text-right">{t('Discount %')}</TableHead>
+                  <TableHead className="text-right">{t('Standard price (without VAT)')}</TableHead><TableHead className="text-right">{t('Margin')}</TableHead><TableHead className="w-10" />
                 </TableRow></TableHeader>
                 <TableBody>
                   {items.fields.map((f, i) => {

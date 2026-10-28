@@ -31,7 +31,7 @@ const salespersonCol = (): ColumnDef<Row> => ({
   cell: ({ getValue }) => (getValue() as string) || <span className="text-muted-foreground">—</span>,
 })
 const totalCol = (base: string): ColumnDef<Row> => ({
-  accessorKey: 'total', header: ({ column }) => <ColumnHeader column={column} title={t('Total')} />, meta: { label: t('Total'), align: 'right', exportValue: (r) => num(r.total) },
+  accessorKey: 'total', header: ({ column }) => <ColumnHeader column={column} title={t('Total with VAT')} />, meta: { label: t('Total with VAT'), align: 'right', exportValue: (r) => num(r.total) },
   cell: ({ row: { original: r } }) => <span className="tabular">{formatMoney(r.total as number)} <span className="text-muted-foreground">{r.currency_code !== base ? r.currency_code : ''}</span></span>,
 })
 
@@ -96,7 +96,7 @@ const CFG: Record<SalesKind, Cfg> = {
       { id: 'order', accessorFn: (r) => nm(r.order, 'number'), header: t('Order|sales'), meta: { label: t('Sales order') } },
       { id: 'warehouse', accessorFn: (r) => td(nm(r.warehouse)), filterFn: inFilter, header: t('Warehouse'), meta: { label: t('Warehouse') } },
       { id: 'qty', accessorFn: (r) => sum(r.lines, 'quantity'), header: t('Units'), meta: { label: t('Units'), align: 'right' }, cell: ({ getValue }) => formatQty(getValue() as number) },
-      { accessorKey: 'total_cost', header: t('Cost'), meta: { label: t('Cost ({currency})', { currency: base }), align: 'right' }, cell: ({ row: { original: r } }) => r.status === 'done' ? formatMoney(r.total_cost as number) : '—' },
+      { accessorKey: 'total_cost', header: t('Cost (without VAT)'), meta: { label: t('Cost ({currency}, without VAT)', { currency: base }), align: 'right' }, cell: ({ row: { original: r } }) => r.status === 'done' ? formatMoney(r.total_cost as number) : '—' },
     ],
   },
   invoices: {
@@ -120,7 +120,7 @@ const CFG: Record<SalesKind, Cfg> = {
       },
       dateCol('due_date', t('Due')),
       totalCol(base),
-      { accessorKey: 'amount_due', header: t('Still to pay'), meta: { label: t('Still to pay'), align: 'right' }, cell: ({ row: { original: r } }) => r.status === 'posted' ? formatMoney(r.amount_due as number) : '—' },
+      { accessorKey: 'amount_due', header: t('Still to pay (with VAT)'), meta: { label: t('Still to pay (with VAT)'), align: 'right' }, cell: ({ row: { original: r } }) => r.status === 'posted' ? formatMoney(r.amount_due as number) : '—' },
     ],
   },
 }

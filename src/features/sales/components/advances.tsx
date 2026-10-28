@@ -60,7 +60,7 @@ export function AdvanceButton({ order }: { order: { id: string; total: number; c
               <div className="grid gap-1.5"><Label htmlFor="adv-d">{t('Date')}</Label><Input id="adv-d" type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} /></div>
             </div>
             <p className="rounded-md bg-muted/50 px-3 py-2 text-sm">{t('Advance with VAT')}: <b className="tabular-nums">{formatMoney(gross, order.currency_code)}</b>
-              <span className="block text-xs text-muted-foreground">{t('of the order {total}', { total: formatMoney(order.total, order.currency_code) })}</span></p>
+              <span className="block text-xs text-muted-foreground">{t('of the order total with VAT {total}', { total: formatMoney(order.total, order.currency_code) })}</span></p>
           </div>
           <DialogFooter><Button disabled={gross <= 0 || gross > num(order.total)} loading={create.isPending} onClick={() => create.mutate()}>{t('Create the advance invoice')}</Button></DialogFooter>
         </DialogContent>
@@ -88,11 +88,11 @@ export function AdvancesCard({ orderId, partnerId, draftInvoiceId, onDeducted }:
           <div key={a.id}>
             <div className="flex items-center justify-between gap-2">
               <Link className="text-primary hover:underline" to={`/sales/invoices/${a.id}`}>{a.number ?? t('Draft')}</Link>
-              <span className="tabular-nums font-medium">{formatMoney(a.total, a.currency)}</span>
+              <span className="tabular-nums font-medium">{formatMoney(a.total, a.currency)} <span className="text-xs font-normal text-muted-foreground">{t('with VAT')}</span></span>
             </div>
             <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
               <span>{formatDate(a.date)} {a.status !== 'posted' && <StatusBadge status={a.status} />}</span>
-              {a.status === 'posted' && <span>{num(a.left) > 0 ? t('{amount} left to deduct', { amount: formatMoney(a.left) }) : t('fully deducted')}</span>}
+              {a.status === 'posted' && <span>{num(a.left) > 0 ? t('{amount} without VAT left to deduct', { amount: formatMoney(a.left) }) : t('fully deducted')}</span>}
             </div>
           </div>
         ))}

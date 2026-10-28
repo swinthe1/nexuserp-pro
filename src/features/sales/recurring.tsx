@@ -127,7 +127,7 @@ export function RecurringPage() {
         : <span className="text-muted-foreground">—</span>,
     },
     { accessorKey: 'made_count', header: t('Made|recurring'), meta: { label: t('Made|recurring'), align: 'right' } },
-    { accessorKey: 'total', header: t('Each'), meta: { label: t('Each'), align: 'right' }, cell: ({ row: { original: r } }) => <span className="tabular">{formatMoney(r.total)} {r.currency_code}</span> },
+    { accessorKey: 'total', header: t('Each (with VAT)'), meta: { label: t('Each (with VAT)'), align: 'right' }, cell: ({ row: { original: r } }) => <span className="tabular">{formatMoney(r.total)} {r.currency_code}</span> },
     ...(writer ? [{
       id: 'actions', enableHiding: false, meta: { noExport: true },
       cell: ({ row: { original: r } }: { row: { original: RecurringPlan } }) => (

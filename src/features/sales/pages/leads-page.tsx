@@ -43,7 +43,7 @@ export function LeadsPage() {
     { accessorKey: 'status', filterFn: inFilter, header: t('Status'), meta: { label: t('Status'), exportValue: (l) => humanize(l.status) }, cell: ({ getValue }) => <StatusBadge status={getValue() as string} /> },
     { accessorKey: 'source', filterFn: inFilter, header: t('Source'), meta: { label: t('Source'), exportValue: (l) => humanize(l.source) }, cell: ({ getValue }) => humanize(getValue() as string) },
     { id: 'owner', accessorFn: (l) => l.owner?.full_name ?? '', filterFn: inFilter, header: t('Owner'), meta: { label: t('Owner') }, cell: ({ getValue }) => (getValue() as string) || <span className="text-muted-foreground">{t('Unassigned')}</span> },
-    { accessorKey: 'estimated_value', header: ({ column }) => <ColumnHeader column={column} title={t('Est. value')} />, meta: { label: t('Estimated value'), align: 'right' }, cell: ({ getValue }) => getValue() == null ? '—' : <span className="tabular">{formatMoney(getValue() as number)}</span> },
+    { accessorKey: 'estimated_value', header: ({ column }) => <ColumnHeader column={column} title={t('Est. value (without VAT)')} />, meta: { label: t('Estimated value (without VAT)'), align: 'right' }, cell: ({ getValue }) => getValue() == null ? '—' : <span className="tabular">{formatMoney(getValue() as number)}</span> },
     { accessorKey: 'created_at', header: ({ column }) => <ColumnHeader column={column} title={t('Added')} />, meta: { label: t('Added') }, cell: ({ getValue }) => formatDate(getValue() as string) },
   ], [])
   const owners = [...new Set((leads.data ?? []).map((l) => l.owner?.full_name).filter(Boolean))] as string[]
@@ -141,7 +141,7 @@ function LeadForm({ lead, onDone }: { lead?: LeadRow; onDone: () => void }) {
                   </Select></FormItem>
               )} />
               <FormField control={form.control} name="estimated_value" render={({ field }) => (
-                <FormItem><FormLabel optional>{t('Estimated value')}</FormLabel><FormControl><Input type="number" step="any" className="tabular" disabled={!writable} {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel optional>{t('Estimated value (without VAT)')}</FormLabel><FormControl><Input type="number" step="any" className="tabular" disabled={!writable} {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="owner_id" render={({ field }) => (
                 <FormItem className="col-span-2"><FormLabel optional>{t('Owner')}</FormLabel>
@@ -217,7 +217,7 @@ function ConvertDialog({ lead, open, onOpenChange }: { lead: LeadRow; open: bool
             {mode === 'existing' && <SearchSelect value={partnerId} onChange={setPartnerId} placeholder={t('Choose a customer')} options={(customers.data ?? []).map((c) => ({ value: c.id, label: c.name, hint: c.code }))} />}
           </fieldset>
           <div className="grid gap-1.5"><Label htmlFor="cv-name">{t('Deal name')}</Label><Input id="cv-name" value={name} onChange={(e) => setName(e.target.value)} /></div>
-          <div className="grid gap-1.5"><Label htmlFor="cv-val">{t('Expected value')}</Label><Input id="cv-val" type="number" step="any" className="tabular" value={value} onChange={(e) => setValue(e.target.value)} /></div>
+          <div className="grid gap-1.5"><Label htmlFor="cv-val">{t('Expected value (without VAT)')}</Label><Input id="cv-val" type="number" step="any" className="tabular" value={value} onChange={(e) => setValue(e.target.value)} /></div>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>{t('Cancel')}</Button>
