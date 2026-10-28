@@ -26,6 +26,10 @@ export function describeError(error: unknown): string {
       return msg.startsWith('Permission denied') || msg.includes('row-level security')
         ? t("You don't have permission to do this. Ask a company admin for access.")
         : tServer(msg)
+    case 'PGRST202':   // the app is newer than the database: the server's update (database part) has not run yet
+    case 'PGRST205':
+    case '42883':
+      return t('This part needs the latest server update. The administrator runs the server update and it works.')
     case 'PGRST301':
     case '401':
       return t('Your session has expired. Sign in again.')

@@ -139,4 +139,5 @@ export default {
   "{n} thing to check in the books": "{n} gjë për t’u kontrolluar në libra",
   "{n} things to check in the books": "{n} gjëra për t’u kontrolluar në libra",
   "goods without invoice, items below zero, partners without NUI…": "mall pa faturë, artikuj nën zero, partnerë pa NUI…",
+  "This part needs the latest server update. The administrator runs the server update and it works.": "Kjo pjesë kërkon përditësimin e fundit të serverit. Administratori e përditëson serverin dhe funksionon.",
 } satisfies Dict
