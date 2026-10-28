@@ -47,8 +47,8 @@ export function StockPage() {
       accessorKey: 'available', header: ({ column }) => <ColumnHeader column={column} title={t('Available')} />, meta: { label: t('Available') },
       cell: ({ row: { original: r } }) => <StockBar onHand={r.on_hand} reserved={r.reserved} className="max-w-[200px]" />,
     },
-    { accessorKey: 'avg_cost', header: t('Avg. cost'), meta: { label: t('Average cost'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
-    { accessorKey: 'stock_value', header: ({ column }) => <ColumnHeader column={column} title={t('Value')} />, meta: { label: t('Value'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
+    { accessorKey: 'avg_cost', header: t('Avg. cost'), meta: { label: t('Average cost, without VAT'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
+    { accessorKey: 'stock_value', header: ({ column }) => <ColumnHeader column={column} title={t('Value at cost')} />, meta: { label: t('Value at cost'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
     { accessorKey: 'last_movement_at', header: ({ column }) => <ColumnHeader column={column} title={t('Last moved')} />, meta: { label: t('Last moved') }, cell: ({ getValue }) => <span className="text-[13px]">{formatDate(getValue() as string)}</span> },
   ], [today])
 
@@ -56,7 +56,8 @@ export function StockPage() {
     <>
       <PageHeader title={t('Stock levels')} description={t('How much of each item you have in every place and lot. Available is what is on hand minus what is reserved for orders.')} />
       <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label={t('Stock value')} value={formatMoney(overview.data?.stock_value, company?.base_currency)} loading={overview.isLoading} hint={t('At average cost')} />
+        <StatCard label={t('Value at purchase price, without VAT')} value={formatMoney(overview.data?.stock_value, company?.base_currency)} loading={overview.isLoading}
+          hint={overview.data?.sales_value != null ? t('At selling price with VAT {amount}', { amount: formatMoney(overview.data.sales_value) }) : t('At average cost')} />
         <StatCard label={t('Active items')} value={overview.data?.active_skus ?? 0} loading={overview.isLoading} href="/inventory/products" />
         <StatCard label={t('Low stock')} value={overview.data?.low_stock ?? 0} tone={overview.data?.low_stock ? 'warning' : 'default'} loading={overview.isLoading} href="/inventory/alerts" hint={t('At or below the reorder point')} />
         <StatCard label={t('Lines below zero')} value={overview.data?.negative_lines ?? 0} tone={overview.data?.negative_lines ? 'destructive' : 'default'} loading={overview.isLoading} hint={t('Only possible when selling without stock is allowed')} />

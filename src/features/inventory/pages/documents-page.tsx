@@ -48,7 +48,7 @@ const CONFIG: Record<DocKind, KindConfig> = {
         cell: ({ row: { original: r } }) => r.is_import ? <span className="inline-flex items-center gap-1.5"><Globe2 className="size-3.5 text-muted-foreground" /><StatusBadge status={r.clearance_status as string} /></span> : <span className="text-muted-foreground">{t('Domestic')}</span>,
       },
       { id: 'lines', accessorFn: (r) => count(r.lines), header: t('Lines'), meta: { label: t('Lines'), align: 'right' } },
-      { accessorKey: 'total_value', header: ({ column }) => <ColumnHeader column={column} title={t('Value')} />, meta: { label: t('Value ({currency})', { currency: cur }), align: 'right' }, cell: ({ row: { original: r } }) => r.status === 'done' ? formatMoney(r.total_value as number) : '—' },
+      { accessorKey: 'total_value', header: ({ column }) => <ColumnHeader column={column} title={t('Value at cost')} />, meta: { label: t('Value at cost ({currency})', { currency: cur }), align: 'right' }, cell: ({ row: { original: r } }) => r.status === 'done' ? formatMoney(r.total_value as number) : '—' },
     ],
   },
   adjustments: {
@@ -60,7 +60,7 @@ const CONFIG: Record<DocKind, KindConfig> = {
       { accessorKey: 'reason', filterFn: inFilter, header: t('Reason'), meta: { label: t('Reason'), exportValue: (r) => t(ADJUSTMENT_REASONS[r.reason as keyof typeof ADJUSTMENT_REASONS] ?? String(r.reason)) }, cell: ({ getValue }) => { const k = ADJUSTMENT_REASONS[getValue() as keyof typeof ADJUSTMENT_REASONS]; return k ? t(k) : humanize(getValue() as string) } },
       { id: 'warehouse', accessorFn: (r) => name(r.warehouse), filterFn: inFilter, header: t('Warehouse'), meta: { label: t('Warehouse') } },
       { id: 'lines', accessorFn: (r) => count(r.lines), header: t('Lines'), meta: { label: t('Lines'), align: 'right' } },
-      { accessorKey: 'total_value', header: ({ column }) => <ColumnHeader column={column} title={t('Value')} />, meta: { label: t('Value ({currency})', { currency: cur }), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
+      { accessorKey: 'total_value', header: ({ column }) => <ColumnHeader column={column} title={t('Value at cost')} />, meta: { label: t('Value at cost ({currency})', { currency: cur }), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
     ],
   },
   transfers: {

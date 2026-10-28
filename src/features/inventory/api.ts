@@ -400,6 +400,8 @@ export function useInventoryOverview() {
 }
 export interface InventoryOverview {
   stock_value: number
+  /** the same stock at the selling price with VAT */
+  sales_value?: number
   active_skus: number
   low_stock: number
   negative_lines: number

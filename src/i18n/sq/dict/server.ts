@@ -699,4 +699,7 @@ export default {
   "This link has expired; ask for a new one": "Kjo lidhje ka skaduar; kërkoni një të re",
   "The details were sent already. Thank you!": "Të dhënat janë dërguar tashmë. Faleminderit!",
   "Check the e-mail address": "Kontrolloni adresën e emailit",
+  "Value at cost, without VAT": "Vlera me çmim blerjeje pa TVSH",
+  "Avg unit cost, without VAT": "Kosto mesatare për njësi pa TVSH",
+  "Value at selling prices, without VAT": "Vlera me çmim shitjeje pa TVSH",
 } satisfies Dict

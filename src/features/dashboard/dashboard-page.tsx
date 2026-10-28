@@ -82,7 +82,8 @@ export function DashboardPage() {
       <BooksCheckBanner />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard icon={Boxes} hue="152 68%" label={t('Stock value')} value={formatMoney(inv.data?.stock_value, cur)} loading={inv.isLoading} href="/inventory/stock" hint={t('{n} products in stock', { n: inv.data?.active_skus ?? 0 })} />
+        <StatCard icon={Boxes} hue="152 68%" label={t('Value at purchase price, without VAT')} value={formatMoney(inv.data?.stock_value, cur)} loading={inv.isLoading} href="/inventory/stock"
+          hint={inv.data?.sales_value != null ? t('At selling price with VAT {amount}', { amount: formatMoney(inv.data.sales_value) }) : t('{n} products in stock', { n: inv.data?.active_skus ?? 0 })} />
         <StatCard icon={TriangleAlert} hue="32 90%" label={t('Running low')} value={inv.data?.low_stock ?? 0} tone={inv.data?.low_stock ? 'warning' : 'default'} loading={inv.isLoading} href="/inventory/alerts" hint={t('At or below the reorder point')} />
         <StatCard icon={Ship} hue="188 78%" label={t('Imports waiting for customs costs')} value={inv.data?.pending_clearance ?? 0} loading={inv.isLoading} href="/inventory/receipts" hint={t('Customs and transport costs not added yet')} />
         <StatCard icon={ClipboardCheck} hue="262 60%" label={t('Waiting for approval')} value={pending.data ?? 0} loading={pending.isLoading} href="/approvals" />

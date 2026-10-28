@@ -70,7 +70,7 @@ export function ItemCardView({ variantId }: { variantId: string }) {
             <TableHeader><TableRow>
               <TableHead>{t('Date')}</TableHead><TableHead>{t('Movement')}</TableHead><TableHead>{t('Document')}</TableHead><TableHead>{t('Partner / warehouse')}</TableHead>
               <TableHead className="text-right">{t('In')}</TableHead><TableHead className="text-right">{t('Out')}</TableHead><TableHead className="text-right">{t('Unit cost')}</TableHead>
-              <TableHead className="text-right">{t('Quantity')}</TableHead><TableHead className="text-right">{t('Value')}</TableHead>
+              <TableHead className="text-right">{t('Quantity')}</TableHead><TableHead className="text-right">{t('Value at cost')}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               <TableRow className="bg-muted/40 font-medium"><TableCell>{formatDate(c.from)}</TableCell><TableCell colSpan={6}>{t('Opening balance')}</TableCell>

@@ -159,7 +159,7 @@ function CheckPanel({ check, loading, error, retry, cutover }: { check?: Migrati
         <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <Figure label={t('Products')} value={formatQty(check.products)} sub={tn(check.warehouses ?? 0, '{n} warehouse', '{n} warehouses')} />
           <Figure label={t('Customers')} value={formatQty(check.customers)} sub={tn(check.vendors, '{n} vendor', '{n} vendors')} />
-          <Figure label={t('Stock value')} value={formatMoney(check.stock_value, cur)} sub={tn(check.stock_lines, '{n} item in stock', '{n} items in stock')} />
+          <Figure label={t('Value at purchase price, without VAT')} value={formatMoney(check.stock_value, cur)} sub={tn(check.stock_lines, '{n} item in stock', '{n} items in stock')} />
           <Figure label={t('Employees')} value={formatQty(check.employees)} sub={tn(check.price_list_items, '{n} special price', '{n} special prices')} />
           <Figure label={t('Customers owe')} value={formatMoney(check.receivables, cur)} sub={tn(check.receivables_count, '{n} open invoice', '{n} open invoices')} />
           <Figure label={t('Owed to vendors')} value={formatMoney(check.payables, cur)} sub={tn(check.payables_count, '{n} open bill', '{n} open bills')} />

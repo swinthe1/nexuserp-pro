@@ -140,4 +140,13 @@ export default {
   "{n} things to check in the books": "{n} gjëra për t’u kontrolluar në libra",
   "goods without invoice, items below zero, partners without NUI…": "mall pa faturë, artikuj nën zero, partnerë pa NUI…",
   "This part needs the latest server update. The administrator runs the server update and it works.": "Kjo pjesë kërkon përditësimin e fundit të serverit. Administratori e përditëson serverin dhe funksionon.",
+  "At selling price with VAT {amount}": "Me çmim shitjeje me TVSH: {amount}",
+  "Average cost, without VAT": "Kosto mesatare pa TVSH",
+  "Selling price with VAT {price}": "Çmimi i shitjes me TVSH: {price}",
+  "Value at cost": "Vlera me çmim blerjeje (pa TVSH)",
+  "Value at cost ({currency})": "Vlera me çmim blerjeje pa TVSH ({currency})",
+  "Value at purchase price, without VAT": "Vlera me çmim blerjeje pa TVSH",
+  "Value at selling price, with VAT": "Vlera me çmim shitjeje me TVSH",
+  "With VAT {amount}": "Me TVSH: {amount}",
+  "With VAT {amount} · weighted, updated on every receipt": "Me TVSH: {amount} · e ponderuar, përditësohet me çdo pranim",
 } satisfies Dict

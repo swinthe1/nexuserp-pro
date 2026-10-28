@@ -123,7 +123,7 @@ export function WarehousesPage() {
             <CardContent className="p-0">
               {tree.length === 0 ? <EmptyState compact icon={MapPin} title={t('No locations')} description={t('Add at least one bin to store stock here.')} /> : (
                 <Table>
-                  <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Code')}</TableHead><TableHead>{t('Name')}</TableHead><TableHead>{t('Type')}</TableHead><TableHead>{t('Barcode')}</TableHead><TableHead className="text-right">{t('Stock value')}</TableHead><TableHead className="w-20" /></TableRow></TableHeader>
+                  <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Code')}</TableHead><TableHead>{t('Name')}</TableHead><TableHead>{t('Type')}</TableHead><TableHead>{t('Barcode')}</TableHead><TableHead className="text-right">{t('Value at cost')}</TableHead><TableHead className="w-20" /></TableRow></TableHeader>
                   <TableBody>
                     {tree.map((l) => (
                       <TableRow key={l.id}>

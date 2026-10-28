@@ -50,6 +50,7 @@ export function ProductDetailPage() {
   const product = useProduct(id)
   const levels = useProductStockLevels(id)
   const units = useUnits()
+  const taxes = useTaxCodes()
   const p = product.data
 
   if (product.isLoading) {
@@ -63,6 +64,10 @@ export function ProductDetailPage() {
   const reserved = rows.reduce((s, r) => s + num(r.reserved), 0)
   const value = rows.reduce((s, r) => s + num(r.stock_value), 0)
   const avg = onHand > 0 ? value / onHand : num(rows[0]?.avg_cost)
+  // every value says its price: the cost (purchase, without VAT, as in the books) and the selling price with VAT (as on the shelf)
+  const rate = (id: string | null | undefined) => num(taxes.data?.find((x) => x.id === id)?.rate)
+  const buyVat = 1 + rate(p.purchase_tax_code_id ?? p.sales_tax_code_id) / 100
+  const sellGross = num(p.sales_price) * (1 + rate(p.sales_tax_code_id) / 100)
   const lowVariants = p.product_variants.filter((v) => v.replenishment_rules.some((r) => {
     const avail = rows.filter((x) => x.variant_id === v.id && x.warehouse_id === r.warehouse_id).reduce((s, x) => s + num(x.available), 0)
     return avail <= num(r.min_qty)
@@ -86,12 +91,13 @@ export function ProductDetailPage() {
       />
 
       {p.product_type === 'stockable' && (
-        <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <StatCard label={t('On hand')} value={formatQty(onHand)} hint={t('{qty} reserved', { qty: formatQty(reserved) })} loading={levels.isLoading} />
           <StatCard label={t('Available')} value={formatQty(onHand - reserved)} tone={onHand - reserved < 0 ? 'destructive' : lowVariants ? 'warning' : 'default'}
             hint={lowVariants ? tn(lowVariants, '{n} variant at or below the reorder point', '{n} variants at or below the reorder point') : t('All variants are above the reorder point')} loading={levels.isLoading} />
-          <StatCard label={t('Average cost')} value={formatMoney(avg)} hint={t('Weighted, updated on every receipt')} loading={levels.isLoading} />
-          <StatCard label={t('Stock value')} value={formatMoney(value, company?.base_currency)} hint={t('Sales price {price}', { price: formatMoney(p.sales_price) })} loading={levels.isLoading} />
+          <StatCard label={t('Average cost, without VAT')} value={formatMoney(avg)} hint={t('With VAT {amount} · weighted, updated on every receipt', { amount: formatMoney(avg * buyVat) })} loading={levels.isLoading} />
+          <StatCard label={t('Value at purchase price, without VAT')} value={formatMoney(value, company?.base_currency)} hint={t('With VAT {amount}', { amount: formatMoney(value * buyVat) })} loading={levels.isLoading} />
+          <StatCard label={t('Value at selling price, with VAT')} value={formatMoney(onHand * sellGross, company?.base_currency)} hint={t('Selling price with VAT {price}', { price: formatMoney(sellGross) })} loading={levels.isLoading} />
         </div>
       )}
 
@@ -115,7 +121,7 @@ export function ProductDetailPage() {
                 <Table>
                   <TableHeader><TableRow className="hover:bg-transparent">
                     <TableHead>{t('Variant')}</TableHead><TableHead>{t('Location')}</TableHead><TableHead>{t('Lot')}</TableHead>
-                    <TableHead>{t('Available')}</TableHead><TableHead className="text-right">{t('Value')}</TableHead>
+                    <TableHead>{t('Available')}</TableHead><TableHead className="text-right">{t('Value at cost')}</TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
                     {rows.map((r) => (
