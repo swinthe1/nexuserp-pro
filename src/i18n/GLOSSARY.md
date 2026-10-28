@@ -138,3 +138,16 @@ draft Draft · submitted Dërguar për miratim · pending Në pritje · approved
 ## Dates and numbers
 Formatting follows the language automatically (formatDate, formatMoney, formatMonth, intlLocale()). Albanian: "24 tet 2026", "1 234,50". Never hard-code 'en-GB'.
 Relative words: Today Sot · Yesterday Dje · Tomorrow Nesër · This week Këtë javë · This month Këtë muaj · Last month Muajin e kaluar · This quarter Këtë tremujor · Year to date Nga fillimi i vitit · This year Këtë vit.
+
+## Amounts always say what they are
+Every amount in a commercial context (prices, document totals, sales and purchase figures, stock values, margins, debts) names its basis, so nobody has to guess:
+| Meaning | English key | Shqip |
+|---|---|---|
+| a price or amount before VAT | "… (without VAT)" / "…, without VAT" | "… (pa TVSH)" / "… pa TVSH" |
+| a price or amount with VAT | "… (with VAT)" / "…, with VAT" | "… (me TVSH)" / "… me TVSH" |
+| stock or goods at cost | Value at purchase price (without VAT) | Vlera me çmim blerjeje (pa TVSH) |
+| stock or goods at the selling price | Value at selling price (with VAT) | Vlera me çmim shitjeje (me TVSH) |
+| a document's three totals | Amount without VAT · VAT · Total with VAT | Vlera pa TVSH · TVSH · Totali me TVSH |
+| margin, profit, cost | always without VAT, and said so | gjithmonë pa TVSH, dhe thuhet |
+| debts and open amounts (what customers owe, what we owe) | as invoiced: with VAT | siç janë faturuar: me TVSH |
+Check the SQL behind a figure before labelling it: say what it really is. Accounting amounts (journal debits and credits, ledger balances, payroll, bank lines, cash counts, tax declarations) are as booked and need no VAT word.

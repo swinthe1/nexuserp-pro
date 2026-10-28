@@ -115,7 +115,7 @@ function OrdersTable({ rows, loading, highlight, showChannel }: { rows: ChannelO
   return (
     <Table>
       <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Order')}</TableHead>{showChannel && <TableHead>{t('Channel')}</TableHead>}<TableHead>{t('Customer')}</TableHead>
-        <TableHead>{t('Ordered')}</TableHead><TableHead>{t('Import')}</TableHead><TableHead>{t('Sales order')}</TableHead><TableHead className="text-right">{t('Total')}</TableHead><TableHead className="w-[1%]" /></TableRow></TableHeader>
+        <TableHead>{t('Ordered')}</TableHead><TableHead>{t('Import')}</TableHead><TableHead>{t('Sales order')}</TableHead><TableHead className="text-right">{t('Total (with VAT)')}</TableHead><TableHead className="w-[1%]" /></TableRow></TableHeader>
       <TableBody>{rows.map((o) => {
         const p = o.payload as { customer?: { name?: string; email?: string }; payment?: string; created_at?: string } | null
         return (

@@ -95,7 +95,7 @@ export function ReadsList({ items, onOpen, bookedLabel, doneLabel = t('To check'
                 <div className="truncate text-sm font-medium">{r.title}</div>
                 <div className="truncate text-xs text-muted-foreground">{r.date ? formatDate(r.date) : formatDate(r.created_at, true)}{r.extra ? ` · ${r.extra}` : ''}{r.error ? ` · ${tServer(r.error)}` : ''}</div>
               </div>
-              {r.total != null && <span className="text-sm font-semibold tabular">{formatMoney(r.total)}</span>}
+              {r.total != null && <span className="text-right text-sm font-semibold tabular">{formatMoney(r.total)}<span className="block text-2xs font-normal text-muted-foreground">{t('with VAT')}</span></span>}
               {r.booked ? <Badge variant="outline" className="border-success/40 text-success">{bookedLabel}</Badge>
                 : <span className={cn('w-20 text-right text-xs font-medium', r.status === 'failed' ? 'text-destructive' : r.status === 'done' ? 'text-info' : 'text-muted-foreground')}>{label[r.status] ?? r.status}</span>}
             </button>

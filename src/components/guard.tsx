@@ -21,11 +21,11 @@ const TEXT: Record<string, { title: string; why: string }> = {
     why: msg('One zero too many is the most common typing mistake. It changes the stock, the cost and the total of the invoice. If the quantity is right, go on.') },
   price_zero: { title: msg('Line {line}: {item} has no price.'),
     why: msg('A line at zero goes into the books at zero: the stock comes in without value, or the goods leave for free. Write the price, or go on if it really is free.') },
-  price_jump: { title: msg('Line {line}: {item} at {price}. Last time it was {last} ({pct}%).'),
+  price_jump: { title: msg('Line {line}: {item} at {price} without VAT. Last time it was {last} ({pct}%).'),
     why: msg('A price much higher or lower than the last purchase is often a typing mistake or the price of another unit (a box instead of a piece). The cost of the item will follow this price.') },
-  below_cost: { title: msg('Line {line}: {item} is sold at {price}, but it cost {cost}.'),
+  below_cost: { title: msg('Line {line}: {item} is sold at {price} without VAT, but it cost {cost} without VAT.'),
     why: msg('Selling under cost means a loss on every piece. Sometimes it is meant (a promotion, old goods); often a wrong price or a discount too big.') },
-  price_differs: { title: msg('Line {line}: {item} at {price}. Its price is {list} ({pct}%).'),
+  price_differs: { title: msg('Line {line}: {item} at {price} without VAT. Its price is {list} without VAT ({pct}%).'),
     why: msg('The price is far from the item’s own price. Check that it is the price of the right unit and that the discount is right.') },
   vat_differs: { title: msg('Line {line}: {item} has VAT {rate}%. Last time it was {usual}%.'),
     why: msg('The same item usually has the same VAT. A wrong rate goes wrong into the VAT book and the declaration.') },
@@ -37,7 +37,7 @@ const TEXT: Record<string, { title: string; why: string }> = {
     why: msg('Without the supplier’s NUI the purchase book is incomplete and the VAT may not be deducted. Add it on the supplier’s card (the register finds it by name).') },
   customer_no_nui: { title: msg('{partner} is a business without a NUI.'),
     why: msg('A business customer needs its NUI on the invoice and in the sales book. Add it on the customer’s card (the register finds it by name).') },
-  same_total: { title: msg('There is already {number} for the same partner with the same total ({total}).'),
+  same_total: { title: msg('There is already {number} for the same partner with the same total ({total} with VAT).'),
     why: msg('The same invoice entered twice doubles the debt, the stock and the VAT. If it is a different invoice, go on.') },
 }
 

@@ -124,7 +124,9 @@ export function ApprovalsPage() {
                       </TableCell>
                       <TableCell className="text-[13px]">{r.workflow?.name}</TableCell>
                       <TableCell className="text-[13px]">{step?.name ?? '—'}{step?.approver_role_id && <div className="text-xs text-muted-foreground">{td(roleById.get(step.approver_role_id)?.name)}</div>}</TableCell>
-                      <TableCell className="text-right tabular">{formatMoney(r.amount, company?.base_currency)}</TableCell>
+                      <TableCell className="text-right tabular">{formatMoney(r.amount, company?.base_currency)}
+                        {/* an order's amount is its total with VAT */}
+                        {(r.doc_type === 'sales_order' || r.doc_type === 'purchase_order') && <span className="block text-2xs text-muted-foreground">{t('with VAT')}</span>}</TableCell>
                       <TableCell className="text-[13px]">{formatDate(r.requested_at, true)}</TableCell>
                       <TableCell><StatusBadge status={r.status} /></TableCell>
                       <TableCell className="text-right">
