@@ -18,6 +18,8 @@ export interface NavItem {
   focus?: string[]
   /** shown to everyone who may open it, also in the short menu */
   always?: boolean
+  /** shown here too when the same page is in an earlier part of the menu (recipes: the till and production) */
+  also?: boolean
 }
 /** label: the part's key (also what a company switches off); title: what the menu shows, when it differs */
 export interface NavSection { label: string; title?: string; items: NavItem[] }
@@ -49,11 +51,13 @@ export const NAV: NavSection[] = [
       { label: msg('Pipeline|menu'), href: '/crm/pipeline', icon: Kanban, perm: 'crm.read', keywords: ['opportunities', 'deals', 'crm', 'kanban'] },
       { label: msg('Agent app'), href: '/agent', icon: Smartphone, perm: 'sales.write', keywords: ['agjent', 'terren', 'field', 'route', 'rruga', 'arkëtim', 'van', 'shitës', 'porosi'] },
       { label: msg('Field agents'), href: '/sales/agents', icon: MapPinned, perm: 'sales.approve', keywords: ['agjentët', 'terren', 'field sales', 'routes', 'visits', 'vizita', 'gps'] },
+      { label: msg('Web shop'), href: '/ecommerce', icon: Globe, perm: 'ecommerce.read', keywords: ['e-commerce', 'shopify', 'woocommerce', 'online orders', 'channels'] },
     ],
   },
   {
     // the shop or café till
     label: msg('Retail'),
+    title: msg('Shop till|menu'),
     items: [
       { label: msg('Point of sale|menu'), href: '/pos', icon: Store, perm: 'pos.read', keywords: ['pos', 'till', 'cashier', 'arka', 'z-report', 'register'] },
       { label: msg('Safe|nav'), href: '/safe', icon: Vault, perm: 'pos.approve|finance.read', keywords: ['sefi', 'sef', 'kasaforta', 'cash', 'deposit', 'derdhje', 'para', 'count'] },
@@ -162,7 +166,7 @@ export const NAV: NavSection[] = [
     items: [
       { label: msg('Production overview'), href: '/manufacturing', icon: Gauge, perm: 'manufacturing.read', keywords: ['production', 'mrp', 'plan', 'prodhim', 'capacity'] },
       { label: msg('Work orders|menu'), href: '/manufacturing/orders', icon: Factory, perm: 'manufacturing.read', keywords: ['wo', 'production order', 'manufacturing order', 'urdhër pune'] },
-      { label: msg('Recipes'), href: '/manufacturing/boms', icon: Layers, perm: 'manufacturing.read', keywords: ['receta', 'recipe', 'kit', 'ingredients', 'përbërës', 'kafe', 'restorant'] },
+      { label: msg('Bills of materials'), href: '/manufacturing/boms', also: true, icon: Layers, perm: 'manufacturing.read', keywords: ['receta', 'recipe', 'kit', 'ingredients', 'përbërës', 'kafe', 'restorant'] },
       { label: msg('Work centers|menu'), href: '/manufacturing/work-centers', icon: Cog, perm: 'manufacturing.read', keywords: ['machines', 'lines', 'capacity', 'rates'] },
     ],
   },
@@ -174,7 +178,6 @@ export const NAV: NavSection[] = [
       { label: msg('Delivery planning'), href: '/logistics/planning', icon: MapPinned, perm: 'logistics.read', keywords: ['routes', 'dispatch', 'vans', 'drivers', 'plan'] },
       { label: msg('Shipments'), href: '/logistics/shipments', icon: Route, perm: 'logistics.read', keywords: ['tracking', 'carrier', 'cod', 'cash on delivery', 'dërgesa'] },
       { label: msg('Carriers and fleet'), href: '/logistics/setup', icon: PackageDone, perm: 'logistics.read', keywords: ['vehicles', 'carriers', 'vans', 'courier'] },
-      { label: msg('Web shop'), href: '/ecommerce', icon: Globe, perm: 'ecommerce.read', keywords: ['e-commerce', 'shopify', 'woocommerce', 'online orders', 'channels'] },
     ],
   },
   {

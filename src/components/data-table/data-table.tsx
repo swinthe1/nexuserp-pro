@@ -180,7 +180,8 @@ export function DataTable<T>({
   }, [views.data, applyView])
 
   const state = table.getState()
-  const filtered = !!state.globalFilter || state.columnFilters.length > 0
+  // "nothing matches these filters" only when there is something to filter; an empty list says how to start
+  const filtered = (!!state.globalFilter || state.columnFilters.length > 0) && (server ? true : (data?.length ?? 0) > 0)
   const selectedRows = table.getSelectedRowModel().rows
   const rowCount = server ? server.rowCount : table.getFilteredRowModel().rows.length
   const visibleCols = table.getVisibleLeafColumns().length
@@ -245,6 +246,14 @@ export function DataTable<T>({
           </DropdownMenu>
         </div>
       </div>
+
+      {/* a list that opens filtered says so, so nobody thinks records are missing */}
+      {state.columnFilters.length > 0 && !isLoading && (
+        <div className="-mt-1 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+          <span>{tn(state.columnFilters.length, 'A filter is on: not everything is shown.', '{n} filters are on: not everything is shown.')}</span>
+          <button type="button" className="font-medium text-primary hover:underline" onClick={() => table.resetColumnFilters()}>{t('Show all')}</button>
+        </div>
+      )}
 
       {bulkActions && selectedRows.length > 0 && (
         <div className="flex items-center gap-2 rounded-md border border-primary/30 bg-accent/60 px-3 py-1.5 text-[13px]">
@@ -361,7 +370,8 @@ function PhoneCards<T>({ table, isLoading, error, onRowClick, selectable, emptyN
   // the column a list never hides is its main one (the name, the number)
   const title = cols.find((c) => c.columnDef.meta?.mobile === 'title') ?? cols.find((c) => c.columnDef.enableHiding === false && labels[c.id]) ?? cols.find((c) => labels[c.id]) ?? cols[0]
   const rights = cols.filter((c) => c.columnDef.meta?.align === 'right')
-  const amount = cols.find((c) => c.columnDef.meta?.mobile === 'amount') ?? rights[rights.length - 1]
+  // the money a card leads with: the one the list names, else its total, else the last number; its name goes under it
+  const amount = cols.find((c) => c.columnDef.meta?.mobile === 'amount') ?? rights.find((c) => /(^|_)total/i.test(c.id)) ?? rights[rights.length - 1]
   const status = cols.find((c) => c !== title && /(^|_)(status|state)$/i.test(c.id))
   const actions = cols.filter((c) => !labels[c.id] && c !== title)
   const rest = cols.filter((c) => c !== title && c !== amount && c !== status && !actions.includes(c)).slice(0, 4)
@@ -393,7 +403,7 @@ function PhoneCards<T>({ table, isLoading, error, onRowClick, selectable, emptyN
                 </span>
               )}
               <div className="min-w-0 flex-1 text-[15px] font-medium [&_*]:whitespace-normal">{cell(row, title?.id)}</div>
-              {amount && <div className="shrink-0 text-right text-[15px] font-semibold tabular">{cell(row, amount.id)}</div>}
+              {amount && <div className="shrink-0 text-right text-[15px] font-semibold tabular">{cell(row, amount.id)}{labels[amount.id] && <div className="max-w-[9rem] truncate text-[11px] font-normal text-muted-foreground">{labels[amount.id]}</div>}</div>}
             </div>
             {(status || rest.length > 0 || actions.length > 0) && (
               <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
@@ -417,4 +427,4 @@ function PhoneCards<T>({ table, isLoading, error, onRowClick, selectable, emptyN
 
 export { ColumnHeader } from './column-header'
 
-import { t } from '@/i18n'
+import { t, tn } from '@/i18n'

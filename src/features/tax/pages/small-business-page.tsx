@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Can, useCompany } from '@/app/company-provider'
 import { ErrorState } from '@/components/error-state'
 import { PageHeader } from '@/components/page-header'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -37,6 +38,9 @@ export function SmallBusinessPage() {
     onError: (e) => toast.error(describeError(e)),
   })
   const d = q.data
+  // a business registered for VAT does not pay this tax: say so before anything else
+  const vat = useQuery({ queryKey: ['company-vat-number', companyId], enabled: !!companyId, staleTime: 10 * 60_000,
+    queryFn: async () => unwrap(await supabase.from('companies').select('vat_number').eq('id', companyId!).single()).vat_number as string | null })
   return (
     <>
       <PageHeader title={t('Small business tax')}
@@ -47,6 +51,12 @@ export function SmallBusinessPage() {
             <SelectContent>{[now, now - 1, now - 2].map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
           </Select>
         </>} />
+      {vat.data && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-info/40 bg-info/5 px-4 py-3 text-sm">
+          <span className="flex-1">{t('This business is registered for VAT (number {n}), so it does not pay the small business tax: it declares VAT every month.', { n: vat.data })}</span>
+          <Button variant="outline" size="sm" asChild><Link to="/tax/declarations">{t('VAT declarations')}</Link></Button>
+        </div>
+      )}
       {q.isError ? <ErrorState error={q.error} onRetry={() => void q.refetch()} /> : !d ? <Skeleton className="h-72" /> : <div className="grid gap-4">
         <Card><CardContent className="grid gap-3 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
           <div>

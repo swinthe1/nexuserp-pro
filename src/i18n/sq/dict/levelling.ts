@@ -151,4 +151,12 @@ export default {
   "With VAT {amount} · weighted, updated on every receipt": "Me TVSH: {amount} · e ponderuar, përditësohet me çdo pranim",
   "Total (with VAT)": "Totali (me TVSH)",
   "with VAT": "me TVSH",
+  "Not paid yet": "Ende pa u paguar",
+  "To complete: {what}": "Për ta kompletuar: {what}",
+  "This business is registered for VAT (number {n}), so it does not pay the small business tax: it declares VAT every month.": "Ky biznes është i regjistruar për TVSH (numri {n}), prandaj nuk paguan tatimin e biznesit të vogël: deklaron TVSH-në çdo muaj.",
+  "This shift was not closed since {date}. Close it and make the Z report, so each day’s sales and cash are counted apart.": "Ky turn nuk është mbyllur që nga {date}. Mbylleni dhe bëni raportin Z, që shitjet dhe paratë e çdo dite të numërohen veç e veç.",
+  "A filter is on: not everything is shown.": "Një filtër është aktiv: nuk shfaqet gjithçka.",
+  "{n} filters are on: not everything is shown.": "{n} filtra janë aktivë: nuk shfaqet gjithçka.",
+  "Show all": "Shfaqi të gjitha",
+  "Add the rooms first": "Shtoni fillimisht dhomat",
 } satisfies Dict

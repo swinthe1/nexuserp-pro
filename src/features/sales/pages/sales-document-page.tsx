@@ -374,7 +374,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
                 description={t('The draft disappears from the lists. Its number is not used again.')} confirmLabel={t('Delete draft')} destructive
                 onConfirm={async () => { await del.mutateAsync(doc.id); navigate(cfg.list) }} />
             )}
-            {editable && <Button variant={doc ? 'outline' : 'default'} onClick={() => void saveOnly()} loading={save.isPending}>{doc ? t('Save draft') : t('Create draft')}</Button>}
+            {editable && <Button variant={doc || kind === 'invoices' ? 'outline' : 'default'} onClick={() => void saveOnly()} loading={save.isPending}>{doc ? t('Save draft') : t('Create draft')}</Button>}
             {actions}
           </Can></>}
         />

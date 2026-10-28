@@ -2,7 +2,7 @@ import type { Dict } from '../index'
 
 /** Database enum values (statuses, kinds, methods). Used by tEnum()/humanize() and StatusBadge. Add more here as `enum:<value>`. */
 export default {
-  'enum:draft': 'Draft',
+  'enum:draft': 'Skicë',
   'enum:submitted': 'Dërguar për miratim',
   'enum:pending': 'Në pritje',
   'enum:approved': 'Miratuar',

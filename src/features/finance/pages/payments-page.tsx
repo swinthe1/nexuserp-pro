@@ -24,7 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { ErrorState } from '@/components/error-state'
 import { useRealtimeInvalidate } from '@/hooks/use-realtime'
-import { t, td, tr } from '@/i18n'
+import { t, td, tEnum, tr } from '@/i18n'
 import { cn, formatDate, formatMoney, humanize, num, todayISO } from '@/lib/utils'
 import { usePartners } from '@/features/sales/api'
 import {
@@ -50,17 +50,17 @@ export function PaymentsPage() {
         : <span className="inline-flex items-center gap-1"><ArrowUpRight className="size-3.5 text-muted-foreground" /> {t('Paid out')}</span>,
     },
     { id: 'partner', accessorFn: (r) => r.partner?.name ?? '', header: ({ column }) => <ColumnHeader column={column} title={t('Partner')} />, meta: { label: t('Partner') } },
-    { id: 'bank', accessorFn: (r) => td(r.bank?.name ?? ''), filterFn: inFilter, header: t('Bank or cash'), meta: { label: t('Bank or cash account') } },
-    { accessorKey: 'method', header: t('Method'), meta: { label: t('Method') }, cell: ({ getValue }) => humanize(getValue() as string) },
-    { accessorKey: 'status', filterFn: inFilter, header: t('Status'), meta: { label: t('Status') }, cell: ({ getValue }) => <StatusBadge status={getValue() as string} /> },
-    { accessorKey: 'unallocated', header: t('Not matched'), meta: { label: t('Not matched'), align: 'right' }, cell: ({ getValue }) => num(getValue()) ? <span className="tabular text-warning">{formatMoney(getValue() as number)}</span> : '—' },
     { accessorKey: 'amount', header: ({ column }) => <ColumnHeader column={column} title={t('Amount')} />, meta: { label: t('Amount'), align: 'right' },
       cell: ({ row: { original: r } }) => <span className="tabular">{formatMoney(r.amount)} <span className="text-muted-foreground">{r.currency_code !== company?.base_currency ? r.currency_code : ''}</span></span> },
+    { id: 'bank', accessorFn: (r) => td(r.bank?.name ?? ''), filterFn: inFilter, header: t('Bank or cash'), meta: { label: t('Bank or cash account') } },
+    { accessorKey: 'method', header: t('Method'), meta: { label: t('Method') }, cell: ({ getValue }) => tEnum(getValue() as string) },
+    { accessorKey: 'status', filterFn: inFilter, header: t('Status'), meta: { label: t('Status') }, cell: ({ getValue }) => <StatusBadge status={getValue() as string} /> },
+    { accessorKey: 'unallocated', header: t('Not matched'), meta: { label: t('Not matched'), align: 'right' }, cell: ({ getValue }) => num(getValue()) ? <span className="tabular text-warning">{formatMoney(getValue() as number)}</span> : '—' },
   ], [company?.base_currency])
   const banks = [...new Set((payments.data ?? []).map((p) => td(p.bank?.name)).filter(Boolean))] as string[]
   return (
     <>
-      <PageHeader title={t('Payments')} description={t('Money received from customers and paid to vendors, matched to their invoices. Posting records the bank movement and settles the invoices.')}
+      <PageHeader title={t('Payments|menu')} description={t('Money received from customers and paid to vendors, matched to their invoices. Posting records the bank movement and settles the invoices.')}
         actions={<Can perm="invoicing.write">
           <Button variant="outline" asChild><Link to="/finance/payments/new?type=vendor_payment"><ArrowUpRight /> {t('Pay a vendor')}</Link></Button>
           <Button asChild><Link to="/finance/payments/new?type=customer_payment"><ArrowDownLeft /> {t('Receive a payment')}</Link></Button>

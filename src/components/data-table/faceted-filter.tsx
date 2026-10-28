@@ -25,7 +25,7 @@ export function FacetedFilter<TData, TValue>({ column, title, options }: { colum
             <>
               <Separator orientation="vertical" className="mx-1 h-4" />
               {selected.size > 2 ? (
-                <Badge variant="secondary" className="rounded-sm">{selected.size} selected</Badge>
+                <Badge variant="secondary" className="rounded-sm">{t('{n} selected', { n: selected.size })}</Badge>
               ) : (
                 options.filter((o) => selected.has(o.value)).map((o) => <Badge key={o.value} variant="secondary" className="rounded-sm">{o.label}</Badge>)
               )}

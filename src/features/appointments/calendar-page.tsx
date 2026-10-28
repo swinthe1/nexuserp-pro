@@ -40,7 +40,7 @@ export function AppointmentsCalendarPage() {
 
   return (
     <>
-      <PageHeader title={t('Appointments')} description={formatDateWith(new Date(`${day}T12:00:00`), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+      <PageHeader title={t('Appointment calendar')} description={formatDateWith(new Date(`${day}T12:00:00`), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
         actions={<>
           <Button variant="outline" asChild><Link to="/appointments/setup"><Settings2 /> {t('Services and staff')}</Link></Button>
           <Can perm="sales.write"><Button onClick={() => setOpen({ appt: null, initial: { day, time: isToday ? localTime(new Date(Math.ceil(now.getTime() / 900000) * 900000)) : '09:00' } })} disabled={!b?.resources.length}><CalendarPlus /> {t('New appointment')}</Button></Can>

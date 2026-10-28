@@ -59,7 +59,7 @@ export function AssetsPage() {
   const cats = [...new Set((assets.data ?? []).map((a) => td(a.category?.name)).filter(Boolean))] as string[]
   return (
     <>
-      <PageHeader title={t('Fixed assets')} description={t('Equipment, vehicles and furniture the company owns. Depreciation is recorded every month; each asset shows its schedule.')}
+      <PageHeader title={t('Fixed assets|menu')} description={t('Equipment, vehicles and furniture the company owns. Depreciation is recorded every month; each asset shows its schedule.')}
         actions={<Can perm="finance.write">
           <Button variant="outline" onClick={() => setRunOpen(true)}><CalendarClock /> {t('Run depreciation')}</Button>
           <Button asChild><Link to="/finance/assets/new"><Plus /> {t('New asset')}</Link></Button>

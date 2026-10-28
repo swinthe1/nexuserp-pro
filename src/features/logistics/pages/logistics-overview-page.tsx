@@ -54,7 +54,7 @@ export function LogisticsOverviewPage() {
   const days = (d?.by_day ?? []).map((x) => ({ day: formatDateWith(new Date(`${x.day}T00:00:00`), { day: 'numeric', month: 'short' }), delivered: num(x.delivered) }))
   return (
     <>
-      <PageHeader title={t('Logistics')} description={t('What is waiting to go out, what is on the road and how deliveries are going.')}
+      <PageHeader title={t('Logistics overview')} description={t('What is waiting to go out, what is on the road and how deliveries are going.')}
         actions={<>
           <Select value={range} onValueChange={(v) => setRange(v as keyof typeof RANGES)}><SelectTrigger className="w-[150px]" aria-label={t('Period')}><SelectValue /></SelectTrigger>
             <SelectContent>{Object.entries(RANGES).map(([k, r]) => <SelectItem key={k} value={k}>{t(r.label)}</SelectItem>)}</SelectContent></Select>

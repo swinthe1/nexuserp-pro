@@ -45,7 +45,7 @@ export function AgingPage({ kind }: { kind: 'ar' | 'ap' }) {
 
   return (
     <>
-      <PageHeader title={isAR ? t('What customers owe') : t('What we owe vendors')}
+      <PageHeader title={isAR ? t('Receivables|menu') : t('Payables|menu')}
         description={isAR ? t('Open customer balances, by how long they are overdue. Receipts not yet matched to an invoice reduce the balance.') : t('Open vendor balances, by how long they are overdue. Payments not yet matched to a bill reduce the balance.')}
         actions={<>
           <div className="flex items-center gap-2"><Label htmlFor="asof" className="text-[13px] text-muted-foreground">{t('On date')}</Label>

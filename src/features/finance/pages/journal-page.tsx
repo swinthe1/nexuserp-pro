@@ -55,7 +55,7 @@ export function JournalEntriesPage() {
   const sources = [...new Set((entries.data ?? []).map((r) => (r.is_automatic ? r.source_doc_type ?? 'automatic' : 'manual')))]
   return (
     <>
-      <PageHeader title={t('Accounting entries')} description={t('Everything recorded in the accounts. Automatic entries come from documents and link back to them; manual entries are for accruals, opening balances and corrections.')}
+      <PageHeader title={t('Journal entries|menu')} description={t('Everything recorded in the accounts. Automatic entries come from documents and link back to them; manual entries are for accruals, opening balances and corrections.')}
         actions={<>
           <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-[150px]" aria-label={t('From')} />
           <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-[150px]" aria-label={t('To')} />

@@ -163,7 +163,7 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
     .filter((s) => ALWAYS_SHOWN.has(s.label) || !hidden.includes(s.label))
     .map((s) => ({ ...s, items: s.items.filter((i) => can(i.perm) && pageAllowed(i.href) && !hidden.includes(i.href) && mine(i)) }))
     // a page shows once: where it first appears among the parts this business sees
-    .map((s, _, all) => ({ ...s, items: s.items.filter((i) => !all.slice(0, all.indexOf(s)).some((p) => p.items.some((x) => x.href === i.href))) }))
+    .map((s, _, all) => ({ ...s, items: s.items.filter((i) => i.also || !all.slice(0, all.indexOf(s)).some((p) => p.items.some((x) => x.href === i.href))) }))
     .filter((s) => s.items.length), [can, pageAllowed, hidden, mine])
   const byHref = React.useMemo(() => new Map(sections.flatMap((s) => s.items).map((i) => [i.href, i])), [sections])
 
@@ -272,7 +272,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
           className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-[13px] text-muted-foreground hover:bg-secondary hover:text-foreground"
           aria-label={collapsed ? t('Expand the menu') : t('Collapse the menu')}
         >
-          {collapsed ? <PanelLeftOpen className="size-4" /> : <><PanelLeftClose className="size-4" /> {t('Collapse|menu')} <kbd className="ml-auto text-2xs">[</kbd></>}
+          {collapsed ? <PanelLeftOpen className="size-4" /> : <><PanelLeftClose className="size-4" /> {t('Collapse|menu')}</>}
         </button>
       </div>
     </aside>

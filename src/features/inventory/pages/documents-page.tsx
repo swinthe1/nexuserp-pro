@@ -35,7 +35,7 @@ const dateCol = (key: string): ColumnDef<Row> => ({
 
 const CONFIG: Record<DocKind, KindConfig> = {
   receipts: {
-    title: msg('Goods receipts'), newLabel: msg('Receive goods'), emptyTitle: msg('No goods received yet'), perm: 'wms.write', statuses: ['draft', 'done', 'cancelled'],
+    title: msg('Goods receipts|menu'), newLabel: msg('Receive goods'), emptyTitle: msg('No goods received yet'), perm: 'wms.write', statuses: ['draft', 'done', 'cancelled'],
     description: msg('Goods coming in from vendors, imports and customer returns. Completing a receipt adds the stock and updates the average cost.'),
     empty: msg('Receive goods for a purchase order, or directly from a vendor.'),
     columns: (cur) => [
@@ -87,7 +87,7 @@ const CONFIG: Record<DocKind, KindConfig> = {
     ],
   },
   'landed-costs': {
-    title: msg('Landed costs'), newLabel: msg('New landed cost'), emptyTitle: msg('No landed costs yet'), perm: 'procurement.write', statuses: ['draft', 'posted', 'cancelled'],
+    title: msg('Landed costs|menu'), newLabel: msg('New landed cost'), emptyTitle: msg('No landed costs yet'), perm: 'procurement.write', statuses: ['draft', 'posted', 'cancelled'],
     description: msg('Transport, customs duty and insurance added to the cost of received goods, usually after an import clears customs.'),
     empty: msg('After an import clears customs, add the forwarder and customs charges here.'),
     columns: (cur) => [

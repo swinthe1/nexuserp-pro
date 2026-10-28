@@ -38,7 +38,7 @@ export function FinanceOverviewPage() {
 
   return (
     <>
-      <PageHeader title={t('Finance')} description={t('Figures come straight from the accounts, in {cur}. Click a number to see what is behind it.', { cur })}
+      <PageHeader title={t('Finance overview|menu')} description={t('Figures come straight from the accounts, in {cur}. Click a number to see what is behind it.', { cur })}
         actions={<>
           <Select value={rangeKey} onValueChange={(v) => setRangeKey(v as RangeKey)}>
             <SelectTrigger className="w-[150px]" aria-label={t('Period')}><SelectValue /></SelectTrigger>

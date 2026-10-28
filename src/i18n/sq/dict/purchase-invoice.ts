@@ -65,7 +65,7 @@ export default {
   'The invoice of {amount} is posted to {vendor}': 'Fatura prej {amount} postohet te {vendor}',
   '{n} selling price changes': '{n} çmim shitjeje ndryshon',
   '{n} selling prices change': '{n} çmime shitjeje ndryshojnë',
-  'Delete this draft?': 'Ta fshij këtë draft?',
+  'Delete this draft?': 'Ta fshij këtë skicë?',
   'Nothing was received or posted yet.': 'Ende nuk është pranuar as postuar asgjë.',
   'Transport, customs and other costs are added afterwards with': 'Transporti, dogana dhe shpenzime të tjera shtohen pas kësaj te',
   'The goods came in with the receipt': 'Malli hyri me fletëhyrjen',

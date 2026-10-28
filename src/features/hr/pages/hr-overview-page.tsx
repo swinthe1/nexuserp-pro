@@ -24,7 +24,7 @@ export function HrOverviewPage() {
   const d = ov.data
   const max = Math.max(1, ...(d?.by_department ?? []).map((x) => num(x.count)))
   const trend = (d?.payroll_trend ?? []).map((x) => ({ ...x, label: monthLabel(x.period), gross: num(x.gross), employer_cost: num(x.employer_cost), net: num(x.net) }))
-  if (ov.isError) return <><PageHeader title={t('People')} /><ErrorState error={ov.error} onRetry={() => void ov.refetch()} /></>
+  if (ov.isError) return <><PageHeader title={t('People overview')} /><ErrorState error={ov.error} onRetry={() => void ov.refetch()} /></>
   return (
     <>
       <PageHeader title={t('People')} description={t('Who works here, who is away today, and what salaries cost.')}

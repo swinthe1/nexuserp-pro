@@ -21,7 +21,8 @@ export function currencyLabel(code: string) {
 /** Money in the current language's format with the currency after it: "12 340,00 lekë" (sq), "12,340.00 ALL" (en), "1 250,00 €" */
 export function formatMoney(value: number | string | null | undefined, currency?: string, decimals = 2) {
   if (value === null || value === undefined || value === '') return '—'
-  const n = typeof value === 'string' ? Number(value) : value
+  let n = typeof value === 'string' ? Number(value) : value
+  if (Math.abs(n) < 0.5 / 10 ** decimals) n = 0   // never "-0,00"
   const s = nf(`m${decimals}`, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(n)
   return currency ? `${s} ${currencyLabel(currency)}` : s
 }

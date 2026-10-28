@@ -66,7 +66,7 @@ export function CostCentersPage() {
   const current = edit === 'new' ? null : edit
   return (
     <>
-      <PageHeader title={t('Cost centers')} description={t('Tag entries with a department, branch or project to see its own profit. Revenue and costs without a cost center are shown separately.')}
+      <PageHeader title={t('Cost centers|menu')} description={t('Tag entries with a department, branch or project to see its own profit. Revenue and costs without a cost center are shown separately.')}
         actions={<>
           <div className="flex items-center gap-2 text-[13px]">
             <Label htmlFor="cc-from" className="text-muted-foreground">{t('From')}</Label><Input id="cc-from" type="date" className="w-[150px]" value={from} onChange={(e) => setFrom(e.target.value)} />

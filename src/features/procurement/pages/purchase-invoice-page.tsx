@@ -283,6 +283,8 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
           <Button variant="outline" loading={save.isPending && !complete.isPending} disabled={!h.vendor_id || !h.vendor_invoice_number.trim()} onClick={() => void saveDraft()}><Save /> {t('Save draft')}</Button>
           <Button disabled={!!problem} title={problem ?? undefined} onClick={() => setConfirm(true)}><CheckCheck /> {t('Complete')}</Button>
         </>} />
+      {/* why the main button is not active yet, in words, not only on hover */}
+      {editable && problem && <p className="-mt-2 mb-3 text-right text-xs text-muted-foreground">{t('To complete: {what}', { what: problem.toLowerCase() })}</p>}
 
       <Card className="mb-4">
         <CardContent className="grid gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -310,7 +312,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
           <div className="grid gap-1.5"><Label>{t('Payment')}</Label>
             <Select value={h.pay_bank_account_id || 'later'} onValueChange={(v) => set('pay_bank_account_id', v === 'later' ? '' : v)}><SelectTrigger aria-label={t('Payment')}><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="later">{t('Later (on credit)')}</SelectItem>
+                <SelectItem value="later">{t('Not paid yet')}</SelectItem>
                 {(banks.data ?? []).filter((b) => b.is_active && b.currency_code === h.currency_code).map((b) => <SelectItem key={b.id} value={b.id}>{t('Paid now from {name}', { name: td(b.name) })}</SelectItem>)}
               </SelectContent></Select></div>
           <div className="grid gap-1.5 sm:col-span-2 lg:col-span-4"><Label htmlFor="pi-notes">{t('Notes')}</Label><Textarea id="pi-notes" rows={1} value={h.notes} onChange={(e) => set('notes', e.target.value)} /></div>

@@ -44,7 +44,7 @@ export function MfgOverviewPage() {
   const days = (d?.by_day ?? []).map((x) => ({ day: formatDateWith(new Date(`${x.day}T00:00:00`), { day: 'numeric', month: 'short' }), value: num(x.value) }))
   return (
     <>
-      <PageHeader title={t('Production')} description={t('What is being made now, what to make next and what it costs, in {currency} without VAT.', { currency: company?.base_currency ?? 'ALL' })}
+      <PageHeader title={t('Production overview')} description={t('What is being made now, what to make next and what it costs, in {currency} without VAT.', { currency: company?.base_currency ?? 'ALL' })}
         actions={<>
           <Select value={range} onValueChange={(v) => setRange(v as keyof typeof RANGES)}><SelectTrigger className="w-[150px]" aria-label={t('Period')}><SelectValue /></SelectTrigger>
             <SelectContent>{Object.entries(RANGES).map(([k, r]) => <SelectItem key={k} value={k}>{t(r.label)}</SelectItem>)}</SelectContent></Select>
@@ -77,7 +77,7 @@ export function MfgOverviewPage() {
             <Table>
               <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Product')}</TableHead><TableHead className="text-right">{t('Free stock')}</TableHead><TableHead className="text-right">{t('Customer orders')}</TableHead>
                 <TableHead className="text-right">{t('For other orders')}</TableHead><TableHead className="text-right">{t('Being made')}</TableHead><TableHead className="text-right">{t('Min / max')}</TableHead>
-                <TableHead className="text-right">{t('Expected|qty')}</TableHead><TableHead className="text-right">{t('Make')}</TableHead><TableHead className="w-[1%]" /></TableRow></TableHeader>
+                <TableHead className="text-right">{t('Expected|qty')}</TableHead><TableHead className="text-right">{t('To make')}</TableHead><TableHead className="w-[1%]" /></TableRow></TableHeader>
               <TableBody>{plan.data.map((p) => (
                 <TableRow key={p.variant_id} className="hover:bg-transparent">
                   <TableCell><span className="font-medium">{p.name}</span> <span className="text-xs text-muted-foreground">{p.sku}</span>
@@ -183,7 +183,7 @@ export function WorkCentersPage() {
   const cur = edit === 'new' ? null : edit
   return (
     <>
-      <PageHeader title={t('Work centers')} description={t('Machines, lines and teams where the work is done. Their hourly rates turn the time worked into labour and overhead cost.')}
+      <PageHeader title={t('Work centers|menu')} description={t('Machines, lines and teams where the work is done. Their hourly rates turn the time worked into labour and overhead cost.')}
         actions={<Can perm="manufacturing.write"><Button onClick={() => setEdit('new')}><Plus /> {t('New work center')}</Button></Can>} />
       <Card><CardContent className="overflow-x-auto p-0">
         {centers.isLoading ? <Skeleton className="m-4 h-32" /> : centers.isError ? <ErrorState compact error={centers.error} onRetry={() => void centers.refetch()} /> : !centers.data?.length ? <EmptyState icon={Factory} title={t('No work centers yet')} description={t('Add the roaster, the packing line, the assembly bench…')}

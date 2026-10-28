@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { XlsxColumn } from '@/lib/export'
 import { ErrorState } from '@/components/error-state'
-import { getLocale, t, tn } from '@/i18n'
+import { getLocale, t, tn, tServer } from '@/i18n'
 import { cn, formatDate, formatMoney, num } from '@/lib/utils'
 import { type BookRow, type LayoutCol, layoutLabel, monthLabel, monthRange, previousMonth, useCompanyTaxProfile, useVatBook, useVatLayout } from '../api'
 import { MonthPicker } from '../components/tax-ui'
@@ -45,10 +45,10 @@ export function VatBooksPage() {
   const exportCols: XlsxColumn<BookRow>[] = [
     { header: t('No.|register'), value: (r) => r.line_no, format: 'int', width: 5 },
     { header: t('Date'), value: (r) => formatDate(r.doc_date), width: 11 },
-    { header: t('Number'), value: (r) => r.number },
+    { header: t('Number'), value: (r) => tServer(r.number) },
     { header: book === 'sales' ? t('Note') : t('Vendor invoice / DUD'), value: (r) => r.ref },
     ...(showFiscal ? [{ header: xk ? t('Fiscal code') : t('NIVF'), value: (r: BookRow) => r.fiscal_code, format: 'text' as const }] : []),
-    { header: book === 'sales' ? t('Buyer') : t('Seller'), value: (r) => r.partner },
+    { header: book === 'sales' ? t('Buyer') : t('Seller'), value: (r) => tServer(r.partner) },
     { header: taxLabel, value: (r) => r.tax_number, format: 'text' },
     ...cols.map((c): XlsxColumn<BookRow> => ({ header: colLabel(c), value: (r) => r.cols?.[c.key] ?? null, format: 'money' })),
     { header: t('Total with VAT'), value: (r) => num(r.total), format: 'money' },
@@ -111,10 +111,10 @@ export function VatBooksPage() {
                   <tr key={`${r.line_no}`} className={cn('hover:bg-muted/40', r.doc_type === 'credit_note' || r.doc_type === 'vendor_credit' ? 'text-muted-foreground' : '')}>
                     <Td className="text-right tabular text-muted-foreground">{r.line_no}</Td>
                     <Td className="whitespace-nowrap tabular">{formatDate(r.doc_date)}</Td>
-                    <Td className="whitespace-nowrap">{r.href ? <Link to={r.href} className="font-medium text-primary hover:underline">{r.number}</Link> : r.number}</Td>
+                    <Td className="whitespace-nowrap">{r.href ? <Link to={r.href} className="font-medium text-primary hover:underline">{tServer(r.number)}</Link> : tServer(r.number)}</Td>
                     <Td className="whitespace-nowrap text-muted-foreground">{r.ref ?? ''}</Td>
                     {showFiscal && <Td className="max-w-[140px] truncate font-mono text-xs text-muted-foreground" title={r.fiscal_code ?? ''}>{r.fiscal_code ? `${r.fiscal_code.slice(0, 8)}…` : ''}</Td>}
-                    <Td className="max-w-[240px] truncate">{r.partner}</Td>
+                    <Td className="max-w-[240px] truncate">{tServer(r.partner)}</Td>
                     <Td className="whitespace-nowrap tabular text-muted-foreground">{r.tax_number ?? ''}</Td>
                     {cols.map((c) => {
                       const v = r.cols?.[c.key]

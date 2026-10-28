@@ -361,7 +361,7 @@ export default {
   "Purchases (input)": "Blerje",
   "Calculation": "Llogaritja",
   // Notification bodies, tracking events and texts written by postings
-  "Created as drafts by the daily run": "Krijuar si draft nga ekzekutimi ditor",
+  "Created as drafts by the daily run": "Krijuar si skicë nga ekzekutimi ditor",
   "Cash on delivery collected by the driver": "Pagesa në dorëzim u arkëtua nga shoferi",
   "Channel is not active: quantities computed, nothing sent": "Kanali nuk është aktiv: sasitë u llogaritën, nuk u dërgua asgjë",
   "The fiscalization connector (Edge Function `fiscalize`) is not configured for production": "Lidhja me sistemin e fiskalizimit nuk është konfiguruar ende për punë reale",
@@ -564,7 +564,7 @@ export default {
   "The cost changed and the price no longer keeps the target margin.": "Kosto ndryshoi dhe çmimi nuk e ruan më marzhin e synuar.",
   "Give another price for one item at a time": "Çmim tjetër jepet për një artikull në një kohë",
   "The price cannot be negative": "Çmimi nuk mund të jetë negativ",
-  "Check the drafts and send them to the customers.": "Kontrolloni draftet dhe dërgojini te klientët.",
+  "Check the drafts and send them to the customers.": "Kontrolloni skicat dhe dërgojini te klientët.",
   "Only invoices can repeat, not credit notes": "Vetëm faturat mund të përsëriten, jo notat e kreditit",
   "Choose a day from 1 to 28": "Zgjidhni një ditë nga 1 deri në 28",
   "The end comes before the start": "Fundi është para fillimit",
@@ -702,4 +702,9 @@ export default {
   "Value at cost, without VAT": "Vlera me çmim blerjeje pa TVSH",
   "Avg unit cost, without VAT": "Kosto mesatare për njësi pa TVSH",
   "Value at selling prices, without VAT": "Vlera me çmim shitjeje pa TVSH",
+  "Migration": "Kalimi nga programi tjetër",
+  "Result carried forward": "Rezultati i mbartur",
+  "Safe count": "Numërimi i sefit",
+  "Safe movement": "Lëvizje në sef",
+  "Return to vendor": "Kthim te furnitori",
 } satisfies Dict

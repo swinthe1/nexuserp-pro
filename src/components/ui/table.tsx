@@ -1,11 +1,33 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 
-const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
-    <table ref={ref} className={cn('w-full caption-bottom text-[13.5px]', className)} {...props} />
-  </div>
-))
+/** a table that scrolls sideways when it is wider than the page; a soft edge shows that more columns are there */
+const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(({ className, ...props }, ref) => {
+  const box = React.useRef<HTMLDivElement>(null)
+  const [edge, setEdge] = React.useState<{ left: boolean; right: boolean }>({ left: false, right: false })
+  React.useEffect(() => {
+    const el = box.current
+    if (!el) return
+    const measure = () => {
+      const left = el.scrollLeft > 2, right = el.scrollLeft + el.clientWidth < el.scrollWidth - 2
+      setEdge((e) => (e.left === left && e.right === right ? e : { left, right }))
+    }
+    measure()
+    el.addEventListener('scroll', measure, { passive: true })
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null
+    ro?.observe(el); if (el.firstElementChild) ro?.observe(el.firstElementChild)
+    return () => { el.removeEventListener('scroll', measure); ro?.disconnect() }
+  }, [])
+  return (
+    <div className="relative w-full">
+      <div ref={box} className="w-full overflow-auto">
+        <table ref={ref} className={cn('w-full caption-bottom text-[13.5px]', className)} {...props} />
+      </div>
+      {edge.left && <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-card to-transparent print:hidden" />}
+      {edge.right && <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-card via-card/70 to-transparent print:hidden" />}
+    </div>
+  )
+})
 Table.displayName = 'Table'
 const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(({ className, ...props }, ref) => (
   <thead ref={ref} className={cn('bg-muted/70 [&_tr]:border-b', className)} {...props} />

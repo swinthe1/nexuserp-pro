@@ -31,7 +31,7 @@ export function CardsPage() {
   const p = partners.data?.find((x) => x.id === id)
   return (
     <>
-      <PageHeader title={t('Partner cards')} description={t('The account card of a customer or supplier with the running balance, and the statement of open items to confirm balances (IOS).')} />
+      <PageHeader title={t('Partner cards|menu')} description={t('The account card of a customer or supplier with the running balance, and the statement of open items to confirm balances (IOS).')} />
       <div className="mb-4 max-w-md">
         <SearchSelect value={id} onChange={(v) => { const n = new URLSearchParams(params); if (v) n.set('p', v); else n.delete('p'); setParams(n, { replace: true }) }}
           placeholder={t('Choose a customer or supplier')}

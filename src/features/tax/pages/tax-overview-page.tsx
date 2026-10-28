@@ -36,7 +36,7 @@ export function TaxOverviewPage() {
 
   return (
     <>
-      <PageHeader title={t('Tax')} description={t('VAT for {month} so far, what is due to the {authority} and when, and how fiscalization is going.', { month: monthLabel(ym), authority })}
+      <PageHeader title={t('Tax overview|menu')} description={t('VAT for {month} so far, what is due to the {authority} and when, and how fiscalization is going.', { month: monthLabel(ym), authority })}
         actions={<>
           <Button variant="outline" asChild><Link to={`/tax/books?month=${ym}`}><FileSpreadsheet /> {t('Open the books')}</Link></Button>
           <Can perm="tax.write"><Button onClick={() => setNewOpen(true)}><Plus /> {t('New declaration')}</Button></Can>

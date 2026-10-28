@@ -1,12 +1,12 @@
-import { Plus, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
+import { NewReservationButton } from '../components/new-reservation-button'
 import { useCompany } from '@/app/company-provider'
 import { EmptyState } from '@/components/empty-state'
 import { ErrorState } from '@/components/error-state'
 import { PageHeader } from '@/components/page-header'
 import { StatusBadge } from '@/components/status-badge'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -31,7 +31,7 @@ export function ReservationsPage() {
   return (
     <>
       <PageHeader title={t('Reservations')} description={t('Every stay, booked, in the hotel or gone. Search by guest, number or phone.')}
-        actions={can('sales.write') && <Button onClick={() => setOpen({})}><Plus />{t('New reservation')}</Button>} />
+        actions={can('sales.write') && <NewReservationButton onClick={() => setOpen({})} />} />
       <div className="mb-3 flex flex-wrap gap-2">
         <div className="relative min-w-[220px] flex-1 sm:max-w-xs">
           <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />

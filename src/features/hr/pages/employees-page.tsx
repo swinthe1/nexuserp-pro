@@ -53,7 +53,7 @@ export function EmployeesPage() {
   ], [])
   return (
     <>
-      <PageHeader title={t('Employees')} description={t('Everyone who works here, with their department, manager and contract.')}
+      <PageHeader title={t('Employees|menu')} description={t('Everyone who works here, with their department, manager and contract.')}
         actions={<>
           <Button variant="outline" asChild><Link to="/hr/setup"><Settings2 /> {t('HR setup')}</Link></Button>
           <Can perm="hr.write"><Button variant="outline" asChild><Link to="/settings/import?kind=employees"><Upload /> {t('Import')}</Link></Button><Button asChild><Link to="/hr/employees/new"><Plus /> {t('New employee')}</Link></Button></Can>

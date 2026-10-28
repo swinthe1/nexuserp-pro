@@ -67,7 +67,7 @@ export function AlertsPage() {
   return (
     <>
       <PageHeader
-        title={t('Low stock')}
+        title={t('Low stock|menu')}
         description={t('Items at or below their reorder point. The suggested order fills each warehouse up to its maximum, minus what is already ordered.')}
         actions={<Can perm="wms.write"><Button variant="outline" asChild><Link to="/inventory/receipts/new"><PackageCheck /> {t('Receive goods')}</Link></Button></Can>}
       />

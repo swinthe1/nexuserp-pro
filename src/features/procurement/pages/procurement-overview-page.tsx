@@ -39,7 +39,7 @@ export function ProcurementOverviewPage() {
   return (
     <>
       <PageHeader
-        title={t('Purchasing')}
+        title={t('Purchasing overview|menu')}
         description={t('Spend counts recorded vendor bills, less credit notes, in {currency} without VAT.', { currency: cur })}
         actions={<>
           <Select value={rangeKey} onValueChange={(v) => setRangeKey(v as RangeKey)}>

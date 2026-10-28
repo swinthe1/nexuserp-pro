@@ -98,7 +98,7 @@ export function SharedTillCard() {
     <div className="mb-5 rounded-lg border bg-card p-4">
       <div className="flex flex-wrap items-start gap-3">
         <MonitorSmartphone className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
-        <div className="min-w-0 flex-1">
+        <div className="min-w-[14rem] flex-1 basis-64">
           <p className="text-sm font-medium">{t('Shared till')}</p>
           <p className="mt-0.5 max-w-2xl text-[13px] text-muted-foreground">
             {t('On a computer that several people use, each one taps their name and types a PIN, with no email or password. It locks itself after 10 minutes without use.')}

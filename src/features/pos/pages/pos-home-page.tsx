@@ -90,6 +90,12 @@ export function PosHomePage() {
                   </div>
                   {s ? <Badge variant="success">{t('Open|status')}</Badge> : <Badge variant="secondary">{tEnum('closed')}</Badge>}
                 </div>
+                {/* a shift left open since an earlier day: the day's Z report was never made */}
+                {s && s.opened_at.slice(0, 10) < today && (
+                  <div className="rounded-md border border-destructive/40 bg-destructive/5 px-2.5 py-1.5 text-[13px] text-destructive">
+                    {t('This shift was not closed since {date}. Close it and make the Z report, so each day\u2019s sales and cash are counted apart.', { date: formatDate(s.opened_at) })}
+                  </div>
+                )}
                 <div className="text-[13px] text-muted-foreground">
                   {s ? t('Shift {number} · open for {time} · opening cash {amount} {currency}', { number: s.number, time: since(s.opened_at), amount: formatMoney(s.opening_cash), currency: company?.base_currency ?? '' }) : t('No open shift. Opening the till asks how much cash is in the drawer.')}
                 </div>

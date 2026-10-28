@@ -58,7 +58,7 @@ export default {
   '{n} shipments added to {route}': '{n} transporte u shtuan te {route}',
   'Routes on {date}': 'Itineraret më {date}',
   'No routes this day': 'Asnjë itinerar këtë ditë',
-  'Select shipments on the left and create a route for a van and driver.': 'Zgjidhni transportet majtas dhe krijoni një itinerar për një furgon dhe shofer.',
+  'Select shipments on the left and create a route for a van and driver.': 'Zgjidhni transportet nga lista «Në pritje» dhe krijoni një itinerar për një furgon dhe shofer.',
   'from {place}': 'nga {place}',
   'No stops yet.': 'Ende pa ndalesa.',
   'Remove {number}': 'Hiq {number}',

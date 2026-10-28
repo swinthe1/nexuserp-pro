@@ -56,7 +56,7 @@ export function PipelinePage() {
   return (
     <>
       <PageHeader
-        title={t('Pipeline')}
+        title={t('Pipeline|menu')}
         description={opps.data ? tr('{n} open deals worth {total} without VAT, {weighted} expected by probability.', { n: openRows.length, total: <span className="tabular font-medium text-foreground">{formatMoney(total)}</span>, weighted: <span className="tabular font-medium text-foreground">{formatMoney(weighted)}</span> }) : t('Deals in progress, by stage.')}
         actions={<>
           <Button variant={mine ? 'secondary' : 'ghost'} size="sm" onClick={() => setMine((m) => !m)} aria-pressed={mine}>{t('My deals')}</Button>

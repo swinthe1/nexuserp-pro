@@ -1,6 +1,7 @@
-import { BedDouble, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { BedDouble, ChevronLeft, ChevronRight } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
+import { NewReservationButton } from '../components/new-reservation-button'
 import { useCompany } from '@/app/company-provider'
 import { EmptyState } from '@/components/empty-state'
 import { ErrorState } from '@/components/error-state'
@@ -47,7 +48,7 @@ export function HotelCalendarPage() {
   return (
     <>
       <PageHeader title={t('Room calendar')} description={t('Every room and its nights. Click an empty night to book it, or a stay to open it.')}
-        actions={can('sales.write') && <Button onClick={() => setOpen({ initial: { check_in: today } })}><Plus />{t('New reservation')}</Button>} />
+        actions={can('sales.write') && <NewReservationButton onClick={() => setOpen({ initial: { check_in: today } })} />} />
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <div className="flex items-center rounded-md border">
           <Button variant="ghost" size="icon" className="size-8" aria-label={t('Earlier')} onClick={() => setStart(addDays(start, -7))}><ChevronLeft className="size-4" /></Button>

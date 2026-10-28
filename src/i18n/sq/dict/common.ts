@@ -5,7 +5,7 @@ export default {
   // actions
   'Save': 'Ruaj',
   'Save changes': 'Ruaj ndryshimet',
-  'Save draft': 'Ruaj si draft',
+  'Save draft': 'Ruaj si skicë',
   'Saved': 'U ruajt',
   'Draft saved': 'Drafti u ruajt',
   'Cancel': 'Anulo',
@@ -16,7 +16,7 @@ export default {
   'Add line': 'Shto rresht',
   'Remove': 'Hiq',
   'Create': 'Krijo',
-  'Create draft': 'Krijo draft',
+  'Create draft': 'Krijo skicë',
   'Search': 'Kërko',
   'Search…': 'Kërko…',
   'Filter': 'Filtro',
@@ -44,7 +44,7 @@ export default {
   'Reject': 'Refuzo',
   'Post': 'Kontabilizo',
   'Pay': 'Paguaj',
-  'Receive': 'Prit mallin',
+  'Receive': 'Prano mallin',
   'Ship': 'Dërgo',
   'Scan': 'Skano',
   'Upload': 'Ngarko',
@@ -72,7 +72,7 @@ export default {
   'Yes': 'Po',
   'No': 'Jo',
   'OK': 'Në rregull',
-  'Back to draft': 'Kthe në draft',
+  'Back to draft': 'Kthe në skicë',
   'Mark as read': 'Shëno si të lexuar',
 
   // common labels

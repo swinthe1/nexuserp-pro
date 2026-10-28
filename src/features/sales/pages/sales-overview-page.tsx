@@ -46,7 +46,7 @@ export function SalesOverviewPage() {
   return (
     <>
       <PageHeader
-        title={t('Sales')}
+        title={t('Sales overview|menu')}
         description={t('Sales are counted from posted invoices minus credit notes, in {currency} without VAT.', { currency: cur })}
         actions={<>
           <Select value={rangeKey} onValueChange={(v) => setRangeKey(v as RangeKey)}>

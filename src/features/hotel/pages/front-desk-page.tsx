@@ -1,7 +1,8 @@
-import { CalendarRange, LogIn, LogOut, Plus } from 'lucide-react'
+import { CalendarRange, LogIn, LogOut } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
+import { NewReservationButton } from '../components/new-reservation-button'
 import { useCompany } from '@/app/company-provider'
 import { ErrorState } from '@/components/error-state'
 import { PageHeader } from '@/components/page-header'
@@ -31,7 +32,7 @@ export function FrontDeskPage() {
       <PageHeader title={t('Front desk')} description={d ? formatDateWith(new Date(`${d.date}T00:00:00`), { weekday: 'long', day: 'numeric', month: 'long' }) : undefined}
         actions={<div className="flex gap-2">
           <Button variant="outline" asChild><Link to="/hotel/calendar"><CalendarRange />{t('Room calendar')}</Link></Button>
-          {can('sales.write') && <Button onClick={() => setOpen({ initial: {} })}><Plus />{t('New reservation')}</Button>}
+          {can('sales.write') && <NewReservationButton onClick={() => setOpen({ initial: {} })} />}
         </div>} />
       {q.isError ? <ErrorState error={q.error} onRetry={() => void q.refetch()} /> : !d ? <Skeleton className="h-80" /> : (
         <div className="grid gap-4">

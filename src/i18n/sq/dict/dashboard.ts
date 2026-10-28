@@ -44,7 +44,7 @@ export default {
   'All movements': 'Të gjitha lëvizjet',
   'No movements yet': 'Ende pa lëvizje',
   'Receive goods or add opening stock to get started.': 'Pranoni mall ose shtoni gjendjen fillestare për të filluar.',
-  'Receive goods': 'Prit mallin',
+  'Receive goods': 'Prano mallin',
   'value only': 'vetëm vlera',
   'Stock by store': 'Stoku sipas njësive',
   '{amount} in {n} stores and warehouses, at average cost. Open one to see its items.': '{amount} në {n} njësi dhe magazina, me koston mesatare. Hapni njërën për të parë artikujt e saj.',

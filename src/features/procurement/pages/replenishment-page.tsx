@@ -67,7 +67,7 @@ export function ReplenishmentPage() {
   return (
     <>
       <PageHeader
-        title={t('Replenishment')}
+        title={t('Replenishment|menu')}
         description={t('Items at or below their reorder point. Expected stock = on hand − reserved − ordered by customers but not yet reserved + already on order. Suggested quantities fill up to the maximum, respecting vendor minimums.')}
         actions={<>
           <Select value={warehouse} onValueChange={setWarehouse}>

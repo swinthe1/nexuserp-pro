@@ -96,3 +96,9 @@ export function useHotelAction<A>(fn: (a: A) => Promise<unknown>) {
 
 export const nights = (a: string, b: string) => Math.max(Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000), 0)
 export const addDays = (d: string, n: number) => { const x = new Date(`${d}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10) }
+
+/** "New reservation", or — while there are no rooms yet — the way to add them, so nobody starts a booking that cannot be made */
+export function useCanBook() {
+  const rooms = useRooms()
+  return { ready: !rooms.isLoading, hasRooms: (rooms.data ?? []).length > 0 }
+}

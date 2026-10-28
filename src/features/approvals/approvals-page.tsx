@@ -98,7 +98,7 @@ export function ApprovalsPage() {
 
   return (
     <>
-      <PageHeader title={t('Approvals')} description={t("Documents waiting for your decision. You can't approve your own requests.")} />
+      <PageHeader title={t('Approvals|menu')} description={t("Documents waiting for your decision. You can't approve your own requests.")} />
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="mb-4">
         <TabsList><TabsTrigger value="pending">{t('Waiting')}</TabsTrigger><TabsTrigger value="decided">{t('Decided')}</TabsTrigger></TabsList>
       </Tabs>

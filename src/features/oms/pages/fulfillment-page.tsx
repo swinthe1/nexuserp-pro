@@ -57,7 +57,7 @@ export function FulfillmentPage() {
 
   return (
     <>
-      <PageHeader title={t('Order desk')} description={t('Every open order line with what is reserved, free and on the way. Reserve what stock allows, ship what is ready, and send the rest to replenishment.')}
+      <PageHeader title={t('Order desk|menu')} description={t('Every open order line with what is reserved, free and on the way. Reserve what stock allows, ship what is ready, and send the rest to replenishment.')}
         actions={<>
           <Select value={warehouse} onValueChange={setWarehouse}>
             <SelectTrigger className="w-[190px]" aria-label={t('Warehouse')}><SelectValue /></SelectTrigger>
