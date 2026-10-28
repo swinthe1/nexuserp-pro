@@ -49,7 +49,7 @@ export function CompensationsPage() {
           <div className="overflow-x-auto rounded-lg border">
             <Table>
               <TableHeader><TableRow><TableHead>{t('Number')}</TableHead><TableHead>{t('Date')}</TableHead><TableHead>{t('Partner')}</TableHead>
-                <TableHead>{t('Status')}</TableHead><TableHead className="text-right">{t('Amount')}</TableHead></TableRow></TableHeader>
+                <TableHead>{t('Status')}</TableHead><TableHead className="text-right">{t('Amount with VAT')}</TableHead></TableRow></TableHeader>
               <TableBody>
                 {list.data.map((r) => (
                   <TableRow key={r.id} className="cursor-pointer" onClick={() => setParams({ c: r.id })}>
@@ -124,7 +124,7 @@ function NewCompensation({ onClose, onDone }: { onClose: () => void; onDone: (id
                 <li key={r.id} className="flex items-center gap-2 px-2.5 py-2 text-[13px]">
                   <Checkbox checked={!!p?.on} onCheckedChange={(v) => setPicks((x) => ({ ...x, [r.id]: { on: !!v, amount: x[r.id]?.amount || String(r.open) } }))} aria-label={r.number} />
                   <span className="min-w-0 flex-1"><span className="font-medium">{r.number}</span>{r.reference && <span className="text-muted-foreground"> · {r.reference}</span>}
-                    <span className="block text-[11px] text-muted-foreground">{formatDate(r.date)} · {t('open {amount}', { amount: formatMoney(r.open, r.currency) })}</span></span>
+                    <span className="block text-[11px] text-muted-foreground">{formatDate(r.date)} · {t('open {amount}, with VAT', { amount: formatMoney(r.open, r.currency) })}</span></span>
                   <Input inputMode="decimal" className="h-8 w-24 text-right tabular-nums" disabled={!p?.on} value={p?.amount ?? ''} aria-label={t('Amount')}
                     onChange={(e) => setPicks((x) => ({ ...x, [r.id]: { on: true, amount: e.target.value } }))} />
                 </li>

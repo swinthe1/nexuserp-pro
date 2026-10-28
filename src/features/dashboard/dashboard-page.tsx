@@ -91,26 +91,26 @@ export function DashboardPage() {
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {can('sales.read') ? <>
-          {legacy ? <StatCard icon={TrendingUp} hue="204 82%" label={t('Sales this month')} value={formatMoney(legacy.month, cur)} href="/history"
-            hint={t('{n} receipts · {pct}% gross margin · old program', { n: num(legacy.month_receipts), pct: legacy.month_cost != null && num(legacy.month_net) > 0 ? formatNumberWith(((num(legacy.month_net) - num(legacy.month_cost)) / num(legacy.month_net)) * 100, { maximumFractionDigits: 1 }) : '—' })} />
-          : <StatCard icon={TrendingUp} hue="204 82%" label={t('Sales this month')} value={formatMoney(sales.data?.revenue, cur)} loading={sales.isLoading} href="/sales" hint={sales.data ? t('{n} invoices · {pct}% gross margin', { n: sales.data.invoice_count, pct: sales.data.revenue > 0 ? formatNumberWith(((sales.data.revenue - sales.data.cogs) / sales.data.revenue) * 100, { maximumFractionDigits: 1 }) : '0' }) : undefined} />}
-          <StatCard icon={AlarmClock} hue="354 70%" label={t('Unpaid invoices past due')} value={formatMoney(sales.data?.overdue_amount, cur)} loading={sales.isLoading} tone={sales.data?.overdue_count ? 'destructive' : 'default'} href="/sales/invoices" hint={t('{n} past the due date', { n: sales.data?.overdue_count ?? 0 })} />
+          {legacy ? <StatCard icon={TrendingUp} hue="204 82%" label={t('Sales this month (with VAT)')} value={formatMoney(legacy.month, cur)} href="/history"
+            hint={t('{n} receipts · {pct}% gross margin without VAT · old program', { n: num(legacy.month_receipts), pct: legacy.month_cost != null && num(legacy.month_net) > 0 ? formatNumberWith(((num(legacy.month_net) - num(legacy.month_cost)) / num(legacy.month_net)) * 100, { maximumFractionDigits: 1 }) : '—' })} />
+          : <StatCard icon={TrendingUp} hue="204 82%" label={t('Sales this month (without VAT)')} value={formatMoney(sales.data?.revenue, cur)} loading={sales.isLoading} href="/sales" hint={sales.data ? t('{n} invoices · {pct}% gross margin, without VAT', { n: sales.data.invoice_count, pct: sales.data.revenue > 0 ? formatNumberWith(((sales.data.revenue - sales.data.cogs) / sales.data.revenue) * 100, { maximumFractionDigits: 1 }) : '0' }) : undefined} />}
+          <StatCard icon={AlarmClock} hue="354 70%" label={t('Unpaid invoices past due (with VAT)')} value={formatMoney(sales.data?.overdue_amount, cur)} loading={sales.isLoading} tone={sales.data?.overdue_count ? 'destructive' : 'default'} href="/sales/invoices" hint={t('{n} past the due date', { n: sales.data?.overdue_count ?? 0 })} />
         </> : <>
-          <StatCard icon={TrendingUp} hue="204 82%" label={t('Sales this month')} value="" pending={t('No access')} hint={t('Needs access to sales')} />
-          {can('finance.read') ? <StatCard icon={Users} hue="350 70%" label={t('Customers late paying')} value={formatMoney(fin.data?.ar_overdue, cur)} loading={fin.isLoading} href="/finance/receivables"
-            tone={fin.data?.ar_overdue ? 'destructive' : 'default'} hint={fin.data ? t('of {amount} customers owe in total', { amount: formatMoney(fin.data.receivables) }) : undefined} />
-            : <StatCard icon={Users} hue="350 70%" label={t('Customers late paying')} value="" pending={t('No access')} hint={t('Needs access to finance')} />}
+          <StatCard icon={TrendingUp} hue="204 82%" label={t('Sales this month (without VAT)')} value="" pending={t('No access')} hint={t('Needs access to sales')} />
+          {can('finance.read') ? <StatCard icon={Users} hue="350 70%" label={t('Customers late paying (with VAT)')} value={formatMoney(fin.data?.ar_overdue, cur)} loading={fin.isLoading} href="/finance/receivables"
+            tone={fin.data?.ar_overdue ? 'destructive' : 'default'} hint={fin.data ? t('of {amount} customers owe in total, with VAT', { amount: formatMoney(fin.data.receivables) }) : undefined} />
+            : <StatCard icon={Users} hue="350 70%" label={t('Customers late paying (with VAT)')} value="" pending={t('No access')} hint={t('Needs access to finance')} />}
         </>}
         {canAp ? (
-          <StatCard icon={Wallet} hue="32 90%" label={t('Bills to pay soon')} value={formatMoney((proc.data?.ap_due_7 ?? 0) + (proc.data?.ap_overdue ?? 0), cur)} loading={proc.isLoading} href="/procurement/bills"
+          <StatCard icon={Wallet} hue="32 90%" label={t('Bills to pay soon (with VAT)')} value={formatMoney((proc.data?.ap_due_7 ?? 0) + (proc.data?.ap_overdue ?? 0), cur)} loading={proc.isLoading} href="/procurement/bills"
             tone={proc.data?.ap_overdue_count ? 'destructive' : 'default'}
             hint={proc.data ? t('{amount} late · the rest within 7 days', { amount: formatMoney(proc.data.ap_overdue) }) : undefined} />
-        ) : <StatCard icon={Wallet} hue="32 90%" label={t('Bills to pay soon')} value="" pending={t('No access')} hint={t('Needs access to invoices and payments')} />}
+        ) : <StatCard icon={Wallet} hue="32 90%" label={t('Bills to pay soon (with VAT)')} value="" pending={t('No access')} hint={t('Needs access to invoices and payments')} />}
         {can('sales.read') ? (
-          <StatCard icon={PackageCheck} hue="204 82%" label={t('Orders to deliver and invoice')} value={formatMoney(sales.data?.backlog, cur)} loading={sales.isLoading} href="/sales/orders" hint={t('{n} orders confirmed this month', { n: sales.data?.orders_count ?? 0 })} />
+          <StatCard icon={PackageCheck} hue="204 82%" label={t('Orders to deliver and invoice (without VAT)')} value={formatMoney(sales.data?.backlog, cur)} loading={sales.isLoading} href="/sales/orders" hint={t('{n} orders confirmed this month', { n: sales.data?.orders_count ?? 0 })} />
         ) : can('finance.read') ? (
-          <StatCard icon={Landmark} hue="158 82%" label={t('Net profit this month')} value={formatMoney(fin.data?.net_profit, cur)} loading={fin.isLoading} href="/finance/reports" tone={(fin.data?.net_profit ?? 0) < 0 ? 'destructive' : 'default'} hint={t('From the accounting')} />
-        ) : <StatCard icon={Landmark} hue="158 82%" label={t('Net profit this month')} value="" pending={t('No access')} hint={t('Needs access to finance')} />}
+          <StatCard icon={Landmark} hue="158 82%" label={t('Net profit this month (without VAT)')} value={formatMoney(fin.data?.net_profit, cur)} loading={fin.isLoading} href="/finance/reports" tone={(fin.data?.net_profit ?? 0) < 0 ? 'destructive' : 'default'} hint={t('From the accounting')} />
+        ) : <StatCard icon={Landmark} hue="158 82%" label={t('Net profit this month (without VAT)')} value="" pending={t('No access')} hint={t('Needs access to finance')} />}
       </div>
 
       {legacy && <LegacySales data={legacy} />}
@@ -118,7 +118,7 @@ export function DashboardPage() {
 
       <div className="mt-4 grid gap-4 grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_380px]">
         <Card>
-          <CardHeader><CardTitle>{t('Stock in and out')}</CardTitle><CardDescription>{t('Last 30 days, at cost ({currency})', { currency: cur ?? '' })}</CardDescription></CardHeader>
+          <CardHeader><CardTitle>{t('Stock in and out')}</CardTitle><CardDescription>{t('Last 30 days, at purchase price without VAT ({currency})', { currency: cur ?? '' })}</CardDescription></CardHeader>
           <CardContent>
             {inv.isLoading ? <Skeleton className="h-64" /> : inv.isError ? <ErrorState compact error={inv.error} onRetry={() => void inv.refetch()} /> : (
               <div className="h-64">
@@ -158,7 +158,7 @@ export function DashboardPage() {
 
       <div className="mt-4 grid gap-4 grid-cols-[minmax(0,1fr)] xl:grid-cols-[380px_minmax(0,1fr)]">
         <Card>
-          <CardHeader><CardTitle>{t('Stock value by category')}</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{t('Stock value by category')}</CardTitle><CardDescription>{t('At purchase price, without VAT')}</CardDescription></CardHeader>
           <CardContent className="grid gap-2.5">
             {inv.isLoading && <Skeleton className="h-40" />}
             {inv.data?.value_by_category.length === 0 && <p className="py-8 text-center text-[13px] text-muted-foreground">{t('No stock yet.')}</p>}
@@ -189,7 +189,7 @@ export function DashboardPage() {
                   <span className="w-32 shrink-0">{humanize(m.movement_type)}</span>
                   <span className="min-w-0 flex-1 truncate font-medium">{m.sku}</span>
                   <span className={`tabular ${Number(m.quantity) === 0 ? 'text-muted-foreground' : m.direction === 'in' ? 'text-success' : m.direction === 'out' ? 'text-destructive' : ''}`}>{Number(m.quantity) === 0 ? t('value only') : `${m.direction === 'out' ? '−' : m.direction === 'in' ? '+' : ''}${formatQty(m.quantity)}`}</span>
-                  <span className="w-28 text-right tabular text-muted-foreground">{formatMoney(m.total_cost)}</span>
+                  <span className="w-28 text-right tabular text-muted-foreground" title={t('Cost, without VAT')}>{formatMoney(m.total_cost)}</span>
                 </li>
               ))}
             </ul>

@@ -51,7 +51,7 @@ export function AssetsPage() {
     { id: 'cc', accessorFn: (r) => r.cost_center?.code ?? '', header: t('Cost center'), meta: { label: t('Cost center') } },
     { accessorKey: 'in_service_date', header: t('In service since'), meta: { label: t('In service since') }, cell: ({ getValue }) => <span className="whitespace-nowrap">{formatDate(getValue() as string)}</span> },
     { accessorKey: 'status', filterFn: inFilter, header: t('Status'), meta: { label: t('Status') }, cell: ({ getValue }) => <StatusBadge status={getValue() as string} /> },
-    { accessorKey: 'acquisition_cost', header: t('Cost'), meta: { label: t('Cost'), align: 'right' }, cell: ({ getValue }) => <span className="tabular">{formatMoney(getValue() as number)}</span> },
+    { accessorKey: 'acquisition_cost', header: t('Cost (without VAT)'), meta: { label: t('Cost (without VAT)'), align: 'right' }, cell: ({ getValue }) => <span className="tabular">{formatMoney(getValue() as number)}</span> },
     { accessorKey: 'accumulated_depreciation', header: t('Depreciated'), meta: { label: t('Depreciated'), align: 'right' }, cell: ({ getValue }) => <span className="tabular text-muted-foreground">{formatMoney(getValue() as number)}</span> },
     { accessorKey: 'book_value', header: ({ column }) => <ColumnHeader column={column} title={t('Book value')} />, meta: { label: t('Book value'), align: 'right' },
       cell: ({ row: { original: r } }) => r.status === 'disposed' ? <span className="text-[13px] text-muted-foreground">{t('Disposed on {date}', { date: formatDate(r.disposal_date) })}</span> : <span className="tabular font-medium">{formatMoney(r.book_value)}</span> },
@@ -65,7 +65,7 @@ export function AssetsPage() {
           <Button asChild><Link to="/finance/assets/new"><Plus /> {t('New asset')}</Link></Button>
         </Can>} />
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <StatCard label={t('Cost of assets in use')} value={formatMoney(cost)} loading={assets.isLoading} hint={tn(live.length, '{n} asset', '{n} assets')} />
+        <StatCard label={t('Cost of assets in use (without VAT)')} value={formatMoney(cost)} loading={assets.isLoading} hint={tn(live.length, '{n} asset', '{n} assets')} />
         <StatCard label={t('Accumulated depreciation')} value={formatMoney(accum)} loading={assets.isLoading} hint={cost ? t('{pct}% written off', { pct: ((accum / cost) * 100).toFixed(0) }) : undefined} />
         <StatCard label={t('Net book value')} value={formatMoney(cost - accum)} loading={assets.isLoading} />
       </div>
@@ -153,7 +153,7 @@ function AssetForm({ asset }: { asset?: AssetDetail }) {
         <div className="grid gap-1.5"><Label htmlFor="as-svc">{t('In service from')}</Label><Input id="as-svc" type="date" value={v.in_service_date} disabled={!editable} onChange={(e) => set('in_service_date')(e.target.value)} /></div>
         <div className="grid gap-1.5"><Label>{t('Vendor')}</Label><SearchSelect value={v.vendor_id} onChange={set('vendor_id')} disabled={!editable} clearable placeholder={t('Optional')}
           options={(partners.data ?? []).filter((p) => p.is_vendor).map((p) => ({ value: p.id, label: p.name, hint: p.code }))} /></div>
-        <div className="grid gap-1.5"><Label htmlFor="as-cost">{t('Cost')}</Label><Input id="as-cost" type="number" step="any" className="text-right tabular" value={v.acquisition_cost} disabled={!editable} onChange={(e) => set('acquisition_cost')(e.target.value)} /></div>
+        <div className="grid gap-1.5"><Label htmlFor="as-cost">{t('Cost (without VAT)')}</Label><Input id="as-cost" type="number" step="any" className="text-right tabular" value={v.acquisition_cost} disabled={!editable} onChange={(e) => set('acquisition_cost')(e.target.value)} /></div>
         <div className="grid gap-1.5"><Label htmlFor="as-salv">{t('Residual value')}</Label><Input id="as-salv" type="number" step="any" className="text-right tabular" value={v.salvage_value} disabled={!editable} onChange={(e) => set('salvage_value')(e.target.value)} /></div>
         <div className="grid gap-1.5"><Label htmlFor="as-life">{t('Useful life (months)')}</Label><Input id="as-life" type="number" className="text-right tabular" value={v.useful_life_months} disabled={!editable} onChange={(e) => set('useful_life_months')(e.target.value)} /></div>
         <div className="grid gap-1.5"><Label>{t('Method')}</Label>
@@ -187,11 +187,11 @@ function AssetForm({ asset }: { asset?: AssetDetail }) {
           <TabsList><TabsTrigger value="schedule">{t('Depreciation')}</TabsTrigger><TabsTrigger value="details">{t('Details')}</TabsTrigger><TabsTrigger value="accounting">{t('Accounting')}</TabsTrigger></TabsList>
           <TabsContent value="schedule">
             <div className="mb-4 grid gap-3 sm:grid-cols-4">
-              <StatCard label={t('Cost')} value={formatMoney(asset.acquisition_cost)} />
+              <StatCard label={t('Cost (without VAT)')} value={formatMoney(asset.acquisition_cost)} />
               <StatCard label={t('Depreciated')} value={formatMoney(asset.accumulated_depreciation)} hint={t('{done} of {total} months recorded', { done: schedule.filter((s) => s.status === 'posted').length, total: schedule.length })} />
               <StatCard label={t('Book value')} value={formatMoney(asset.book_value)} />
               <StatCard label={asset.status === 'disposed' ? t('Disposed') : t('Ends')} value={asset.status === 'disposed' ? formatDate(asset.disposal_date) : formatDate(schedule.at(-1)?.period_date)}
-                hint={asset.status === 'disposed' ? t('Proceeds {amount}', { amount: formatMoney(asset.disposal_amount) }) : humanize(asset.depreciation_method)} />
+                hint={asset.status === 'disposed' ? t('Proceeds {amount}, without VAT', { amount: formatMoney(asset.disposal_amount) }) : humanize(asset.depreciation_method)} />
             </div>
             <Card>
               <CardHeader className="py-3"><CardTitle>{t('Schedule')}</CardTitle></CardHeader>
@@ -267,7 +267,7 @@ function DisposeDialog({ open, onOpenChange, asset }: { open: boolean; onOpenCha
           <DialogDescription>{t('Depreciation is brought up to the date, then the cost and accumulated depreciation are removed and the gain or loss is recorded.')}</DialogDescription></DialogHeader>
         <div className="grid grid-cols-2 gap-3">
           <div className="grid gap-1.5"><Label htmlFor="ds-date">{t('Date')}</Label><Input id="ds-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
-          <div className="grid gap-1.5"><Label htmlFor="ds-amt">{t('Sale amount (0 if scrapped)')}</Label><Input id="ds-amt" type="number" step="any" className="text-right tabular" value={proceeds} onChange={(e) => setProceeds(e.target.value)} /></div>
+          <div className="grid gap-1.5"><Label htmlFor="ds-amt">{t('Sale amount without VAT (0 if scrapped)')}</Label><Input id="ds-amt" type="number" step="any" className="text-right tabular" value={proceeds} onChange={(e) => setProceeds(e.target.value)} /></div>
           {num(proceeds) > 0 && <div className="col-span-2 grid gap-1.5"><Label>{t('Received into')}</Label>
             <SearchSelect value={account} onChange={setAccount} options={(accounts.data ?? []).filter((a) => a.is_postable).map((a) => ({ value: a.id, label: `${a.code} ${td(a.name)}`, keywords: [a.name] }))} /></div>}
         </div>

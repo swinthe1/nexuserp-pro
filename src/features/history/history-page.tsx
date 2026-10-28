@@ -9,7 +9,7 @@ import { ErrorState } from '@/components/error-state'
 import { PageHeader } from '@/components/page-header'
 import { StatCard } from '@/components/stat-card'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -93,12 +93,12 @@ function Overview() {
     <div className="grid gap-4">
       <Range from={from} to={to} setFrom={setFrom} setTo={setTo} />
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard label={t('Sales')} value={formatMoney(sales, cur)} loading={q.isLoading} hint={tn(receipts, '{n} sale or receipt', '{n} sales and receipts')} />
-        <StatCard label={t('Purchases')} value={formatMoney(purchases, cur)} loading={q.isLoading} />
-        <StatCard label={t('Average sale')} value={formatMoney(receipts ? sales / receipts : 0, cur)} loading={q.isLoading} />
+        <StatCard label={t('Sales (with VAT)')} value={formatMoney(sales, cur)} loading={q.isLoading} hint={tn(receipts, '{n} sale or receipt', '{n} sales and receipts')} />
+        <StatCard label={t('Purchases (with VAT)')} value={formatMoney(purchases, cur)} loading={q.isLoading} />
+        <StatCard label={t('Average sale (with VAT)')} value={formatMoney(receipts ? sales / receipts : 0, cur)} loading={q.isLoading} />
       </div>
       <Card>
-        <CardHeader><CardTitle>{t('Sales and purchases by month')}</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t('Sales and purchases by month')}</CardTitle><CardDescription>{t('With VAT, as on the documents of the old program')}</CardDescription></CardHeader>
         <CardContent>
           {q.isLoading ? <Skeleton className="h-64" /> : (
             <div className="h-64">
@@ -119,10 +119,10 @@ function Overview() {
       </Card>
       <div className="grid gap-4 lg:grid-cols-2">
         <Card><CardHeader><CardTitle>{t('Sales by store')}</CardTitle></CardHeader>
-          <CardContent className="p-0"><Table><TableHeader><TableRow><TableHead>{t('Store')}</TableHead><TableHead className="text-right">{t('Receipts')}</TableHead><TableHead className="text-right">{t('Sales')}</TableHead></TableRow></TableHeader>
+          <CardContent className="p-0"><Table><TableHeader><TableRow><TableHead>{t('Store')}</TableHead><TableHead className="text-right">{t('Receipts')}</TableHead><TableHead className="text-right">{t('Sales with VAT')}</TableHead></TableRow></TableHeader>
             <TableBody>{(d?.by_store ?? []).map((r) => <TableRow key={r.store}><TableCell>{td(r.store)}</TableCell><TableCell className="text-right tabular">{num(r.receipts).toLocaleString('sq')}</TableCell><TableCell className="text-right tabular">{formatMoney(r.sales ?? 0)}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
         <Card><CardHeader><CardTitle>{t('Best-selling products')}</CardTitle></CardHeader>
-          <CardContent className="p-0"><Table><TableHeader><TableRow><TableHead>{t('Product')}</TableHead><TableHead className="text-right">{t('Quantity')}</TableHead><TableHead className="text-right">{t('Sales')}</TableHead></TableRow></TableHeader>
+          <CardContent className="p-0"><Table><TableHeader><TableRow><TableHead>{t('Product')}</TableHead><TableHead className="text-right">{t('Quantity')}</TableHead><TableHead className="text-right">{t('Sales with VAT')}</TableHead></TableRow></TableHeader>
             <TableBody>{(d?.top_products ?? []).map((r) => <TableRow key={`${r.sku}-${r.name}`}><TableCell><span className="text-muted-foreground">{r.sku}</span> {r.name}</TableCell><TableCell className="text-right tabular">{formatQty(r.quantity)}</TableCell><TableCell className="text-right tabular">{formatMoney(r.amount)}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
       </div>
     </div>
@@ -164,7 +164,7 @@ function Documents() {
     { accessorKey: 'partner_name', enableSorting: false, header: t('Partner'), meta: { label: t('Partner') }, cell: ({ getValue }) => (getValue() as string) || '—' },
     { accessorKey: 'warehouse_code', enableSorting: false, header: t('Store'), meta: { label: t('Store') }, cell: ({ getValue }) => (getValue() as string) || '—' },
     { accessorKey: 'cashier', enableSorting: false, header: t('Cashier'), meta: { label: t('Cashier') }, cell: ({ getValue }) => (getValue() as string) || '—' },
-    { accessorKey: 'total', header: ({ column }) => <ColumnHeader column={column} title={t('Total')} />, meta: { label: t('Total'), align: 'right' }, cell: ({ getValue }) => <span className="tabular">{formatMoney(getValue() as number)}</span> },
+    { accessorKey: 'total', header: ({ column }) => <ColumnHeader column={column} title={t('Total with VAT')} />, meta: { label: t('Total with VAT'), align: 'right' }, cell: ({ getValue }) => <span className="tabular">{formatMoney(getValue() as number)}</span> },
   ], [])
   return (
     <div className="grid gap-3">
@@ -185,6 +185,8 @@ function DocumentSheet({ id, onClose }: { id: string | null; onClose: () => void
   const q = useHistoryDocument(id)
   const d = q.data
   const k = d ? KIND[d.kind] ?? KIND.other! : null
+  // sales and purchases carry VAT; transfers and counts are at cost
+  const trade = !!d && ['sale', 'pos_sale', 'sale_return', 'purchase', 'purchase_return'].includes(d.kind)
   return (
     <Sheet open={!!id} onOpenChange={(o) => !o && onClose()}>
       <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
@@ -195,7 +197,7 @@ function DocumentSheet({ id, onClose }: { id: string | null; onClose: () => void
         <div className="px-5 pb-8">
           {q.isLoading ? <Skeleton className="mt-4 h-40" /> : q.error ? <ErrorState error={q.error} /> : d && <>
             <Table className="mt-3">
-              <TableHeader><TableRow><TableHead>{t('Product')}</TableHead><TableHead className="text-right">{t('Quantity')}</TableHead><TableHead className="text-right">{t('Price')}</TableHead><TableHead className="text-right">{t('Total')}</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>{t('Product')}</TableHead><TableHead className="text-right">{t('Quantity')}</TableHead><TableHead className="text-right">{t('Price')}</TableHead><TableHead className="text-right">{trade ? t('Total with VAT') : t('Total')}</TableHead></TableRow></TableHeader>
               <TableBody>{d.lines.map((l) => (
                 <TableRow key={l.id}><TableCell><div className="text-[13px] font-medium">{l.name}</div><div className="text-xs text-muted-foreground">{l.sku}{num(l.discount_pct) ? ` · −${num(l.discount_pct)}%` : ''}{l.tax_rate != null ? ` · ${t('VAT {rate}%', { rate: num(l.tax_rate) })}` : ''}</div></TableCell>
                   <TableCell className="text-right tabular">{formatQty(l.quantity)}</TableCell><TableCell className="text-right tabular">{l.unit_price == null ? '—' : formatMoney(l.unit_price)}</TableCell>
@@ -205,7 +207,7 @@ function DocumentSheet({ id, onClose }: { id: string | null; onClose: () => void
               {d.net != null && <><dt className="text-muted-foreground">{t('Without VAT')}</dt><dd className="text-right tabular">{formatMoney(d.net)}</dd></>}
               {d.tax != null && <><dt className="text-muted-foreground">{t('VAT')}</dt><dd className="text-right tabular">{formatMoney(d.tax)}</dd></>}
               {num(d.discount) !== 0 && <><dt className="text-muted-foreground">{t('Discount')}</dt><dd className="text-right tabular">{formatMoney(d.discount)}</dd></>}
-              <dt className="font-semibold">{t('Total')}</dt><dd className="text-right font-semibold tabular">{formatMoney(d.total)}</dd>
+              <dt className="font-semibold">{trade ? t('Total with VAT') : t('Total')}</dt><dd className="text-right font-semibold tabular">{formatMoney(d.total)}</dd>
               {d.paid != null && num(d.paid) !== 0 && <><dt className="text-muted-foreground">{t('Paid')}</dt><dd className="text-right tabular">{formatMoney(d.paid)}</dd></>}
               {d.fiscal_code && <><dt className="text-muted-foreground">{t('Fiscal code')}</dt><dd className="truncate text-right font-mono text-xs">{d.fiscal_code}</dd></>}
             </dl>

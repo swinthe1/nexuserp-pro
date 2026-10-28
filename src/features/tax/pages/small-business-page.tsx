@@ -72,7 +72,7 @@ export function SmallBusinessPage() {
         <Card className="overflow-hidden"><Table>
           <TableHeader><TableRow>
             <TableHead>{t('Quarter')}</TableHead><TableHead className="text-right">{t('Documents')}</TableHead>
-            <TableHead className="text-right">{t('Gross income')}</TableHead><TableHead className="hidden text-right sm:table-cell">{t('Purchases')}</TableHead>
+            <TableHead className="text-right">{t('Gross income (with VAT)')}</TableHead><TableHead className="hidden text-right sm:table-cell">{t('Purchases (with VAT)')}</TableHead>
             <TableHead className="text-right">{t('Tax')}</TableHead><TableHead className="hidden text-right sm:table-cell">{t('Due by')}</TableHead><TableHead />
           </TableRow></TableHeader>
           <TableBody>{d.quarters.map((x) => (

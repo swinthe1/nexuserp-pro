@@ -133,8 +133,8 @@ function Review({ id, onDone }: { id: string | null; onDone: () => void }) {
           ))}
           <div className="flex items-center justify-between">
             <Button variant="ghost" size="sm" onClick={() => set({ lines: [...f.lines, { rate: 0, net: 0, vat: 0, tax_code_id: null }] })}><Plus /> {t('Another VAT rate')}</Button>
-            <div className="text-right text-[13px] text-muted-foreground">{t('Sales of the day')} <span className="block text-xl font-semibold text-foreground tabular">{formatMoney(total)}</span>
-              {r?.total != null && Math.abs(num(r.total) - total) > 0.05 && <span className="text-warning">{t('The report says {amount}', { amount: formatMoney(r.total) })}</span>}</div>
+            <div className="text-right text-[13px] text-muted-foreground">{t('Sales of the day, with VAT')} <span className="block text-xl font-semibold text-foreground tabular">{formatMoney(total)}</span>
+              {r?.total != null && Math.abs(num(r.total) - total) > 0.05 && <span className="text-warning">{t('The report says {amount} with VAT', { amount: formatMoney(r.total) })}</span>}</div>
           </div>
         </CardContent></Card>
 

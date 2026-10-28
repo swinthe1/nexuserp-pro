@@ -51,9 +51,9 @@ export function VatBooksPage() {
     { header: book === 'sales' ? t('Buyer') : t('Seller'), value: (r) => r.partner },
     { header: taxLabel, value: (r) => r.tax_number, format: 'text' },
     ...cols.map((c): XlsxColumn<BookRow> => ({ header: colLabel(c), value: (r) => r.cols?.[c.key] ?? null, format: 'money' })),
-    { header: t('Total'), value: (r) => num(r.total), format: 'money' },
+    { header: t('Total with VAT'), value: (r) => num(r.total), format: 'money' },
   ]
-  const exportTotals: Record<string, number | string> = { [t('No.|register')]: t('Total'), [t('Total')]: totals.total ?? 0 }
+  const exportTotals: Record<string, number | string> = { [t('No.|register')]: t('Total'), [t('Total with VAT')]: totals.total ?? 0 }
   for (const c of cols) exportTotals[colLabel(c)] = totals[c.key] ?? 0
 
   return (
@@ -103,7 +103,7 @@ export function VatBooksPage() {
                       <span className="block leading-tight text-foreground">{layoutLabel(c)}</span>
                     </Th>
                   ))}
-                  <Th className="text-right">{t('Total')}</Th>
+                  <Th className="text-right">{t('Total with VAT')}</Th>
                 </tr>
               </thead>
               <tbody>

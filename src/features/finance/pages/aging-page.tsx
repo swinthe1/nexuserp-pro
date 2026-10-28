@@ -39,7 +39,7 @@ export function AgingPage({ kind }: { kind: 'ar' | 'ap' }) {
   const partnerHref = (id: string) => `/partners/${id}`
 
   const exportCsv = () => downloadCsv(`${isAR ? t('receivables') : t('payables')}-${asOf}`, [
-    [isAR ? t('Customer') : t('Vendor'), ...BUCKETS.map((b) => t(b.label)), t('Not matched'), t('Total'), t('Oldest due date'), t('Documents')],
+    [isAR ? t('Customer') : t('Vendor'), ...BUCKETS.map((b) => t(b.label)), t('Not matched'), t('Total with VAT'), t('Oldest due date'), t('Documents')],
     ...rows.map((r) => [r.partner_name, ...BUCKETS.map((b) => r[b.key]), r.unapplied, r.total, r.oldest_due, r.documents]),
   ])
 
@@ -54,9 +54,9 @@ export function AgingPage({ kind }: { kind: 'ar' | 'ap' }) {
           <Can perm="invoicing.write"><Button asChild><Link to={`/finance/payments/new?type=${payType}`}>{isAR ? t('Receive a payment') : t('Pay a vendor')}</Link></Button></Can>
         </>} />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label={isAR ? t('Total to collect') : t('Total to pay')} value={formatMoney(total)} loading={aging.isLoading} hint={[isAR ? tn(rows.length, '{n} customer', '{n} customers') : tn(rows.length, '{n} vendor', '{n} vendors'), company?.base_currency].filter(Boolean).join(' · ')} />
-        <StatCard label={t('Overdue')} value={formatMoney(overdue)} loading={aging.isLoading} tone={overdue ? (isAR ? 'warning' : 'destructive') : 'default'} hint={total ? t('{pct}% of the balance', { pct: ((overdue / total) * 100).toFixed(0) }) : undefined} />
-        <StatCard label={t('Over 90 days')} value={formatMoney(sum('d90_plus'))} loading={aging.isLoading} tone={sum('d90_plus') ? 'destructive' : 'default'} hint={isAR ? t('Send a reminder, or consider a provision') : t('Vendors may stop supplying')} />
+        <StatCard label={isAR ? t('Total to collect (with VAT)') : t('Total to pay (with VAT)')} value={formatMoney(total)} loading={aging.isLoading} hint={[isAR ? tn(rows.length, '{n} customer', '{n} customers') : tn(rows.length, '{n} vendor', '{n} vendors'), company?.base_currency].filter(Boolean).join(' · ')} />
+        <StatCard label={t('Overdue (with VAT)')} value={formatMoney(overdue)} loading={aging.isLoading} tone={overdue ? (isAR ? 'warning' : 'destructive') : 'default'} hint={total ? t('{pct}% of the balance', { pct: ((overdue / total) * 100).toFixed(0) }) : undefined} />
+        <StatCard label={t('Over 90 days (with VAT)')} value={formatMoney(sum('d90_plus'))} loading={aging.isLoading} tone={sum('d90_plus') ? 'destructive' : 'default'} hint={isAR ? t('Send a reminder, or consider a provision') : t('Vendors may stop supplying')} />
         <StatCard label={t('Not matched')} value={formatMoney(-sum('unapplied'))} loading={aging.isLoading} hint={isAR ? t('Receipts not matched to an invoice') : t('Payments not matched to a bill')} />
       </div>
       {/* the distribution bar makes the shape of the balance readable at a glance */}
@@ -74,7 +74,7 @@ export function AgingPage({ kind }: { kind: 'ar' | 'ap' }) {
               <TableHeader><TableRow className="hover:bg-transparent">
                 <TableHead>{isAR ? t('Customer') : t('Vendor')}</TableHead>
                 {BUCKETS.map((b) => <TableHead key={b.key} className="text-right">{t(b.label)}</TableHead>)}
-                <TableHead className="text-right">{t('Not matched')}</TableHead><TableHead className="text-right">{t('Total')}</TableHead><TableHead>{t('Oldest due date')}</TableHead><TableHead className="w-24" />
+                <TableHead className="text-right">{t('Not matched')}</TableHead><TableHead className="text-right">{t('Total with VAT')}</TableHead><TableHead>{t('Oldest due date')}</TableHead><TableHead className="w-24" />
               </TableRow></TableHeader>
               <TableBody>
                 {rows.map((r) => (

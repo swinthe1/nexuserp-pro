@@ -30,8 +30,8 @@ export function StockByWarehouse() {
         <div>
           <CardTitle>{t('Stock by store')}</CardTitle>
           <CardDescription>
-            {q.data ? t('{amount} in {n} stores and warehouses, at average cost. Open one to see its items.', { amount: formatMoney(total, company?.base_currency), n: rows.length })
-              : t('At average cost. Open one to see its items.')}
+            {q.data ? t('{amount} in {n} stores and warehouses, at purchase price (average cost) without VAT. Open one to see its items.', { amount: formatMoney(total, company?.base_currency), n: rows.length })
+              : t('At purchase price (average cost), without VAT. Open one to see its items.')}
           </CardDescription>
         </div>
         <Button variant="ghost" size="sm" asChild className="shrink-0"><Link to="/inventory/warehouses">{t('Warehouses')} <ArrowRight /></Link></Button>

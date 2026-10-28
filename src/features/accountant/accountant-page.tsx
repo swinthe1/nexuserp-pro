@@ -60,7 +60,7 @@ function ClientCard({ c, current, open }: { c: Client; current: boolean; open: (
     { show: c.supplier_reads > 0, icon: ScanText, text: tn(c.supplier_reads, '{n} supplier invoice read, not received', '{n} supplier invoices read, not received'), href: '/inventory/read-invoice' },
     { show: c.draft_bills > 0, icon: FilePen, text: tn(c.draft_bills, '{n} vendor bill in draft', '{n} vendor bills in draft'), href: '/procurement/bills' },
     { show: c.draft_invoices > 0, icon: FileText, text: tn(c.draft_invoices, '{n} sales invoice in draft', '{n} sales invoices in draft'), href: '/sales/invoices' },
-    { show: c.overdue > 0, icon: HandCoins, text: t('{amount} overdue from customers', { amount: `${formatMoney(c.overdue)} ${c.currency}` }), href: '/finance/receivables', tone: 'warn' },
+    { show: c.overdue > 0, icon: HandCoins, text: t('{amount} overdue from customers, with VAT', { amount: `${formatMoney(c.overdue)} ${c.currency}` }), href: '/finance/receivables', tone: 'warn' },
   ]
   const d = c.deadline
   return (

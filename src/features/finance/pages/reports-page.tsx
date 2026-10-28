@@ -315,7 +315,7 @@ export function ReportsPage() {
 
       {chartData && chartData.length > 1 && (
         <Card className="mt-4 print:hidden">
-          <CardHeader className="pb-2"><CardTitle>{yearly ? t('Year on year') : t('Over the period')}</CardTitle><CardDescription>{t('Revenue, gross profit and net profit, {cur}', { cur })}</CardDescription></CardHeader>
+          <CardHeader className="pb-2"><CardTitle>{yearly ? t('Year on year') : t('Over the period')}</CardTitle><CardDescription>{t('Revenue, gross profit and net profit, without VAT, {cur}', { cur })}</CardDescription></CardHeader>
           <CardContent>
             <div className="h-56">
               <ResponsiveContainer>

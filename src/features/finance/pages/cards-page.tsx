@@ -140,7 +140,7 @@ function OpenTab({ partnerId, side }: { partnerId: string; side: Side }) {
             <Table>
               <TableHeader><TableRow>
                 <TableHead>{t('Document')}</TableHead><TableHead>{t('Number')}</TableHead><TableHead>{t('Their number')}</TableHead><TableHead>{t('Date')}</TableHead>
-                <TableHead>{t('Due')}</TableHead><TableHead className="text-right">{t('Amount')}</TableHead><TableHead className="text-right">{t('Open|amount')}</TableHead>
+                <TableHead>{t('Due')}</TableHead><TableHead className="text-right">{t('Amount with VAT')}</TableHead><TableHead className="text-right">{t('Open, with VAT')}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {o.rows.map((r) => (
@@ -156,7 +156,7 @@ function OpenTab({ partnerId, side }: { partnerId: string; side: Side }) {
                 ))}
               </TableBody>
               <TableFooter>{Object.entries(o.totals).map(([cur, v]) => (
-                <TableRow key={cur}><TableCell colSpan={6}>{t('Total open')}</TableCell><TableCell className="text-right tabular-nums">{formatMoney(v, cur)}</TableCell></TableRow>
+                <TableRow key={cur}><TableCell colSpan={6}>{t('Total open, with VAT')}</TableCell><TableCell className="text-right tabular-nums">{formatMoney(v, cur)}</TableCell></TableRow>
               ))}</TableFooter>
             </Table>
           </div>

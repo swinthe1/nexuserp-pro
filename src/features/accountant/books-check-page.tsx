@@ -33,7 +33,7 @@ const LOOK: Record<string, { icon: LucideIcon; one: string; many: string; why: s
     detail: (d) => `NUI ${d}` },
   below_cost: { icon: TrendingDown, one: msg('{n} sale this week was under cost'), many: msg('{n} sales this week were under cost'),
     why: msg('Every piece sold under cost is a loss. Check the prices and discounts on these invoices.'),
-    detail: (d) => formatMoney(Number(d)) },
+    detail: (d) => t('Sold at {amount}, without VAT', { amount: formatMoney(Number(d)) }) },
   guard_waved: { icon: ShieldAlert, one: msg('{n} warning was waved through this week'), many: msg('{n} warnings were waved through this week'),
     why: msg('Before posting, the guard warned and the person went on. Often that is right; when one person does it often, a few minutes together with them saves mistakes.'),
     detail: (d) => tn(Number(d), '{n} time', '{n} times') },

@@ -20,7 +20,7 @@ export function LegacySales({ data }: { data: HistoryLive }) {
         <div>
           <CardTitle>{t('Sales today by store')}</CardTitle>
           <CardDescription>
-            {t('{amount} from {n} receipts today, from the old program. Updates by itself.', { amount: formatMoney(data.today, cur), n: num(data.today_receipts) })}
+            {t('{amount} with VAT from {n} receipts today, from the old program. Updates by itself.', { amount: formatMoney(data.today, cur), n: num(data.today_receipts) })}
           </CardDescription>
         </div>
         <Button variant="ghost" size="sm" asChild className="shrink-0"><Link to="/history">{t('History')} <ArrowRight /></Link></Button>
@@ -39,7 +39,7 @@ export function LegacySales({ data }: { data: HistoryLive }) {
                   <div className="h-1 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${(num(s.today) / max) * 100}%` }} /></div>
                   <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                     <span>{tn(num(s.today_receipts), '{n} receipt today', '{n} receipts today')}</span>
-                    <span>{t('{amount} this month', { amount: formatMoney(s.month ?? 0, cur) })}</span>
+                    <span>{t('{amount} this month, with VAT', { amount: formatMoney(s.month ?? 0, cur) })}</span>
                     {s.from_exits && <span title={t('This till records sales only as stock exits; they are valued at the sales price.')}>{t('from stock exits')}</span>}
                   </div>
                 </li>
