@@ -45,7 +45,7 @@ export function VendorPricesTable({ vendorId }: { vendorId?: string }) {
     ...(vendorId ? [] : [{ id: 'vendor', accessorFn: (r: VendorProductRow) => r.vendor?.name ?? '', filterFn: inFilter, header: ({ column }) => <ColumnHeader column={column} title={t('Vendor')} />, meta: { label: t('Vendor') },
       cell: ({ row: { original: r } }: { row: { original: VendorProductRow } }) => <span className="inline-flex items-center gap-1.5">{r.vendor?.name}{r.is_preferred && <Star className="size-3.5 fill-current text-warning" aria-label={t('Preferred')} />}</span> } as ColumnDef<VendorProductRow>]),
     { accessorKey: 'vendor_sku', header: t("Vendor's code"), meta: { label: t("Vendor's code") }, cell: ({ getValue }) => (getValue() as string) || '—' },
-    { accessorKey: 'price', header: ({ column }) => <ColumnHeader column={column} title={t('Price')} />, meta: { label: t('Price'), align: 'right' }, cell: ({ row: { original: r } }) => <span className="tabular">{formatMoney(r.price)} <span className="text-muted-foreground">{r.currency_code}</span></span> },
+    { accessorKey: 'price', header: ({ column }) => <ColumnHeader column={column} title={t('Price (without VAT)')} />, meta: { label: t('Price (without VAT)'), align: 'right' }, cell: ({ row: { original: r } }) => <span className="tabular">{formatMoney(r.price)} <span className="text-muted-foreground">{r.currency_code}</span></span> },
     { accessorKey: 'min_order_qty', header: t('Minimum order'), meta: { label: t('Minimum order'), align: 'right' }, cell: ({ getValue }) => formatQty(getValue() as number) },
     { accessorKey: 'lead_time_days', header: t('Delivery time'), meta: { label: t('Delivery time (days)'), align: 'right' }, cell: ({ getValue }) => t('{n} days', { n: getValue() as number }) },
     ...(vendorId ? [{ accessorKey: 'is_preferred', header: t('Preferred'), meta: { label: t('Preferred') }, cell: ({ getValue }: { getValue: () => unknown }) => getValue() ? <Badge variant="warning"><Star className="size-3" /> {t('Preferred')}</Badge> : null } as ColumnDef<VendorProductRow>] : []),
@@ -104,7 +104,7 @@ function VendorPriceDialog({ open, row, vendorId, onClose, onDelete }: { open: b
               <FormItem className="col-span-2"><FormLabel>{t('Item')}</FormLabel><FormControl><VariantPicker value={field.value} onChange={(v) => field.onChange(v)} disabled={!!row} /></FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="price" render={({ field }) => (
-              <FormItem><FormLabel>{t('Price')}</FormLabel><FormControl><Input type="number" step="any" className="tabular" {...field} /></FormControl><FormMessage /></FormItem>
+              <FormItem><FormLabel>{t('Price (without VAT)')}</FormLabel><FormControl><Input type="number" step="any" className="tabular" {...field} /></FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="currency_code" render={({ field }) => (
               <FormItem><FormLabel>{t('Currency')}</FormLabel>

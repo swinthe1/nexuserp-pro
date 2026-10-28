@@ -65,7 +65,7 @@ export function ReceiptAfterActions({ doc, nameOf }: { doc: Receipt; nameOf: (va
             <li key={r.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5">
               <span className="font-medium">{r.number}</span>
               <span className="text-muted-foreground">{formatDate(r.return_date)} · {r.reason}</span>
-              <span className="ml-auto tabular-nums">{formatMoney(r.total_cost, company?.base_currency)}</span>
+              <span className="ml-auto tabular-nums">{t('At cost {amount}, without VAT', { amount: formatMoney(r.total_cost, company?.base_currency) })}</span>
               {r.vendor_credit_id ? <Button size="sm" variant="ghost" asChild><Link to={`/procurement/bills/${r.vendor_credit_id}`}>{t('Credit note')}</Link></Button>
                 : can('invoicing.write') && <Button size="sm" variant="outline" loading={credit.isPending && credit.variables === r.id} onClick={() => credit.mutate(r.id)}>{t('Create the credit note')}</Button>}
             </li>

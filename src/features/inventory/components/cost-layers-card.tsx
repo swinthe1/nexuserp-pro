@@ -23,7 +23,7 @@ export function CostLayersCard({ variantIds }: { variantIds: string[] }) {
       <CardContent className="p-0">
         <Table>
           <TableHeader><TableRow className="hover:bg-transparent">
-            <TableHead>{t('Date')}</TableHead><TableHead>{t('Document')}</TableHead><TableHead className="text-right">{t('Left')}</TableHead><TableHead className="text-right">{t('Unit cost')}</TableHead>
+            <TableHead>{t('Date')}</TableHead><TableHead>{t('Document')}</TableHead><TableHead className="text-right">{t('Left')}</TableHead><TableHead className="text-right">{t('Unit cost (without VAT)')}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {q.data.map((l, i) => (

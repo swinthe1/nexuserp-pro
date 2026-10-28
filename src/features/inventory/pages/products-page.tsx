@@ -83,8 +83,8 @@ export function ProductsPage() {
     { accessorKey: 'on_hand', header: ({ column }) => <ColumnHeader column={column} title={t('On hand')} />, meta: { label: t('On hand'), align: 'right' }, cell: ({ getValue }) => formatQty(getValue() as number) },
     { accessorKey: 'reserved', header: ({ column }) => <ColumnHeader column={column} title={t('Reserved')} />, meta: { label: t('Reserved'), align: 'right' }, cell: ({ getValue }) => formatQty(getValue() as number) },
     { accessorKey: 'incoming', header: ({ column }) => <ColumnHeader column={column} title={t('Incoming')} />, meta: { label: t('Incoming'), align: 'right' }, cell: ({ getValue }) => formatQty(getValue() as number) },
-    { accessorKey: 'sales_price', header: ({ column }) => <ColumnHeader column={column} title={t('Price')} />, meta: { label: t('Sales price'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
-    { accessorKey: 'avg_cost', header: ({ column }) => <ColumnHeader column={column} title={t('Avg cost')} />, meta: { label: t('Average cost'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number, undefined, 2) },
+    { accessorKey: 'sales_price', header: ({ column }) => <ColumnHeader column={column} title={t('Selling price (without VAT)')} />, meta: { label: t('Selling price (without VAT)'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
+    { accessorKey: 'avg_cost', header: ({ column }) => <ColumnHeader column={column} title={t('Avg cost (without VAT)')} />, meta: { label: t('Average cost (without VAT)'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number, undefined, 2) },
     { accessorKey: 'stock_value', header: ({ column }) => <ColumnHeader column={column} title={t('Value at cost')} />, meta: { label: t('Value at cost ({currency})', { currency: cur }), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
     {
       accessorKey: 'last_sold', header: ({ column }) => <ColumnHeader column={column} title={t('Last sold')} />, meta: { label: t('Last sold'), align: 'right' },

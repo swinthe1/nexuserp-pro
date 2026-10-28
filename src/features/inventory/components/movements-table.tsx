@@ -88,7 +88,7 @@ export function MovementsTable({ productId, tableKey = 'inventory.movements' }: 
         </span>
       ),
     },
-    { accessorKey: 'unit_cost', header: t('Unit cost'), meta: { label: t('Unit cost'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
+    { accessorKey: 'unit_cost', header: t('Unit cost (without VAT)'), meta: { label: t('Unit cost (without VAT)'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
     { accessorKey: 'total_cost', header: ({ column }) => <ColumnHeader column={column} title={t('Value at cost')} />, meta: { label: t('Value at cost'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
     {
       accessorKey: 'reference', header: t('Document'), meta: { label: t('Document') },

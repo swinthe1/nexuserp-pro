@@ -28,7 +28,7 @@ const vendorCol = (): ColumnDef<Row> => ({
   cell: ({ getValue }) => <span className="block max-w-[240px] truncate">{(getValue() as string) || '—'}</span>,
 })
 const totalCol = (base: string): ColumnDef<Row> => ({
-  accessorKey: 'total', header: ({ column }) => <ColumnHeader column={column} title={t('Total')} />, meta: { label: t('Total'), align: 'right', exportValue: (r) => num(r.total) },
+  accessorKey: 'total', header: ({ column }) => <ColumnHeader column={column} title={t('Total (with VAT)')} />, meta: { label: t('Total (with VAT)'), align: 'right', exportValue: (r) => num(r.total) },
   cell: ({ row: { original: r } }) => <span className="tabular">{formatMoney(r.total as number)} <span className="text-muted-foreground">{r.currency_code !== base ? r.currency_code : ''}</span></span>,
 })
 
@@ -52,7 +52,7 @@ const buildCfg = (): Record<ProcKind, Cfg> => ({
       { id: 'warehouse', accessorFn: (r) => td(nm(r.warehouse)), header: t('For warehouse'), meta: { label: t('Warehouse') }, cell: ({ getValue }) => (getValue() as string) || '—' },
       dateCol('required_date', t('Needed by')),
       { id: 'lines', accessorFn: (r) => (r.lines as { count: number }[] | null)?.[0]?.count ?? 0, header: t('Items'), meta: { label: t('Items'), align: 'right' } },
-      { accessorKey: 'estimated_total', header: ({ column }) => <ColumnHeader column={column} title={t('Estimate')} />, meta: { label: t('Estimate'), align: 'right' }, cell: ({ getValue }) => <span className="tabular">{formatMoney(getValue() as number)}</span> },
+      { accessorKey: 'estimated_total', header: ({ column }) => <ColumnHeader column={column} title={t('Estimate (without VAT)')} />, meta: { label: t('Estimate (without VAT)'), align: 'right' }, cell: ({ getValue }) => <span className="tabular">{formatMoney(getValue() as number)}</span> },
     ],
   },
   orders: {

@@ -197,9 +197,9 @@ function ReceiptForm({ doc }: { doc?: ReceiptDoc }) {
                   <TableHead className="min-w-[150px]">{t('Location')}</TableHead>
                   <TableHead className="min-w-[150px]">{t('Lot')}</TableHead>
                   <TableHead className="w-24 text-right">{t('Qty')}</TableHead>
-                  <TableHead className="w-32 text-right">{t('Unit price ({currency})', { currency: currency ?? base ?? '' })}</TableHead>
+                  <TableHead className="w-32 text-right">{t('Unit price without VAT ({currency})', { currency: currency ?? base ?? '' })}</TableHead>
                   <TableHead className="w-28">QC</TableHead>
-                  <TableHead className="w-28 text-right">{posted ? t('Unit cost ({currency})', { currency: base ?? '' }) : t('Line value')}</TableHead>
+                  <TableHead className="w-28 text-right">{posted ? t('Unit cost without VAT ({currency})', { currency: base ?? '' }) : t('Line value (without VAT)')}</TableHead>
                   <TableHead className="w-10" />
                 </TableRow></TableHeader>
                 <TableBody>
@@ -235,7 +235,7 @@ function ReceiptForm({ doc }: { doc?: ReceiptDoc }) {
                         <TableCell>
                           <FormField control={form.control} name={`lines.${i}.unit_price`} render={({ field }) => (
                             <FormItem><FormControl>
-                              <Input type="number" step="any" min="0" className="h-9 min-w-[88px] text-right" name={field.name} aria-label={t('Unit price, line {n}', { n: i + 1 })}
+                              <Input type="number" step="any" min="0" className="h-9 min-w-[88px] text-right" name={field.name} aria-label={t('Unit price without VAT, line {n}', { n: i + 1 })}
                                 value={isReturn ? '' : field.value ?? ''} onChange={field.onChange} disabled={field.disabled || isReturn}
                                 title={isReturn ? t('A return comes back at the average cost') : undefined}
                                 placeholder={isReturn ? t('Average cost') : pl ? formatMoney(num(pl.unit_price) * (1 - num(pl.discount_pct) / 100)) : '0.00'} />
@@ -271,9 +271,9 @@ function ReceiptForm({ doc }: { doc?: ReceiptDoc }) {
             rows={[
               [t('Lines'), (watchedLines ?? []).length],
               [t('Units'), formatQty((watchedLines ?? []).reduce((s, l) => s + num(l.quantity), 0))],
-              [t('Value ({currency})', { currency: currency ?? base ?? '' }), formatMoney(total)],
-              ...(foreign ? [[t('Value ({currency})', { currency: base ?? '' }), formatMoney(total * num(rate))] as [string, string]] : []),
-              ...(posted ? [[t('Recorded value'), formatMoney(doc.total_value, base)] as [string, string]] : []),
+              [t('Value without VAT ({currency})', { currency: currency ?? base ?? '' }), formatMoney(total)],
+              ...(foreign ? [[t('Value without VAT ({currency})', { currency: base ?? '' }), formatMoney(total * num(rate))] as [string, string]] : []),
+              ...(posted ? [[t('Recorded value at purchase price (without VAT)'), formatMoney(doc.total_value, base)] as [string, string]] : []),
               ...(doc?.purchase_order_id && doc.purchase_order
                 ? [[t('Purchase order'), <Link key="po" className="text-primary hover:underline" to={`/procurement/orders/${doc.purchase_order_id}`}>{doc.purchase_order.number}</Link>] as [string, React.ReactNode]]
                 : []),

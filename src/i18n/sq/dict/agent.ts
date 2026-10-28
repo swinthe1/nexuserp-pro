@@ -84,7 +84,7 @@ export default {
   '{n} product in the order': '{n} artikull në porosi',
   '{n} products in the order': '{n} artikuj në porosi',
   'No product matches': 'Asnjë artikull nuk përputhet',
-  'Total with VAT': 'Gjithsej me TVSH',
+  'Total with VAT': 'Totali me TVSH',
   'About, with VAT': 'Afërsisht, me TVSH',
   'Review and send': 'Shiko dhe dërgo',
   'Send the order': 'Dërgo porosinë',

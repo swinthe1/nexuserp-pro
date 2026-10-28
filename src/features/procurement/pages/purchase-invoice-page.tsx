@@ -340,17 +340,17 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
                 <th className="w-8 px-2 py-2 font-medium">#</th>
                 <th className="px-2 py-2 font-medium">{t('Item')}</th>
                 <th className="w-20 px-2 py-2 text-right font-medium">{t('Qty')}</th>
-                <th className="w-24 px-2 py-2 text-right font-medium">{t('Purchase price')}</th>
+                <th className="w-24 px-2 py-2 text-right font-medium">{t('Purchase price (without VAT)')}</th>
                 <th className="w-16 px-2 py-2 text-right font-medium">{t('Disc. %')}</th>
                 <th className="w-16 px-2 py-2 text-right font-medium">{t('Extra %')}</th>
-                <th className="w-24 px-2 py-2 text-right font-medium">{t('Cost')}</th>
-                <th className="w-24 px-2 py-2 text-right font-medium">{t('Avg. cost now')}</th>
+                <th className="w-24 px-2 py-2 text-right font-medium">{t('Cost (without VAT)')}</th>
+                <th className="w-24 px-2 py-2 text-right font-medium">{t('Avg. cost now (without VAT)')}</th>
                 <th className="w-24 px-2 py-2 font-medium">{t('VAT')}</th>
                 <th className="w-24 px-2 py-2 text-right font-medium">{t('Without VAT')}</th>
                 <th className="w-24 px-2 py-2 text-right font-medium">{t('With VAT')}</th>
-                <th className="w-24 px-2 py-2 text-right font-medium">{t('Selling price now')}</th>
-                <th className="w-28 px-2 py-2 text-right font-medium">{t('Recommended')}</th>
-                <th className="w-28 px-2 py-2 text-right font-medium">{t('New selling price')}</th>
+                <th className="w-24 px-2 py-2 text-right font-medium">{t('Selling price now (with VAT)')}</th>
+                <th className="w-28 px-2 py-2 text-right font-medium">{t('Recommended (with VAT)')}</th>
+                <th className="w-28 px-2 py-2 text-right font-medium">{t('New selling price (with VAT)')}</th>
                 <th className="w-20 px-2 py-2 text-right font-medium" title={basis === 'margin' ? t('Margin on the selling price') : t('Margin on the cost')}>{t('Margin %')}</th>
                 <th className="w-8" />
               </tr>
@@ -384,7 +384,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
                         onChange={(v) => upd(c.r.key, { pack: v.pack_id, pq: v.pack_qty, ...(v.quantity ? { qty: String(v.quantity) } : {}) })} /></td>
                     <td className="px-1 py-1"><Input data-nav inputMode="decimal" className={cn('h-8 min-w-[88px] text-right tabular-nums', lastChanged && 'border-amber-500')} value={c.r.price}
                       title={lastChanged ? t('Last time {price}', { price: fmt(num(c.i!.last!.price), 4) }) : undefined}
-                      onChange={(e) => upd(c.r.key, { price: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Purchase price')} /></td>
+                      onChange={(e) => upd(c.r.key, { price: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Purchase price (without VAT)')} /></td>
                     <td className="px-1 py-1"><Input data-nav inputMode="decimal" className="h-8 min-w-[56px] text-right tabular-nums" value={c.r.d1} placeholder="0" onChange={(e) => upd(c.r.key, { d1: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Disc. %')} /></td>
                     <td className="px-1 py-1"><Input data-nav inputMode="decimal" className="h-8 min-w-[56px] text-right tabular-nums" value={c.r.d2} placeholder="0" onChange={(e) => upd(c.r.key, { d2: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Extra %')} /></td>
                     <td className="px-2 py-2 text-right tabular-nums">{fmt(c.unit, 4)}</td>
@@ -414,7 +414,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
                       ) : <span className="px-1.5 text-muted-foreground">{c.i ? '—' : '…'}</span>}
                     </td>
                     <td className="px-1 py-1"><Input data-nav inputMode="decimal" className={cn('h-8 min-w-[88px] text-right tabular-nums', c.newGross != null && 'border-primary font-medium')} value={c.r.gross.startsWith('net:') ? '' : c.r.gross}
-                      placeholder={c.curGross == null ? '' : fmt(c.curGross)} onChange={(e) => upd(c.r.key, { gross: e.target.value, m: null })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('New selling price')} /></td>
+                      placeholder={c.curGross == null ? '' : fmt(c.curGross)} onChange={(e) => upd(c.r.key, { gross: e.target.value, m: null })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('New selling price (with VAT)')} /></td>
                     <td className="px-1 py-1">
                       <Input data-nav inputMode="decimal" aria-label={t('Margin %')} disabled={!c.i || c.costBase <= 0}
                         className={cn('h-8 min-w-[64px] text-right tabular-nums', c.markup != null && c.markup < 0 ? 'font-medium text-destructive' : c.markup != null && c.markup < 5 ? 'text-amber-700 dark:text-amber-400' : '')}
@@ -433,16 +433,16 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
         <div className="grid gap-6 border-t p-4 md:grid-cols-2">
           <dl className="grid content-start gap-1 text-sm">
             <div className="flex justify-between"><dt className="text-muted-foreground">{t('Selling value without VAT')}</dt><dd className="tabular-nums">{formatMoney(tot.sale, base)}</dd></div>
-            <div className="flex justify-between"><dt className="text-muted-foreground">{t('Cost of the goods')}</dt><dd className="tabular-nums">{formatMoney(tot.cost, base)}</dd></div>
-            <div className="flex justify-between font-medium"><dt>{t('Difference (margin)')}</dt>
+            <div className="flex justify-between"><dt className="text-muted-foreground">{t('Cost of the goods (without VAT)')}</dt><dd className="tabular-nums">{formatMoney(tot.cost, base)}</dd></div>
+            <div className="flex justify-between font-medium"><dt>{t('Difference (margin, without VAT)')}</dt>
               <dd className={cn('tabular-nums', tot.sale - tot.cost < 0 && 'text-destructive')}>{formatMoney(tot.sale - tot.cost, base)}{tot.cost > 0 && tot.sale > 0 && ` · ${fmt(marginOf(tot.sale, tot.cost, basis) ?? 0)} %`}</dd></div>
           </dl>
           <dl className="grid content-start gap-1 text-sm md:ml-auto md:w-80">
-            <div className="flex justify-between"><dt className="text-muted-foreground">{t('Invoice gross')}</dt><dd className="tabular-nums">{fmt(tot.gross)}</dd></div>
+            <div className="flex justify-between"><dt className="text-muted-foreground">{t('Before discount (without VAT)')}</dt><dd className="tabular-nums">{fmt(tot.gross)}</dd></div>
             <div className="flex justify-between"><dt className="text-muted-foreground">{t('Discounts')}</dt><dd className="tabular-nums">−{fmt(tot.gross - tot.net)}</dd></div>
-            <div className="flex justify-between"><dt className="text-muted-foreground">{t('Without VAT')}</dt><dd className="tabular-nums">{fmt(tot.net)}</dd></div>
+            <div className="flex justify-between"><dt className="text-muted-foreground">{t('Amount without VAT')}</dt><dd className="tabular-nums">{fmt(tot.net)}</dd></div>
             <div className="flex justify-between"><dt className="text-muted-foreground">{t('VAT')}</dt><dd className="tabular-nums">{fmt(tot.vat)}</dd></div>
-            <div className="flex justify-between border-t pt-1 text-base font-semibold"><dt>{t('Total')}</dt><dd className="tabular-nums">{formatMoney(tot.net + tot.vat, h.currency_code)}</dd></div>
+            <div className="flex justify-between border-t pt-1 text-base font-semibold"><dt>{t('Total (with VAT)')}</dt><dd className="tabular-nums">{formatMoney(tot.net + tot.vat, h.currency_code)}</dd></div>
           </dl>
         </div>
       </Card>
@@ -456,7 +456,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
             </DialogHeader>
             <ul className="grid gap-1.5 text-sm">
               <li>· {t('{n} items come into {warehouse}', { n: rows.length, warehouse: td(warehouses.data?.find((w) => w.id === h.warehouse_id)?.name ?? '') })}</li>
-              <li>· {t('The invoice of {amount} is posted to {vendor}', { amount: formatMoney(tot.net + tot.vat, h.currency_code), vendor: vendor?.name ?? '' })}</li>
+              <li>· {t('The invoice of {amount} with VAT is posted to {vendor}', { amount: formatMoney(tot.net + tot.vat, h.currency_code), vendor: vendor?.name ?? '' })}</li>
               {changing > 0 && <li>· {tn(changing, '{n} selling price changes', '{n} selling prices change')}</li>}
               {payBank && <li>· {t('Paid now from {name}', { name: td(payBank.name) })}</li>}
             </ul>

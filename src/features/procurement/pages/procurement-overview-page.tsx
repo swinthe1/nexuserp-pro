@@ -52,11 +52,11 @@ export function ProcurementOverviewPage() {
       />
       {ov.isError && <Card className="mb-3"><ErrorState compact error={ov.error} onRetry={() => void ov.refetch()} /></Card>}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label={t('Spend')} value={formatMoney(d?.spend)} loading={ov.isLoading} href="/procurement/bills" hint={tn(d?.bill_count ?? 0, '{n} bill', '{n} bills')} />
-        <StatCard label={t('On order')} value={formatMoney(d?.open_po_value)} loading={ov.isLoading} href="/procurement/orders" tone={d?.late_count ? 'warning' : 'default'}
+        <StatCard label={t('Spend (without VAT)')} value={formatMoney(d?.spend)} loading={ov.isLoading} href="/procurement/bills" hint={tn(d?.bill_count ?? 0, '{n} bill', '{n} bills')} />
+        <StatCard label={t('On order (without VAT)')} value={formatMoney(d?.open_po_value)} loading={ov.isLoading} href="/procurement/orders" tone={d?.late_count ? 'warning' : 'default'}
           hint={d?.late_count ? tn(d.late_count, '{n} order past the expected date', '{n} orders past the expected date') : t('Nothing late')} />
-        <StatCard label={t('Received, not billed')} value={formatMoney(d?.to_bill_value)} loading={ov.isLoading} hint={t('Bills to expect from vendors')} />
-        <StatCard label={t('Bills overdue')} value={formatMoney(d?.ap_overdue)} loading={ov.isLoading} tone={d?.ap_overdue_count ? 'destructive' : 'default'} href="/procurement/bills"
+        <StatCard label={t('Received, not billed (without VAT)')} value={formatMoney(d?.to_bill_value)} loading={ov.isLoading} hint={t('Bills to expect from vendors')} />
+        <StatCard label={t('Bills overdue (with VAT)')} value={formatMoney(d?.ap_overdue)} loading={ov.isLoading} tone={d?.ap_overdue_count ? 'destructive' : 'default'} href="/procurement/bills"
           hint={t('{amount} due in the next 7 days', { amount: formatMoney(d?.ap_due_7) })} />
       </div>
       <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -70,7 +70,7 @@ export function ProcurementOverviewPage() {
 
       <div className="mt-4 grid gap-4 grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_420px]">
         <Card>
-          <CardHeader><CardTitle>{t('Spend by month')}</CardTitle><CardDescription>{t('Last 12 months, {currency}', { currency: cur })}</CardDescription></CardHeader>
+          <CardHeader><CardTitle>{t('Spend by month')}</CardTitle><CardDescription>{t('Last 12 months, {currency} without VAT', { currency: cur })}</CardDescription></CardHeader>
           <CardContent>
             {ov.isLoading ? <Skeleton className="h-64" /> : (
               <div className="h-64">
@@ -79,7 +79,7 @@ export function ProcurementOverviewPage() {
                     <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
                     <XAxis dataKey="month" tick={axisTick} tickLine={false} axisLine={false} />
                     <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatCompact(v)} width={52} />
-                    <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }} formatter={(v: number) => [formatMoney(v, cur), t('Spend')]} />
+                    <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }} formatter={(v: number) => [formatMoney(v, cur), t('Spend (without VAT)')]} />
                     <Bar dataKey="spend" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -95,7 +95,7 @@ export function ProcurementOverviewPage() {
           <CardContent className="p-0">
             {ov.isLoading ? <Skeleton className="mx-4 mb-4 h-40" /> : !d?.top_vendors.length ? <p className="px-4 pb-6 text-[13px] text-muted-foreground">{t('No bills in this period.')}</p> : (
               <Table>
-                <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Vendor')}</TableHead><TableHead className="text-right">{t('Spend')}</TableHead><TableHead className="text-right">{t('On time')}</TableHead><TableHead className="text-right">{t('Delivery time')}</TableHead></TableRow></TableHeader>
+                <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Vendor')}</TableHead><TableHead className="text-right">{t('Spend (without VAT)')}</TableHead><TableHead className="text-right">{t('On time')}</TableHead><TableHead className="text-right">{t('Delivery time')}</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {d.top_vendors.map((v) => (
                     <TableRow key={v.id}>
@@ -112,7 +112,7 @@ export function ProcurementOverviewPage() {
         </Card>
       </div>
       <Card className="mt-4">
-        <CardHeader><CardTitle>{t('Top purchased items')}</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t('Top purchased items')}</CardTitle><CardDescription>{t('By spend without VAT')}</CardDescription></CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {ov.isLoading && <Skeleton className="h-24" />}
           {d && !d.top_products.length && <p className="text-[13px] text-muted-foreground">{t('No bills in this period.')}</p>}

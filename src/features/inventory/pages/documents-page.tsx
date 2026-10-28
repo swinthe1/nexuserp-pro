@@ -94,7 +94,7 @@ const CONFIG: Record<DocKind, KindConfig> = {
       dateCol('landed_cost_date'),
       { accessorKey: 'allocation_method', header: t('Split by'), meta: { label: t('Split by') }, cell: ({ getValue }) => tEnum(`alloc_${getValue() as string}`) },
       { id: 'receipts', accessorFn: (r) => ((r.receipts as { receipt: { number: string } }[] | null) ?? []).map((x) => x.receipt.number).join(', '), header: t('Goods receipts'), meta: { label: t('Goods receipts') } },
-      { accessorKey: 'total_amount', header: ({ column }) => <ColumnHeader column={column} title={t('Amount')} />, meta: { label: t('Amount ({currency})', { currency: cur }), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
+      { accessorKey: 'total_amount', header: ({ column }) => <ColumnHeader column={column} title={t('Amount (without VAT)')} />, meta: { label: t('Amount without VAT ({currency})', { currency: cur }), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
     ],
   },
 }

@@ -36,7 +36,7 @@ export function PriceSuggestions() {
     },
     { id: 'category', accessorFn: (r) => r.category ?? '', filterFn: inFilter, header: t('Category'), meta: { label: t('Category') }, cell: ({ getValue }) => td(getValue() as string) || '—' },
     {
-      id: 'cost', accessorFn: (r) => r.cost_after, header: t('Cost'), meta: { label: t('Cost'), align: 'right' },
+      id: 'cost', accessorFn: (r) => r.cost_after, header: t('Cost (without VAT)'), meta: { label: t('Cost (without VAT)'), align: 'right' },
       cell: ({ row: { original: r } }) => (
         <span className="tabular">{r.cost_before != null && <span className="text-muted-foreground">{formatMoney(r.cost_before)} → </span>}{formatMoney(r.cost_after)}</span>
       ),
@@ -45,9 +45,9 @@ export function PriceSuggestions() {
       id: 'rule', accessorFn: (r) => r.margin_pct, header: t('Target'), meta: { label: t('Target') },
       cell: ({ row: { original: r } }) => <span className="whitespace-nowrap">{r.basis === 'margin' ? t('{pct}% margin', { pct: num(r.margin_pct) }) : t('{pct}% over cost', { pct: num(r.margin_pct) })}</span>,
     },
-    { id: 'now', accessorFn: (r) => r.gross_now, header: t('Price now'), meta: { label: t('Price now'), align: 'right' }, cell: ({ getValue }) => <span className="tabular text-muted-foreground">{getValue() == null ? '—' : formatMoney(getValue() as number)}</span> },
+    { id: 'now', accessorFn: (r) => r.gross_now, header: t('Price now (with VAT)'), meta: { label: t('Price now (with VAT)'), align: 'right' }, cell: ({ getValue }) => <span className="tabular text-muted-foreground">{getValue() == null ? '—' : formatMoney(getValue() as number)}</span> },
     {
-      id: 'new', accessorFn: (r) => r.gross_new, header: ({ column }) => <ColumnHeader column={column} title={t('New price')} />, meta: { label: t('New price'), align: 'right', mobile: 'amount' },
+      id: 'new', accessorFn: (r) => r.gross_new, header: ({ column }) => <ColumnHeader column={column} title={t('New price (with VAT)')} />, meta: { label: t('New price (with VAT)'), align: 'right', mobile: 'amount' },
       cell: ({ row: { original: r } }) => {
         const p = pctChange(r)
         return (
@@ -120,7 +120,7 @@ function OtherPriceDialog({ s, onClose, onSave, busy }: { s: PriceSuggestion; on
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-sm">
         <DialogHeader><DialogTitle>{s.name}</DialogTitle>
-          <DialogDescription>{t('Cost {cost} · suggested {price}', { cost: formatMoney(s.cost_after), price: formatMoney(s.gross_new) })}</DialogDescription></DialogHeader>
+          <DialogDescription>{t('Cost {cost} without VAT · suggested {price} with VAT', { cost: formatMoney(s.cost_after), price: formatMoney(s.gross_new) })}</DialogDescription></DialogHeader>
         <form className="grid gap-3" onSubmit={(e) => { e.preventDefault(); if (gross > 0) onSave(gross) }}>
           <div className="grid gap-1.5">
             <Label htmlFor="op">{t('Selling price, VAT included')}</Label>

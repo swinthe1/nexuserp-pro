@@ -243,7 +243,7 @@ function RunResultCard({ result, onClose }: { result: RunResult; onClose: () => 
             <div key={po.id} className="flex flex-wrap items-center gap-2">
               <Link className="font-medium text-primary hover:underline" to={`/procurement/orders/${po.id}`}>{po.number}</Link>
               <span className="text-muted-foreground">{po.vendor}</span><StatusBadge status={po.status} />
-              <span className="ml-auto tabular">{formatMoney(po.total, company?.base_currency)}</span>
+              <span className="ml-auto tabular">{t('{amount} with VAT', { amount: formatMoney(po.total, company?.base_currency) })}</span>
             </div>
           ))}
           {result.transfers.map((x) => <div key={x.id}><Link className="font-medium text-primary hover:underline" to={`/inventory/transfers/${x.id}`}>{x.number}</Link> <span className="text-muted-foreground">{t('draft transfer')}</span></div>)}

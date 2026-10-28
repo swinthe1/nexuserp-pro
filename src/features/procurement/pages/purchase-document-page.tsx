@@ -349,10 +349,10 @@ function PoSidePanel({ doc, currency, base }: { doc?: PoDoc; currency: string; b
       <Card>
         <CardHeader><CardTitle>{t('Summary')}</CardTitle></CardHeader>
         <CardContent className="grid gap-2 text-[13px]">
-          <Row k={t('Net')}>{formatMoney(doc.subtotal)} {currency}</Row>
+          <Row k={t('Amount without VAT')}>{formatMoney(doc.subtotal)} {currency}</Row>
           <Row k={t('VAT')}>{formatMoney(doc.tax_total)} {currency}</Row>
-          <Row k={t('Total')}><span className="text-base">{formatMoney(doc.total)} {currency}</span></Row>
-          {currency !== base && <Row k={t('Total ({currency})', { currency: base })}>{formatMoney(doc.total_base)}</Row>}
+          <Row k={t('Total (with VAT)')}><span className="text-base">{formatMoney(doc.total)} {currency}</span></Row>
+          {currency !== base && <Row k={t('Total with VAT ({currency})', { currency: base })}>{formatMoney(doc.total_base)}</Row>}
           {doc.status !== 'draft' && <>
             <div className="mt-1 border-t pt-2" />
             <Row k={t('Received')}>{ordered ? Math.round((received / ordered) * 100) : 0}%</Row>
@@ -645,16 +645,16 @@ function BillSidePanel({ doc, currency, base, matchStatus, vendorId }: { doc?: B
     <Card>
       <CardHeader><CardTitle>{t('Summary')}</CardTitle></CardHeader>
       <CardContent className="grid gap-2 text-[13px]">
-        <Row k={t('Net')}>{formatMoney(doc.subtotal)} {currency}</Row>
+        <Row k={t('Amount without VAT')}>{formatMoney(doc.subtotal)} {currency}</Row>
         <Row k={t('VAT')}>{formatMoney(doc.tax_total)} {currency}</Row>
-        <Row k={t('Total')}><span className="text-base">{formatMoney(doc.total)} {currency}</span></Row>
-        {currency !== base && <Row k={t('Total ({currency})', { currency: base })}>{formatMoney(doc.total_base)}</Row>}
+        <Row k={t('Total (with VAT)')}><span className="text-base">{formatMoney(doc.total)} {currency}</span></Row>
+        {currency !== base && <Row k={t('Total with VAT ({currency})', { currency: base })}>{formatMoney(doc.total_base)}</Row>}
         <Row k={t('Due date')}>{formatDate(doc.due_date)}</Row>
-        {doc.status === 'posted' && <Row k={t('Still to pay')}>{formatMoney(doc.amount_due)} {currency}</Row>}
+        {doc.status === 'posted' && <Row k={t('Still to pay (with VAT)')}>{formatMoney(doc.amount_due)} {currency}</Row>}
         {doc.document_type !== 'vendor_credit' && matchStatus && <Row k={t('Check against order')}><MatchBadge status={matchStatus} /></Row>}
         {(capitalized !== 0 || expensed !== 0) && <>
-          <Row k={t('Added to stock value')}>{formatMoney(capitalized)} {base}</Row>
-          {expensed !== 0 && <Row k={t('On goods already sold')}>{formatMoney(expensed)} {base}</Row>}
+          <Row k={t('Added to stock value (without VAT)')}>{formatMoney(capitalized)} {base}</Row>
+          {expensed !== 0 && <Row k={t('On goods already sold (without VAT)')}>{formatMoney(expensed)} {base}</Row>}
         </>}
         {(doc.order || doc.original || doc.receipt_id || (doc.credits?.length ?? 0) > 0) && (
           <div className="mt-1 grid gap-1.5 border-t pt-2">

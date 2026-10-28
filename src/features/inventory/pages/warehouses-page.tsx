@@ -99,6 +99,7 @@ export function WarehousesPage() {
               </span>
               <span className="text-right">
                 <span className="block text-[13px] tabular">{formatMoney(valueBy('warehouse_id', w.id))}</span>
+                <span className="block text-2xs text-muted-foreground">{t('at purchase price, without VAT')}</span>
                 {!w.is_active && <Badge variant="secondary">{t('Inactive')}</Badge>}
               </span>
             </button>
@@ -107,7 +108,7 @@ export function WarehousesPage() {
         {current ? (
           <Card>
             <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
-              <CardTitle>{td(current.name)} <span className="font-normal text-muted-foreground">· {tn(whLocations.length, '{n} location', '{n} locations')} · {formatMoney(valueBy('warehouse_id', current.id), company?.base_currency)}</span></CardTitle>
+              <CardTitle>{td(current.name)} <span className="font-normal text-muted-foreground">· {tn(whLocations.length, '{n} location', '{n} locations')} · {t('{amount} at purchase price, without VAT', { amount: formatMoney(valueBy('warehouse_id', current.id), company?.base_currency) })}</span></CardTitle>
               <Can perm="inventory.write">
                 <div className="flex gap-2">
                   <SimpleFormDialog trigger={<Button variant="ghost" size="sm"><Pencil /> {t('Edit')}</Button>} title={t('Edit {name}', { name: td(current.name) })} schema={warehouseSchema}

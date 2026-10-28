@@ -67,7 +67,7 @@ export function WorkOrdersPage() {
     { accessorKey: 'planned_start', header: ({ column }) => <ColumnHeader column={column} title={t('Start')} />, meta: { label: t('Planned start') }, cell: ({ getValue }) => formatDate(getValue() as string, true) },
     { accessorKey: 'planned_end', header: t('Due'), meta: { label: t('Due') }, cell: ({ row: { original: w } }) => <span className={cn(isLate(w) && 'text-destructive')}>{formatDate(w.planned_end, true)}</span> },
     { accessorKey: 'priority', header: t('Priority'), meta: { label: t('Priority'), align: 'right' } },
-    { id: 'cost', accessorFn: (w) => num(w.total_cost), header: t('Cost so far'), meta: { label: t('Cost so far'), align: 'right' }, cell: ({ getValue }) => <span className="tabular">{formatMoney(getValue() as number)}</span> },
+    { id: 'cost', accessorFn: (w) => num(w.total_cost), header: t('Cost so far (without VAT)'), meta: { label: t('Cost so far (without VAT)'), align: 'right' }, cell: ({ getValue }) => <span className="tabular">{formatMoney(getValue() as number)}</span> },
     { id: 'so', accessorFn: (w) => w.sales_order?.number ?? '', header: t('For order'), meta: { label: t('Sales order') } },
   ], [])
   return (
@@ -165,7 +165,7 @@ export function NewWorkOrderDialog({ onClose, initialBom, initialVariant, initia
         {bomId && num(qty) > 0 && (
           <div className="grid gap-2 rounded-lg border bg-muted/30 p-3 text-[13px]">
             <div className="flex flex-wrap items-baseline justify-between gap-2"><span className="font-medium">{t('What it needs')}</span>
-              {cost.data && <span className="text-muted-foreground">{t('Estimated cost')} <b className="tabular text-foreground">{formatMoney(cost.data.total)}</b> · {t('{cost} each', { cost: formatMoney(cost.data.unit) })}</span>}</div>
+              {cost.data && <span className="text-muted-foreground">{t('Estimated cost (without VAT)')} <b className="tabular text-foreground">{formatMoney(cost.data.total)}</b> · {t('{cost} each', { cost: formatMoney(cost.data.unit) })}</span>}</div>
             {first.map((r) => (
               <div key={r.path} className="flex items-center justify-between gap-3">
                 <span className="flex items-center gap-1.5">{r.sub_bom_id && <Layers className="size-3.5 text-primary" />}{r.name}</span>
@@ -270,9 +270,9 @@ function WorkOrderView({ w }: { w: WorkOrderDetail }) {
           <ProgressBar className="mt-2" done={num(w.quantity_produced)} total={num(w.quantity_planned)} />
           <div className="mt-1.5 text-xs text-muted-foreground">{num(w.quantity_scrapped) ? `${t('{qty} scrapped', { qty: formatQty(w.quantity_scrapped) })} · ` : ''}{w.output_lot ? <>{t('lot')} <Link className="text-primary hover:underline" to={`/wms/lots/${w.output_lot.id}`}>{w.output_lot.lot_number}</Link></> : t('no lot yet')}</div>
         </div>
-        <StatCard label={t('Cost so far')} value={formatMoney(w.total_cost)} hint={t('Planned {amount}', { amount: formatMoney(planned) })} tone={num(w.total_cost) > planned * 1.05 && planned > 0 ? 'warning' : 'default'} />
-        <StatCard label={t('Unit cost')} value={actualUnit == null ? '—' : formatMoney(actualUnit)} hint={t('Planned {amount} each', { amount: formatMoney(plannedUnit) })} />
-        <StatCard label={w.status === 'closed' ? t('Cost difference booked') : t('Still in production')} value={formatMoney(w.status === 'closed' ? w.variance_value : wip)}
+        <StatCard label={t('Cost so far (without VAT)')} value={formatMoney(w.total_cost)} hint={t('Planned {amount}', { amount: formatMoney(planned) })} tone={num(w.total_cost) > planned * 1.05 && planned > 0 ? 'warning' : 'default'} />
+        <StatCard label={t('Unit cost (without VAT)')} value={actualUnit == null ? '—' : formatMoney(actualUnit)} hint={t('Planned {amount} each', { amount: formatMoney(plannedUnit) })} />
+        <StatCard label={w.status === 'closed' ? t('Cost difference booked (without VAT)') : t('Still in production (without VAT)')} value={formatMoney(w.status === 'closed' ? w.variance_value : wip)}
           tone={w.status === 'closed' && num(w.variance_value) > 0 ? 'warning' : 'default'}
           hint={w.status === 'closed' ? t('Cost the output did not take') : t('Cost not yet moved to finished goods')} />
       </div>
@@ -318,7 +318,7 @@ function MaterialsTab({ w, rows, loading, live, onConsumeAll, consuming }: { w: 
           {loading ? <Skeleton className="m-4 h-32" /> : !rows?.length ? <p className="px-4 py-6 text-center text-[13px] text-muted-foreground">{t('This order needs no materials.')}</p> : (
             <Table>
               <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Material')}</TableHead><TableHead className="text-right">{t('Required|qty')}</TableHead><TableHead className="text-right">{t('Used')}</TableHead>
-                <TableHead className="w-40">{t('Progress')}</TableHead><TableHead className="text-right">{t('Free at {location}', { location: w.component_location?.code ?? '' })}</TableHead><TableHead className="text-right">{t('Unit cost')}</TableHead></TableRow></TableHeader>
+                <TableHead className="w-40">{t('Progress')}</TableHead><TableHead className="text-right">{t('Free at {location}', { location: w.component_location?.code ?? '' })}</TableHead><TableHead className="text-right">{t('Unit cost (without VAT)')}</TableHead></TableRow></TableHeader>
               <TableBody>
                 {(rows ?? []).map((m) => (
                   <TableRow key={m.material_id} className="hover:bg-transparent">
@@ -342,7 +342,7 @@ function MaterialsTab({ w, rows, loading, live, onConsumeAll, consuming }: { w: 
           <CardHeader className="py-3"><CardTitle>{t('Used so far')}</CardTitle><CardDescription>{t('Each line is stock moved into production at the average cost of that moment.')}</CardDescription></CardHeader>
           <CardContent className="overflow-x-auto p-0">
             <Table>
-              <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('When')}</TableHead><TableHead>{t('Material')}</TableHead><TableHead>{t('Lot')}</TableHead><TableHead className="text-right">{t('Quantity')}</TableHead><TableHead className="text-right">{t('Cost')}</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('When')}</TableHead><TableHead>{t('Material')}</TableHead><TableHead>{t('Lot')}</TableHead><TableHead className="text-right">{t('Quantity')}</TableHead><TableHead className="text-right">{t('Cost (without VAT)')}</TableHead></TableRow></TableHeader>
               <TableBody>{[...w.consumptions].sort((a, b) => b.consumed_at.localeCompare(a.consumed_at)).map((c) => (
                 <TableRow key={c.id} className="hover:bg-transparent"><TableCell className="text-[13px]">{formatDate(c.consumed_at, true)}</TableCell>
                   <TableCell>{c.variant?.name} <span className="text-xs text-muted-foreground">{c.variant?.sku}</span></TableCell>
@@ -387,7 +387,7 @@ function OutputTab({ w }: { w: WorkOrderDetail }) {
   return (
     <Card><CardContent className="overflow-x-auto p-0">
       <Table>
-        <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('When')}</TableHead><TableHead>{t('Type')}</TableHead><TableHead>{t('Lot')}</TableHead><TableHead className="text-right">{t('Quantity')}</TableHead><TableHead className="text-right">{t('Unit cost')}</TableHead><TableHead className="text-right">{t('Value')}</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('When')}</TableHead><TableHead>{t('Type')}</TableHead><TableHead>{t('Lot')}</TableHead><TableHead className="text-right">{t('Quantity')}</TableHead><TableHead className="text-right">{t('Unit cost (without VAT)')}</TableHead><TableHead className="text-right">{t('Value at cost (without VAT)')}</TableHead></TableRow></TableHeader>
         <TableBody>{outs.map((o) => (
           <TableRow key={o.id} className="hover:bg-transparent"><TableCell className="text-[13px]">{formatDate(o.produced_at, true)}</TableCell>
             <TableCell>{o.output_type === 'scrap' ? <Badge variant="destructive">{t('Scrap')}</Badge> : <Badge variant="success">{t('Finished')}</Badge>}</TableCell>
@@ -411,7 +411,7 @@ function CostTab({ w }: { w: WorkOrderDetail }) {
   return (
     <div className="grid gap-4 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_320px]">
       <Card>
-        <CardHeader className="pb-2"><CardTitle>{t('Planned against actual')}</CardTitle><CardDescription>{t('Planned cost is the recipe at release for {qty}. “Planned for output” scales it to what was actually made.', { qty: formatQty(w.quantity_planned) })}</CardDescription></CardHeader>
+        <CardHeader className="pb-2"><CardTitle>{t('Planned against actual (without VAT)')}</CardTitle><CardDescription>{t('Planned cost is the recipe at release for {qty}. “Planned for output” scales it to what was actually made.', { qty: formatQty(w.quantity_planned) })}</CardDescription></CardHeader>
         <CardContent className="overflow-x-auto p-0">
           <Table>
             <TableHeader><TableRow className="hover:bg-transparent"><TableHead /><TableHead className="text-right">{t('Planned')}</TableHead><TableHead className="text-right">{t('Planned for output')}</TableHead><TableHead className="text-right">{t('Actual')}</TableHead><TableHead className="text-right">{t('Difference')}</TableHead></TableRow></TableHeader>
@@ -427,7 +427,7 @@ function CostTab({ w }: { w: WorkOrderDetail }) {
         </CardContent>
       </Card>
       <Card>
-        <CardHeader className="pb-2"><CardTitle>{t('Where the cost went')}</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle>{t('Where the cost went (without VAT)')}</CardTitle></CardHeader>
         <CardContent className="grid gap-1.5 text-[13px]">
           <Row k={t('Booked into production')} v={formatMoney(ta)} />
           <Row k={t('Moved to finished goods')} v={`−${formatMoney(w.output_value)}`} />

@@ -233,7 +233,7 @@ function Structure({ bom, qty, setQty }: { bom: BomDetail; qty: string; setQty: 
         {rows.isLoading ? <Skeleton className="m-4 h-40" /> : rows.isError ? <ErrorState compact error={rows.error} onRetry={() => void rows.refetch()} /> : (
           <Table>
             <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Component')}</TableHead><TableHead className="text-right">{t('Per batch')}</TableHead><TableHead className="text-right">{t('Needed')}</TableHead>
-              <TableHead className="text-right">{t('Available')}</TableHead><TableHead className="text-right">{t('Unit cost')}</TableHead><TableHead className="text-right">{t('Cost')}</TableHead></TableRow></TableHeader>
+              <TableHead className="text-right">{t('Available')}</TableHead><TableHead className="text-right">{t('Unit cost (without VAT)')}</TableHead><TableHead className="text-right">{t('Cost (without VAT)')}</TableHead></TableRow></TableHeader>
             <TableBody>
               {(rows.data ?? []).map((r) => {
                 const short = !r.sub_bom_id && num(r.available) < num(r.quantity)
@@ -258,7 +258,7 @@ function Structure({ bom, qty, setQty }: { bom: BomDetail; qty: string; setQty: 
                 )
               })}
             </TableBody>
-            <TableFooter><TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="text-right font-medium">{t('Materials at current cost')}</TableCell><TableCell className="text-right tabular font-semibold">{formatMoney(total)}</TableCell></TableRow></TableFooter>
+            <TableFooter><TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="text-right font-medium">{t('Materials at current cost, without VAT')}</TableCell><TableCell className="text-right tabular font-semibold">{formatMoney(total)}</TableCell></TableRow></TableFooter>
           </Table>
         )}
       </CardContent>
@@ -273,7 +273,7 @@ function CostView({ bom, qty, setQty }: { bom: BomDetail; qty: string; setQty: (
   return (
     <div className="grid gap-4 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_340px]">
       <Card>
-        <CardHeader className="pb-2"><CardTitle>{t('Cost breakdown')}</CardTitle><CardDescription>{t('Materials at their current average cost; semi-finished products are costed from their own recipes, including their steps.')}</CardDescription></CardHeader>
+        <CardHeader className="pb-2"><CardTitle>{t('Cost breakdown (without VAT)')}</CardTitle><CardDescription>{t('Materials at their current average cost; semi-finished products are costed from their own recipes, including their steps.')}</CardDescription></CardHeader>
         <CardContent>
           <QtyBar qty={qty} setQty={setQty} />
           {cost.isError ? <ErrorState compact error={cost.error} onRetry={() => void cost.refetch()} /> : !c ? <Skeleton className="h-40" /> : <>
@@ -291,7 +291,7 @@ function CostView({ bom, qty, setQty }: { bom: BomDetail; qty: string; setQty: (
         </CardContent>
       </Card>
       <Card>
-        <CardHeader className="pb-2"><CardTitle>{t('Per unit')}</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle>{t('Cost per unit (without VAT)')}</CardTitle></CardHeader>
         <CardContent>
           <div className="text-3xl font-semibold tracking-[-0.02em] tabular">{c ? formatMoney(c.unit) : '—'}</div>
           <div className="mt-4 grid gap-1.5 text-[13px]">

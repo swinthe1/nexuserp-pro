@@ -54,7 +54,7 @@ export function PriceLevelsPage() {
     { accessorKey: 'level_date', header: ({ column }) => <ColumnHeader column={column} title={t('Date')} />, meta: { label: t('Date') }, cell: ({ getValue }) => formatDate(getValue() as string) },
     { id: 'wh', accessorFn: (r) => (r.warehouse as { name: string } | null)?.name ?? '', header: t('Stock of'), meta: { label: t('Stock of') }, cell: ({ getValue }) => td(getValue() as string) || t('All warehouses') },
     { id: 'n', accessorFn: (r) => (r.lines as unknown as { count: number }[])[0]?.count ?? 0, header: t('Items'), meta: { label: t('Items') } },
-    { accessorKey: 'value_change', header: t('Value change'), meta: { label: t('Value change') }, cell: ({ getValue, row }) => row.original.status === 'posted' ? <span className="tabular-nums">{formatMoney(getValue() as number)}</span> : '' },
+    { accessorKey: 'value_change', header: t('Value change (with VAT)'), meta: { label: t('Value change (with VAT)') }, cell: ({ getValue, row }) => row.original.status === 'posted' ? <span className="tabular-nums">{formatMoney(getValue() as number)}</span> : '' },
     { accessorKey: 'status', header: t('Status'), meta: { label: t('Status') }, cell: ({ getValue }) => <StatusBadge status={getValue() as string} /> },
     { accessorKey: 'notes', header: t('Notes'), meta: { label: t('Notes') }, cell: ({ getValue }) => <span className="text-muted-foreground">{getValue() as string}</span> },
   ], [])
@@ -159,7 +159,7 @@ function Editor({ doc }: { doc?: Level }) {
     },
     onSuccess: async ({ id, r }) => {
       await qc.invalidateQueries({ queryKey: ['inv'] })
-      toast.success(t('{number} posted: {n} prices changed, value {amount}', { number: r.number, n: r.changed, amount: formatMoney(r.value_change, company?.base_currency) }))
+      toast.success(t('{number} posted: {n} prices changed, value {amount} with VAT', { number: r.number, n: r.changed, amount: formatMoney(r.value_change, company?.base_currency) }))
       navigate(`/inventory/levelling/${id}`, { replace: true })
     },
     onError: (e) => toast.error(describeError(e)),
@@ -178,13 +178,13 @@ function Editor({ doc }: { doc?: Level }) {
     return {
       title: t('Price levelling'), number: p.number, subtitle: formatDate(p.date), company: p.company, partner: null,
       info: [[t('Date'), formatDate(p.date)], [t('Stock of'), p.warehouse ? td(p.warehouse) : t('All warehouses')], [t('Items'), String(p.lines.length)]],
-      tables: [{ columns: [{ label: t('Code') }, { label: t('Item') }, { label: t('Unit') }, { label: t('Quantity'), align: 'right' }, { label: t('Old price'), align: 'right' },
-        { label: t('New price'), align: 'right' }, { label: t('Difference'), align: 'right' }, { label: t('Value'), align: 'right' }],
+      tables: [{ columns: [{ label: t('Code') }, { label: t('Item') }, { label: t('Unit') }, { label: t('Quantity'), align: 'right' }, { label: t('Old price (with VAT)'), align: 'right' },
+        { label: t('New price (with VAT)'), align: 'right' }, { label: t('Difference'), align: 'right' }, { label: t('Value (with VAT)'), align: 'right' }],
         rows: p.lines.map((l) => {
           const o = gross(l.old_price, l.vat_rate), n = gross(l.new_price, l.vat_rate)
           return [l.sku, l.name, l.uom ? td(l.uom) : '', qf(l.quantity), nf(o, dec), nf(n, dec), nf(n - o, dec), nf(l.value_change ?? 0, dec)]
         }) }],
-      summary: [[t('Value change'), `${nf(p.value_change, dec)} ${p.currency}`, true]],
+      summary: [[t('Value change (with VAT)'), `${nf(p.value_change, dec)} ${p.currency}`, true]],
       texts: [t('Prices with VAT.'), p.notes ?? ''], signatures: [t('Prepared by'), t('Approved by')], printed_by: p.printed_by, printed_at: p.printed_at,
     }
   }
@@ -200,7 +200,7 @@ function Editor({ doc }: { doc?: Level }) {
             trigger={<Button variant="ghost" className="text-destructive"><Trash2 /> {t('Delete')}</Button>} />}
           {editable && <Button variant="outline" loading={save.isPending && !post.isPending} disabled={!rows.length}
             onClick={async () => { const id = await save.mutateAsync(); await qc.invalidateQueries({ queryKey: ['inv'] }); toast.success(t('Draft saved')); if (!doc) navigate(`/inventory/levelling/${id}`, { replace: true }) }}><Save /> {t('Save draft')}</Button>}
-          {editable && <ConfirmDialog title={t('Post the levelling?')} description={t('{n} prices change now. Value of the change on the stock: {amount}.', { n: changed, amount: formatMoney(total, company?.base_currency) })}
+          {editable && <ConfirmDialog title={t('Post the levelling?')} description={t('{n} prices change now. Value of the change on the stock, with VAT: {amount}.', { n: changed, amount: formatMoney(total, company?.base_currency) })}
             confirmLabel={t('Post')} onConfirm={() => post.mutateAsync()} trigger={<Button disabled={!changed} loading={post.isPending}><Check /> {t('Post')}</Button>} />}
         </>} />
 
@@ -240,9 +240,9 @@ function Editor({ doc }: { doc?: Level }) {
           <table className="w-full min-w-[880px] text-[13px]">
             <thead className="bg-muted/40 text-left text-xs text-muted-foreground"><tr>
               <th className="px-3 py-2 font-medium">{t('Item')}</th><th className="px-3 py-2 text-right font-medium">{t('Stock')}</th>
-              <th className="px-3 py-2 text-right font-medium">{t('Cost')}</th><th className="px-3 py-2 text-right font-medium">{t('Old price')}</th>
-              <th className="w-36 px-3 py-2 text-right font-medium">{t('New price')}</th><th className="px-3 py-2 text-right font-medium">{t('Difference')}</th>
-              <th className="px-3 py-2 text-right font-medium">{t('Margin %')}</th><th className="px-3 py-2 text-right font-medium">{t('Value')}</th><th className="w-10" />
+              <th className="px-3 py-2 text-right font-medium">{t('Cost (without VAT)')}</th><th className="px-3 py-2 text-right font-medium">{t('Old price (with VAT)')}</th>
+              <th className="w-36 px-3 py-2 text-right font-medium">{t('New price (with VAT)')}</th><th className="px-3 py-2 text-right font-medium">{t('Difference')}</th>
+              <th className="px-3 py-2 text-right font-medium">{t('Margin %')}</th><th className="px-3 py-2 text-right font-medium">{t('Value (with VAT)')}</th><th className="w-10" />
             </tr></thead>
             <tbody>
               {calc.map((c, i) => (

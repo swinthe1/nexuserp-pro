@@ -19,7 +19,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
       </Button>
       <button
         onClick={() => open()}
-        className="flex h-9 w-full max-w-md items-center gap-2 rounded-full border border-transparent bg-muted px-3.5 text-[13px] text-muted-foreground transition-colors hover:border-primary/30 hover:bg-card hover:text-foreground"
+        className="flex h-9 w-full min-w-0 max-w-md items-center gap-2 rounded-full border border-transparent bg-muted px-3.5 text-[13px] text-muted-foreground transition-colors hover:border-primary/30 hover:bg-card hover:text-foreground"
       >
         <Search className="size-4" />
         <span className="flex-1 truncate text-left">{t('Search or jump to…')}</span>

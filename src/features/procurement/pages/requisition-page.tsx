@@ -162,7 +162,7 @@ function RequisitionForm({ doc }: { doc?: ReqDoc }) {
                 <CardHeader><CardTitle>{t('Summary')}</CardTitle></CardHeader>
                 <CardContent className="grid gap-2 text-[13px]">
                   <div className="flex justify-between"><span className="text-muted-foreground">{t('Items')}</span><span className="tabular font-medium">{watched?.length ?? 0}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">{t('Estimated cost')}</span><span className="tabular font-medium">{formatMoney(total)} {base}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{t('Estimated cost (without VAT)')}</span><span className="tabular font-medium">{formatMoney(total)} {base}</span></div>
                   {(doc?.orders.length ?? 0) > 0 && (
                     <div className="mt-1 grid gap-1.5 border-t pt-2">
                       {doc!.orders.map((o) => (
@@ -184,8 +184,8 @@ function RequisitionForm({ doc }: { doc?: ReqDoc }) {
                 {lines.fields.length === 0 ? <EmptyState compact title={t('No items yet')} description={t('Pick products from the catalogue, or describe anything else you need.')} /> : (
                   <Table className="min-w-[820px]">
                     <TableHeader><TableRow className="hover:bg-transparent">
-                      <TableHead>{t('Item')}</TableHead><TableHead className="w-28 text-right">{t('Qty')}</TableHead><TableHead className="w-32 text-right">{t('Estimated unit cost')}</TableHead>
-                      <TableHead className="w-52">{t('Suggested vendor')}</TableHead><TableHead className="w-32 text-right">{t('Estimate')}</TableHead><TableHead className="w-10" />
+                      <TableHead>{t('Item')}</TableHead><TableHead className="w-28 text-right">{t('Qty')}</TableHead><TableHead className="w-32 text-right">{t('Estimated unit cost (without VAT)')}</TableHead>
+                      <TableHead className="w-52">{t('Suggested vendor')}</TableHead><TableHead className="w-32 text-right">{t('Estimate (without VAT)')}</TableHead><TableHead className="w-10" />
                     </TableRow></TableHeader>
                     <TableBody>
                       {lines.fields.map((f, i) => {
@@ -211,7 +211,7 @@ function RequisitionForm({ doc }: { doc?: ReqDoc }) {
                               </div>
                             </TableCell>
                             <TableCell><FormField control={form.control} name={`lines.${i}.quantity`} render={({ field }) => <FormItem><FormControl><Input type="number" step="any" className="h-9 text-right" disabled={!editable} aria-label={t('Quantity, item {n}', { n: i + 1 })} {...field} /></FormControl><FormMessage /></FormItem>} /></TableCell>
-                            <TableCell><FormField control={form.control} name={`lines.${i}.estimated_unit_cost`} render={({ field }) => <FormItem><FormControl><Input type="number" step="any" className="h-9 text-right" disabled={!editable} aria-label={t('Estimated cost, item {n}', { n: i + 1 })} {...field} /></FormControl><FormMessage /></FormItem>} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`lines.${i}.estimated_unit_cost`} render={({ field }) => <FormItem><FormControl><Input type="number" step="any" className="h-9 text-right" disabled={!editable} aria-label={t('Estimated cost without VAT, item {n}', { n: i + 1 })} {...field} /></FormControl><FormMessage /></FormItem>} /></TableCell>
                             <TableCell><FormField control={form.control} name={`lines.${i}.suggested_vendor_id`} render={({ field }) => (
                               <SearchSelect value={field.value} onChange={field.onChange} clearable disabled={!editable} placeholder={t('Any vendor')}
                                 options={(vendors.data ?? []).filter((x) => x.is_active).map((x) => ({ value: x.id, label: x.name }))} />

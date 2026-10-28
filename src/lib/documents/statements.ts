@@ -116,8 +116,8 @@ export function itemCardStatement(c: ItemCard): Statement {
     title: t('Item card'), subtitle: `${formatDate(c.from)} – ${formatDate(c.to)}`, company: c.company, partner: null,
     info: [[t('Item'), `${c.sku} · ${c.name}`], [t('Warehouse'), c.warehouse ?? t('All warehouses')], [t('Period'), `${formatDate(c.from)} – ${formatDate(c.to)}`]],
     tables: [{ columns: [{ label: t('Date') }, { label: t('Movement') }, { label: t('Document') }, { label: t('Partner / warehouse') }, { label: t('In'), align: 'right' },
-      { label: t('Out'), align: 'right' }, { label: t('Unit cost'), align: 'right' }, { label: t('Quantity'), align: 'right' }, { label: t('Value'), align: 'right' }], rows, strong: [0, rows.length - 1] }],
-    summary: [[t('Quantity'), `${qf(c.closing_qty)} ${c.uom ?? ''}`], [t('Value'), `${nf(c.closing_value, dec)} ${c.currency}`, true]],
+      { label: t('Out'), align: 'right' }, { label: t('Unit cost (without VAT)'), align: 'right' }, { label: t('Quantity'), align: 'right' }, { label: t('Value at cost'), align: 'right' }], rows, strong: [0, rows.length - 1] }],
+    summary: [[t('Quantity'), `${qf(c.closing_qty)} ${c.uom ?? ''}`], [t('Value at purchase price, without VAT'), `${nf(c.closing_value, dec)} ${c.currency}`, true]],
     printed_by: c.printed_by, printed_at: c.printed_at,
   }
 }

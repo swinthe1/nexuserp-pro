@@ -44,7 +44,7 @@ export function ReadInvoicePage() {
           {full ? t('This month\u2019s {n} invoices are used up; reading starts again on the 1st. Receive goods by hand meanwhile.', { n: usage.data.limit })
             : t('{used} of {limit} invoices read this month', { used: usage.data.used, limit: usage.data.limit })}</div>} />
       {id ? <ReadReview key={id} id={id} onDone={() => setParams({})} /> : <ReadsList bookedLabel={t('Receipt made')} doneLabel={t('Read')} showWaiting={false} onOpen={(x) => setParams({ id: x })}
-        items={(list.data ?? []).map((r) => ({ ...r, date: null, booked: !!r.receipt_id, extra: r.total != null ? formatMoney(r.total) : null, total: null,
+        items={(list.data ?? []).map((r) => ({ ...r, date: null, booked: !!r.receipt_id, extra: r.total != null ? t('{amount} with VAT', { amount: formatMoney(r.total) }) : null, total: null,
           title: <>{r.vendor ?? r.file_name ?? t('Invoice')}{r.number ? ` · ${r.number}` : ''}</> }))} />}
     </div>
   )
@@ -121,8 +121,8 @@ function ReadReview({ id, onDone }: { id: string; onDone: () => void }) {
                 <div className="grid grid-cols-2 gap-2 sm:contents">
                 <div className="grid gap-1"><Label className="text-xs text-muted-foreground sm:sr-only">{t('Quantity')}</Label>
                   <Input type="number" step="any" className="text-right tabular" value={l.quantity} onChange={(e) => set({ quantity: num(e.target.value) })} aria-label={t('Quantity')} /></div>
-                <div className="grid gap-1"><Label className="text-xs text-muted-foreground sm:sr-only">{t('Unit cost')}</Label>
-                  <Input type="number" step="any" className="text-right tabular" value={l.unit_price ?? 0} onChange={(e) => set({ unit_price: num(e.target.value) })} aria-label={t('Unit cost')} /></div>
+                <div className="grid gap-1"><Label className="text-xs text-muted-foreground sm:sr-only">{t('Unit cost (without VAT)')}</Label>
+                  <Input type="number" step="any" className="text-right tabular" value={l.unit_price ?? 0} onChange={(e) => set({ unit_price: num(e.target.value) })} aria-label={t('Unit cost (without VAT)')} /></div>
                 </div>
               </li>
             )

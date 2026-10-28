@@ -128,7 +128,7 @@ function LandedCostForm({ doc }: { doc?: LandedDoc }) {
             action={editable && <Button type="button" size="sm" variant="outline" onClick={() => charges.append({ charge_type: 'other', description: '', amount: 0 })}><Plus /> {t('Add charge')}</Button>}
           >
             <Table>
-              <TableHeader><TableRow className="hover:bg-transparent"><TableHead className="w-44">{t('Type')}</TableHead><TableHead>{t('Description')}</TableHead><TableHead className="w-40 text-right">{t('Amount ({currency})', { currency: base ?? '' })}</TableHead><TableHead className="w-10" /></TableRow></TableHeader>
+              <TableHeader><TableRow className="hover:bg-transparent"><TableHead className="w-44">{t('Type')}</TableHead><TableHead>{t('Description')}</TableHead><TableHead className="w-40 text-right">{t('Amount without VAT ({currency})', { currency: base ?? '' })}</TableHead><TableHead className="w-10" /></TableRow></TableHeader>
               <TableBody>
                 {charges.fields.map((f, i) => (
                   <TableRow key={f.id} className="align-top hover:bg-transparent">
@@ -141,7 +141,7 @@ function LandedCostForm({ doc }: { doc?: LandedDoc }) {
                   </TableRow>
                 ))}
               </TableBody>
-              <TableFooter><TableRow className="hover:bg-transparent"><TableCell colSpan={2}>{t('Total')}</TableCell><TableCell className="text-right tabular">{formatMoney(total)}</TableCell><TableCell /></TableRow></TableFooter>
+              <TableFooter><TableRow className="hover:bg-transparent"><TableCell colSpan={2}>{t('Total (without VAT)')}</TableCell><TableCell className="text-right tabular">{formatMoney(total)}</TableCell><TableCell /></TableRow></TableFooter>
             </Table>
           </LinesCard>
         <Card className="mt-4">
@@ -162,7 +162,7 @@ function LandedCostForm({ doc }: { doc?: LandedDoc }) {
                                 <div className="text-xs text-muted-foreground">{(r.vendor as { name: string } | null)?.name ?? t('No vendor')} · {formatDate(r.receipt_date)}</div></TableCell>
                               <TableCell className="text-[13px]">{r.is_import && <span className="inline-flex items-center gap-1"><Globe2 className="size-3.5 text-muted-foreground" />{r.customs_declaration_number}</span>}</TableCell>
                               <TableCell>{r.is_import && <StatusBadge status={r.clearance_status} />}</TableCell>
-                              <TableCell className="text-right tabular">{formatMoney(r.total_value, base)}</TableCell>
+                              <TableCell className="text-right tabular">{formatMoney(r.total_value, base)} <span className="text-2xs text-muted-foreground">{t('without VAT')}</span></TableCell>
                             </TableRow>
                           )
                         })}
@@ -177,10 +177,10 @@ function LandedCostForm({ doc }: { doc?: LandedDoc }) {
 
           {doc?.status === 'posted' && doc.allocations.length > 0 && (
             <Card className="mt-4">
-              <CardHeader><CardTitle>{t('Allocation')}</CardTitle><CardDescription>{t('How the {amount} was spread', { amount: formatMoney(doc.total_amount, base) })}</CardDescription></CardHeader>
+              <CardHeader><CardTitle>{t('Allocation')}</CardTitle><CardDescription>{t('How the {amount} without VAT was spread', { amount: formatMoney(doc.total_amount, base) })}</CardDescription></CardHeader>
               <CardContent className="p-0">
                 <Table>
-                  <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Product')}</TableHead><TableHead className="text-right">{t('Qty received')}</TableHead><TableHead className="text-right">{t('Allocated')}</TableHead><TableHead className="text-right">{t('Into stock')}</TableHead><TableHead className="text-right">{t('Booked as expense')}</TableHead><TableHead className="text-right">{t('Per unit')}</TableHead></TableRow></TableHeader>
+                  <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Product')}</TableHead><TableHead className="text-right">{t('Qty received')}</TableHead><TableHead className="text-right">{t('Allocated')}</TableHead><TableHead className="text-right">{t('Into stock')}</TableHead><TableHead className="text-right">{t('Booked as expense')}</TableHead><TableHead className="text-right">{t('Per unit (without VAT)')}</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {doc.allocations.map((a) => (
                       <TableRow key={a.id}>
@@ -200,8 +200,8 @@ function LandedCostForm({ doc }: { doc?: LandedDoc }) {
         </>}
         summary={<SummaryCard rows={[
           [t('Goods receipts'), (selected ?? []).length],
-          [t('Charges'), formatMoney(total, base)],
-          ...(doc?.status === 'posted' ? [[t('Added to stock value'), formatMoney(allocTotals.cap, base)], [t('Expense (goods sold)'), formatMoney(allocTotals.exp, base)]] as [string, string][] : []),
+          [t('Charges (without VAT)'), formatMoney(total, base)],
+          ...(doc?.status === 'posted' ? [[t('Added to stock value (without VAT)'), formatMoney(allocTotals.cap, base)], [t('Expense (goods sold, without VAT)'), formatMoney(allocTotals.exp, base)]] as [string, string][] : []),
           ...(num(doc?.import_vat) > 0 ? [[t('Import VAT (deductible)'), formatMoney(doc!.import_vat, base)]] as [string, string][] : []),
         ]} footer={t('Charges are in the base currency, without VAT. Import VAT from the customs declaration can be deducted: it goes to the purchase book, not into the stock value.')} />}
       >

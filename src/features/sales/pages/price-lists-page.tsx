@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Plus, Star, Trash2 } from 'lucide-react'
 import * as React from 'react'
@@ -20,6 +21,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import type { Tables } from '@/lib/database.types'
+import { unwrap } from '@/lib/errors'
+import { supabase } from '@/lib/supabase'
 import { cn, formatDate, formatMoney, num } from '@/lib/utils'
 import { useCurrencies, useVariantOptions } from '@/features/inventory/api'
 import { VariantPicker } from '@/features/inventory/components/pickers'
@@ -88,6 +91,11 @@ function PriceListForm({ pl }: { pl?: Tables<'price_lists'> & { items: Tables<'p
   const withTax = useWatch({ control: form.control, name: 'prices_include_tax' })
   const cost = React.useMemo(() => new Map((variants.data ?? []).map((v) => [v.id, v.avg_cost])), [variants.data])
   const basePrice = React.useMemo(() => new Map((sellable.data ?? []).map((v) => [v.id, v.sales_price])), [sellable.data])
+  // each item's VAT rate: a list with VAT is compared with cost (and filled in) at the price with VAT taken out / put in
+  const rates = useQuery({ queryKey: ['price-list-rates', company?.id], enabled: !!company?.id, staleTime: 5 * 60_000,
+    queryFn: async () => unwrap(await supabase.from('product_variants').select('id, products!inner(sales_tax_code:tax_codes!products_company_id_sales_tax_code_id_fkey(rate))')
+      .eq('company_id', company!.id).is('deleted_at', null).limit(5000)) as unknown as { id: string; products: { sales_tax_code: { rate: number } | null } }[] })
+  const rateOf = React.useCallback((id: string) => num(rates.data?.find((r) => r.id === id)?.products.sales_tax_code?.rate), [rates.data])
 
   const submit = form.handleSubmit(async (v) => {
     const newId = await save.mutateAsync({
@@ -156,12 +164,12 @@ function PriceListForm({ pl }: { pl?: Tables<'price_lists'> & { items: Tables<'p
                   {items.fields.map((f, i) => {
                     const it = watched[i]
                     const c = it?.variant_id ? cost.get(it.variant_id) : null
-                    const net = num(it?.price) * (1 - num(it?.discount_pct) / 100)
+                    const net = num(it?.price) * (1 - num(it?.discount_pct) / 100) / (withTax && it?.variant_id ? 1 + rateOf(it.variant_id) / 100 : 1)
                     const margin = c != null && net > 0 && cur === company?.base_currency ? ((net - num(c)) / net) * 100 : null
                     return (
                       <TableRow key={f.id}>
                         <TableCell><FormField control={form.control} name={`items.${i}.variant_id`} render={({ field, fieldState }) => (
-                          <FormItem><VariantPicker value={field.value} onChange={(v) => { field.onChange(v); if (v && !num(form.getValues(`items.${i}.price`))) form.setValue(`items.${i}.price`, num(basePrice.get(v))) }} disabled={!writable} aria-invalid={!!fieldState.error} /><FormMessage /></FormItem>
+                          <FormItem><VariantPicker value={field.value} onChange={(v) => { field.onChange(v); if (v && !num(form.getValues(`items.${i}.price`))) form.setValue(`items.${i}.price`, Math.round(num(basePrice.get(v)) * (withTax ? 1 + rateOf(v) / 100 : 1) * 100) / 100) }} disabled={!writable} aria-invalid={!!fieldState.error} /><FormMessage /></FormItem>
                         )} /></TableCell>
                         <TableCell><FormField control={form.control} name={`items.${i}.min_quantity`} render={({ field }) => <FormItem><FormControl><Input type="number" step="any" className="text-right tabular" disabled={!writable} {...field} /></FormControl><FormMessage /></FormItem>} /></TableCell>
                         <TableCell><FormField control={form.control} name={`items.${i}.price`} render={({ field }) => <FormItem><FormControl><Input type="number" step="any" className="text-right tabular" disabled={!writable} {...field} /></FormControl><FormMessage /></FormItem>} /></TableCell>

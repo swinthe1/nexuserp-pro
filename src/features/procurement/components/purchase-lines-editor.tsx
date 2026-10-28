@@ -141,9 +141,9 @@ export function PurchaseLinesEditor({ form: anyForm, editable, currency, progres
           <Table className="min-w-[760px]">
             <TableHeader><TableRow className="hover:bg-transparent">
               <TableHead className="w-8">#</TableHead><TableHead>{t('Item')}</TableHead><TableHead className="text-right">{t('Qty')}</TableHead>
-              <TableHead className="text-right">{t('Unit price')}</TableHead><TableHead className="text-right">{t('Discount')}</TableHead><TableHead>{t('VAT')}</TableHead>
+              <TableHead className="text-right">{t('Unit price (without VAT)')}</TableHead><TableHead className="text-right">{t('Discount')}</TableHead><TableHead>{t('VAT')}</TableHead>
               {progress && <TableHead className="w-[220px]">{t('Received · billed')}</TableHead>}
-              <TableHead className="text-right">{t('Amount')}</TableHead>
+              <TableHead className="text-right">{t('Amount (without VAT)')}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {(watched ?? []).map((l, i) => {
@@ -171,8 +171,8 @@ export function PurchaseLinesEditor({ form: anyForm, editable, currency, progres
           <Table className="min-w-[900px]">
             <TableHeader><TableRow className="hover:bg-transparent">
               <TableHead className="w-8">#</TableHead><TableHead>{t('Item')}</TableHead><TableHead className="w-32 text-right">{t('Qty')}</TableHead>
-              <TableHead className="w-32 text-right">{t('Unit price')}</TableHead><TableHead className="w-24 text-right">{t('Discount %')}</TableHead>
-              <TableHead className="w-36">{t('VAT')}</TableHead><TableHead className="w-36 text-right">{t('Amount')}</TableHead><TableHead className="w-10" />
+              <TableHead className="w-32 text-right">{t('Unit price (without VAT)')}</TableHead><TableHead className="w-24 text-right">{t('Discount %')}</TableHead>
+              <TableHead className="w-36">{t('VAT')}</TableHead><TableHead className="w-36 text-right">{t('Amount (without VAT)')}</TableHead><TableHead className="w-10" />
             </TableRow></TableHeader>
             <TableBody>
               {lines.fields.map((f, i) => {
@@ -226,7 +226,7 @@ export function PurchaseLinesEditor({ form: anyForm, editable, currency, progres
                     </TableCell>
                     <TableCell>
                       <FormField control={form.control} name={`lines.${i}.unit_price`} render={({ field }) => (
-                        <FormItem><FormControl><Input type="number" step="any" min="0" className="h-9 min-w-[100px] text-right" aria-label={t('Unit price, line {n}', { n: i + 1 })}
+                        <FormItem><FormControl><Input type="number" step="any" min="0" className="h-9 min-w-[100px] text-right" aria-label={t('Unit price without VAT, line {n}', { n: i + 1 })}
                           {...field} onChange={(e) => { field.onChange(e); form.setValue(`lines.${i}.price_source`, 'manual') }} /></FormControl><FormMessage /></FormItem>
                       )} />
                       {l?.price_source === 'auto' && h?.source && <p className="mt-1 text-right text-2xs text-muted-foreground">{SOURCE_LABEL[h.source] ? t(SOURCE_LABEL[h.source]!) : h.source}</p>}
@@ -255,11 +255,11 @@ export function PurchaseLinesEditor({ form: anyForm, editable, currency, progres
       )}
       {lines.fields.length > 0 && (
         <dl className="ml-auto grid w-full max-w-xs grid-cols-[1fr_auto] gap-x-6 gap-y-1 border-t px-4 py-3 text-[13px]">
-          {discount > 0 && <><dt className="text-muted-foreground">{t('Before discount')}</dt><dd className="text-right tabular">{formatMoney(totals.gross)}</dd>
+          {discount > 0 && <><dt className="text-muted-foreground">{t('Before discount (without VAT)')}</dt><dd className="text-right tabular">{formatMoney(totals.gross)}</dd>
             <dt className="text-muted-foreground">{t('Discount')}</dt><dd className="text-right tabular text-success">−{formatMoney(discount)}</dd></>}
-          <dt className="text-muted-foreground">{t('Net')}</dt><dd className="text-right tabular">{formatMoney(totals.sub)}</dd>
+          <dt className="text-muted-foreground">{t('Amount without VAT')}</dt><dd className="text-right tabular">{formatMoney(totals.sub)}</dd>
           <dt className="text-muted-foreground">{t('VAT')}</dt><dd className="text-right tabular">{formatMoney(totals.tax)}</dd>
-          <dt className="mt-1 border-t pt-2 font-semibold">{t('Total')}</dt><dd className="mt-1 border-t pt-2 text-right tabular text-base font-semibold">{formatMoney(totals.total)} <span className="text-xs font-normal text-muted-foreground">{currency}</span></dd>
+          <dt className="mt-1 border-t pt-2 font-semibold">{t('Total (with VAT)')}</dt><dd className="mt-1 border-t pt-2 text-right tabular text-base font-semibold">{formatMoney(totals.total)} <span className="text-xs font-normal text-muted-foreground">{currency}</span></dd>
         </dl>
       )}
       {form.formState.errors.lines?.message && <p className="px-4 pb-3 text-xs font-medium text-destructive">{t(form.formState.errors.lines.message)}</p>}

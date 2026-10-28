@@ -189,7 +189,7 @@ export function ProductNewPage() {
           <FormSection title={t('Price & VAT')} description={t('Prices are in {currency} without VAT. The till shows them with VAT.', { currency: company?.base_currency ?? '' })}>
             <div className="grid gap-4 sm:grid-cols-3">
               <FormField control={form.control} name="sales_price" render={({ field }) => (
-                <FormItem><FormLabel>{t('Sales price')}</FormLabel><FormControl><Input type="number" step="0.01" min="0" {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>{t('Selling price (without VAT)')}</FormLabel><FormControl><Input type="number" step="0.01" min="0" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               {(['sales_tax_code_id', 'purchase_tax_code_id'] as const).map((name) => (
                 <FormField key={name} control={form.control} name={name} render={({ field }) => (
@@ -253,7 +253,7 @@ export function ProductNewPage() {
                     <TableHead>{t('Variant')}</TableHead>
                     <TableHead className="w-[200px]">SKU</TableHead>
                     <TableHead className="w-[230px]">{t('Barcode')}</TableHead>
-                    <TableHead className="w-[120px] text-right">{t('Price')}</TableHead>
+                    <TableHead className="w-[120px] text-right">{t('Selling price (without VAT)')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

@@ -44,7 +44,7 @@ export function MfgOverviewPage() {
   const days = (d?.by_day ?? []).map((x) => ({ day: formatDateWith(new Date(`${x.day}T00:00:00`), { day: 'numeric', month: 'short' }), value: num(x.value) }))
   return (
     <>
-      <PageHeader title={t('Production')} description={t('What is being made now, what to make next and what it costs, in {currency}.', { currency: company?.base_currency ?? 'ALL' })}
+      <PageHeader title={t('Production')} description={t('What is being made now, what to make next and what it costs, in {currency} without VAT.', { currency: company?.base_currency ?? 'ALL' })}
         actions={<>
           <Select value={range} onValueChange={(v) => setRange(v as keyof typeof RANGES)}><SelectTrigger className="w-[150px]" aria-label={t('Period')}><SelectValue /></SelectTrigger>
             <SelectContent>{Object.entries(RANGES).map(([k, r]) => <SelectItem key={k} value={k}>{t(r.label)}</SelectItem>)}</SelectContent></Select>
@@ -55,15 +55,15 @@ export function MfgOverviewPage() {
         <StatCard label={t('In production')} value={(d?.released ?? 0) + (d?.in_progress ?? 0)} loading={ov.isLoading} href="/manufacturing/orders?view=board"
           hint={t('{a} in progress · {b} released · {c} planned', { a: d?.in_progress ?? 0, b: d?.released ?? 0, c: d?.draft ?? 0 })} />
         <StatCard label={t('Late')} value={d?.late ?? 0} loading={ov.isLoading} tone={d?.late ? 'destructive' : 'default'} href="/manufacturing/orders" hint={t('Past their due time and not finished')} />
-        <StatCard label={t('Work in progress')} value={formatMoney(d?.wip)} loading={ov.isLoading} hint={t('{n} finished, waiting to be closed', { n: d?.completed ?? 0 })} />
-        <StatCard label={t('Produced')} value={formatMoney(d?.produced_value)} loading={ov.isLoading} hint={tn(d?.produced_orders ?? 0, '{n} work order · at actual cost', '{n} work orders · at actual cost')} />
+        <StatCard label={t('Work in progress (without VAT)')} value={formatMoney(d?.wip)} loading={ov.isLoading} hint={t('{n} finished, waiting to be closed', { n: d?.completed ?? 0 })} />
+        <StatCard label={t('Produced (without VAT)')} value={formatMoney(d?.produced_value)} loading={ov.isLoading} hint={tn(d?.produced_orders ?? 0, '{n} work order · at actual cost', '{n} work orders · at actual cost')} />
       </div>
       <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label={t('To make')} value={toMake.length} loading={plan.isLoading} tone={toMake.length ? 'warning' : 'default'} hint={t('Products below their minimum or short for orders')} />
         <StatCard label={t('Closed: planned vs actual')} value={d && num(d.planned_cost) ? `${formatQty(Math.round(((num(d.actual_cost) - num(d.planned_cost)) / num(d.planned_cost)) * 1000) / 10)}%` : '—'}
           loading={ov.isLoading} tone={d && num(d.actual_cost) > num(d.planned_cost) * 1.02 ? 'warning' : 'default'}
           hint={d ? t('{actual} actual against {planned} planned', { actual: formatMoney(d.actual_cost), planned: formatMoney(d.planned_cost) }) : undefined} />
-        <StatCard label={t('Cost difference')} value={formatMoney(d?.variance)} loading={ov.isLoading} tone={num(d?.variance) > 0 ? 'warning' : 'default'} hint={t('Booked when orders are closed, account 6012')} />
+        <StatCard label={t('Cost difference (without VAT)')} value={formatMoney(d?.variance)} loading={ov.isLoading} tone={num(d?.variance) > 0 ? 'warning' : 'default'} hint={t('Booked when orders are closed, account 6012')} />
         <StatCard label={t('Recipes')} value={<Link className="hover:underline" to="/manufacturing/boms">{t('Open')}</Link>} hint={t('Ingredients, steps, cost and where each item is used')} />
       </div>
 
@@ -81,7 +81,7 @@ export function MfgOverviewPage() {
               <TableBody>{plan.data.map((p) => (
                 <TableRow key={p.variant_id} className="hover:bg-transparent">
                   <TableCell><span className="font-medium">{p.name}</span> <span className="text-xs text-muted-foreground">{p.sku}</span>
-                    <div className="text-xs text-muted-foreground"><Link to={`/manufacturing/boms/${p.bom_id}`} className="hover:underline">{p.bom_code}</Link> · {t('{cost} each · {min} min per batch of {qty}', { cost: formatMoney(p.unit_cost), min: formatQty(p.lead_minutes), qty: formatQty(p.bom_quantity) })}</div></TableCell>
+                    <div className="text-xs text-muted-foreground"><Link to={`/manufacturing/boms/${p.bom_id}`} className="hover:underline">{p.bom_code}</Link> · {t('{cost} each without VAT · {min} min per batch of {qty}', { cost: formatMoney(p.unit_cost), min: formatQty(p.lead_minutes), qty: formatQty(p.bom_quantity) })}</div></TableCell>
                   <TableCell className="text-right tabular">{formatQty(num(p.on_hand) - num(p.reserved))}</TableCell>
                   <TableCell className="text-right tabular">{num(p.sales_demand) ? formatQty(p.sales_demand) : '—'}</TableCell>
                   <TableCell className="text-right tabular">{num(p.component_demand) ? formatQty(p.component_demand) : '—'}</TableCell>
@@ -102,14 +102,14 @@ export function MfgOverviewPage() {
       <div className="mt-4 grid gap-4 grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_380px]">
         <LoadCard />
         <Card>
-          <CardHeader className="pb-2"><CardTitle>{t('Produced')}</CardTitle><CardDescription>{t('Value of finished goods by day, {period}', { period: t(RANGES[range].label).toLowerCase() })}</CardDescription></CardHeader>
+          <CardHeader className="pb-2"><CardTitle>{t('Produced')}</CardTitle><CardDescription>{t('Value of finished goods at cost, without VAT, by day, {period}', { period: t(RANGES[range].label).toLowerCase() })}</CardDescription></CardHeader>
           <CardContent>
             {ov.isLoading ? <Skeleton className="h-48" /> : ov.isError ? <ErrorState compact error={ov.error} onRetry={() => void ov.refetch()} /> : !days.length ? <p className="py-12 text-center text-[13px] text-muted-foreground">{t('Nothing produced in this period.')}</p> : (
               <div className="h-48"><ResponsiveContainer><BarChart data={days} margin={{ left: -8, right: 4 }}>
                 <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
                 <XAxis dataKey="day" tick={axisTick} tickLine={false} axisLine={false} />
                 <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatCompact(v)} width={48} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }} formatter={(v: number) => [formatMoney(v), t('Produced')]} />
+                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }} formatter={(v: number) => [formatMoney(v), t('Produced (without VAT)')]} />
                 <Bar dataKey="value" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} isAnimationActive={false} />
               </BarChart></ResponsiveContainer></div>
             )}

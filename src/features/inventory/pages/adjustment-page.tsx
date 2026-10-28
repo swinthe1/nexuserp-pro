@@ -125,7 +125,7 @@ function AdjustmentForm({ doc }: { doc?: AdjustmentDoc }) {
                 <TableHeader><TableRow className="hover:bg-transparent">
                   <TableHead className="min-w-[200px]">{t('Product')}</TableHead><TableHead className="min-w-[150px]">{t('Location')}</TableHead><TableHead className="min-w-[150px]">{t('Lot')}</TableHead>
                   <TableHead className="w-24 text-right">{t('On hand')}</TableHead><TableHead className="w-28 text-right">{t('Change (±)')}</TableHead>
-                  <TableHead className="w-32 text-right">{t('Unit cost')}</TableHead><TableHead className="w-28 text-right">{t('After')}</TableHead><TableHead className="w-10" />
+                  <TableHead className="w-32 text-right">{t('Unit cost (without VAT)')}</TableHead><TableHead className="w-28 text-right">{t('After')}</TableHead><TableHead className="w-10" />
                 </TableRow></TableHeader>
                 <TableBody>
                   {lines.fields.map((f, i) => {
@@ -163,7 +163,7 @@ function AdjustmentForm({ doc }: { doc?: AdjustmentDoc }) {
             [t('Lines'), (watched ?? []).length],
             [t('Units in'), formatQty((watched ?? []).filter((l) => num(l.quantity_change) > 0).reduce((s, l) => s + num(l.quantity_change), 0))],
             [t('Units out'), formatQty((watched ?? []).filter((l) => num(l.quantity_change) < 0).reduce((s, l) => s - num(l.quantity_change), 0))],
-            [doc?.status === 'posted' ? t('Recorded value') : t('Estimated value'), formatMoney(doc?.status === 'posted' ? doc.total_value : estimate, company?.base_currency)],
+            [doc?.status === 'posted' ? t('Recorded value at purchase price (without VAT)') : t('Estimated value at purchase price (without VAT)'), formatMoney(doc?.status === 'posted' ? doc.total_value : estimate, company?.base_currency)],
           ]} footer={doc?.status === 'pending_approval' ? t('Waiting for approval. You will be notified when it is decided.') : t('Damaged and expired goods go to the scrap location; the rest to the adjustment location.')} />
         }
       >
