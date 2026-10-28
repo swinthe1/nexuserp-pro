@@ -64,12 +64,12 @@ export function printZReport(z: ZData) {
   const pays = Object.entries(z.payments).filter(([k]) => k !== 'change_given').map(([k, v]) => row(method(k), money(Number(v)))).join('')
   printHtml(`<div class="c b big">${esc(t('Z-REPORT {number}', { number: z.number }))}</div><div class="c muted">${esc(z.company)}<br>${esc(z.register)} · ${esc(t('shift {number}', { number: z.session }))}<br>
     ${esc(stamp(new Date(z.opened)))} → ${esc(z.closed ? stamp(new Date(z.closed)) : '')}</div><hr>
-    <table>${row(t('Receipts'), String(z.orders))}${row(t('Refunds|count'), String(z.refunds))}${row(t('Gross sales'), money(z.gross))}${row(t('Refunds|amount'), `−${money(z.refundsTotal)}`)}
-    ${row(t('Discounts given'), money(z.discounts))}${row(t('Net of VAT'), money(z.net))}${row(t('VAT'), money(z.tax))}${row(t('Total {currency}', { currency: z.currency }), money(z.gross - z.refundsTotal), 'b')}</table><hr>
+    <table>${row(t('Receipts'), String(z.orders))}${row(t('Refunds|count'), String(z.refunds))}${row(t('Gross sales (with VAT)'), money(z.gross))}${row(t('Refunds (with VAT)'), `−${money(z.refundsTotal)}`)}
+    ${row(t('Discounts given (with VAT)'), money(z.discounts))}${row(t('Sales (without VAT)'), money(z.net))}${row(t('VAT'), money(z.tax))}${row(t('Total with VAT {currency}', { currency: z.currency }), money(z.gross - z.refundsTotal), 'b')}</table><hr>
     <div class="b">${esc(t('VAT'))}</div><table>${z.taxes.map((x) => row(t('{rate}% on {base}', { rate: x.rate, base: money(x.base) }), money(x.tax))).join('')}</table><hr>
     <div class="b">${esc(t('Payments'))}</div><table>${pays}${row(t('Change given'), money(Number(z.payments.change_given ?? 0)))}</table><hr>
     <div class="b">${esc(t('Cash drawer'))}</div><table>${row(t('Opening cash'), money(z.opening))}${row(t('Cash in'), money(z.cashIn))}${row(t('Cash out'), `−${money(z.cashOut)}`)}
     ${row(t('Expected'), money(z.expected), 'b')}${row(t('Counted'), z.counted == null ? '—' : money(z.counted))}${row(t('Difference'), z.difference == null ? '—' : money(z.difference), 'b')}</table><hr>
-    <div class="b">${esc(t('Best sellers'))}</div><table>${z.items.slice(0, 10).map((i) => row(`${qty(Number(i.quantity))} × ${i.name}`, money(Number(i.total)))).join('')}</table>
+    <div class="b">${esc(t('Best sellers · sales with VAT'))}</div><table>${z.items.slice(0, 10).map((i) => row(`${qty(Number(i.quantity))} × ${i.name}`, money(Number(i.total)))).join('')}</table>
     <hr><div class="c muted">${esc(t('Printed {date}', { date: stamp(new Date()) }))}</div>`, CSS, 'receipt')
 }

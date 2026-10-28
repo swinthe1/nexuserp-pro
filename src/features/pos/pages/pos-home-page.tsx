@@ -62,7 +62,7 @@ export function PosHomePage() {
     { accessorKey: 'closed_at', header: t('Closed|time'), meta: { label: t('Closed|time') }, cell: ({ getValue }) => (getValue() ? formatDate(getValue() as string, true) : '—') },
     { accessorKey: 'status', filterFn: inFilter, header: t('Status'), meta: { label: t('Status') }, cell: ({ getValue }) => <StatusBadge status={getValue() as string} /> },
     { id: 'receipts', accessorFn: (r) => r.z[0]?.order_count ?? null, header: t('Receipts'), meta: { label: t('Receipts'), align: 'right' }, cell: ({ getValue }) => getValue() ?? '—' },
-    { id: 'sales', accessorFn: (r) => (r.z[0] ? num(r.z[0].gross_sales) - num(r.z[0].refunds_total) : null), header: t('Sales'), meta: { label: t('Sales'), align: 'right' },
+    { id: 'sales', accessorFn: (r) => (r.z[0] ? num(r.z[0].gross_sales) - num(r.z[0].refunds_total) : null), header: t('Sales (with VAT)'), meta: { label: t('Sales (with VAT)'), align: 'right' },
       cell: ({ getValue }) => (getValue() == null ? '—' : <span className="tabular">{formatMoney(getValue() as number)}</span>) },
     { id: 'diff', accessorFn: (r) => r.z[0]?.cash_difference ?? null, header: t('Cash difference'), meta: { label: t('Cash difference'), align: 'right' },
       cell: ({ getValue }) => { const v = getValue() as number | null; return v == null ? '—' : <span className={cn('tabular', v < 0 && 'text-destructive', v > 0 && 'text-warning')}>{formatMoney(v)}</span> } },
@@ -116,7 +116,7 @@ export function PosHomePage() {
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
         <StatCard label={t('Tills open now')} value={(registers.data ?? []).filter((r) => r.sessions.length).length} loading={registers.isLoading} />
         <StatCard label={t('Shifts today')} value={todays.length} loading={sessions.isLoading} />
-        <StatCard label={t('Closed sales today')} value={formatMoney(closedSales)} loading={sessions.isLoading} hint={tn(zToday.length, '{n} Z-report · VAT included', '{n} Z-reports · VAT included')} />
+        <StatCard label={t('Closed sales today, with VAT')} value={formatMoney(closedSales)} loading={sessions.isLoading} hint={tn(zToday.length, '{n} Z-report', '{n} Z-reports')} />
       </div>
 
       <h2 className="mb-2 mt-6 text-sm font-semibold">{t('Shifts')}</h2>
@@ -153,7 +153,7 @@ export function SyncPanel({ compact }: { compact?: boolean }) {
                 <TableRow key={i.client_uuid} className="hover:bg-transparent">
                   <TableCell className="font-medium">{i.device_ref}</TableCell>
                   <TableCell className="text-[13px] text-muted-foreground">{formatDate(i.created_at, true)}</TableCell>
-                  <TableCell className="text-right tabular">{formatMoney(i.total)}</TableCell>
+                  <TableCell className="text-right tabular" title={t('Total (with VAT)')}>{formatMoney(i.total)}</TableCell>
                   <TableCell className="text-[13px]">{i.status === 'failed' ? <span className="text-destructive">{i.error}</span> : <span className="text-muted-foreground">{t('Waiting')}</span>}</TableCell>
                   <TableCell className="w-[1%] whitespace-nowrap text-right">
                     {i.status === 'failed' && <>
@@ -290,9 +290,9 @@ export function PosSessionPage() {
         {z && (
           <TabsContent value="z" className="grid gap-4">
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <StatCard label={t('Sales (VAT included)')} value={formatMoney(num(z.gross_sales) - num(z.refunds_total))} hint={t('{a} receipts · {b} refunds', { a: z.order_count, b: z.refund_count })} />
-              <StatCard label={t('Net of VAT')} value={formatMoney(z.net_sales)} hint={t('VAT {amount}', { amount: formatMoney(z.tax_total) })} />
-              <StatCard label={t('Discounts given')} value={formatMoney(z.discounts_total)} />
+              <StatCard label={t('Sales (with VAT)')} value={formatMoney(num(z.gross_sales) - num(z.refunds_total))} hint={t('{a} receipts · {b} refunds', { a: z.order_count, b: z.refund_count })} />
+              <StatCard label={t('Sales (without VAT)')} value={formatMoney(z.net_sales)} hint={t('VAT {amount}', { amount: formatMoney(z.tax_total) })} />
+              <StatCard label={t('Discounts given (with VAT)')} value={formatMoney(z.discounts_total)} />
               <StatCard label={t('Cash difference')} value={formatMoney(z.cash_difference)} tone={num(z.cash_difference) < 0 ? 'destructive' : num(z.cash_difference) > 0 ? 'warning' : 'default'}
                 hint={t('Counted {a} of {b} expected', { a: formatMoney(z.counted_cash), b: formatMoney(z.expected_cash) })} />
             </div>
@@ -309,7 +309,7 @@ export function PosSessionPage() {
                 {taxes.map((x) => <Row key={x.rate} k={t('{rate}% on {base}', { rate: num(x.rate), base: formatMoney(x.base) })} v={formatMoney(x.tax)} />)}
               </CardContent></Card>
             </div>
-            <Card><CardHeader className="pb-2"><CardTitle>{t('Best sellers')}</CardTitle></CardHeader><CardContent className="p-0">
+            <Card><CardHeader className="pb-2"><CardTitle>{t('Best sellers · sales with VAT')}</CardTitle></CardHeader><CardContent className="p-0">
               <Table><TableBody>{items.map((i) => (
                 <TableRow key={i.name} className="hover:bg-transparent"><TableCell>{i.name}</TableCell><TableCell className="text-right tabular">{num(i.quantity)}</TableCell><TableCell className="text-right tabular">{formatMoney(i.total)}</TableCell></TableRow>
               ))}</TableBody></Table>
@@ -319,7 +319,7 @@ export function PosSessionPage() {
         <TabsContent value="orders">
           <Card><CardContent className="overflow-x-auto p-0">
             <Table>
-              <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Receipt|pos')}</TableHead><TableHead>{t('Time')}</TableHead><TableHead>{t('Customer')}</TableHead><TableHead>{t('Paid with')}</TableHead><TableHead className="text-right">{t('Total')}</TableHead><TableHead className="w-[1%]" /></TableRow></TableHeader>
+              <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Receipt|pos')}</TableHead><TableHead>{t('Time')}</TableHead><TableHead>{t('Customer')}</TableHead><TableHead>{t('Paid with')}</TableHead><TableHead className="text-right">{t('Total (with VAT)')}</TableHead><TableHead className="w-[1%]" /></TableRow></TableHeader>
               <TableBody>
                 {orders.map((o) => (
                   <TableRow key={o.id} className="hover:bg-transparent">

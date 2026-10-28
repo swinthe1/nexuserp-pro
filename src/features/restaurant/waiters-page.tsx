@@ -73,11 +73,11 @@ export function WaitersPage() {
               <TableHead className="text-right">{t('Bills|restaurant')}</TableHead>
               <TableHead className="text-right">{t('Tables')}</TableHead>
               <TableHead className="text-right">{t('Guests')}</TableHead>
-              <TableHead className="text-right">{t('Takings')}</TableHead>
-              <TableHead className="text-right">{t('Per guest')}</TableHead>
-              <TableHead className="text-right">{t('Discounts')}</TableHead>
+              <TableHead className="text-right">{t('Takings (with VAT)')}</TableHead>
+              <TableHead className="text-right">{t('Per guest (with VAT)')}</TableHead>
+              <TableHead className="text-right">{t('Discounts (with VAT)')}</TableHead>
               <TableHead className="text-right">{t('Average table time')}</TableHead>
-              <TableHead className="text-right">{t('Cancelled after sending')}</TableHead>
+              <TableHead className="text-right">{t('Cancelled after sending · value with VAT')}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {rows.map((r) => (

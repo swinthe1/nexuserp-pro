@@ -80,7 +80,7 @@ export function MembershipsPage() {
         <div className="grid h-fit gap-4">
           <Door onRenew={(partner) => setSell({ partner_id: partner })} />
           <Card>
-            <CardHeader className="flex-row items-center justify-between gap-2 space-y-0"><CardTitle>{t('Plans')}</CardTitle>
+            <CardHeader className="flex-row items-center justify-between gap-2 space-y-0"><CardTitle>{t('Plans')} <span className="text-xs font-normal text-muted-foreground">· {t('prices with VAT')}</span></CardTitle>
               <Can perm="sales.write"><Button size="sm" variant="outline" onClick={() => setPlan('new')}><Plus /> {t('Add')}</Button></Can></CardHeader>
             <CardContent className="p-0"><ul className="divide-y">
               {(plans.data ?? []).map((p) => (
@@ -164,7 +164,7 @@ function SellDialog({ partnerId, plans, onClose }: { partnerId?: string; plans: 
             <div className="grid gap-1.5">{plans.map((p) => (
               <button key={p.id} type="button" onClick={() => { setPlanId(p.id); setPrice(num(p.price)) }}
                 className={cn('flex items-center justify-between rounded-md border px-3 py-2 text-left text-sm', planId === p.id ? 'border-primary bg-primary/5' : 'hover:bg-muted')}>
-                <span><span className="font-medium">{p.name}</span><span className="block text-xs text-muted-foreground">{planLength(p)}</span></span><span className="tabular">{formatMoney(p.price)}</span>
+                <span><span className="font-medium">{p.name}</span><span className="block text-xs text-muted-foreground">{planLength(p)}</span></span><span className="tabular" title={t('Price with VAT')}>{formatMoney(p.price)}</span>
               </button>))}</div></div>
           <div className="grid grid-cols-2 gap-2">
             <div className="grid gap-1.5"><Label htmlFor="sp">{t('Price with VAT')}</Label><Input id="sp" type="number" step="0.01" value={price} onChange={(e) => setPrice(num(e.target.value))} /></div>

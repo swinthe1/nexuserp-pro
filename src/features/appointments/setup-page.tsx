@@ -56,7 +56,7 @@ export function AppointmentsSetupPage() {
         </Card>
         <Card>
           <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
-            <div><CardTitle>{t('Services')}</CardTitle><CardDescription>{t('What a client books: a haircut, a check-up, an oil change.')}</CardDescription></div>
+            <div><CardTitle>{t('Services')}</CardTitle><CardDescription>{t('What a client books: a haircut, a check-up, an oil change.')} {t('Prices with VAT.')}</CardDescription></div>
             <Can perm="sales.write"><Button size="sm" onClick={() => setSvc('new')}><Plus /> {t('Add')}</Button></Can>
           </CardHeader>
           <CardContent className="p-0">
@@ -66,7 +66,7 @@ export function AppointmentsSetupPage() {
                   <span className="size-3 rounded-full" style={{ background: s.color ?? '#94a3b8' }} />
                   <span className="flex-1"><span className="font-medium">{s.name}</span>
                     <span className="block text-xs text-muted-foreground">{s.duration_min} min{s.resource_ids.length ? ` · ${s.resource_ids.map((id) => resources.data?.find((r) => r.id === id)?.name).filter(Boolean).join(', ')}` : ''}</span></span>
-                  <span className="tabular">{formatMoney(s.price)}</span>
+                  <span className="tabular" title={t('Price with VAT')}>{formatMoney(s.price)}</span>
                   {!s.is_active && <Badge variant="secondary">{t('Not active')}</Badge>}
                   <Can perm="sales.write"><Button variant="ghost" size="icon" aria-label={t('Edit')} onClick={() => setSvc(s)}><Pencil /></Button></Can>
                 </li>

@@ -50,7 +50,7 @@ export function AppointmentsCalendarPage() {
         <Button variant={isToday ? 'secondary' : 'outline'} onClick={() => setDay(localDay(new Date()))}>{t('Today')}</Button>
         <Button variant="outline" size="icon" aria-label={t('Next day')} onClick={() => setDay(shift(day, 1))}><ChevronRight /></Button>
         <Input type="date" className="w-40" value={day} onChange={(e) => e.target.value && setDay(e.target.value)} aria-label={t('Day')} />
-        {b && <span className="text-[13px] text-muted-foreground">{tn(live.length, '{n} appointment', '{n} appointments')} · {t('{amount} expected', { amount: formatMoney(expected) })}</span>}
+        {b && <span className="text-[13px] text-muted-foreground">{tn(live.length, '{n} appointment', '{n} appointments')} · {t('{amount} expected, with VAT', { amount: formatMoney(expected) })}</span>}
       </div>
       {board.isLoading ? <Skeleton className="h-[600px]" /> : board.isError ? <ErrorState error={board.error} onRetry={() => void board.refetch()} />
         : !b?.resources.length ? <EmptyState icon={Settings2} title={t('Add who works first')} description={t('Add the people (or chairs, rooms, lifts) and the services with their length and price; then the calendar opens.')}

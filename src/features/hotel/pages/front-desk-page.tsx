@@ -48,7 +48,7 @@ export function FrontDeskPage() {
                 <div><dt className="text-muted-foreground">{t('In the hotel')}</dt><dd className="text-lg font-semibold tabular">{d.in_house}</dd></div>
                 <div><dt className="text-muted-foreground">{t('Rooms to clean')}</dt><dd className={cn('text-lg font-semibold tabular', d.dirty > 0 && 'text-amber-600')}>{d.dirty}</dd></div>
               </dl>
-              <div className="ml-auto text-right text-[13px]"><div className="text-muted-foreground">{t('Invoiced for stays this month')}</div><div className="text-lg font-semibold tabular">{formatMoney(d.revenue_month)}</div></div>
+              <div className="ml-auto text-right text-[13px]"><div className="text-muted-foreground">{t('Invoiced for stays this month, with VAT')}</div><div className="text-lg font-semibold tabular">{formatMoney(d.revenue_month)}</div></div>
             </CardContent>
           </Card>
           <div className="grid gap-4 lg:grid-cols-2">

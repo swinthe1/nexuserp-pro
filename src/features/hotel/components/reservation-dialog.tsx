@@ -81,7 +81,7 @@ export function ReservationDialog({ id, initial, open, onOpenChange }: { id?: st
 
   const roomOptions = (rooms.data ?? []).filter((x) => x.is_active).map((x) => {
     const tp = types.data?.find((y) => y.id === x.room_type_id)
-    return { value: x.id, label: t('Room {n}', { n: x.number }), hint: tp ? `${tp.name} · ${formatMoney(tp.rate)}` : undefined }
+    return { value: x.id, label: t('Room {n}', { n: x.number }), hint: tp ? `${tp.name} · ${t('{amount} a night, with VAT', { amount: formatMoney(tp.rate) })}` : undefined }
   })
   const customerOptions = (customers.data ?? []).map((c) => ({ value: c.id, label: c.name, hint: c.tax_number ?? c.code }))
 
@@ -136,7 +136,7 @@ export function ReservationDialog({ id, initial, open, onOpenChange }: { id?: st
                 <Textarea id="rs-notes" rows={2} value={v.notes ?? ''} disabled={!editable} placeholder={t('Late arrival, extra bed, breakfast…')} onChange={(e) => set('notes', e.target.value || null)} /></div>
             </div>
             <div className="flex items-baseline justify-between rounded-md bg-muted/50 px-3 py-2 text-[13px]">
-              <span className="text-muted-foreground">{tn(n, '{n} night', '{n} nights')} × {formatMoney(v.rate)}</span>
+              <span className="text-muted-foreground">{tn(n, '{n} night', '{n} nights')} × {formatMoney(v.rate)} · {t('with VAT|short')}</span>
               <span className="text-base font-semibold tabular">{formatMoney(n * v.rate)}</span>
             </div>
             {r && <Charges reservation={r} editable={can('sales.write') && r.status === 'checked_in'} />}
@@ -182,7 +182,7 @@ function Charges({ reservation, editable }: { reservation: Reservation & { charg
   return (
     <div className="grid gap-2">
       <div className="flex items-baseline justify-between"><h3 className="text-[13px] font-semibold">{t('Extras on the room')}</h3>
-        {reservation.charges.length > 0 && <span className="text-[13px] tabular text-muted-foreground">{formatMoney(total)}</span>}</div>
+        {reservation.charges.length > 0 && <span className="text-[13px] tabular text-muted-foreground">{formatMoney(total)} {t('with VAT|short')}</span>}</div>
       {reservation.charges.map((c) => (
         <div key={c.id} className="flex items-center gap-2 text-[13px]">
           <span className="w-20 text-muted-foreground">{formatDate(c.charge_date)}</span>

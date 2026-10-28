@@ -52,7 +52,7 @@ function printBill(company: TillData['company'], tab: Tab) {
   const total = lines.reduce((s, l) => s + lineSum(l), 0)
   printHtml(`<div class="c big">${esc(company.name)}</div><div class="c">${esc(tab.table ? t('Table {name}', { name: tab.table }) : tab.label || tab.number)} · ${esc(tn(tab.guests, '{n} guest', '{n} guests'))}</div><hr>
     <table>${lines.map((l) => `<tr><td>${esc(num(l.quantity))} × ${esc(l.name)}</td><td style="text-align:right">${esc(formatMoney(lineSum(l)))}</td></tr>`).join('')}</table><hr>
-    <table><tr class="big"><td>${esc(t('Total'))}</td><td style="text-align:right">${esc(formatMoney(total))}</td></tr></table>
+    <table><tr class="big"><td>${esc(t('Total with VAT|till'))}</td><td style="text-align:right">${esc(formatMoney(total))}</td></tr></table>
     ${tab.guests > 1 ? `<div>${esc(t('Per guest {amount}', { amount: formatMoney(total / tab.guests) }))}</div>` : ''}
     <hr><div class="c">${esc(t('This is not a fiscal receipt.'))}</div>`, TICKET_CSS, 'receipt')
 }
@@ -236,7 +236,7 @@ function FloorView({ floor, loading, areaId, onOpen, onOpenTab, onSetup }: {
 function TableStatus({ o }: { o: FloorOrder }) {
   return (
     <div className="grid gap-1">
-      <span className="text-lg font-semibold tabular">{formatMoney(o.total)}</span>
+      <span className="text-lg font-semibold tabular" title={t('Total (with VAT)')}>{formatMoney(o.total)}</span>
       <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
         <span>{ago(o.opened_at)}</span>
         {o.waiter && <span className="truncate">{o.waiter.split(' ')[0]}</span>}
@@ -335,7 +335,7 @@ function TabScreen({ data, tabId, floor, kitchenPrint, onClose, onMoved, cashier
             <button key={c.variant_id} type="button" onClick={() => addDraft(c)}
               className="flex flex-col justify-between rounded-lg border bg-card p-2.5 text-left transition-[border-color,transform] hover:border-primary/50 active:scale-[0.98]">
               <span className="line-clamp-2 text-[13px] font-medium leading-tight">{c.name}</span>
-              <span className="text-base font-semibold tabular">{formatMoney(c.price)}</span>
+              <span className="text-base font-semibold tabular" title={t('Price with VAT')}>{formatMoney(c.price)}</span>
             </button>
           ))}
         </div>
@@ -343,7 +343,7 @@ function TabScreen({ data, tabId, floor, kitchenPrint, onClose, onMoved, cashier
           <div className="-mx-3 -mb-3 grid grid-cols-[1fr_auto] gap-2 border-t bg-card p-3">
             <Button variant="outline" className="h-14 justify-between" onClick={() => setPane('order')}>
               <span className="flex items-center gap-2"><ListOrdered /> {title}{newCount > 0 && <span className="rounded-full bg-warning px-2 text-xs font-semibold text-warning-foreground">+{newCount}</span>}</span>
-              <span className="text-base font-semibold tabular">{formatMoney(due)}</span>
+              <span className="text-base font-semibold tabular">{formatMoney(due)} <span className="text-[11px] font-normal text-muted-foreground">{t('with VAT|short')}</span></span>
             </Button>
             <Button className="h-14 px-5" loading={busy} disabled={!unsent} variant={unsent ? 'default' : 'secondary'} onClick={() => void sendAll()}><Send /> {t('Send')}</Button>
           </div>
@@ -409,7 +409,7 @@ function TabScreen({ data, tabId, floor, kitchenPrint, onClose, onMoved, cashier
         <div className="border-t px-4 py-3">
           {paidSum > 0 && <div className="flex justify-between text-[13px] text-muted-foreground"><span>{t('Paid already')}</span><span className="tabular">{formatMoney(paidSum)}</span></div>}
           <div className="mt-1 flex items-baseline justify-between">
-            <span className="text-sm font-medium">{t('To pay')}</span>
+            <span className="text-sm font-medium">{t('To pay, with VAT')}</span>
             <span className="text-[30px] font-semibold leading-none tracking-[-0.02em] tabular">{formatMoney(due)} <span className="text-sm font-normal text-muted-foreground">{cur}</span></span>
           </div>
           {o.guests > 1 && due > 0 && <div className="text-right text-xs text-muted-foreground">{t('Per guest {amount}', { amount: formatMoney(due / o.guests) })}</div>}
@@ -654,7 +654,7 @@ function PayTabDialog({ data, tab, cashier, onClose, onClosedTab }: { data: Till
         </div>
 
         <DialogFooter className="items-center sm:justify-between">
-          <span className="text-sm">{everything ? t('Whole bill') : t('Part of the bill')} · <b className="tabular">{formatMoney(total)}</b>
+          <span className="text-sm">{everything ? t('Whole bill') : t('Part of the bill')} · <b className="tabular">{formatMoney(total)}</b> {t('with VAT|short')}
             {discount > 0 && <span className="text-success"> ({t('{amount} off', { amount: formatMoney(discount) })})</span>}</span>
           <Button size="lg" disabled={total <= 0} onClick={() => setStep('pay')}>{t('Pay {amount}', { amount: formatMoney(total) })}</Button>
         </DialogFooter>

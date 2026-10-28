@@ -441,7 +441,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
                 className="flex flex-col justify-between rounded-lg border bg-card p-2.5 text-left transition-[border-color,transform] hover:border-primary/50 active:scale-[0.98]">
                 <span className="line-clamp-2 text-[13px] font-medium leading-tight">{c.name}</span>
                 <span className="flex items-end justify-between gap-1">
-                  <span className="text-base font-semibold tabular">{formatMoney(c.price)}</span>
+                  <span className="text-base font-semibold tabular" title={t('Price with VAT')}>{formatMoney(c.price)}</span>
                   {c.product_type === 'stockable' && <span className={cn('text-[11px] tabular', c.on_hand <= 0 ? 'text-destructive' : 'text-muted-foreground')} title={t('In stock at this till')}>{num(c.on_hand)}</span>}
                 </span>
               </button>
@@ -452,7 +452,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
             <div className="-mx-3 -mb-3 grid grid-cols-[1fr_auto] gap-2 border-t bg-card p-3">
               <Button variant="outline" className="h-14 justify-between" onClick={() => setPane('sale')}>
                 <span className="flex items-center gap-2"><ListOrdered /> {t('{a} lines · {b} items', { a: lines.length, b: num(itemsCount) })}</span>
-                <span className="text-base font-semibold tabular">{formatMoney(total)}</span>
+                <span className="text-base font-semibold tabular">{formatMoney(total)} <span className="text-[11px] font-normal text-muted-foreground">{t('with VAT|short')}</span></span>
               </Button>
               <Button className="h-14 px-5" disabled={!lines.length} onClick={() => setDialog('pay')}>{t('Pay')}</Button>
             </div>
@@ -525,7 +525,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
           <div className="border-t px-4 py-3">
             <div className="flex justify-between text-[13px] text-muted-foreground"><span>{t('{a} lines · {b} items', { a: lines.length, b: num(itemsCount) })}</span><span className="tabular">{t('incl. VAT {amount}', { amount: formatMoney(vat) })}</span></div>
             <div className="mt-1 flex items-baseline justify-between">
-              <span className="text-sm font-medium">{t('Total')}</span>
+              <span className="text-sm font-medium">{t('Total with VAT|till')}</span>
               <span className="text-[34px] font-semibold leading-none tracking-[-0.02em] tabular">{formatMoney(total)} <span className="text-sm font-normal text-muted-foreground">{cur}</span></span>
             </div>
             <div className="mt-3 grid grid-cols-[auto_1fr] gap-2">
@@ -752,13 +752,13 @@ function LineDialog({ line, canDiscount, onClose, onRemove }: { line: Line; canD
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-sm">
-        <DialogHeader><DialogTitle className="truncate pr-6">{line.name}</DialogTitle><DialogDescription>{line.sku} · {t('{cost} each', { cost: formatMoney(line.price) })}</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle className="truncate pr-6">{line.name}</DialogTitle><DialogDescription>{line.sku} · {t('{price} each, with VAT', { price: formatMoney(line.price) })}</DialogDescription></DialogHeader>
         <form className="grid grid-cols-2 gap-3" onSubmit={(e) => { e.preventDefault(); if (valid) onClose({ qty: num(qty), discount: d }) }}>
           <div className="grid gap-1.5"><Label htmlFor="ln-q">{t('Quantity')}</Label><Input id="ln-q" autoFocus inputMode="decimal" className="h-12 text-right text-lg tabular" value={qty} onChange={(e) => setQty(e.target.value.replace(',', '.'))} onFocus={(e) => e.target.select()} /></div>
           <div className="grid gap-1.5"><Label htmlFor="ln-d">{t('Discount %')}</Label><Input id="ln-d" inputMode="decimal" className="h-12 text-right text-lg tabular" value={disc} onChange={(e) => setDisc(e.target.value.replace(',', '.'))} placeholder="0" /></div>
           <div className="col-span-2 flex flex-wrap gap-1.5">{[5, 10, 15, 20].map((p) => <Button key={p} type="button" variant="outline" size="sm" onClick={() => setDisc(String(p))}>{p}%</Button>)}</div>
           {!allowed && <p className="col-span-2 text-[13px] text-destructive">{t('Discounts above {pct}% need a manager.', { pct: MAX_DISCOUNT })}</p>}
-          <div className="col-span-2 flex justify-between text-[13px]"><span className="text-muted-foreground">{t('Line total')}</span><span className="font-semibold tabular">{formatMoney(lineTotal({ qty: num(qty), price: line.price, discount: d }))}</span></div>
+          <div className="col-span-2 flex justify-between text-[13px]"><span className="text-muted-foreground">{t('Line total, with VAT')}</span><span className="font-semibold tabular">{formatMoney(lineTotal({ qty: num(qty), price: line.price, discount: d }))}</span></div>
           <div className="col-span-2 flex gap-2"><Button type="button" variant="ghost" className="text-destructive" onClick={onRemove}><Trash2 /> {t('Remove')}</Button><Button type="submit" className="ml-auto" disabled={!valid}>{t('Apply')}</Button></div>
         </form>
       </DialogContent>
@@ -806,7 +806,7 @@ function RefundDialog({ data, currency, onClose, onRefund }: { data: TillData; c
                 return (
                   <div key={i} className="flex items-center gap-3 border-b px-3 py-2 last:border-0">
                     <div className="min-w-0 flex-1"><div className="truncate text-[13px] font-medium">{l.description}</div>
-                      <div className="text-xs text-muted-foreground">{t('{a} sold · {b} can be returned · {price}', { a: num(l.quantity), b: max, price: formatMoney(l.unit_price) })}</div></div>
+                      <div className="text-xs text-muted-foreground">{t('{a} sold · {b} can be returned · {price} with VAT', { a: num(l.quantity), b: max, price: formatMoney(l.unit_price) })}</div></div>
                     <Input aria-label={t('Return quantity for {item}', { item: l.description })} inputMode="decimal" className={cn('h-10 w-20 text-right tabular', num(qty[i]) > max && 'border-destructive')}
                       value={qty[i] ?? ''} onChange={(e) => setQty((s) => ({ ...s, [i]: e.target.value.replace(',', '.') }))} />
                   </div>
@@ -873,7 +873,7 @@ function CloseDialog({ data, pending, onClose, onClosed }: { data: TillData; pen
           <div className="grid content-start gap-1.5 text-[13px]">
             {!s ? <Skeleton className="h-40" /> : <>
               <Row k={t('Receipts')} v={t('{a} · {b} refunds', { a: s.orders, b: s.refunds })} />
-              <Row k={t('Sales (VAT included)')} v={formatMoney(num(s.gross) - num(s.refunded))} />
+              <Row k={t('Sales (with VAT)')} v={formatMoney(num(s.gross) - num(s.refunded))} />
               {Object.entries(s.payments).map(([m, v]) => <Row key={m} k={tEnum(m)} v={formatMoney(v)} />)}
               <Row k={t('Change given')} v={`${num(s.change) ? '−' : ''}${formatMoney(s.change)}`} />
               <div className="my-1 border-t" />

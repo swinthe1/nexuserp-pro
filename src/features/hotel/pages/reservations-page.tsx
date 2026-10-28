@@ -50,7 +50,7 @@ export function ReservationsPage() {
               <Table className="min-w-[760px]">
                 <TableHeader><TableRow className="hover:bg-transparent">
                   <TableHead>{t('Number')}</TableHead><TableHead>{t('Guest')}</TableHead><TableHead>{t('Room')}</TableHead><TableHead>{t('Arrives')}</TableHead><TableHead>{t('Leaves')}</TableHead>
-                  <TableHead>{t('Booked through')}</TableHead><TableHead className="text-right">{t('Amount')}</TableHead><TableHead>{t('Status')}</TableHead>
+                  <TableHead>{t('Booked through')}</TableHead><TableHead className="text-right">{t('Amount (with VAT)')}</TableHead><TableHead>{t('Status')}</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
                   {list.data.map((r) => (

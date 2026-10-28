@@ -78,7 +78,7 @@ export function AppointmentDialog({ board, appt, initial, open, onOpenChange }: 
         <fieldset disabled={!editable} className="grid gap-3 sm:grid-cols-2">
           <div className="grid gap-1.5"><Label>{t('Service')}</Label>
             <SearchSelect value={f.service_id} onChange={(v) => { const s = board.services.find((x) => x.id === v); set({ service_id: v, duration: s?.duration_min ?? f.duration, price: s ? num(s.price) : f.price }) }}
-              options={services.map((s) => ({ value: s.id, label: s.name, hint: `${s.duration_min} min · ${formatMoney(s.price)}` /* i18n-ignore */ }))} placeholder={t('Choose the service')} /></div>
+              options={services.map((s) => ({ value: s.id, label: s.name, hint: `${s.duration_min} min · ${t('{amount} with VAT', { amount: formatMoney(s.price) })}` /* i18n-ignore */ }))} placeholder={t('Choose the service')} /></div>
           <div className="grid gap-1.5"><Label>{t('With')}</Label>
             <Select value={f.resource_id} onValueChange={(v) => set({ resource_id: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>

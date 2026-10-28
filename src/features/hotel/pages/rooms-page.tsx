@@ -156,7 +156,7 @@ function RoomDialog({ value, types, onClose }: { value: Partial<Room>; types: Ro
           <div className="grid gap-1.5"><Label>{t('Type')}</Label>
             <Select value={v.room_type_id} onValueChange={(x) => setV({ ...v, room_type_id: x })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{types.map((k) => <SelectItem key={k.id} value={k.id}>{k.name} · {formatMoney(k.rate)}</SelectItem>)}</SelectContent>
+              <SelectContent>{types.map((k) => <SelectItem key={k.id} value={k.id}>{k.name} · {t('{amount} a night, with VAT', { amount: formatMoney(k.rate) })}</SelectItem>)}</SelectContent>
             </Select></div>
           <div className="grid gap-1.5"><Label htmlFor="rm-notes">{t('Notes')}</Label><Input id="rm-notes" value={v.notes ?? ''} placeholder={t('e.g. Balcony, accessible')} onChange={(e) => setV({ ...v, notes: e.target.value })} /></div>
           {v.id && <label className="flex items-center justify-between text-[13px]">{t('In use')}<Switch checked={v.is_active ?? true} onCheckedChange={(c) => setV({ ...v, is_active: c })} /></label>}
