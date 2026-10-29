@@ -15249,6 +15249,12 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      platform_client_detail: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       platform_clients: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -15312,6 +15318,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: { platform: string | null; version: string | null; file_name: string | null; size_bytes: number | null; published_at: string | null }[]
       }
+      platform_events: {
+        Args: {
+          p_company?: string
+          p_limit?: number
+          p_before?: string
+          p_kind?: string
+        }
+        Returns: Json
+      }
       platform_licence_info: {
         Args: {
           p_company: string
@@ -15324,6 +15339,16 @@ export type Database = {
         Args: {
           p_company: string
         }
+        Returns: Json
+      }
+      platform_log_visit: {
+        Args: {
+          p_company: string
+        }
+        Returns: undefined
+      }
+      platform_overview: {
+        Args: Record<PropertyKey, never>
         Returns: Json
       }
       platform_pricing_save: {

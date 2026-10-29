@@ -1,3 +1,4 @@
+import { supabase } from '@/lib/supabase'
 import { CableCar, CalendarClock, Eye, GraduationCap } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
@@ -30,6 +31,8 @@ const SUPPORT_KEY = 'drispro.support'
 /** The platform owner opened this client's company on purpose (kept for the browser tab). */
 export function startSupportVisit(companyId: string) {
   try { sessionStorage.setItem(SUPPORT_KEY, companyId) } catch { /* ignore */ }
+  // written in the platform's diary (once an hour per client)
+  void supabase.rpc('platform_log_visit', { p_company: companyId }).then(() => undefined, () => undefined)
 }
 export function isSupportVisit(companyId: string) {
   try { return sessionStorage.getItem(SUPPORT_KEY) === companyId } catch { return false }

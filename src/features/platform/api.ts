@@ -13,6 +13,9 @@ export interface PlatformClient {
   licence_code?: string | null
   deployment?: 'any' | 'cloud' | 'local' | null
   local_seen_at?: string | null
+  local_version?: string | null
+  local_url?: string | null
+  has_server?: boolean
   max_users: number | null
   extra_features?: string[] | null
   max_warehouses?: number | null
@@ -82,7 +85,7 @@ export function usePlatformClients(enabled = true) {
 
 function useRefresh() {
   const qc = useQueryClient()
-  return () => Promise.all([qc.invalidateQueries({ queryKey: KEY }), qc.invalidateQueries({ queryKey: ['my-context'] })])
+  return () => Promise.all([Promise.all([qc.invalidateQueries({ queryKey: KEY }), qc.invalidateQueries({ queryKey: ['platform'] })]), qc.invalidateQueries({ queryKey: ['my-context'] }), qc.invalidateQueries({ queryKey: ['platform'] })])
 }
 
 export function useCreateClient() {
@@ -114,7 +117,7 @@ export function useCreateAccount() {
   return useMutation({
     mutationFn: async (v: { member: string; password: string; name?: string }) =>
       unwrap(await supabase.rpc('platform_create_account', { p_member: v.member, p_password: v.password, p_name: (v.name || null) as unknown as string })) as string,
-    onSuccess: () => { void qc.invalidateQueries({ queryKey: KEY }) },
+    onSuccess: () => { void Promise.all([qc.invalidateQueries({ queryKey: KEY }), qc.invalidateQueries({ queryKey: ['platform'] })]) },
   })
 }
 
@@ -149,7 +152,7 @@ export function useCreateSyncKey() {
   return useMutation({
     mutationFn: async (v: { company: string; name: string }) =>
       unwrap(await supabase.rpc('sync_create_connection', { p_company: v.company, p_name: v.name })) as unknown as { id: string; key: string },
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: KEY }), qc.invalidateQueries({ queryKey: ['platform'] })]),
   })
 }
 
@@ -157,7 +160,7 @@ export function useSetSyncActive() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (v: { id: string; active: boolean }) => unwrap(await supabase.rpc('sync_set_active', { p_id: v.id, p_active: v.active })),
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: KEY }), qc.invalidateQueries({ queryKey: ['platform'] })]),
   })
 }
 
@@ -174,7 +177,7 @@ export function useSetBusinessType() {
   return useMutation({
     mutationFn: async (v: { company: string; type: string; applyMenu: boolean }) =>
       unwrap(await supabase.rpc('platform_set_business_type', { p_company: v.company, p_type: v.type, p_apply_menu: v.applyMenu })),
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: KEY }), qc.invalidateQueries({ queryKey: ['platform'] })]),
   })
 }
 
@@ -183,7 +186,7 @@ export function useDeleteClient() {
   return useMutation({
     mutationFn: async (v: { company: string; name: string; deleteUsers: boolean }) =>
       unwrap(await supabase.rpc('platform_delete_client', { p_company: v.company, p_confirm_name: v.name, p_delete_users: v.deleteUsers })) as unknown as { rows: number; users_deleted: number },
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: KEY }), qc.invalidateQueries({ queryKey: ['platform'] })]),
   })
 }
 
@@ -196,4 +199,50 @@ export function useBackupStatus() {
     queryFn: async () => unwrap(await supabase.rpc('platform_backup_status')) as unknown as
       { last_ok: BackupRow | null; last_failed: BackupRow | null; copies_week: number; recent: BackupRow[] },
   })
+}
+
+/* ------------------------------------------------------------------ the console */
+
+export type PlatformEvent = { id: number; at: string; actor_email: string | null; company_id: string | null; company_name: string | null; kind: string
+  details: Record<string, unknown>; company_exists?: boolean }
+export type Attention = { kind: 'licence_expired' | 'licence_ending' | 'link_error' | 'link_quiet' | 'local_quiet' | 'pending_account' | 'seats_full'
+  company_id: string; company_name: string; at?: string | null; days?: number; detail?: string | null; name?: string; version?: string | null; member_id?: string }
+export interface PlatformOverview {
+  clients: number; active: number; ending: number; expired: number; suspended: number; training: number; users: number; seats: number
+  local_servers: number; local_online: number; local_versions: Record<string, number>
+  income_month: number | null; priced: boolean; by_plan: Record<string, number>
+  new_by_month: { month: string; n: number }[]
+  links: { active: number; errors: number; quiet: number }
+  reads_month: { total: number; failed: number }
+  events: PlatformEvent[]; attention: Attention[]
+}
+export function usePlatformOverview() {
+  return useQuery({ queryKey: ['platform', 'overview'], refetchInterval: 60_000,
+    queryFn: async () => unwrap(await supabase.rpc('platform_overview')) as unknown as PlatformOverview })
+}
+
+export type ClientMember = { member_id: string; user_id: string | null; email: string; name: string | null; status: string; last_sign_in_at: string | null
+  joined_at: string | null; external_accountant: boolean; roles: string[]; is_admin: boolean }
+export interface ClientDetail {
+  company: { id: string; name: string; legal_name: string | null; tax_number: string | null; vat_number: string | null; business_number: string | null
+    country_code: string; base_currency: string; address: string | null; phone: string | null; email: string | null; website: string | null
+    created_at: string; is_training: boolean; business_type: string }
+  licence: (Record<string, unknown> & { plan: string; max_users: number; valid_from: string; valid_until: string; status: string; code: string | null
+    deployment: string; local_seen_at: string | null; local_version: string | null; local_url: string | null; has_server: boolean
+    extra_features: string[]; max_warehouses: number | null; notes: string | null; updated_at: string }) | null
+  users: number
+  members: ClientMember[]
+  usage: { invoices: number; invoices_month: number; bills: number; pos_month: number; products: number; partners: number; warehouses: number
+    reads_month: number; last_activity: string | null; activity_by_day: { day: string; n: number }[] }
+  sync: SyncConnection[]
+  events: PlatformEvent[]
+}
+export function useClientDetail(id: string | undefined) {
+  return useQuery({ queryKey: ['platform', 'client', id], enabled: !!id,
+    queryFn: async () => unwrap(await supabase.rpc('platform_client_detail', { p_company: id! })) as unknown as ClientDetail })
+}
+
+export function usePlatformEvents(company?: string | null, kind?: string | null) {
+  return useQuery({ queryKey: ['platform', 'events', company ?? null, kind ?? null],
+    queryFn: async () => unwrap(await supabase.rpc('platform_events', { p_company: company ?? undefined, p_limit: 500, p_kind: kind ?? undefined })) as unknown as PlatformEvent[] })
 }

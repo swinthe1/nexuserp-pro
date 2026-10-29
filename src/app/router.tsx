@@ -149,7 +149,19 @@ function Home() {
 const PortalPage = lazyPage(() => import('@/features/portal/portal-page'), 'PortalPage')
 const DevelopersPage = lazyPage(() => import('@/features/public/developers-page'), 'DevelopersPage')
 const PartnerInfoPage = lazyPage(() => import('@/features/public/partner-info-page'), 'PartnerInfoPage')
-const PlatformPage = lazyPage(() => import('@/features/platform/platform-page'), 'PlatformPage')
+const PlatformLayout = lazyPage(() => import('@/features/platform/console/layout'), 'PlatformLayout')
+const PlatformOverview = lazyPage(() => import('@/features/platform/console/overview-page'), 'OverviewPage')
+const PlatformClients = lazyPage(() => import('@/features/platform/console/clients-page'), 'ClientsPage')
+const PlatformClient = lazyPage(() => import('@/features/platform/console/client-page'), 'ClientPage')
+const PlatformLicences = lazyPage(() => import('@/features/platform/console/pages'), 'LicencesPage')
+const PlatformServers = lazyPage(() => import('@/features/platform/console/pages'), 'ServersPage')
+const PlatformLinks = lazyPage(() => import('@/features/platform/console/pages'), 'LinksPage')
+const PlatformBackups = lazyPage(() => import('@/features/platform/console/pages'), 'BackupsPage')
+const PlatformReleases = lazyPage(() => import('@/features/platform/console/pages'), 'ReleasesPage')
+const PlatformPrices = lazyPage(() => import('@/features/platform/console/pages'), 'PricesPage')
+const PlatformDiary = lazyPage(() => import('@/features/platform/console/pages'), 'DiaryPage')
+const PlatformSettings = lazyPage(() => import('@/features/platform/console/pages'), 'ConsoleSettingsPage')
+const consolePage = (el: React.ReactNode) => <ErrorBoundary><React.Suspense fallback={<div className="h-64" />}>{el}</React.Suspense></ErrorBoundary>
 
 const router = createBrowserRouter([
   {
@@ -171,7 +183,24 @@ const router = createBrowserRouter([
   { path: '/developers', element: <Navigate to="/api" replace /> },
   // the customer's B2B portal: a private link, no account
   { path: '/b2b', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PortalPage /></React.Suspense></ErrorBoundary> },
-  { path: '/platform', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PlatformPage /></React.Suspense></ErrorBoundary> },
+  // the Super Admin's console: its own side menu and pages
+  {
+    path: '/platform', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PlatformLayout /></React.Suspense></ErrorBoundary>,
+    children: [
+      { index: true, element: consolePage(<PlatformOverview />) },
+      { path: 'clients', element: consolePage(<PlatformClients />) },
+      { path: 'clients/:id', element: consolePage(<PlatformClient />) },
+      { path: 'licences', element: consolePage(<PlatformLicences />) },
+      { path: 'servers', element: consolePage(<PlatformServers />) },
+      { path: 'links', element: consolePage(<PlatformLinks />) },
+      { path: 'backups', element: consolePage(<PlatformBackups />) },
+      { path: 'releases', element: consolePage(<PlatformReleases />) },
+      { path: 'prices', element: consolePage(<PlatformPrices />) },
+      { path: 'diary', element: consolePage(<PlatformDiary />) },
+      { path: 'settings', element: consolePage(<PlatformSettings />) },
+      { path: '*', element: <Navigate to="/platform" replace /> },
+    ],
+  },
   // the till runs full screen, outside the app shell, so it keeps working offline
   { path: '/pos/till/:registerId', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><TillPage /></React.Suspense></ErrorBoundary> },
   { path: '/pos/floor/:registerId', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><FloorPage /></React.Suspense></ErrorBoundary> },

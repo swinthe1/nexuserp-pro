@@ -1,55 +1,42 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowDownToLine, ArrowRight, Cable, Copy, Download, GraduationCap, KeyRound, LogOut, MoreHorizontal, Plus, Search, ServerCog, Shapes, Store, Trash2, UserPlus } from 'lucide-react'
+import { Cable, Copy, Download, GraduationCap, Trash2, UserPlus } from 'lucide-react'
 import * as React from 'react'
 import { supabase, supabaseAnonKey, supabaseUrl } from '@/lib/supabase'
 import { useForm } from 'react-hook-form'
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { AgentLogSheet } from '@/features/settings/components/agent-log'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { useAuth } from '@/app/auth-provider'
-import { useCompany } from '@/app/company-provider'
-import { EmptyState } from '@/components/empty-state'
-import { startSupportVisit } from '@/components/license-banner'
-import { ErrorState } from '@/components/error-state'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
 import { msg, t, td, tn } from '@/i18n'
-import { LanguageToggle } from '@/i18n/language'
-import { DemoClientDialog } from './demo-client-dialog'
 import { describeError } from '@/lib/errors'
 import { daysUntil, LICENSE_WARNING_DAYS } from '@/lib/license'
 import { cn, formatDate, formatQty as formatInt, todayISO } from '@/lib/utils'
-import { generatePassword, type PlatformClient, type SyncConnection, useCreateClient, useCreateSyncKey, usePlatformClients, useSaveLicense, useSetPassword, useSetSelfService, useSetSyncActive, useSetTraining, useSetBusinessType, useDeleteClient, useCreateAccount } from './api'
+import { generatePassword, type PlatformClient, type SyncConnection, useCreateClient, useCreateSyncKey, useSaveLicense, useSetPassword, useSetSyncActive, useSetTraining, useSetBusinessType, useDeleteClient, useCreateAccount } from './api'
 import { Checkbox } from '@/components/ui/checkbox'
 import { BUSINESS_TYPES, businessTypeLabel } from './business-types'
 import { Label } from '@/components/ui/label'
-import { BackupCard } from './backup-card'
-import { DesktopReleaseCard } from './desktop-release-card'
 import { FEATURES, PAID_MODULES, PLAN_FEATURES, PLAN_STORES, type Feature } from '@/lib/plans'
 
-const PLANS = [
+export const PLANS = [
   { value: 'basic', label: msg('Basic') },
   { value: 'standard', label: msg('Standard') },
   { value: 'pro', label: msg('Pro') },
 ]
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function PlanIncludesWatch({ form }: { form: any }) {
+export function PlanIncludesWatch({ form }: { form: any }) {
   const plan = (form.watch('plan') as string | undefined) ?? 'pro'
   return <PlanIncludes plan={plan} />
 }
 
 /** What a plan includes, under the plan picker. */
-function PlanIncludes({ plan }: { plan: string }) {
+export function PlanIncludes({ plan }: { plan: string }) {
   const included = PLAN_FEATURES[plan] ?? PLAN_FEATURES.pro
   const stores = PLAN_STORES[plan]
   return (
@@ -61,21 +48,21 @@ function PlanIncludes({ plan }: { plan: string }) {
   )
 }
 
-function planLabel(plan: string | null) {
+export function planLabel(plan: string | null) {
   if (!plan) return '—'
   if (plan === 'trial') return t('Trial')
   const p = PLANS.find((x) => x.value === plan)
   return p ? t(p.label) : plan
 }
 
-function addMonths(iso: string, months: number) {
+export function addMonths(iso: string, months: number) {
   const [y, m, d] = iso.split('-').map(Number)
   const dt = new Date(Date.UTC(y, m - 1 + months, d))
   return dt.toISOString().slice(0, 10)
 }
 
-type LicenseState = { label: string; variant: 'success' | 'warning' | 'destructive' | 'secondary'; rank: number }
-function licenseState(c: PlatformClient): LicenseState {
+export type LicenseState = { label: string; variant: 'success' | 'warning' | 'destructive' | 'secondary'; rank: number }
+export function licenseState(c: PlatformClient): LicenseState {
   if (!c.valid_until || !c.status) return { label: t('No licence'), variant: 'destructive', rank: 0 }
   if (c.status === 'suspended') return { label: t('Paused'), variant: 'destructive', rank: 1 }
   const days = daysUntil(c.valid_until)
@@ -85,213 +72,11 @@ function licenseState(c: PlatformClient): LicenseState {
   return { label: t('Active'), variant: 'success', rank: 5 }
 }
 
-async function copy(text: string) {
+export async function copy(text: string) {
   try { await navigator.clipboard.writeText(text); toast.success(t('Copied')) } catch { toast.error(t('Could not copy. Select the text and copy it by hand.')) }
 }
 
-/* ------------------------------------------------------------------ page */
-
-export function PlatformPage() {
-  const { user, loading, signOut } = useAuth()
-  const { isSuperAdmin, loading: ctxLoading, companies, switchCompany } = useCompany()
-  const navigate = useNavigate()
-  const [params, setParams] = useSearchParams()
-  const clients = usePlatformClients(isSuperAdmin)
-  const selfService = useSetSelfService()
-  const [query, setQuery] = React.useState('')
-  const [creating, setCreating] = React.useState(params.get('new') === '1')
-  const [demo, setDemo] = React.useState(false)
-  const [editing, setEditing] = React.useState<PlatformClient | null>(null)
-  const [password, setPassword] = React.useState<{ email: string } | null>(null)
-  const [live, setLive] = React.useState<string | null>(null)
-  const [typing, setTyping] = React.useState<PlatformClient | null>(null)
-  const [deleting, setDeleting] = React.useState<PlatformClient | null>(null)
-
-  if (!loading && !user) return <Navigate to="/login" replace />
-  if (loading || ctxLoading) return <div className="min-h-dvh bg-background" />
-  if (!isSuperAdmin) return <Navigate to="/" replace />
-
-  const list = clients.data?.clients ?? []
-  const q = query.trim().toLowerCase()
-  const shown = list
-    .filter((c) => !q || [c.name, c.legal_name, c.tax_number, ...c.admins].some((v) => v?.toLowerCase().includes(q)))
-    .sort((a, b) => licenseState(a).rank - licenseState(b).rank || a.name.localeCompare(b.name))
-  const counts = list.reduce((acc, c) => {
-    const s = licenseState(c)
-    if (s.rank === 5 || s.rank === 4) acc.active++
-    else if (s.rank === 3) acc.soon++
-    else acc.off++
-    return acc
-  }, { active: 0, soon: 0, off: 0 })
-
-  const openCompany = async (id: string, path = '/') => { startSupportVisit(id); await switchCompany(id); navigate(path) }
-
-  return (
-    <div className="min-h-dvh bg-background">
-      <header className="flex h-14 items-center gap-3 border-b bg-sidebar px-4 sm:px-6">
-        <img src="/favicon.svg" alt="" className="size-7" />
-        <span className="text-sm font-semibold">DrisPRO</span>
-        <span className="hidden text-sm text-muted-foreground sm:inline">{t('Platform')}</span>
-        <div className="ml-auto flex items-center gap-2">
-          <LanguageToggle />
-          {companies.length > 0 && <Button variant="outline" size="sm" onClick={() => navigate('/')}>{t('Open the app')} <ArrowRight /></Button>}
-          <Button variant="ghost" size="sm" onClick={() => void signOut()} aria-label={t('Sign out')}><LogOut /><span className="hidden sm:inline">{t('Sign out')}</span></Button>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-xl font-semibold tracking-[-0.01em]">{t('Clients and licences')}</h1>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              {t('Create each client company with its administrator and licence. Only you see this page; clients cannot create companies themselves.')}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setDemo(true)}><Store /> {t('Demo client')}</Button>
-            <Button onClick={() => setCreating(true)}><Plus /> {t('New client')}</Button>
-          </div>
-        </div>
-
-        <div className="mb-4 grid grid-cols-3 gap-3">
-          <Count value={counts.active} label={t('Active')} />
-          <Count value={counts.soon} label={tn(LICENSE_WARNING_DAYS, 'Ending within {n} day', 'Ending within {n} days')} tone={counts.soon ? 'warning' : undefined} />
-          <Count value={counts.off} label={t('Expired or paused')} tone={counts.off ? 'destructive' : undefined} />
-        </div>
-
-        <PendingAccounts clients={list} />
-
-        <div className="rounded-lg border bg-card">
-          <div className="flex items-center gap-2 border-b p-3">
-            <div className="relative w-full max-w-xs">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('Search name, NUI/NIPT or email')} className="pl-8" aria-label={t('Search clients')} />
-            </div>
-            <span className="ml-auto text-xs text-muted-foreground">{tn(list.length, '{n} client', '{n} clients')}</span>
-          </div>
-          {clients.isLoading ? (
-            <div className="space-y-2 p-4">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10" />)}</div>
-          ) : clients.error ? (
-            <ErrorState error={clients.error} onRetry={() => void clients.refetch()} compact />
-          ) : !shown.length ? (
-            <EmptyState icon={ServerCog} compact
-              title={list.length ? t('No client matches the search') : t('No clients yet')}
-              description={list.length ? undefined : t('Add the first client: their company, the administrator account and the licence period.')}
-              action={list.length ? undefined : <Button onClick={() => setCreating(true)}><Plus /> {t('New client')}</Button>} />
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('Client')}</TableHead>
-                    <TableHead>{t('Administrator')}</TableHead>
-                    <TableHead className="text-right">{t('Users')}</TableHead>
-                    <TableHead>{t('Plan')}</TableHead>
-                    <TableHead>{t('Valid until')}</TableHead>
-                    <TableHead>{t('Last activity')}</TableHead>
-                    <TableHead className="w-10"><span className="sr-only">{t('Actions')}</span></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {shown.map((c) => {
-                    const s = licenseState(c)
-                    const full = c.max_users != null && c.users >= c.max_users
-                    return (
-                      <TableRow key={c.id}>
-                        <TableCell>
-                          <span className="block font-medium">{c.name}</span>
-                          <span className="block text-xs text-muted-foreground">
-                            {c.country_code === 'XK' ? t('Kosovo') : t('Albania')}{c.tax_number ? ` · ${c.tax_number}` : ''} · {t(businessTypeLabel(c.business_type))}
-                          </span>
-                          {(c.is_training || (c.sync ?? []).some((x) => x.is_active)) && (
-                            <span className="mt-1 flex flex-wrap gap-1">
-                              {c.is_training && <Badge variant="warning">{t('Training')}</Badge>}
-                              {(c.sync ?? []).filter((x) => x.is_active).map((x) => <Badge key={x.id} variant={linkState(x).variant}>{linkState(x).label}</Badge>)}
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-[13px]">{c.admins[0] ?? <span className="text-muted-foreground">—</span>}
-                          {c.admins.length > 1 && <span className="text-xs text-muted-foreground"> +{c.admins.length - 1}</span>}</TableCell>
-                        <TableCell className={full ? 'text-right tabular text-warning' : 'text-right tabular'}>{formatInt(c.users)} / {c.max_users ?? '—'}</TableCell>
-                        <TableCell>
-                          <span className="block">{planLabel(c.plan)}</span>
-                          {c.licence_code && (
-                            <button type="button" title={t('Copy')} className="mt-0.5 block font-mono text-[11px] text-muted-foreground hover:text-foreground"
-                              onClick={() => { void navigator.clipboard?.writeText(c.licence_code!); toast.success(t('Code copied')) }}>{c.licence_code}</button>
-                          )}
-                          {c.deployment && c.deployment !== 'any' && <span className="text-[11px] text-muted-foreground">{c.deployment === 'local' ? t('Local server only') : t('Cloud only')}</span>}
-                          {c.local_seen_at && <span className="block text-[11px] text-muted-foreground">{t('Local server')} · {formatDate(c.local_seen_at, true)}</span>}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col items-start gap-1">
-                            <Badge variant={s.variant}>{s.label}</Badge>
-                            {c.valid_until && <span className="text-xs text-muted-foreground">{formatDate(c.valid_until)}</span>}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-[13px] text-muted-foreground">{c.last_activity ? formatDate(c.last_activity, true) : t('Never')}</TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon-sm" aria-label={t('Actions for {name}', { name: c.name })}><MoreHorizontal /></Button></DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onSelect={() => setEditing(c)}>{t('Change licence')}</DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => setTyping(c)}><Shapes /> {t('Type of business')}</DropdownMenuItem>
-                              <DropdownMenuItem disabled={!c.admins.length} onSelect={() => setPassword({ email: c.admins[0] ?? '' })}><KeyRound /> {t('Set a new password')}</DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onSelect={() => void openCompany(c.id, '/settings/migration')}><ArrowDownToLine /> {t('Move data from the old program')}</DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => setLive(c.id)}><Cable /> {t('Live link and training')}</DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => void openCompany(c.id)}><ArrowRight /> {t('Open this company')}</DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setDeleting(c)}><Trash2 /> {t('Delete the client')}</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </div>
-
-        <BackupCard />
-        <DesktopReleaseCard />
-
-        <div className="mt-6 flex items-start justify-between gap-4 rounded-lg border bg-card p-4">
-          <div>
-            <p className="text-sm font-medium">{t('Open sign-up')}</p>
-            <p className="mt-0.5 max-w-xl text-[13px] text-muted-foreground">
-              {t('When on, anyone can create an account and a company with a 30-day trial. Keep it off to decide every client yourself; invited staff can always sign up.')}
-            </p>
-          </div>
-          <Switch checked={!!clients.data?.self_service} disabled={selfService.isPending || clients.isLoading}
-            aria-label={t('Open sign-up')}
-            onCheckedChange={(on) => selfService.mutate(on, {
-              onSuccess: () => toast.success(on ? t('Anyone can sign up now') : t('Sign-up is by invitation only')),
-              onError: (e) => toast.error(describeError(e)),
-            })} />
-        </div>
-      </main>
-
-      <DemoClientDialog open={demo} onOpenChange={setDemo} />
-      <NewClientDialog open={creating} onOpenChange={(o) => { setCreating(o); if (!o && params.get('new')) setParams({}, { replace: true }) }} />
-      <LicenseDialog client={editing} onClose={() => setEditing(null)} />
-      <PasswordDialog target={password} onClose={() => setPassword(null)} />
-      <BusinessTypeDialog client={typing} onClose={() => setTyping(null)} />
-      <DeleteClientDialog client={deleting} onClose={() => setDeleting(null)} />
-      <LiveLinkDialog client={list.find((x) => x.id === live) ?? null} onClose={() => setLive(null)} />
-    </div>
-  )
-}
-
-function Count({ value, label, tone }: { value: number; label: string; tone?: 'warning' | 'destructive' }) {
-  return (
-    <div className="rounded-lg border bg-card px-4 py-3">
-      <span className={tone === 'warning' ? 'block text-2xl font-semibold tabular text-warning' : tone === 'destructive' ? 'block text-2xl font-semibold tabular text-destructive' : 'block text-2xl font-semibold tabular'}>{formatInt(value)}</span>
-      <span className="block text-xs text-muted-foreground">{label}</span>
-    </div>
-  )
-}
+/* ------------------------------------------------------------------ the windows of the console */
 
 /* ------------------------------------------------------------------ new client */
 
@@ -312,7 +97,7 @@ const clientSchema = z.object({
 }).refine((v) => v.valid_until >= v.valid_from, { path: ['valid_until'], message: msg('The end date is before the start date') })
 type ClientValues = z.infer<typeof clientSchema>
 
-function NewClientDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+export function NewClientDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const create = useCreateClient()
   const [done, setDone] = React.useState<ClientValues | null>(null)
   const defaults = React.useCallback((): ClientValues => ({
@@ -436,7 +221,7 @@ function NewClientDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
 type LicenseShape = { plan: string; max_users: number; valid_from: string; valid_until: string; notes?: string | null }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function LicenseFields({ form }: { form: any }) {
+export function LicenseFields({ form }: { form: any }) {
   const extend = (months: number) => {
     const until: string = form.getValues('valid_until')
     const base = until && until > todayISO() ? until : todayISO()
@@ -492,7 +277,7 @@ const licenseSchema = z.object({
 }).refine((v) => v.valid_until >= v.valid_from, { path: ['valid_until'], message: msg('The end date is before the start date') })
 type LicenseValues = z.infer<typeof licenseSchema> & LicenseShape
 
-function LicenseDialog({ client, onClose }: { client: PlatformClient | null; onClose: () => void }) {
+export function LicenseDialog({ client, onClose }: { client: PlatformClient | null; onClose: () => void }) {
   const save = useSaveLicense()
   const form = useForm<LicenseValues>({ resolver: zodResolver(licenseSchema) })
   const plan = form.watch('plan') ?? 'pro'
@@ -583,7 +368,7 @@ function LicenseDialog({ client, onClose }: { client: PlatformClient | null; onC
 
 /* ------------------------------------------------------------------ licence code: the program activates with it, cloud or local server */
 type LicenceInfo = { code: string; deployment: 'any' | 'cloud' | 'local'; local_server: boolean; local_seen_at: string | null; local_url: string | null; local_version: string | null }
-function LicenceCodeCard({ companyId }: { companyId: string }) {
+export function LicenceCodeCard({ companyId }: { companyId: string }) {
   const [info, setInfo] = React.useState<LicenceInfo | null>(null)
   const [busy, setBusy] = React.useState(false)
   const call = React.useCallback(async (deployment?: string, free = false) => {
@@ -627,7 +412,7 @@ function LicenceCodeCard({ companyId }: { companyId: string }) {
 
 /* the nightly copies a local server sent to our cloud (encrypted) */
 type CloudCopy = { file: string; parts: number; bytes: number; created_at: string }
-function CloudCopies({ companyId }: { companyId: string }) {
+export function CloudCopies({ companyId }: { companyId: string }) {
   const [rows, setRows] = React.useState<CloudCopy[] | null>(null)
   React.useEffect(() => {
     let live = true
@@ -651,7 +436,7 @@ function CloudCopies({ companyId }: { companyId: string }) {
 /* supplier invoices read with AI: this month against the limit, the months before with their cost */
 type AiUsage = { used: number; limit: number; override: number | null; plan_limit: number; months: { month: string; reads?: number; questions?: number; failed?: number; cost_usd: number }[] }
 /* with chat: the assistant's questions instead, counted and limited the same way */
-function AiReadsCard({ companyId, chat = false }: { companyId: string; chat?: boolean }) {
+export function AiReadsCard({ companyId, chat = false }: { companyId: string; chat?: boolean }) {
   const [u, setU] = React.useState<AiUsage | null>(null)
   const [val, setVal] = React.useState('')
   const [busy, setBusy] = React.useState(false)
@@ -700,7 +485,7 @@ function AiReadsCard({ companyId, chat = false }: { companyId: string; chat?: bo
 /* ------------------------------------------------------------------ new password */
 
 /** People a client's administrator invited: the platform administrator makes their account. */
-function PendingAccounts({ clients }: { clients: PlatformClient[] }) {
+export function PendingAccounts({ clients }: { clients: PlatformClient[] }) {
   const rows = clients.flatMap((c) => (c.pending ?? []).map((p) => ({ ...p, company: c.name })))
   const [target, setTarget] = React.useState<(typeof rows)[number] | null>(null)
   // the dialog stays open after the account is made (the row is gone by then) to show the password
@@ -728,7 +513,7 @@ function PendingAccounts({ clients }: { clients: PlatformClient[] }) {
   )
 }
 
-function CreateAccountDialog({ target, onClose }: { target: { member_id: string; email: string; company: string }; onClose: () => void }) {
+export function CreateAccountDialog({ target, onClose }: { target: { member_id: string; email: string; company: string }; onClose: () => void }) {
   const create = useCreateAccount()
   const [name, setName] = React.useState('')
   const [pw, setPw] = React.useState(generatePassword)
@@ -772,7 +557,7 @@ function CreateAccountDialog({ target, onClose }: { target: { member_id: string;
   )
 }
 
-function PasswordDialog({ target, onClose }: { target: { email: string } | null; onClose: () => void }) {
+export function PasswordDialog({ target, onClose }: { target: { email: string } | null; onClose: () => void }) {
   const setPw = useSetPassword()
   const [email, setEmail] = React.useState('')
   const [pw, setPwValue] = React.useState('')
@@ -825,7 +610,7 @@ function PasswordDialog({ target, onClose }: { target: { email: string } | null;
 
 /* ------------------------------------------------------------------ live link */
 
-function linkState(x: SyncConnection): { label: string; variant: 'success' | 'warning' | 'secondary' | 'destructive' } {
+export function linkState(x: SyncConnection): { label: string; variant: 'success' | 'warning' | 'secondary' | 'destructive' } {
   if (!x.is_active) return { label: t('Link off'), variant: 'secondary' }
   if (!x.last_seen_at) return { label: t('Not connected yet'), variant: 'secondary' }
   if (x.last_error) return { label: t('Link has errors'), variant: 'destructive' }
@@ -833,7 +618,7 @@ function linkState(x: SyncConnection): { label: string; variant: 'success' | 'wa
   return minutes <= 3 ? { label: t('Live|link'), variant: 'success' } : { label: t('No signal'), variant: 'warning' }
 }
 
-function countsText(c: Record<string, unknown> | null) {
+export function countsText(c: Record<string, unknown> | null) {
   if (!c) return ''
   const parts: string[] = []
   const pick = (k: string, label: string) => {
@@ -847,7 +632,7 @@ function countsText(c: Record<string, unknown> | null) {
   return parts.join(' · ')
 }
 
-function LiveLinkDialog({ client, onClose }: { client: PlatformClient | null; onClose: () => void }) {
+export function LiveLinkDialog({ client, onClose }: { client: PlatformClient | null; onClose: () => void }) {
   const createKey = useCreateSyncKey()
   const setActive = useSetSyncActive()
   const setTraining = useSetTraining()
@@ -948,7 +733,7 @@ function LiveLinkDialog({ client, onClose }: { client: PlatformClient | null; on
 
 /* ------------------------------------------------------------------ type of business */
 
-function BusinessTypeDialog({ client, onClose }: { client: PlatformClient | null; onClose: () => void }) {
+export function BusinessTypeDialog({ client, onClose }: { client: PlatformClient | null; onClose: () => void }) {
   const save = useSetBusinessType()
   const [type, setType] = React.useState('general')
   const [applyMenu, setApplyMenu] = React.useState(true)
@@ -995,7 +780,7 @@ function BusinessTypeDialog({ client, onClose }: { client: PlatformClient | null
 
 /* ------------------------------------------------------------------ delete a client */
 
-function DeleteClientDialog({ client, onClose }: { client: PlatformClient | null; onClose: () => void }) {
+export function DeleteClientDialog({ client, onClose }: { client: PlatformClient | null; onClose: () => void }) {
   const del = useDeleteClient()
   const [name, setName] = React.useState('')
   const [users, setUsers] = React.useState(true)
