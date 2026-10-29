@@ -22,6 +22,13 @@ export const EVENT: Record<string, { label: string; icon: LucideIcon; tone?: 'da
   link_on: { label: msg('Live link switched on'), icon: Cable, tone: 'good' },
   link_off: { label: msg('Live link switched off'), icon: Cable, tone: 'danger' },
   support_visit: { label: msg('Opened the company to help'), icon: LifeBuoy },
+  member_added: { label: msg('Member added'), icon: UserPlus, tone: 'good' },
+  client_details_set: { label: msg('Company details changed'), icon: Building2 },
+  member_roles_set: { label: msg('Roles changed'), icon: ShieldCheck },
+  member_suspended: { label: msg('Access suspended'), icon: UserPlus, tone: 'danger' },
+  member_active: { label: msg('Access restored'), icon: UserPlus, tone: 'good' },
+  member_removed: { label: msg('Removed from the company'), icon: Trash2, tone: 'danger' },
+  member_details_set: { label: msg('Details changed'), icon: KeyRound },
 }
 export const eventLook = (kind: string) => EVENT[kind] ?? { label: kind, icon: ScrollText }
 
@@ -29,6 +36,8 @@ const FIELD: Record<string, string> = {
   plan: msg('Plan'), max_users: msg('Users'), valid_from: msg('Valid from'), valid_until: msg('Valid until'), status: msg('Status'),
   extra_features: msg('Added modules'), max_warehouses: msg('Units'), deployment: msg('Where it runs'), ai_reads_limit: msg('Photo reads a month'),
   ai_chat_limit: msg('Assistant questions a month'), notes: msg('Notes'),
+  name: msg('Name'), legal_name: msg('Legal name'), tax_number: msg('NUI'), vat_number: msg('VAT number'), business_number: msg('Business number'),
+  address_line1: msg('Address'), city: msg('City'), phone: msg('Phone'), email: msg('Email'), website: msg('Website'),
 }
 
 function value(k: string, v: unknown): string {
@@ -44,14 +53,16 @@ function value(k: string, v: unknown): string {
 /** the details of a line, in words: "Users: 10 → 11 · Valid until: 25.11.2026 → 25.11.2027" */
 export function eventDetails(e: PlatformEvent): string {
   const d = e.details ?? {}
-  if (e.kind === 'licence_changed') {
+  if (e.kind === 'licence_changed' || e.kind === 'client_details_set') {
     return Object.entries(d).filter(([k]) => FIELD[k]).map(([k, x]) => {
       const c = x as { from: unknown; to: unknown }
       return k === 'notes' ? t(FIELD[k]!) : `${t(FIELD[k]!)}: ${value(k, c.from)} → ${value(k, c.to)}`
     }).join(' · ')
   }
   if (e.kind === 'licence_created') return [planLabel(String(d.plan ?? '')), d.max_users != null ? t('{n} users', { n: Number(d.max_users) }) : '', d.valid_until ? t('until {date}', { date: formatDate(String(d.valid_until)) }) : ''].filter(Boolean).join(' · ')
-  if (e.kind === 'password_set' || e.kind === 'account_created') return String(d.email ?? '')
+  if (e.kind === 'password_set' || e.kind === 'account_created' || e.kind === 'member_suspended' || e.kind === 'member_active' || e.kind === 'member_removed') return String(d.email ?? '')
+  if (e.kind === 'member_added' || e.kind === 'member_roles_set') return [d.email, Array.isArray(d.roles) ? (d.roles as string[]).join(', ') : ''].filter(Boolean).join(' · ')
+  if (e.kind === 'member_details_set') return [d.email, d.name].filter(Boolean).join(' → ')
   if (e.kind === 'business_type_set') return t(businessTypeLabel(String(d.type ?? '')))
   if (e.kind === 'self_service_set') return d.on ? t('Anyone can sign up') : t('By invitation only')
   if (e.kind === 'client_deleted') return t('{n} records deleted', { n: Number(d.rows ?? 0) })

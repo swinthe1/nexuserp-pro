@@ -222,10 +222,10 @@ export function usePlatformOverview() {
 }
 
 export type ClientMember = { member_id: string; user_id: string | null; email: string; name: string | null; status: string; last_sign_in_at: string | null
-  joined_at: string | null; external_accountant: boolean; roles: string[]; is_admin: boolean }
+  joined_at: string | null; external_accountant: boolean; roles: string[]; role_keys: string[]; is_admin: boolean }
 export interface ClientDetail {
   company: { id: string; name: string; legal_name: string | null; tax_number: string | null; vat_number: string | null; business_number: string | null
-    country_code: string; base_currency: string; address: string | null; phone: string | null; email: string | null; website: string | null
+    country_code: string; base_currency: string; address: string | null; address_line1: string | null; city: string | null; phone: string | null; email: string | null; website: string | null
     created_at: string; is_training: boolean; business_type: string }
   licence: (Record<string, unknown> & { plan: string; max_users: number; valid_from: string; valid_until: string; status: string; code: string | null
     deployment: string; local_seen_at: string | null; local_version: string | null; local_url: string | null; has_server: boolean
@@ -246,3 +246,51 @@ export function usePlatformEvents(company?: string | null, kind?: string | null)
   return useQuery({ queryKey: ['platform', 'events', company ?? null, kind ?? null],
     queryFn: async () => unwrap(await supabase.rpc('platform_events', { p_company: company ?? undefined, p_limit: 500, p_kind: kind ?? undefined })) as unknown as PlatformEvent[] })
 }
+
+/* ------------------------------------------------------------------ the VPS */
+export type ServerDisk = { mount: string; total: number; used: number; free: number; inodes_pct?: number | null }
+export type ServerCheck = { name: string; url: string; status?: number; ms?: number; ok: boolean; error?: string; cert_days?: number }
+export type ServerContainer = { name: string; at: string; image: string | null; state: string; status: string | null; health: string | null; restarts: number | null
+  started_at: string | null; cpu_pct: number | null; mem_bytes: number | null; mem_limit: number | null; net_io: string | null; block_io: string | null }
+export type ServerAlert = { kind: 'monitor_quiet' | 'cpu_high' | 'mem_high' | 'disk_high' | 'check_failed' | 'cert_soon' | 'container_down' | 'container_unhealthy' | 'many_errors'
+  at?: string | null; name?: string; value?: number; detail?: string | null }
+export interface ServerStatus {
+  last: null | { at: string; cpu_pct: number; load1: number; load5: number; load15: number; cores: number; mem_total: number; mem_available: number
+    swap_total: number; swap_used: number; net_rx: number; net_tx: number; uptime_s: number; disks: ServerDisk[]; checks: ServerCheck[]
+    host: { hostname?: string; os?: string; kernel?: string; docker?: string; boot?: string } }
+  series: { at: string; cpu: number; mem: number; load: number; rx: number; tx: number }[]
+  containers: ServerContainer[]
+  errors: { id: number; at: string; container: string; level: 'error' | 'warn'; line: string }[]
+  error_counts: Record<string, number>
+  tails: { container: string; at: string }[]
+  database: { version?: string; size?: number; connections?: number; active?: number; idle_in_tx?: number; max_connections?: number; longest_s?: number
+    cache_hit?: number; deadlocks?: number; started_at?: string; tables?: { name: string; size: number; rows: number }[]; error?: string }
+  alerts: ServerAlert[]
+}
+export function useServerStatus(hours = 24) {
+  return useQuery({ queryKey: ['platform', 'server', hours], refetchInterval: 60_000,
+    queryFn: async () => unwrap(await supabase.rpc('platform_server_status', { p_hours: hours })) as unknown as ServerStatus })
+}
+export function useServerLog(container: string | null) {
+  return useQuery({ queryKey: ['platform', 'server-log', container], enabled: !!container, refetchInterval: 60_000,
+    queryFn: async () => unwrap(await supabase.rpc('platform_server_log', { p_container: container! })) as unknown as { container: string; at: string; lines: string } | null })
+}
+
+/* ------------------------------------------------------------------ a client's people */
+export type CompanyRole = { id: string; key: string; name: string; description: string | null }
+export function useCompanyRoles(company: string | undefined) {
+  return useQuery({ queryKey: ['platform', 'roles', company], enabled: !!company,
+    queryFn: async () => unwrap(await supabase.rpc('platform_company_roles', { p_company: company! })) as unknown as CompanyRole[] })
+}
+function usePeopleAction<A, R>(fn: (a: A) => Promise<R>) {
+  const qc = useQueryClient()
+  return useMutation({ mutationFn: fn, onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: ['platform'] }), qc.invalidateQueries({ queryKey: KEY })]) })
+}
+export const useAddMember = () => usePeopleAction(async (a: { company: string; email: string; name: string; password: string; roles: string[] }) =>
+  unwrap(await supabase.rpc('platform_add_member', { p_company: a.company, p_email: a.email, p_name: a.name, p_password: a.password, p_role_keys: a.roles })) as unknown as { member_id: string; new_account: boolean; email: string })
+export const useMemberRoles = () => usePeopleAction(async (a: { member: string; roles: string[] }) =>
+  unwrap(await supabase.rpc('platform_member_roles', { p_member: a.member, p_role_keys: a.roles })))
+export const useMemberStatus = () => usePeopleAction(async (a: { member: string; status: 'active' | 'suspended' | 'removed' }) =>
+  unwrap(await supabase.rpc('platform_member_status', { p_member: a.member, p_status: a.status })))
+export const useUpdateCompany = () => usePeopleAction(async (a: { company: string; values: Record<string, string> }) =>
+  unwrap(await supabase.rpc('platform_update_company', { p_company: a.company, p: a.values as never })))

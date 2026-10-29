@@ -1,4 +1,4 @@
-import { ArrowRight, Cable, CalendarPlus, Copy, GraduationCap, KeyRound, Pause, Play, Server, ShieldCheck, Trash2, UserPlus } from 'lucide-react'
+import { Pencil, ArrowRight, Cable, CalendarPlus, Copy, GraduationCap, Pause, Play, Server, ShieldCheck, Trash2} from 'lucide-react'
 import * as React from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
@@ -11,18 +11,21 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { formatDateWith, t, td, tn } from '@/i18n'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { formatDateWith, msg, t, tn } from '@/i18n'
 import { describeError } from '@/lib/errors'
 import { daysUntil } from '@/lib/license'
 import { FEATURES } from '@/lib/plans'
 import { cn, formatDate } from '@/lib/utils'
-import { type ClientDetail, useClientDetail, usePlatformClients, useSetTraining } from '../api'
+import { type ClientDetail, useClientDetail, useUpdateCompany, usePlatformClients, useSetTraining } from '../api'
 import { businessTypeLabel } from '../business-types'
-import { CloudCopies, CreateAccountDialog, DeleteClientDialog, LicenseDialog, licenseState, LiveLinkDialog, linkState, countsText, PasswordDialog, planLabel } from '../dialogs'
+import { CloudCopies, DeleteClientDialog, LicenseDialog, licenseState, LiveLinkDialog, linkState, countsText, planLabel } from '../dialogs'
 import { ClientActions, useOpenCompany, useRenew } from './client-actions'
 import { EventRow } from './events'
+import { PeopleTab } from './people-tab'
 
 const TABS = ['summary', 'licence', 'people', 'links', 'diary', 'danger'] as const
 type Tab = (typeof TABS)[number]
@@ -102,13 +105,15 @@ export function ClientPage() {
 }
 
 function Summary({ d }: { d: ClientDetail }) {
+  const [editing, setEditing] = React.useState(false)
   const u = d.usage
   const chart = u.activity_by_day.map((x) => ({ day: formatDateWith(new Date(`${x.day}T00:00:00`), { day: 'numeric', month: 'short' }), n: x.n }))
   const admins = d.members.filter((m) => m.is_admin)
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <Card>
-        <CardHeader><CardTitle>{t('The company')}</CardTitle></CardHeader>
+        <CardHeader className="flex-row items-start justify-between space-y-0"><CardTitle>{t('The company')}</CardTitle>
+          <Button variant="outline" size="sm" onClick={() => setEditing(true)}><Pencil /> {t('Change details')}</Button></CardHeader>
         <CardContent className="pt-0">
           <dl className="divide-y">
             <Field label={t('Legal name')} value={d.company.legal_name} />
@@ -152,7 +157,42 @@ function Summary({ d }: { d: ClientDetail }) {
           </CardContent>
         </Card>
       </div>
+      <CompanyDialog d={d} open={editing} onClose={() => setEditing(false)} />
     </div>
+  )
+}
+
+const COMPANY_FIELDS = [
+  ['name', msg('Name')], ['legal_name', msg('Legal name')], ['tax_number', msg('NUI')], ['vat_number', msg('VAT number')],
+  ['business_number', msg('Business number')], ['address_line1', msg('Address')], ['city', msg('City')], ['phone', msg('Phone')],
+  ['email', msg('Email')], ['website', msg('Website')],
+] as const
+
+/** The client's own details, corrected from the console */
+function CompanyDialog({ d, open, onClose }: { d: ClientDetail; open: boolean; onClose: () => void }) {
+  const save = useUpdateCompany()
+  const [v, setV] = React.useState<Record<string, string>>({})
+  React.useEffect(() => { if (open) setV(Object.fromEntries(COMPANY_FIELDS.map(([k]) => [k, String((d.company as Record<string, unknown>)[k] ?? '')]))) }, [open, d])
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader><DialogTitle>{t('Details of {name}', { name: d.company.name })}</DialogTitle>
+          <DialogDescription>{t('They show on the client\'s invoices and documents. What changes is written in the diary.')}</DialogDescription></DialogHeader>
+        <form id="company-form" className="grid gap-3 sm:grid-cols-2" onSubmit={(e) => { e.preventDefault()
+          save.mutate({ company: d.company.id, values: v }, { onSuccess: () => { toast.success(t('Details saved')); onClose() }, onError: (x) => toast.error(describeError(x)) }) }}>
+          {COMPANY_FIELDS.map(([k, label]) => (
+            <div key={k} className={cn('grid gap-1.5', (k === 'name' || k === 'legal_name' || k === 'address_line1') && 'sm:col-span-2')}>
+              <Label htmlFor={`co-${k}`}>{t(label)}</Label>
+              <Input id={`co-${k}`} value={v[k] ?? ''} onChange={(e) => setV({ ...v, [k]: e.target.value })} type={k === 'email' ? 'email' : k === 'phone' ? 'tel' : 'text'} />
+            </div>
+          ))}
+        </form>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>{t('Cancel')}</Button>
+          <Button type="submit" form="company-form" loading={save.isPending} disabled={(v.name ?? '').trim().length < 2}>{t('Save')}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -207,42 +247,6 @@ function LicenceTab({ d, c }: { d: ClientDetail; c: NonNullable<ReturnType<typeo
 }
 function UsersBarInline({ used, max }: { used: number; max: number }) {
   return <div className="flex items-center gap-3"><span className="tabular">{used} / {max}</span><span className="h-1.5 w-32 overflow-hidden rounded-full bg-muted"><span className={cn('block h-full rounded-full', used >= max ? 'bg-warning' : 'bg-primary')} style={{ width: `${Math.min(100, (used / max) * 100)}%` }} /></span></div>
-}
-
-function PeopleTab({ d }: { d: ClientDetail }) {
-  const [pw, setPw] = React.useState<string | null>(null)
-  const [account, setAccount] = React.useState<{ member_id: string; email: string; company: string } | null>(null)
-  return (
-    <Card>
-      <CardContent className="overflow-x-auto p-0">
-        <Table className="min-w-[760px]">
-          <TableHeader><TableRow className="hover:bg-transparent">
-            <TableHead>{t('Person')}</TableHead><TableHead>{t('Roles')}</TableHead><TableHead>{t('Status')}</TableHead><TableHead>{t('Last signed in')}</TableHead><TableHead className="w-48" />
-          </TableRow></TableHeader>
-          <TableBody>
-            {d.members.map((m) => (
-              <TableRow key={m.member_id}>
-                <TableCell><div className="font-medium">{m.name ?? m.email}{m.is_admin && <Badge variant="outline" className="ml-2 border-primary/40 text-primary">{t('Administrator')}</Badge>}
-                  {m.external_accountant && <Badge variant="outline" className="ml-1">{t('Outside accountant')}</Badge>}</div>
-                  <div className="text-xs text-muted-foreground">{m.email}</div></TableCell>
-                <TableCell><div className="flex flex-wrap gap-1">{m.roles.map((r) => <Badge key={r} variant="secondary">{td(r)}</Badge>)}</div></TableCell>
-                <TableCell><Badge variant={m.status === 'active' ? 'success' : m.status === 'invited' ? 'warning' : 'secondary'}>{m.status === 'active' ? t('Active') : m.status === 'invited' ? t('Invited') : t('Suspended')}</Badge></TableCell>
-                <TableCell className="text-[13px] text-muted-foreground">{m.last_sign_in_at ? formatDate(m.last_sign_in_at, true) : t('Never')}</TableCell>
-                <TableCell className="text-right">
-                  {m.user_id
-                    ? <Button variant="ghost" size="sm" onClick={() => setPw(m.email)}><KeyRound /> {t('New password')}</Button>
-                    : <Button size="sm" onClick={() => setAccount({ member_id: m.member_id, email: m.email, company: d.company.name })}><UserPlus /> {t('Make the account')}</Button>}
-                </TableCell>
-              </TableRow>
-            ))}
-            {!d.members.length && <TableRow><TableCell colSpan={5} className="py-8 text-center text-[13px] text-muted-foreground">{t('Nobody yet')}</TableCell></TableRow>}
-          </TableBody>
-        </Table>
-      </CardContent>
-      <PasswordDialog target={pw ? { email: pw } : null} onClose={() => setPw(null)} />
-      {account && <CreateAccountDialog target={account} onClose={() => setAccount(null)} />}
-    </Card>
-  )
 }
 
 function LinksTab({ d, c }: { d: ClientDetail; c: NonNullable<ReturnType<typeof usePlatformClients>['data']>['clients'][number] }) {

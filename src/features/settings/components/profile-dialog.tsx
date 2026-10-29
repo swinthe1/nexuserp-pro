@@ -17,8 +17,11 @@ type Details = { first_name: string | null; last_name: string | null; phone: str
  * First name, last name and phone of a person. The person changes their own; the company's administrator
  * those of the company's people; the Super Admin anyone's. The email stays: it is the sign-in.
  */
-export function ProfileDialog({ userId, self, onClose }: { userId: string; self?: boolean; onClose: () => void }) {
-  const { companyId } = useCompany()
+export function ProfileDialog({ userId, self, onClose, companyId: forCompany }: { userId: string; self?: boolean; onClose: () => void
+  /** the company the person belongs to, when it is not the one open (the platform console) */
+  companyId?: string }) {
+  const { companyId: openCompany } = useCompany()
+  const companyId = forCompany ?? openCompany
   const qc = useQueryClient()
   const q = useQuery({
     queryKey: ['member-profile', userId],
@@ -35,7 +38,7 @@ export function ProfileDialog({ userId, self, onClose }: { userId: string; self?
     onSuccess: () => {
       toast.success(t('Details saved'))
       void qc.invalidateQueries({ queryKey: ['member-profile', userId] })
-      void qc.invalidateQueries({ predicate: (x) => x.queryKey.includes('users') })
+      void qc.invalidateQueries({ predicate: (x) => x.queryKey.includes('users') || x.queryKey[0] === 'platform' })
       onClose()
     },
     onError: (e) => toast.error(describeError(e)),

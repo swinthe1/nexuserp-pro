@@ -236,6 +236,7 @@ begin
   return jsonb_build_object(
     'company', jsonb_build_object('id', c.id, 'name', c.name, 'legal_name', c.legal_name, 'tax_number', c.tax_number, 'vat_number', c.vat_number,
        'business_number', c.business_number, 'country_code', c.country_code, 'base_currency', c.base_currency, 'address', concat_ws(', ', c.address_line1, c.address_line2, c.city),
+       'address_line1', c.address_line1, 'city', c.city,
        'phone', c.phone, 'email', c.email, 'website', c.website, 'created_at', c.created_at, 'is_training', c.is_training, 'business_type', c.business_type),
     'licence', (select to_jsonb(l) - 'backup_key' - 'local_server_id' || jsonb_build_object('has_server', l.local_server_id is not null) from public.licenses l where l.company_id = c.id),
     'users', app.seats_used(c.id),
@@ -243,6 +244,7 @@ begin
           'member_id', m.id, 'user_id', m.user_id, 'email', coalesce(u.email, m.invited_email), 'name', p.full_name, 'status', m.status,
           'last_sign_in_at', u.last_sign_in_at, 'joined_at', m.joined_at, 'external_accountant', m.external_accountant,
           'roles', (select coalesce(jsonb_agg(r.name order by r.name), '[]'::jsonb) from public.member_roles mr join public.roles r on r.id = mr.role_id where mr.member_id = m.id),
+          'role_keys', (select coalesce(jsonb_agg(r.key order by r.name), '[]'::jsonb) from public.member_roles mr join public.roles r on r.id = mr.role_id where mr.member_id = m.id),
           'is_admin', exists (select 1 from public.member_roles mr join public.roles r on r.id = mr.role_id where mr.member_id = m.id and r.key = 'company_admin'))
         order by m.created_at)
         from public.company_members m left join auth.users u on u.id = m.user_id left join public.profiles p on p.id = m.user_id

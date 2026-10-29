@@ -35,10 +35,38 @@ select public.platform_log_visit(:'co');
 reset role;
 select t.ok((select count(*) from app.platform_events where kind = 'support_visit' and company_id = :'co') = 1, 'a visit is written once an hour');
 
+-- a client's people, from the console
+set role authenticated;
+select t.login(:'boss');
+select public.platform_add_member(:'co', 'new.person@console.test', 'New Person', 'Secret123x', array['pos_cashier']) as added \gset
+select t.ok((:'added'::jsonb ->> 'new_account')::boolean, 'a new person gets an account');
+select public.platform_member_roles((:'added'::jsonb ->> 'member_id')::uuid, array['sales_rep']);
+select public.platform_member_status((:'added'::jsonb ->> 'member_id')::uuid, 'suspended');
+select public.platform_update_company(:'co', jsonb_build_object('phone', '+383 44 999 999'));
+reset role;
+select t.ok((select array_agg(r.key) from public.member_roles mr join public.roles r on r.id = mr.role_id where mr.member_id = (:'added'::jsonb ->> 'member_id')::uuid) = array['sales_rep'], 'the roles are changed');
+select t.ok((select status from public.company_members where id = (:'added'::jsonb ->> 'member_id')::uuid) = 'suspended', 'the person is suspended');
+select t.ok((select phone from public.companies where id = :'co') = '+383 44 999 999', 'the company''s details are changed');
+select t.ok((select count(*) from app.platform_events where company_id = :'co' and kind in ('member_added', 'member_roles_set', 'member_suspended', 'client_details_set')) = 4, 'every step is in the diary');
+
+-- the server reports and the console reads it
+select drispro_meta.server_report(jsonb_build_object('sample', jsonb_build_object('cpu_pct', 12, 'cores', 4, 'mem_total', 1000, 'mem_available', 50, 'net_rx', 1, 'net_tx', 1, 'uptime_s', 60,
+  'disks', jsonb_build_array(jsonb_build_object('mount', '/', 'total', 100, 'used', 90, 'free', 10))),
+  'containers', jsonb_build_array(jsonb_build_object('name', 'db', 'state', 'running', 'health', 'healthy'), jsonb_build_object('name', 'old', 'state', 'exited')),
+  'logs', jsonb_build_array(jsonb_build_object('container', 'db', 'level', 'error', 'line', 'ERROR: something'))));
+set role authenticated;
+select t.login(:'boss');
+select public.platform_server_status(1) as srv \gset
+select t.ok((:'srv'::jsonb -> 'last' ->> 'cpu_pct')::numeric = 12 and jsonb_array_length(:'srv'::jsonb -> 'containers') = 2, 'the console reads the server''s report');
+select t.ok(:'srv'::jsonb -> 'alerts' @> '[{"kind": "mem_high"}]' and :'srv'::jsonb -> 'alerts' @> '[{"kind": "disk_high"}]' and :'srv'::jsonb -> 'alerts' @> '[{"kind": "container_down", "name": "old"}]',
+  'memory, disk and a stopped container are reported as problems');
+
 set role authenticated;
 select t.login(:'plain');
 select t.throws('select public.platform_overview()', 'Super Admin|super admin|Only', 'only the Super Admin sees the overview');
 select t.throws($$select public.platform_events()$$, 'Super Admin|super admin|Only', 'and the diary');
+select t.throws($$select public.platform_server_status()$$, 'Only', 'and the server');
+select t.throws($$select public.platform_add_member('$$ || :'co' || $$', 'x@y.test', 'X', 'Secret123x', array['pos_cashier'])$$, 'Only', 'and cannot add people');
 
 \set QUIET off
 select count(*) as assertions_passed from t.results;

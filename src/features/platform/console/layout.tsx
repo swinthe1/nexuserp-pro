@@ -1,5 +1,5 @@
 import {
-  ArrowRight, Boxes, Cable, CircleDollarSign, DatabaseBackup, LayoutDashboard, LogOut, Menu, MonitorDown, Plus, ScrollText,
+  ArrowRight, Boxes, Cable, Cpu, CircleDollarSign, DatabaseBackup, LayoutDashboard, LogOut, Menu, MonitorDown, Plus, ScrollText,
   Search, Server, Settings2, ShieldCheck, Store, Users, type LucideIcon,
 } from 'lucide-react'
 import * as React from 'react'
@@ -11,12 +11,12 @@ import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { msg, t } from '@/i18n'
 import { LanguageToggle } from '@/i18n/language'
 import { cn } from '@/lib/utils'
-import { usePlatformOverview } from '../api'
+import { usePlatformOverview, useServerStatus } from '../api'
 import { DemoClientDialog } from '../demo-client-dialog'
 import { NewClientDialog } from '../dialogs'
 import { ClientSearch } from './client-search'
 
-type Item = { label: string; href: string; icon: LucideIcon; end?: boolean; badge?: 'attention' | 'ending' | 'links' }
+type Item = { label: string; href: string; icon: LucideIcon; end?: boolean; badge?: 'attention' | 'ending' | 'links' | 'server' }
 const NAV: { title?: string; items: Item[] }[] = [
   { items: [{ label: msg('Overview'), href: '/platform', icon: LayoutDashboard, end: true, badge: 'attention' }] },
   { title: msg('Clients'), items: [
@@ -24,6 +24,7 @@ const NAV: { title?: string; items: Item[] }[] = [
     { label: msg('Licences'), href: '/platform/licences', icon: ShieldCheck, badge: 'ending' },
   ] },
   { title: msg('Servers and links'), items: [
+    { label: msg('Server (VPS)'), href: '/platform/server', icon: Cpu, badge: 'server' },
     { label: msg('Local servers'), href: '/platform/servers', icon: Server },
     { label: msg('Live links'), href: '/platform/links', icon: Cable, badge: 'links' },
     { label: msg('Database copies'), href: '/platform/backups', icon: DatabaseBackup },
@@ -44,7 +45,9 @@ export const useConsoleActions = () => React.useContext(ConsoleActions)
 
 function SideNav({ onNavigate }: { onNavigate?: () => void }) {
   const ov = usePlatformOverview()
+  const srv = useServerStatus(1)
   const badge = (b?: Item['badge']) => {
+    if (b === 'server') return srv.data?.alerts.length ?? 0
     const d = ov.data
     if (!d || !b) return 0
     if (b === 'attention') return d.attention.filter((a) => a.kind !== 'pending_account' && a.kind !== 'seats_full').length

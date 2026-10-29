@@ -69,6 +69,8 @@ rm -rf "/root/$o-pro" "/root/$o-pro-deploy.zip"
 
 echo "==> 2/3 Database"
 NO_DEMO=1 bash deploy/coolify/setup-database.sh $db
+# the server reports to the platform console every minute (CPU, memory, disks, containers, log errors)
+bash deploy/coolify/install-monitor.sh "$db" | sed 's/^/    /' || echo "!!  the server monitor could not start (the rest goes on)" >&2
 # the API's signing secret, so the cloud can give local servers their tickets for cloud copies
 auth="$(docker ps --format '{{.Names}}' | grep -E '^supabase-auth' | head -1 || true)"
 if [ -n "$auth" ]; then

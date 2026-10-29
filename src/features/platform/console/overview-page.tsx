@@ -9,7 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatDateWith, msg, t, tn } from '@/i18n'
 import { formatDate, formatMoney } from '@/lib/utils'
-import { type Attention, useBackupStatus, usePlatformOverview } from '../api'
+import { type Attention, useBackupStatus, usePlatformOverview, useServerStatus } from '../api'
+import { alertText } from './server-page'
 import { planLabel } from '../dialogs'
 import { EventRow } from './events'
 
@@ -37,7 +38,9 @@ function attentionDetail(a: Attention) {
 export function OverviewPage() {
   const q = usePlatformOverview()
   const backups = useBackupStatus()
+  const server = useServerStatus(1)
   const d = q.data
+  const srvAlerts = server.data?.alerts ?? []
   if (q.isError) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />
   const chart = (d?.new_by_month ?? []).map((m) => ({ month: formatDateWith(new Date(`${m.month}-01T00:00:00`), { month: 'short' }), n: m.n }))
   const lastCopy = backups.data?.last_ok?.at
@@ -74,9 +77,22 @@ export function OverviewPage() {
         <Card>
           <CardHeader><CardTitle>{t('Needs you')}</CardTitle><CardDescription>{t('The most urgent first. Each one opens where it is fixed.')}</CardDescription></CardHeader>
           <CardContent className="pt-0">
-            {q.isLoading ? <Skeleton className="h-40" /> : !d?.attention.length ? (
+            {/* the server itself first: when it is in trouble, everyone is */}
+            {srvAlerts.length > 0 && (
+              <ul className="mb-2 divide-y rounded-lg border border-destructive/30">
+                {srvAlerts.map((a, i) => (
+                  <li key={i} className="flex items-center gap-3 px-3 py-2.5">
+                    <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-destructive/10 text-destructive"><Server className="size-4" /></span>
+                    <div className="min-w-0 flex-1"><div className="truncate text-[13px] font-medium">{t('Server (VPS)')} · <span className="font-normal">{alertText(a)}</span></div>
+                      {a.detail && <div className="truncate text-xs text-muted-foreground">{a.detail}</div>}</div>
+                    <Button variant="outline" size="sm" asChild className="shrink-0"><Link to="/platform/server">{t('Look')}</Link></Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {q.isLoading ? <Skeleton className="h-40" /> : !d?.attention.length ? (srvAlerts.length ? null : (
               <div className="flex items-center gap-3 rounded-lg border border-success/30 bg-success/5 p-4 text-sm"><CheckCircle2 className="size-5 text-success" />{t('Nothing waits for you. Everything runs.')}</div>
-            ) : (
+            )) : (
               <ul className="divide-y rounded-lg border">
                 {d.attention.slice(0, 12).map((a, i) => {
                   const x = ATTENTION[a.kind]

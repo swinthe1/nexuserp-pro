@@ -15233,6 +15233,16 @@ export type Database = {
         }
         Returns: Json
       }
+      platform_add_member: {
+        Args: {
+          p_company: string
+          p_email: string
+          p_name: string
+          p_password: string
+          p_role_keys: string[]
+        }
+        Returns: Json
+      }
       platform_ai_chat_usage: {
         Args: {
           p_company: string
@@ -15257,6 +15267,12 @@ export type Database = {
       }
       platform_clients: {
         Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      platform_company_roles: {
+        Args: {
+          p_company: string
+        }
         Returns: Json
       }
       platform_create_account: {
@@ -15347,6 +15363,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      platform_member_roles: {
+        Args: {
+          p_member: string
+          p_role_keys: string[]
+        }
+        Returns: undefined
+      }
+      platform_member_status: {
+        Args: {
+          p_member: string
+          p_status: string
+        }
+        Returns: undefined
+      }
       platform_overview: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -15368,6 +15398,18 @@ export type Database = {
           p_notes?: string
         }
         Returns: undefined
+      }
+      platform_server_log: {
+        Args: {
+          p_container: string
+        }
+        Returns: Json
+      }
+      platform_server_status: {
+        Args: {
+          p_hours?: number
+        }
+        Returns: Json
       }
       platform_set_ai_chat_limit: {
         Args: {
@@ -15409,6 +15451,13 @@ export type Database = {
       platform_set_self_service: {
         Args: {
           p_on: boolean
+        }
+        Returns: undefined
+      }
+      platform_update_company: {
+        Args: {
+          p_company: string
+          p: Json
         }
         Returns: undefined
       }
