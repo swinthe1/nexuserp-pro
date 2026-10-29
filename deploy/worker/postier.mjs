@@ -15,6 +15,12 @@ import crypto from 'node:crypto'
 import { newPushKeys, sendPush } from './push.mjs'
 import { deliver } from './webhooks.mjs'
 
+/** what the client sees when a reading fails: the reading service's own message (credits, keys, limits) stays in the log */
+function plainReadError(m) {
+  return /credit balance|anthropic|api[ _-]?key|x-api-key|rate.?limit|overloaded|authentic|billing|quota|\b(401|403|429|5\d\d)\b|fetch failed|ECONN|timed? ?out|network/i.test(m)
+    ? 'The reading service is not available right now' : m
+}
+
 const API = (process.env.API_URL || '').replace(/\/+$/, '')
 const KEY = process.env.SERVICE_KEY || ''
 const MODE = process.env.MODE === 'local' ? 'local' : 'cloud'
@@ -343,7 +349,7 @@ async function readerRound() {
       }
     } catch (e) {
       log('invoice not read', doc.name ?? '', String(e.message || e))
-      await rpc('reader_done', { p_id: doc.id, p_ok: false, p_error: String(e.message || e) }).catch(() => {})
+      await rpc('reader_done', { p_id: doc.id, p_ok: false, p_error: plainReadError(String(e.message || e)) }).catch(() => {})
     }
   }
   // local: the answers of the cloud
@@ -352,7 +358,7 @@ async function readerRound() {
       try {
         const a = await rpc('licence_read_result', { p_code: LICENCE, p_server: SERVER_ID, p_id: x.relay_id }, LICENCE_SERVER, CLOUD_ANON_KEY)
         if (a?.status === 'done') await rpc('reader_done', { p_id: x.id, p_ok: true, p_result: a.result, p_input_tokens: a.input_tokens, p_output_tokens: a.output_tokens })
-        else if (a?.status === 'failed') await rpc('reader_done', { p_id: x.id, p_ok: false, p_error: a.error || 'The invoice could not be read' })
+        else if (a?.status === 'failed') await rpc('reader_done', { p_id: x.id, p_ok: false, p_error: plainReadError(a.error || 'The invoice could not be read') })
       } catch (e) { log('answer from the cloud failed', String(e.message || e)) }
     }
   }

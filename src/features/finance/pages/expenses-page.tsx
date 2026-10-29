@@ -4,7 +4,7 @@ import * as React from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Can, useCompany } from '@/app/company-provider'
-import { PhotoCard, ReadsList, usePhotoSubmit } from '@/components/photo-reads'
+import { PhotoCard, ReadsList, usePhotoSubmit, readError } from '@/components/photo-reads'
 import { PageHeader } from '@/components/page-header'
 import { SearchSelect } from '@/components/search-select'
 import { Button } from '@/components/ui/button'
@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { VendorPicker } from '@/features/inventory/components/pickers'
 import { useTaxCodes } from '@/features/tax/api'
-import { msg, t, td, tServer } from '@/i18n'
+import { msg, t, td } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { cn, formatMoney, num, todayISO } from '@/lib/utils'
@@ -52,6 +52,7 @@ function ReadsPage({ kind }: { kind: Kind }) {
   const { companyId } = useCompany()
   const [params, setParams] = useSearchParams()
   const id = params.get('id')
+  const [fresh, setFresh] = React.useState(0)
   const list = useQuery({
     queryKey: ['expense-reads', companyId, kind], enabled: !!companyId,
     refetchInterval: (q) => ((q.state.data as Row[] | undefined)?.some((r) => r.status === 'queued' || r.status === 'reading') ? 3000 : false),
@@ -70,10 +71,12 @@ function ReadsPage({ kind }: { kind: Kind }) {
         ? <PageHeader title={t('Assets from invoices')} description={t('A vehicle, a machine, computers: photograph the invoice and DrisPRO books it as an investment, makes the fixed asset and plans its depreciation.')} />
         : <PageHeader title={t('Expenses')} description={t('Fuel, electricity, phone, a meal with a client: photograph the receipt and DrisPRO reads it, proposes where it goes and books it. It learns from what you choose.')}
             actions={<Can perm="inventory.write"><Button variant="outline" loading={seed.isPending} onClick={() => seed.mutate()}><ListPlus /> {t('Ready-made expense items')}</Button></Can>} />}
-      <PhotoCard icon={ReceiptText} busy={send.isPending} onPick={pick} onManual={() => setParams({ id: 'new' })}
+      <PhotoCard icon={ReceiptText} busy={send.isPending} onPick={pick}
         title={kind === 'asset' ? t('A new asset invoice') : t('A new expense')}
         hint={kind === 'asset' ? t('The whole invoice in the photo, or the PDF. Several at once from the gallery.') : t('The whole receipt in the photo, flat and with light. Several at once from the gallery.')} />
-      {id ? <Review key={id} kind={kind} id={id === 'new' ? null : id} onDone={() => setParams({})} /> : <ReadsList bookedLabel={t('Booked|expense')} onOpen={(x) => setParams({ id: x })}
+      {/* written by hand unless a photo was chosen; the recent ones below */}
+      <Review key={id ?? `new-${fresh}`} kind={kind} id={id && id !== 'new' ? id : null} onDone={() => { setParams({}); setFresh((n) => n + 1) }} />
+      {!id && <ReadsList bookedLabel={t('Booked|expense')} onOpen={(x) => setParams({ id: x })}
         items={(list.data ?? []).map((r) => ({ ...r, booked: !!r.bill_id, extra: r.number,
           title: <>{r.vendor ?? r.file_name ?? t('Receipt')}{r.category ? <span className="font-normal text-muted-foreground"> · {catLabel(r.category) || r.category}</span> : null}</> }))} />}
     </div>
@@ -131,7 +134,7 @@ function Review({ id, kind, onDone }: { id: string | null; kind: Kind; onDone: (
   }
   if (id && (q.data?.status === 'failed' || !r)) {
     return <Card><CardContent className="grid justify-items-center gap-2 p-8 text-center"><TriangleAlert className="size-6 text-destructive" />
-      <div className="font-medium">{t('The receipt could not be read')}</div><div className="text-[13px] text-muted-foreground">{tServer(q.data?.error)}</div>
+      <div className="font-medium">{t('The receipt could not be read')}</div><div className="text-[13px] text-muted-foreground">{readError(q.data?.error)}</div>
       <Button variant="outline" onClick={onDone}>{t('Back')}</Button></CardContent></Card>
   }
   if (!f) return null

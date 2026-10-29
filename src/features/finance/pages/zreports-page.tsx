@@ -4,7 +4,7 @@ import * as React from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
-import { PhotoCard, ReadsList, usePhotoSubmit } from '@/components/photo-reads'
+import { PhotoCard, ReadsList, usePhotoSubmit, readError } from '@/components/photo-reads'
 import { PageHeader } from '@/components/page-header'
 import { SearchSelect } from '@/components/search-select'
 import { Button } from '@/components/ui/button'
@@ -12,7 +12,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useTaxCodes } from '@/features/tax/api'
-import { t, td, tServer } from '@/i18n'
+import { t, td } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { cn, formatMoney, num, todayISO } from '@/lib/utils'
@@ -31,6 +31,7 @@ export function ZReportsPage() {
   const { companyId } = useCompany()
   const [params, setParams] = useSearchParams()
   const id = params.get('id')
+  const [fresh, setFresh] = React.useState(0)
   const list = useQuery({
     queryKey: ['zreport-reads', companyId], enabled: !!companyId,
     refetchInterval: (q) => ((q.state.data as Row[] | undefined)?.some((r) => r.status === 'queued' || r.status === 'reading') ? 3000 : false),
@@ -41,9 +42,11 @@ export function ZReportsPage() {
   return (
     <div className="mx-auto grid max-w-5xl gap-4">
       <PageHeader title={t('Z reports')} description={t('For a business with its own fiscal cash register: photograph the Z report of the day and DrisPRO books the sales by VAT rate, with the cash and the card amounts. It goes into the sales book.')} />
-      <PhotoCard icon={Printer} busy={send.isPending} onPick={pick} onManual={() => setParams({ id: 'new' })} title={t('A new Z report')}
+      <PhotoCard icon={Printer} busy={send.isPending} onPick={pick} title={t('A new Z report')}
         hint={t('The whole report in the photo, flat and with light. Several days at once from the gallery.')} />
-      {id ? <Review key={id} id={id === 'new' ? null : id} onDone={() => setParams({})} /> : <ReadsList bookedLabel={t('Booked|expense')} onOpen={(x) => setParams({ id: x })}
+      {/* written by hand unless a photo was chosen; the recent ones below */}
+      <Review key={id ?? `new-${fresh}`} id={id && id !== 'new' ? id : null} onDone={() => { setParams({}); setFresh((n) => n + 1) }} />
+      {!id && <ReadsList bookedLabel={t('Booked|expense')} onOpen={(x) => setParams({ id: x })}
         items={(list.data ?? []).map((r) => ({ ...r, booked: !!r.invoice_id,
           title: <>{r.z_number ? t('Z report {number}', { number: r.z_number }) : r.file_name ?? t('Z report')}{r.device ? <span className="font-normal text-muted-foreground"> · {r.device}</span> : null}</> }))} />}
     </div>
@@ -90,7 +93,7 @@ function Review({ id, onDone }: { id: string | null; onDone: () => void }) {
   }
   if (id && (q.data?.status === 'failed' || !r)) {
     return <Card><CardContent className="grid justify-items-center gap-2 p-8 text-center"><TriangleAlert className="size-6 text-destructive" />
-      <div className="font-medium">{t('The Z report could not be read')}</div><div className="text-[13px] text-muted-foreground">{tServer(q.data?.error)}</div>
+      <div className="font-medium">{t('The Z report could not be read')}</div><div className="text-[13px] text-muted-foreground">{readError(q.data?.error)}</div>
       <Button variant="outline" onClick={onDone}>{t('Back')}</Button></CardContent></Card>
   }
   if (!f) return null

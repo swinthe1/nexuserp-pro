@@ -17,6 +17,14 @@ import { cn, formatDate, formatMoney } from '@/lib/utils'
  * sending photos or PDFs to be read, the card with the buttons, and the list of recent reads.
  */
 
+/** what went wrong, in words for the client: never the reading service's own technical message */
+export function readError(e: string | null | undefined) {
+  if (!e) return ''
+  if (/credit balance|anthropic|api[ _-]?key|x-api-key|rate.?limit|overloaded|authentic|billing|quota|\b(401|403|429|5\d\d)\b|fetch failed|ECONN|timed? ?out|network/i.test(e))
+    return t('Reading from a photo does not work right now. Write it by hand; the photo can be read later.')
+  return tServer(e)
+}
+
 export type ReadKind = 'invoice' | 'expense' | 'asset' | 'z_report'
 
 /** Sends the chosen photos or PDFs to be read; one file opens its review, several are read in the background. */
@@ -53,24 +61,29 @@ export function usePhotoSubmit({ kind, invalidate, onOne, manyMessage }: {
   return { send, pick }
 }
 
-/** The card at the top: what to photograph, and the buttons. */
+/**
+ * The photo, as a choice: the form is written by hand by default, and this slim bar offers to fill it from
+ * a photo or a PDF instead. With onManual, the bar also leads to the form written by hand (first).
+ */
 export function PhotoCard({ icon: Icon, title, hint, extra, busy, disabled, multiple = true, onPick, onManual }: {
   icon: LucideIcon; title: string; hint: string; extra?: React.ReactNode; busy: boolean; disabled?: boolean; multiple?: boolean
   onPick: (capture: boolean) => void; onManual?: () => void
 }) {
   return (
-    <Card>
-      <CardContent className="flex flex-col items-center gap-3 p-5 text-center sm:flex-row sm:text-left">
-        <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><Icon className="size-6" /></span>
-        <div className="flex-1"><div className="font-medium">{title}</div>
-          <div className="text-[13px] text-muted-foreground">{hint}</div>{extra}</div>
-        <div className="flex flex-wrap justify-center gap-2">
-          <Button size="lg" loading={busy} disabled={disabled} onClick={() => onPick(true)}><Camera /> {t('Take a photo')}</Button>
-          <Button size="lg" variant="outline" disabled={busy || disabled} onClick={() => onPick(false)}><FileText /> {multiple ? t('Choose files') : t('Choose a file')}</Button>
-          {onManual && <Button size="lg" variant="ghost" onClick={onManual}><PenLine /> {t('Without a photo')}</Button>}
-        </div>
-      </CardContent>
-    </Card>
+    <div className="flex flex-col gap-2 rounded-lg border border-dashed bg-card/60 px-3 py-2.5 sm:flex-row sm:items-center">
+      <Icon className="hidden size-4 shrink-0 text-muted-foreground sm:block" />
+      <div className="min-w-0 flex-1 text-[13px]">
+        <span className="font-medium">{title}</span>
+        <span className="text-muted-foreground"> · {t('optional: fill it from a photo or a PDF')}</span>
+        <div className="text-xs text-muted-foreground">{hint}</div>
+        {extra}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {onManual && <Button size="sm" onClick={onManual}><PenLine /> {t('Write it by hand')}</Button>}
+        <Button size="sm" variant="outline" loading={busy} disabled={disabled} onClick={() => onPick(true)}><Camera /> {t('Take a photo')}</Button>
+        <Button size="sm" variant="outline" disabled={busy || disabled} onClick={() => onPick(false)}><FileText /> {multiple ? t('Choose files') : t('Choose a file')}</Button>
+      </div>
+    </div>
   )
 }
 
@@ -93,7 +106,7 @@ export function ReadsList({ items, onOpen, bookedLabel, doneLabel = t('To check'
             <button type="button" onClick={() => onOpen(r.id)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted/40">
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium">{r.title}</div>
-                <div className="truncate text-xs text-muted-foreground">{r.date ? formatDate(r.date) : formatDate(r.created_at, true)}{r.extra ? ` · ${r.extra}` : ''}{r.error ? ` · ${tServer(r.error)}` : ''}</div>
+                <div className="truncate text-xs text-muted-foreground">{r.date ? formatDate(r.date) : formatDate(r.created_at, true)}{r.extra ? ` · ${r.extra}` : ''}{r.error ? ` · ${readError(r.error)}` : ''}</div>
               </div>
               {r.total != null && <span className="text-right text-sm font-semibold tabular">{formatMoney(r.total)}<span className="block text-2xs font-normal text-muted-foreground">{t('with VAT')}</span></span>}
               {r.booked ? <Badge variant="outline" className="border-success/40 text-success">{bookedLabel}</Badge>

@@ -4,7 +4,7 @@ import * as React from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
-import { PhotoCard, ReadsList, usePhotoSubmit } from '@/components/photo-reads'
+import { PhotoCard, ReadsList, usePhotoSubmit, readError } from '@/components/photo-reads'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { cn, formatMoney, num, todayISO } from '@/lib/utils'
-import { t, tn, tServer } from '@/i18n'
+import { t, tn } from '@/i18n'
 import { VariantPicker, VendorPicker, WarehousePicker } from '../components/pickers'
 import { useWarehouses } from '../api'
 
@@ -26,6 +26,7 @@ type ReadRow = { id: string; file_name: string | null; status: string; error: st
 
 export function ReadInvoicePage() {
   const { companyId } = useCompany()
+  const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const id = params.get('id')
   const list = useQuery({ queryKey: ['doc-reads', companyId], enabled: !!companyId, refetchInterval: (q) => ((q.state.data as ReadRow[] | undefined)?.some((r) => r.status === 'queued' || r.status === 'reading') ? 3000 : false),
@@ -38,7 +39,7 @@ export function ReadInvoicePage() {
     <div className="mx-auto grid max-w-5xl gap-4">
       <PageHeader title={t('Invoice from a photo')} back={{ href: '/inventory/receipts', label: t('Goods receipts') }}
         description={t('Photograph the supplier’s invoice or choose its PDF. DrisPRO reads the vendor and the lines and finds your items; you check them and a draft receipt is made.')} />
-      <PhotoCard icon={ScanText} busy={send.isPending} disabled={full} multiple={false} onPick={(c) => pick(c, false)} title={t('A new invoice')}
+      <PhotoCard icon={ScanText} busy={send.isPending} disabled={full} multiple={false} onPick={(c) => pick(c, false)} onManual={() => navigate('/procurement/invoice/new')} title={t('A new invoice')}
         hint={t('The whole page in the photo, flat and with light. A PDF from the vendor is read best.')}
         extra={usage.data && <div className={cn('mt-1 text-xs', full ? 'font-medium text-destructive' : 'text-muted-foreground')}>
           {full ? t('This month\u2019s {n} invoices are used up; reading starts again on the 1st. Receive goods by hand meanwhile.', { n: usage.data.limit })
@@ -83,7 +84,7 @@ function ReadReview({ id, onDone }: { id: string; onDone: () => void }) {
   }
   if (q.data.status === 'failed' || !r) {
     return <Card><CardContent className="grid justify-items-center gap-2 p-8 text-center"><TriangleAlert className="size-6 text-destructive" />
-      <div className="font-medium">{t('The invoice could not be read')}</div><div className="text-[13px] text-muted-foreground">{tServer(q.data.error)}</div>
+      <div className="font-medium">{t('The invoice could not be read')}</div><div className="text-[13px] text-muted-foreground">{readError(q.data.error)}</div>
       <Button variant="outline" onClick={onDone}>{t('Back')}</Button></CardContent></Card>
   }
   const missing = lines.filter((l) => l.use && !l.variant_id).length

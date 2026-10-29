@@ -4,9 +4,9 @@ import type { Dict } from '../index'
 export default {
   'Purchase invoice': 'Faturë blerje',
   'New purchase invoice': 'Faturë e re blerjeje',
-  'Purchase invoice with goods': 'Faturë blerje me mall',
-  'Expense bill (no goods)': 'Faturë shpenzimi (pa mall)',
-  'New purchase invoice with goods': 'Faturë e re blerjeje me mall',
+  'Purchase invoice with goods': 'Faturë blerje',
+  'Expense bill (no goods)': 'Faturë shpenzimi',
+  'New purchase invoice with goods': 'Faturë e re blerjeje',
   'The supplier’s invoice with the goods: they come into the warehouse at their cost, and you set the selling prices here.':
     'Fatura e furnitorit me mallin: malli hyn në magazinë me koston e vet, dhe çmimet e shitjes i vendosni këtu.',
   'Supplier': 'Furnitori',

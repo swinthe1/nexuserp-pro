@@ -7,7 +7,7 @@ export default {
   'Z report {number}': 'Z-raporti {number}',
   'Assets from invoices': "Mjete nga faturat",
   'A vehicle, a machine, computers: photograph the invoice and DrisPRO books it as an investment, makes the fixed asset and plans its depreciation.':
-    'Një veturë, një makineri, kompjuterë: fotografoni faturën dhe DrisPRO e regjistron si investim, krijon mjetin themelor dhe planifikon amortizimin e tij.',
+    'Një veturë, një makineri, kompjuterë: shkruani faturën (ose plotësojeni nga një foto) dhe DrisPRO e regjistron si investim, krijon mjetin themelor dhe planifikon amortizimin e tij.',
   'A new asset invoice': 'Faturë e re për mjet themelor',
   'Asset {asset} made from invoice {number}': 'Mjeti {asset} u krijua nga fatura {number}',
   'Asset {asset}': 'Mjeti {asset}',
@@ -18,7 +18,7 @@ export default {
   'Book the asset': 'Regjistro mjetin',
   '{n} Z reports are being read': '{n} Z-raporte po lexohen',
   'For a business with its own fiscal cash register: photograph the Z report of the day and DrisPRO books the sales by VAT rate, with the cash and the card amounts. It goes into the sales book.':
-    'Për biznes me arkë fiskale të vetën: fotografoni Z-raportin e ditës dhe DrisPRO regjistron shitjet sipas normës së TVSH-së, me paratë në dorë dhe me kartelë. Shkon në librin e shitjes.',
+    'Për biznes me arkë fiskale të vetën: shkruani Z-raportin e ditës (ose plotësojeni nga një foto) dhe DrisPRO regjistron shitjet sipas normës së TVSH-së, me paratë në dorë dhe me kartelë. Shkon në librin e shitjes.',
   'A new Z report': 'Z-raport i ri',
   'The whole report in the photo, flat and with light. Several days at once from the gallery.': 'I gjithë raporti në foto, i shtrirë dhe me dritë. Disa ditë njëherësh nga galeria.',
   'Booked as {number}': 'U regjistrua si {number}',

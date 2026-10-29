@@ -14922,6 +14922,23 @@ export type Database = {
         }
         Returns: { member_id: string | null; view_mode: string | null; simple: boolean | null; has_pin: boolean | null; pin_locked: boolean | null }[]
       }
+      member_profile_get: {
+        Args: {
+          p_company: string
+          p_user: string
+        }
+        Returns: Json
+      }
+      member_profile_save: {
+        Args: {
+          p_company: string
+          p_user: string
+          p_first_name: string
+          p_last_name: string
+          p_phone?: string
+        }
+        Returns: undefined
+      }
       member_set_pin: {
         Args: {
           p_member: string

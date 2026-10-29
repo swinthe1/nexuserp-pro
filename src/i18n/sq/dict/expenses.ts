@@ -18,7 +18,7 @@ export default {
   'Choose a photo or a PDF': 'Zgjidhni një foto ose një PDF',
   '{n} receipts are being read': '{n} kupona po lexohen',
   'Fuel, electricity, phone, a meal with a client: photograph the receipt and DrisPRO reads it, proposes where it goes and books it. It learns from what you choose.':
-    'Karburant, rrymë, telefon, një drekë me klient: fotografoni kuponin dhe DrisPRO e lexon, propozon ku shkon dhe e regjistron. Mëson nga ajo që zgjidhni ju.',
+    'Karburant, rrymë, telefon, një drekë me klient: shkruani kuponin, ose plotësojeni nga një foto që DrisPRO e lexon dhe propozon ku shkon. Mëson nga ajo që zgjidhni ju.',
   'A new expense': 'Një shpenzim i ri',
   'The whole receipt in the photo, flat and with light. Several at once from the gallery.': 'I gjithë kuponi në foto, i shtrirë dhe me dritë. Disa njëherësh nga galeria.',
   'Choose files': 'Zgjidh skedarë',

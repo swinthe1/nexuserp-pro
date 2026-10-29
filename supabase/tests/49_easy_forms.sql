@@ -22,6 +22,17 @@ select t.ok((select coalesce(sum(sl.on_hand), 0) from public.stock_levels sl joi
   or :'r'::jsonb ->> 'status' = 'pending_approval', 'twelve pieces are on the shelf');
 select t.throws($$select public.product_opening_stock('$$ || :'prod' || $$', '$$ || :'wh' || $$', 0)$$, 'more than zero', 'no opening stock of zero');
 
+-- one's own details, and a stranger's are refused
+select id as me from public.profiles where email = 'demo@market-test.com' \gset
+select public.member_profile_save(:'co', :'me', 'Demo', 'Owner', '+383 44 000 000');
+select t.ok((select full_name from public.profiles where id = :'me') = 'Demo Owner', 'a person changes their own name');
+reset role;
+select t.ok((select raw_user_meta_data ->> 'full_name' from auth.users where id = :'me') = 'Demo Owner', 'the sign-in account shows the new name');
+select p.id as stranger from public.profiles p where not exists (select 1 from public.company_members m where m.user_id = p.id and m.company_id = :'co') and not p.is_super_admin limit 1 \gset
+set role authenticated;
+select t.login('demo@market-test.com');
+select t.throws($$select public.member_profile_save('$$ || :'co' || $$', '$$ || :'stranger' || $$', 'X', 'Y')$$, 'Not allowed', 'not the details of someone outside the company');
+
 reset role;
 select t.ok((select default_prefix from public.document_types where key = 'sales_invoice') = 'FAT-', 'a new company numbers invoices FAT-');
 select t.ok(:'adj' like 'RS-%', 'the adjustment is numbered RS-');

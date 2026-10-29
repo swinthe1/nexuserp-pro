@@ -1,4 +1,4 @@
-import { Download, KeyRound, Languages, LaptopMinimal, LayoutGrid, LogOut, Monitor, Moon, PanelLeft, BriefcaseBusiness, ServerCog, Smartphone, Sparkles, Sun, UserRound } from 'lucide-react'
+import { Download, IdCard, KeyRound, Languages, LaptopMinimal, LayoutGrid, LogOut, Monitor, Moon, PanelLeft, BriefcaseBusiness, ServerCog, Smartphone, Sparkles, Sun, UserRound } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/app/auth-provider'
@@ -17,6 +17,7 @@ import { initials } from '@/lib/utils'
 import { DesktopSettingsDialog } from '@/components/desktop-settings'
 import { isDesktop } from '@/lib/desktop'
 import { AiConnectorDialog } from '@/features/portal/ai-connector'
+import { ProfileDialog } from '@/features/settings/components/profile-dialog'
 
 export function UserMenu() {
   const { user, signOut } = useAuth()
@@ -25,6 +26,7 @@ export function UserMenu() {
   const [pwOpen, setPwOpen] = React.useState(false)
   const [pcOpen, setPcOpen] = React.useState(false)
   const [aiOpen, setAiOpen] = React.useState(false)
+  const [meOpen, setMeOpen] = React.useState(false)
   const { theme, setTheme } = useTheme()
   const locale = useLocale()
   const { canInstall, install } = useInstallApp()
@@ -42,6 +44,7 @@ export function UserMenu() {
           {company && <div className="mt-1 truncate text-xs">{company.roles.map((r) => td(r.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase()))).join(', ')}</div>}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {company && user && <DropdownMenuItem onSelect={() => setMeOpen(true)}><IdCard /> {t('My details')}</DropdownMenuItem>}
         <DropdownMenuItem asChild><Link to="/hr/me"><UserRound /> {t('My workplace')}</Link></DropdownMenuItem>
         <DropdownMenuItem onSelect={() => setPwOpen(true)}><KeyRound /> {t('Change password')}</DropdownMenuItem>
         {company && (simple
@@ -78,6 +81,7 @@ export function UserMenu() {
     <ChangePasswordDialog open={pwOpen} onOpenChange={setPwOpen} />
     <DesktopSettingsDialog open={pcOpen} onOpenChange={setPcOpen} />
     <AiConnectorDialog open={aiOpen} onOpenChange={setAiOpen} />
+    {meOpen && user && <ProfileDialog userId={user.id} self onClose={() => setMeOpen(false)} />}
     </>
   )
 }

@@ -18,6 +18,7 @@ import { t, td } from '@/i18n'
 import { formatDate, initials } from '@/lib/utils'
 import { type CompanyUser, type RoleRow, useCompanyUsers, useInviteAccountant, useInviteMember, useRoles, useMemberWarehouses, useSetMemberRoles, useSetMemberStatus, useSetMemberWarehouses } from '../api'
 import { useWarehouses } from '@/features/inventory/api'
+import { ProfileDialog } from '../components/profile-dialog'
 import { PinDialog, SharedTillCard, useMemberExtras, useSetView } from '../components/easy-access'
 
 export function UsersPage() {
@@ -34,6 +35,7 @@ export function UsersPage() {
   const setView = useSetView()
   const [pinFor, setPinFor] = React.useState<CompanyUser | null>(null)
   const [whFor, setWhFor] = React.useState<CompanyUser | null>(null)
+  const [profileFor, setProfileFor] = React.useState<string | null>(null)
   const memberWh = useMemberWarehouses()
   const whs = useWarehouses({ all: true })
 
@@ -79,6 +81,7 @@ export function UsersPage() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon-sm" aria-label={t('Actions for {name}', { name: u.full_name ?? u.email })}><MoreHorizontal /></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            {u.user_id && <DropdownMenuItem onSelect={() => setProfileFor(u.user_id)}>{t('Change details')}</DropdownMenuItem>}
             <DropdownMenuItem onSelect={() => setEditing(u)}>{t('Change roles')}</DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setWhFor(u)}>{t('Warehouses they work in')}</DropdownMenuItem>
             {u.user_id && u.status === 'active' && <DropdownMenuItem onSelect={() => setPinFor(u)}>{extras.data?.get(u.member_id)?.has_pin ? t('Change the PIN') : t('Give a PIN for the shared till')}</DropdownMenuItem>}
@@ -122,6 +125,7 @@ export function UsersPage() {
       <InviteDialog open={inviteOpen} onOpenChange={(o) => { setInviteOpen(o); if (!o && params.get('invite')) setParams({}, { replace: true }) }} roles={roles.data ?? []} />
       {pinFor && <PinDialog member={pinFor.member_id} name={pinFor.full_name ?? pinFor.email} hasPin={!!extras.data?.get(pinFor.member_id)?.has_pin} onClose={() => setPinFor(null)} />}
       {whFor && <WarehousesDialog user={whFor} current={memberWh.data?.[whFor.member_id] ?? []} onClose={() => setWhFor(null)} />}
+      {profileFor && <ProfileDialog userId={profileFor} onClose={() => setProfileFor(null)} />}
       {editing && <RolesDialog user={editing} roles={roles.data ?? []} onClose={() => setEditing(null)} />}
       <Dialog open={!!removing} onOpenChange={(o) => !o && setRemoving(null)}>
         <DialogContent className="max-w-md">
