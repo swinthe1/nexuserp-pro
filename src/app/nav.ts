@@ -20,6 +20,10 @@ export interface NavItem {
   always?: boolean
   /** shown here too when the same page is in an earlier part of the menu (recipes: the till and production) */
   also?: boolean
+  /** a small heading inside a long part of the menu; the items under it share it */
+  group?: string
+  /** found by the page search, but not listed in the side menu (it has its own place, e.g. the bell) */
+  hideInMenu?: boolean
 }
 /** label: the part's key (also what a company switches off); title: what the menu shows, when it differs */
 export interface NavSection { label: string; title?: string; items: NavItem[] }
@@ -29,27 +33,26 @@ export const NAV: NavSection[] = [
     label: msg('Overview'),
     items: [
       { label: msg('Dashboard'), href: '/', icon: LayoutDashboard, perm: 'core.read', keywords: ['home', 'kpi'], always: true },
-      { label: msg('Books check'), href: '/check', icon: ShieldCheck, perm: 'invoicing.read', keywords: ['kontrolli', 'gabime', 'gabimet', 'mistakes', 'check', 'kujdestari', 'pa faturë', 'minus', 'nui'] },
       { label: msg('Approvals|menu'), href: '/approvals', icon: Gauge, perm: 'core.read', keywords: ['approve', 'pending', 'inbox'] },
-      { label: msg('Notifications'), href: '/notifications', icon: Bell, perm: 'core.read', keywords: ['alerts', 'inbox', 'reminders', 'njoftime'], always: true },
+      { label: msg('Notifications'), href: '/notifications', icon: Bell, perm: 'core.read', keywords: ['alerts', 'inbox', 'reminders', 'njoftime'], always: true, hideInMenu: true },
     ],
   },
   {
     // selling: offers, orders, invoices and the customers
     label: msg('Sell|menu'),
     items: [
-      { label: msg('Customer invoices'), href: '/sales/invoices', icon: Receipt, perm: 'invoicing.read', keywords: ['invoice', 'fatura', 'credit note', 'billing'] },
+      { label: msg('Customer invoices'), href: '/sales/invoices', icon: Receipt, perm: 'invoicing.read', group: msg('Documents'), keywords: ['invoice', 'fatura', 'credit note', 'billing'] },
       { label: msg('Quotes'), href: '/sales/quotes', icon: FileText, perm: 'sales.read', keywords: ['offer', 'proposal', 'estimate', 'oferta'] },
       { label: msg('Sales orders'), href: '/sales/orders', icon: ShoppingBag, perm: 'sales.read', keywords: ['so', 'orders', 'porosi'] },
       { label: msg('Deliveries'), href: '/sales/deliveries', icon: Truck, perm: 'sales.read', keywords: ['shipping', 'dispatch', 'flete'] },
-      { label: msg('Customers'), href: '/partners?role=customer', icon: Users, perm: 'partners.read', keywords: ['clients', 'partners', 'vendors', 'klient'], focus: ['sales.write', 'pos.write'] },
       { label: msg('Recurring invoices'), href: '/sales/recurring', icon: Repeat, perm: 'invoicing.read', keywords: ['rent', 'subscription', 'qira', 'abonim', 'monthly'] },
       { label: msg('Order desk|menu'), href: '/oms/fulfillment', icon: ListOrdered, perm: 'sales.read', keywords: ['oms', 'backorders', 'fulfilment', 'allocation', 'open orders', 'short'] },
+      { label: msg('Customers'), href: '/partners?role=customer', icon: Users, perm: 'partners.read', group: msg('Customers and prices'), keywords: ['clients', 'partners', 'vendors', 'klient'], focus: ['sales.write', 'pos.write'] },
       { label: msg('Price lists'), href: '/sales/price-lists', icon: Tags, perm: 'sales.read', keywords: ['pricing', 'wholesale', 'retail', 'discount'] },
       { label: msg('Promotions'), href: '/sales/promotions', icon: Percent, perm: 'sales.read', keywords: ['promocion', 'promocione', 'aksion', 'zbritje', '3 me 2', 'offer', 'sale', 'happy hour'] },
-      { label: msg('Leads'), href: '/crm/leads', icon: Magnet, perm: 'crm.read', keywords: ['prospects', 'enquiries', 'crm'] },
+      { label: msg('Leads'), href: '/crm/leads', icon: Magnet, perm: 'crm.read', group: msg('New customers'), keywords: ['prospects', 'enquiries', 'crm'] },
       { label: msg('Pipeline|menu'), href: '/crm/pipeline', icon: Kanban, perm: 'crm.read', keywords: ['opportunities', 'deals', 'crm', 'kanban'] },
-      { label: msg('Agent app'), href: '/agent', icon: Smartphone, perm: 'sales.write', keywords: ['agjent', 'terren', 'field', 'route', 'rruga', 'arkëtim', 'van', 'shitës', 'porosi'] },
+      { label: msg('Agent app'), href: '/agent', icon: Smartphone, perm: 'sales.write', group: msg('In the field and online'), keywords: ['agjent', 'terren', 'field', 'route', 'rruga', 'arkëtim', 'van', 'shitës', 'porosi'] },
       { label: msg('Field agents'), href: '/sales/agents', icon: MapPinned, perm: 'sales.approve', keywords: ['agjentët', 'terren', 'field sales', 'routes', 'visits', 'vizita', 'gps'] },
       { label: msg('Web shop'), href: '/ecommerce', icon: Globe, perm: 'ecommerce.read', keywords: ['e-commerce', 'shopify', 'woocommerce', 'online orders', 'channels'] },
     ],
@@ -70,32 +73,32 @@ export const NAV: NavSection[] = [
     // buying: orders, supplier invoices and the suppliers
     label: msg('Buy|menu'),
     items: [
-      { label: msg('Vendor bills'), href: '/procurement/bills', icon: FileCheck2, perm: 'invoicing.read', keywords: ['bill', 'ap', 'payable', 'three-way match', 'faturë blerje'] },
+      { label: msg('Vendor bills'), href: '/procurement/bills', icon: FileCheck2, perm: 'invoicing.read', group: msg('Documents'), keywords: ['bill', 'ap', 'payable', 'three-way match', 'faturë blerje'] },
       { label: msg('Purchase orders'), href: '/procurement/orders', icon: ShoppingCart, perm: 'procurement.read', keywords: ['po', 'buy', 'order', 'porosi blerje'] },
       { label: msg('Invoice from a photo|menu'), href: '/inventory/read-invoice', icon: ScanText, perm: 'inventory.read', keywords: ['ocr', 'scan', 'photo', 'foto', 'fatura', 'ai', 'pdf'] },
-      { label: msg('Replenishment|menu'), href: '/procurement/replenishment', icon: RefreshCw, perm: 'procurement.read', keywords: ['reorder', 'mrp', 'suggestions', 'restock'] },
-      { label: msg('Requisitions|menu'), href: '/procurement/requisitions', icon: ClipboardList, perm: 'requisitions.read', keywords: ['request', 'purchase request', 'pr', 'kërkesë'] },
-      { label: msg('Vendor prices'), href: '/procurement/vendor-prices', icon: Tags, perm: 'procurement.read', keywords: ['vendor price list', 'supplier prices', 'lead time', 'moq'] },
       { label: msg('Landed costs|menu'), href: '/inventory/landed-costs', icon: Ship, perm: 'procurement.read', keywords: ['customs', 'freight', 'import', 'clearance'] },
-      { label: msg('Vendors'), href: '/partners?role=vendor', icon: Factory, perm: 'partners.read', keywords: ['suppliers', 'furnitor'], focus: ['procurement.write', 'wms.write'] },
+      { label: msg('Vendors'), href: '/partners?role=vendor', icon: Factory, perm: 'partners.read', group: msg('Suppliers'), keywords: ['suppliers', 'furnitor'], focus: ['procurement.write', 'wms.write'] },
+      { label: msg('Vendor prices'), href: '/procurement/vendor-prices', icon: Tags, perm: 'procurement.read', keywords: ['vendor price list', 'supplier prices', 'lead time', 'moq'] },
+      { label: msg('Replenishment|menu'), href: '/procurement/replenishment', icon: RefreshCw, perm: 'procurement.read', group: msg('Planning'), keywords: ['reorder', 'mrp', 'suggestions', 'restock'] },
+      { label: msg('Requisitions|menu'), href: '/procurement/requisitions', icon: ClipboardList, perm: 'requisitions.read', keywords: ['request', 'purchase request', 'pr', 'kërkesë'] },
     ],
   },
   {
     // the goods: what there is, what came in and went out
     label: msg('Inventory|menu'),
     items: [
-      { label: msg('Products'), href: '/inventory/products', icon: Boxes, perm: 'inventory.read', keywords: ['items', 'sku', 'variants', 'barcode'], focus: ['sales.write', 'wms.write'] },
+      { label: msg('Products'), href: '/inventory/products', icon: Boxes, perm: 'inventory.read', group: msg('Items'), keywords: ['items', 'sku', 'variants', 'barcode'], focus: ['sales.write', 'wms.write'] },
       { label: msg('Stock levels'), href: '/inventory/stock', icon: PackageSearch, perm: 'inventory.read', keywords: ['on hand', 'available', 'reserved', 'valuation'], focus: ['sales.write', 'wms.write', 'pos.write'] },
       { label: msg('Item card'), href: '/inventory/item-card', icon: FileStack, perm: 'inventory.read', keywords: ['kartela', 'kartela e artikullit', 'item ledger', 'stock card', 'lëvizjet', 'movements', 'ledger', 'history'], focus: ['wms.write'] },
-      { label: msg('Goods receipts|menu'), href: '/inventory/receipts', icon: PackageCheck, perm: 'inventory.read', keywords: ['grn', 'receive', 'import'] },
+      { label: msg('Low stock|menu'), href: '/inventory/alerts', icon: TriangleAlert, perm: 'inventory.read', keywords: ['reorder', 'alerts', 'replenish'] },
+      { label: msg('Lots & expiry|menu'), href: '/wms/lots', icon: Hourglass, perm: 'inventory.read', keywords: ['batch', 'serial', 'traceability', 'recall', 'fefo', 'expiry'] },
+      { label: msg('Goods receipts|menu'), href: '/inventory/receipts', icon: PackageCheck, perm: 'inventory.read', group: msg('Goods in and out'), keywords: ['grn', 'receive', 'import'] },
       { label: msg('Transfers'), href: '/inventory/transfers', icon: ArrowLeftRight, perm: 'inventory.read', keywords: ['move', 'warehouse'] },
       { label: msg('Adjustments'), href: '/inventory/adjustments', icon: SlidersHorizontal, perm: 'inventory.read', keywords: ['opening', 'write-off', 'damage'] },
       { label: msg('Cycle counts|menu'), href: '/wms/counts', icon: ClipboardCheck, perm: 'wms.read', keywords: ['inventory count', 'stocktake', 'inventarizim', 'inventarizimi', 'numërimi', 'regjistrimi i mallit'] },
-      { label: msg('Low stock|menu'), href: '/inventory/alerts', icon: TriangleAlert, perm: 'inventory.read', keywords: ['reorder', 'alerts', 'replenish'] },
-      { label: msg('Price levelling'), href: '/inventory/levelling', icon: Tags, perm: 'inventory.read', keywords: ['nivelim', 'nivelimi', 'nivelimi i cmimeve', 'ndryshim cmimi', 'price change', 'repricing', 'çmimet e reja', 'new selling prices', 'margin', 'markup', 'cost', 'marzh', 'cmim'] },
+      { label: msg('Price levelling'), href: '/inventory/levelling', icon: Tags, perm: 'inventory.read', group: msg('Prices and labels'), keywords: ['nivelim', 'nivelimi', 'nivelimi i cmimeve', 'ndryshim cmimi', 'price change', 'repricing', 'çmimet e reja', 'new selling prices', 'margin', 'markup', 'cost', 'marzh', 'cmim'] },
       { label: msg('Labels'), href: '/inventory/labels', icon: Tag, perm: 'inventory.read', keywords: ['etiketa', 'etiketat', 'barkod', 'barcode', 'shelf', 'raft', 'çmim', 'printo'] },
-      { label: msg('Lots & expiry|menu'), href: '/wms/lots', icon: Hourglass, perm: 'inventory.read', keywords: ['batch', 'serial', 'traceability', 'recall', 'fefo', 'expiry'] },
-      { label: msg('Warehouses'), href: '/inventory/warehouses', icon: Warehouse, perm: 'inventory.read', keywords: ['locations', 'bins'] },
+      { label: msg('Warehouses'), href: '/inventory/warehouses', icon: Warehouse, perm: 'inventory.read', group: msg('Setup|group'), keywords: ['locations', 'bins'] },
       { label: msg('Inventory setup|menu'), href: '/inventory/setup', icon: PackagePlus, perm: 'inventory.read', keywords: ['categories', 'units', 'attributes'] },
     ],
   },
@@ -117,12 +120,12 @@ export const NAV: NavSection[] = [
     // VAT and the books for the tax office
     label: msg('Taxes and books'),
     items: [
-      { label: msg('Sales book'), href: '/tax/books', icon: FileSpreadsheet, perm: 'tax.read', keywords: ['libri i shitjes', 'libri i shitjeve', 'sales book', 'vat book', 'tvsh'] },
+      { label: msg('Sales book'), href: '/tax/books', icon: FileSpreadsheet, perm: 'tax.read', group: msg('Books and declarations'), keywords: ['libri i shitjes', 'libri i shitjeve', 'sales book', 'vat book', 'tvsh'] },
       { label: msg('Purchase book'), href: '/tax/books?book=purchase', icon: FileSpreadsheet, perm: 'tax.read', keywords: ['libri i blerjes', 'libri i blerjeve', 'purchase book', 'vat book', 'tvsh'] },
       { label: msg('VAT declarations'), href: '/tax/declarations', icon: ClipboardPen, perm: 'tax.read', keywords: ['vat return', 'deklarata', 'tvsh', 'dpt', 'atk'] },
       { label: msg('Small business tax'), href: '/tax/small-business', icon: BadgePercent, perm: 'tax.read', keywords: ['biznes i vogël', 'biznes i vogel', '3%', '9%', 'tremujor', 'qarkullim', 'small business', 'turnover tax'] },
       { label: msg('Z reports'), href: '/finance/z-reports', icon: Printer, perm: 'invoicing.read', keywords: ['z raport', 'z-raporti', 'raporti z', 'arka fiskale', 'kasa', 'fiscal register', 'z report'] },
-      { label: msg('Withholding tax'), href: '/tax/withholding', icon: Landmark, perm: 'tax.read', keywords: ['tatim në burim', 'tatimi në burim', 'withholding', 'qira', 'rent', 'wht'] },
+      { label: msg('Withholding tax'), href: '/tax/withholding', icon: Landmark, perm: 'tax.read', group: msg('Other taxes'), keywords: ['tatim në burim', 'tatimi në burim', 'withholding', 'qira', 'rent', 'wht'] },
       { label: msg('Corporate income tax'), href: '/tax/income-tax', icon: Percent, perm: 'tax.read', keywords: ['tatimi mbi fitimin', 'tatim fitimi', 'cit', 'profit tax', 'deklarata vjetore'] },
       { label: msg('Fiscalization'), href: '/tax/fiscalization', icon: Fingerprint, perm: 'tax.read', keywords: ['nivf', 'nslf', 'iic', 'fic', 'cis', 'efiskalizimi', 'qr'] },
       { label: msg('Tax codes|menu'), href: '/tax/codes', icon: Tags, perm: 'tax.read', keywords: ['vat rates', 'exempt', 'reverse charge'] },
@@ -132,6 +135,7 @@ export const NAV: NavSection[] = [
     // the accountant's part
     label: msg('Accounting'),
     items: [
+      { label: msg('Books check'), href: '/check', icon: ShieldCheck, perm: 'invoicing.read', keywords: ['kontrolli', 'gabime', 'gabimet', 'mistakes', 'check', 'kujdestari', 'pa faturë', 'minus', 'nui'] },
       { label: msg('Financial statements'), href: '/finance/reports', icon: BarChart3, perm: 'finance.read', keywords: ['p&l', 'profit and loss', 'balance sheet', 'cash flow', 'trial balance', 'bilanc', 'comparison'] },
       { label: msg('Journal entries|menu'), href: '/finance/journal', icon: BookOpenText, perm: 'finance.read', keywords: ['gl', 'general ledger', 'manual entry', 'ditar'] },
       { label: msg('Account card'), href: '/finance/account-card', icon: BookOpenText, perm: 'finance.read', keywords: ['kartela e kontos', 'libri kryesor', 'general ledger', 'account ledger'] },

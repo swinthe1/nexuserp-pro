@@ -6,7 +6,7 @@ import { moduleLook } from '@/app/modules'
 import { NAV, type NavItem } from '@/app/nav'
 import { useCommandPalette } from '@/components/layout/command-palette'
 import { CompanySwitcher } from '@/components/layout/company-switcher'
-import { mostUsed, recordVisit, useFavourites, useHiddenSections, useOpenSections } from '@/components/layout/nav-prefs'
+import { recordVisit, useFavourites, useHiddenSections, useOpenSections } from '@/components/layout/nav-prefs'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { t } from '@/i18n'
@@ -51,15 +51,10 @@ function useFullMenu() {
 const writes = (perm: string) => perm.split('|').map((p) => p.replace(/\.read$/, '.write'))
 
 
-/** a section's own icon in its own colour (app/modules.ts) */
-function SectionIcon({ label, className }: { label: string; className?: string }) {
-  const look = moduleLook(label)
-  const Icon = look.icon
-  return (
-    <span aria-hidden style={{ '--mod': look.hue } as React.CSSProperties} className={cn('mod-chip flex size-6 shrink-0 items-center justify-center rounded-md', className)}>
-      <Icon className="size-3.5" strokeWidth={2} />
-    </span>
-  )
+/** a part's icon: one quiet colour for all, the brand colour for the part you are in */
+function SectionIcon({ label, className, active }: { label: string; className?: string; active?: boolean }) {
+  const Icon = moduleLook(label).icon
+  return <Icon aria-hidden className={cn('size-[18px] shrink-0', active ? 'text-primary' : 'text-muted-foreground', className)} strokeWidth={1.75} />
 }
 
 function SectionFlyout({ label, title, items, activeHref, onNavigate }: { label: string; title?: string; items: NavItem[]; activeHref: string | null; onNavigate?: () => void }) {
@@ -74,7 +69,7 @@ function SectionFlyout({ label, title, items, activeHref, onNavigate }: { label:
         <button type="button" aria-label={t(title ?? label)} onMouseEnter={show} onMouseLeave={hide}
           className={cn('flex h-9 w-full items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
             active && 'bg-secondary ring-1 ring-primary/40', open && !active && 'bg-secondary text-foreground')}>
-          <SectionIcon label={label} className="size-7" />
+          <SectionIcon label={label} active={active} className="size-5" />
         </button>
       </PopoverTrigger>
       <PopoverContent side="right" align="start" sideOffset={10} className="w-60 p-1.5" onMouseEnter={show} onMouseLeave={hide}
@@ -95,8 +90,10 @@ function SectionFlyout({ label, title, items, activeHref, onNavigate }: { label:
   )
 }
 
-function Item({ item, collapsed, onNavigate, active, pinned, onTogglePin }: {
+function Item({ item, collapsed, onNavigate, active, pinned, onTogglePin, sub }: {
   item: NavItem; collapsed: boolean; onNavigate?: () => void; active: boolean; pinned?: boolean; onTogglePin?: () => void
+  /** a page inside a part: words only, lined up under the part's name */
+  sub?: boolean
 }) {
   const Icon = item.icon
   const link = (
@@ -105,16 +102,19 @@ function Item({ item, collapsed, onNavigate, active, pinned, onTogglePin }: {
       end={item.href === '/'}
       onClick={onNavigate}
       aria-current={active ? 'page' : undefined}
+      title={sub ? t(item.label) : undefined}
       className={
         cn(
-          'group/item flex h-8 min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 text-[13px] font-medium text-sidebar-foreground transition-colors hover:bg-secondary hover:text-foreground',
-          active && 'bg-primary/15 font-semibold text-white ring-1 ring-inset ring-primary/25',
+          'group/item relative flex min-w-0 flex-1 basis-auto items-center rounded-md text-sidebar-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground',
+          sub ? 'min-h-8 py-1.5 pl-[38px] pr-7 text-[13px] leading-snug' : 'h-9 gap-2.5 px-2 text-[13.5px] font-medium',
+          active && 'bg-white/[0.08] font-medium text-white',
+          active && sub && 'before:absolute before:inset-y-1.5 before:left-[23px] before:w-0.5 before:rounded-full before:bg-primary',
           collapsed && 'h-9 flex-none justify-center px-0',
         )
       }
     >
-      <Icon className={cn('size-4 shrink-0', active ? 'text-primary' : 'text-muted-foreground group-hover/item:text-foreground')} />
-      {!collapsed && <span className="flex-1 truncate">{t(item.label)}</span>}
+      {!sub && <Icon className={cn('size-[18px] shrink-0', active ? 'text-primary' : 'text-muted-foreground group-hover/item:text-foreground')} strokeWidth={1.75} />}
+      {!collapsed && <span className={cn('flex-1', sub ? 'line-clamp-2' : 'truncate')}>{t(item.label)}</span>}
     </NavLink>
   )
   if (collapsed) {
@@ -160,21 +160,23 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
   React.useEffect(() => { if (activeHref) recordVisit(activeHref) }, [activeHref])
 
   const sections = React.useMemo(() => NAV
+    // an item without its own group heading belongs to the one above it
+    .map((s) => { let g: string | undefined; return { ...s, items: s.items.map((i): NavItem => { g = i.group ?? g; return { ...i, group: g } }) } })
     .filter((s) => ALWAYS_SHOWN.has(s.label) || !hidden.includes(s.label))
-    .map((s) => ({ ...s, items: s.items.filter((i) => can(i.perm) && pageAllowed(i.href) && !hidden.includes(i.href) && mine(i)) }))
+    .map((s) => ({ ...s, items: s.items.filter((i) => !i.hideInMenu && can(i.perm) && pageAllowed(i.href) && !hidden.includes(i.href) && mine(i)) }))
     // a page shows once: where it first appears among the parts this business sees
     .map((s, _, all) => ({ ...s, items: s.items.filter((i) => i.also || !all.slice(0, all.indexOf(s)).some((p) => p.items.some((x) => x.href === i.href))) }))
     .filter((s) => s.items.length), [can, pageAllowed, hidden, mine])
   const byHref = React.useMemo(() => new Map(sections.flatMap((s) => s.items).map((i) => [i.href, i])), [sections])
 
-  // pinned pages first; until something is pinned, the pages used most on this device
-  const pinnedItems = favourites.map((h) => byHref.get(h)).filter((i): i is NavItem => !!i)
-  const suggested = pinnedItems.length ? [] : mostUsed(5, (h) => byHref.has(h)).map((h) => byHref.get(h)!)
-  const quick = pinnedItems.length ? pinnedItems : suggested
+  // only what the person starred; the overview pages are already at the top, so they are not repeated
+  const overviewHrefs = new Set(sections.find((s) => s.label === 'Overview')?.items.map((i) => i.href) ?? [])
+  const pinnedItems = favourites.map((h) => byHref.get(h)).filter((i): i is NavItem => !!i && !overviewHrefs.has(i.href))
+  const quick = pinnedItems
   const activeSection = sections.find((s) => s.items.some((i) => i.href === activeHref))?.label
   const openSet = new Set(open ?? [])
   const isOpen = (label: string) => label === activeSection || openSet.has(label)
-  const toggleSection = (label: string) => setOpen(openSet.has(label) ? [...openSet].filter((l) => l !== label) : [...openSet, label])
+  const toggleSection = (label: string) => setOpen(openSet.has(label) ? [] : [label])
   const pinProps = (i: NavItem) => ({ pinned: favourites.includes(i.href), onTogglePin: () => toggle(i.href) })
 
   if (collapsed) {
@@ -196,47 +198,55 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
   }
 
   return (
-    <nav className="flex flex-col gap-3" aria-label={t('Main menu')}>
+    <nav className="flex flex-col gap-1" aria-label={t('Main menu')}>
       <button type="button" onClick={() => palette.open('pages')}
-        className="flex h-8 items-center gap-2 rounded-md border border-sidebar-border bg-background/60 px-2 text-[13px] text-muted-foreground hover:text-foreground">
+        className="mb-2 flex h-8 items-center gap-2 rounded-md border border-sidebar-border bg-background/60 px-2 text-[13px] text-muted-foreground hover:text-foreground">
         <Search className="size-4" /> <span className="flex-1 text-left">{t('Find a page…')}</span>
       </button>
 
+      {/* the start page and what waits for approval, then the pages starred, then the parts */}
+      {sections.filter((x) => x.label === 'Overview').map((section) => (
+        <div key={section.label} className="flex flex-col gap-px">
+          {section.items.map((i) => <Item key={i.href} item={i} collapsed={false} onNavigate={onNavigate} active={i.href === activeHref} />)}
+        </div>
+      ))}
       {quick.length > 0 && (
-        <div className="flex flex-col gap-0.5">
-          <div className="flex items-center gap-1.5 px-2 pb-1 text-xs font-medium text-muted-foreground/80">
-            {pinnedItems.length ? <><Star className="size-3 fill-current text-warning" /> {t('Favourites')}</> : t('Used most')}
+        <div className="mt-2 flex flex-col gap-px">
+          <div className="flex items-center gap-1.5 px-2 pb-1 text-2xs font-medium text-muted-foreground/70">
+            <Star className="size-3 fill-current text-warning" /> {t('Favourites')}
           </div>
           {quick.map((i) => <Item key={`q-${i.href}`} item={i} collapsed={false} onNavigate={onNavigate} active={i.href === activeHref} {...pinProps(i)} />)}
-          {!pinnedItems.length && <p className="px-2 pt-1 text-2xs text-muted-foreground">{t('Click the star next to a page to keep it here.')}</p>}
         </div>
       )}
 
+      <div className="my-2 border-t border-sidebar-border" />
       {sections.map((section) => {
-        if (section.label === 'Overview') {
-          return (
-            <div key={section.label} className="flex flex-col gap-0.5">
-              {section.items.map((i) => <Item key={i.href} item={i} collapsed={false} onNavigate={onNavigate} active={i.href === activeHref} />)}
-            </div>
-          )
-        }
+        if (section.label === 'Overview') return null
         const expanded = isOpen(section.label)
         const id = `nav-${section.label.replace(/\W+/g, '-')}`
         return (
-          <div key={section.label} className="flex flex-col gap-0.5">
+          <div key={section.label} className={cn('flex flex-col', (section.label === 'Reports|menu' || (section.label === 'Company' && !sections.some((x) => x.label === 'Reports|menu'))) && 'mt-2 border-t border-sidebar-border pt-3')}>
             <button type="button" aria-expanded={expanded} aria-controls={id}
               disabled={section.label === activeSection}
               onClick={() => toggleSection(section.label)}
-              className={cn('flex h-8 items-center gap-2 rounded-lg px-1.5 text-[13px] font-semibold text-sidebar-foreground hover:bg-secondary hover:text-foreground disabled:cursor-default disabled:hover:bg-transparent',
-                expanded && 'text-foreground')}>
-              <SectionIcon label={section.label} />
-              <span className="flex-1 text-left">{t(section.title ?? section.label)}</span>
-              {!expanded && <span className="text-2xs font-medium text-muted-foreground/80">{section.items.length}</span>}
-              <ChevronRight className={cn('size-3.5 text-muted-foreground transition-transform', expanded && 'rotate-90')} />
+              className={cn('flex h-9 items-center gap-2.5 rounded-md px-2 text-[13.5px] font-medium text-sidebar-foreground hover:bg-white/[0.06] hover:text-foreground disabled:cursor-default disabled:hover:bg-transparent',
+                expanded && 'text-white')}>
+              <SectionIcon label={section.label} active={section.label === activeSection} />
+              <span className="flex-1 truncate text-left">{t(section.title ?? section.label)}</span>
+              <ChevronRight className={cn('size-3.5 text-muted-foreground/70 transition-transform', expanded && 'rotate-90')} />
             </button>
             {expanded && (
-              <div id={id} className="ml-[18px] flex flex-col gap-0.5 border-l border-sidebar-border pl-2">
-                {section.items.map((i) => <Item key={i.href} item={i} collapsed={false} onNavigate={onNavigate} active={i.href === activeHref} {...pinProps(i)} />)}
+              <div id={id} className="flex flex-col gap-px pb-2 pt-0.5">
+                {section.items.map((i, k) => {
+                  // headings inside a long part only; a short one reads fine as it is
+                  const heading = section.items.length > 7 && i.group && i.group !== section.items[k - 1]?.group ? i.group : null
+                  return (
+                    <React.Fragment key={i.href}>
+                      {heading && <div className={cn('pb-0.5 pl-[38px] text-2xs font-medium text-muted-foreground/70', k > 0 && 'pt-2.5')}>{t(heading)}</div>}
+                      <Item item={i} sub collapsed={false} onNavigate={onNavigate} active={i.href === activeHref} {...pinProps(i)} />
+                    </React.Fragment>
+                  )
+                })}
               </div>
             )}
           </div>
