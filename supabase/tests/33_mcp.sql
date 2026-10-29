@@ -43,7 +43,7 @@ select t.ok((select status from public.sales_invoices where id = (:'inv'::jsonb 
         and (select count(*) from public.sales_invoice_lines where invoice_id = (:'inv'::jsonb ->> 'id')::uuid) = 2
         and (:'inv'::jsonb ->> 'net')::numeric = 11, 'the invoice is a draft with the company''s prices and a free line');
 set role anon;
-select t.ok(public.mcp_http('{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"draft_purchase_order","arguments":{"vendor":"Rugove","lines":[{"item":"Ujë Rugove 1.5 L","quantity":100}]}}}') #>> '{result,content,0,text}' like '%PO-%',
+select t.ok(public.mcp_http('{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"draft_purchase_order","arguments":{"vendor":"Rugove","lines":[{"item":"Ujë Rugove 1.5 L","quantity":100}]}}}') #>> '{result,content,0,text}' like '%PB-%',
   'a purchase order draft has its number');
 select t.ok(public.mcp_http('{"jsonrpc":"2.0","id":10,"method":"tools/call","params":{"name":"draft_sales_invoice","arguments":{"customer":"Nobody","lines":[{"item":"UJE","quantity":1}]}}}') #>> '{result,content,0,text}' like 'No customer%',
   'an unknown customer is said, not guessed');

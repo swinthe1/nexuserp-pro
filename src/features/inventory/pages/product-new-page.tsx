@@ -1,10 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus, Sparkles, Trash2, X } from 'lucide-react'
+import { ChevronDown, Plus, Sparkles, Trash2, X } from 'lucide-react'
 import * as React from 'react'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { useCompany } from '@/app/company-provider'
 import { FormSection } from '@/components/form-section'
 import { PageHeader } from '@/components/page-header'
 import { SearchSelect } from '@/components/search-select'
@@ -17,8 +16,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
-import { describeError } from '@/lib/errors'
-import { cn } from '@/lib/utils'
+import { describeError, unwrap } from '@/lib/errors'
+import { supabase } from '@/lib/supabase'
+import { cn, formatMoney } from '@/lib/utils'
 import { useAttributes, useCategories, useCreateProduct, useTaxCodes, useUnits, useWarehouses, type AttributeWithValues } from '../api'
 import { VendorPicker } from '../components/pickers'
 import { productSchema, type ProductFormValues } from '../schemas'
@@ -40,7 +40,6 @@ function buildMatrix(attrs: AttributeWithValues[], selected: Record<string, stri
 
 export function ProductNewPage() {
   const navigate = useNavigate()
-  const { company } = useCompany()
   const units = useUnits()
   const categories = useCategories()
   const taxes = useTaxCodes()
@@ -61,9 +60,19 @@ export function ProductNewPage() {
   })
   const variants = useFieldArray({ control: form.control, name: 'variants' })
   const rules = useFieldArray({ control: form.control, name: 'reorder_rules' })
-  const [code, attributeIds, selectedValues, productType, tracking] = useWatch({
-    control: form.control, name: ['code', 'attribute_ids', 'selected_values', 'product_type', 'tracking'],
+  const [code, attributeIds, selectedValues, productType, tracking, salesTax, salesPrice] = useWatch({
+    control: form.control, name: ['code', 'attribute_ids', 'selected_values', 'product_type', 'tracking', 'sales_tax_code_id', 'sales_price'],
   })
+  // the form asks the price the way it is on the shelf (with VAT) and keeps the price without VAT from it
+  const rate = Number(taxes.data?.find((x) => x.id === salesTax)?.rate ?? 0)
+  const [gross, setGross] = React.useState('')
+  const setGrossPrice = (v: string) => { setGross(v); const g = Number(v.replace(',', '.')); form.setValue('sales_price', Number.isFinite(g) && g > 0 ? Math.round((g / (1 + rate / 100)) * 1e6) / 1e6 : 0) }
+  React.useEffect(() => { if (gross) setGrossPrice(gross) // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rate])
+  // what is on the shelf now, put in as opening stock right after saving
+  const [opening, setOpening] = React.useState({ qty: '', cost: '', warehouse: '' })
+  React.useEffect(() => { if (!opening.warehouse && warehouses.data?.length) setOpening((o) => ({ ...o, warehouse: warehouses.data![0]!.id })) }, [warehouses.data, opening.warehouse])
+  const [more, setMore] = React.useState(false)
 
   // sensible defaults once lookups load
   React.useEffect(() => {
@@ -117,13 +126,23 @@ export function ProductNewPage() {
         })),
         reorder_rules: v.product_type === 'stockable' ? v.reorder_rules.map((r) => ({ ...r, preferred_vendor_id: r.preferred_vendor_id ?? null })) : [],
       })
-      toast.success(t('{name} created', { name: v.name }), { description: tn(v.variants.length, '{n} variant', '{n} variants') })
+      const qty = Number(opening.qty.replace(',', '.'))
+      if (v.product_type === 'stockable' && v.variants.length === 1 && qty > 0 && opening.warehouse) {
+        try {
+          unwrap(await supabase.rpc('product_opening_stock', { p_product: id as string, p_warehouse: opening.warehouse, p_qty: qty,
+            p_cost: Number(opening.cost.replace(',', '.')) || undefined }))
+        } catch (e) { toast.error(t('The item is saved, but the opening stock is not: {why}', { why: describeError(e) })) }
+      }
+      toast.success(t('{name} created', { name: v.name }), { description: v.variants.length > 1 ? tn(v.variants.length, '{n} variant', '{n} variants') : undefined })
       navigate(`/inventory/products/${id}`)
     } catch (e) {
       const code = (e as { code?: string }).code
       if (code === '23505' || String((e as { message?: string }).message ?? '').includes('code is already used')) form.setError('code', { message: t('This code is already used by another product') })
       else toast.error(describeError(e))
     }
+  }, (errors) => {
+    // a mistake in a part that is folded away: open it, so the message is seen
+    if (Object.keys(errors).some((k) => !['name', 'code', 'sales_price', 'sales_tax_code_id', 'uom_id'].includes(k))) setMore(true)
   })
 
   return (
@@ -138,16 +157,90 @@ export function ProductNewPage() {
           </>}
         />
         <div className="rounded-lg border bg-card px-5">
-          <FormSection title={t('Basic details')} description={t('Code and name appear on documents, labels and the POS.')}>
-            <div className="grid gap-4 sm:grid-cols-[180px_1fr]">
-              <FormField control={form.control} name="code" render={({ field }) => (
-                <FormItem><FormLabel>{t('Code')}</FormLabel><FormControl><Input autoFocus placeholder={t('TEE-BASIC')} {...field} onChange={(e) => field.onChange(e.target.value.toUpperCase())} /></FormControl><FormMessage /></FormItem>
-              )} />
+          <FormSection title={t('The item')} description={t('What is needed to sell it today. Everything else can wait under “More”.')}>
+            {variants.fields.length === 1 && variants.fields[0]!.key === 'default' && (
+              <div className="flex items-end gap-2">
+                <FormField control={form.control} name="variants.0.barcode" render={({ field }) => (
+                  <FormItem className="flex-1"><FormLabel optional>{t('Barcode')}</FormLabel>
+                    <FormControl><Input autoFocus className="tabular" inputMode="numeric" placeholder={form.watch('variants.0.generate_barcode') ? t('Automatic (200…)') : t('Scan it or type it')} {...field} /></FormControl>
+                    <FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="variants.0.generate_barcode" render={({ field }) => (
+                  <label className="flex h-9 shrink-0 items-center gap-1.5 text-xs text-muted-foreground" title={t('Generate an in-store EAN-13 if no barcode is entered')}>
+                    <Checkbox checked={field.value} onCheckedChange={(v) => field.onChange(!!v)} /> {t('Make one')}
+                  </label>
+                )} />
+              </div>
+            )}
+            <div className="grid gap-4 sm:grid-cols-[1fr_180px]">
               <FormField control={form.control} name="name" render={({ field }) => (
                 <FormItem><FormLabel>{t('Name')}</FormLabel><FormControl><Input placeholder={t('T-Shirt Basic')} {...field} /></FormControl><FormMessage /></FormItem>
               )} />
+              <FormField control={form.control} name="code" render={({ field }) => (
+                <FormItem><FormLabel>{t('Code')}</FormLabel><FormControl><Input placeholder={t('TEE-BASIC')} {...field} onChange={(e) => field.onChange(e.target.value.toUpperCase())} /></FormControl><FormMessage /></FormItem>
+              )} />
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
+              <FormItem>
+                <FormLabel>{t('Selling price with VAT')}</FormLabel>
+                <Input type="number" step="0.01" min="0" inputMode="decimal" value={gross} onChange={(e) => setGrossPrice(e.target.value)} placeholder="0.00" />
+                <FormDescription>{t('Without VAT: {amount}', { amount: formatMoney(Number(salesPrice) || 0) })}</FormDescription>
+              </FormItem>
+              <FormField control={form.control} name="sales_tax_code_id" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('VAT on sales')}</FormLabel>
+                  <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                    <FormControl><SelectTrigger><SelectValue placeholder={t('VAT code')} /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      {(taxes.data ?? []).filter((x) => x.is_active && x.scope !== 'purchase')
+                        .map((x) => <SelectItem key={x.id} value={x.id}>{td(x.name)}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="uom_id" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('Unit')}</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl><SelectTrigger><SelectValue placeholder={t('Unit')} /></SelectTrigger></FormControl>
+                    <SelectContent>{(units.data ?? []).filter((u) => u.is_active).map((u) => <SelectItem key={u.id} value={u.id}>{td(u.name)} ({u.code})</SelectItem>)}</SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            </div>
+            {productType === 'stockable' && variants.fields.length === 1 && (
+              <div className="grid gap-4 rounded-md border border-dashed p-3 sm:grid-cols-3">
+                <FormItem>
+                  <FormLabel optional>{t('Quantity on the shelf now')}</FormLabel>
+                  <Input type="number" step="any" min="0" inputMode="decimal" value={opening.qty} onChange={(e) => setOpening({ ...opening, qty: e.target.value })} placeholder="0" />
+                </FormItem>
+                <FormItem>
+                  <FormLabel optional>{t('Purchase price without VAT')}</FormLabel>
+                  <Input type="number" step="0.01" min="0" inputMode="decimal" value={opening.cost} onChange={(e) => setOpening({ ...opening, cost: e.target.value })} placeholder="0.00" />
+                </FormItem>
+                {(warehouses.data?.length ?? 0) > 1 ? (
+                  <FormItem>
+                    <FormLabel>{t('Warehouse')}</FormLabel>
+                    <Select value={opening.warehouse} onValueChange={(v) => setOpening({ ...opening, warehouse: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>{(warehouses.data ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{td(w.name)}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </FormItem>
+                ) : <p className="self-end pb-2 text-xs text-muted-foreground">{t('It goes into the stock as opening stock, valued at this price.')}</p>}
+              </div>
+            )}
+          </FormSection>
+
+          <button type="button" onClick={() => setMore(!more)} aria-expanded={more}
+            className="flex w-full items-center gap-2 border-t py-4 text-left text-sm font-medium text-primary">
+            <ChevronDown className={cn('size-4 transition-transform', more && 'rotate-180')} />
+            {more ? t('Less') : t('More: type, category, purchase VAT, variants, reorder points, weight and customs')}
+          </button>
+
+          <div className={cn(!more && 'hidden')}>
+          <FormSection title={t('Kind and group')}>
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField control={form.control} name="product_type" render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('Type')}</FormLabel>
@@ -170,41 +263,26 @@ export function ProductNewPage() {
                   </FormControl>
                 </FormItem>
               )} />
-              <FormField control={form.control} name="uom_id" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('Unit')}</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl><SelectTrigger><SelectValue placeholder={t('Unit')} /></SelectTrigger></FormControl>
-                    <SelectContent>{(units.data ?? []).filter((u) => u.is_active).map((u) => <SelectItem key={u.id} value={u.id}>{td(u.name)} ({u.code})</SelectItem>)}</SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )} />
             </div>
             <FormField control={form.control} name="description" render={({ field }) => (
               <FormItem><FormLabel optional>{t('Description')}</FormLabel><FormControl><Textarea rows={2} {...field} /></FormControl></FormItem>
             )} />
           </FormSection>
 
-          <FormSection title={t('Price & VAT')} description={t('Prices are in {currency} without VAT. The till shows them with VAT.', { currency: company?.base_currency ?? '' })}>
+          <FormSection title={t('Purchase')}>
             <div className="grid gap-4 sm:grid-cols-3">
-              <FormField control={form.control} name="sales_price" render={({ field }) => (
-                <FormItem><FormLabel>{t('Selling price (without VAT)')}</FormLabel><FormControl><Input type="number" step="0.01" min="0" {...field} /></FormControl><FormMessage /></FormItem>
+              <FormField control={form.control} name="purchase_tax_code_id" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('VAT on purchases')}</FormLabel>
+                  <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                    <FormControl><SelectTrigger><SelectValue placeholder={t('VAT code')} /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      {(taxes.data ?? []).filter((x) => x.is_active && x.scope !== 'sales')
+                        .map((x) => <SelectItem key={x.id} value={x.id}>{td(x.name)}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
               )} />
-              {(['sales_tax_code_id', 'purchase_tax_code_id'] as const).map((name) => (
-                <FormField key={name} control={form.control} name={name} render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{name === 'sales_tax_code_id' ? t('VAT on sales') : t('VAT on purchases')}</FormLabel>
-                    <Select value={field.value ?? ''} onValueChange={field.onChange}>
-                      <FormControl><SelectTrigger><SelectValue placeholder={t('VAT code')} /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        {(taxes.data ?? []).filter((x) => x.is_active && x.scope !== (name === 'sales_tax_code_id' ? 'purchase' : 'sales'))
-                          .map((x) => <SelectItem key={x.id} value={x.id}>{td(x.name)}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )} />
-              ))}
             </div>
             <div className="flex flex-wrap gap-6">
               <FormField control={form.control} name="is_sellable" render={({ field }) => (
@@ -337,8 +415,8 @@ export function ProductNewPage() {
               )} />
             </div>
           </FormSection>
+          </div>
         </div>
-        <FormDescription className="mt-3">{t('Opening stock is added afterwards with a stock adjustment (reason: opening) or a goods receipt.')}</FormDescription>
       </form>
     </Form>
   )

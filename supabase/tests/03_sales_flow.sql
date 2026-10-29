@@ -55,7 +55,7 @@ select t.ok(public.next_partner_code(:'co', 'customer') = 'C00001', 'customer co
 select t.login('sam@shop.al');
 insert into public.leads (company_id, title, contact_name, company_name, email, source, estimated_value)
 values (:'co', 'Uniforms for Hotel Dajti', 'Erion Leka', 'Hotel Dajti sh.p.k.', 'erion@dajti.al', 'referral', 250000) returning id as lead, number as lead_no \gset
-select t.ok(:'lead_no' = 'LD-2026-00001', 'leads are numbered');
+select t.ok(:'lead_no' = 'KON-2026-00001', 'leads are numbered');
 select public.convert_lead(:'lead') as conv \gset
 select (:'conv'::jsonb ->> 'opportunity_id') as opp, (:'conv'::jsonb ->> 'partner_id') as dajti \gset
 select t.ok((select status from public.leads where id = :'lead') = 'converted', 'lead converted');
@@ -89,7 +89,7 @@ select public.convert_quote_to_order(:'q') as so \gset
 select t.ok((select status from public.sales_quotes where id = :'q') = 'converted', 'quote marked converted');
 select t.ok((select status from public.opportunities where id = :'opp') = 'won', 'winning the quote wins the opportunity');
 select t.ok((select (count(*), sum(line_total)) = (2::bigint, 25152.00) from public.sales_order_lines where sales_order_id = :'so'), 'order copies the quote lines');
-select t.ok((select number from public.sales_orders where id = :'so') like 'SO-2026-%', 'orders are numbered');
+select t.ok((select number from public.sales_orders where id = :'so') like 'PSH-2026-%', 'orders are numbered');
 
 -- ---------- confirmation checks ---------------------------------------------------------
 select t.throws(format($q$update public.business_partners set credit_limit = 99999999 where id = %L$q$, :'cust_a'), 'sales manager', 'a sales rep cannot raise a credit limit');
@@ -119,7 +119,7 @@ select t.throws(format($q$select public.post_delivery(%L)$q$, gen_random_uuid())
 select t.login('otto@shop.al');
 select public.create_delivery_from_order(:'so') as d1 \gset
 select t.ok((select sum(quantity) from public.delivery_lines where delivery_id = :'d1') = 10, 'delivery picks the reserved quantity');
-select t.ok((select number from public.deliveries where id = :'d1') like 'DO-2026-%', 'deliveries are numbered');
+select t.ok((select number from public.deliveries where id = :'d1') like 'FD-2026-%', 'deliveries are numbered');
 select public.post_delivery(:'d1');
 select t.ok((select (status, total_cost) = ('done', 8000.00) from public.deliveries where id = :'d1'), 'delivery posted at average cost (COGS 10 × 800)');
 select t.ok((select status from public.sales_orders where id = :'so') = 'partially_delivered', 'order partially delivered');
@@ -154,7 +154,7 @@ select t.ok((select (status, invoice_status) = ('closed', 'invoiced') from publi
 select t.throws(format($q$select public.create_invoice_from_order(%L)$q$, :'so'), 'Nothing to invoice', 'a closed order with everything invoiced has nothing more to invoice');
 
 select public.create_credit_note(:'inv') as cn \gset
-select t.ok((select number from public.sales_invoices where id = :'cn') like 'CN-2026-%', 'credit notes have their own series');
+select t.ok((select number from public.sales_invoices where id = :'cn') like 'NK-2026-%', 'credit notes have their own series');
 update public.sales_invoice_lines set quantity = 2 where invoice_id = :'cn' and line_no = 1;
 delete from public.sales_invoice_lines where invoice_id = :'cn' and line_no = 2;
 select public.post_sales_invoice(:'cn');

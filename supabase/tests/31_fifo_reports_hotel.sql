@@ -64,7 +64,7 @@ insert into public.hotel_rooms (company_id, number, room_type_id, floor) values 
 insert into public.hotel_rooms (company_id, number, room_type_id, floor) values (:'co', '102', :'dbl', '1') returning id as r102 \gset
 insert into public.hotel_reservations (company_id, room_id, guest_name, guest_phone, check_in, check_out, rate)
 values (:'co', :'r101', 'Ana Gjoni', '+355691234567', current_date - 2, current_date + 1, 6000) returning id as res, number as resno \gset
-select t.ok(:'resno' like 'RES-%', 'reservations are numbered');
+select t.ok(:'resno' like 'REZ-%', 'reservations are numbered');
 select t.throws(format($q$insert into public.hotel_reservations (company_id, room_id, guest_name, check_in, check_out, rate)
   values (%L, %L, 'Tjetri', current_date, current_date + 2, 6000)$q$, :'co', :'r101'), 'already taken', 'a room holds one stay at a time');
 insert into public.hotel_reservations (company_id, room_id, guest_name, check_in, check_out, rate)

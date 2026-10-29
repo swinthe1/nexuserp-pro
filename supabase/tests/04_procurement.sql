@@ -55,7 +55,7 @@ insert into public.purchase_requisitions (company_id, warehouse_id, required_dat
 values (:'co', :'wh', current_date + 10, 'Café reopening') returning id as req, number as req_no \gset
 insert into public.purchase_requisition_lines (company_id, requisition_id, variant_id, description, quantity, estimated_unit_cost) values
   (:'co', :'req', :'cof', 'Coffee beans', 24, 950), (:'co', :'req', :'cup', 'Cups', 10, 200);
-select t.ok(:'req_no' like 'PR-2026-%', 'requisitions are numbered');
+select t.ok(:'req_no' like 'KB-2026-%', 'requisitions are numbered');
 select t.ok((select estimated_total from public.purchase_requisitions where id = :'req') = 24800, 'requisition estimate totalled');
 select t.throws(format($q$update public.purchase_requisitions set status = 'approved' where id = %L$q$, :'req'), 'set by its own action',
                 'a requester cannot approve by editing the status');
@@ -146,12 +146,12 @@ select t.ok((select unit_cost from public.goods_receipt_lines where receipt_id =
 -- ---------- vendor bills: three-way match ------------------------------------------------
 select t.login('finn@buy.al');
 select public.create_bill_from_po(:'po1', 'F-778') as b1 \gset
-select t.ok((select (number like 'BILL-2026-%', due_date) = (true, current_date + 30) from public.vendor_bills where id = :'b1'),
+select t.ok((select (number like 'FB-2026-%', due_date) = (true, current_date + 30) from public.vendor_bills where id = :'b1'),
             'bill numbered, due date from vendor terms');
 select t.ok((select count(*) from public.vendor_bill_lines where bill_id = :'b1' and receipt_line_id is not null) = 2, 'bill lines linked to receipts');
 select t.ok(public.match_vendor_bill(:'b1') ->> 'status' = 'matched', 'bill matches order and receipt');
 select t.throws(format($q$insert into public.vendor_bills (company_id, vendor_id, vendor_invoice_number) values (%L, %L, ' f-778 ')$q$, :'co', :'va'),
-                'already entered as BILL', 'duplicate vendor invoice numbers blocked (case and spaces ignored)');
+                'already entered as FB', 'duplicate vendor invoice numbers blocked (case and spaces ignored)');
 select t.throws(format($q$select public.create_bill_from_po(%L, 'F-779')$q$, :'po1'), 'Nothing to bill', 'draft bills hold their quantities');
 
 update public.vendor_bill_lines set unit_price = 950 where bill_id = :'b1' and variant_id = :'cof';
@@ -207,7 +207,7 @@ select t.login('finn@buy.al');
 
 -- vendor credit notes
 select public.create_vendor_credit(:'b1') as vc \gset
-select t.ok((select (number like 'VCN-2026-%', document_type, original_bill_id, vendor_invoice_number) = (true, 'vendor_credit', :'b1'::uuid, 'CR-F-778')
+select t.ok((select (number like 'NKF-2026-%', document_type, original_bill_id, vendor_invoice_number) = (true, 'vendor_credit', :'b1'::uuid, 'CR-F-778')
                from public.vendor_bills where id = :'vc'), 'credit note in its own series');
 select public.post_vendor_bill(:'vc');
 select t.ok((select qty_billed from public.purchase_order_lines where purchase_order_id = :'po1' and variant_id = :'cof') > 0,

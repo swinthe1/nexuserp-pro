@@ -100,7 +100,7 @@ select t.login('acco@fin.al');
 insert into public.payments (company_id, document_type, partner_id, method, amount, bank_account_id, payment_date, reference)
 values (:'co', 'customer_payment', :'cust', 'bank_transfer', 50000, :'bank', current_date, 'ERA-INV') returning id as rcp, number as rcp_no \gset
 insert into public.payment_allocations (company_id, payment_id, sales_invoice_id, amount) values (:'co', :'rcp', :'inv', 50000);
-select t.ok(:'rcp_no' like 'RCP-2026-%', 'customer receipts are numbered');
+select t.ok(:'rcp_no' like 'ARK-2026-%', 'customer receipts are numbered');
 select t.throws(format($q$update public.payments set status = 'posted' where id = %L$q$, :'rcp'), 'set by its own action', 'payments post only through posting');
 select public.post_payment(:'rcp');
 select t.ok((select (payment_status, amount_paid) = ('partially_paid', 57200.00) from public.sales_invoices where id = :'inv'), 'invoice partially paid (50,000 paid + 7,200 credited)');
@@ -127,7 +127,7 @@ insert into public.approval_workflow_steps (company_id, workflow_id, step_order,
 select t.login('acco@fin.al');
 insert into public.payments (company_id, document_type, partner_id, method, amount, bank_account_id) values (:'co', 'vendor_payment', :'vend', 'bank_transfer', 73200, :'bank') returning id as vp, number as vp_no \gset
 insert into public.payment_allocations (company_id, payment_id, vendor_bill_id, amount) values (:'co', :'vp', :'bill', 73200);
-select t.ok(public.post_payment(:'vp') = 'pending_approval' and :'vp_no' like 'PAY-2026-%', 'large vendor payment waits for approval');
+select t.ok(public.post_payment(:'vp') = 'pending_approval' and :'vp_no' like 'PGS-2026-%', 'large vendor payment waits for approval');
 select t.login('fina@fin.al');
 select public.decide_approval((select id from public.approval_requests where document_id = :'vp'), 'approved');
 select t.login('acco@fin.al');

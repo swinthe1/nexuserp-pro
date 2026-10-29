@@ -193,7 +193,7 @@ select t.login('alice@alba.al');
 select public.generate_replenishment(:'co');
 select id as sug from public.replenishment_suggestions where company_id = :'co' and variant_id = :'pack' and status = 'open' \gset
 select t.login('pete@mfg.al');
-select t.ok(((public.create_wos_from_suggestions(array[:'sug']::uuid[]))->0->>'number') like 'WO-%', 'a manufacture suggestion becomes a work order');
+select t.ok(((public.create_wos_from_suggestions(array[:'sug']::uuid[]))->0->>'number') like 'UP-%', 'a manufacture suggestion becomes a work order');
 
 -- ---------- visibility -----------------------------------------------------------------------------------
 select t.login('cass@mfg.al');

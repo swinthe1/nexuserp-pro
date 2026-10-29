@@ -71,7 +71,7 @@ select t.ok(exists (select 1 from public.global_search(:'co', 'espresso') where 
 insert into public.goods_receipts (company_id, warehouse_id, receipt_date) values (:'co', :'wh', '2026-10-01') returning id as gr1, number as gr1_no \gset
 insert into public.goods_receipt_lines (company_id, receipt_id, variant_id, location_id, quantity, unit_cost) values (:'co', :'gr1', :'coffee', :'stock', 10, 100);
 select public.post_goods_receipt(:'gr1');
-select t.ok(:'gr1_no' = 'GRN-2026-00001', 'receipts are numbered');
+select t.ok(:'gr1_no' = 'PRN-2026-00001', 'receipts are numbered');
 select t.ok((select (qty_on_hand, avg_cost, total_value) = (10.0000, 100.000000, 1000.0000) from public.item_costs where variant_id = :'coffee'),
             'first receipt sets average cost = 100');
 

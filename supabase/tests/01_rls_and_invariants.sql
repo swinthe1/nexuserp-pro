@@ -160,7 +160,7 @@ insert into public.sales_orders (company_id, partner_id, warehouse_id, currency_
 values (:'company_a', :'customer_id', :'wh_a', 'ALL', '2026-10-23') returning id as so1, number as so1_number \gset
 insert into public.sales_orders (company_id, partner_id, warehouse_id, currency_code, order_date)
 values (:'company_a', :'customer_id', :'wh_a', 'ALL', '2026-10-23') returning number as so2_number \gset
-select t.ok(:'so1_number' = 'SO-2026-00001' and :'so2_number' = 'SO-2026-00002', 'document numbers are sequential per type and year');
+select t.ok(:'so1_number' = 'PSH-2026-00001' and :'so2_number' = 'PSH-2026-00002', 'document numbers are sequential per type and year');
 
 insert into public.sales_order_lines (company_id, sales_order_id, line_no, variant_id, description, quantity, unit_price, discount_pct, tax_code_id)
 values (:'company_a', :'so1', 1, :'variant_id', 'T-Shirt M Navy', 2, 100, 10, :'vat20');
@@ -185,7 +185,7 @@ insert into public.sales_invoices (company_id, partner_id, currency_code, invoic
 values (:'company_a', :'customer_id', 'ALL', '2026-10-23', '2026-11-22') returning id as inv1, number as inv_number \gset
 insert into public.sales_invoices (company_id, document_type, partner_id, currency_code, original_invoice_id, invoice_date, due_date)
 values (:'company_a', 'credit_note', :'customer_id', 'ALL', :'inv1', '2026-10-23', '2026-10-23') returning number as cn_number \gset
-select t.ok(:'inv_number' = 'INV-2026-00001' and :'cn_number' = 'CN-2026-00001', 'credit notes use their own number series');
+select t.ok(:'inv_number' = 'FAT-2026-00001' and :'cn_number' = 'NK-2026-00001', 'credit notes use their own number series');
 reset role;
 
 -- gapless: a rolled back document does not burn a number
@@ -356,7 +356,7 @@ select :'company_a', id, 'Erin', 'Krasniqi', '2025-03-01' from auth.users where 
 insert into public.employees (company_id, first_name, last_name, hire_date) values (:'company_a', 'Other', 'Person', '2024-01-01') returning id as emp_other \gset
 insert into public.leave_types (company_id, name) values (:'company_a', 'Study leave') returning id as lt \gset
 insert into public.employees (company_id, first_name, last_name, hire_date) values (:'company_a', 'Third', 'Hire', '2025-06-01') returning number as emp_no3 \gset
-select t.ok(:'emp_no' = 'EMP-2025-00001' and :'emp_no3' = 'EMP-2025-00002', 'back-dated numbering keeps a separate counter per year');
+select t.ok(:'emp_no' = 'PUN-2025-00001' and :'emp_no3' = 'PUN-2025-00002', 'back-dated numbering keeps a separate counter per year');
 set role authenticated;
 select t.login('erin@alba.al');
 select t.ok((select count(*) from public.employees) = 1 and (select id from public.employees) = :'emp_erin', 'employee sees only own record');

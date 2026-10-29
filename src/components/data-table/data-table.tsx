@@ -4,7 +4,7 @@ import {
   type ColumnDef, type ColumnFiltersState, type FilterFn, type PaginationState, type Row, type RowSelectionState,
   type SortingState, type Table as TanTable, type VisibilityState,
 } from '@tanstack/react-table'
-import { Download, FileSpreadsheet, FileText, Search, X } from 'lucide-react'
+import { Download, FileSpreadsheet, FileText, MoreHorizontal, Search, X } from 'lucide-react'
 import * as React from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -202,7 +202,7 @@ export function DataTable<T>({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative w-full sm:w-64">
+        <div className="relative w-full max-sm:w-[calc(100%-3rem)] sm:w-64">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={state.globalFilter ?? ''}
@@ -212,6 +212,18 @@ export function DataTable<T>({
             aria-label={t('Search the list')}
           />
         </div>
+        {/* on a phone the list comes first: saving views and choosing columns mean nothing for cards, export sits behind one button */}
+        {phone && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="size-10 shrink-0" aria-label={t('More')}><MoreHorizontal /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem disabled={!rowCount} onSelect={() => void doExport('xlsx')}><FileSpreadsheet /> {t('Export')} Excel</DropdownMenuItem>
+              <DropdownMenuItem disabled={!rowCount} onSelect={() => void doExport('pdf')}><FileText /> {t('Export')} PDF</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         {facets.map((f) => {
           const col = table.getColumn(f.columnId)
           return col ? <FacetedFilter key={f.columnId} column={col} title={f.title} options={f.options} /> : null
@@ -223,7 +235,7 @@ export function DataTable<T>({
         )}
         <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2">
           {toolbar}
-          {tableKey && (
+          {tableKey && !phone && (
             <SavedViews
               tableKey={tableKey}
               onApply={applyView}
@@ -233,8 +245,8 @@ export function DataTable<T>({
               })}
             />
           )}
-          <ViewOptions table={table} />
-          <DropdownMenu>
+          {!phone && <ViewOptions table={table} />}
+          {!phone && <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" disabled={!rowCount}><Download /> {t('Export')}</Button>
             </DropdownMenuTrigger>
@@ -243,7 +255,7 @@ export function DataTable<T>({
               <DropdownMenuItem onSelect={() => void doExport('csv')}><FileSpreadsheet /> CSV {selectedRows.length ? t('({n} selected)', { n: selectedRows.length }) : ''}</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => void doExport('pdf')}><FileText /> PDF {selectedRows.length ? t('({n} selected)', { n: selectedRows.length }) : ''}</DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu>}
         </div>
       </div>
 

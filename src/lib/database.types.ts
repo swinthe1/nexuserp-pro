@@ -15720,6 +15720,15 @@ export type Database = {
         }
         Returns: Json
       }
+      product_opening_stock: {
+        Args: {
+          p_product: string
+          p_warehouse: string
+          p_qty: number
+          p_cost?: number
+        }
+        Returns: Json
+      }
       product_packs_all: {
         Args: {
           p_company: string
