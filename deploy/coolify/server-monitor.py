@@ -105,6 +105,52 @@ def host():
             'boot': datetime.fromtimestamp(time.time() - float(open('/proc/uptime').read().split()[0]), timezone.utc).isoformat()}
 
 
+def top_processes():
+    """The busiest programs on the whole server, inside Docker or not: each one's processor time,
+    read twice one second apart (100% = one core)."""
+    tck = os.sysconf('SC_CLK_TCK'); page = os.sysconf('SC_PAGE_SIZE')
+    def ticks():
+        t = {}
+        for d in os.listdir('/proc'):
+            if not d.isdigit():
+                continue
+            try:
+                f = open(f'/proc/{d}/stat').read().rsplit(')', 1)[1].split()
+                t[int(d)] = int(f[11]) + int(f[12])     # utime + stime
+            except Exception:
+                pass
+        return t
+    t1 = ticks(); time.sleep(1); t2 = ticks()
+    try:
+        total = meminfo()['MemTotal']
+    except Exception:
+        total = 0
+    busy = sorted(((t2[p] - t1.get(p, t2[p])) * 100.0 / tck, p) for p in t2 if p in t1)[::-1][:10]
+    names = {}
+    out = []
+    for cpu, pid in busy:
+        try:
+            cmd = open(f'/proc/{pid}/cmdline', 'rb').read().replace(b'\0', b' ').decode(errors='replace').strip()
+            if not cmd:
+                cmd = '[' + open(f'/proc/{pid}/comm').read().strip() + ']'
+            rss = int(open(f'/proc/{pid}/statm').read().split()[1]) * page
+            cont = ''
+            m = re.search(r'([0-9a-f]{64})', open(f'/proc/{pid}/cgroup').read())
+            if m:
+                cont = m.group(1)
+        except Exception:
+            continue
+        out.append({'pid': pid, 'cpu': round(cpu, 1), 'mem': round(100.0 * rss / total, 1) if total else 0, 'mem_bytes': rss,
+                    'command': hide(cmd)[:300], 'container_id': cont[:12]})
+    if any(p['container_id'] for p in out):
+        for line in sh(['docker', 'ps', '-a', '--no-trunc', '--format', '{{.ID}} {{.Names}}']).splitlines():
+            cid, _, name = line.partition(' ')
+            names[cid[:12]] = name
+        for p in out:
+            p['container'] = names.get(p['container_id'], '')
+    return out
+
+
 def check(url):
     r = {'name': url.split('/')[2], 'url': url}
     t0 = time.time()
@@ -240,7 +286,8 @@ def main():
     sample = {'cpu_pct': cpu_pct(), 'load1': round(load[0], 2), 'load5': round(load[1], 2), 'load15': round(load[2], 2), 'cores': os.cpu_count(),
               'mem_total': m.get('MemTotal'), 'mem_available': m.get('MemAvailable'), 'swap_total': m.get('SwapTotal'),
               'swap_used': (m.get('SwapTotal', 0) - m.get('SwapFree', 0)), 'net_rx': rx, 'net_tx': tx,
-              'uptime_s': int(float(open('/proc/uptime').read().split()[0])), 'disks': disks(), 'checks': [check(u) for u in CHECKS], 'host': host()}
+              'uptime_s': int(float(open('/proc/uptime').read().split()[0])), 'disks': disks(), 'checks': [check(u) for u in CHECKS],
+              'host': {**host(), 'top': top_processes()}}
     cs = containers()
     running = [c['name'] for c in cs if c.get('state') == 'running']
     payload = {'sample': sample, 'containers': cs, 'logs': logs(running, since)}

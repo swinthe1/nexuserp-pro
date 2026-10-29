@@ -265,4 +265,8 @@ export default {
   'Stopped with an error': 'U ndal me gabim',
   'Keeps restarting': 'Riniset vazhdimisht',
   '{n} of {total} running · the busiest first · click one to see its log': '{n} nga {total} punojnë · më i ngarkuari i pari · klikoni njërin për ta parë logun',
+  'The busiest processes': 'Proceset më të ngarkuara',
+  'What uses the processor right now, on the whole server. 100% is one core of {n}.': 'Çka e përdor procesorin tani, në gjithë serverin. 100% është një bërthamë nga {n}.',
+  'Program': 'Programi',
+  'the server itself': 'vetë serveri',
 } satisfies Dict

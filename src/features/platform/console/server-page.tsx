@@ -108,6 +108,7 @@ export function ServerPage() {
         <ServerMeters d={d} />
         <ServerCharts d={d} />
 
+        <TopProcesses d={d} />
         <div className="mt-4"><Containers d={d} onLog={setLog} /></div>
         <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-4 xl:grid-cols-2">
           <Checks d={d} />
@@ -174,11 +175,43 @@ function ServerCharts({ d }: { d: ServerStatus }) {
   )
 }
 
+/** Coolify's builder: it runs only while an app is built */
+const isBuilder = (c: { image: string | null; name: string }) => (c.image ?? '').startsWith('moby/buildkit') || c.name.startsWith('buildx_buildkit')
+
+/** the busiest programs on the whole server, inside a container or not */
+function TopProcesses({ d }: { d: ServerStatus }) {
+  const top = d.last!.host.top ?? []
+  if (!top.length) return null
+  return (
+    <Card className="mt-4">
+      <CardHeader><CardTitle className="flex items-center gap-2"><Cpu className="size-4" /> {t('The busiest processes')}</CardTitle>
+        <CardDescription>{t('What uses the processor right now, on the whole server. 100% is one core of {n}.', { n: d.last!.cores })}</CardDescription></CardHeader>
+      <CardContent className="overflow-x-auto p-0">
+        <Table className="min-w-[760px]">
+          <TableHeader><TableRow className="hover:bg-transparent">
+            <TableHead className="text-right">{t('Processor')}</TableHead><TableHead className="text-right">{t('Memory')}</TableHead><TableHead>{t('Container')}</TableHead><TableHead>{t('Program')}</TableHead>
+          </TableRow></TableHeader>
+          <TableBody>
+            {top.map((p) => (
+              <TableRow key={p.pid}>
+                <TableCell className={cn('text-right font-medium tabular', p.cpu >= 50 && 'text-destructive', p.cpu >= 20 && p.cpu < 50 && 'text-warning')}>{p.cpu}%</TableCell>
+                <TableCell className="text-right tabular">{p.mem}%</TableCell>
+                <TableCell className="max-w-[220px] truncate text-[13px]">{p.container || <span className="text-muted-foreground">{t('the server itself')}</span>}</TableCell>
+                <TableCell className="max-w-[520px] truncate font-mono text-xs" title={p.command}>{p.command}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  )
+}
+
 function Containers({ d, onLog }: { d: ServerStatus; onLog: (c: string) => void }) {
   const hasTail = new Set(d.tails.map((x) => x.container))
   // problems first, then the busiest: who uses the processor is seen at once
   const rank = (c: (typeof d.containers)[number]) => {
-    const always = c.restart_policy === 'always' || c.restart_policy === 'unless-stopped'
+    const always = (c.restart_policy === 'always' || c.restart_policy === 'unless-stopped') && !isBuilder(c)
     if (c.health === 'unhealthy' || c.state === 'restarting' || (c.state !== 'running' && always)) return 0
     return c.state === 'running' ? 1 : 2
   }
@@ -197,7 +230,7 @@ function Containers({ d, onLog }: { d: ServerStatus; onLog: (c: string) => void 
           <TableBody>
             {sorted.map((c) => {
               // a helper that ran once and stopped is not a problem; one meant to run all the time is
-              const always = c.restart_policy === 'always' || c.restart_policy === 'unless-stopped'
+              const always = (c.restart_policy === 'always' || c.restart_policy === 'unless-stopped') && !isBuilder(c)
               const bad = c.health === 'unhealthy' || c.state === 'restarting' || (c.state !== 'running' && always)
               const finished = c.state !== 'running' && !bad
               return (

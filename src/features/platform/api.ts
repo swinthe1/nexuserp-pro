@@ -258,7 +258,8 @@ export type ServerAlert = { kind: 'monitor_quiet' | 'cpu_high' | 'mem_high' | 'd
 export interface ServerStatus {
   last: null | { at: string; cpu_pct: number; load1: number; load5: number; load15: number; cores: number; mem_total: number; mem_available: number
     swap_total: number; swap_used: number; net_rx: number; net_tx: number; uptime_s: number; disks: ServerDisk[]; checks: ServerCheck[]
-    host: { hostname?: string; os?: string; kernel?: string; docker?: string; boot?: string } }
+    host: { hostname?: string; os?: string; kernel?: string; docker?: string; boot?: string
+      top?: { pid: number; cpu: number; mem: number; mem_bytes?: number; command: string; container_id?: string; container?: string }[] } }
   series: { at: string; cpu: number; mem: number; load: number; rx: number; tx: number }[]
   containers: ServerContainer[]
   errors: { id: number; at: string; container: string; level: 'error' | 'warn'; line: string }[]
