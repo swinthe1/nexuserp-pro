@@ -251,7 +251,8 @@ export function usePlatformEvents(company?: string | null, kind?: string | null)
 export type ServerDisk = { mount: string; total: number; used: number; free: number; inodes_pct?: number | null }
 export type ServerCheck = { name: string; url: string; status?: number; ms?: number; ok: boolean; error?: string; cert_days?: number }
 export type ServerContainer = { name: string; at: string; image: string | null; state: string; status: string | null; health: string | null; restarts: number | null
-  started_at: string | null; cpu_pct: number | null; mem_bytes: number | null; mem_limit: number | null; net_io: string | null; block_io: string | null }
+  started_at: string | null; cpu_pct: number | null; mem_bytes: number | null; mem_limit: number | null; net_io: string | null; block_io: string | null
+  restart_policy?: string | null; exit_code?: number | null }
 export type ServerAlert = { kind: 'monitor_quiet' | 'cpu_high' | 'mem_high' | 'disk_high' | 'check_failed' | 'cert_soon' | 'container_down' | 'container_unhealthy' | 'many_errors'
   at?: string | null; name?: string; value?: number; detail?: string | null }
 export interface ServerStatus {

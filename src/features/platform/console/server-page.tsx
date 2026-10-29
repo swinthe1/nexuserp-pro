@@ -188,13 +188,17 @@ function Containers({ d, onLog }: { d: ServerStatus; onLog: (c: string) => void 
           </TableRow></TableHeader>
           <TableBody>
             {d.containers.map((c) => {
-              const bad = c.state !== 'running' || c.health === 'unhealthy'
+              // a helper that ran once and stopped is not a problem; one meant to run all the time is
+              const always = c.restart_policy === 'always' || c.restart_policy === 'unless-stopped'
+              const bad = c.health === 'unhealthy' || c.state === 'restarting' || (c.state !== 'running' && always)
+              const finished = c.state !== 'running' && !bad
               return (
-                <TableRow key={c.name} className={cn(hasTail.has(c.name) && 'cursor-pointer')} onClick={() => hasTail.has(c.name) && onLog(c.name)}>
+                <TableRow key={c.name} className={cn(hasTail.has(c.name) && 'cursor-pointer', finished && 'text-muted-foreground')} onClick={() => hasTail.has(c.name) && onLog(c.name)}>
                   <TableCell><div className="font-medium">{c.name}</div><div className="max-w-[260px] truncate text-2xs text-muted-foreground">{c.image}</div></TableCell>
                   <TableCell>
-                    <Badge variant={bad ? 'destructive' : c.health === 'healthy' ? 'success' : 'secondary'}>
-                      {c.state !== 'running' ? t('Stopped') : c.health === 'unhealthy' ? t('Unhealthy') : c.health === 'healthy' ? t('Healthy') : t('Running')}</Badge>
+                    <Badge variant={bad ? 'destructive' : c.health === 'healthy' ? 'success' : 'secondary'} className={cn(finished && 'opacity-70')}>
+                      {finished ? (c.exit_code ? t('Stopped with an error') : t('Finished its work')) : c.state === 'restarting' ? t('Keeps restarting')
+                        : c.state !== 'running' ? t('Stopped') : c.health === 'unhealthy' ? t('Unhealthy') : c.health === 'healthy' ? t('Healthy') : t('Running')}</Badge>
                     <div className="mt-0.5 text-2xs text-muted-foreground">{c.status}</div>
                   </TableCell>
                   <TableCell className="text-right tabular">{c.cpu_pct != null ? `${c.cpu_pct}%` : '—'}</TableCell>

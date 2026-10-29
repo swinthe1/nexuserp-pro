@@ -261,4 +261,7 @@ export default {
   'Company details changed': 'U ndryshuan të dhënat e kompanisë',
   'Details of {name}': 'Të dhënat e {name}',
   "They show on the client's invoices and documents. What changes is written in the diary.": 'Shfaqen në faturat dhe dokumentet e klientit. Çka ndryshon shkruhet në ditar.',
+  'Finished its work': 'Mbaroi punën',
+  'Stopped with an error': 'U ndal me gabim',
+  'Keeps restarting': 'Riniset vazhdimisht',
 } satisfies Dict

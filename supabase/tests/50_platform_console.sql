@@ -52,12 +52,13 @@ select t.ok((select count(*) from app.platform_events where company_id = :'co' a
 -- the server reports and the console reads it
 select drispro_meta.server_report(jsonb_build_object('sample', jsonb_build_object('cpu_pct', 12, 'cores', 4, 'mem_total', 1000, 'mem_available', 50, 'net_rx', 1, 'net_tx', 1, 'uptime_s', 60,
   'disks', jsonb_build_array(jsonb_build_object('mount', '/', 'total', 100, 'used', 90, 'free', 10))),
-  'containers', jsonb_build_array(jsonb_build_object('name', 'db', 'state', 'running', 'health', 'healthy'), jsonb_build_object('name', 'old', 'state', 'exited')),
+  'containers', jsonb_build_array(jsonb_build_object('name', 'db', 'state', 'running', 'health', 'healthy'), jsonb_build_object('name', 'old', 'state', 'exited', 'restart_policy', 'unless-stopped'), jsonb_build_object('name', 'createbucket', 'state', 'exited', 'restart_policy', 'no', 'exit_code', 0)),
   'logs', jsonb_build_array(jsonb_build_object('container', 'db', 'level', 'error', 'line', 'ERROR: something'))));
 set role authenticated;
 select t.login(:'boss');
 select public.platform_server_status(1) as srv \gset
-select t.ok((:'srv'::jsonb -> 'last' ->> 'cpu_pct')::numeric = 12 and jsonb_array_length(:'srv'::jsonb -> 'containers') = 2, 'the console reads the server''s report');
+select t.ok((:'srv'::jsonb -> 'last' ->> 'cpu_pct')::numeric = 12 and jsonb_array_length(:'srv'::jsonb -> 'containers') = 3, 'the console reads the server''s report');
+select t.ok(not (:'srv'::jsonb -> 'alerts' @> '[{"name": "createbucket"}]'), 'a helper that ran once and stopped is not a problem');
 select t.ok(:'srv'::jsonb -> 'alerts' @> '[{"kind": "mem_high"}]' and :'srv'::jsonb -> 'alerts' @> '[{"kind": "disk_high"}]' and :'srv'::jsonb -> 'alerts' @> '[{"kind": "container_down", "name": "old"}]',
   'memory, disk and a stopped container are reported as problems');
 

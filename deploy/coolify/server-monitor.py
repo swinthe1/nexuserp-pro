@@ -150,12 +150,13 @@ def containers():
         rows[x['Names']] = {'name': x['Names'], 'image': x.get('Image'), 'state': x.get('State'), 'status': x.get('Status')}
     if not rows:
         return []
-    fmt = '{{.Name}}|{{.RestartCount}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}|{{.State.StartedAt}}'
+    fmt = '{{.Name}}|{{.RestartCount}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}|{{.State.StartedAt}}|{{.HostConfig.RestartPolicy.Name}}|{{.State.ExitCode}}'
     for line in sh(['docker', 'inspect', '--format', fmt] + list(rows)).splitlines():
-        n, rc, health, started = (line.split('|') + ['', '', '', ''])[:4]
+        n, rc, health, started, policy, code = (line.split('|') + [''] * 6)[:6]
         n = n.lstrip('/')
         if n in rows:
-            rows[n].update({'restarts': int(rc or 0), 'health': health, 'started_at': started if not started.startswith('0001') else ''})
+            rows[n].update({'restarts': int(rc or 0), 'health': health, 'started_at': started if not started.startswith('0001') else '',
+                            'restart_policy': policy or 'no', 'exit_code': int(code) if code.lstrip('-').isdigit() else None})
     for line in sh(['docker', 'stats', '--no-stream', '--format', '{{json .}}'], timeout=40).splitlines():
         try:
             x = json.loads(line)
@@ -171,7 +172,7 @@ def containers():
 
 ERR = re.compile(r'(?i)\b(error|fatal|panic|exception|traceback|crit(ical)?|segfault|out of memory|oom)\b')
 WARN = re.compile(r'(?i)\b(warn(ing)?)\b')
-NOISE = re.compile(r'(?i)(error_count=0|errors?: 0\b|no error|"level":"info")')
+NOISE = re.compile(r'(?i)(error_count=0|errors?: 0\b|no error|"level":"info"|request body is buffered to a temporary file|upstream response is buffered to a temporary file)')
 
 
 def logs(names, since):
