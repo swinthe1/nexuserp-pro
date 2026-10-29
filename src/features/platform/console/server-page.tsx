@@ -185,7 +185,7 @@ function TopProcesses({ d }: { d: ServerStatus }) {
   return (
     <Card className="mt-4">
       <CardHeader><CardTitle className="flex items-center gap-2"><Cpu className="size-4" /> {t('The busiest processes')}</CardTitle>
-        <CardDescription>{t('What uses the processor right now, on the whole server. 100% is one core of {n}.', { n: d.last!.cores })}</CardDescription></CardHeader>
+        <CardDescription>{t('What used the processor over the last minute, on the whole server. 100% is one core of {n}.', { n: d.last!.cores })}</CardDescription></CardHeader>
       <CardContent className="overflow-x-auto p-0">
         <Table className="min-w-[760px]">
           <TableHeader><TableRow className="hover:bg-transparent">
