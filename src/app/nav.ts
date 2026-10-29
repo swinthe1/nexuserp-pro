@@ -100,7 +100,7 @@ export const NAV: NavSection[] = [
       { label: msg('Cycle counts|menu'), href: '/wms/counts', icon: ClipboardCheck, perm: 'wms.read', keywords: ['inventory count', 'stocktake', 'inventarizim', 'inventarizimi', 'numërimi', 'regjistrimi i mallit'] },
       { label: msg('Price levelling'), href: '/inventory/levelling', icon: ArrowUpDown, perm: 'inventory.read', group: msg('Prices and labels'), keywords: ['nivelim', 'nivelimi', 'nivelimi i cmimeve', 'ndryshim cmimi', 'price change', 'repricing', 'çmimet e reja', 'new selling prices', 'margin', 'markup', 'cost', 'marzh', 'cmim'] },
       { label: msg('Labels'), href: '/inventory/labels', icon: Tag, perm: 'inventory.read', keywords: ['etiketa', 'etiketat', 'barkod', 'barcode', 'shelf', 'raft', 'çmim', 'printo'] },
-      { label: msg('Warehouses'), href: '/inventory/warehouses', icon: Warehouse, perm: 'inventory.read', group: msg('Setup|group'), keywords: ['locations', 'bins'] },
+      { label: msg('Warehouses|menu'), href: '/inventory/warehouses', icon: Warehouse, perm: 'inventory.read', group: msg('Setup|group'), keywords: ['locations', 'bins', 'magazinat', 'magazina', 'dyqanet', 'depot', 'njësitë', 'pikat'] },
       { label: msg('Inventory setup|menu'), href: '/inventory/setup', icon: FolderTree, perm: 'inventory.read', keywords: ['categories', 'units', 'attributes'] },
     ],
   },

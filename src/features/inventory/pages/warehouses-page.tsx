@@ -73,7 +73,7 @@ export function WarehousesPage() {
   return (
     <>
       <PageHeader
-        title={t('Warehouses')}
+        title={t('Warehouses|menu')}
         description={t('Warehouses, stores and their bins. Every stock movement goes from one location to another.')}
         actions={<Can perm="inventory.write">
           <SimpleFormDialog trigger={<Button><Plus /> {t('New warehouse')}</Button>} title={t('New warehouse')} schema={warehouseSchema}

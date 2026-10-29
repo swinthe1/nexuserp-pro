@@ -382,7 +382,7 @@ export default {
   "Cycle counts|menu": "Inventarizimi",
   "Low stock|menu": "Po mbarojnë",
   "Lots & expiry|menu": "Afatet e skadimit",
-  "Inventory setup|menu": "Grupet dhe njësitë",
+  'Inventory setup|menu': 'Grupet dhe njësitë matëse',
   "Payments|menu": "Pagesat",
   "Receivables|menu": "Kush më ka borxh",
   "Payables|menu": "Kujt i kam borxh",

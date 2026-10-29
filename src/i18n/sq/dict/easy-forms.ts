@@ -33,6 +33,7 @@ export default {
   'Books and declarations': "Librat",
   'Other taxes': 'Tatime të tjera',
   'Debts|menu': 'Borxhet',
+  'Warehouses|menu': 'Njësitë',
   'VAT books|menu': 'Librat e TVSH-së',
   'My details': 'Të dhënat e mia',
   'Change details': 'Ndrysho të dhënat',
