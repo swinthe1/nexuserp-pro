@@ -22,14 +22,14 @@ function useActiveHref() {
     const params = new URLSearchParams(search)
     let best: string | null = null
     let bestScore = -1
-    for (const item of NAV.flatMap((s) => s.items)) {
+    for (const item of NAV.flatMap((s) => s.items.flatMap((i) => [i, ...(i.match ?? []).map((m) => ({ ...i, href: m, own: i.href }))]))) {
       const [path, query] = item.href.split('?') as [string, string | undefined]
       const pathOk = path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(`${path}/`)
       if (!pathOk) continue
       const q = new URLSearchParams(query ?? '')
       if ([...q.entries()].some(([k, v]) => params.get(k) !== v)) continue
       const score = path.length + (query ? 1000 : 0)
-      if (score > bestScore) { best = item.href; bestScore = score }
+      if (score > bestScore) { best = 'own' in item ? (item.own as string) : item.href; bestScore = score }
     }
     return best
   }, [pathname, search])

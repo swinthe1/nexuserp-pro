@@ -4,7 +4,7 @@ import {
   BadgePercent, ClipboardCheck, Hourglass, PackageOpen, ScanLine, ShoppingBasket,
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, Building, HandCoins, ListTree, Network, Settings2, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, 
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
-  BedDouble, BookUser, CalendarRange, ConciergeBell, Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, ReceiptText, IdCard, Settings, CreditCard, type LucideIcon, Activity, ArrowDownLeft, ArrowUpDown, ArrowUpRight, BadgeEuro, BookOpen, CalendarPlus, CheckCheck, CircleDollarSign, Clock, Coins, Combine, FileInput, FileOutput, FileScan, FolderTree, Gift, Handshake, LineChart, Map, Move, NotebookTabs, PieChart, ScanBarcode, Send,
+  BedDouble, BookUser, CalendarRange, ConciergeBell, Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, ReceiptText, IdCard, Settings, CreditCard, type LucideIcon, Activity, ArrowUpDown, BadgeEuro, BookOpen, CalendarPlus, CheckCheck, CircleDollarSign, Clock, Coins, Combine, FileScan, FolderTree, Gift, Handshake, LineChart, Map, Move, NotebookTabs, PieChart, ScanBarcode, Send,
 } from 'lucide-react'
 import { msg } from '@/i18n'
 
@@ -24,6 +24,8 @@ export interface NavItem {
   group?: string
   /** found by the page search, but not listed in the side menu (it has its own place, e.g. the bell) */
   hideInMenu?: boolean
+  /** other addresses that belong to this entry (the debts page has two tabs) */
+  match?: string[]
 }
 /** label: the part's key (also what a company switches off); title: what the menu shows, when it differs */
 export interface NavSection { label: string; title?: string; items: NavItem[] }
@@ -107,8 +109,7 @@ export const NAV: NavSection[] = [
     label: msg('Money'),
     items: [
       { label: msg('Payments|menu'), href: '/finance/payments', icon: CircleDollarSign, perm: 'invoicing.read', keywords: ['receipts', 'pay', 'arkëtim', 'pagesë'] },
-      { label: msg('Receivables|menu'), href: '/finance/receivables', icon: ArrowDownLeft, perm: 'invoicing.read', keywords: ['ar', 'aging', 'debtors', 'overdue', 'bilanci i subjekteve', 'saldo', 'borxhet', 'kush më ka borxh'] },
-      { label: msg('Payables|menu'), href: '/finance/payables', icon: ArrowUpRight, perm: 'invoicing.read', keywords: ['ap', 'aging', 'creditors', 'due'] },
+      { label: msg('Debts|menu'), href: '/finance/receivables', match: ['/finance/payables'], icon: Scale, perm: 'invoicing.read', keywords: ['ar', 'aging', 'debtors', 'overdue', 'bilanci i subjekteve', 'saldo', 'borxhet', 'kush më ka borxh', 'ap', 'creditors', 'due', 'kujt i kam borxh', 'furnitorët', 'borxhe', 'detyrime'] },
       { label: msg('Expenses'), href: '/finance/expenses', icon: ReceiptText, perm: 'invoicing.read', keywords: ['shpenzime', 'shpenzim', 'karburant', 'naftë', 'rryma', 'kupon', 'faturë', 'foto', 'receipt', 'fuel', 'expense'] },
       { label: msg('Bank and cash'), href: '/finance/bank', icon: Landmark, perm: 'finance.read', keywords: ['reconciliation', 'statement', 'banka'] },
       { label: msg('Cash book|ledger'), href: '/finance/cash-book', icon: Coins, perm: 'finance.read', keywords: ['libri i arkës', 'arka', 'cash book', 'para në dorë'] },
@@ -120,8 +121,7 @@ export const NAV: NavSection[] = [
     // VAT and the books for the tax office
     label: msg('Taxes and books'),
     items: [
-      { label: msg('Sales book'), href: '/tax/books', icon: FileOutput, perm: 'tax.read', group: msg('Books and declarations'), keywords: ['libri i shitjes', 'libri i shitjeve', 'sales book', 'vat book', 'tvsh'] },
-      { label: msg('Purchase book'), href: '/tax/books?book=purchase', icon: FileInput, perm: 'tax.read', keywords: ['libri i blerjes', 'libri i blerjeve', 'purchase book', 'vat book', 'tvsh'] },
+      { label: msg('VAT books|menu'), href: '/tax/books', icon: BookOpen, perm: 'tax.read', group: msg('Books and declarations'), keywords: ['libri i shitjes', 'libri i shitjeve', 'sales book', 'vat book', 'tvsh', 'libri i blerjes', 'libri i blerjeve', 'purchase book'] },
       { label: msg('VAT declarations'), href: '/tax/declarations', icon: ClipboardPen, perm: 'tax.read', keywords: ['vat return', 'deklarata', 'tvsh', 'dpt', 'atk'] },
       { label: msg('Small business tax'), href: '/tax/small-business', icon: BadgePercent, perm: 'tax.read', keywords: ['biznes i vogël', 'biznes i vogel', '3%', '9%', 'tremujor', 'qarkullim', 'small business', 'turnover tax'] },
       { label: msg('Z reports'), href: '/finance/z-reports', icon: Printer, perm: 'invoicing.read', keywords: ['z raport', 'z-raporti', 'raporti z', 'arka fiskale', 'kasa', 'fiscal register', 'z report'] },

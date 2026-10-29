@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { AlarmClock, ArrowRight, Boxes, ClipboardCheck, Landmark, PackageCheck, ShieldAlert, Ship, TrendingUp, TriangleAlert, Users, Wallet } from 'lucide-react'
+import { AlarmClock, ArrowDownLeft, ArrowLeftRight, ArrowRight, ArrowUpRight, Coins, FileQuestion, FileText, PackageMinus, Percent, ReceiptText, Scale, ShoppingCart, Truck, Boxes, ClipboardCheck, Landmark, PackageCheck, ShieldAlert, Ship, TrendingUp, TriangleAlert, Users, Wallet } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
@@ -104,6 +104,41 @@ export function DashboardPage() {
     <StatCard icon={PackageCheck} hue="204 82%" label={t('Orders to deliver and invoice (without VAT)')} value={formatMoney(sales.data?.backlog, cur)} loading={sales.isLoading} href="/sales/orders" hint={t('{n} orders confirmed this month', { n: sales.data?.orders_count ?? 0 })} />)
   add('net_profit', t('Net profit this month (without VAT)'), can('finance.read'),
     <StatCard icon={Landmark} hue="158 82%" label={t('Net profit this month (without VAT)')} value={formatMoney(fin.data?.net_profit, cur)} loading={fin.isLoading} href="/finance/reports" tone={(fin.data?.net_profit ?? 0) < 0 ? 'destructive' : 'default'} hint={t('From the accounting')} />)
+  // more to choose from: everything below is already counted for the overviews
+  add('gross_margin', t('Gross margin this month (without VAT)'), can('sales.read'),
+    <StatCard icon={Percent} hue="152 68%" label={t('Gross margin this month (without VAT)')} value={formatMoney((sales.data?.revenue ?? 0) - (sales.data?.cogs ?? 0), cur)} loading={sales.isLoading} href="/reports/margin"
+      hint={sales.data && sales.data.revenue > 0 ? t('{pct}% of sales', { pct: formatNumberWith(((sales.data.revenue - sales.data.cogs) / sales.data.revenue) * 100, { maximumFractionDigits: 1 }) }) : undefined} />)
+  add('quotes', t('Quotes sent this month'), can('sales.read'),
+    <StatCard icon={FileText} hue="204 82%" label={t('Quotes sent this month')} value={sales.data?.quotes_sent ?? 0} loading={sales.isLoading} href="/sales/quotes" hint={t('{n} became orders', { n: sales.data?.quotes_converted ?? 0 })} />)
+  add('purchases_month', t('Purchases this month (without VAT)'), canAp,
+    <StatCard icon={ShoppingCart} hue="32 90%" label={t('Purchases this month (without VAT)')} value={formatMoney(proc.data?.spend, cur)} loading={proc.isLoading} href="/procurement/bills" hint={t('{n} supplier invoices', { n: proc.data?.bill_count ?? 0 })} />)
+  add('open_po', t('Open purchase orders (without VAT)'), canAp,
+    <StatCard icon={Truck} hue="188 78%" label={t('Open purchase orders (without VAT)')} value={formatMoney(proc.data?.open_po_value, cur)} loading={proc.isLoading} href="/procurement/orders"
+      tone={proc.data?.late_count ? 'warning' : 'default'} hint={t('{n} late', { n: proc.data?.late_count ?? 0 })} />)
+  add('to_bill', t('Goods received, invoice not entered (without VAT)'), canAp,
+    <StatCard icon={FileQuestion} hue="32 90%" label={t('Goods received, invoice not entered (without VAT)')} value={formatMoney(proc.data?.to_bill_value, cur)} loading={proc.isLoading} href="/inventory/receipts" />)
+  add('cash', t('Money in cash and bank'), can('finance.read'),
+    <StatCard icon={Coins} hue="158 82%" label={t('Money in cash and bank')} value={formatMoney(fin.data?.cash, cur)} loading={fin.isLoading} href="/finance/bank" tone={(fin.data?.cash ?? 0) < 0 ? 'destructive' : 'default'} />)
+  add('receivables', t('Customers owe me in total (with VAT)'), can('finance.read'),
+    <StatCard icon={ArrowDownLeft} hue="204 82%" label={t('Customers owe me in total (with VAT)')} value={formatMoney(fin.data?.receivables, cur)} loading={fin.isLoading} href="/finance/receivables"
+      hint={fin.data ? t('{amount} of it late', { amount: formatMoney(fin.data.ar_overdue) }) : undefined} />)
+  add('payables', t('I owe suppliers in total (with VAT)'), can('finance.read'),
+    <StatCard icon={ArrowUpRight} hue="350 70%" label={t('I owe suppliers in total (with VAT)')} value={formatMoney(fin.data?.payables, cur)} loading={fin.isLoading} href="/finance/payables"
+      hint={fin.data ? t('{amount} of it late', { amount: formatMoney(fin.data.ap_overdue) }) : undefined} />)
+  add('vat_due', t('VAT to pay'), can('finance.read'),
+    <StatCard icon={Scale} hue="262 60%" label={t('VAT to pay')} value={formatMoney(fin.data?.vat_due, cur)} loading={fin.isLoading} href="/tax/declarations" hint={t('By the accounting, so far')} />)
+  add('expenses_month', t('Expenses this month (without VAT)'), can('finance.read'),
+    <StatCard icon={ReceiptText} hue="350 70%" label={t('Expenses this month (without VAT)')} value={formatMoney(fin.data?.expenses, cur)} loading={fin.isLoading} href="/finance/expenses" />)
+  add('negative_stock', t('Items below zero'), can('inventory.read'),
+    <StatCard icon={PackageMinus} hue="354 70%" label={t('Items below zero')} value={inv.data?.negative_lines ?? 0} loading={inv.isLoading} href="/check"
+      tone={inv.data?.negative_lines ? 'destructive' : 'default'} hint={t('Sold before the goods were received')} />)
+  add('bank_unmatched', t('Bank lines not matched'), can('finance.read'),
+    <StatCard icon={Landmark} hue="188 78%" label={t('Bank lines not matched')} value={fin.data?.unmatched_bank_lines ?? 0} loading={fin.isLoading} href="/finance/bank"
+      tone={fin.data?.unmatched_bank_lines ? 'warning' : 'default'} />)
+  add('movements_today', t('Stock movements today'), can('inventory.read'),
+    <StatCard icon={ArrowLeftRight} hue="204 82%" label={t('Stock movements today')} value={inv.data?.movements_today ?? 0} loading={inv.isLoading} href="/inventory/item-card" />)
+  add('active_skus', t('Items in stock'), can('inventory.read'),
+    <StatCard icon={Boxes} hue="152 68%" label={t('Items in stock')} value={inv.data?.active_skus ?? 0} loading={inv.isLoading} href="/inventory/stock" />)
   const byKey = new Map(cards.map((c) => [c.key, c]))
   // the usual eight, until the person chooses their own
   const usual = ['stock_value', 'low_stock', 'customs', 'approvals', 'sales_month', can('sales.read') ? 'overdue' : 'customers_late', 'bills_due', can('sales.read') ? 'backlog' : 'net_profit']

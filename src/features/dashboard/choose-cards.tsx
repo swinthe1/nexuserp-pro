@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, LayoutGrid } from 'lucide-react'
+import { ArrowDown, ArrowUp, SlidersHorizontal } from 'lucide-react'
 import * as React from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -26,14 +26,14 @@ export function ChooseCards({ all, shown, onSave }: { all: Card[]; shown: string
   const toggle = (k: string) => setOn((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n })
   return (
     <>
-      <Button variant="outline" size="sm" onClick={start}><LayoutGrid /> {t('Choose cards')}</Button>
+      <Button variant="outline" size="sm" onClick={start}><SlidersHorizontal /> {t('Choose cards')}</Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{t('Choose cards')}</DialogTitle>
             <DialogDescription>{t('Tick what you want to see on the dashboard; the arrows change the order. Only you see this choice.')}</DialogDescription>
           </DialogHeader>
-          <ul className="grid gap-1">
+          <ul className="grid max-h-[60vh] gap-1 overflow-y-auto pr-1">
             {order.map((k, i) => (
               <li key={k} className={cn('flex items-center gap-2 rounded-md border px-2 py-1.5', !on.has(k) && 'opacity-60')}>
                 <label className="flex flex-1 cursor-pointer items-center gap-2.5 text-sm">

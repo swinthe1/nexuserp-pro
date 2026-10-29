@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ErrorState } from '@/components/error-state'
 import { msg, t, tn } from '@/i18n'
@@ -45,7 +46,7 @@ export function AgingPage({ kind }: { kind: 'ar' | 'ap' }) {
 
   return (
     <>
-      <PageHeader title={isAR ? t('Receivables|menu') : t('Payables|menu')}
+      <PageHeader title={t('Debts|menu')}
         description={isAR ? t('Open customer balances, by how long they are overdue. Receipts not yet matched to an invoice reduce the balance.') : t('Open vendor balances, by how long they are overdue. Payments not yet matched to a bill reduce the balance.')}
         actions={<>
           <div className="flex items-center gap-2"><Label htmlFor="asof" className="text-[13px] text-muted-foreground">{t('On date')}</Label>
@@ -53,6 +54,13 @@ export function AgingPage({ kind }: { kind: 'ar' | 'ap' }) {
           <Button variant="outline" onClick={exportCsv} disabled={!rows.length}><Download /> {t('Export')}</Button>
           <Can perm="invoicing.write"><Button asChild><Link to={`/finance/payments/new?type=${payType}`}>{isAR ? t('Receive a payment') : t('Pay a vendor')}</Link></Button></Can>
         </>} />
+      {/* both sides of the debts on one page: what customers owe me, what I owe suppliers */}
+      <Tabs value={kind} onValueChange={(v) => navigate(v === 'ar' ? '/finance/receivables' : '/finance/payables', { replace: true })} className="mb-4">
+        <TabsList>
+          <TabsTrigger value="ar">{t('Receivables|menu')}</TabsTrigger>
+          <TabsTrigger value="ap">{t('Payables|menu')}</TabsTrigger>
+        </TabsList>
+      </Tabs>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label={isAR ? t('Total to collect (with VAT)') : t('Total to pay (with VAT)')} value={formatMoney(total)} loading={aging.isLoading} hint={[isAR ? tn(rows.length, '{n} customer', '{n} customers') : tn(rows.length, '{n} vendor', '{n} vendors'), company?.base_currency].filter(Boolean).join(' · ')} />
         <StatCard label={t('Overdue (with VAT)')} value={formatMoney(overdue)} loading={aging.isLoading} tone={overdue ? (isAR ? 'warning' : 'destructive') : 'default'} hint={total ? t('{pct}% of the balance', { pct: ((overdue / total) * 100).toFixed(0) }) : undefined} />
