@@ -176,10 +176,18 @@ function ServerCharts({ d }: { d: ServerStatus }) {
 
 function Containers({ d, onLog }: { d: ServerStatus; onLog: (c: string) => void }) {
   const hasTail = new Set(d.tails.map((x) => x.container))
+  // problems first, then the busiest: who uses the processor is seen at once
+  const rank = (c: (typeof d.containers)[number]) => {
+    const always = c.restart_policy === 'always' || c.restart_policy === 'unless-stopped'
+    if (c.health === 'unhealthy' || c.state === 'restarting' || (c.state !== 'running' && always)) return 0
+    return c.state === 'running' ? 1 : 2
+  }
+  const sorted = [...d.containers].sort((a, b) => rank(a) - rank(b) || (b.cpu_pct ?? -1) - (a.cpu_pct ?? -1) || a.name.localeCompare(b.name))
+  const cpuTotal = d.containers.reduce((x, c) => x + (c.cpu_pct ?? 0), 0)
   const running = d.containers.filter((c) => c.state === 'running').length
   return (
     <Card>
-      <CardHeader><CardTitle>{t('Containers')}</CardTitle><CardDescription>{t('{n} of {total} running · click one to see its log', { n: running, total: d.containers.length })}</CardDescription></CardHeader>
+      <CardHeader><CardTitle>{t('Containers')}</CardTitle><CardDescription>{t('{n} of {total} running · the busiest first · click one to see its log', { n: running, total: d.containers.length })}</CardDescription></CardHeader>
       <CardContent className="overflow-x-auto p-0">
         <Table className="min-w-[760px]">
           <TableHeader><TableRow className="hover:bg-transparent">
@@ -187,7 +195,7 @@ function Containers({ d, onLog }: { d: ServerStatus; onLog: (c: string) => void 
             <TableHead className="text-right">{t('Memory')}</TableHead><TableHead className="text-right">{t('Restarts')}</TableHead><TableHead className="text-right">{t('Errors')}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {d.containers.map((c) => {
+            {sorted.map((c) => {
               // a helper that ran once and stopped is not a problem; one meant to run all the time is
               const always = c.restart_policy === 'always' || c.restart_policy === 'unless-stopped'
               const bad = c.health === 'unhealthy' || c.state === 'restarting' || (c.state !== 'running' && always)
@@ -201,7 +209,12 @@ function Containers({ d, onLog }: { d: ServerStatus; onLog: (c: string) => void 
                         : c.state !== 'running' ? t('Stopped') : c.health === 'unhealthy' ? t('Unhealthy') : c.health === 'healthy' ? t('Healthy') : t('Running')}</Badge>
                     <div className="mt-0.5 text-2xs text-muted-foreground">{c.status}</div>
                   </TableCell>
-                  <TableCell className="text-right tabular">{c.cpu_pct != null ? `${c.cpu_pct}%` : '—'}</TableCell>
+                  <TableCell className="text-right tabular">
+                    {c.cpu_pct != null ? <div className="flex items-center justify-end gap-2">
+                      <span className="hidden h-1.5 w-16 overflow-hidden rounded-full bg-muted sm:block"><span className={cn('block h-full rounded-full', c.cpu_pct >= 50 ? 'bg-destructive' : c.cpu_pct >= 20 ? 'bg-warning' : 'bg-primary')}
+                        style={{ width: `${cpuTotal ? Math.min(100, (c.cpu_pct / cpuTotal) * 100) : 0}%` }} /></span>
+                      <span className={cn(c.cpu_pct >= 50 && 'font-semibold text-destructive', c.cpu_pct >= 20 && c.cpu_pct < 50 && 'font-medium text-warning')}>{c.cpu_pct}%</span></div> : '—'}
+                  </TableCell>
                   <TableCell className="text-right tabular">{bytes(c.mem_bytes)}</TableCell>
                   <TableCell className={cn('text-right tabular', (c.restarts ?? 0) > 0 && 'text-warning')}>{c.restarts ?? '—'}</TableCell>
                   <TableCell className={cn('text-right tabular', d.error_counts[c.name] && 'font-medium text-destructive')}>{d.error_counts[c.name] ?? 0}</TableCell>

@@ -264,4 +264,5 @@ export default {
   'Finished its work': 'Mbaroi punën',
   'Stopped with an error': 'U ndal me gabim',
   'Keeps restarting': 'Riniset vazhdimisht',
+  '{n} of {total} running · the busiest first · click one to see its log': '{n} nga {total} punojnë · më i ngarkuari i pari · klikoni njërin për ta parë logun',
 } satisfies Dict
