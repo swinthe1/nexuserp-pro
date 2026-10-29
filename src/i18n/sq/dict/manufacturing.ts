@@ -123,7 +123,7 @@ export default {
   "For": "Për",
   "units": "njësi",
   "All levels": "Të gjitha nivelet",
-  "Every level down to the raw materials. Semi-finished products are made from their own recipe; their ingredients are indented underneath. Stock is across all warehouses.": "Çdo nivel deri te lëndët e para. Gjysmëproduktet bëhen me recetën e tyre; përbërësit e tyre shfaqen më poshtë me dhëmbëzim. Stoku është për të gjitha magazinat.",
+  "Every level down to the raw materials. Semi-finished products are made from their own recipe; their ingredients are indented underneath. Stock is across all warehouses.": "Çdo nivel deri te lëndët e para. Gjysmëproduktet bëhen me recetën e tyre; përbërësit e tyre shfaqen më poshtë me dhëmbëzim. Stoku është për të gjitha njësitë.",
   "Per batch": "Për seri",
   "Needed": "Nevojitet",
   "Semi-finished product": "Gjysmëprodukt",

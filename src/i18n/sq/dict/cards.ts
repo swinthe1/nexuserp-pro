@@ -73,7 +73,7 @@ export default {
   'Choose an item': 'Zgjidhni artikullin',
   'Choose an item (name, code or barcode)': 'Zgjidhni artikullin (emri, kodi ose barkodi)',
   'Movement': 'Lëvizja',
-  'Partner / warehouse': 'Partneri / magazina',
+  'Partner / warehouse': 'Partneri / njësia',
   'Goods in': 'Hyrje malli',
   'Till sale': 'Shitje në arkë',
   'Till return': 'Kthim në arkë',

@@ -9,7 +9,7 @@ export default {
   'Purchase analysis': 'Analiza e blerjeve',
   'What did we buy, from which vendors, and how much VAT was on it?': 'Çfarë blemë, nga cilët furnitorë dhe sa TVSH kishte?',
   'Inventory valuation': 'Vlera e stokut',
-  'What is our stock worth, per warehouse and category, on a given day?': 'Sa vlen stoku ynë, sipas magazinës dhe kategorisë, në një datë të caktuar?',
+  'What is our stock worth, per warehouse and category, on a given day?': 'Sa vlen stoku ynë, sipas njësisë dhe kategorisë, në një datë të caktuar?',
   'Stock aging': 'Vjetërsia e stokut',
   'How much stock has not moved for 30, 90 or 180 days?': 'Sa stok nuk ka lëvizur prej 30, 90 ose 180 ditësh?',
   'Open receivables': 'Klientë për t\'u arkëtuar',

@@ -16,7 +16,7 @@ export default {
   'Fiscal number': 'Nr. fiskal',
   'From the supplier’s fiscal invoice': 'Nga fatura fiskale e furnitorit',
   'Received on': 'Pranuar më',
-  'Choose the warehouse': 'Zgjidhni magazinën',
+  'Choose the warehouse': 'Zgjidhni njësinë',
   'of the day': 'i ditës',
   'Immediately': 'Menjëherë',
   'Later (on credit)': 'Më vonë (me afat)',
@@ -71,7 +71,7 @@ export default {
   'The goods came in with the receipt': 'Malli hyri me fletëhyrjen',
 
   // serveri
-  'Choose the warehouse the goods go into': 'Zgjidhni magazinën ku hyn malli',
+  'Choose the warehouse the goods go into': 'Zgjidhni njësinë ku hyn malli',
   'Credit notes are completed from the bill page': 'Notat e kreditit kompletohen nga faqja e faturës',
   'This bill belongs to an order: the goods come in with the order\'s receipt': 'Kjo faturë i përket një porosie: malli hyn me pranimin e porosisë',
   'Add at least one line': 'Shtoni të paktën një rresht',

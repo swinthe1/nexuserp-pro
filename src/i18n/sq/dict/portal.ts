@@ -108,7 +108,7 @@ export default {
     'Çdo thirrje është POST me JSON. Dërgoni çelësin publik te “apikey” dhe çelësin tuaj te “x-api-key”. Gabimet kthehen me kod gabimi HTTP dhe mesazh.',
   'Products, 200 at a time (up to 500); “next” is the SKU to continue after. With p_updated_since, only what changed (also switched-off ones).':
     'Artikujt, 200 njëherësh (deri 500); “next” është SKU pas të cilit vazhdohet. Me p_updated_since, vetëm ato që ndryshuan (edhe të fikurat).',
-  'Stock per warehouse: on hand, reserved, available.': 'Stoku për magazinë: gjendja, i rezervuari, i lirë.',
+  'Stock per warehouse: on hand, reserved, available.': 'Stoku për njësi: gjendja, i rezervuari, i lirë.',
   'The price a customer gets, by their code (their own price, their price list or the list price).': 'Çmimi që merr një klient, sipas kodit të tij (çmimi i tij, lista e tij ose çmimi i listës).',
   'Customers and vendors with what customers owe, paged by code.': 'Klientët dhe furnitorët me detyrimet e klientëve, me faqe sipas kodit.',
   'Create or update by code, with the same columns as the spreadsheet import.': 'Krijim ose ndryshim sipas kodit, me të njëjtat kolona si importi nga Excel.',

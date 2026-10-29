@@ -41,7 +41,7 @@ export default {
   'Enter the company name': 'Shkruani emrin e kompanisë',
   'NIPT looks like L91234567A; NUI is 9 digits': 'NIPT-i duket si L91234567A; NUI ka 9 shifra',
   '{name} is ready': '{name} është gati',
-  'We set up a main warehouse, VAT codes, units and a financial year.': 'Krijuam magazinën kryesore, kodet e TVSH-së, njësitë matëse dhe vitin financiar.',
+  'We set up a main warehouse, VAT codes, units and a financial year.': 'Krijuam njësinë kryesore, kodet e TVSH-së, njësitë matëse dhe vitin financiar.',
   'Add a company': 'Shto një kompani',
   'Set up your company': 'Krijoni kompaninë tuaj',
   "You'll be its admin. You can invite colleagues afterwards.": 'Ju do të jeni administratori. Kolegët mund t\'i ftoni më pas.',

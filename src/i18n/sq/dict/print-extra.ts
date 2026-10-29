@@ -10,7 +10,7 @@ export default {
   'SWIFT with the bank accounts': 'SWIFT te llogaritë bankare',
   'One under the other': 'Njëra nën tjetrën',
   'Side by side on one line': 'Në një rresht',
-  'Store or warehouse code in the number': 'Kodi i dyqanit ose magazinës në numër',
+  'Store or warehouse code in the number': 'Kodi i dyqanit ose njësisë në numër',
   'Each store counts on its own, e.g. {example}.': 'Çdo dyqan numëron më vete, p.sh. {example}.',
   'Account card': 'Kartela e kontos',
   'Partner balances': 'Bilanci i subjekteve',

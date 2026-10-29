@@ -26,12 +26,12 @@ export default {
   'Prices with VAT.': 'Çmimet me TVSH.',
 
   // magazinat
-  'Warehouses they work in': 'Magazinat ku punon',
-  'Warehouses of {name}': 'Magazinat e {name}',
+  'Warehouses they work in': 'Njësitë ku punon',
+  'Warehouses of {name}': 'Njësitë e {name}',
   'Tick the shops and warehouses this person works in. They can then receive, sell, count and move goods only there. With none ticked, they work in all.':
     'Shënoni dyqanet dhe magazinat ku punon ky person. Atëherë mund të pranojë, shesë, numërojë dhe lëvizë mall vetëm aty. Pa asnjë të shënuar, punon në të gjitha.',
-  'Saved: only the ticked warehouses': 'U ruajt: vetëm magazinat e shënuara',
-  'Saved: all warehouses': 'U ruajt: të gjitha magazinat',
+  'Saved: only the ticked warehouses': 'U ruajt: vetëm njësitë e shënuara',
+  'Saved: all warehouses': 'U ruajt: të gjitha njësitë',
 
   // paradhëniet
   'Advance invoice': 'Faturë paradhënieje',
@@ -58,7 +58,7 @@ export default {
   'It is already posted': 'Është postuar tashmë',
   'Add at least one item': 'Shtoni të paktën një artikull',
   'Member not found': 'Anëtari nuk u gjet',
-  'Unknown warehouse': 'Magazinë e panjohur',
+  'Unknown warehouse': 'Njësi e panjohur',
   'Confirm the order first': 'Konfirmojeni më parë porosinë',
   'Customer not found': 'Klienti nuk u gjet',
   'Enter the amount of the advance': 'Shkruani shumën e paradhënies',

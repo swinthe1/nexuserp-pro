@@ -47,7 +47,7 @@ export default {
   'Receive goods': 'Prano mallin',
   'value only': 'vetëm vlera',
   'Stock by store': 'Stoku sipas njësive',
-  '{amount} in {n} stores and warehouses, at average cost. Open one to see its items.': '{amount} në {n} njësi dhe magazina, me koston mesatare. Hapni njërën për të parë artikujt e saj.',
+  "{amount} in {n} stores and warehouses, at average cost. Open one to see its items.": "{amount} në {n} dyqane dhe njësi, me koston mesatare. Hapni njërën për të parë artikujt e saj.",
   'At average cost. Open one to see its items.': 'Me koston mesatare. Hapni njërën për të parë artikujt e saj.',
   'No stock': 'Pa stok',
   '{n} item in stock': '{n} artikull në stok',

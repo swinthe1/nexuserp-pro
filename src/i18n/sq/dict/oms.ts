@@ -2,7 +2,7 @@ import type { Dict } from '../index'
 
 /** Order desk (fulfilment queue). */
 export default {
-  'All warehouses': 'Të gjitha magazinat',
+  'All warehouses': 'Të gjitha njësitë',
   'Can reserve': 'Mund të rezervohet',
   'Change the filters.': 'Ndryshoni filtrat.',
   'Confirmed orders that still have something to deliver show up here.': 'Këtu shfaqen porositë e konfirmuara që kanë ende diçka për t\'u dorëzuar.',
