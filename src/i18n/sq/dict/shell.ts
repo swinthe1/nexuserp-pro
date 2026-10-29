@@ -6,7 +6,7 @@ export default {
   'Overview': 'Pasqyra',
   'Sales & CRM': 'Shitjet dhe klientët',
   'Purchasing': 'Blerjet',
-  'Inventory|menu': 'Magazina',
+  'Inventory|menu': 'Stoku',
   'Warehouse|menu': "Skaneri",
   'Retail': 'Arka e dyqanit',
   'Manufacturing': 'Prodhimi',
