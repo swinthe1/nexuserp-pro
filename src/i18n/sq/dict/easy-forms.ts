@@ -24,14 +24,18 @@ export default {
   'More: type, category, purchase VAT, variants, reorder points, weight and customs': 'Më shumë: lloji, grupi, TVSH-ja e blerjes, variantet, porositë automatike, pesha dhe dogana',
   'Kind and group': 'Lloji dhe grupi',
   // grupet brenda menysë
-  'Customers and prices': 'Klientët dhe çmimet',
+  'Customers and prices': "Klientët",
   'New customers': 'Klientë të rinj',
-  'In the field and online': 'Në terren dhe online',
+  'In the field and online': "Terreni dhe online",
   'Goods in and out': 'Hyrjet dhe daljet',
-  'Prices and labels': 'Çmimet dhe etiketat',
+  'Prices and labels': "Çmimet",
   'Setup|group': 'Rregullimet',
-  'Books and declarations': 'Librat dhe deklaratat',
+  'Books and declarations': "Librat",
   'Other taxes': 'Tatime të tjera',
+  // paneli
+  'Choose cards': 'Zgjidh kartelat',
+  'Tick what you want to see on the dashboard; the arrows change the order. Only you see this choice.': 'Shëno çka do të shohësh në panel; shigjetat ndryshojnë radhën. Këtë zgjedhje e sheh vetëm ti.',
+  'Back to the usual cards': 'Kthe kartelat e zakonshme',
   // gabimet nga serveri
   'The opening quantity must be more than zero': 'Sasia fillestare duhet të jetë më e madhe se zero',
   'An item with variants gets its opening stock per variant, with a stock adjustment': 'Artikulli me variante e merr gjendjen fillestare për çdo variant, me një rregullim stoku',

@@ -139,7 +139,7 @@ export default {
   "Equity, assets and payroll": "Kapitali, aktivet dhe pagat",
   "Exchange gains": "Fitime nga kursi i këmbimit",
   "Exchange losses": "Humbje nga kursi i këmbimit",
-  "Finance setup": "Cilësimet e financës",
+  "Finance setup": "Rregullimet e financës",
   "Financial year {year}": "Viti financiar {year}",
   "Financial year {year} created": "Viti financiar {year} u krijua",
   "Freight and duties added to stock value": "Transporti dhe detyrimet doganore që i shtohen vlerës së stokut",

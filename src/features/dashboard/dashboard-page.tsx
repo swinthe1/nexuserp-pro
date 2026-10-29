@@ -9,6 +9,8 @@ import { useCompany } from '@/app/company-provider'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
 import { StatCard } from '@/components/stat-card'
+import { useDashboardCards } from '@/components/layout/nav-prefs'
+import { ChooseCards } from './choose-cards'
 import { StockBar } from '@/components/stock-bar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -73,44 +75,53 @@ export function DashboardPage() {
   useRealtimeInvalidate('pos_orders', companyId, [['sales', companyId], ['inv', companyId]])
   useRealtimeInvalidate('stock_alerts', companyId, [['inv', companyId]])
 
+  const choice = useDashboardCards()
+  // every card a person may put on the dashboard; each one only when they may see what it shows
+  const cards: { key: string; label: string; node: React.ReactNode }[] = []
+  const add = (key: string, label: string, ok: boolean, node: React.ReactNode) => { if (ok) cards.push({ key, label, node }) }
+  add('stock_value', t('Value at purchase price, without VAT'), can('inventory.read'),
+    <StatCard icon={Boxes} hue="152 68%" label={t('Value at purchase price, without VAT')} value={formatMoney(inv.data?.stock_value, cur)} loading={inv.isLoading} href="/inventory/stock"
+      hint={inv.data?.sales_value != null ? t('At selling price with VAT {amount}', { amount: formatMoney(inv.data.sales_value) }) : t('{n} products in stock', { n: inv.data?.active_skus ?? 0 })} />)
+  add('low_stock', t('Running low'), can('inventory.read'),
+    <StatCard icon={TriangleAlert} hue="32 90%" label={t('Running low')} value={inv.data?.low_stock ?? 0} tone={inv.data?.low_stock ? 'warning' : 'default'} loading={inv.isLoading} href="/inventory/alerts" hint={t('At or below the reorder point')} />)
+  add('customs', t('Imports waiting for customs costs'), can('inventory.read'),
+    <StatCard icon={Ship} hue="188 78%" label={t('Imports waiting for customs costs')} value={inv.data?.pending_clearance ?? 0} loading={inv.isLoading} href="/inventory/receipts" hint={t('Customs and transport costs not added yet')} />)
+  add('approvals', t('Waiting for approval'), true,
+    <StatCard icon={ClipboardCheck} hue="262 60%" label={t('Waiting for approval')} value={pending.data ?? 0} loading={pending.isLoading} href="/approvals" />)
+  add('sales_month', legacy ? t('Sales this month (with VAT)') : t('Sales this month (without VAT)'), can('sales.read'),
+    legacy ? <StatCard icon={TrendingUp} hue="204 82%" label={t('Sales this month (with VAT)')} value={formatMoney(legacy.month, cur)} href="/history"
+      hint={t('{n} receipts · {pct}% gross margin without VAT · old program', { n: num(legacy.month_receipts), pct: legacy.month_cost != null && num(legacy.month_net) > 0 ? formatNumberWith(((num(legacy.month_net) - num(legacy.month_cost)) / num(legacy.month_net)) * 100, { maximumFractionDigits: 1 }) : '—' })} />
+      : <StatCard icon={TrendingUp} hue="204 82%" label={t('Sales this month (without VAT)')} value={formatMoney(sales.data?.revenue, cur)} loading={sales.isLoading} href="/sales" hint={sales.data ? t('{n} invoices · {pct}% gross margin, without VAT', { n: sales.data.invoice_count, pct: sales.data.revenue > 0 ? formatNumberWith(((sales.data.revenue - sales.data.cogs) / sales.data.revenue) * 100, { maximumFractionDigits: 1 }) : '0' }) : undefined} />)
+  add('overdue', t('Unpaid invoices past due (with VAT)'), can('sales.read'),
+    <StatCard icon={AlarmClock} hue="354 70%" label={t('Unpaid invoices past due (with VAT)')} value={formatMoney(sales.data?.overdue_amount, cur)} loading={sales.isLoading} tone={sales.data?.overdue_count ? 'destructive' : 'default'} href="/sales/invoices" hint={t('{n} past the due date', { n: sales.data?.overdue_count ?? 0 })} />)
+  add('customers_late', t('Customers late paying (with VAT)'), can('finance.read'),
+    <StatCard icon={Users} hue="350 70%" label={t('Customers late paying (with VAT)')} value={formatMoney(fin.data?.ar_overdue, cur)} loading={fin.isLoading} href="/finance/receivables"
+      tone={fin.data?.ar_overdue ? 'destructive' : 'default'} hint={fin.data ? t('of {amount} customers owe in total, with VAT', { amount: formatMoney(fin.data.receivables) }) : undefined} />)
+  add('bills_due', t('Bills to pay soon (with VAT)'), canAp,
+    <StatCard icon={Wallet} hue="32 90%" label={t('Bills to pay soon (with VAT)')} value={formatMoney((proc.data?.ap_due_7 ?? 0) + (proc.data?.ap_overdue ?? 0), cur)} loading={proc.isLoading} href="/procurement/bills"
+      tone={proc.data?.ap_overdue_count ? 'destructive' : 'default'} hint={proc.data ? t('{amount} late · the rest within 7 days', { amount: formatMoney(proc.data.ap_overdue) }) : undefined} />)
+  add('backlog', t('Orders to deliver and invoice (without VAT)'), can('sales.read'),
+    <StatCard icon={PackageCheck} hue="204 82%" label={t('Orders to deliver and invoice (without VAT)')} value={formatMoney(sales.data?.backlog, cur)} loading={sales.isLoading} href="/sales/orders" hint={t('{n} orders confirmed this month', { n: sales.data?.orders_count ?? 0 })} />)
+  add('net_profit', t('Net profit this month (without VAT)'), can('finance.read'),
+    <StatCard icon={Landmark} hue="158 82%" label={t('Net profit this month (without VAT)')} value={formatMoney(fin.data?.net_profit, cur)} loading={fin.isLoading} href="/finance/reports" tone={(fin.data?.net_profit ?? 0) < 0 ? 'destructive' : 'default'} hint={t('From the accounting')} />)
+  const byKey = new Map(cards.map((c) => [c.key, c]))
+  // the usual eight, until the person chooses their own
+  const usual = ['stock_value', 'low_stock', 'customs', 'approvals', 'sales_month', can('sales.read') ? 'overdue' : 'customers_late', 'bills_due', can('sales.read') ? 'backlog' : 'net_profit']
+  const shown = (choice.cards ?? usual).filter((k) => byKey.has(k))
+
   const flow = (inv.data?.movements_by_day ?? []).map((d) => ({ day: shortDay(d.day), in: Number(d.value_in), out: Number(d.value_out) }))
   const firstName = ((user?.user_metadata?.full_name as string | undefined) ?? '').split(' ')[0]
 
   return (
     <>
-      <PageHeader title={greeting(firstName)} description={`${company?.name ?? ''} · ${formatDate(new Date())}`} />
+      <PageHeader title={greeting(firstName)} description={`${company?.name ?? ''} · ${formatDate(new Date())}`}
+        actions={<ChooseCards all={cards.map((c) => ({ key: c.key, label: c.label }))} shown={shown} onSave={choice.set} />} />
       <BooksCheckBanner />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard icon={Boxes} hue="152 68%" label={t('Value at purchase price, without VAT')} value={formatMoney(inv.data?.stock_value, cur)} loading={inv.isLoading} href="/inventory/stock"
-          hint={inv.data?.sales_value != null ? t('At selling price with VAT {amount}', { amount: formatMoney(inv.data.sales_value) }) : t('{n} products in stock', { n: inv.data?.active_skus ?? 0 })} />
-        <StatCard icon={TriangleAlert} hue="32 90%" label={t('Running low')} value={inv.data?.low_stock ?? 0} tone={inv.data?.low_stock ? 'warning' : 'default'} loading={inv.isLoading} href="/inventory/alerts" hint={t('At or below the reorder point')} />
-        <StatCard icon={Ship} hue="188 78%" label={t('Imports waiting for customs costs')} value={inv.data?.pending_clearance ?? 0} loading={inv.isLoading} href="/inventory/receipts" hint={t('Customs and transport costs not added yet')} />
-        <StatCard icon={ClipboardCheck} hue="262 60%" label={t('Waiting for approval')} value={pending.data ?? 0} loading={pending.isLoading} href="/approvals" />
-      </div>
-
-      <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {can('sales.read') ? <>
-          {legacy ? <StatCard icon={TrendingUp} hue="204 82%" label={t('Sales this month (with VAT)')} value={formatMoney(legacy.month, cur)} href="/history"
-            hint={t('{n} receipts · {pct}% gross margin without VAT · old program', { n: num(legacy.month_receipts), pct: legacy.month_cost != null && num(legacy.month_net) > 0 ? formatNumberWith(((num(legacy.month_net) - num(legacy.month_cost)) / num(legacy.month_net)) * 100, { maximumFractionDigits: 1 }) : '—' })} />
-          : <StatCard icon={TrendingUp} hue="204 82%" label={t('Sales this month (without VAT)')} value={formatMoney(sales.data?.revenue, cur)} loading={sales.isLoading} href="/sales" hint={sales.data ? t('{n} invoices · {pct}% gross margin, without VAT', { n: sales.data.invoice_count, pct: sales.data.revenue > 0 ? formatNumberWith(((sales.data.revenue - sales.data.cogs) / sales.data.revenue) * 100, { maximumFractionDigits: 1 }) : '0' }) : undefined} />}
-          <StatCard icon={AlarmClock} hue="354 70%" label={t('Unpaid invoices past due (with VAT)')} value={formatMoney(sales.data?.overdue_amount, cur)} loading={sales.isLoading} tone={sales.data?.overdue_count ? 'destructive' : 'default'} href="/sales/invoices" hint={t('{n} past the due date', { n: sales.data?.overdue_count ?? 0 })} />
-        </> : <>
-          <StatCard icon={TrendingUp} hue="204 82%" label={t('Sales this month (without VAT)')} value="" pending={t('No access')} hint={t('Needs access to sales')} />
-          {can('finance.read') ? <StatCard icon={Users} hue="350 70%" label={t('Customers late paying (with VAT)')} value={formatMoney(fin.data?.ar_overdue, cur)} loading={fin.isLoading} href="/finance/receivables"
-            tone={fin.data?.ar_overdue ? 'destructive' : 'default'} hint={fin.data ? t('of {amount} customers owe in total, with VAT', { amount: formatMoney(fin.data.receivables) }) : undefined} />
-            : <StatCard icon={Users} hue="350 70%" label={t('Customers late paying (with VAT)')} value="" pending={t('No access')} hint={t('Needs access to finance')} />}
-        </>}
-        {canAp ? (
-          <StatCard icon={Wallet} hue="32 90%" label={t('Bills to pay soon (with VAT)')} value={formatMoney((proc.data?.ap_due_7 ?? 0) + (proc.data?.ap_overdue ?? 0), cur)} loading={proc.isLoading} href="/procurement/bills"
-            tone={proc.data?.ap_overdue_count ? 'destructive' : 'default'}
-            hint={proc.data ? t('{amount} late · the rest within 7 days', { amount: formatMoney(proc.data.ap_overdue) }) : undefined} />
-        ) : <StatCard icon={Wallet} hue="32 90%" label={t('Bills to pay soon (with VAT)')} value="" pending={t('No access')} hint={t('Needs access to invoices and payments')} />}
-        {can('sales.read') ? (
-          <StatCard icon={PackageCheck} hue="204 82%" label={t('Orders to deliver and invoice (without VAT)')} value={formatMoney(sales.data?.backlog, cur)} loading={sales.isLoading} href="/sales/orders" hint={t('{n} orders confirmed this month', { n: sales.data?.orders_count ?? 0 })} />
-        ) : can('finance.read') ? (
-          <StatCard icon={Landmark} hue="158 82%" label={t('Net profit this month (without VAT)')} value={formatMoney(fin.data?.net_profit, cur)} loading={fin.isLoading} href="/finance/reports" tone={(fin.data?.net_profit ?? 0) < 0 ? 'destructive' : 'default'} hint={t('From the accounting')} />
-        ) : <StatCard icon={Landmark} hue="158 82%" label={t('Net profit this month (without VAT)')} value="" pending={t('No access')} hint={t('Needs access to finance')} />}
+        {/* until the person's own choice has loaded, so the cards do not jump */}
+        {!choice.loaded ? Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="h-[136px] rounded-xl" />)
+          : shown.map((k) => <React.Fragment key={k}>{byKey.get(k)!.node}</React.Fragment>)}
       </div>
 
       {legacy && <LegacySales data={legacy} />}

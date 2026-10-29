@@ -45,9 +45,9 @@ export function NewMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button size="sm" className="h-9 rounded-full px-3" aria-label={t('New|create')}><Plus /> <span className="max-sm:hidden">{t('New|create')}</span></Button>
+        <Button size="icon" className="size-9 shrink-0 rounded-full" aria-label={t('New|create')} title={t('New|create')}><Plus className="size-5" /></Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 p-1.5">
+      <DropdownMenuContent align="start" className="w-80 p-1.5">
         <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">{t('What happened?')}</DropdownMenuLabel>
         {items.map((c) => (
           <DropdownMenuItem key={c.href} onSelect={() => navigate(c.href)} className="items-start gap-3 py-2">

@@ -2,7 +2,7 @@ import type { Dict } from '../index'
 
 /** Moving a client from another program: steps, importer, check. */
 export default {
-  'Move from another program': 'Kalimi nga programi tjetër',
+  'Move from another program': "Kalimi nga programi tjetër",
   'Move data from the old program': 'Kalo të dhënat nga programi i vjetër',
   'Bring {company} over from the program it used until now: master data first, then the position on the cut-over date, then compare the totals.':
     'Kaloni {company} nga programi që ka përdorur deri tani: fillimisht të dhënat bazë, pastaj gjendja në datën e kalimit, në fund krahasimi i totaleve.',

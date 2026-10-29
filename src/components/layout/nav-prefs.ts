@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase'
 /** Most items a person can pin to the top of the menu */
 export const MAX_FAVOURITES = 8
 
-interface Prefs { nav_favourites?: string[]; nav_open?: string[] }
+interface Prefs { nav_favourites?: string[]; nav_open?: string[]; dashboard_cards?: Record<string, string[]> }
 
 function useMyPrefs() {
   const { user } = useAuth()
@@ -28,7 +28,7 @@ function useSavePref() {
   const { user } = useAuth()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ key, value }: { key: keyof Prefs; value: string[] }) => {
+    mutationFn: async ({ key, value }: { key: keyof Prefs; value: unknown }) => {
       const { error } = await supabase.rpc('save_my_preference', { p_key: key, p_value: value as unknown as Json })
       if (error) throw error
     },
@@ -58,6 +58,22 @@ export function useOpenSections() {
   const open = prefs.data?.nav_open ?? null
   const set = React.useCallback((next: string[]) => save.mutate({ key: 'nav_open', value: next }), [save])
   return { open, set }
+}
+
+/** The dashboard cards a person chose for this company, in their order; null = the usual set. */
+export function useDashboardCards() {
+  const { companyId } = useCompany()
+  const prefs = useMyPrefs()
+  const save = useSavePref()
+  const all = prefs.data?.dashboard_cards ?? {}
+  const cards = companyId ? all[companyId] ?? null : null
+  const set = React.useCallback((next: string[] | null) => {
+    if (!companyId) return
+    const copy = { ...all }
+    if (next) copy[companyId] = next; else delete copy[companyId]
+    save.mutate({ key: 'dashboard_cards', value: copy })
+  }, [all, companyId, save])
+  return { cards, set, loaded: prefs.isSuccess }
 }
 
 /** Parts of the menu the company's admin switched off for everyone. */

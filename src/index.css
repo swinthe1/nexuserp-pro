@@ -31,9 +31,9 @@
     --input: 165 12% 83%;
     --ring: 158 82% 34%;
     --radius: 0.625rem;
-    --sidebar: 196 48% 12%;
-    --sidebar-foreground: 190 20% 84%;
-    --sidebar-border: 196 36% 18%;
+    --sidebar: 161 62% 13%;
+    --sidebar-foreground: 150 24% 88%;
+    --sidebar-border: 160 40% 20%;
     --shadow-card: 0 1px 2px hsl(200 30% 15% / 0.05), 0 2px 6px -2px hsl(200 30% 15% / 0.06);
   }
   .dark {
@@ -62,9 +62,9 @@
     --border: 198 18% 17%;
     --input: 198 18% 21%;
     --ring: 155 62% 46%;
-    --sidebar: 196 48% 9%;
-    --sidebar-foreground: 190 20% 82%;
-    --sidebar-border: 196 36% 15%;
+    --sidebar: 161 55% 9%;
+    --sidebar-foreground: 150 20% 84%;
+    --sidebar-border: 160 36% 15%;
     --shadow-card: 0 1px 2px hsl(0 0% 0% / 0.3);
   }
 }
@@ -74,28 +74,28 @@
 @layer base {
   .sidebar-navy {
     color-scheme: dark;
-    --background: 196 48% 9%;
+    --background: 161 60% 9%;
     --foreground: 0 0% 100%;
-    --card: 196 40% 18%;
+    --card: 160 45% 18%;
     --card-foreground: 0 0% 100%;
-    --popover: 196 45% 13%;
+    --popover: 161 55% 12%;
     --popover-foreground: 0 0% 100%;
-    --primary: 152 64% 56%;
-    --primary-foreground: 196 48% 10%;
-    --secondary: 196 38% 17%;
+    --primary: 145 63% 62%;
+    --primary-foreground: 161 62% 10%;
+    --secondary: 160 42% 18%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 196 38% 15%;
-    --muted-foreground: 190 16% 64%;
-    --accent: 196 38% 17%;
+    --muted: 160 42% 16%;
+    --muted-foreground: 148 18% 68%;
+    --accent: 160 42% 18%;
     --accent-foreground: 0 0% 100%;
     --info: 204 85% 65%;
     --warning: 40 95% 60%;
-    --border: 196 32% 21%;
-    --input: 196 32% 24%;
-    --ring: 152 64% 56%;
-    --sidebar: 196 48% 12%;
-    --sidebar-foreground: 190 22% 84%;
-    --sidebar-border: 196 36% 18%;
+    --border: 160 38% 21%;
+    --input: 160 36% 24%;
+    --ring: 145 63% 62%;
+    --sidebar: 161 62% 13%;
+    --sidebar-foreground: 150 24% 88%;
+    --sidebar-border: 160 40% 20%;
   }
 }
 

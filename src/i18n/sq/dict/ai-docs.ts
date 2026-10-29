@@ -5,7 +5,7 @@ export default {
   'Z reports': 'Z-raportet',
   'Z report': 'Z-raport',
   'Z report {number}': 'Z-raporti {number}',
-  'Assets from invoices': 'Mjete themelore nga faturat',
+  'Assets from invoices': "Mjete nga faturat",
   'A vehicle, a machine, computers: photograph the invoice and DrisPRO books it as an investment, makes the fixed asset and plans its depreciation.':
     'Një veturë, një makineri, kompjuterë: fotografoni faturën dhe DrisPRO e regjistron si investim, krijon mjetin themelor dhe planifikon amortizimin e tij.',
   'A new asset invoice': 'Faturë e re për mjet themelor',
@@ -36,7 +36,7 @@ export default {
   'Cash and card are more than the sales of the day.': 'Paratë në dorë dhe me kartelë janë më shumë se shitjet e ditës.',
   'Book the sales': 'Regjistro shitjet',
   // biznesi i vogël
-  'Small business tax': 'Tatimi i biznesit të vogël',
+  'Small business tax': "Biznesi i vogël",
   'A business not registered for VAT pays a tax on its gross income every quarter: 3% for trade, transport and farming, 9% for services and professions. The income comes from the same documents as the sales book.':
     'Biznesi që nuk është i regjistruar për TVSH paguan tatim mbi të ardhurat bruto çdo tremujor: 3% për tregti, transport dhe bujqësi, 9% për shërbime dhe profesione. Të ardhurat merren nga të njëjtat dokumente si libri i shitjes.',
   'The rate of this business': 'Norma e këtij biznesi',

@@ -2,8 +2,8 @@ import type { Dict } from '../index'
 
 /** Agjentët në terren: aplikacioni në telefon dhe pamja e menaxherit */
 export default {
-  'Agent app': 'Aplikacioni i agjentit',
-  'Field agents': 'Agjentët në terren',
+  'Agent app': "Agjenti",
+  'Field agents': "Agjentët",
   'Monday': 'E hënë',
   'Tuesday': 'E martë',
   'Wednesday': 'E mërkurë',

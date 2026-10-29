@@ -142,7 +142,7 @@ export default {
   "VAT 20%": "TVSH 20%",
   "VAT credit so far": "Kredi TVSH deri tani",
   "VAT declaration": "Deklaratë TVSH-je",
-  "VAT declarations": "Deklaratat e TVSH-së",
+  "VAT declarations": "Deklaratat e TVSH",
   "VAT for {month} so far, what is due to the {authority} and when, and how fiscalization is going.": "TVSH-ja e {month} deri tani, çfarë i detyrohemi {authority} dhe kur, si dhe gjendja e fiskalizimit.",
   "VAT in the books compared with the VAT booked in accounting for the period.": "TVSH-ja në libra krahasuar me TVSH-në e regjistruar në kontabilitet për periudhën.",
   "VAT in the books equals VAT booked on 4456 / 4457": "TVSH-ja në libra është e barabartë me atë në 4456 / 4457",

@@ -25,8 +25,9 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
         <span className="flex-1 truncate text-left">{t('Search or jump to…')}</span>
         <kbd className="hidden rounded-md border bg-card px-1.5 text-2xs font-semibold sm:inline">{isMac ? '⌘' : 'Ctrl'} K</kbd>{/* i18n-ignore */}
       </button>
+      {/* right next to the search: find something, or make something new */}
+      <NewMenu />
       <div className="ml-auto flex items-center gap-1">
-        <NewMenu />
         <LanguageToggle className="hidden sm:inline-flex" />
         <span className="sm:hidden"><LanguageMenuButton /></span>
         <TillLockButton />

@@ -105,15 +105,15 @@ function Item({ item, collapsed, onNavigate, active, pinned, onTogglePin, sub }:
       title={sub ? t(item.label) : undefined}
       className={
         cn(
-          'group/item relative flex min-w-0 flex-1 basis-auto items-center rounded-md text-sidebar-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground',
-          sub ? 'min-h-8 py-1.5 pl-[38px] pr-7 text-[13px] leading-snug' : 'h-9 gap-2.5 px-2 text-[13.5px] font-medium',
-          active && 'bg-white/[0.08] font-medium text-white',
-          active && sub && 'before:absolute before:inset-y-1.5 before:left-[23px] before:w-0.5 before:rounded-full before:bg-primary',
+          'group/item relative flex min-w-0 flex-1 basis-auto items-center rounded-md text-sidebar-foreground transition-colors hover:bg-primary/[0.08] hover:text-foreground',
+          sub ? 'min-h-8 gap-2.5 py-1.5 pl-[30px] pr-7 text-[13px] leading-snug' : 'h-9 gap-2.5 px-2 text-[13.5px] font-medium',
+          active && 'bg-primary/[0.14] font-medium text-white',
+          active && sub && 'before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-full before:bg-primary',
           collapsed && 'h-9 flex-none justify-center px-0',
         )
       }
     >
-      {!sub && <Icon className={cn('size-[18px] shrink-0', active ? 'text-primary' : 'text-muted-foreground group-hover/item:text-foreground')} strokeWidth={1.75} />}
+      <Icon className={cn('shrink-0', sub ? 'size-4' : 'size-[18px]', active ? 'text-primary' : 'text-muted-foreground group-hover/item:text-foreground')} strokeWidth={1.75} />
       {!collapsed && <span className={cn('flex-1', sub ? 'line-clamp-2' : 'truncate')}>{t(item.label)}</span>}
     </NavLink>
   )
@@ -175,8 +175,14 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
   const quick = pinnedItems
   const activeSection = sections.find((s) => s.items.some((i) => i.href === activeHref))?.label
   const openSet = new Set(open ?? [])
-  const isOpen = (label: string) => label === activeSection || openSet.has(label)
-  const toggleSection = (label: string) => setOpen(openSet.has(label) ? [] : [label])
+  // the part you are in opens by itself, but a click on its name folds it like any other
+  const [foldedActive, setFoldedActive] = React.useState(false)
+  React.useEffect(() => { setFoldedActive(false) }, [activeSection])
+  const isOpen = (label: string) => (label === activeSection && !foldedActive && !openSet.size) || openSet.has(label)
+  const toggleSection = (label: string) => {
+    if (isOpen(label)) { setOpen([]); if (label === activeSection) setFoldedActive(true) }
+    else { setOpen(label === activeSection ? [] : [label]); setFoldedActive(label !== activeSection) }
+  }
   const pinProps = (i: NavItem) => ({ pinned: favourites.includes(i.href), onTogglePin: () => toggle(i.href) })
 
   if (collapsed) {
@@ -227,9 +233,8 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
         return (
           <div key={section.label} className={cn('flex flex-col', (section.label === 'Reports|menu' || (section.label === 'Company' && !sections.some((x) => x.label === 'Reports|menu'))) && 'mt-2 border-t border-sidebar-border pt-3')}>
             <button type="button" aria-expanded={expanded} aria-controls={id}
-              disabled={section.label === activeSection}
               onClick={() => toggleSection(section.label)}
-              className={cn('flex h-9 items-center gap-2.5 rounded-md px-2 text-[13.5px] font-medium text-sidebar-foreground hover:bg-white/[0.06] hover:text-foreground disabled:cursor-default disabled:hover:bg-transparent',
+              className={cn('flex h-9 items-center gap-2.5 rounded-md px-2 text-[13.5px] font-medium text-sidebar-foreground hover:bg-primary/[0.08] hover:text-foreground',
                 expanded && 'text-white')}>
               <SectionIcon label={section.label} active={section.label === activeSection} />
               <span className="flex-1 truncate text-left">{t(section.title ?? section.label)}</span>
@@ -242,7 +247,7 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
                   const heading = section.items.length > 7 && i.group && i.group !== section.items[k - 1]?.group ? i.group : null
                   return (
                     <React.Fragment key={i.href}>
-                      {heading && <div className={cn('pb-0.5 pl-[38px] text-2xs font-medium text-muted-foreground/70', k > 0 && 'pt-2.5')}>{t(heading)}</div>}
+                      {heading && <div className={cn('pb-0.5 pl-[30px] text-2xs font-medium text-primary/70', k > 0 && 'pt-2.5')}>{t(heading)}</div>}
                       <Item item={i} sub collapsed={false} onNavigate={onNavigate} active={i.href === activeHref} {...pinProps(i)} />
                     </React.Fragment>
                   )

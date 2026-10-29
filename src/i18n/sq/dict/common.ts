@@ -113,7 +113,7 @@ export default {
   'Item': 'Artikulli',
   'Items': 'Artikuj',
   'Product': 'Produkti',
-  'Products': 'Produktet',
+  'Products': "Artikujt",
   'Variant': 'Varianti',
   'Category': 'Kategoria',
   'Warehouse': 'Magazina',

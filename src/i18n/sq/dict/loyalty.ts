@@ -2,7 +2,7 @@ import type { Dict } from '../index'
 
 /** Loyalty cards: management page, till and receipt */
 export default {
-  'Loyalty cards': 'Kartelat e zbritjes',
+  'Loyalty cards': "Kartat e zbritjes",
   'Loyalty card': 'Kartela e zbritjes',
   'Discount card': 'Kartelë me zbritje',
   'The same discount on every purchase, e.g. 5%.': 'E njëjta zbritje në çdo blerje, p.sh. 5%.',

@@ -2,7 +2,7 @@ import type { Dict } from '../index'
 
 /** History from the old program */
 export default {
-  'History from the old program': 'Historiku nga programi i vjetër',
+  'History from the old program': "Programi i vjetër",
   'Kind|history': 'Lloji',
   'Average sale': 'Shitja mesatare',
   'Best-selling products': 'Artikujt më të shitur',
