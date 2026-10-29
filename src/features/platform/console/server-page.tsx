@@ -353,7 +353,7 @@ function LogDialog({ container, onClose }: { container: string | null; onClose: 
     <Dialog open={!!container} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-5xl">
         <DialogHeader><DialogTitle className="font-mono text-base">{container}</DialogTitle>
-          <DialogDescription>{q.data ? t('The last 150 lines, read {date}. It is read again every 5 minutes.', { date: formatDate(q.data.at, true) }) : ' '}</DialogDescription></DialogHeader>
+          <DialogDescription>{q.data ? t('The last 150 lines, read {date}. It is read again every 15 minutes.', { date: formatDate(q.data.at, true) }) : ' '}</DialogDescription></DialogHeader>
         {q.isLoading ? <Skeleton className="h-96" /> : !q.data ? <p className="text-[13px] text-muted-foreground">{t('No log of this container yet.')}</p> : (
           <pre ref={ref} className="max-h-[65vh] overflow-auto rounded-lg bg-[hsl(161_55%_8%)] p-3 font-mono text-[11.5px] leading-relaxed text-[hsl(150_20%_86%)]">
             {q.data.lines.split('\n').map((l, i) => <div key={i} className={cn(/\b(error|fatal|panic|exception)\b/i.test(l) && 'text-[hsl(0_85%_72%)]', /\bwarn/i.test(l) && 'text-[hsl(40_95%_65%)]')}>{l}</div>)}

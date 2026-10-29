@@ -217,7 +217,7 @@ export default {
   "The container {name} is not running": "Kontejneri {name} nuk punon",
   "The container {name} reports a problem": "Kontejneri {name} raporton problem",
   "The disk {name} is {value}% full": "Disku {name} është {value}% i mbushur",
-  "The last 150 lines, read {date}. It is read again every 5 minutes.": "150 rreshtat e fundit, lexuar {date}. Lexohet sërish çdo 5 minuta.",
+  "The last 150 lines, read {date}. It is read again every 15 minutes.": "150 rreshtat e fundit, lexuar {date}. Lexohet sërish çdo 15 minuta.",
   "The last {n} hour, newest first. Passwords and keys are hidden.": "{n} ora e fundit, më e reja e para. Fjalëkalimet dhe çelësat fshihen.",
   "The last {n} hours, newest first. Passwords and keys are hidden.": "{n} orët e fundit, më e reja e para. Fjalëkalimet dhe çelësat fshihen.",
   "The processor works at {value}% for 10 minutes": "Procesori punon me {value}% prej 10 minutash",

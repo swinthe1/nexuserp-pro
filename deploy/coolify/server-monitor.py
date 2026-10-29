@@ -222,10 +222,14 @@ NOISE = re.compile(r'(?i)(error_count=0|errors?: 0\b|no error|"level":"info"|req
 
 
 def logs(names, since):
+    """Error and warning lines since the last run: one read of each log (its output and its errors together)."""
     out = []
     for n in names:
-        text = sh(['docker', 'logs', '--timestamps', '--since', since, '--tail', '2000', n], timeout=20)
-        text += sh_err(['docker', 'logs', '--timestamps', '--since', since, '--tail', '2000', n])
+        try:
+            text = subprocess.run(['docker', 'logs', '--timestamps', '--since', since, '--tail', '500', n],
+                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=15).stdout
+        except Exception:
+            continue
         k = 0
         for line in text.splitlines():
             if NOISE.search(line):
@@ -241,18 +245,11 @@ def logs(names, since):
     return out
 
 
-def sh_err(args):
-    try:
-        return subprocess.run(args, capture_output=True, text=True, timeout=20).stderr
-    except Exception:
-        return ''
-
-
 def tails(names):
     out = []
     for n in names:
-        r = subprocess.run(['docker', 'logs', '--timestamps', '--tail', '150', n], capture_output=True, text=True, timeout=20)
-        lines = sorted((r.stdout + r.stderr).splitlines())[-150:]
+        r = subprocess.run(['docker', 'logs', '--timestamps', '--tail', '150', n], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=20)
+        lines = sorted(r.stdout.splitlines())[-150:]
         out.append({'container': n, 'lines': hide('\n'.join(lines))})
     return out
 
@@ -291,7 +288,7 @@ def main():
     cs = containers()
     running = [c['name'] for c in cs if c.get('state') == 'running']
     payload = {'sample': sample, 'containers': cs, 'logs': logs(running, since)}
-    if now // 60 % 5 == 0 or not state.get('tails'):
+    if now // 60 % 15 == 0 or not state.get('tails'):
         payload['tails'] = tails([c['name'] for c in cs])
         state['tails'] = now
     send(payload)
