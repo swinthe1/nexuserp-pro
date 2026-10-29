@@ -1001,7 +1001,9 @@ function DeleteClientDialog({ client, onClose }: { client: PlatformClient | null
   const [users, setUsers] = React.useState(true)
   const [err, setErr] = React.useState<string | null>(null)
   React.useEffect(() => { setName(''); setUsers(true); setErr(null) }, [client])
-  const ok = !!client && name.trim() === client.name
+  // the words must match; full stops, spaces and capitals do not count (sh.p.k. or shpk)
+  const same = (x: string) => x.toLowerCase().replace(/[\s.,]+/g, '')
+  const ok = !!client && !!name.trim() && same(name) === same(client.name)
   return (
     <Dialog open={!!client} onOpenChange={(o) => { if (!o && !del.isPending) onClose() }}>
       <DialogContent className="max-w-md">

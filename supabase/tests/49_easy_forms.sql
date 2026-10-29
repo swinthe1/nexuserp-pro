@@ -54,5 +54,25 @@ select t.ok(not exists (select 1 from public.stock_movements where company_id = 
 select t.ok(not exists (select 1 from pg_trigger where not tgisinternal and tgenabled = 'D'), 'every paused rule is on again');
 select t.ok((:'del'::jsonb ->> 'fast')::boolean = false, 'it went the way without the switch');
 
+
+-- a department with its manager, the manager in that department: the two tables point at each other
+select id as co2 from public.companies where name = 'Njerëz Test' \gset
+select id as emp from public.employees where company_id = :'co2' limit 1 \gset
+set session_replication_role = replica;
+insert into public.departments (company_id, code, name, manager_id) values (:'co2', 'CYC', 'Cycle', :'emp') returning id as dep \gset
+update public.employees set department_id = :'dep' where id = :'emp';
+set session_replication_role = origin;
+begin;
+select set_config('app.purge_no_replica', 'on', true);
+set local role authenticated;
+select t.login(:'boss');
+-- the typed name: capitals, full stops and spaces do not count
+select public.platform_delete_client(:'co2', '  NJERËZ   test. ', true) as del2 \gset
+commit;
+reset role;
+select t.ok(not exists (select 1 from public.companies where id = :'co2'), 'a client whose tables point at each other is deleted too');
+select t.ok(not exists (select 1 from pg_trigger where not tgisinternal and tgenabled = 'D'), 'and every paused rule is on again');
+select t.throws($$select public.platform_delete_client((select id from public.companies where name = 'Paga Test'), 'Paga', true)$$, 'exactly', 'a different name does not delete');
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;
