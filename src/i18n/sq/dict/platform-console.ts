@@ -269,4 +269,5 @@ export default {
   'What used the processor over the last minute, on the whole server. 100% is one core of {n}.': 'Çka e përdori procesorin në minutën e fundit, në gjithë serverin. 100% është një bërthamë nga {n}.',
   'Program': 'Programi',
   'the server itself': 'vetë serveri',
+  'Stopped by hand': 'U ndal me dorë',
 } satisfies Dict

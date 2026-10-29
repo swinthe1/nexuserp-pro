@@ -212,7 +212,7 @@ function Containers({ d, onLog }: { d: ServerStatus; onLog: (c: string) => void 
   // problems first, then the busiest: who uses the processor is seen at once
   const rank = (c: (typeof d.containers)[number]) => {
     const always = (c.restart_policy === 'always' || c.restart_policy === 'unless-stopped') && !isBuilder(c)
-    if (c.health === 'unhealthy' || c.state === 'restarting' || (c.state !== 'running' && always)) return 0
+    if (c.health === 'unhealthy' || c.state === 'restarting' || (c.state !== 'running' && always && (c.exit_code ?? 1) !== 0)) return 0
     return c.state === 'running' ? 1 : 2
   }
   const sorted = [...d.containers].sort((a, b) => rank(a) - rank(b) || (b.cpu_pct ?? -1) - (a.cpu_pct ?? -1) || a.name.localeCompare(b.name))
@@ -231,14 +231,14 @@ function Containers({ d, onLog }: { d: ServerStatus; onLog: (c: string) => void 
             {sorted.map((c) => {
               // a helper that ran once and stopped is not a problem; one meant to run all the time is
               const always = (c.restart_policy === 'always' || c.restart_policy === 'unless-stopped') && !isBuilder(c)
-              const bad = c.health === 'unhealthy' || c.state === 'restarting' || (c.state !== 'running' && always)
+              const bad = c.health === 'unhealthy' || c.state === 'restarting' || (c.state !== 'running' && always && (c.exit_code ?? 1) !== 0)
               const finished = c.state !== 'running' && !bad
               return (
                 <TableRow key={c.name} className={cn(hasTail.has(c.name) && 'cursor-pointer', finished && 'text-muted-foreground')} onClick={() => hasTail.has(c.name) && onLog(c.name)}>
                   <TableCell><div className="font-medium">{c.name}</div><div className="max-w-[260px] truncate text-2xs text-muted-foreground">{c.image}</div></TableCell>
                   <TableCell>
                     <Badge variant={bad ? 'destructive' : c.health === 'healthy' ? 'success' : 'secondary'} className={cn(finished && 'opacity-70')}>
-                      {finished ? (c.exit_code ? t('Stopped with an error') : t('Finished its work')) : c.state === 'restarting' ? t('Keeps restarting')
+                      {finished ? (c.exit_code ? t('Stopped with an error') : always ? t('Stopped by hand') : t('Finished its work')) : c.state === 'restarting' ? t('Keeps restarting')
                         : c.state !== 'running' ? t('Stopped') : c.health === 'unhealthy' ? t('Unhealthy') : c.health === 'healthy' ? t('Healthy') : t('Running')}</Badge>
                     <div className="mt-0.5 text-2xs text-muted-foreground">{c.status}</div>
                   </TableCell>
