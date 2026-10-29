@@ -30,6 +30,8 @@ export function describeError(error: unknown): string {
     case 'PGRST205':
     case '42883':
       return t('This part needs the latest server update. The administrator runs the server update and it works.')
+    case '57014':     // the server's time limit
+      return t('This took longer than the server allows and nothing was changed. Try again; if it happens again, tell the administrator.')
     case 'PGRST301':
     case '401':
       return t('Your session has expired. Sign in again.')

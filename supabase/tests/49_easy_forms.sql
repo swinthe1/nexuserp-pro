@@ -37,5 +37,22 @@ reset role;
 select t.ok((select default_prefix from public.document_types where key = 'sales_invoice') = 'FAT-', 'a new company numbers invoices FAT-');
 select t.ok(:'adj' like 'RS-%', 'the adjustment is numbered RS-');
 
+
+-- deleting a whole client the way the cloud server does it (no switch for the database's own rules)
+reset role;
+select id as gone from public.companies where name = 'Market Demo X' \gset
+select email as boss from public.profiles where is_super_admin limit 1 \gset
+begin;
+select set_config('app.purge_no_replica', 'on', true);
+set local role authenticated;
+select t.login(:'boss');
+select public.platform_delete_client(:'gone', 'Market Demo X', true) as del \gset
+commit;
+reset role;
+select t.ok(not exists (select 1 from public.companies where id = :'gone'), 'the client is deleted');
+select t.ok(not exists (select 1 from public.stock_movements where company_id = :'gone'), 'with its stock movements');
+select t.ok(not exists (select 1 from pg_trigger where not tgisinternal and tgenabled = 'D'), 'every paused rule is on again');
+select t.ok((:'del'::jsonb ->> 'fast')::boolean = false, 'it went the way without the switch');
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;
