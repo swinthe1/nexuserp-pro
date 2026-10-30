@@ -16,7 +16,9 @@ select public.platform_create_client(jsonb_build_object('name', 'Pagat Kosova', 
   'valid_until', (current_date + 365)::text)) as xk \gset
 select t.login('alice@alba.al');
 select public.invite_member(:'co', 'rina@rev.al', array['accountant']);
+select t.accept_invites();
 select public.invite_member(:'co', 'kasa@rev.al', array['pos_cashier']);
+select t.accept_invites();
 create or replace function pg_temp.bal(p_co uuid, p_code text) returns numeric language sql as $$
   select coalesce(sum(jl.debit - jl.credit), 0) from public.journal_lines jl join public.journal_entries e on e.id = jl.entry_id
    where jl.company_id = p_co and jl.account_id = (select id from public.accounts where company_id = p_co and code = p_code)

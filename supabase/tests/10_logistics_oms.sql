@@ -17,11 +17,17 @@ set role authenticated;
 select t.login('alice@alba.al');
 select public.create_company('Logjistika Test', 'AL') as co \gset
 select public.invite_member(:'co', 'lou@log.al', array['logistics_manager']);
+select t.accept_invites();
 select public.invite_member(:'co', 'wade@log.al', array['warehouse_operator']);
+select t.accept_invites();
 select public.invite_member(:'co', 'pam@log.al', array['procurement_manager']);
+select t.accept_invites();
 select public.invite_member(:'co', 'sid@log.al', array['sales_manager']);
+select t.accept_invites();
 select public.invite_member(:'co', 'fin@log.al', array['accountant']);
+select t.accept_invites();
 select public.invite_member(:'co', 'cash@log.al', array['pos_cashier']);
+select t.accept_invites();
 select id as wh    from public.warehouses where company_id = :'co' and code = 'WH' \gset
 select id as stock from public.warehouse_locations where company_id = :'co' and code = 'WH/STOCK' \gset
 select id as pcs   from public.units_of_measure where company_id = :'co' and code = 'pcs' \gset

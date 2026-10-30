@@ -14,9 +14,13 @@ set role authenticated;
 select t.login('alice@alba.al');
 select public.create_company('Shitje Test', 'AL') as co \gset
 select public.invite_member(:'co', 'sam@shop.al',   array['sales_rep']);
+select t.accept_invites();
 select public.invite_member(:'co', 'mia@shop.al',   array['sales_manager']);
+select t.accept_invites();
 select public.invite_member(:'co', 'otto@shop.al',  array['warehouse_operator']);
+select t.accept_invites();
 select public.invite_member(:'co', 'fiona@shop.al', array['accountant']);
+select t.accept_invites();
 
 select id as pcs   from public.units_of_measure where company_id = :'co' and code = 'pcs' \gset
 select id as vat20 from public.tax_codes where company_id = :'co' and code = 'VAT20' \gset

@@ -11,6 +11,7 @@ select public.platform_create_client(jsonb_build_object('name', 'Portali Test', 
   'valid_until', (current_date + 365)::text)) as co \gset
 select t.login('alice@alba.al');
 select public.invite_member(:'co', 'shitja@b2b.al', array['sales_rep']);
+select t.accept_invites();
 select id as pcs   from public.units_of_measure where company_id = :'co' and code = 'pcs' \gset
 select id as vat20 from public.tax_codes where company_id = :'co' and code = 'VAT20' \gset
 select id as wh    from public.warehouses where company_id = :'co' and code = 'WH' \gset

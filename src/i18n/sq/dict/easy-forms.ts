@@ -29,7 +29,7 @@ export default {
   'In the field and online': "Terreni dhe online",
   'Goods in and out': 'Hyrjet dhe daljet',
   'Prices and labels': "Çmimet",
-  'Setup|group': 'Rregullimet',
+  'Setup|group': 'Cilësimet',
   'Books and declarations': "Librat",
   'Other taxes': 'Tatime të tjera',
   'Debts|menu': 'Borxhet',

@@ -25,7 +25,9 @@ set role authenticated;
 select t.login('alice@alba.al');
 select public.create_company('Tatim Test', 'AL', 'ALL', 'K12345678L') as co \gset
 select public.invite_member(:'co', 'tina@tax.al', array['accountant']);
+select t.accept_invites();
 select public.invite_member(:'co', 'sam@tax.al', array['sales_rep']);
+select t.accept_invites();
 select date_trunc('month', current_date)::date as m1, extract(year from current_date)::int as y, extract(month from current_date)::int as mo \gset
 select (date_trunc('month', current_date) + interval '1 month')::date as m2 \gset
 select id as wh    from public.warehouses where company_id = :'co' and code = 'WH' \gset

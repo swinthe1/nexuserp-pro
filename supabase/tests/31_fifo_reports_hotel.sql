@@ -48,6 +48,7 @@ select t.throws(format($q$select public.run_report(%L, 'sales', '{"group_by":"cu
 insert into public.saved_reports (company_id, name, report, params) values (:'co', 'Shitjet sipas muajit', 'sales', '{"group_by":"month","period":"this_year"}') returning id as sr \gset
 select t.ok((select count(*) from public.saved_reports where id = :'sr') = 1, 'a report is saved');
 select public.invite_member(:'co', 'ola@hr.al', array['sales_manager']);
+select t.accept_invites();
 select t.login('ola@hr.al');
 select t.ok((select count(*) from public.saved_reports where id = :'sr') = 0, 'another user does not see it until it is shared');
 select t.login('alice@alba.al');

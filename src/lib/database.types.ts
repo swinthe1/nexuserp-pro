@@ -2425,6 +2425,7 @@ export type Database = {
           created_by: string | null
           updated_at: string
           updated_by: string | null
+          seq: number
         }
         Insert: {
           id?: string
@@ -2439,6 +2440,7 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          seq?: number
         }
         Update: {
           id?: string
@@ -2453,6 +2455,7 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          seq?: number
         }
         Relationships: [
           { foreignKeyName: "cost_layers_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -13688,6 +13691,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      answer_invitation: {
+        Args: {
+          p_member: string
+          p_accept: boolean
+        }
+        Returns: string
+      }
       api_invoices: {
         Args: {
           p_key?: string
@@ -15171,6 +15181,10 @@ export type Database = {
           p_tiles: string[]
         }
         Returns: undefined
+      }
+      my_invitations: {
+        Args: Record<PropertyKey, never>
+        Returns: { member_id: string | null; company_id: string | null; company_name: string | null; invited_at: string | null; invited_by: string | null; roles: string[] | null }[]
       }
       my_payslip_periods: {
         Args: Record<PropertyKey, never>

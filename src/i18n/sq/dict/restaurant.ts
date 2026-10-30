@@ -142,5 +142,5 @@ export default {
   "Each new order is printed once on this computer’s printer. For printing without the print window, start Chrome with --kiosk-printing.": "Çdo porosi e re printohet një herë në printerin e këtij kompjuteri. Për ta printuar pa dritaren e printimit, hapni Chrome me --kiosk-printing.",
   "Printing new orders": "Po printohen porositë e reja",
   "Print new orders": "Printo porositë e reja",
-  "Bills|restaurant": "Faturat",
+  "Bills|restaurant": 'Llogaritë',
 } satisfies Dict

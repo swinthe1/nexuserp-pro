@@ -45,6 +45,7 @@ select t.ok((select count(*) from public.licenses) = 1 and (select plan from pub
 select t.throws($$ select notes from public.licenses $$, 'permission denied', 'internal licence notes stay private');
 select t.throws($$ update public.licenses set max_users = 99 $$, 'permission denied', 'clients cannot change their licence');
 select public.invite_member(:'drita', 'arben@drita.xk', array['cashier']);
+select t.accept_invites();
 select t.throws($$ select public.invite_member('$$ || :'drita' || $$', 'blerta@drita.xk', array['cashier']) $$, 'licence allows 2 users', 'invitations stop at the user limit');
 select t.throws($$ select public.create_company('Second', 'XK') $$, 'Only the platform administrator', 'client admins cannot open more companies');
 
@@ -97,6 +98,7 @@ select public.platform_save_license(:'drita', 'pro', 3, current_date - 60, curre
 select t.login('olga@drita.xk');
 select t.ok((public.get_my_context() -> 'companies' -> 0 -> 'license' ->> 'plan') = 'pro', 'renewed: access comes back');
 select public.invite_member(:'drita', 'blerta@drita.xk', array['cashier']);
+select t.accept_invites();
 select t.ok((select count(*) from public.company_members where company_id = :'drita' and deleted_at is null) = 3, 'a bigger licence allows more users');
 
 -- forgotten password and self-service switch are for the platform owner only

@@ -11,6 +11,7 @@ select public.platform_create_client(jsonb_build_object('name', 'Dokumente Test'
   'valid_until', (current_date + 365)::text)) as co \gset
 select t.login('alice@alba.al');
 select public.invite_member(:'co', 'arka@doc.al', array['pos_cashier']);
+select t.accept_invites();
 select id as pcs  from public.units_of_measure where company_id = :'co' and code = 'pcs' \gset
 select id as vat  from public.tax_codes where company_id = :'co' and rate = 18 and deleted_at is null limit 1 \gset
 select public.create_product(jsonb_build_object('company_id', :'co', 'code', 'KAF', 'name', 'Kafe', 'uom_id', :'pcs',

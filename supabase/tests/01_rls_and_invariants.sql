@@ -21,6 +21,11 @@ begin
   perform set_config('request.jwt.claim.sub', (select id::text from auth.users where email = p_email), false);
 end $$;
 
+-- people who already have an account are invited; in the tests they accept at once
+create function t.accept_invites() returns void language sql security definer as $$
+  update public.company_members set status = 'active', joined_at = now() where status = 'invited' and user_id is not null and deleted_at is null
+$$;
+
 create function t.ok(p_cond boolean, p_label text) returns void language plpgsql as $$
 begin
   if p_cond is not true then raise exception 'FAIL: %', p_label; end if;
@@ -62,10 +67,15 @@ set role authenticated;
 select t.login('alice@alba.al');
 select public.create_company('Alba Retail sh.p.k.', 'AL', null, 'L91234567A') as company_a \gset
 select public.invite_member(:'company_a', 'carol@alba.al', array['sales_rep']);
+select t.accept_invites();
 select public.invite_member(:'company_a', 'dave@alba.al',  array['auditor']);
+select t.accept_invites();
 select public.invite_member(:'company_a', 'frank@alba.al', array['finance_manager']);
+select t.accept_invites();
 select public.invite_member(:'company_a', 'erin@alba.al',  array['employee']);
+select t.accept_invites();
 select public.invite_member(:'company_a', 'late@alba.al',  array['warehouse_operator']);  -- not signed up yet
+select t.accept_invites();
 
 select t.login('bob@kosova.xk');
 select public.create_company('Kosova Trade L.L.C.', 'XK') as company_b \gset

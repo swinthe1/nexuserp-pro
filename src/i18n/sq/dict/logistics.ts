@@ -2,7 +2,7 @@ import type { Dict } from '../index'
 
 export default {
   'Logistics': 'Logjistika',
-  'Delivery planning': 'Planifikimi i dërgesave',
+  'Delivery planning': 'Planifikimi i transportit',
   'Plan deliveries': 'Planifiko dërgesat',
   'What is waiting to go out, what is on the road and how deliveries are going.': 'Çfarë pret të dalë, çfarë është në rrugë dhe si po shkojnë dërgesat.',
   'Turn picked deliveries into shipments, then put them on a van or hand them to a carrier.': 'Ktheni dërgesat e mbledhura në transporte, pastaj ngarkojini në furgon ose dorëzojini te një transportues.',

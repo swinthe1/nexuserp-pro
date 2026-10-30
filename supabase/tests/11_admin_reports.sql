@@ -14,10 +14,15 @@ select t.login('alice@alba.al');
 select public.create_company('Admin Test', 'AL') as co \gset
 select public.create_company('Other Co', 'AL') as other \gset
 select public.invite_member(:'co', 'amy@adm.al', array['company_admin']) as m_amy \gset
+select t.accept_invites();
 select public.invite_member(:'co', 'bob@adm.al', array['sales_rep']) as m_bob \gset
+select t.accept_invites();
 select public.invite_member(:'co', 'aud@adm.al', array['auditor']);
+select t.accept_invites();
 select public.invite_member(:'co', 'hal@adm.al', array['hr_manager']);
+select t.accept_invites();
 select public.invite_member(:'co', 'cy@adm.al', array['pos_cashier']);
+select t.accept_invites();
 select id as m_alice from public.company_members where company_id = :'co' and user_id = auth.uid() \gset
 select t.throws(format($q$select public.invite_member(%L, 'BOB@adm.al', array['sales_rep'])$q$, :'co'), 'already a member', 'no duplicate memberships');
 select t.throws(format($q$select public.invite_member(%L, 'not-an-email', array['sales_rep'])$q$, :'co'), 'valid email', 'invites need an email address');

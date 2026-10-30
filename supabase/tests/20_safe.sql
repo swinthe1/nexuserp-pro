@@ -10,6 +10,7 @@ set role authenticated;
 select t.login('ana@auto.xk');
 select id as co from public.companies where name = 'Automatika Test' \gset
 select public.invite_member(:'co', 'sami@wms.al', array['store_manager']);
+select t.accept_invites();
 select id as tea from public.product_variants where company_id = :'co' and sku = 'COLA' \gset
 select id as shop from public.warehouses where company_id = :'co' order by created_at limit 1 \gset
 select id as floor from public.warehouse_locations where company_id = :'co' and warehouse_id = :'shop' order by created_at limit 1 \gset

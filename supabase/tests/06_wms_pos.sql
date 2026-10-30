@@ -13,8 +13,11 @@ set role authenticated;
 select t.login('alice@alba.al');
 select public.create_company('Magazina Test', 'AL') as co \gset
 select public.invite_member(:'co', 'wanda@wms.al', array['warehouse_operator']);
+select t.accept_invites();
 select public.invite_member(:'co', 'ivo@wms.al', array['inventory_manager']);
+select t.accept_invites();
 select public.invite_member(:'co', 'cora@wms.al', array['pos_cashier']);
+select t.accept_invites();
 
 create or replace function pg_temp.bal(p_co uuid, p_code text) returns numeric language sql as $$
   select coalesce(sum(jl.debit - jl.credit), 0) from public.journal_lines jl join public.journal_entries e on e.id = jl.entry_id

@@ -308,6 +308,7 @@ insert into auth.users (email, raw_user_meta_data) values ('kasa@auto.xk', '{"fu
 set role authenticated;
 select t.login('ana@auto.xk');
 select public.invite_member(:'aco', 'kasa@auto.xk', array['pos_cashier']);
+select t.accept_invites();
 select t.ok((public.assistant_usage(:'aco') ->> 'limit')::int = 600, 'the Standard plan asks the assistant 600 questions a month');
 select public.assistant_send(:'aco', null, 'Sa borxh ka Kafe Prizreni?', '{"path":"/sales/invoices"}') as asend \gset
 select t.throws(format($q$select public.assistant_send(%L, %L, 'Edhe një')$q$, :'aco', :'asend'::jsonb ->> 'conversation_id'), 'Wait for the answer', 'one question at a time in a conversation');

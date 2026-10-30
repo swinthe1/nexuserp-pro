@@ -13,7 +13,9 @@ set role authenticated;
 select t.login('alice@alba.al');
 select public.create_company('Dyqani Phase Two', 'AL') as co \gset
 select public.invite_member(:'co', 'ivan@store.al',  array['inventory_manager']);
+select t.accept_invites();
 select public.invite_member(:'co', 'wendy@store.al', array['warehouse_operator']);
+select t.accept_invites();
 
 select id as pcs   from public.units_of_measure where company_id = :'co' and code = 'pcs' \gset
 select id as vat20 from public.tax_codes where company_id = :'co' and code = 'VAT20' \gset

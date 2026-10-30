@@ -26,10 +26,15 @@ set role authenticated;
 select t.login('alice@alba.al');
 select public.create_company('Njerëz Test', 'AL') as co \gset
 select public.invite_member(:'co', 'hana@hr.al', array['hr_manager']);
+select t.accept_invites();
 select public.invite_member(:'co', 'ola@hr.al', array['hr_manager']);
+select t.accept_invites();
 select public.invite_member(:'co', 'eda@hr.al', array['employee']);
+select t.accept_invites();
 select public.invite_member(:'co', 'mark@hr.al', array['employee']);
+select t.accept_invites();
 select public.invite_member(:'co', 'acc@hr.al', array['accountant']);
+select t.accept_invites();
 select t.ok((select count(*) from public.public_holidays where company_id = :'co' and holiday_date between '2026-01-01' and '2026-12-31') = 15,
             '2026 Albanian holidays seeded, moved days included');
 

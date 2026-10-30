@@ -23,9 +23,13 @@ set role authenticated;
 select t.login('alice@alba.al');
 select public.create_company('Fabrika Test', 'AL') as co \gset
 select public.invite_member(:'co', 'pete@mfg.al', array['production_manager']);
+select t.accept_invites();
 select public.invite_member(:'co', 'wes@mfg.al', array['warehouse_operator']);
+select t.accept_invites();
 select public.invite_member(:'co', 'fay@mfg.al', array['finance_manager']);
+select t.accept_invites();
 select public.invite_member(:'co', 'cass@mfg.al', array['pos_cashier']);
+select t.accept_invites();
 
 select id as pcs   from public.units_of_measure where company_id = :'co' and code = 'pcs' \gset
 select coalesce((select id from public.units_of_measure where company_id = :'co' and code = 'kg'), :'pcs'::uuid) as kg \gset

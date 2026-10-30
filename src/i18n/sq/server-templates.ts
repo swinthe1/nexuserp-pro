@@ -5,6 +5,7 @@
  * report bucket labels and journal line descriptions.
  */
 export const serverTemplates: [string, string][] = [
+  ['You are invited to %', 'Jeni ftuar te {0}'],
   ['The instalments add up to %, the document is %', 'Këstet bëjnë gjithsej {0}, dokumenti është {1}'],
   ['Bills in % must be paid from an account in that currency; % is in %', 'Faturat në {0} duhet të paguhen nga një llogari në atë monedhë; {1} është në {2}'],
   ['Too many wrong PINs; try again in % minutes', 'Shumë PIN të gabuar; provoni përsëri pas {0} minutash'],

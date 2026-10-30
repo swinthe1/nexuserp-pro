@@ -13,8 +13,11 @@ set role authenticated;
 select t.login('alice@alba.al');
 select public.create_company('Financa Test', 'AL') as co \gset
 select public.invite_member(:'co', 'fina@fin.al', array['finance_manager']);
+select t.accept_invites();
 select public.invite_member(:'co', 'acco@fin.al', array['accountant']);
+select t.accept_invites();
 select public.invite_member(:'co', 'rexa@fin.al', array['sales_rep']);
+select t.accept_invites();
 
 -- ---------- chart of accounts & posting setup ------------------------------------
 select t.ok((select count(*) from public.accounts where company_id = :'co' and is_postable) >= 50, 'a chart of accounts is created with the company');

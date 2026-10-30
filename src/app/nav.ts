@@ -36,6 +36,7 @@ export const NAV: NavSection[] = [
     items: [
       { label: msg('Dashboard'), href: '/', icon: LayoutDashboard, perm: 'core.read', keywords: ['home', 'kpi'], always: true },
       { label: msg('Approvals|menu'), href: '/approvals', icon: CheckCheck, perm: 'core.read', keywords: ['approve', 'pending', 'inbox'] },
+      { label: msg('My clients'), href: '/accountant', icon: BookOpen, perm: 'core.read', hideInMenu: true, keywords: ['kontabilisti', 'kontabilist', 'accountant', 'klientët e kontabilistit', 'zyra e kontabilitetit'] },
       { label: msg('Notifications'), href: '/notifications', icon: Bell, perm: 'core.read', keywords: ['alerts', 'inbox', 'reminders', 'njoftime'], always: true, hideInMenu: true },
     ],
   },
@@ -202,6 +203,7 @@ export const NAV: NavSection[] = [
     title: msg('People|menu'),
     items: [
       { label: msg('People overview'), href: '/hr', icon: UsersRound, perm: 'hr.read', keywords: ['hr', 'headcount', 'burime njerëzore'] },
+      { label: msg('HR setup'), href: '/hr/setup', icon: Settings2, perm: 'hr.read', hideInMenu: true, keywords: ['cilësimet e punonjësve', 'departamente', 'pozita', 'pushime', 'hr settings', 'departments', 'positions'] },
       { label: msg('Employees|menu'), href: '/hr/employees', icon: Contact, perm: 'hr.read', keywords: ['staff', 'punonjës', 'contracts'] },
       { label: msg('Leave'), href: '/hr/leave', icon: CalendarDays, perm: 'hr.read', keywords: ['holiday', 'vacation', 'pushime', 'absence', 'sick'] },
       { label: msg('Attendance'), href: '/hr/attendance', icon: Clock, perm: 'hr.read', keywords: ['timesheet', 'clock in', 'prezenca', 'overtime'] },

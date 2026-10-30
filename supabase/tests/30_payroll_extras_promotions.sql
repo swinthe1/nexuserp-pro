@@ -15,6 +15,7 @@ select public.platform_create_client(jsonb_build_object('name', 'Paga Test', 'co
   'valid_until', (current_date + 365)::text)) as co \gset
 select t.login('alice@alba.al');
 select public.invite_member(:'co', 'ola@hr.al', array['hr_manager']);
+select t.accept_invites();
 select extract(year from current_date - interval '1 month')::int as y, extract(month from current_date - interval '1 month')::int as m \gset
 select make_date(:y, :m, 1) as m1 \gset
 -- the first Sunday of that month

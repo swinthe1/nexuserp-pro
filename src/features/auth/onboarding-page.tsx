@@ -1,3 +1,4 @@
+import { Invitations } from '@/components/invitations'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
 import type * as React from 'react'
@@ -46,6 +47,7 @@ function AccessScreen({ icon: Icon, title, children }: { icon: typeof Clock; tit
         <Icon className="size-6 text-muted-foreground" />
         <h1 className="mt-3 text-xl font-semibold tracking-[-0.01em]">{title}</h1>
         <div className="mt-2 space-y-2 text-sm text-muted-foreground">{children}</div>
+        <Invitations className="-mx-6 mt-4 border-t" />
         <p className="mt-4 text-xs text-muted-foreground">{t('Signed in as {email}', { email: user?.email ?? '' })}</p>
         <div className="mt-5 flex gap-2">
           <Button variant="outline" onClick={() => void qc.invalidateQueries({ queryKey: ['my-context'] })}>{t('Check again')}</Button>

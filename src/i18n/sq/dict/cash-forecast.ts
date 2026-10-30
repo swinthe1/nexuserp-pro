@@ -92,6 +92,12 @@ export default {
 
   // emra që ngatërroheshin
   'Store|shop': 'Dyqani',
+  'Invitation refused': 'Ftesa u refuzua',
+  'You are now in the company': 'Tani jeni pjesë e kompanisë',
+  'invited you ({name}) as {roles}': 'ju ka ftuar ({name}) si {roles}',
+  'invited you as {roles}': 'ju ka ftuar si {roles}',
+  'This invitation is no longer open': 'Kjo ftesë nuk është më e hapur',
+  'Open DrisPRO to accept or refuse the invitation.': 'Hapni DrisPRO për ta pranuar ose refuzuar ftesën.',
   'From an invoice photo': 'Nga fotoja e faturës',
   'Pay several at once': 'Paguaj disa njëherësh',
   'Numbering that restarts every year must show the year, or the numbers of two years would be the same': 'Numërimi që rifillon çdo vit duhet ta tregojë vitin, përndryshe numrat e dy viteve do të ishin të njëjtë',
