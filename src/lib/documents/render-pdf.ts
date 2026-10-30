@@ -1,6 +1,6 @@
 /** The same document as a PDF (A4), for downloading and for email attachments. */
 import { getLocale, t, td } from '@/i18n'
-import { formatDate } from '@/lib/utils'
+import { formatDate, formatMoney } from '@/lib/utils'
 import { METHOD, amountInWords, docTitle, isVoucher, partnerLabel, type PrintDoc, settingsOf, showPrices, textKey } from './model'
 
 const nf = (n: number | null | undefined, d = 2) => n == null ? '' : Number(n).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d })
@@ -72,7 +72,8 @@ export async function renderDocPdf(d: PrintDoc) {
   const det: [string, string][] = ([
     [t('Date'), formatDate(d.date)], [t('Due date'), d.due_date ? formatDate(d.due_date) : ''], [t('Valid until'), d.valid_until ? formatDate(d.valid_until) : ''],
     [t('Wanted by'), d.requested_date ? formatDate(d.requested_date) : ''], [t('Expected on'), d.expected_date ? formatDate(d.expected_date) : ''],
-    [t('Payment terms'), d.payment_term ?? ''], [t('Order'), d.order ?? ''], [t('Corrects invoice'), d.original ?? ''], [t('Your reference'), d.reference ?? ''],
+    [t('Payment terms'), d.payment_term ?? ''],
+    ...(d.instalments ?? []).map((x, i) => [i === 0 ? t('Instalments') : '', `${formatDate(x.due_date)}: ${formatMoney(x.amount)}`] as [string, string]), [t('Order'), d.order ?? ''], [t('Corrects invoice'), d.original ?? ''], [t('Your reference'), d.reference ?? ''],
     [t('Warehouse'), d.warehouse ?? ''], [t('Salesperson'), d.salesperson ?? ''], [t('Buyer'), d.buyer ?? ''],
     [t('Carrier'), [d.carrier, d.tracking].filter(Boolean).join(' · ')], [t('Currency'), d.currency !== d.company.base_currency ? d.currency : ''],
   ] as [string, string][]).filter(([, v]) => v)

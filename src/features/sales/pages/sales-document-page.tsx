@@ -27,6 +27,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { InstalmentsCard } from '@/features/finance/components/instalments'
 import { Textarea } from '@/components/ui/textarea'
 import type { Tables } from '@/lib/database.types'
 import { cn, formatDate, formatMoney, formatQty, num, todayISO } from '@/lib/utils'
@@ -489,6 +490,9 @@ function SidePanel({ kind, doc, availability, currency, base }: {
             })}
           </CardContent>
         </Card>
+      )}
+      {kind === 'invoices' && doc.document_type === 'sales_invoice' && !doc.is_advance && (
+        <InstalmentsCard docType="sales_invoice" id={doc.id} total={num(doc.total)} date={doc.invoice_date as string} status={doc.status as string} currency={currency} />
       )}
       {kind === 'orders' && doc.status !== 'draft' && <AdvancesCard orderId={doc.id} />}
       {kind === 'invoices' && doc.status === 'draft' && doc.document_type === 'sales_invoice' && !doc.is_advance && (

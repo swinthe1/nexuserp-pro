@@ -1,6 +1,6 @@
 /** A printed document as an A4 HTML page (printing goes through printHtml). */
 import { getLocale, t, td } from '@/i18n'
-import { formatDate } from '@/lib/utils'
+import { formatDate, formatMoney } from '@/lib/utils'
 import { METHOD, amountInWords, docTitle, isVoucher, partnerLabel, type PrintDoc, settingsOf, showPrices, textKey } from './model'
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!))
@@ -53,6 +53,7 @@ function details(d: PrintDoc): [string, string][] {
     [t('Wanted by'), d.requested_date ? formatDate(d.requested_date) : null],
     [t('Expected on'), d.expected_date ? formatDate(d.expected_date) : null],
     [t('Payment terms'), d.payment_term],
+    [t('Instalments'), d.instalments?.length ? d.instalments.map((x) => `${formatDate(x.due_date)}: ${formatMoney(x.amount)}`).join(' · ') : null],
     [t('Order'), d.order],
     [t('Corrects invoice'), d.original],
     [t('Your reference'), d.reference],

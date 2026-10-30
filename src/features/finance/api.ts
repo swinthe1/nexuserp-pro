@@ -524,7 +524,7 @@ export const useDeleteCashPlanItem = () => useAction(async (id: string) => unwra
 export type ProposalRow = {
   bill_id: string; number: string; vendor_invoice_number: string | null; vendor_id: string; vendor_name: string; vendor_iban: string | null
   bill_date: string; due_date: string | null; days_overdue: number; currency_code: string; total: number; open_amount: number; open_base: number
-  discount_amount: number; discount_until: string | null; reason: 'overdue' | 'discount' | 'due_soon' | 'later'; priority: number
+  due_now: number; instalments: number; discount_amount: number; discount_until: string | null; reason: 'overdue' | 'discount' | 'due_soon' | 'later'; priority: number
 }
 export function usePaymentProposal() {
   const { companyId } = useCompany()

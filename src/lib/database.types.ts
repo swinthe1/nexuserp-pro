@@ -2985,6 +2985,52 @@ export type Database = {
           { foreignKeyName: "departments_company_id_parent_id_fkey"; columns: ["company_id", "parent_id"]; isOneToOne: false; referencedRelation: "departments"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      document_instalments: {
+        Row: {
+          id: string
+          company_id: string
+          sales_invoice_id: string | null
+          vendor_bill_id: string | null
+          seq: number
+          due_date: string
+          amount: number
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          sales_invoice_id?: string | null
+          vendor_bill_id?: string | null
+          seq: number
+          due_date: string
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          sales_invoice_id?: string | null
+          vendor_bill_id?: string | null
+          seq?: number
+          due_date?: string
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "document_instalments_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "document_instalments_sales_invoice_id_fkey"; columns: ["sales_invoice_id"]; isOneToOne: false; referencedRelation: "sales_invoices"; referencedColumns: ["id"] },
+          { foreignKeyName: "document_instalments_vendor_bill_id_fkey"; columns: ["vendor_bill_id"]; isOneToOne: false; referencedRelation: "vendor_bills"; referencedColumns: ["id"] },
+        ]
+      }
       document_sequence_counters: {
         Row: {
           company_id: string
@@ -6544,6 +6590,7 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          instalments: Json | null
         }
         Insert: {
           id?: string
@@ -6560,6 +6607,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          instalments?: Json | null
         }
         Update: {
           id?: string
@@ -6576,6 +6624,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          instalments?: Json | null
         }
         Relationships: [
           { foreignKeyName: "payment_terms_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -14464,6 +14513,13 @@ export type Database = {
         }
         Returns: string
       }
+      document_instalment_list: {
+        Args: {
+          p_doc_type: string
+          p_id: string
+        }
+        Returns: { seq: number | null; due_date: string | null; amount: number | null; paid: number | null; open: number | null; overdue: boolean | null }[]
+      }
       document_print: {
         Args: {
           p_kind: string
@@ -15252,7 +15308,7 @@ export type Database = {
           p_company: string
           p_as_of?: string
         }
-        Returns: { bill_id: string | null; number: string | null; vendor_invoice_number: string | null; vendor_id: string | null; vendor_name: string | null; vendor_iban: string | null; bill_date: string | null; due_date: string | null; days_overdue: number | null; currency_code: string | null; total: number | null; open_amount: number | null; open_base: number | null; discount_amount: number | null; discount_until: string | null; reason: string | null; priority: number | null }[]
+        Returns: { bill_id: string | null; number: string | null; vendor_invoice_number: string | null; vendor_id: string | null; vendor_name: string | null; vendor_iban: string | null; bill_date: string | null; due_date: string | null; days_overdue: number | null; currency_code: string | null; total: number | null; open_amount: number | null; open_base: number | null; due_now: number | null; instalments: number | null; discount_amount: number | null; discount_until: string | null; reason: string | null; priority: number | null }[]
       }
       payroll_income_tax: {
         Args: {
@@ -16487,6 +16543,14 @@ export type Database = {
           p_on: boolean
         }
         Returns: undefined
+      }
+      set_instalments: {
+        Args: {
+          p_doc_type: string
+          p_id: string
+          p_rows: Json
+        }
+        Returns: number
       }
       set_member_roles: {
         Args: {

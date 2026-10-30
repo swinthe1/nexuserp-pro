@@ -43,6 +43,8 @@ export type PrintDoc = {
   kind: 'sales_invoice' | 'advance_invoice' | 'credit_note' | 'sales_quote' | 'proforma' | 'sales_order' | 'delivery' | 'receipt_voucher' | 'payment_voucher' | 'purchase_order' | 'goods_receipt'
   number: string; date: string; due_date?: string | null; valid_until?: string | null; requested_date?: string | null; expected_date?: string | null
   currency: string; rate?: number; status?: string; notes?: string | null; terms?: string | null; reference?: string | null; payment_term?: string | null
+  /** an invoice paid in parts */
+  instalments?: { due_date: string; amount: number }[] | null
   salesperson?: string | null; buyer?: string | null; by?: string | null; order?: string | null; original?: string | null; warehouse?: string | null
   carrier?: string | null; tracking?: string | null; packages?: number | null; weight?: number | null; incoterm?: string | null; deliver_to?: string | null; ship_to?: string | null
   method?: string; account?: string | null; cash?: boolean; unallocated?: number; receipt_type?: string

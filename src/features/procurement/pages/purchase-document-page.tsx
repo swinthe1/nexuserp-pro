@@ -17,6 +17,7 @@ import { SearchSelect } from '@/components/search-select'
 import { StatusBadge } from '@/components/status-badge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { InstalmentsCard } from '@/features/finance/components/instalments'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
@@ -642,6 +643,7 @@ function BillSidePanel({ doc, currency, base, matchStatus, vendorId }: { doc?: B
   const capitalized = doc.lines.reduce((s, l) => s + num(l.capitalized_variance), 0)
   const expensed = doc.lines.reduce((s, l) => s + num(l.expensed_variance), 0)
   return (
+    <div className="grid gap-4">
     <Card>
       <CardHeader><CardTitle>{t('Summary')}</CardTitle></CardHeader>
       <CardContent className="grid gap-2 text-[13px]">
@@ -666,6 +668,10 @@ function BillSidePanel({ doc, currency, base, matchStatus, vendorId }: { doc?: B
         )}
       </CardContent>
     </Card>
+    {doc.document_type === 'vendor_bill' && (
+      <InstalmentsCard docType="vendor_bill" id={doc.id} total={num(doc.total)} date={doc.bill_date} status={doc.status} currency={currency} />
+    )}
+    </div>
   )
 }
 

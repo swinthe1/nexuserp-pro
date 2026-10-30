@@ -14,6 +14,7 @@ import { ErrorState } from '@/components/error-state'
 import { msg, t, td, tn } from '@/i18n'
 import { formatDate, formatMonth, humanize, todayISO } from '@/lib/utils'
 import { CashLimits } from '../components/cash-limits'
+import { PaymentTerms } from '../components/instalments'
 import { useAccountDefaults, useAccounts, useAssetCategories, useCreateFiscalYear, useFiscalYears, useJournals, useSaveAccountDefault, useSetPeriodStatus } from '../api'
 
 /** Which account each automatic posting uses — grouped the way an accountant reads them */
@@ -69,12 +70,13 @@ export function FinanceSetupPage() {
     <>
       <PageHeader title={t('Finance setup')} description={t('Which accounts automatic entries use, the journals, and which months are still open.')} />
       <Tabs defaultValue="accounts">
-        <TabsList><TabsTrigger value="accounts">{t('Posting accounts')}</TabsTrigger><TabsTrigger value="periods">{t('Accounting months')}</TabsTrigger><TabsTrigger value="journals">{t('Journals')}</TabsTrigger><TabsTrigger value="assets">{t('Asset categories')}</TabsTrigger><TabsTrigger value="cash">{t('Cash limits')}</TabsTrigger></TabsList>
+        <TabsList><TabsTrigger value="accounts">{t('Posting accounts')}</TabsTrigger><TabsTrigger value="periods">{t('Accounting months')}</TabsTrigger><TabsTrigger value="journals">{t('Journals')}</TabsTrigger><TabsTrigger value="assets">{t('Asset categories')}</TabsTrigger><TabsTrigger value="cash">{t('Cash limits')}</TabsTrigger><TabsTrigger value="terms">{t('Payment terms')}</TabsTrigger></TabsList>
         <TabsContent value="accounts"><PostingAccounts /></TabsContent>
         <TabsContent value="periods"><Periods /></TabsContent>
         <TabsContent value="journals"><Journals /></TabsContent>
         <TabsContent value="assets"><AssetCategories /></TabsContent>
         <TabsContent value="cash"><CashLimits /></TabsContent>
+        <TabsContent value="terms"><PaymentTerms /></TabsContent>
       </Tabs>
     </>
   )

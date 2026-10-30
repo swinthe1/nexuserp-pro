@@ -27,6 +27,9 @@ const GROUPS: { key: ProposalRow['reason']; label: string; hint: string }[] = [
   { key: 'later', label: msg('Later'), hint: msg('Not due yet. Paying now only costs cash.') },
 ]
 
+/** what to pay now: the instalments due this week, or all that is open (less the early-payment discount) */
+const suggested = (r: ProposalRow) => r.instalments > 0 && num(r.due_now) > 0 ? num(r.due_now) : num(r.open_amount) - num(r.discount_amount)
+
 type Paid = { payments: { id: string; number: string; vendor: string; amount: number; status: string }[]; count: number; total: number }
 
 export function PaymentProposalPage() {
@@ -56,7 +59,7 @@ export function PaymentProposalPage() {
     const pick: Record<string, string> = {}
     for (const r of rows) {
       if (r.reason === 'later' || r.currency_code !== bankRow.currency_code) continue
-      const amt = r.open_amount - num(r.discount_amount)
+      const amt = suggested(r)
       if (amt > left + 0.005) continue
       left -= amt; pick[r.bill_id] = amt.toFixed(2)
     }
@@ -64,7 +67,7 @@ export function PaymentProposalPage() {
   }, [rows, touched, bankRow, bankBalance, balances.isLoading])
   const toggle = (r: ProposalRow, on: boolean) => {
     setTouched(true)
-    setSel((s) => { const n = { ...s }; if (on) n[r.bill_id] = (r.open_amount - num(r.discount_amount)).toFixed(2); else delete n[r.bill_id]; return n })
+    setSel((s) => { const n = { ...s }; if (on) n[r.bill_id] = suggested(r).toFixed(2); else delete n[r.bill_id]; return n })
   }
   const chosen = rows.filter((r) => sel[r.bill_id] != null)
   const total = chosen.reduce((s, r) => s + num(sel[r.bill_id]), 0)
@@ -152,7 +155,7 @@ export function PaymentProposalPage() {
                   <Table className="md:table-fixed">
                     <TableHeader><TableRow>
                       <TableHead className="w-10" /><TableHead>{t('Vendor')}</TableHead><TableHead className="hidden w-[190px] md:table-cell">{t('Bill')}</TableHead>
-                      <TableHead className="w-[150px]">{t('Due date')}</TableHead><TableHead className="hidden w-[130px] text-right sm:table-cell">{t('Open')}</TableHead><TableHead className="w-[150px] text-right">{t('To pay')}</TableHead>
+                      <TableHead className="w-[150px]">{t('Due date')}</TableHead><TableHead className="hidden w-[130px] text-right sm:table-cell">{t('Open|amount')}</TableHead><TableHead className="w-[150px] text-right">{t('To pay')}</TableHead>
                     </TableRow></TableHeader>
                     <TableBody>
                       {list.map((r) => {
@@ -169,6 +172,7 @@ export function PaymentProposalPage() {
                             <TableCell>
                               <span className="tabular">{formatDate(r.due_date)}</span>
                               {r.days_overdue > 0 && <span className="block text-xs text-destructive">{t('{n} days late', { n: r.days_overdue })}</span>}
+                              {r.instalments > 0 && <span className="block text-xs text-muted-foreground">{t('{n} instalments · {amount} due now', { n: r.instalments, amount: formatMoney(r.due_now, r.currency_code) })}</span>}
                               {num(r.discount_amount) > 0 && <span className="block text-xs text-success">{t('−{amount} by {date}', { amount: formatMoney(r.discount_amount, r.currency_code), date: formatDate(r.discount_until) })}</span>}
                             </TableCell>
                             <TableCell className="hidden text-right tabular sm:table-cell">{formatMoney(r.open_amount, r.currency_code)}</TableCell>
