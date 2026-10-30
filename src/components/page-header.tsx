@@ -48,7 +48,7 @@ export function PageHeader({ title, description, actions, back, meta, className,
           </div>
         </div>
       </div>
-      {actions && <div className="flex shrink-0 flex-wrap items-center gap-2 print:hidden">{actions}</div>}
+      {actions && <div className="flex min-w-0 max-w-full shrink-0 flex-wrap items-center gap-2 print:hidden max-sm:[&_a]:whitespace-normal max-sm:[&_button]:whitespace-normal">{actions}</div>}
     </div>
   )
 }

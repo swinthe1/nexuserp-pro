@@ -229,16 +229,6 @@ export function useAuditPeople() {
 /* ------------------------------------------------------------------ imports */
 export type ImportKind = 'products' | 'partners' | 'employees' | 'opening_stock'
 export type ImportResult = { rows: number; created: number; updated: number; errors: { row: number; field: string | null; message: string }[]; dry_run: boolean; adjustment_id: string | null }
-export const useImportRows = () => {
-  const { companyId } = useCompany()
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async (a: { kind: ImportKind; rows: Record<string, string>[]; dryRun: boolean }) =>
-      unwrap(await supabase.rpc('import_rows', { p_company: companyId, p_kind: a.kind, p_rows: a.rows as unknown as Json, p_dry_run: a.dryRun })) as unknown as ImportResult,
-    onSuccess: (_r, a) => { if (!a.dryRun) void qc.invalidateQueries() },
-    onError: (e) => toast.error(describeError(e)),
-  })
-}
 
 /* ------------------------------------------------------------------ migration from another program */
 export type MigrationKind = 'open_receivables' | 'open_payables' | 'opening_balances' | 'price_lists' | 'warehouses' | 'accounts'

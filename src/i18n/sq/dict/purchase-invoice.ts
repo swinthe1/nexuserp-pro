@@ -6,7 +6,7 @@ export default {
   'New purchase invoice': 'Faturë e re blerjeje',
   'Purchase invoice with goods': 'Faturë blerje',
   'Expense bill (no goods)': 'Faturë shpenzimi',
-  'New purchase invoice with goods': 'Faturë e re blerjeje',
+  'New purchase invoice with goods': 'Faturë blerjeje me mall',
   'The supplier’s invoice with the goods: they come into the warehouse at their cost, and you set the selling prices here.':
     'Fatura e furnitorit me mallin: malli hyn në magazinë me koston e vet, dhe çmimet e shitjes i vendosni këtu.',
   'Supplier': 'Furnitori',

@@ -10,14 +10,14 @@ export default {
   'Cash and bank today, then week by week what is expected to come in and go out. Customers are expected as late as they usually pay.': 'Paraja në arkë dhe bankë sot, pastaj javë për javë çka pritet të hyjë dhe të dalë. Klientët llogariten me aq vonesë sa paguajnë zakonisht.',
   'Customers paying their invoices': 'Klientët që paguajnë faturat',
   'Till and cash sales (weekly average)': 'Shitjet në arkë (mesatarja javore)',
-  'Repeating invoices': 'Faturat që përsëriten',
+  'Repeating invoices': 'Faturat mujore',
   'Invoices not made yet (estimate)': 'Fatura që s’janë bërë ende (vlerësim)',
   'Your own items in': 'Zërat e tu që hyjnë',
   'Supplier bills': 'Faturat e furnitorëve',
   'Purchases not billed yet (estimate)': 'Blerje që s’janë faturuar ende (vlerësim)',
   'Expenses paid on the spot (weekly average)': 'Shpenzimet e paguara në vend (mesatarja javore)',
   'Your own items out': 'Zërat e tu që dalin',
-  'Repeating invoice': 'Faturë që përsëritet',
+  'Repeating invoice': 'Faturë mujore',
   'Supplier bill': 'Faturë furnitori',
   'Your item': 'Zëri yt',
   'cash-forecast': 'parashikimi-i-parase',
@@ -89,6 +89,15 @@ export default {
   '−{amount} by {date}': '−{amount} deri më {date}',
   'When you take an early-payment discount, the rest of the bill stays open until the supplier sends the credit note for it.': 'Kur merr zbritjen për pagesë të hershme, pjesa tjetër e faturës mbetet e hapur derisa furnitori të dërgojë notën e kreditit.',
   '{n} payments made, {amount} in total.': 'U bënë {n} pagesa, gjithsej {amount}.',
+
+  // emra që ngatërroheshin
+  'Store|shop': 'Dyqani',
+  'Pay several at once': 'Paguaj disa njëherësh',
+  'Numbering that restarts every year must show the year, or the numbers of two years would be the same': 'Numërimi që rifillon çdo vit duhet ta tregojë vitin, përndryshe numrat e dy viteve do të ishin të njëjtë',
+  'The same bill is chosen twice': 'E njëjta faturë është zgjedhur dy herë',
+  'Stock count|tile': 'Numërimi',
+  'Units|places': 'Njësitë',
+  'Lead|kind': 'Kontakt',
 
   // mesazhet e bazës
   'Choose the bank or cash account to pay from': 'Zgjidh llogarinë e bankës ose arkën nga e cila paguhet',

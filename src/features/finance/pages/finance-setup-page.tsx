@@ -98,7 +98,7 @@ function PostingAccounts() {
           <CardHeader className="pb-2"><CardTitle>{t(g.title)}</CardTitle></CardHeader>
           <CardContent className="grid gap-3">
             {g.keys.map(([key, label, hint]) => (
-              <div key={key} className="grid items-center gap-1.5 sm:grid-cols-[minmax(0,1fr)_260px]">
+              <div key={key} className="grid grid-cols-[minmax(0,1fr)] items-center gap-1.5 sm:grid-cols-[minmax(0,1fr)_260px]">
                 <div><div className="text-[13px] font-medium">{t(label)}</div>{hint && <div className="text-xs text-muted-foreground">{t(hint)}</div>}</div>
                 <SearchSelect value={map.get(key) ?? null} disabled={!can('finance.write')} options={options} placeholder={t('Not set: posting will be refused')}
                   onChange={(v) => v && save.mutate({ key, accountId: v })} aria-invalid={!map.get(key)} />

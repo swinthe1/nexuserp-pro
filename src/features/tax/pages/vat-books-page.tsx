@@ -69,7 +69,7 @@ export function VatBooksPage() {
         </>} />
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <div className="flex rounded-md border p-0.5" role="tablist" aria-label={t('Book')}>
+        <div className="flex max-w-full overflow-x-auto rounded-md border p-0.5" role="tablist" aria-label={t('Book')}>
           {(['sales', 'purchase'] as const).map((b) => (
             <button key={b} role="tab" aria-selected={book === b} onClick={() => set('book', b)}
               className={cn('h-8 rounded px-3 text-[13px] font-medium transition-colors', book === b ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground')}>

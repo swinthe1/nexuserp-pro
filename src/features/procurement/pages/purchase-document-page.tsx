@@ -207,7 +207,7 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
 
   const body = (
     <>
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <Card>
           <CardContent className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
             <FormField control={form.control} name="vendor_id" render={({ field }) => (
@@ -540,7 +540,7 @@ function BillForm({ doc }: { doc?: BillDoc }) {
           {t('Posted despite a mismatch. Reason:')} <span className="font-medium">{doc.match_override_reason}</span>
         </div>
       )}
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <Card>
           <CardContent className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
             <FormField control={form.control} name="vendor_id" render={({ field }) => (

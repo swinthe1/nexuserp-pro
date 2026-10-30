@@ -456,7 +456,7 @@ export default {
   "Pause": "Ndalo",
   "Paused|recurring": "E ndalur",
   "Post them straight away": "Postoji menjëherë",
-  "Posted": "Postuar",
+  "Posted": "E kontabilizuar",
   "Recurring invoices": "Faturat mujore",
   "Remove it; the invoices stay": "Hiqe; faturat mbeten",
   "Removed": "U hoq",

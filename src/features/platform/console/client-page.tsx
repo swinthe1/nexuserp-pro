@@ -133,7 +133,7 @@ function Summary({ d }: { d: ClientDetail }) {
           <CardHeader><CardTitle>{t('How they use it')}</CardTitle><CardDescription>{u.last_activity ? t('Last activity {date}', { date: formatDate(u.last_activity, true) }) : t('No activity yet')}</CardDescription></CardHeader>
           <CardContent className="grid grid-cols-2 gap-2 pt-0 sm:grid-cols-4">
             <Tile label={t('Users')} value={`${d.users} / ${d.licence?.max_users ?? '—'}`} />
-            <Tile label={t('Units')} value={u.warehouses} hint={d.licence?.max_warehouses ? t('of {n}', { n: d.licence.max_warehouses }) : undefined} />
+            <Tile label={t('Units|places')} value={u.warehouses} hint={d.licence?.max_warehouses ? t('of {n}', { n: d.licence.max_warehouses }) : undefined} />
             <Tile label={t('Items')} value={u.products} />
             <Tile label={t('Partners')} value={u.partners} />
             <Tile label={t('Sales invoices')} value={u.invoices} hint={t('{n} this month', { n: u.invoices_month })} />
@@ -217,7 +217,7 @@ function LicenceTab({ d, c }: { d: ClientDetail; c: NonNullable<ReturnType<typeo
             <Field label={t('Plan')} value={planLabel(l.plan)} />
             <Field label={t('Added modules')} value={modules.length ? modules.map((m) => t(m)).join(', ') : null} />
             <Field label={t('Users')} value={<UsersBarInline used={d.users} max={l.max_users} />} />
-            <Field label={t('Units')} value={l.max_warehouses ? t('up to {n}', { n: l.max_warehouses }) : t('as the plan')} />
+            <Field label={t('Units|places')} value={l.max_warehouses ? t('up to {n}', { n: l.max_warehouses }) : t('as the plan')} />
             <Field label={t('Valid')} value={`${formatDate(l.valid_from)} – ${formatDate(l.valid_until)}`} />
             <Field label={t('Where it runs')} value={l.deployment === 'local' ? t('Local server only') : l.deployment === 'cloud' ? t('Cloud only') : t('Cloud or local')} />
             <Field label={t('Licence code')} value={l.code && <button type="button" className="inline-flex items-center gap-1.5 font-mono text-xs hover:text-primary"

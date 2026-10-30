@@ -162,12 +162,18 @@ export function useFiscalRecords() {
         .order('created_at', { ascending: false }).limit(1000))
       const inv = recs.filter((r) => r.source_doc_type !== 'pos_order').map((r) => r.source_doc_id)
       const pos = recs.filter((r) => r.source_doc_type === 'pos_order').map((r) => r.source_doc_id)
+      // up to 1,000 ids do not fit in one address: ask in parts of 150
+      const inParts = async <T,>(ids: string[], load: (part: string[]) => PromiseLike<{ data: T[] | null; error: unknown }>) => {
+        const out: T[] = []
+        for (let i = 0; i < ids.length; i += 150) out.push(...((unwrap(await load(ids.slice(i, i + 150)) as never) as T[] | null) ?? []))
+        return out
+      }
       const [a, b] = await Promise.all([
-        inv.length ? supabase.from('sales_invoices').select('id, number').in('id', inv) : Promise.resolve({ data: [] as { id: string; number: string }[], error: null }),
-        pos.length ? supabase.from('pos_orders').select('id, number, session_id').in('id', pos) : Promise.resolve({ data: [] as { id: string; number: string; session_id: string }[], error: null }),
+        inParts<{ id: string; number: string }>(inv, (part) => supabase.from('sales_invoices').select('id, number').in('id', part)),
+        inParts<{ id: string; number: string; session_id: string }>(pos, (part) => supabase.from('pos_orders').select('id, number, session_id').in('id', part)),
       ])
-      const invMap = new Map((a.data ?? []).map((x) => [x.id, x.number]))
-      const posMap = new Map((b.data ?? []).map((x) => [x.id, x]))
+      const invMap = new Map(a.map((x) => [x.id, x.number]))
+      const posMap = new Map(b.map((x) => [x.id, x]))
       return recs.map((r): FiscalRecord => {
         if (r.source_doc_type === 'pos_order') {
           const p = posMap.get(r.source_doc_id)

@@ -53,7 +53,7 @@ export function WaitersPage() {
         </div>
         <div className="grid gap-1.5"><Label htmlFor="w-from">{t('From')}</Label><Input id="w-from" type="date" value={from} onChange={(e) => setRange([e.target.value, to])} className="w-40" /></div>
         <div className="grid gap-1.5"><Label htmlFor="w-to">{t('To')}</Label><Input id="w-to" type="date" value={to} onChange={(e) => setRange([from, e.target.value])} className="w-40" /></div>
-        <div className="grid gap-1.5"><Label>{t('Store')}</Label>
+        <div className="grid gap-1.5"><Label>{t('Store|shop')}</Label>
           <Select value={store} onValueChange={setStore}>
             <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
             <SelectContent>

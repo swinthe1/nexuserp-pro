@@ -58,7 +58,7 @@ const CREATE_ACTIONS = [
 ]
 
 const KIND_LABEL: Record<string, string> = {
-  product: msg('Product'), partner: msg('Customer or vendor'), warehouse: msg('Warehouse'), opportunity: msg('Deal'), lead: msg('Lead'),
+  product: msg('Product'), partner: msg('Customer or vendor'), warehouse: msg('Warehouse'), opportunity: msg('Deal'), lead: msg('Lead|kind'),
   sales_quote: msg('Quote'), sales_order: msg('Sales order'), delivery: msg('Delivery'), sales_invoice: msg('Customer invoice'),
   purchase_order: msg('Purchase order'), purchase_requisition: msg('Requisition'), vendor_bill: msg('Vendor bill'), account: msg('Account'),
   payment: msg('Payment'), journal_entry: msg('Journal entry'), fixed_asset: msg('Fixed asset'), work_order: msg('Work order'), bom: msg('Bill of materials'),
@@ -120,18 +120,18 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
   }
 
   const hiddenMenu = useHiddenSections()
-  const navItems = NAV.flatMap((s) => s.items.map((i) => ({ ...i, section: s.label })))
+  const navItems = NAV.flatMap((s) => s.items.map((i) => ({ ...i, section: s.label, sectionTitle: s.title ?? s.label })))
     .filter((i) => can(i.perm) && pageAllowed(i.href)
       && (i.section === 'Overview' || i.section === 'Company' || !hiddenMenu.includes(i.section)) && !hiddenMenu.includes(i.href))
     // a page once, where this business sees it first
-    .filter((i, n, all) => all.findIndex((x) => x.href === i.href) === n && matches(query, i.label, t(i.label), i.section, t(i.section), ...(i.keywords ?? [])))
+    .filter((i, n, all) => all.findIndex((x) => x.href === i.href) === n && matches(query, i.label, t(i.label), i.section, t(i.section), t(i.sectionTitle), ...(i.keywords ?? [])))
   const actions = mode === 'pages' ? [] : CREATE_ACTIONS.filter((a) => can(a.perm) && pageAllowed(a.href) && matches(query, a.label, t(a.label)))
   const navPages = navItems.length > 0 && (
     <CommandGroup heading={t('Go to')}>
       {navItems.map((i) => (
         <CommandItem key={i.href} value={`nav-${i.href}`} onSelect={() => go(i.href)}>
           <i.icon /> {t(i.label)}
-          <CommandShortcut>{t(i.section)}</CommandShortcut>
+          <CommandShortcut>{t(i.sectionTitle)}</CommandShortcut>
         </CommandItem>
       ))}
     </CommandGroup>

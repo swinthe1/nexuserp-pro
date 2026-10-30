@@ -2,7 +2,7 @@ import type { Dict } from '../index'
 
 /** Z-raportet dhe mjetet themelore nga fotoja */
 export default {
-  'Z reports': 'Z-raportet',
+  'Z reports': 'Z-raportet e arkës fiskale',
   'Z report': 'Z-raport',
   'Z report {number}': 'Z-raporti {number}',
   'Assets from invoices': "Mjete nga faturat",

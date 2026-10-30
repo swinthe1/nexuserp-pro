@@ -37,7 +37,7 @@ export function CardsPage() {
       <PageHeader title={t('Client cards')} description={t('The car with its plate and kilometres, the patient, the pet: everything done for them, visit by visit.')}
         actions={<Can perm="sales.write"><Button onClick={() => setAdding(true)}><Plus /> {k ? t('New: {kind}', { kind: t(k.label).toLowerCase() }) : t('New card')}</Button></Can>} />
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <div className="flex rounded-md border p-0.5">
+        <div className="flex max-w-full overflow-x-auto rounded-md border p-0.5">
           {(['vehicle', 'patient', 'pet', 'client', 'device', 'all'] as const).map((x) => (
             <Button key={x} size="sm" className="h-7" variant={kind === x ? 'secondary' : 'ghost'} onClick={() => setParams({ kind: x }, { replace: true })}>{x === 'all' ? t('All') : t(CARD_KINDS[x].plural)}</Button>
           ))}

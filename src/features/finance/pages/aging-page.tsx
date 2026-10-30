@@ -52,6 +52,7 @@ export function AgingPage({ kind }: { kind: 'ar' | 'ap' }) {
           <div className="flex items-center gap-2"><Label htmlFor="asof" className="text-[13px] text-muted-foreground">{t('On date')}</Label>
             <Input id="asof" type="date" className="w-[150px]" value={asOf} onChange={(e) => setAsOf(e.target.value || todayISO())} /></div>
           <Button variant="outline" onClick={exportCsv} disabled={!rows.length}><Download /> {t('Export')}</Button>
+          {!isAR && <Button variant="outline" asChild><Link to="/finance/payment-proposal">{t('Pay several at once')}</Link></Button>}
           <Can perm="invoicing.write"><Button asChild><Link to={`/finance/payments/new?type=${payType}`}>{isAR ? t('Receive a payment') : t('Pay a vendor')}</Link></Button></Can>
         </>} />
       {/* both sides of the debts on one page: what customers owe me, what I owe suppliers */}

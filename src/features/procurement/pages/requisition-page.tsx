@@ -140,7 +140,7 @@ function RequisitionForm({ doc }: { doc?: ReqDoc }) {
         <Tabs defaultValue="document">
           {doc && <TabsList><TabsTrigger value="document">{t('Request')}</TabsTrigger><TabsTrigger value="activity">{t('Activity')}</TabsTrigger></TabsList>}
           <TabsContent value="document">
-            <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+            <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
               <Card>
                 <CardContent className="grid gap-4 p-4 sm:grid-cols-2">
                   <FormField control={form.control} name="warehouse_id" render={({ field }) => (

@@ -99,6 +99,13 @@
   }
 }
 
+/* a grid without its own columns gets one column that may shrink: long text inside it
+   (a button, a number, a name) then cannot push the page wider than a phone screen.
+   Any grid-cols-* class still wins, being in the utilities layer. */
+@layer base {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* module colours: a hue from app/modules.ts, a lightness that suits the background */
 @layer base {
   :root { --mod-l: 38%; }

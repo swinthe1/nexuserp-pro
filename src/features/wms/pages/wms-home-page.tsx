@@ -29,7 +29,7 @@ export function WmsHomePage() {
     { key: '3', href: '/wms/picking', title: t('Pick'), icon: ShoppingBasket, count: pickTotal, hint: d?.picking ? tn(d.picking, '{n} pick list in progress', '{n} pick lists in progress') : t('Make pick lists for deliveries') },
     { key: '4', href: '/wms/shipping', title: t('Ship'), icon: Truck, count: d?.to_ship, hint: t('{n} shipped today', { n: d?.shipped_today ?? 0 }) },
     { key: '5', href: '/wms/move', title: t('Move'), icon: ArrowLeftRight, hint: t('Shelf to shelf, or to another warehouse') },
-    { key: '6', href: '/wms/counts', title: t('Count'), icon: ClipboardCheck, count: d?.counts_open, hint: t('Count stock by shelf or category') },
+    { key: '6', href: '/wms/counts', title: t('Stock count|tile'), icon: ClipboardCheck, count: d?.counts_open, hint: t('Count stock by shelf or category') },
     { key: '7', href: '/wms/lots', title: t('Lots and expiry'), icon: Hourglass, count: (d?.expired ?? 0) + (d?.expiring_30 ?? 0),
       hint: d?.expired ? tn(d.expired, '{n} expired lot still in stock', '{n} expired lots still in stock') : t('{n} expiring within 30 days', { n: d?.expiring_30 ?? 0 }), tone: d?.expired ? 'bad' : d?.expiring_30 ? 'warn' : undefined },
   ]

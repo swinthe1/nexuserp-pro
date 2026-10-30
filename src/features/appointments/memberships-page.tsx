@@ -44,10 +44,10 @@ export function MembershipsPage() {
     <>
       <PageHeader title={t('Memberships')} description={t('Sell a monthly, yearly or 10-visit membership to an invoice, check members in at the door, and see whose ends soon.')}
         actions={<Can perm="sales.write"><Button onClick={() => setSell({})} disabled={!plans.data?.length}><Plus /> {t('Sell a membership')}</Button></Can>} />
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="grid h-fit gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex rounded-md border p-0.5">
+            <div className="flex max-w-full overflow-x-auto rounded-md border p-0.5">
               {[['active', t('Active')], ['ending', t('Ending within 7 days')], ['expired', t('Expired, not renewed')], ['frozen', t('Frozen')], ['all', t('All')]].map(([k, l]) => (
                 <Button key={k} size="sm" className="h-7" variant={filter === k ? 'secondary' : 'ghost'} onClick={() => setParams({ filter: k! }, { replace: true })}>{l}</Button>
               ))}

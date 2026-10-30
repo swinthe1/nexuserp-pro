@@ -465,7 +465,7 @@ function PriceDialog({ open, initial, onClose, onSave }: { open: boolean; initia
         <DialogHeader><DialogTitle>{initial ? t('Edit special price') : t('New special price')}</DialogTitle></DialogHeader>
         <div className="grid gap-3">
           <div className="grid gap-1.5"><Label>{t('Product')}</Label><VariantPicker value={variant} onChange={setVariant} /></div>
-          <div className="flex rounded-md border p-0.5" role="radiogroup" aria-label={t('Kind of agreement')}>
+          <div className="flex max-w-full overflow-x-auto rounded-md border p-0.5" role="radiogroup" aria-label={t('Kind of agreement')}>
             <Button type="button" size="sm" className="h-7 flex-1" variant={mode === 'price' ? 'secondary' : 'ghost'} onClick={() => setMode('price')} aria-pressed={mode === 'price'}>{t('Fixed price')}</Button>
             <Button type="button" size="sm" className="h-7 flex-1" variant={mode === 'discount' ? 'secondary' : 'ghost'} onClick={() => setMode('discount')} aria-pressed={mode === 'discount'}>{t('Discount on the list price')}</Button>
           </div>

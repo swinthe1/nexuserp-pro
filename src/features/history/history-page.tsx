@@ -119,7 +119,7 @@ function Overview() {
       </Card>
       <div className="grid gap-4 lg:grid-cols-2">
         <Card><CardHeader><CardTitle>{t('Sales by store')}</CardTitle></CardHeader>
-          <CardContent className="p-0"><Table><TableHeader><TableRow><TableHead>{t('Store')}</TableHead><TableHead className="text-right">{t('Receipts')}</TableHead><TableHead className="text-right">{t('Sales with VAT')}</TableHead></TableRow></TableHeader>
+          <CardContent className="p-0"><Table><TableHeader><TableRow><TableHead>{t('Store|shop')}</TableHead><TableHead className="text-right">{t('Receipts')}</TableHead><TableHead className="text-right">{t('Sales with VAT')}</TableHead></TableRow></TableHeader>
             <TableBody>{(d?.by_store ?? []).map((r) => <TableRow key={r.store}><TableCell>{td(r.store)}</TableCell><TableCell className="text-right tabular">{num(r.receipts).toLocaleString('sq')}</TableCell><TableCell className="text-right tabular">{formatMoney(r.sales ?? 0)}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
         <Card><CardHeader><CardTitle>{t('Best-selling products')}</CardTitle></CardHeader>
           <CardContent className="p-0"><Table><TableHeader><TableRow><TableHead>{t('Product')}</TableHead><TableHead className="text-right">{t('Quantity')}</TableHead><TableHead className="text-right">{t('Sales with VAT')}</TableHead></TableRow></TableHeader>
@@ -162,7 +162,7 @@ function Documents() {
     { accessorKey: 'kind', enableSorting: false, header: t('Kind|history'), meta: { label: t('Kind|history') }, cell: ({ getValue }) => { const k = KIND[getValue() as string] ?? KIND.other!; return <Badge variant={k.variant}>{t(k.label)}</Badge> } },
     { accessorKey: 'number', enableSorting: false, header: t('Number'), meta: { label: t('Number') }, cell: ({ row: { original: d } }) => <div><div className="font-medium">{d.number}</div>{d.doc_type && <div className="text-xs text-muted-foreground">{d.doc_type}</div>}</div> },
     { accessorKey: 'partner_name', enableSorting: false, header: t('Partner'), meta: { label: t('Partner') }, cell: ({ getValue }) => (getValue() as string) || '—' },
-    { accessorKey: 'warehouse_code', enableSorting: false, header: t('Store'), meta: { label: t('Store') }, cell: ({ getValue }) => (getValue() as string) || '—' },
+    { accessorKey: 'warehouse_code', enableSorting: false, header: t('Store|shop'), meta: { label: t('Store|shop') }, cell: ({ getValue }) => (getValue() as string) || '—' },
     { accessorKey: 'cashier', enableSorting: false, header: t('Cashier'), meta: { label: t('Cashier') }, cell: ({ getValue }) => (getValue() as string) || '—' },
     { accessorKey: 'total', header: ({ column }) => <ColumnHeader column={column} title={t('Total with VAT')} />, meta: { label: t('Total with VAT'), align: 'right' }, cell: ({ getValue }) => <span className="tabular">{formatMoney(getValue() as number)}</span> },
   ], [])

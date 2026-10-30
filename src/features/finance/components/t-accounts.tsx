@@ -118,7 +118,7 @@ export function AccountingTab({ sourceType, sourceId, emptyHint }: { sourceType:
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-[13px] text-muted-foreground">{tn(entries.length, '{n} accounting entry was created automatically from this document.', '{n} accounting entries were created automatically from this document.')}</p>
-        <div className="flex rounded-md border p-0.5" role="group" aria-label={t('View')}>
+        <div className="flex max-w-full overflow-x-auto rounded-md border p-0.5" role="group" aria-label={t('View')}>
           <Button size="sm" variant={view === 't' ? 'secondary' : 'ghost'} className="h-7" onClick={() => setView('t')} aria-pressed={view === 't'}>{t('T-accounts')}</Button>
           <Button size="sm" variant={view === 'lines' ? 'secondary' : 'ghost'} className="h-7" onClick={() => setView('lines')} aria-pressed={view === 'lines'}>{t('Entry lines')}</Button>
         </div>

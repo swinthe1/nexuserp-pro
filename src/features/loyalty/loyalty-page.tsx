@@ -399,7 +399,7 @@ function ReportTab() {
             + (books.data ? ` · ${t('in the books: {amount}', { amount: formatMoney(books.data.booked, cur) })}` : '') : undefined} />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
-        <SmallTable title={t('By store')} head={[t('Store'), t('Receipts'), t('Discount (with VAT)')]}
+        <SmallTable title={t('By store')} head={[t('Store|shop'), t('Receipts'), t('Discount (with VAT)')]}
           rows={(d?.by_store ?? []).map((r) => [td(r.name), String(r.receipts), formatMoney(r.discount ?? 0)])} />
         <SmallTable title={t('By type of card')} head={[t('Type'), t('Cards'), t('Discount (with VAT)')]}
           rows={(d?.by_program ?? []).map((r) => [r.name, String(r.cards), formatMoney(r.discount ?? 0)])} />

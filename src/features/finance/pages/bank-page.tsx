@@ -306,7 +306,7 @@ export function StatementPage() {
       <Card className="mt-4">
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 space-y-0 py-3">
           <CardTitle>{t('Lines')}</CardTitle>
-          <div className="flex rounded-md border p-0.5" role="group" aria-label={t('Filter')}>
+          <div className="flex max-w-full overflow-x-auto rounded-md border p-0.5" role="group" aria-label={t('Filter')}>
             <Button size="sm" className="h-7" variant={filter === 'all' ? 'secondary' : 'ghost'} onClick={() => setFilter('all')}>{t('All')}</Button>
             <Button size="sm" className="h-7" variant={filter === 'unmatched' ? 'secondary' : 'ghost'} onClick={() => setFilter('unmatched')}>{t('To do ({n})', { n: unmatched })}</Button>
             {suggested > 0 && <Button size="sm" className="h-7" variant={filter === 'suggested' ? 'secondary' : 'ghost'} onClick={() => setFilter('suggested')}>{t('To check ({n})', { n: suggested })}</Button>}

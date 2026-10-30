@@ -328,7 +328,7 @@ function ReceiptForm({ doc }: { doc?: ReceiptDoc }) {
                   </Select></FormItem>
               )} />
               <FormField control={form.control} name="exchange_rate" render={({ field }) => (
-                <FormItem><FormLabel>{foreign ? t('Customs rate') : t('Rate')}</FormLabel>
+                <FormItem><FormLabel>{foreign ? t('Customs rate') : t('Exchange rate')}</FormLabel>
                   <FormControl><Input type="number" step="any" value={field.value ?? ''} onChange={field.onChange} disabled={field.disabled || !foreign} /></FormControl>
                   <FormDescription>{foreign ? `${base} per 1 ${currency}` : t('Base currency')}</FormDescription><FormMessage /></FormItem>
               )} />

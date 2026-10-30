@@ -18,7 +18,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { msg, t } from '@/i18n'
 import { downloadCsv } from '@/lib/export'
 import { cn, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
-import { useAccountBalances, useBankAccounts, usePaymentProposal, usePayVendorBills, type ProposalRow } from '../api'
+import { parseAmount } from '../bank-formats'
+import { useBankAccounts, useBankPosition, usePaymentProposal, usePayVendorBills, type ProposalRow } from '../api'
 
 const GROUPS: { key: ProposalRow['reason']; label: string; hint: string }[] = [
   { key: 'overdue', label: msg('Overdue'), hint: msg('Past the due date. Pay these first, or call the supplier.') },
@@ -36,7 +37,7 @@ export function PaymentProposalPage() {
   const { company } = useCompany()
   const q = usePaymentProposal()
   const banks = useBankAccounts()
-  const balances = useAccountBalances('1900-01-01', todayISO())
+  const balances = useBankPosition()
   const pay = usePayVendorBills()
   const rows = React.useMemo(() => q.data ?? [], [q.data])
 
@@ -46,7 +47,8 @@ export function PaymentProposalPage() {
     if (!bank && activeBanks.length) setBank((activeBanks.find((b) => b.account_kind === 'bank') ?? activeBanks[0]!).id)
   }, [activeBanks, bank])
   const bankRow = activeBanks.find((b) => b.id === bank)
-  const bankBalance = bankRow ? num(balances.data?.find((b) => b.account_id === bankRow.account_id)?.closing) : 0
+  // in the account's own currency, as the bills are paid in it
+  const bankBalance = bankRow ? num(balances.data?.find((b) => b.id === bankRow.id)?.book_balance) : 0
   const [date, setDate] = React.useState(todayISO())
 
   // what to pay: selected bills, each with an amount (all that is open, or less)
@@ -69,8 +71,10 @@ export function PaymentProposalPage() {
     setTouched(true)
     setSel((s) => { const n = { ...s }; if (on) n[r.bill_id] = suggested(r).toFixed(2); else delete n[r.bill_id]; return n })
   }
+  /** what was typed: 448,40 or 448.40; never more than is open */
+  const amountOf = (r: ProposalRow) => { const v = parseAmount(sel[r.bill_id] ?? ''); return Number.isFinite(v) ? Math.min(v, num(r.open_amount)) : 0 }
   const chosen = rows.filter((r) => sel[r.bill_id] != null)
-  const total = chosen.reduce((s, r) => s + num(sel[r.bill_id]), 0)
+  const total = chosen.reduce((s, r) => s + amountOf(r), 0)
   const wrongCurrency = bankRow ? chosen.filter((r) => r.currency_code !== bankRow.currency_code) : []
   const after = bankBalance - total
   const [done, setDone] = React.useState<Paid | null>(null)
@@ -82,12 +86,12 @@ export function PaymentProposalPage() {
     [t('Vendor'), t('IBAN'), t('Amount'), t('Currency'), t('Reference')],
     ...Object.values(chosen.reduce<Record<string, { name: string; iban: string; amount: number; cur: string; refs: string[] }>>((m, r) => {
       const g = (m[r.vendor_id] ??= { name: r.vendor_name, iban: r.vendor_iban ?? '', amount: 0, cur: r.currency_code, refs: [] })
-      g.amount += num(sel[r.bill_id]); g.refs.push(r.vendor_invoice_number || r.number); return m
+      g.amount += amountOf(r); g.refs.push(r.vendor_invoice_number || r.number); return m
     }, {})).map((g) => [g.name, g.iban, g.amount.toFixed(2), g.cur, g.refs.join(', ')]),
   ])
 
   const submit = async () => {
-    const r = await pay.mutateAsync({ bank, date, items: chosen.map((x) => ({ bill: x.bill_id, amount: num(sel[x.bill_id]) })) })
+    const r = await pay.mutateAsync({ bank, date, items: chosen.map((x) => ({ bill: x.bill_id, amount: amountOf(x) })) })
     setSel({}); setTouched(true); setDone(r)
   }
 
@@ -126,7 +130,7 @@ export function PaymentProposalPage() {
               <div className="ml-auto flex flex-wrap gap-2">
                 <Button variant="outline" disabled={!chosen.length} onClick={exportBank}><Download /> {t('List for the bank')}</Button>
                 <Can perm="invoicing.write">
-                  <Button disabled={!chosen.length || !bank || wrongCurrency.length > 0 || chosen.some((r) => num(sel[r.bill_id]) <= 0)} loading={pay.isPending} onClick={submit}>
+                  <Button disabled={!chosen.length || !bank || wrongCurrency.length > 0 || chosen.some((r) => amountOf(r) <= 0)} loading={pay.isPending} onClick={submit}>
                     <Send /> {t('Pay {n} bills · {amount}', { n: chosen.length, amount: formatMoney(total, bankRow?.currency_code ?? undefined) })}
                   </Button>
                 </Can>
@@ -204,7 +208,7 @@ export function PaymentProposalPage() {
                 <li key={p.id} className="flex items-center justify-between gap-3 py-2">
                   <div className="min-w-0"><Link to={`/finance/payments/${p.id}`} className="font-medium hover:underline">{p.number}</Link>
                     <span className="block truncate text-xs text-muted-foreground">{p.vendor}{p.status === 'pending_approval' && ` · ${t('Waiting for approval')}`}</span></div>
-                  <span className="tabular">{formatMoney(p.amount)}</span>
+                  <span className="tabular">{formatMoney(p.amount, bankRow?.currency_code ?? undefined)}</span>
                 </li>
               ))}
             </ul>

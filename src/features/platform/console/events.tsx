@@ -34,7 +34,7 @@ export const eventLook = (kind: string) => EVENT[kind] ?? { label: kind, icon: S
 
 const FIELD: Record<string, string> = {
   plan: msg('Plan'), max_users: msg('Users'), valid_from: msg('Valid from'), valid_until: msg('Valid until'), status: msg('Status'),
-  extra_features: msg('Added modules'), max_warehouses: msg('Units'), deployment: msg('Where it runs'), ai_reads_limit: msg('Photo reads a month'),
+  extra_features: msg('Added modules'), max_warehouses: msg('Units|places'), deployment: msg('Where it runs'), ai_reads_limit: msg('Photo reads a month'),
   ai_chat_limit: msg('Assistant questions a month'), notes: msg('Notes'),
   name: msg('Name'), legal_name: msg('Legal name'), tax_number: msg('NUI'), vat_number: msg('VAT number'), business_number: msg('Business number'),
   address_line1: msg('Address'), city: msg('City'), phone: msg('Phone'), email: msg('Email'), website: msg('Website'),

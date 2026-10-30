@@ -298,6 +298,7 @@ const router = createBrowserRouter([
         { path: ':id', element: <PurchaseDocumentPage key="bill" kind="bills" /> },
       ] },
       { path: 'procurement/invoice', element: <RequirePerm perm="invoicing.read" />, children: [
+        { index: true, element: <Navigate to="/procurement/invoice/new" replace /> },
         { path: 'new', element: <PurchaseInvoicePage key="pi-new" /> },
         { path: ':id', element: <PurchaseInvoicePage key="pi" /> },
       ] },

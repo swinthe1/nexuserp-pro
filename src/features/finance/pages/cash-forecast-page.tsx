@@ -85,7 +85,7 @@ export function CashForecastPage() {
 
           <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatCard label={t('Cash and bank today')} icon={Wallet} value={formatMoney(d.opening)}
-              hint={d.accounts.map((a) => `${a.name}: ${formatMoney(a.balance)}`).join(' · ') || t('No bank or cash accounts yet')} />
+              hint={d.accounts.map((a) => `${a.name}: ${a.currency === d.currency ? formatMoney(a.balance) : formatMoney(a.balance_currency, a.currency)}`).join(' · ') || t('No bank or cash accounts yet')} />
             <StatCard label={t('Coming in')} value={<span className="text-success">{formatMoney(totals.inflow)}</span>} hint={t('In the next {n} weeks', { n: d.weeks_count })} />
             <StatCard label={t('Going out')} value={<span className="text-destructive">{formatMoney(-totals.outflow)}</span>} hint={t('In the next {n} weeks', { n: d.weeks_count })} />
             <StatCard label={t('Cash at the end')} tone={num(last?.closing) < 0 ? 'destructive' : 'default'} value={formatMoney(last?.closing)}

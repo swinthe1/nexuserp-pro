@@ -98,10 +98,6 @@ export interface TillProgram {
 export type TillCardRow = [string, string, string | null, string, string, number, number]
 export interface TillLoyalty { programs: TillProgram[]; cards: TillCardRow[] }
 
-export async function loadTillLoyalty(registerId: string): Promise<TillLoyalty> {
-  return unwrap(await supabase.rpc('pos_loyalty_data', { p_register: registerId })) as unknown as TillLoyalty
-}
-
 export interface Quote {
   usable: boolean; reason?: string; card_id: string; program_id: string; kind: LoyaltyKind; program_pct: number; pct: number
   redeem_points: number; redeem_amount: number; lines: { eligible: boolean; pct: number }[]; month_left: number | null

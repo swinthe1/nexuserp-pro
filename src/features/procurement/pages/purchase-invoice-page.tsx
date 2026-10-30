@@ -302,7 +302,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
             <div className="grid gap-1.5"><Label>{t('Currency')}</Label>
               <Select value={h.currency_code} onValueChange={(v) => set('currency_code', v)}><SelectTrigger aria-label={t('Currency')}><SelectValue /></SelectTrigger>
                 <SelectContent>{(currencies.data ?? []).map((c) => <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>)}</SelectContent></Select></div>
-            <div className="grid gap-1.5"><Label htmlFor="pi-rate">{t('Rate')}</Label><Input id="pi-rate" inputMode="decimal" disabled={h.currency_code === base} value={h.currency_code === base ? '1' : h.exchange_rate}
+            <div className="grid gap-1.5"><Label htmlFor="pi-rate">{t('Exchange rate')}</Label><Input id="pi-rate" inputMode="decimal" disabled={h.currency_code === base} value={h.currency_code === base ? '1' : h.exchange_rate}
               placeholder={t('of the day')} onChange={(e) => set('exchange_rate', e.target.value)} /></div>
           </div>
           <div className="grid gap-1.5"><Label>{t('Payment terms')}</Label>
@@ -328,7 +328,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
           </div>
           <div className="w-72"><SearchSelect value={null} onChange={(v) => v && addItem(v)} placeholder={t('…or search by name')}
             options={itemOptions} /></div>
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="ml-auto flex flex-wrap items-center gap-1.5">
             <Label htmlFor="pi-margin" className="whitespace-nowrap text-[13px] text-muted-foreground">{t('Margin for all')}</Label>
             <Input id="pi-margin" inputMode="decimal" className="h-8 w-20 text-right" value={margin} onChange={(e) => setMargin(e.target.value)} placeholder="25" />
             <Button size="sm" variant="outline" disabled={!margin || !rows.length} onClick={applyMargin}><Percent /> {t('Set prices')}</Button>

@@ -489,7 +489,7 @@ export type ForecastWeek = {
 export type ForecastFlow = { date: string; week: number; kind: string; label: string | null; partner_id: string | null; partner: string | null; amount: number; ref: string | null; overdue: boolean }
 export type CashForecast = {
   as_of: string; weeks_count: number; estimates: boolean; currency: string; opening: number
-  accounts: { id: string; name: string; kind: string; currency: string; balance: number }[]
+  accounts: { id: string; name: string; kind: string; currency: string; balance: number; balance_currency: number }[]
   weeks: ForecastWeek[]; first_negative_week: number | null; lowest: { week: number; closing: number } | null
   overdue_in: number; overdue_out: number; doubtful: number; avg_late_days: number
   ar_open: number; ap_open: number; dso: number | null; dpo: number | null

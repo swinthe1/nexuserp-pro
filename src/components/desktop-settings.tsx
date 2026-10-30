@@ -101,7 +101,7 @@ export function DesktopSettingsDialog({ open, onOpenChange }: { open: boolean; o
               <Label htmlFor="ds-server">{t('Server address')}</Label>
               <div className="flex gap-2">
                 <Input id="ds-server" value={server} onChange={(e) => setServer(e.target.value)} spellCheck={false} />
-                <Button variant="outline" disabled={server.trim() === s.server} onClick={() => void desktop!.setServer(server.trim()).catch((e: Error) => toast.error(e.message))}>{t('Change')}</Button>
+                <Button variant="outline" disabled={server.trim() === s.server} onClick={() => void desktop!.setServer(server.trim()).catch((e: Error) => toast.error(e.message))}>{t('Change|edit')}</Button>
               </div>
             </div>
           </div>

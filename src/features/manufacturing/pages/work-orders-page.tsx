@@ -74,7 +74,7 @@ export function WorkOrdersPage() {
     <>
       <PageHeader title={t('Work orders')} description={t('What is being made, from planned to closed. Using materials and booking output move the stock; closing settles the cost in accounting.')}
         actions={<>
-          <div className="flex rounded-md border p-0.5" role="group" aria-label={t('View')}>
+          <div className="flex max-w-full overflow-x-auto rounded-md border p-0.5" role="group" aria-label={t('View')}>
             <Button size="sm" variant={view === 'list' ? 'secondary' : 'ghost'} className="h-8" onClick={() => setParams((p) => { p.delete('view'); return p })}><List /> {t('List')}</Button>
             <Button size="sm" variant={view === 'board' ? 'secondary' : 'ghost'} className="h-8" onClick={() => setParams((p) => { p.set('view', 'board'); return p })}><Columns3 /> {t('Board')}</Button>
           </div>

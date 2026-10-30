@@ -19,7 +19,7 @@ import { AutomationCard } from '../components/automation-card'
 type Settings = { pos_cash_tolerance: number; payroll_auto_day: number | null; payroll_auto_for: 'previous' | 'current'; payroll_deduct_absence: boolean
   payroll_night_pct: number | null; payroll_holiday_pct: number | null }
 
-export function useAutomationSettings() {
+export function usePayrollTillSettings() {
   const { companyId } = useCompany()
   return useQuery({
     queryKey: ['automation-settings', companyId],
@@ -28,7 +28,7 @@ export function useAutomationSettings() {
       .select('pos_cash_tolerance, payroll_auto_day, payroll_auto_for, payroll_deduct_absence, payroll_night_pct, payroll_holiday_pct').eq('company_id', companyId!).single()) as unknown as Settings,
   })
 }
-export function useSaveAutomation() {
+export function useSavePayrollTillSettings() {
   const { companyId } = useCompany()
   const qc = useQueryClient()
   return useMutation({
@@ -40,8 +40,8 @@ export function useSaveAutomation() {
 
 export function AutomationPage() {
   const { can, company } = useCompany()
-  const q = useAutomationSettings()
-  const save = useSaveAutomation()
+  const q = usePayrollTillSettings()
+  const save = useSavePayrollTillSettings()
   const s = q.data
   const [tol, setTol] = React.useState('')
   React.useEffect(() => { if (s) setTol(String(s.pos_cash_tolerance)) }, [s])

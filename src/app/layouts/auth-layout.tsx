@@ -80,7 +80,7 @@ export function AuthLayout() {
   const { user, loading } = useAuth()
   if (!loading && user) return <Navigate to="/" replace />
   return (
-    <div className="grid min-h-dvh bg-background lg:grid-cols-[minmax(0,1fr)_minmax(440px,560px)]">
+    <div className="grid grid-cols-[minmax(0,1fr)] min-h-dvh bg-background lg:grid-cols-[minmax(0,1fr)_minmax(440px,560px)]">
       <style>{`
         @keyframes auth-print { from { clip-path: inset(0 0 100% 0); transform: translateY(-24px) rotate(-2deg); } to { clip-path: inset(0 0 0 0); transform: translateY(0) rotate(-2deg); } }
         .auth-receipt { animation: auth-print 1.1s cubic-bezier(.2,.7,.2,1) both .15s; }

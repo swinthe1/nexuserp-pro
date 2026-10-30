@@ -12,7 +12,7 @@ export function EmptyState({ icon: Icon = Inbox, title, description, action, com
       </span>
       <p className="text-sm font-medium">{title}</p>
       {description && <p className="max-w-sm text-[13px] text-muted-foreground">{description}</p>}
-      {action && <div className="mt-2">{action}</div>}
+      {action && <div className="mt-2 max-w-full [&_a]:whitespace-normal [&_button]:whitespace-normal">{action}</div>}
     </div>
   )
 }

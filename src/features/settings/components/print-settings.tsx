@@ -68,7 +68,7 @@ export function PrintSettingsCard() {
   const dirty = logo !== undefined || stamp !== undefined || JSON.stringify(s) !== JSON.stringify({ ...PRINT_DEFAULTS, ...(co.data.settings ?? {}) })
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_540px]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 xl:grid-cols-[minmax(0,1fr)_540px]">
       <Card>
         <CardHeader><CardTitle>{t('Printed documents')}</CardTitle>
           <CardDescription>{t('Invoices, offers, pro formas, delivery notes, purchase orders, receipts and payment vouchers are printed, saved as PDF and emailed with this look.')}</CardDescription></CardHeader>
@@ -91,7 +91,7 @@ export function PrintSettingsCard() {
                 <SelectContent><SelectItem value="left">{t('left')}</SelectItem><SelectItem value="right">{t('right')}</SelectItem></SelectContent>
               </Select>
               <Label className="ml-2 font-normal text-muted-foreground">{t('Size')}</Label>
-              <div className="flex rounded-md border p-0.5" role="radiogroup" aria-label={t('Size of the logo')}>
+              <div className="flex max-w-full overflow-x-auto rounded-md border p-0.5" role="radiogroup" aria-label={t('Size of the logo')}>
                 {(['s', 'm', 'l'] as const).map((z) => (
                   <button key={z} type="button" role="radio" aria-checked={(s.logo_size ?? 'm') === z} disabled={ro} onClick={() => set({ logo_size: z })}
                     className={cn('h-7 w-8 rounded text-xs font-medium uppercase', (s.logo_size ?? 'm') === z ? 'bg-secondary text-foreground' : 'text-muted-foreground')}>{z}</button>
