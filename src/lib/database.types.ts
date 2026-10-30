@@ -2553,6 +2553,8 @@ export type Database = {
           created_by: string | null
           updated_at: string
           updated_by: string | null
+          recount: boolean
+          first_counted_qty: number | null
         }
         Insert: {
           id?: string
@@ -2570,6 +2572,8 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          recount?: boolean
+          first_counted_qty?: number | null
         }
         Update: {
           id?: string
@@ -2587,6 +2591,8 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          recount?: boolean
+          first_counted_qty?: number | null
         }
         Relationships: [
           { foreignKeyName: "cycle_count_lines_company_id_cycle_count_id_fkey"; columns: ["company_id", "cycle_count_id"]; isOneToOne: false; referencedRelation: "cycle_counts"; referencedColumns: ["company_id", "id"] },
@@ -14212,6 +14218,14 @@ export type Database = {
         }
         Returns: Json
       }
+      count_import: {
+        Args: {
+          p_id: string
+          p_rows: Json
+          p_add?: boolean
+        }
+        Returns: Json
+      }
       count_item: {
         Args: {
           p_count: string
@@ -14220,6 +14234,21 @@ export type Database = {
           p_qty: number
           p_lot?: string
           p_set?: boolean
+        }
+        Returns: Json
+      }
+      count_recount: {
+        Args: {
+          p_id: string
+          p_min_value?: number
+          p_min_pct?: number
+          p_lines?: string[]
+        }
+        Returns: number
+      }
+      count_review: {
+        Args: {
+          p_id: string
         }
         Returns: Json
       }
@@ -16670,6 +16699,14 @@ export type Database = {
           p_tracking: string
         }
         Returns: string
+      }
+      shrinkage_report: {
+        Args: {
+          p_company: string
+          p_from: string
+          p_to: string
+        }
+        Returns: { reason: string | null; warehouse_id: string | null; warehouse: string | null; variant_id: string | null; sku: string | null; name: string | null; category: string | null; qty_lost: number | null; qty_found: number | null; value_lost: number | null; value_found: number | null; adjustments: number | null }[]
       }
       small_business_tax: {
         Args: {

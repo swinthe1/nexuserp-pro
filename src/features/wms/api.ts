@@ -270,7 +270,7 @@ export function useCounts() {
   })
 }
 export type CountLine = { id: string; variant_id: string; location_id: string; lot_id: string | null; system_qty: number; counted_qty: number | null
-  variance: number | null; counted_at: string | null
+  variance: number | null; counted_at: string | null; recount: boolean; first_counted_qty: number | null
   variant: { sku: string; name: string; product: { tracking: string } | null } | null; location: { code: string } | null; lot: { lot_number: string } | null }
 export function useCount(id: string | undefined) {
   const { companyId } = useCompany()
@@ -282,7 +282,7 @@ export function useCount(id: string | undefined) {
         .select('id, number, status, count_date, scope, blind_count, posted_at, adjustment_id, warehouse_id, warehouse:warehouses(code, name)')
         .eq('id', id!).single().returns<Omit<CountRow, 'lines'> & { warehouse_id: string }>())
       const lines = unwrap(await supabase.from('cycle_count_lines')
-        .select('id, variant_id, location_id, lot_id, system_qty, counted_qty, variance, counted_at, variant:product_variants(sku, name, product:products(tracking)), location:warehouse_locations(code), lot:lots(lot_number)')
+        .select('id, variant_id, location_id, lot_id, system_qty, counted_qty, variance, counted_at, recount, first_counted_qty, variant:product_variants(sku, name, product:products(tracking)), location:warehouse_locations(code), lot:lots(lot_number)')
         .eq('cycle_count_id', id!).returns<CountLine[]>())
       lines.sort((a, b) => (a.location?.code ?? '').localeCompare(b.location?.code ?? '') || (a.variant?.sku ?? '').localeCompare(b.variant?.sku ?? ''))
       return { ...c, lines }
@@ -319,7 +319,7 @@ export function useCountItem() {
           }
           const it = itemOffline(companyId ?? '', a.variant)
           const loc = c.lines.find((l) => l.location_id === a.location)?.location ?? null
-          return { ...c, lines: [...c.lines, { id: op, variant_id: a.variant, location_id: a.location, lot_id: a.lot ?? null, system_qty: 0, counted_qty: Math.max(0, a.qty), variance: null,
+          return { ...c, lines: [...c.lines, { id: op, variant_id: a.variant, location_id: a.location, lot_id: a.lot ?? null, system_qty: 0, counted_qty: Math.max(0, a.qty), variance: null, recount: false, first_counted_qty: null,
             counted_at: new Date().toISOString(), variant: it ? { sku: it.sku, name: it.name, product: { tracking: it.tracking } } : null, location: loc, lot: null }] }
         })
         return out
@@ -366,4 +366,33 @@ export function useLotTrace(id: string | undefined) {
 export const DOC_HREF: Record<string, string> = {
   goods_receipt: '/inventory/receipts/', delivery: '/sales/deliveries/', stock_adjustment: '/inventory/adjustments/', stock_transfer: '/inventory/transfers/',
   warehouse_task: '/wms/tasks/', work_order: '/manufacturing/orders/',
+}
+
+/* ------------------------------------------------------------------ before confirming a count: differences with their value */
+export type CountReviewLine = { id: string; variant_id: string; sku: string; name: string; location: string; lot: string | null; expected: number; counted: number
+  first_counted: number | null; recount: boolean; delta: number; pct: number | null; unit_cost: number; value: number }
+export type CountReview = { lines: CountReviewLine[]; counted: number; not_counted: number; differences: number; gains: number; losses: number; net: number; counted_value: number }
+export function useCountReview(id: string | undefined, enabled: boolean) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...wmsKeys.all(companyId), 'count-review', id],
+    enabled: !!id && enabled,
+    queryFn: async () => unwrap(await supabase.rpc('count_review', { p_id: id! })) as unknown as CountReview,
+  })
+}
+export const useCountRecount = () => useAction(async (a: { id: string; minValue?: number | null; minPct?: number | null; lines?: string[] }) =>
+  unwrap(await supabase.rpc('count_recount', { p_id: a.id, p_min_value: a.minValue ?? undefined, p_min_pct: a.minPct ?? undefined, p_lines: a.lines ?? undefined })) as number)
+export type CountImportResult = { rows: number; ok: number; errors: { row: number; code: string | null; reason: string }[] }
+export const useCountImport = () => useAction(async (a: { id: string; rows: { code: string; location?: string; qty: string; lot?: string }[]; add: boolean }) =>
+  unwrap(await supabase.rpc('count_import', { p_id: a.id, p_rows: a.rows as never, p_add: a.add })) as unknown as CountImportResult)
+
+export type ShrinkRow = { reason: string; warehouse_id: string | null; warehouse: string | null; variant_id: string; sku: string; name: string; category: string | null
+  qty_lost: number; qty_found: number; value_lost: number; value_found: number; adjustments: number }
+export function useShrinkage(from: string, to: string) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...wmsKeys.all(companyId), 'shrinkage', from, to],
+    enabled: !!companyId,
+    queryFn: async () => unwrap(await supabase.rpc('shrinkage_report', { p_company: companyId, p_from: from, p_to: to })) as unknown as ShrinkRow[],
+  })
 }

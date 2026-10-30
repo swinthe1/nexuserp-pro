@@ -108,6 +108,7 @@ const ZReportsPage = lazy(() => import('@/features/finance/pages/zreports-page')
 const CashForecastPage = lazy(() => import('@/features/finance/pages/cash-forecast-page'), 'CashForecastPage')
 const PaymentProposalPage = lazy(() => import('@/features/finance/pages/payment-proposal-page'), 'PaymentProposalPage')
 const YearEndPage = lazy(() => import('@/features/finance/pages/year-end-page'), 'YearEndPage')
+const ShrinkagePage = lazy(() => import('@/features/inventory/pages/shrinkage-page'), 'ShrinkagePage')
 const ItemCardPage = lazy(() => import('@/features/inventory/pages/item-card-page'), 'ItemCardPage')
 const LabelsPage = lazy(() => import('@/features/inventory/pages/labels-page'), 'LabelsPage')
 const PriceLevelsPage = lazy(() => import('@/features/inventory/pages/price-levels-page'), 'PriceLevelsPage')
@@ -224,6 +225,7 @@ const router = createBrowserRouter([
         { path: 'stock', element: <StockPage /> },
         { path: 'movements', element: <Navigate to="/inventory/item-card" replace /> },
         { path: 'item-card', element: <ItemCardPage /> },
+        { path: 'shrinkage', element: <ShrinkagePage /> },
         { path: 'labels', element: <LabelsPage /> },
         { path: 'levelling', element: <PriceLevelsPage /> },
         { path: 'levelling/new', element: <PriceLevelPage key="lv-new" /> },

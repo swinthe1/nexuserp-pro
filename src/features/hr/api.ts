@@ -274,8 +274,8 @@ export function useEmployeePayslips(employeeId: string | undefined) {
       if (rows.some((r) => !r.run)) {
         // self-service: employees cannot read payroll runs (company totals); only their own payslips' periods
         type Period = { payslip_id: string; run_number: string; period_start: string; period_end: string; pay_date: string; status: string }
-        const rpc = supabase.rpc.bind(supabase) as unknown as (fn: string) => Promise<{ data: Period[] | null; error: null | { message: string } }>
-        const { data } = await rpc('my_payslip_periods')
+        const client = supabase as unknown as { rpc: (fn: string) => Promise<{ data: Period[] | null; error: null | { message: string } }> }
+        const { data } = await client.rpc('my_payslip_periods')
         const byId = new Map((data ?? []).map((p) => [p.payslip_id, p]))
         for (const r of rows) {
           const p = byId.get(r.id)

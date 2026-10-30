@@ -1,4 +1,4 @@
-import { ClipboardCheck, EyeOff, MapPin, Plus } from 'lucide-react'
+import { ClipboardCheck, EyeOff, FileSpreadsheet, MapPin, Plus, Printer } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -24,6 +24,7 @@ import { cn, formatDate, formatQty, humanize } from '@/lib/utils'
 import { useCategories, useLocations, useWarehouses, type LocationRow } from '@/features/inventory/api'
 import { useCount, useCountItem, useCounts, useCreateCount, usePostCount, useResolveCode, useSubmitCount, wmsKeys, type CountLine } from '../api'
 import { QtyDialog, ScanShell, useScanStatus } from '../components/scan-shell'
+import { CountImportDialog, CountReviewPanel, printCountSheet } from '../components/count-tools'
 
 /** Count lists and screens refresh when someone else counts, submits or posts */
 function useLiveCounts() {
@@ -100,8 +101,9 @@ function NewCountDialog({ onClose }: { onClose: () => void }) {
 
 export function CountPage() {
   const { id } = useParams()
-  const { can } = useCompany()
+  const { can, company } = useCompany()
   const count = useCount(id)
+  const [importing, setImporting] = React.useState(false)
   const resolve = useResolveCode()
   const countItem = useCountItem()
   const submit = useSubmitCount()
@@ -148,6 +150,8 @@ export function CountPage() {
     <ScanShell title={c.number} back={{ href: '/wms/counts', label: t('Stock counts') }}
       meta={<><StatusBadge status={c.status} /><span className="text-[13px] text-muted-foreground">{td(c.warehouse?.name)} · {t('{done} of {total} counted', { done: counted, total: c.lines.length })}{c.blind_count ? ` · ${t('blind')}` : ''}</span></>}
       actions={<>
+        <Button variant="outline" onClick={() => printCountSheet(c, company?.name ?? '')}><Printer /> {t('Print the count sheet')}</Button>
+        {counting && <Can perm="wms.write"><Button variant="outline" onClick={() => setImporting(true)}><FileSpreadsheet /> {t('From Excel')}</Button></Can>}
         {counting && <Can perm="wms.write"><ConfirmDialog trigger={<Button>{t('Finish counting')}</Button>} title={t('Finish counting?')}
           description={<span className="grid gap-3"><span>{tn(c.lines.length - counted, '{n} line is not counted.', '{n} lines are not counted.')}</span>
             <label className="flex items-center gap-2"><Checkbox checked={zero} onCheckedChange={(v) => setZero(!!v)} /> {t('Count the missing lines as zero (the shelf was checked and they are not there)')}</label></span>}
@@ -164,6 +168,7 @@ export function CountPage() {
         <ScanInput onScan={onScan} placeholder={bin ? t('Counting {code}: scan items, or another shelf', { code: bin.code }) : t('Scan a shelf label to start')} status={st.status} />
         {bin && <div className="flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 font-mono text-lg font-semibold"><MapPin className="size-5 text-primary" />{bin.code}</div>}
       </>}
+      {c.status === 'review' && <CountReviewPanel countId={c.id} />}
       <div className="grid gap-3">
         {[...groups.entries()].sort().map(([code, lines]) => (
           <div key={code} className="rounded-xl border bg-card">
@@ -173,7 +178,7 @@ export function CountPage() {
               return (
                 <button key={l.id} type="button" disabled={!counting} onClick={() => { setBin((b) => b ?? null); setEdit(l) }}
                   className="grid w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 border-b px-3 py-2 text-left text-[13px] last:border-0 enabled:hover:bg-muted/50">
-                  <span className="min-w-0"><span className="block truncate font-medium">{l.variant?.name}</span><span className="text-muted-foreground">{l.variant?.sku}{l.lot ? ` · ${l.lot.lot_number}` : ''}</span></span>
+                  <span className="min-w-0"><span className="block truncate font-medium">{l.variant?.name}</span><span className="text-muted-foreground">{l.variant?.sku}{l.lot ? ` · ${l.lot.lot_number}` : ''}</span>{l.recount && <span className="ml-2 rounded bg-warning/15 px-1.5 py-0.5 text-2xs font-medium text-warning">{t('count again')}</span>}</span>
                   {showSystem ? <span className="text-right text-muted-foreground tabular">{t('expected {n}', { n: formatQty(l.system_qty) })}</span> : <span />}
                   <span className={cn('min-w-16 text-right text-lg font-semibold tabular', l.counted_qty == null && 'text-muted-foreground/50',
                     showSystem && v != null && v !== 0 && (v < 0 ? 'text-destructive' : 'text-warning'))}>
@@ -185,6 +190,7 @@ export function CountPage() {
         ))}
         {!c.lines.length && <EmptyState title={t('No lines yet')} description={t('Scan a shelf and the items on it.')} compact />}
       </div>
+      {importing && <CountImportDialog countId={c.id} onClose={() => setImporting(false)} />}
       {pendingLot && <LotPicker variantId={pendingLot.variantId} sku={pendingLot.sku} onClose={() => setPendingLot(null)}
         onPick={async (lot, num) => { const p = pendingLot; setPendingLot(null); await record(p.variantId, p.qty, lot, `${p.sku} · ${num}`) }} />}
       <QtyDialog open={!!edit} title={edit ? t('{sku} at {code}', { sku: edit.variant?.sku ?? '', code: edit.location?.code ?? '' }) : ''} description={t('Counted quantity')} initial={Number(edit?.counted_qty ?? 0)}
