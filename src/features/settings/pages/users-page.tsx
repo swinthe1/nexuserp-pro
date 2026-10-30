@@ -1,3 +1,5 @@
+import { useTrainingOverview } from '@/features/training/api'
+import { tracksFor } from '@/i18n/help/training'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Calculator, MoreHorizontal, ShieldCheck, UserPlus } from 'lucide-react'
 import * as React from 'react'
@@ -15,7 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { t, td } from '@/i18n'
-import { formatDate, initials } from '@/lib/utils'
+import { cn, formatDate, initials } from '@/lib/utils'
 import { type CompanyUser, type RoleRow, useCompanyUsers, useInviteAccountant, useInviteMember, useRoles, useMemberWarehouses, useSetMemberRoles, useSetMemberStatus, useSetMemberWarehouses } from '../api'
 import { useWarehouses } from '@/features/inventory/api'
 import { ProfileDialog } from '../components/profile-dialog'
@@ -32,6 +34,14 @@ export function UsersPage() {
   const setStatus = useSetMemberStatus()
   const write = can('admin.write')
   const extras = useMemberExtras()
+  const training = useTrainingOverview()
+  /** lessons done of the lessons meant for this person's roles */
+  const trainingOf = React.useCallback((u: CompanyUser) => {
+    const keys = (roles.data ?? []).filter((r) => u.role_ids.includes(r.id)).map((r) => r.key)
+    const lessons = tracksFor(keys).flatMap((tr) => tr.lessons)
+    const mine = (u.user_id && training.data?.get(u.user_id)) || new Set<string>()
+    return { done: lessons.filter((l) => mine.has(l.key)).length, total: lessons.length }
+  }, [roles.data, training.data])
   const setView = useSetView()
   const [pinFor, setPinFor] = React.useState<CompanyUser | null>(null)
   const [whFor, setWhFor] = React.useState<CompanyUser | null>(null)
@@ -73,6 +83,9 @@ export function UsersPage() {
     { accessorKey: 'status', filterFn: inFilter, header: t('Status'), meta: { label: t('Status') }, cell: ({ getValue }) => <StatusBadge status={getValue() as string} /> },
     { accessorKey: 'last_sign_in_at', header: ({ column }) => <ColumnHeader column={column} title={t('Last signed in')} />, meta: { label: t('Last signed in') },
       cell: ({ getValue }) => <span className="text-muted-foreground">{getValue() ? formatDate(getValue() as string, true) : t('Never')}</span> },
+    { id: 'training', header: t('Training|menu'), meta: { label: t('Training|menu'), exportValue: (u) => { const x = trainingOf(u); return `${x.done}/${x.total}` } },
+      cell: ({ row: { original: u } }) => { const x = trainingOf(u); return u.status !== 'active' ? null
+        : <span className={cn('tabular text-[13px]', x.done >= x.total ? 'text-success' : x.done ? 'text-foreground' : 'text-muted-foreground')}>{x.done >= x.total ? t('Finished') : `${x.done}/${x.total}`}</span> } },
     { accessorKey: 'joined_at', header: t('Joined'), meta: { label: t('Joined') }, cell: ({ getValue }) => <span className="text-muted-foreground">{formatDate(getValue() as string)}</span> },
     { id: 'employee', header: t('Employee'), meta: { label: t('Employee'), exportValue: (u) => (u.employee_id ? t('Yes') : '') },
       cell: ({ row: { original: u } }) => u.employee_id ? <Link to={`/hr/employees/${u.employee_id}`} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>{t('Employee file')}</Link> : null },
@@ -104,7 +117,7 @@ export function UsersPage() {
           </DropdownMenuContent>
         </DropdownMenu>
       ) },
-  ], [write, setStatus, extras.data, setView, memberWh.data, whs.data])
+  ], [write, setStatus, extras.data, setView, memberWh.data, whs.data, trainingOf])
 
   return (
     <>
@@ -185,7 +198,7 @@ function InviteDialog({ open, onOpenChange, roles }: { open: boolean; onOpenChan
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{t('Invite a person')}</DialogTitle>
-          <DialogDescription>{t('If they already have an account they get access now; otherwise the DrisPRO administrator makes their account and gives you the password.')}</DialogDescription>
+          <DialogDescription>{t('If they already have an account they get an invitation to accept; otherwise the DrisPRO administrator makes their account and gives you the password.')}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
           <div className="grid gap-1.5"><Label htmlFor="inv-email">{t('Email')}</Label>

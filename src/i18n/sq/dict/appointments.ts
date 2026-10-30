@@ -21,6 +21,7 @@ export default {
   'Allergies': 'Alergjitë',
   'Already came in today; not counted again.': 'Ka hyrë tashmë sot; nuk numërohet sërish.',
   'Appointment booked': 'Termini u caktua',
+  'Book|appointment': 'Cakto terminin',
   'Appointment cancelled': 'Termini u anulua',
   'Appointments by person or chair, client cards, the till for products. Without warehouse floor, manufacturing and logistics.':
     'Termine sipas personit ose karriges, kartela klientësh, arka për produktet. Pa magazinë operative, prodhim dhe logjistikë.',

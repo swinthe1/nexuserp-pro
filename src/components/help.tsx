@@ -1,7 +1,7 @@
-import { ArrowRight, ChevronLeft, ChevronRight, Info, Lightbulb, MousePointerClick, TriangleAlert, X } from 'lucide-react'
+import { ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, GraduationCap, Info, Lightbulb, MousePointerClick, TriangleAlert, X } from 'lucide-react'
 import * as React from 'react'
 import { createPortal } from 'react-dom'
-import { Link, matchPath, useLocation } from 'react-router-dom'
+import { Link, matchPath, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -9,6 +9,8 @@ import { t, useLocale } from '@/i18n'
 import { GUIDES } from '@/i18n/help/guides'
 import { TIPS } from '@/i18n/help/tips'
 import type { Guide, L, TourStep } from '@/i18n/help/types'
+import { ALL_LESSONS } from '@/i18n/help/training'
+import { useMarkLesson } from '@/features/training/api'
 import { cn } from '@/lib/utils'
 
 function usePick() {
@@ -28,7 +30,26 @@ export function useGuide(): Guide | null {
 export function PageHelpButton({ className }: { className?: string }) {
   const guide = useGuide()
   const pick = usePick()
-  const [open, setOpen] = React.useState(false)
+  const [params, setParams] = useSearchParams()
+  const navigate = useNavigate()
+  const mark = useMarkLesson()
+  // opened from the training page: the panel opens by itself, with "Lesson done" at the bottom
+  const lesson = ALL_LESSONS.find((l) => l.key === params.get('learn'))
+  const [open, setOpen] = React.useState(!!lesson)
+  React.useEffect(() => { if (lesson) setOpen(true) }, [lesson])
+  // "Show me" only walks through the parts this page shows right now (a posted document has no Save button);
+  // when none of them is here, the button is not offered
+  const [tour, setTour] = React.useState<TourStep[] | null>(null)
+  React.useEffect(() => {
+    if (!open || !guide?.tour?.length) { setTour(null); return }
+    const look = () => {
+      const here = guide.tour!.filter((s) => !s.target || findTarget(s.target))
+      setTour(here.some((s) => s.target) ? here : null)
+    }
+    look()
+    const later = setTimeout(look, 1200) // the page may still be loading when the panel opens
+    return () => clearTimeout(later)
+  }, [open, guide])
   if (!guide) return null
   return (
     <>
@@ -71,8 +92,18 @@ export function PageHelpButton({ className }: { className?: string }) {
                 </div>
               </section>
             )}
-            {!!guide.tour?.length && (
-              <Button className="justify-self-start" onClick={() => { setOpen(false); setTimeout(() => startTour(guide.tour!), 250) }}><MousePointerClick /> {t('Show me on the page')}</Button>
+            {!!tour?.length && (
+              <Button className="justify-self-start" variant={lesson ? 'outline' : 'default'} onClick={() => { setOpen(false); setTimeout(() => startTour(tour), 250) }}><MousePointerClick /> {t('Show me on the page')}</Button>
+            )}
+            {lesson && (
+              <section className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+                <h3 className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-primary"><GraduationCap className="size-3.5" /> {t('Lesson')}: {pick(lesson.title)}</h3>
+                <p className="mb-3 text-[13px]">{pick(lesson.why)}</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" loading={mark.isPending} onClick={async () => { await mark.mutateAsync({ lesson: lesson.key, done: true }); setOpen(false); navigate('/training') }}><CheckCircle2 /> {t('Lesson done')}</Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setOpen(false); params.delete('learn'); setParams(params, { replace: true }) }}>{t('Try it on the page first')}</Button>
+                </div>
+              </section>
             )}
           </div>
         </SheetContent>
@@ -111,7 +142,7 @@ function findTarget(target: string | undefined): HTMLElement | null {
   if (!target) return null
   try { const el = document.querySelector<HTMLElement>(target); if (el && el.offsetParent !== null) return el } catch { /* not a selector */ }
   const want = t(target).trim().toLowerCase()
-  const nodes = [...document.querySelectorAll<HTMLElement>('button, [role=tab], label, h2, h3, th, a')].filter((n) => n.offsetParent !== null && !n.closest('[role=dialog]'))
+  const nodes = [...document.querySelectorAll<HTMLElement>('button, [role=tab], label, h2, h3, th, a')].filter((n) => n.offsetParent !== null && !n.closest('[role=dialog], aside'))
   const text = (n: HTMLElement) => ((n.textContent ?? '').trim() || n.getAttribute('aria-label') || '').trim().toLowerCase()
   const hit = nodes.find((n) => text(n) === want) ?? nodes.find((n) => text(n).startsWith(want))
   if (!hit) return null

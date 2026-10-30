@@ -22,6 +22,7 @@ const lazy = <T,>(load: () => Promise<T>, name: keyof T) =>
   React.lazy(() => load().then((m) => ({ default: m[name] as unknown as React.ComponentType })))
 
 const DashboardPage = lazy(() => import('@/features/dashboard/dashboard-page'), 'DashboardPage')
+const TrainingPage = lazy(() => import('@/features/training/training-page'), 'TrainingPage')
 const ApprovalsPage = lazy(() => import('@/features/approvals/approvals-page'), 'ApprovalsPage')
 const ProductsPage = lazy(() => import('@/features/inventory/pages/products-page'), 'ProductsPage')
 const ProductNewPage = lazy(() => import('@/features/inventory/pages/product-new-page'), 'ProductNewPage')
@@ -216,6 +217,7 @@ const router = createBrowserRouter([
       { element: <RequirePerm perm="core.read" />, children: [
         { index: true, element: <Home /> },
         { path: 'approvals', element: <ApprovalsPage /> },
+        { path: 'training', element: <TrainingPage /> },
       ] },
       { path: 'inventory', element: <RequirePerm perm="inventory.read" />, children: [
         { index: true, element: <Navigate to="products" replace /> },

@@ -135,7 +135,7 @@ export function AppointmentDialog({ board, appt, initial, open, onOpenChange }: 
               onClick={() => invoice.mutate(undefined, { onSuccess: (inv) => { toast.success(t('Done: the invoice is ready to check')); onOpenChange(false); navigate(`/sales/invoices/${inv}`) } })}>
               <CheckCircle2 /> {t('Done, to the invoice')}</Button>}
             {editable && <Button loading={save.isPending} disabled={!f.resource_id || !f.client_name.trim() || !f.time}
-              onClick={() => save.mutate(f, { onSuccess: () => { toast.success(appt ? t('Saved') : t('Appointment booked')); onOpenChange(false) } })}>{appt ? t('Save') : t('Book')}</Button>}
+              onClick={() => save.mutate(f, { onSuccess: () => { toast.success(appt ? t('Saved') : t('Appointment booked')); onOpenChange(false) } })}>{appt ? t('Save') : t('Book|appointment')}</Button>}
           </div>
         </DialogFooter>
       </DialogContent>

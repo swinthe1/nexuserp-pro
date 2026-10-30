@@ -11730,6 +11730,29 @@ export type Database = {
           { foreignKeyName: "tax_codes_company_id_output_account_id_fkey"; columns: ["company_id", "output_account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      training_progress: {
+        Row: {
+          company_id: string
+          user_id: string
+          lesson: string
+          done_at: string
+        }
+        Insert: {
+          company_id: string
+          user_id: string
+          lesson: string
+          done_at?: string
+        }
+        Update: {
+          company_id?: string
+          user_id?: string
+          lesson?: string
+          done_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "training_progress_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
       units_of_measure: {
         Row: {
           id: string
@@ -16880,6 +16903,20 @@ export type Database = {
           p_company: string
         }
         Returns: { obligation: string | null; period_start: string | null; period_end: string | null; due_date: string | null; status: string | null; document_id: string | null; document_number: string | null; amount: number | null }[]
+      }
+      training_mark: {
+        Args: {
+          p_company: string
+          p_lesson: string
+          p_done?: boolean
+        }
+        Returns: undefined
+      }
+      training_overview: {
+        Args: {
+          p_company: string
+        }
+        Returns: { user_id: string | null; lessons: string[] | null; last_at: string | null }[]
       }
       transfers_on_the_road: {
         Args: {

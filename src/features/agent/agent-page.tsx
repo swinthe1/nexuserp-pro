@@ -1,3 +1,4 @@
+import { PageHelpButton } from '@/components/help'
 import {
   ArrowLeft, Banknote, Check, ChevronRight, CircleAlert, CloudOff, DoorClosed, MapPin, MessageCircle, Minus, Navigation, Phone, Plus,
   RefreshCw, Search, Send, ShoppingBag, Store, Wallet, X,
@@ -91,7 +92,7 @@ function RouteScreen({ boot, refreshing, onRefresh, onOpen }: { boot: AgentBoot;
       <div className="mb-3 rounded-2xl bg-primary p-4 text-primary-foreground">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm opacity-80">{t(WEEKDAYS[boot.weekday - 1])} · {formatDate(boot.today)}</p>
+            <p className="flex items-center gap-1 text-sm opacity-80">{t(WEEKDAYS[boot.weekday - 1])} · {formatDate(boot.today)} <PageHelpButton className="text-primary-foreground hover:bg-white/15 hover:text-primary-foreground" /></p>
             <p className="mt-0.5 text-2xl font-semibold">{route.length ? t('{done} of {n} visited', { done, n: route.length }) : t('No route for today')}</p>
           </div>
           <Button size="icon" variant="ghost" className="text-primary-foreground hover:bg-white/15 hover:text-primary-foreground" aria-label={t('Refresh')} onClick={onRefresh}>

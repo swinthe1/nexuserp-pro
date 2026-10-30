@@ -65,7 +65,7 @@ export function HotelRoomsPage() {
             {!rooms.data.length ? <EmptyState compact icon={BedDouble} title={t('No rooms yet')} description={types.data.length ? t('Add each room with its number.') : t('Add a room type first.')} /> : (
               <Table>
                 <TableHeader><TableRow className="hover:bg-transparent">
-                  <TableHead>{t('Room')}</TableHead><TableHead>{t('Type')}</TableHead><TableHead>{t('Floor')}</TableHead><TableHead className="w-[190px]">{t('Cleaning')}</TableHead>
+                  <TableHead>{t('Room')}</TableHead><TableHead>{t('Type')}</TableHead><TableHead>{t('Floor|building')}</TableHead><TableHead className="w-[190px]">{t('Cleaning')}</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
                   {rooms.data.map((r) => (
@@ -151,7 +151,7 @@ function RoomDialog({ value, types, onClose }: { value: Partial<Room>; types: Ro
         <div className="grid gap-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5"><Label htmlFor="rm-no">{t('Number')}</Label><Input id="rm-no" autoFocus value={v.number ?? ''} placeholder="101" onChange={(e) => setV({ ...v, number: e.target.value })} /></div>
-            <div className="grid gap-1.5"><Label htmlFor="rm-fl">{t('Floor')}</Label><Input id="rm-fl" value={v.floor ?? ''} onChange={(e) => setV({ ...v, floor: e.target.value })} /></div>
+            <div className="grid gap-1.5"><Label htmlFor="rm-fl">{t('Floor|building')}</Label><Input id="rm-fl" value={v.floor ?? ''} onChange={(e) => setV({ ...v, floor: e.target.value })} /></div>
           </div>
           <div className="grid gap-1.5"><Label>{t('Type')}</Label>
             <Select value={v.room_type_id} onValueChange={(x) => setV({ ...v, room_type_id: x })}>

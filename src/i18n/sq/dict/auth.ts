@@ -70,7 +70,7 @@ export default {
   "Version {v} · {size} · {date}": "Versioni {v} · {size} · {date}",
   "The download did not finish. Check the connection and try again.": "Shkarkimi nuk përfundoi. Kontrolloni lidhjen dhe provoni përsëri.",
   "Accounts are made by the DrisPRO administrator. Ask your company's administrator if you do not have one.": "Llogaritë i krijon administratori i DrisPRO. Nëse nuk keni llogari, pyesni administratorin e kompanisë suaj.",
-  "If they already have an account they get access now; otherwise the DrisPRO administrator makes their account and gives you the password.": "Nëse e kanë tashmë llogarinë, marrin qasje menjëherë; përndryshe llogarinë e krijon administratori i DrisPRO dhe jua jep fjalëkalimin.",
+  "If they already have an account they get an invitation to accept; otherwise the DrisPRO administrator makes their account and gives you the password.": "Nëse e kanë tashmë llogarinë, u del një ftesë që duhet ta pranojnë; përndryshe llogarinë e krijon administratori i DrisPRO dhe jua jep fjalëkalimin.",
   "Invite colleagues by email. For people without an account, the DrisPRO administrator makes one.": "Ftoni kolegët me email. Për ata pa llogari, llogarinë e krijon administratori i DrisPRO.",
   'The till works without internet': 'Arka punon edhe pa internet',
   'Sales go on; everything is sent when the line is back.': 'Shitja vazhdon; gjithçka dërgohet kur kthehet lidhja.',

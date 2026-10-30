@@ -46,6 +46,7 @@ export default {
   'Reservations': 'Rezervimet',
   'Rooms': 'Dhomat',
   'Room': 'Dhoma',
+  'Floor|building': 'Kati',
   'Room {n}': 'Dhoma {n}',
   'fl. {n}': 'kati {n}',
   'Room types': 'Llojet e dhomave',
