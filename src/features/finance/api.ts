@@ -540,3 +540,24 @@ export function usePayVendorBills() {
     unwrap(await supabase.rpc('pay_vendor_bills', { p_company: companyId, p_bank: a.bank, p_date: a.date, p_items: a.items as unknown as Json, p_reference: a.reference || undefined })) as unknown as
       { payments: { id: string; number: string; vendor: string; amount: number; status: string }[]; count: number; total: number })
 }
+
+/* ---------------------------------------------------------------- bank position: books next to the bank */
+export type BankPositionItemBank = { id: string; date: string; description: string | null; amount: number; statement_id: string }
+export type BankPositionItemBooks = { entry_id: string; date: string; number: string; description: string | null; amount: number }
+export type BankPositionAccount = {
+  id: string; name: string; kind: string; currency: string; bank_name: string | null; iban: string | null; account_id: string
+  book_balance: number; book_balance_base: number; in_30: number; out_30: number
+  statement: null | {
+    id: string; date: string; closing: number; status: string; reference: string | null; days_old: number; book_at_date: number; difference: number
+    not_in_books: number; not_in_books_count: number; not_in_bank: number; not_in_bank_count: number; unexplained: number
+  }
+  not_in_books_items: BankPositionItemBank[]; not_in_bank_items: BankPositionItemBooks[]
+}
+export function useBankPosition() {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: finKeys.list(companyId, 'bank-position'),
+    enabled: !!companyId,
+    queryFn: async () => (unwrap(await supabase.rpc('bank_position', { p_company: companyId })) as unknown as { accounts: BankPositionAccount[] }).accounts,
+  })
+}

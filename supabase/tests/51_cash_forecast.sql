@@ -67,10 +67,37 @@ select t.throws($$select public.pay_vendor_bills('$$ || :'co' || $$', '$$ || :'b
   'already paid or no longer open', 'a bill that is not open is refused');
 select t.throws($$select public.pay_vendor_bills('$$ || :'co' || $$', gen_random_uuid(), current_date, '[]')$$, 'Choose the bank', 'an account must be chosen');
 
+
+-- the bank position: books next to the last statement, and the difference explained
+reset role;
+insert into public.bank_statements (company_id, bank_account_id, statement_date, reference, opening_balance, closing_balance)
+values (:'co', :'bank', current_date, 'TEST', 0, 0) returning id as st \gset
+insert into public.bank_statement_lines (company_id, statement_id, transaction_date, description, amount, match_status)
+values (:'co', :'st', current_date, 'Bank fee', -2.5, 'unmatched'), (:'co', :'st', current_date, 'Unknown customer', 52.5, 'unmatched');
+set role authenticated;
+select t.login('alice@alba.al');
+select a as pos from jsonb_array_elements(public.bank_position(:'co') -> 'accounts') a where a ->> 'id' = :'bank' \gset
+select t.ok((:'pos'::jsonb -> 'statement' ->> 'not_in_books')::numeric = 50 and (:'pos'::jsonb -> 'statement' ->> 'not_in_books_count')::int = 2, 'two statement lines are not in the books yet');
+select t.ok((:'pos'::jsonb -> 'statement' ->> 'not_in_bank_count')::int >= 1, 'today''s supplier payments are not on the statement yet');
+select t.ok((:'pos'::jsonb -> 'statement' ->> 'book_at_date')::numeric = (:'pos'::jsonb ->> 'book_balance')::numeric, 'the books on the statement day are today''s books');
+reset role;
+update public.bank_statements set closing_balance = (:'pos'::jsonb -> 'statement' ->> 'book_at_date')::numeric - (:'pos'::jsonb -> 'statement' ->> 'not_in_bank')::numeric + 50 where id = :'st';
+set role authenticated;
+select t.login('alice@alba.al');
+select a as pos2 from jsonb_array_elements(public.bank_position(:'co') -> 'accounts') a where a ->> 'id' = :'bank' \gset
+select t.ok((:'pos2'::jsonb -> 'statement' ->> 'unexplained')::numeric = 0, 'when the statement agrees, nothing is left unexplained');
+reset role;
+update public.bank_statements set closing_balance = closing_balance + 10 where id = :'st';
+set role authenticated;
+select t.login('alice@alba.al');
+select t.ok((select (a -> 'statement' ->> 'unexplained')::numeric from jsonb_array_elements(public.bank_position(:'co') -> 'accounts') a where a ->> 'id' = :'bank') = 10, 'ten more on the statement is ten not explained');
+select t.ok((select a -> 'statement' from jsonb_array_elements(public.bank_position(:'co') -> 'accounts') a where a ->> 'kind' = 'cash' limit 1) = 'null'::jsonb, 'a cash box has no statement');
+
 -- someone from another company sees nothing
 select t.login('bob@kosova.xk');
 select t.throws($$select public.cash_forecast('$$ || :'co' || $$')$$, '', 'a stranger cannot see the forecast');
 select t.throws($$select * from public.payment_proposal('$$ || :'co' || $$')$$, '', 'nor the proposal');
+select t.throws($$select public.bank_position('$$ || :'co' || $$')$$, '', 'nor the bank position');
 select t.ok((select count(*) from public.cash_plan_items where company_id = :'co') = 0, 'nor the items');
 reset role;
 

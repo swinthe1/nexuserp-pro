@@ -13883,6 +13883,13 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      bank_position: {
+        Args: {
+          p_company: string
+          p_as_of?: string
+        }
+        Returns: Json
+      }
       bom_cost: {
         Args: {
           p_bom: string

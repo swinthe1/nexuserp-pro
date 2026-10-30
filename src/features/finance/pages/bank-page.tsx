@@ -27,9 +27,10 @@ import { t, td, tn, tServer } from '@/i18n'
 import { cn, formatDate, formatMoney, humanize, num, todayISO } from '@/lib/utils'
 import { usePartners } from '@/features/sales/api'
 import { type BankFile, parseAmount, parseDate, readBankFile } from '../bank-formats'
+import { BankPositionDialog, BankPositionLine } from '../components/bank-position'
 import {
   finKeys, useAcceptAllSuggestions, useAcceptSuggestion, useAccountBalances, useAccountDefaults, useAccounts, useAutoMatch, useDismissSuggestion, useBankAccounts, useBookStatementLine, useCreateStatement, useJournals, useMatchCandidates,
-  useReconcileStatement, useSaveBankAccount, useStatement, useStatements, useUpdateStatementLine, type StatementLine, type StatementRow,
+  useBankPosition, useReconcileStatement, useSaveBankAccount, useStatement, useStatements, useUpdateStatementLine, type StatementLine, type StatementRow,
 } from '../api'
 
 type BankAccount = NonNullable<ReturnType<typeof useBankAccounts>['data']>[number]
@@ -71,6 +72,10 @@ export function BankPage() {
   const [edit, setEdit] = React.useState<BankAccount | 'new' | null>(null)
   const [importFor, setImportFor] = React.useState<string | null | undefined>(undefined)
   const glBal = new Map((balances.data ?? []).map((b) => [b.account_id, num(b.closing)]))
+  const position = useBankPosition()
+  const posOf = (id: string) => position.data?.find((a) => a.id === id)
+  const [why, setWhy] = React.useState<string | null>(null)
+  const whyAcc = why ? posOf(why) : undefined
   const cols = React.useMemo<ColumnDef<StatementRow>[]>(() => [
     { accessorKey: 'statement_date', header: ({ column }) => <ColumnHeader column={column} title={t('Date')} />, meta: { label: t('Date') }, cell: ({ getValue }) => formatDate(getValue() as string) },
     { id: 'bank', accessorFn: (r) => td(r.bank?.name ?? ''), header: t('Account'), meta: { label: t('Account') } },
@@ -109,6 +114,7 @@ export function BankPage() {
                   <Link className="hover:underline" to={`/finance/accounts/${b.account_id}`}>{t('Account {code}', { code: b.account?.code ?? '' })}</Link>
                   <span>{last ? t('Last statement {date} · closing {amount}', { date: formatDate(last.statement_date), amount: formatMoney(last.closing_balance) }) : t('No statements yet')}</span>
                 </div>
+                <BankPositionLine a={posOf(b.id)} onOpen={() => setWhy(b.id)} />
                 {b.account_kind !== 'cash' && <Can perm="finance.write"><Button size="sm" variant="outline" className="justify-self-start" onClick={() => setImportFor(b.id)}><Upload /> {t('Import statement')}</Button></Can>}
               </CardContent>
             </Card>
@@ -120,6 +126,7 @@ export function BankPage() {
         exportName={t('bank-statements')} searchPlaceholder={t('Reference, account…')} onRowClick={(r) => navigate(`/finance/bank/statements/${r.id}`)}
         empty={{ title: t('No statements imported'), description: t('Paste the export from your e-banking to start matching.') }} />
       <BankAccountDialog account={edit} onClose={() => setEdit(null)} />
+      {whyAcc?.statement && <BankPositionDialog a={whyAcc} onClose={() => setWhy(null)} />}
       {importFor !== undefined && <ImportStatementDialog bankId={importFor} banks={banks.data ?? []} lastClosing={(id) => statements.data?.find((s) => s.bank_account_id === id)?.closing_balance}
         onClose={() => setImportFor(undefined)} onCreated={(id) => navigate(`/finance/bank/statements/${id}`)} />}
     </>
