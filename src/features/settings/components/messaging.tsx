@@ -20,7 +20,8 @@ import { AutomationCard } from './automation-card'
 type Mailbox = { host: string; port: number; security: 'tls' | 'starttls' | 'none'; username: string | null; has_password: boolean; from_name: string | null
   from_email: string; reply_to: string | null; is_active: boolean; verified_at: string | null; last_error: string | null }
 type Messaging = { summary_hour: number | null; summary_emails: string[]; summary_whatsapp: string[]; dunning_enabled: boolean; dunning_email: boolean
-  dunning_whatsapp: boolean; dunning_steps: number[]; dunning_subject: string | null; dunning_text: string | null; po_email_auto: boolean; po_email_text: string | null
+  dunning_whatsapp: boolean; dunning_steps: number[]; dunning_subject: string | null; dunning_text: string | null;
+  reminder_before_enabled: boolean; reminder_before_days: number; reminder_before_text: string | null; po_email_auto: boolean; po_email_text: string | null
   mailbox: Mailbox | null; whatsapp_ready: boolean; whatsapp_module?: boolean }
 type Msg = { id: string; channel: 'email' | 'whatsapp'; to_address: string; subject: string | null; purpose: string; status: string; attempts: number; last_error: string | null; sent_at: string | null; created_at: string }
 
@@ -29,6 +30,7 @@ const PH = {
   smtp: 'smtp.gmail.com', from: 'info@kompania.com', emails: 'pronari@kompania.com, menaxheri@kompania.com', phones: '+383 44 123 456', steps: '3, 15, 30',
   subject: 'Kujtesë pagese nga {company}', starttls: 'STARTTLS (587)', tls: 'SSL/TLS (465)', wa: 'WhatsApp',
   dunningText: 'Përshëndetje {customer},\n\nJu kujtojmë se këto fatura janë ende të papaguara:\n{invoices}\n\nGjithsej: {total}\n\nFaleminderit,\n{company} {phone}',
+  beforeText: 'Përshëndetje {customer},\n\nJu kujtojmë me mirësjellje se këto pagesa kanë afat së shpejti:\n{invoices}\n\nGjithsej: {total}\n\nFaleminderit,\n{company} {phone}',
   po: 'Përshëndetje,\n\nJu lutemi na dërgoni mallin e mëposhtëm sipas porosisë {number}{date}.',
 }
 const list = (s: string) => s.split(/[,;\n]/).map((x) => x.trim()).filter(Boolean)
@@ -175,12 +177,28 @@ function DunningCard({ d, writer }: { d: Messaging; writer: boolean }) {
   const [steps, setSteps] = React.useState(d.dunning_steps.join(', '))
   const [subject, setSubject] = React.useState(d.dunning_subject ?? '')
   const [text, setText] = React.useState(d.dunning_text ?? '')
-  const preview = useQuery({ queryKey: ['dunning-preview', companyId], enabled: !!companyId && d.dunning_enabled,
-    queryFn: async () => unwrap(await supabase.rpc('dunning_preview', { p_company: companyId! })) as unknown as { partner_id: string; partner_name: string; email: string | null; phone: string | null; step: number; total: number; invoices: number }[] })
+  const [beforeDays, setBeforeDays] = React.useState(String(d.reminder_before_days ?? 3))
+  const [beforeText, setBeforeText] = React.useState(d.reminder_before_text ?? '')
+  const preview = useQuery({ queryKey: ['dunning-preview', companyId], enabled: !!companyId && (d.dunning_enabled || d.reminder_before_enabled),
+    queryFn: async () => unwrap(await supabase.rpc('dunning_preview', { p_company: companyId! })) as unknown as { partner_id: string; partner_name: string; email: string | null; phone: string | null; step: number; total: number; invoices: number; kind: string }[] })
   return (
-    <AutomationCard icon={BellRing} title={t('Reminders for overdue invoices')}
+    <AutomationCard icon={BellRing} title={t('Payment reminders')}
       aside={<Switch checked={d.dunning_enabled} disabled={!writer || save.isPending} aria-label={t('Reminders for overdue invoices')} onCheckedChange={(v) => save.mutate({ dunning_enabled: v })} />}>
-      <p className="text-[13px] text-muted-foreground">{t('Every morning at 9, each customer whose invoices passed a step gets one message listing them. A step is sent once per invoice.')}</p>
+      <p className="text-[13px] text-muted-foreground">{t('Every morning at 9, each customer whose invoices passed a step gets one message listing them. A step is sent once per invoice; an invoice in instalments is reminded instalment by instalment.')}</p>
+      <div className="grid gap-3 rounded-md border p-3">
+        <label className="flex items-center gap-2 text-sm font-medium"><Switch checked={d.reminder_before_enabled} disabled={!writer || save.isPending} onCheckedChange={(v) => save.mutate({ reminder_before_enabled: v })} />
+          {t('Also remind before the due date')}</label>
+        {d.reminder_before_enabled && <>
+          <div className="flex flex-wrap items-center gap-2 text-[13px]">
+            <Input id="rbd" inputMode="numeric" className="h-8 w-16 text-right" value={beforeDays} onChange={(e) => setBeforeDays(e.target.value)} disabled={!writer} aria-label={t('Days before the due date')} />
+            <span className="text-muted-foreground">{t('days before the due date (each invoice or instalment once)')}</span>
+          </div>
+          <div className="grid gap-1.5"><Label htmlFor="rbt">{t('Text')}</Label>
+            <Textarea id="rbt" rows={5} value={beforeText} onChange={(e) => setBeforeText(e.target.value)} disabled={!writer} placeholder={PH.beforeText} />
+            <p className="text-xs text-muted-foreground">{t('Leave empty for the standard text. You can use {customer}, {invoices}, {total}, {date}, {company}, {phone}, {email}.')}</p></div>
+          {writer && <div className="flex justify-end"><Button size="sm" loading={save.isPending} onClick={() => save.mutate({ reminder_before_days: Number(beforeDays) || 3, reminder_before_text: beforeText })}>{t('Save')}</Button></div>}
+        </>}
+      </div>
       {d.dunning_enabled && (
         <>
           <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end">
@@ -201,7 +219,7 @@ function DunningCard({ d, writer }: { d: Messaging; writer: boolean }) {
               <div className="text-xs font-medium text-muted-foreground">{t('The next round would remind')}</div>
               {preview.data.slice(0, 8).map((p) => (
                 <div key={p.partner_id} className="flex items-center justify-between gap-3 text-[13px]">
-                  <span className="min-w-0 truncate">{p.partner_name} <span className="text-muted-foreground">· {t('{n} days', { n: p.step })}{!p.email && !p.phone ? ` · ${t('no email or phone')}` : ''}</span></span>
+                  <span className="min-w-0 truncate">{p.partner_name} <span className="text-muted-foreground">· {p.kind === 'upcoming' ? t('due soon') : t('{n} days late', { n: p.step })}{!p.email && !p.phone ? ` · ${t('no email or phone')}` : ''}</span></span>
                   <span className="shrink-0 tabular">{formatMoney(p.total)}</span>
                 </div>
               ))}

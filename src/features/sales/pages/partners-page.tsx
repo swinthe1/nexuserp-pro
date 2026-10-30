@@ -1,3 +1,4 @@
+import { CustomerReminders } from '@/features/finance/components/reminders'
 import { PartnerCards } from '@/features/finance/pages/cards-page'
 import { PortalLinks } from '@/features/portal/portal-links'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -134,6 +135,7 @@ function PartnerView({ partner }: { partner?: PartnerDetail }) {
           {partner.is_customer && <TabsTrigger value="prices">{t('Special prices')}</TabsTrigger>}
           {partner.is_customer && can('sales.read') && <TabsTrigger value="portal">{t('B2B portal')}</TabsTrigger>}
           {can('invoicing.read') && <TabsTrigger value="card">{t('Card')}</TabsTrigger>}
+          {partner.is_customer && can('invoicing.read') && <TabsTrigger value="reminders">{t('Reminders')}</TabsTrigger>}
           {partner.is_vendor && <TabsTrigger value="purchasing">{t('Purchasing')}</TabsTrigger>}
           {partner.is_vendor && <TabsTrigger value="vendor-prices">{t('Vendor prices')}</TabsTrigger>}
           <TabsTrigger value="activity">{t('Activity')}</TabsTrigger>
@@ -146,6 +148,7 @@ function PartnerView({ partner }: { partner?: PartnerDetail }) {
         {can('invoicing.read') && <TabsContent value="card"><PartnerCards partnerId={partner.id} isCustomer={partner.is_customer} isVendor={partner.is_vendor} /></TabsContent>}
         {partner.is_vendor && <TabsContent value="purchasing"><VendorPurchasing vendorId={partner.id} /></TabsContent>}
         {partner.is_vendor && <TabsContent value="vendor-prices"><VendorPricesTable vendorId={partner.id} /></TabsContent>}
+        {partner.is_customer && can('invoicing.read') && <TabsContent value="reminders"><CustomerReminders partnerId={partner.id} noReminders={partner.no_reminders} hasContact={!!(partner.email || partner.phone)} /></TabsContent>}
         <TabsContent value="activity" className="max-w-2xl"><ActivityTimeline table="business_partners" id={partner.id} /></TabsContent>
       </Tabs>
     </div>

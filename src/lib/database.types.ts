@@ -1301,6 +1301,7 @@ export type Database = {
           deleted_by: string | null
           default_discount_pct: number
           bank_iban: string | null
+          no_reminders: boolean
         }
         Insert: {
           id?: string
@@ -1334,6 +1335,7 @@ export type Database = {
           deleted_by?: string | null
           default_discount_pct?: number
           bank_iban?: string | null
+          no_reminders?: boolean
         }
         Update: {
           id?: string
@@ -1367,6 +1369,7 @@ export type Database = {
           deleted_by?: string | null
           default_discount_pct?: number
           bank_iban?: string | null
+          no_reminders?: boolean
         }
         Relationships: [
           { foreignKeyName: "business_partners_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -2125,6 +2128,9 @@ export type Database = {
           depreciation_auto: boolean
           small_business_rate: number | null
           print_stamp: string | null
+          reminder_before_enabled: boolean
+          reminder_before_days: number
+          reminder_before_text: string | null
         }
         Insert: {
           id?: string
@@ -2186,6 +2192,9 @@ export type Database = {
           depreciation_auto?: boolean
           small_business_rate?: number | null
           print_stamp?: string | null
+          reminder_before_enabled?: boolean
+          reminder_before_days?: number
+          reminder_before_text?: string | null
         }
         Update: {
           id?: string
@@ -2247,6 +2256,9 @@ export type Database = {
           depreciation_auto?: boolean
           small_business_rate?: number | null
           print_stamp?: string | null
+          reminder_before_enabled?: boolean
+          reminder_before_days?: number
+          reminder_before_text?: string | null
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -14570,7 +14582,7 @@ export type Database = {
         Args: {
           p_company: string
         }
-        Returns: { partner_id: string | null; partner_name: string | null; email: string | null; phone: string | null; step: number | null; total: number | null; invoices: number | null }[]
+        Returns: { partner_id: string | null; partner_name: string | null; email: string | null; phone: string | null; step: number | null; total: number | null; invoices: number | null; kind: string | null }[]
       }
       employee_advance_pay: {
         Args: {
@@ -16183,6 +16195,12 @@ export type Database = {
         }
         Returns: Json
       }
+      reminder_history: {
+        Args: {
+          p_partner: string
+        }
+        Returns: { id: string | null; at: string | null; channel: string | null; to_address: string | null; subject: string | null; status: string | null; sent_at: string | null; last_error: string | null }[]
+      }
       remove_from_route: {
         Args: {
           p_shipment: string
@@ -16579,6 +16597,12 @@ export type Database = {
           p_company: string
         }
         Returns: number
+      }
+      send_reminder_now: {
+        Args: {
+          p_partner: string
+        }
+        Returns: Json
       }
       set_depreciation_auto: {
         Args: {

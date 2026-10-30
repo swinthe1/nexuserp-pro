@@ -1,4 +1,5 @@
-import { Download } from 'lucide-react'
+import { BellRing, Download } from 'lucide-react'
+import { useSendReminder } from '../components/reminders'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Can, useCompany } from '@/app/company-provider'
@@ -38,6 +39,8 @@ export function AgingPage({ kind }: { kind: 'ar' | 'ap' }) {
   const isAR = kind === 'ar'
   const payType = isAR ? 'customer_payment' : 'vendor_payment'
   const partnerHref = (id: string) => `/partners/${id}`
+  const remind = useSendReminder()
+  const overdueOf = (r: AgingRow) => num(r.d1_30) + num(r.d31_60) + num(r.d61_90) + num(r.d90_plus)
 
   const exportCsv = () => downloadCsv(`${isAR ? t('receivables') : t('payables')}-${asOf}`, [
     [isAR ? t('Customer') : t('Vendor'), ...BUCKETS.map((b) => t(b.label)), t('Not matched'), t('Total with VAT'), t('Oldest due date'), t('Documents')],
@@ -94,7 +97,10 @@ export function AgingPage({ kind }: { kind: 'ar' | 'ap' }) {
                     <TableCell className="text-right tabular font-medium">{formatMoney(r.total)}</TableCell>
                     <TableCell className={cn('text-[13px]', r.oldest_due && r.oldest_due < asOf && 'text-destructive')}>{formatDate(r.oldest_due)}</TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Can perm="invoicing.write"><Button size="sm" variant="ghost" asChild><Link to={`/finance/payments/new?type=${payType}&partner=${r.partner_id}`}>{isAR ? t('Collect') : t('Pay')}</Link></Button></Can>
+                      <Can perm="invoicing.write"><span className="flex justify-end gap-1">
+                        {isAR && overdueOf(r) > 0 && <Button size="sm" variant="ghost" title={t('Send a reminder now')} aria-label={t('Send a reminder now')} loading={remind.isPending && remind.variables === r.partner_id} onClick={() => remind.mutate(r.partner_id)}><BellRing /></Button>}
+                        <Button size="sm" variant="ghost" asChild><Link to={`/finance/payments/new?type=${payType}&partner=${r.partner_id}`}>{isAR ? t('Collect') : t('Pay')}</Link></Button>
+                      </span></Can>
                     </TableCell>
                   </TableRow>
                 ))}
