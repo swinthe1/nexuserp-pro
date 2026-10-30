@@ -68,7 +68,7 @@ function ReadsPage({ kind }: { kind: Kind }) {
   return (
     <div className="mx-auto grid max-w-5xl gap-4">
       {kind === 'asset'
-        ? <PageHeader title={t('Assets from invoices')} description={t('A vehicle, a machine, computers: photograph the invoice and DrisPRO books it as an investment, makes the fixed asset and plans its depreciation.')} />
+        ? <PageHeader back={{ href: '/finance/assets', label: t('Fixed assets') }} title={t('Assets from invoices')} description={t('A vehicle, a machine, computers: photograph the invoice and DrisPRO books it as an investment, makes the fixed asset and plans its depreciation.')} />
         : <PageHeader title={t('Expenses')} description={t('Fuel, electricity, phone, a meal with a client: photograph the receipt and DrisPRO reads it, proposes where it goes and books it. It learns from what you choose.')}
             actions={<Can perm="inventory.write"><Button variant="outline" loading={seed.isPending} onClick={() => seed.mutate()}><ListPlus /> {t('Ready-made expense items')}</Button></Can>} />}
       <PhotoCard icon={ReceiptText} busy={send.isPending} onPick={pick}

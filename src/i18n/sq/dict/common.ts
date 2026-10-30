@@ -120,7 +120,7 @@ export default {
   'Location': 'Vendndodhja',
   'Lot': 'Loti',
   'Barcode': 'Barkodi',
-  'Unit': 'Njësia',
+  'Unit': 'Njësia matëse',
   'Vendor': 'Furnitori',
   'Customer': 'Klienti',
   'Partner': 'Partneri',

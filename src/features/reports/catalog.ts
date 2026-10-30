@@ -30,8 +30,6 @@ export const REPORTS: ReportDef[] = [
     path: ['warehouse', 'category', 'product'], start: 'warehouse', measure: 'value', asOf: true },
   { key: 'stock_aging', title: msg('Stock aging'), question: msg('How much stock has not moved for 30, 90 or 180 days?'), area: msg('Stock'), perm: 'inventory.read',
     path: ['age', 'category', 'product'], start: 'age', measure: 'value', asOf: true },
-  { key: 'receivables', title: msg('Open receivables'), question: msg('Who owes us, and how overdue is it?'), area: msg('Finance and tax'), perm: 'invoicing.read',
-    path: ['bucket', 'customer', 'document'], start: 'bucket', measure: 'due', asOf: true },
   { key: 'vat', title: msg('VAT summary'), question: msg('Output and input VAT by month and treatment, from the same entries as the VAT books.'), area: msg('Finance and tax'), perm: 'tax.read',
     path: ['month', 'treatment', 'partner', 'document'], start: 'month', measure: 'net_vat' },
   { key: 'payroll', title: msg('Payroll cost'), question: msg('What do salaries cost us per month, department and person?'), area: msg('People'), perm: 'payroll.read',

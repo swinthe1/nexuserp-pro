@@ -68,7 +68,7 @@ export default {
   "Goods leaving the warehouse for customers. Completing a delivery takes the goods out of stock.": "Malli që del nga njësia për klientët. Kur dërgesa përfundon, malli zbritet nga stoku.",
   "Deliveries are created from confirmed sales orders.": "Dërgesat krijohen nga porositë e konfirmuara të shitjes.",
   "Planned for": "Planifikuar për",
-  "Units": "Njësi",
+  "Units": "Sasia",
   "Cost ({currency})": "Kosto ({currency})",
   "Invoices": "Fatura",
   "No invoices yet": "Ende pa fatura",

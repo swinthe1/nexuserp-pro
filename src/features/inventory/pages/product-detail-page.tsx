@@ -35,7 +35,6 @@ import {
   useAttributes, useCategories, useCostHistory, usePriceChanges, useProduct, useProductStockLevels, useTaxCodes, useUnits, useUpdateProduct,
   useVariantMutations, useVendors, useWarehouses, type ProductDetail,
 } from '../api'
-import { MovementsTable } from '../components/movements-table'
 import { CostLayersCard } from '../components/cost-layers-card'
 import { PacksCard } from '../components/packs-card'
 import { ProductPhoto } from '../components/product-photo'
@@ -109,7 +108,6 @@ export function ProductDetailPage() {
           <TabsTrigger value="variants">{t('Variants & barcodes')} <Badge variant="secondary">{p.product_variants.length}</Badge></TabsTrigger>
           {p.product_type === 'stockable' && <TabsTrigger value="reorder">{t('Reorder points')}</TabsTrigger>}
           {p.product_type === 'stockable' && <TabsTrigger value="card">{t('Item card')}</TabsTrigger>}
-          {p.product_type === 'stockable' && <TabsTrigger value="movements">{t('Movements')}</TabsTrigger>}
           <TabsTrigger value="activity">{t('Activity')}</TabsTrigger>
         </TabsList>
 
@@ -154,7 +152,6 @@ export function ProductDetailPage() {
         <TabsContent value="packs"><PacksCard product={{ id: p.id, sales_price: p.sales_price, uom_code: units.data?.find((u) => u.id === p.uom_id)?.code }} /></TabsContent>
         <TabsContent value="reorder"><ReorderTab product={p} /></TabsContent>
         <TabsContent value="card"><ProductItemCard variants={p.product_variants} /></TabsContent>
-        <TabsContent value="movements"><MovementsTable productId={p.id} tableKey="inventory.product-movements" /></TabsContent>
         <TabsContent value="activity" className="max-w-2xl"><ActivityTimeline table="products" id={p.id} /></TabsContent>
       </Tabs>
     </>

@@ -380,7 +380,7 @@ export default {
   'Unit price ({currency})': 'Çmimi për njësi ({currency})',
   'Unit price, line {n}': 'Çmimi për njësi, rreshti {n}',
   'Unit, type and tracking can\'t change after creation because stock history depends on them.': 'Njësia, lloji dhe ndjekja nuk ndryshojnë pas krijimit, sepse historiku i stokut varet prej tyre.',
-  'Units': 'Njësi',
+  'Units': 'Sasia',
   'Units in': 'Njësi hyrëse',
   'Units of measure': 'Njësitë matëse',
   'Units out': 'Njësi dalëse',

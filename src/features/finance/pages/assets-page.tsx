@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { CalendarClock, Plus, Trash2 } from 'lucide-react'
+import { CalendarClock, Camera, Plus, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -62,6 +62,7 @@ export function AssetsPage() {
       <PageHeader title={t('Fixed assets|menu')} description={t('Equipment, vehicles and furniture the company owns. Depreciation is recorded every month; each asset shows its schedule.')}
         actions={<Can perm="finance.write">
           <Button variant="outline" onClick={() => setRunOpen(true)}><CalendarClock /> {t('Run depreciation')}</Button>
+          <Button variant="outline" asChild><Link to="/finance/asset-invoices"><Camera /> {t('From an invoice photo')}</Link></Button>
           <Button asChild><Link to="/finance/assets/new"><Plus /> {t('New asset')}</Link></Button>
         </Can>} />
       <div className="mb-4 grid gap-3 sm:grid-cols-3">

@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { Ban, BookCheck, Check, CheckCheck, Landmark, Link2, Plus, Undo2, Upload, Wallet, Wand2 } from 'lucide-react'
+import { Ban, BookCheck, BookOpenText, Check, CheckCheck, Landmark, Link2, Plus, Undo2, Upload, Wallet, Wand2 } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -115,6 +115,7 @@ export function BankPage() {
                   <span>{last ? t('Last statement {date} · closing {amount}', { date: formatDate(last.statement_date), amount: formatMoney(last.closing_balance) }) : t('No statements yet')}</span>
                 </div>
                 <BankPositionLine a={posOf(b.id)} onOpen={() => setWhy(b.id)} />
+                {b.account_kind === 'cash' && <Button size="sm" variant="outline" className="justify-self-start" asChild><Link to={`/finance/cash-book?account=${b.id}`}><BookOpenText /> {t('Cash book|ledger')}</Link></Button>}
                 {b.account_kind !== 'cash' && <Can perm="finance.write"><Button size="sm" variant="outline" className="justify-self-start" onClick={() => setImportFor(b.id)}><Upload /> {t('Import statement')}</Button></Can>}
               </CardContent>
             </Card>

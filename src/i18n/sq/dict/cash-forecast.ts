@@ -92,6 +92,7 @@ export default {
 
   // emra që ngatërroheshin
   'Store|shop': 'Dyqani',
+  'From an invoice photo': 'Nga fotoja e faturës',
   'Pay several at once': 'Paguaj disa njëherësh',
   'Numbering that restarts every year must show the year, or the numbers of two years would be the same': 'Numërimi që rifillon çdo vit duhet ta tregojë vitin, përndryshe numrat e dy viteve do të ishin të njëjtë',
   'The same bill is chosen twice': 'E njëjta faturë është zgjedhur dy herë',
