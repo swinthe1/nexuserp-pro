@@ -5,6 +5,7 @@
  * report bucket labels and journal line descriptions.
  */
 export const serverTemplates: [string, string][] = [
+  ['Bills in % must be paid from an account in that currency; % is in %', 'Faturat në {0} duhet të paguhen nga një llogari në atë monedhë; {1} është në {2}'],
   ['Too many wrong PINs; try again in % minutes', 'Shumë PIN të gabuar; provoni përsëri pas {0} minutash'],
   ['This company has asked % questions this month, the limit of its plan; the assistant starts again on the 1st', 'Kjo kompani ka bërë {0} pyetje këtë muaj, kufiri i paketës; asistenti nis sërish më 1 të muajit'],
   ['This company has read % invoices this month, the limit of its plan; reading starts again on the 1st', 'Kjo kompani ka lexuar {0} fatura këtë muaj, kufiri i paketës; leximi nis sërish më 1 të muajit'],

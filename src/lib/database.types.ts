@@ -1549,6 +1549,59 @@ export type Database = {
           { foreignKeyName: "carriers_company_id_partner_id_fkey"; columns: ["company_id", "partner_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      cash_plan_items: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          direction: string
+          amount: number
+          first_date: string
+          every_months: number
+          end_date: string | null
+          notes: string | null
+          is_active: boolean
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          direction?: string
+          amount: number
+          first_date: string
+          every_months?: number
+          end_date?: string | null
+          notes?: string | null
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string
+          direction?: string
+          amount?: number
+          first_date?: string
+          every_months?: number
+          end_date?: string | null
+          notes?: string | null
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "cash_plan_items_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
       channel_orders: {
         Row: {
           id: string
@@ -13896,6 +13949,15 @@ export type Database = {
         }
         Returns: string
       }
+      cash_forecast: {
+        Args: {
+          p_company: string
+          p_weeks?: number
+          p_as_of?: string
+          p_estimates?: boolean
+        }
+        Returns: Json
+      }
       cash_limit_preview: {
         Args: {
           p_company: string
@@ -15167,6 +15229,23 @@ export type Database = {
           p_date?: string
         }
         Returns: string
+      }
+      pay_vendor_bills: {
+        Args: {
+          p_company: string
+          p_bank: string
+          p_date: string
+          p_items: Json
+          p_reference?: string
+        }
+        Returns: Json
+      }
+      payment_proposal: {
+        Args: {
+          p_company: string
+          p_as_of?: string
+        }
+        Returns: { bill_id: string | null; number: string | null; vendor_invoice_number: string | null; vendor_id: string | null; vendor_name: string | null; vendor_iban: string | null; bill_date: string | null; due_date: string | null; days_overdue: number | null; currency_code: string | null; total: number | null; open_amount: number | null; open_base: number | null; discount_amount: number | null; discount_until: string | null; reason: string | null; priority: number | null }[]
       }
       payroll_income_tax: {
         Args: {

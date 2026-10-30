@@ -4,7 +4,7 @@ import {
   BadgePercent, ClipboardCheck, Hourglass, PackageOpen, ScanLine, ShoppingBasket,
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, Building, HandCoins, ListTree, Network, Settings2, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, 
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
-  BedDouble, BookUser, CalendarRange, ConciergeBell, Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, ReceiptText, IdCard, Settings, CreditCard, type LucideIcon, Activity, ArrowUpDown, BadgeEuro, BookOpen, CalendarPlus, CheckCheck, CircleDollarSign, Clock, Coins, Combine, FileScan, FolderTree, Gift, Handshake, LineChart, Map, Move, NotebookTabs, PieChart, ScanBarcode, Send,
+  BedDouble, BookUser, CalendarRange, ConciergeBell, Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, ReceiptText, IdCard, Settings, CreditCard, type LucideIcon, Activity, ArrowUpDown, BadgeEuro, BookOpen, CalendarPlus, CheckCheck, CircleDollarSign, Clock, Coins, Combine, FileScan, FolderTree, Gift, Handshake, LineChart, Map, Move, NotebookTabs, PieChart, ScanBarcode, Send, ListChecks, ChartSpline,
 } from 'lucide-react'
 import { msg } from '@/i18n'
 
@@ -110,6 +110,8 @@ export const NAV: NavSection[] = [
     items: [
       { label: msg('Payments|menu'), href: '/finance/payments', icon: CircleDollarSign, perm: 'invoicing.read', keywords: ['receipts', 'pay', 'arkëtim', 'pagesë'] },
       { label: msg('Debts|menu'), href: '/finance/receivables', match: ['/finance/payables'], icon: Scale, perm: 'invoicing.read', keywords: ['ar', 'aging', 'debtors', 'overdue', 'bilanci i subjekteve', 'saldo', 'borxhet', 'kush më ka borxh', 'ap', 'creditors', 'due', 'kujt i kam borxh', 'furnitorët', 'borxhe', 'detyrime'] },
+      { label: msg('Payment proposal'), href: '/finance/payment-proposal', icon: ListChecks, perm: 'invoicing.read', keywords: ['propozimi i pagesave', 'çka të paguaj', 'pagesat e furnitorëve', 'pay suppliers', 'payment run', 'zbritje', 'afati'] },
+      { label: msg('Cash forecast'), href: '/finance/cash-forecast', icon: ChartSpline, perm: 'finance.read', keywords: ['parashikimi', 'cash flow', 'rrjedha e parasë', 'paraja', 'likuiditeti', 'liquidity', '13 javë', 'forecast', 'minus'] },
       { label: msg('Expenses'), href: '/finance/expenses', icon: ReceiptText, perm: 'invoicing.read', keywords: ['shpenzime', 'shpenzim', 'karburant', 'naftë', 'rryma', 'kupon', 'faturë', 'foto', 'receipt', 'fuel', 'expense'] },
       { label: msg('Bank and cash'), href: '/finance/bank', icon: Landmark, perm: 'finance.read', keywords: ['reconciliation', 'statement', 'banka'] },
       { label: msg('Cash book|ledger'), href: '/finance/cash-book', icon: Coins, perm: 'finance.read', keywords: ['libri i arkës', 'arka', 'cash book', 'para në dorë'] },

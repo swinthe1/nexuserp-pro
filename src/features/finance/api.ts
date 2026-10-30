@@ -479,3 +479,64 @@ export function useFiscalStartMonth() {
     queryFn: async () => unwrap(await supabase.from('companies').select('fiscal_year_start_month').eq('id', companyId).single()).fiscal_year_start_month as number,
   })
 }
+
+/* ---------------------------------------------------------------- cash forecast and the supplier payment proposal */
+export type ForecastWeek = {
+  week: number; start: string; end: string; receipts: number; recurring_in: number; plan_in: number; sales_in: number; future_sales: number
+  bills: number; payroll: number; vat: number; plan_out: number; other_out: number; future_bills: number
+  inflow: number; outflow: number; net: number; closing: number
+}
+export type ForecastFlow = { date: string; week: number; kind: string; label: string | null; partner_id: string | null; partner: string | null; amount: number; ref: string | null; overdue: boolean }
+export type CashForecast = {
+  as_of: string; weeks_count: number; estimates: boolean; currency: string; opening: number
+  accounts: { id: string; name: string; kind: string; currency: string; balance: number }[]
+  weeks: ForecastWeek[]; first_negative_week: number | null; lowest: { week: number; closing: number } | null
+  overdue_in: number; overdue_out: number; doubtful: number; avg_late_days: number
+  ar_open: number; ap_open: number; dso: number | null; dpo: number | null
+  customers: { id: string; name: string; amount: number; late_days: number; docs: number; overdue: boolean }[]
+  flows: ForecastFlow[]
+}
+export function useCashForecast(weeks: number, estimates: boolean) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...finKeys.list(companyId, 'cash-forecast'), weeks, estimates],
+    enabled: !!companyId,
+    queryFn: async () => unwrap(await supabase.rpc('cash_forecast', { p_company: companyId, p_weeks: weeks, p_estimates: estimates })) as unknown as CashForecast,
+  })
+}
+export type CashPlanItem = Tables<'cash_plan_items'>
+export function useCashPlanItems() {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: finKeys.list(companyId, 'cash-plan'),
+    enabled: !!companyId,
+    queryFn: async () => unwrap(await supabase.from('cash_plan_items').select('*').eq('company_id', companyId).order('first_date')),
+  })
+}
+export function useSaveCashPlanItem() {
+  const { companyId } = useCompany()
+  return useAction(async ({ id, ...v }: Partial<CashPlanItem> & { id?: string }) => id
+    ? unwrap(await supabase.from('cash_plan_items').update(v as never).eq('id', id))
+    : unwrap(await supabase.from('cash_plan_items').insert({ ...v, company_id: companyId } as never)))
+}
+export const useDeleteCashPlanItem = () => useAction(async (id: string) => unwrap(await supabase.from('cash_plan_items').delete().eq('id', id)))
+
+export type ProposalRow = {
+  bill_id: string; number: string; vendor_invoice_number: string | null; vendor_id: string; vendor_name: string; vendor_iban: string | null
+  bill_date: string; due_date: string | null; days_overdue: number; currency_code: string; total: number; open_amount: number; open_base: number
+  discount_amount: number; discount_until: string | null; reason: 'overdue' | 'discount' | 'due_soon' | 'later'; priority: number
+}
+export function usePaymentProposal() {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: finKeys.list(companyId, 'payment-proposal'),
+    enabled: !!companyId,
+    queryFn: async () => unwrap(await supabase.rpc('payment_proposal', { p_company: companyId })) as unknown as ProposalRow[],
+  })
+}
+export function usePayVendorBills() {
+  const { companyId } = useCompany()
+  return useAction(async (a: { bank: string; date: string; items: { bill: string; amount: number }[]; reference?: string }) =>
+    unwrap(await supabase.rpc('pay_vendor_bills', { p_company: companyId, p_bank: a.bank, p_date: a.date, p_items: a.items as unknown as Json, p_reference: a.reference || undefined })) as unknown as
+      { payments: { id: string; number: string; vendor: string; amount: number; status: string }[]; count: number; total: number })
+}
