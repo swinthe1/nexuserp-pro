@@ -17,7 +17,7 @@ import { msg, t, td } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { cn, formatMoney, num, todayISO } from '@/lib/utils'
-import { useAccounts, useAssetCategories } from '../api'
+import { useAccounts, useAssetCategories, useExpensePayAccounts } from '../api'
 
 const CATEGORIES: { key: string; label: string }[] = [
   { key: 'fuel', label: msg('Fuel') }, { key: 'utilities', label: msg('Electricity, water, heating') }, { key: 'telecom', label: msg('Phone and internet') },
@@ -41,7 +41,6 @@ type Read = { id: string; status: 'queued' | 'reading' | 'done' | 'failed'; erro
   image: string | null; result: Result | null; asset_id?: string | null; asset_number?: string | null }
 type Row = { id: string; file_name: string | null; status: string; error: string | null; vendor: string | null; number: string | null; date: string | null; total: number | null
   category: string | null; bill_id: string | null; bill_number: string | null; created_at: string; asset_id?: string | null }
-type PayAccount = { id: string; name: string; kind: 'cash' | 'bank' }
 
 /** Fuel, electricity, a restaurant bill…: photographed, read, booked with one click. */
 export function ExpensesPage() { return <ReadsPage kind="expense" /> }
@@ -94,8 +93,7 @@ function Review({ id, kind, onDone }: { id: string | null; kind: Kind; onDone: (
     refetchInterval: (x) => (['queued', 'reading'].includes((x.state.data as Read | undefined)?.status ?? 'queued') ? 2500 : false),
     queryFn: async () => unwrap(await supabase.rpc('expense_read_get', { p_id: id! })) as unknown as Read,
   })
-  const pay = useQuery({ queryKey: ['expense-pay', companyId], enabled: !!companyId,
-    queryFn: async () => unwrap(await supabase.rpc('expense_pay_accounts', { p_company: companyId! })) as unknown as PayAccount[] })
+  const pay = useExpensePayAccounts()
   const r = q.data?.result ?? null
   const [f, setF] = React.useState<{ vendor: string | null; vendorName: string; taxNo: string; number: string; date: string; category: string; account: string | null
     description: string; lines: VatLine[]; payFrom: string | null; assetName: string; assetCat: string | null; life: string; serial: string } | null>(null)

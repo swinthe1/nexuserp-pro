@@ -1,3 +1,4 @@
+import { useExpensePayAccounts } from '../api'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2, Plus, Printer, Sparkles, Trash2, TriangleAlert } from 'lucide-react'
 import * as React from 'react'
@@ -24,7 +25,6 @@ type Read = { id: string; status: 'queued' | 'reading' | 'done' | 'failed'; erro
   image: string | null; result: Result | null }
 type Row = { id: string; file_name: string | null; status: string; error: string | null; z_number: string | null; device: string | null; date: string | null
   total: number | null; invoice_id: string | null; invoice_number: string | null; created_at: string }
-type PayAccount = { id: string; name: string; kind: 'cash' | 'bank' }
 
 /** The Z report of a client's own fiscal register: photographed, read, booked as the day's sales. */
 export function ZReportsPage() {
@@ -62,8 +62,7 @@ function Review({ id, onDone }: { id: string | null; onDone: () => void }) {
     refetchInterval: (x) => (['queued', 'reading'].includes((x.state.data as Read | undefined)?.status ?? 'queued') ? 2500 : false),
     queryFn: async () => unwrap(await supabase.rpc('zreport_read_get', { p_id: id! })) as unknown as Read,
   })
-  const pay = useQuery({ queryKey: ['expense-pay', companyId], enabled: !!companyId,
-    queryFn: async () => unwrap(await supabase.rpc('expense_pay_accounts', { p_company: companyId! })) as unknown as PayAccount[] })
+  const pay = useExpensePayAccounts()
   const r = q.data?.result ?? null
   const [f, setF] = React.useState<{ z: string; device: string; date: string; lines: Line[]; cash: string; card: string; cashAcc: string | null; cardAcc: string | null } | null>(null)
   React.useEffect(() => {

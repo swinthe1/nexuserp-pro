@@ -729,3 +729,11 @@ export function useSavePriceRules() {
     onError: (e) => toast.error(describeError(e)),
   })
 }
+
+/** An item by its barcode or code (the first match), or null */
+export async function lookupCode(companyId: string, code: string) {
+  const { data, error } = await supabase.rpc('find_variant_by_code', { p_company: companyId, p_code: code })
+  if (error) throw error
+  const hit = data?.[0]
+  return hit?.variant_id ? { ...hit, variant_id: hit.variant_id } : null
+}

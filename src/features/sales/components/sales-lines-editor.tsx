@@ -11,9 +11,8 @@ import { FormControl, FormField, FormItem, FormMessage } from '@/components/ui/f
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { supabase } from '@/lib/supabase'
 import { cn, formatMoney, formatQty, num } from '@/lib/utils'
-import { useTaxCodes } from '@/features/inventory/api'
+import { useTaxCodes, lookupCode } from '@/features/inventory/api'
 import { fetchPrice, useSellableVariants } from '../api'
 import type { SalesDocValues } from '../schemas'
 import { t, td } from '@/i18n'
@@ -180,9 +179,8 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
                               searchPlaceholder={t('Code, name or scan')}
                               onChange={(val) => { field.onChange(val); setPack(i, { pack_id: null, pack_qty: null }); if (val) void applyPrice(i, val, num(l?.quantity) || 1, true) }}
                               onUnmatchedEnter={async (code) => {
-                                const { data } = await supabase.rpc('find_variant_by_code', { p_company: companyId, p_code: code })
-                                const hit = data?.[0]
-                                if (!hit?.variant_id) return void toast.error(t('No product with barcode or code “{code}”', { code }))
+                                const hit = await lookupCode(companyId!, code).catch(() => null)
+                                if (!hit) return void toast.error(t('No product with barcode or code “{code}”', { code }))
                                 field.onChange(hit.variant_id)
                                 form.setValue(`lines.${i}.quantity`, num(hit.units_per_scan) || 1)
                                 const k = packForScan(packs.byVariant.get(hit.variant_id), num(hit.units_per_scan))

@@ -21,6 +21,21 @@ select (select string_agg(round(qty_left, 3) || '@' || round(unit_cost, 2), ' ' 
 rollback;
 select t.ok(:'layers' = '5.000@9.00', 'two receipts at the same moment: the first one (at 5) leaves first, 5 at 9 are left');
 select t.ok(:'left_value'::numeric = 45, 'what is left is worth 45');
+
+-- freight on the first receipt goes to its layer only
+begin;
+select gen_random_uuid() as line1, gen_random_uuid() as line2 \gset
+select app.post_stock_move(:'co', 'receipt', :'v', :'vend', :'loc', 10, 5.00, null, 'goods_receipt', null, :'line1') \g /dev/null
+select app.post_stock_move(:'co', 'receipt', :'v', :'vend', :'loc', 10, 9.00, null, 'goods_receipt', null, :'line2') \g /dev/null
+select app.post_value_adjustment(:'co', :'v', :'loc', 20, 'landed_cost', null, :'line1', 'TEST') \g /dev/null
+select (select string_agg(round(qty_left, 3) || '@' || round(unit_cost, 2), ' ' order by layer_at, seq) from public.cost_layers where variant_id = :'v' and qty_left > 0) as lc_layers \gset
+select app.post_stock_move(:'co', 'delivery', :'v', :'loc', :'cust', 15) \g /dev/null
+select (select total_cost from public.stock_movements where variant_id = :'v' and movement_type = 'delivery' order by created_at desc limit 1) as lc_cost,
+       (select total_value from public.item_costs where variant_id = :'v') as lc_left \gset
+rollback;
+select t.ok(:'lc_layers' = '10.000@7.00 10.000@9.00', 'freight of 20 on the first receipt: its 10 pieces cost 7, the others still 9');
+select t.ok(:'lc_cost'::numeric = 115, 'selling 15 costs 10 × 7 + 5 × 9 = 115');
+select t.ok(:'lc_left'::numeric = 45, 'and 5 at 9 are left');
 update public.company_settings set costing_method = :'old_method' where company_id = :'co';
 \set QUIET off
 select count(*) as assertions_passed from t.results;

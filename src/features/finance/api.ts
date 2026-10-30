@@ -561,3 +561,11 @@ export function useBankPosition() {
     queryFn: async () => (unwrap(await supabase.rpc('bank_position', { p_company: companyId })) as unknown as { accounts: BankPositionAccount[] }).accounts,
   })
 }
+
+/** The cash boxes and bank accounts an expense or a Z report can be paid from */
+export type PayAccount = { id: string; name: string; kind: 'cash' | 'bank' }
+export function useExpensePayAccounts() {
+  const { companyId } = useCompany()
+  return useQuery({ queryKey: ['expense-pay', companyId], enabled: !!companyId,
+    queryFn: async () => unwrap(await supabase.rpc('expense_pay_accounts', { p_company: companyId! })) as unknown as PayAccount[] })
+}

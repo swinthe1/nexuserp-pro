@@ -14,9 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { msg, t, td } from '@/i18n'
 import { packForScan, usePacks } from '@/lib/packs'
-import { supabase } from '@/lib/supabase'
 import { cn, formatMoney, formatQty, humanize, num } from '@/lib/utils'
-import { useTaxCodes } from '@/features/inventory/api'
+import { useTaxCodes, lookupCode } from '@/features/inventory/api'
 import { fetchPurchasePrice, usePurchasableVariants, type MatchLine, type PurchasePrice } from '../api'
 import type { PurchaseLineValues } from '../schemas'
 
@@ -193,9 +192,8 @@ export function PurchaseLinesEditor({ form: anyForm, editable, currency, progres
                               placeholder={t('Product, or leave empty for a free-text line')} searchPlaceholder={t('SKU, name or scan')}
                               onChange={(val) => { field.onChange(val); setPack(i, { pack_id: null, pack_qty: null }); if (val) void applyPrice(i, val, num(l?.quantity) || 1, true) }}
                               onUnmatchedEnter={async (code) => {
-                                const { data } = await supabase.rpc('find_variant_by_code', { p_company: companyId, p_code: code })
-                                const hit = data?.[0]
-                                if (!hit?.variant_id) return void toast.error(t('No product with barcode or SKU “{code}”', { code }))
+                                const hit = await lookupCode(companyId!, code).catch(() => null)
+                                if (!hit) return void toast.error(t('No product with barcode or code “{code}”', { code }))
                                 field.onChange(hit.variant_id)
                                 const k = packForScan(packs.byVariant.get(hit.variant_id), num(hit.units_per_scan))
                                 setPack(i, k ? { pack_id: k.id, pack_qty: 1, quantity: k.factor } : { pack_id: null, pack_qty: null })
