@@ -1,3 +1,4 @@
+import { Hint } from '@/components/help'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarRange, Pencil, Plus, Split, Trash2 } from 'lucide-react'
 import * as React from 'react'
@@ -124,13 +125,13 @@ function TermDialog({ term, onClose }: { term: Partial<Term>; onClose: () => voi
           {!split.length && <div className="grid gap-1.5"><Label htmlFor="pt-days">{t('Pay within (days)')}</Label>
             <Input id="pt-days" inputMode="numeric" className="w-32" value={v.due_days} onChange={(e) => setV({ ...v, due_days: e.target.value })} /></div>}
           <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-1.5"><Label htmlFor="pt-dp">{t('Discount for paying early (%)')}</Label><Input id="pt-dp" inputMode="decimal" value={v.discount_pct} onChange={(e) => setV({ ...v, discount_pct: e.target.value })} /></div>
+            <div className="grid gap-1.5"><Label htmlFor="pt-dp">{t('Discount for paying early (%)')}<Hint id="early_discount" /></Label><Input id="pt-dp" inputMode="decimal" value={v.discount_pct} onChange={(e) => setV({ ...v, discount_pct: e.target.value })} /></div>
             <div className="grid gap-1.5"><Label htmlFor="pt-dd">{t('If paid within (days)')}</Label><Input id="pt-dd" inputMode="numeric" value={v.discount_days} onChange={(e) => setV({ ...v, discount_days: e.target.value })} /></div>
           </div>
 
           <div className="rounded-md border p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div><div className="text-sm font-medium">{t('Instalments')}</div><div className="text-xs text-muted-foreground">{t('Split the total into parts, each with its own number of days after the document date.')}</div></div>
+              <div><div className="text-sm font-medium">{t('Instalments')}<Hint id="instalments" /></div><div className="text-xs text-muted-foreground">{t('Split the total into parts, each with its own number of days after the document date.')}</div></div>
               {!split.length ? <div className="flex gap-1">{[2, 3, 4, 6].map((n) => <Button key={n} size="sm" variant="outline" onClick={() => even(n)}>{n}×</Button>)}</div>
                 : <Button size="sm" variant="ghost" onClick={() => setSplit([])}>{t('In one go')}</Button>}
             </div>

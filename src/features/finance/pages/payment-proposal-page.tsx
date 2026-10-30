@@ -1,3 +1,4 @@
+import { Hint } from '@/components/help'
 import { BadgePercent, CalendarClock, CircleAlert, Download, Landmark, Send } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
@@ -114,7 +115,7 @@ export function PaymentProposalPage() {
           {/* the pay bar: from which account, on which date, how much is left after */}
           <Card className="sticky top-14 z-10 mb-4">
             <CardContent className="flex flex-wrap items-end gap-3 p-3">
-              <div className="grid gap-1"><Label className="text-xs text-muted-foreground">{t('Pay from')}</Label>
+              <div className="grid gap-1"><Label className="text-xs text-muted-foreground">{t('Pay from')}<Hint id="pay_from" /></Label>
                 <Select value={bank} onValueChange={setBank}>
                   <SelectTrigger className="w-[240px]"><SelectValue placeholder={t('Choose the account')} /></SelectTrigger>
                   <SelectContent>{activeBanks.map((b) => <SelectItem key={b.id} value={b.id}>{b.name} · {b.currency_code}</SelectItem>)}</SelectContent>

@@ -8,6 +8,7 @@ import { Sidebar, SidebarNav } from '@/components/layout/sidebar'
 import { Topbar } from '@/components/layout/topbar'
 import { SimpleTopbar } from '@/features/simple/simple-shell'
 import { Invitations } from '@/components/invitations'
+import { TourHost } from '@/components/help'
 import { LicenseBanner, LiveLinkBanner, SupportBanner, TrainingBanner } from '@/components/license-banner'
 import { OfflineBanner } from '@/components/offline-banner'
 import { PageErrorBoundary } from '@/components/page-error-boundary'
@@ -69,6 +70,7 @@ export function AppLayout() {
           <main id="main" className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
             <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
             <GuardHost />
+            <TourHost />
           </main>
         </div>
       </CommandPaletteProvider>
@@ -100,6 +102,7 @@ export function AppLayout() {
           <main id="main" className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
             <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
             <GuardHost />
+            <TourHost />
           </main>
         </div>
       </div>

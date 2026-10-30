@@ -1,3 +1,4 @@
+import { PageHelpButton, TourHost } from '@/components/help'
 import {
   ArrowLeft, BadgePercent, Banknote, Camera, Check, CloudOff, CreditCard, Ellipsis, Landmark, ListOrdered, LogOut, Minus, Plus, Printer, ReceiptText, RotateCcw, ScanLine, Search, Ticket, Trash2,
   UserRound, Wallet, X,
@@ -373,11 +374,12 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
 
   return (
     <div className="flex h-dvh flex-col bg-muted/30 text-foreground">
+      <TourHost />
       {/* ---------- top bar */}
       <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-card px-3">
         <Button variant="ghost" size="icon" asChild aria-label={t('Leave the till')}><Link to="/pos"><ArrowLeft /></Link></Button>
         <div className="min-w-0 max-sm:flex-1">
-          <div className="truncate text-sm font-semibold">{data.register.name}</div>
+          <div className="flex items-center gap-1 truncate text-sm font-semibold">{data.register.name}<PageHelpButton /></div>
           <div className="truncate text-xs text-muted-foreground">{session.number} · {cashier}</div>
         </div>
         <button type="button" onClick={() => setDialog('queue')}

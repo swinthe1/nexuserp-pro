@@ -1,3 +1,4 @@
+import { PageHelpButton } from '@/components/help'
 import { ChevronLeft } from 'lucide-react'
 import * as React from 'react'
 import { Link, useLocation } from 'react-router-dom'
@@ -42,6 +43,7 @@ export function PageHeader({ title, description, actions, back, meta, className,
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2.5">
               <h1 className="truncate text-[22px] font-bold leading-tight tracking-[-0.02em]">{title}</h1>
+              <PageHelpButton className="-ml-1" />
               {meta}
             </div>
             {description && <p className="mt-0.5 max-w-2xl text-[13px] text-muted-foreground">{description}</p>}

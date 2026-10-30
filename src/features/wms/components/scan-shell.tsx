@@ -1,3 +1,4 @@
+import { PageHelpButton } from '@/components/help'
 import { ChevronLeft, Minus, Plus } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
@@ -16,7 +17,7 @@ export function ScanShell({ title, back, meta, actions, children, className }: {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           {back && <Link to={back.href} className="mb-1 inline-flex items-center gap-0.5 text-[13px] text-muted-foreground hover:text-foreground"><ChevronLeft className="size-4" /> {back.label}</Link>}
-          <div className="flex flex-wrap items-center gap-2"><h1 className="text-xl font-semibold tracking-[-0.01em]">{title}</h1>{meta}</div>
+          <div className="flex flex-wrap items-center gap-2"><h1 className="text-xl font-semibold tracking-[-0.01em]">{title}</h1><PageHelpButton />{meta}</div>
         </div>
         {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
       </div>

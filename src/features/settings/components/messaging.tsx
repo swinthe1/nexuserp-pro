@@ -1,3 +1,4 @@
+import { Hint } from '@/components/help'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { BellRing, Mail, MessageCircle, RotateCcw, Send, ShoppingCart, Sunrise } from 'lucide-react'
 import * as React from 'react'
@@ -202,7 +203,7 @@ function DunningCard({ d, writer }: { d: Messaging; writer: boolean }) {
       {d.dunning_enabled && (
         <>
           <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end">
-            <div className="grid gap-1.5"><Label htmlFor="ds">{t('Days after the due date')}</Label>
+            <div className="grid gap-1.5"><Label htmlFor="ds">{t('Days after the due date')}<Hint id="reminder_steps" /></Label>
               <Input id="ds" value={steps} onChange={(e) => setSteps(e.target.value)} placeholder={PH.steps} disabled={!writer} /></div>
             <label className="flex h-10 items-center gap-2 text-sm"><Switch checked={d.dunning_email} disabled={!writer} onCheckedChange={(v) => save.mutate({ dunning_email: v })} /> {t('Email')}</label>
             {d.whatsapp_module && <label className="flex h-10 items-center gap-2 text-sm"><Switch checked={d.dunning_whatsapp} disabled={!writer} onCheckedChange={(v) => save.mutate({ dunning_whatsapp: v })} /> {PH.wa}</label>}

@@ -1,3 +1,4 @@
+import { Hint } from '@/components/help'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ChevronDown, Plus, Sparkles, Trash2, X } from 'lucide-react'
 import * as React from 'react'
@@ -182,7 +183,7 @@ export function ProductNewPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               <FormItem>
-                <FormLabel>{t('Selling price with VAT')}</FormLabel>
+                <FormLabel>{t('Selling price with VAT')}<Hint id="price_with_vat" /></FormLabel>
                 <Input type="number" step="0.01" min="0" inputMode="decimal" value={gross} onChange={(e) => setGrossPrice(e.target.value)} placeholder="0.00" />
                 <FormDescription>{t('Without VAT: {amount}', { amount: formatMoney(Number(salesPrice) || 0) })}</FormDescription>
               </FormItem>
@@ -212,7 +213,7 @@ export function ProductNewPage() {
             {productType === 'stockable' && variants.fields.length === 1 && (
               <div className="grid gap-4 rounded-md border border-dashed p-3 sm:grid-cols-3">
                 <FormItem>
-                  <FormLabel optional>{t('Quantity on the shelf now')}</FormLabel>
+                  <FormLabel optional>{t('Quantity on the shelf now')}<Hint id="opening_qty" /></FormLabel>
                   <Input type="number" step="any" min="0" inputMode="decimal" value={opening.qty} onChange={(e) => setOpening({ ...opening, qty: e.target.value })} placeholder="0" />
                 </FormItem>
                 <FormItem>

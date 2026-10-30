@@ -1,3 +1,4 @@
+import { Hint } from '@/components/help'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRegistryRemote } from '@/lib/registry'
 import { DocumentActions } from '@/components/document-actions'
@@ -284,7 +285,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
               <FormItem><FormLabel>{kind === 'quotes' ? t('Quote date') : kind === 'orders' ? t('Order date') : t('Invoice date')}</FormLabel><FormControl><Input type="date" disabled={!editable} {...field} /></FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="second_date" render={({ field }) => (
-              <FormItem><FormLabel optional={kind !== 'quotes'}>{t(cfg.secondLabel)}</FormLabel><FormControl><Input type="date" disabled={!editable} {...field} /></FormControl>
+              <FormItem><FormLabel optional={kind !== 'quotes'}>{t(cfg.secondLabel)}{kind === 'invoices' && <Hint id="due_date" />}</FormLabel><FormControl><Input type="date" disabled={!editable} {...field} /></FormControl>
                 {kind === 'invoices' && editable && <FormDescription>{t('Leave empty to follow the payment terms.')}</FormDescription>}</FormItem>
             )} />
             {kind !== 'invoices' && (
@@ -300,7 +301,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
               )} />
             )}
             <FormField control={form.control} name="payment_term_id" render={({ field }) => (
-              <FormItem><FormLabel optional>{t('Payment terms')}</FormLabel>
+              <FormItem><FormLabel optional>{t('Payment terms')}<Hint id="payment_terms" /></FormLabel>
                 <Select value={field.value ?? ''} onValueChange={field.onChange} disabled={!editable}>
                   <FormControl><SelectTrigger><SelectValue placeholder={t('Immediate')} /></SelectTrigger></FormControl>
                   <SelectContent>{(terms.data ?? []).map((x) => <SelectItem key={x.id} value={x.id}>{td(x.name)}</SelectItem>)}</SelectContent>
@@ -331,7 +332,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
                   </Select></FormItem>
               )} />
               <FormField control={form.control} name="exchange_rate" render={({ field }) => (
-                <FormItem><FormLabel>{t('Exchange rate')}</FormLabel><FormControl><Input type="number" step="any" disabled={!editable || currency === base} {...field} /></FormControl>
+                <FormItem><FormLabel>{t('Exchange rate')}<Hint id="exchange_rate" /></FormLabel><FormControl><Input type="number" step="any" disabled={!editable || currency === base} {...field} /></FormControl>
                   <FormDescription>{currency === base ? t('Company currency') : t('{base} per 1 {currency}', { base, currency })}</FormDescription><FormMessage /></FormItem>
               )} />
             </div>

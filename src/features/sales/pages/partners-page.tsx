@@ -1,3 +1,4 @@
+import { Hint } from '@/components/help'
 import { CustomerReminders } from '@/features/finance/components/reminders'
 import { PartnerCards } from '@/features/finance/pages/cards-page'
 import { PortalLinks } from '@/features/portal/portal-links'
@@ -316,7 +317,7 @@ function PartnerForm({ partner }: { partner?: PartnerDetail }) {
                     <SelectContent>{(terms.data ?? []).map((x) => <SelectItem key={x.id} value={x.id}>{td(x.name)}</SelectItem>)}</SelectContent></Select></FormItem>
               )} />
               <FormField control={form.control} name="credit_limit" render={({ field }) => (
-                <FormItem><FormLabel optional>{t('Credit limit ({currency}, with VAT)', { currency: company?.base_currency ?? '' })}</FormLabel><FormControl><Input type="number" step="any" className="tabular" placeholder={t('No limit')} disabled={!writable} {...field} value={field.value ?? ''} /></FormControl>
+                <FormItem><FormLabel optional>{t('Credit limit ({currency}, with VAT)', { currency: company?.base_currency ?? '' })}<Hint id="credit_limit" /></FormLabel><FormControl><Input type="number" step="any" className="tabular" placeholder={t('No limit')} disabled={!writable} {...field} value={field.value ?? ''} /></FormControl>
                   <FormDescription>{t('Orders above it need a sales manager to confirm.')}</FormDescription><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="currency_code" render={({ field }) => (

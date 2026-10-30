@@ -1,3 +1,4 @@
+import { Hint } from '@/components/help'
 import { AlertTriangle, ChevronDown, ChevronRight, CircleCheck, Download, HandCoins, Pencil, Plus, Trash2, Wallet } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
@@ -69,7 +70,7 @@ export function CashForecastPage() {
         actions={<>
           <div className="flex items-center gap-2">
             <Switch id="est" checked={estimates} onCheckedChange={setEstimates} />
-            <Label htmlFor="est" className="text-[13px] text-muted-foreground">{t('With estimates')}</Label>
+            <Label htmlFor="est" className="text-[13px] text-muted-foreground">{t('With estimates')}<Hint id="with_estimates" /></Label>
           </div>
           <Select value={String(weeks)} onValueChange={(v) => setWeeks(Number(v))}>
             <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>

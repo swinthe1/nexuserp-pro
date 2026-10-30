@@ -1,3 +1,4 @@
+import { Hint } from '@/components/help'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CheckCheck, PackagePlus, Percent, Save, ScanBarcode, Sparkles, Trash2 } from 'lucide-react'
 import * as React from 'react'
@@ -302,13 +303,13 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
             <div className="grid gap-1.5"><Label>{t('Currency')}</Label>
               <Select value={h.currency_code} onValueChange={(v) => set('currency_code', v)}><SelectTrigger aria-label={t('Currency')}><SelectValue /></SelectTrigger>
                 <SelectContent>{(currencies.data ?? []).map((c) => <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>)}</SelectContent></Select></div>
-            <div className="grid gap-1.5"><Label htmlFor="pi-rate">{t('Exchange rate')}</Label><Input id="pi-rate" inputMode="decimal" disabled={h.currency_code === base} value={h.currency_code === base ? '1' : h.exchange_rate}
+            <div className="grid gap-1.5"><Label htmlFor="pi-rate">{t('Exchange rate')}<Hint id="exchange_rate" /></Label><Input id="pi-rate" inputMode="decimal" disabled={h.currency_code === base} value={h.currency_code === base ? '1' : h.exchange_rate}
               placeholder={t('of the day')} onChange={(e) => set('exchange_rate', e.target.value)} /></div>
           </div>
-          <div className="grid gap-1.5"><Label>{t('Payment terms')}</Label>
+          <div className="grid gap-1.5"><Label>{t('Payment terms')}<Hint id="payment_terms" /></Label>
             <Select value={h.payment_term_id || 'none'} onValueChange={(v) => set('payment_term_id', v === 'none' ? '' : v)}><SelectTrigger aria-label={t('Payment terms')}><SelectValue /></SelectTrigger>
               <SelectContent><SelectItem value="none">{t('Immediately')}</SelectItem>{(terms.data ?? []).map((x) => <SelectItem key={x.id} value={x.id}>{td(x.name)}</SelectItem>)}</SelectContent></Select></div>
-          <div className="grid gap-1.5"><Label htmlFor="pi-due">{t('Due date')}</Label><Input id="pi-due" type="date" value={h.due_date} onChange={(e) => set('due_date', e.target.value)} /></div>
+          <div className="grid gap-1.5"><Label htmlFor="pi-due">{t('Due date')}<Hint id="due_date" /></Label><Input id="pi-due" type="date" value={h.due_date} onChange={(e) => set('due_date', e.target.value)} /></div>
           <div className="grid gap-1.5"><Label>{t('Payment')}</Label>
             <Select value={h.pay_bank_account_id || 'later'} onValueChange={(v) => set('pay_bank_account_id', v === 'later' ? '' : v)}><SelectTrigger aria-label={t('Payment')}><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -329,7 +330,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
           <div className="w-72"><SearchSelect value={null} onChange={(v) => v && addItem(v)} placeholder={t('…or search by name')}
             options={itemOptions} /></div>
           <div className="ml-auto flex flex-wrap items-center gap-1.5">
-            <Label htmlFor="pi-margin" className="whitespace-nowrap text-[13px] text-muted-foreground">{t('Margin for all')}</Label>
+            <Label htmlFor="pi-margin" className="whitespace-nowrap text-[13px] text-muted-foreground">{t('Margin for all')}<Hint id="margin_all" /></Label>
             <Input id="pi-margin" inputMode="decimal" className="h-8 w-20 text-right" value={margin} onChange={(e) => setMargin(e.target.value)} placeholder="25" />
             <Button size="sm" variant="outline" disabled={!margin || !rows.length} onClick={applyMargin}><Percent /> {t('Set prices')}</Button>
             <Button size="sm" disabled={!advised} onClick={applyAdvice}><Sparkles /> {t('Take the recommendations')}{advised > 0 && ` (${advised})`}</Button>

@@ -1,3 +1,4 @@
+import { Hint } from '@/components/help'
 import { FileSpreadsheet, RotateCcw, TrendingDown, TrendingUp } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
@@ -150,7 +151,7 @@ export function CountReviewPanel({ countId }: { countId: string }) {
           </ul>
           <Can perm="wms.write">
             <div className="flex flex-wrap items-end gap-2 text-[13px]">
-              <span className="self-center text-muted-foreground">{t('Count again the lines over')}</span>
+              <span className="self-center text-muted-foreground">{t('Count again the lines over')}<Hint id="recount" /></span>
               <Input inputMode="decimal" className="h-8 w-20 text-right" value={minValue} aria-label={t('Value')} onChange={(e) => setMinValue(e.target.value)} /><span className="self-center">{cur}</span>
               <span className="self-center text-muted-foreground">{t('or')}</span>
               <Input inputMode="decimal" className="h-8 w-16 text-right" value={minPct} aria-label={t('Percent')} onChange={(e) => setMinPct(e.target.value)} /><span className="self-center">%</span>
