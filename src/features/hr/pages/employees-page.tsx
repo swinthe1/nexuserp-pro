@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { Pencil, Plus, Settings2, Upload } from 'lucide-react'
+import { Plus, Settings2, Upload } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -12,12 +12,10 @@ import { StatusBadge } from '@/components/status-badge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DeductionsCard } from '../components/deductions-card'
@@ -28,9 +26,10 @@ import { cn, formatDate, formatMoney, formatMonth, formatQty, humanize, num, tod
 import { useCostCenters } from '@/features/finance/api'
 import {
   useAttendanceRecords, useContracts, useDepartments, useEmployee, useEmployeePayslips, useEmployees, useLeaveBalances, useLeaveRequests,
-  usePositions, useProfiles, useSaveContract, useSaveEmployee, type Contract, type EmployeeRow,
+  usePositions, useProfiles, useSaveEmployee, type EmployeeRow,
 } from '../api'
 import { PayslipDialog } from '../components/payslip'
+import { NewContractDialog } from './contracts-page'
 
 /* ================================================================== list */
 export function EmployeesPage() {
@@ -175,79 +174,36 @@ function EmployeeForm({ emp }: { emp?: EmployeeRow }) {
 
 /* ------------------------------------------------------------------ contract */
 function ContractCard({ employeeId }: { employeeId: string }) {
-  const { can, company } = useCompany()
+  const { can } = useCompany()
   const contracts = useContracts(employeeId)
-  const [edit, setEdit] = React.useState<Contract | 'new' | null>(null)
-  if (!can('payroll.read') && !can('hr.read')) return null
+  const navigate = useNavigate()
+  const [newOpen, setNewOpen] = React.useState(false)
+  if (!can('payroll.read')) return <Card><CardContent className="p-4 text-[13px] text-muted-foreground">{t('Only payroll people see the contracts.')}</CardContent></Card>
   const active = contracts.data?.find((c) => c.status === 'active')
   return (
     <Card>
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 space-y-0 py-3">
-        <div><CardTitle>{t('Contracts')}</CardTitle><CardDescription>{t('Payroll uses the active contract: one per person.')}</CardDescription></div>
-        <Can perm="payroll.write"><Button size="sm" variant={active ? 'outline' : 'default'} onClick={() => setEdit('new')}><Plus /> {t('New contract')}</Button></Can>
+        <div><CardTitle>{t('Contracts')}</CardTitle><CardDescription>{t('Payroll uses the contract in force. A raise or a new position is an annex.')}</CardDescription></div>
+        <Can perm="payroll.write"><Button size="sm" variant={active ? 'outline' : 'default'} onClick={() => setNewOpen(true)}><Plus /> {t('New contract')}</Button></Can>
       </CardHeader>
       <CardContent className="overflow-x-auto p-0">
         {contracts.isLoading ? <Skeleton className="m-4 h-20" /> : !contracts.data?.length ? contracts.isError ? <ErrorState compact error={contracts.error} onRetry={() => void contracts.refetch()} /> : <p className="px-4 pb-4 text-[13px] text-muted-foreground">{t('No contract yet. Payroll skips people without one.')}</p> : (
           <Table>
-            <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Type')}</TableHead><TableHead>{t('From')}</TableHead><TableHead>{t('To')}</TableHead>
-              <TableHead className="text-right">{t('Gross per month')}</TableHead><TableHead className="text-right">{t('Hours / week')}</TableHead>
-              {company?.country_code === 'XK' && <TableHead>{t('Employer')}</TableHead>}<TableHead>{t('Status')}</TableHead><TableHead className="w-[1%]" /></TableRow></TableHeader>
+            <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Number')}</TableHead><TableHead>{t('Type')}</TableHead><TableHead>{t('From')}</TableHead><TableHead>{t('To')}</TableHead>
+              <TableHead className="text-right">{t('Gross per month')}</TableHead><TableHead>{t('Signed')}</TableHead><TableHead>{t('Status')}</TableHead></TableRow></TableHeader>
             <TableBody>{contracts.data.map((c) => (
-              <TableRow key={c.id} className="hover:bg-transparent">
+              <TableRow key={c.id} className="cursor-pointer" onClick={() => navigate(`/hr/contracts/${c.id}`)}>
+                <TableCell className="font-medium"><Link className="text-primary hover:underline" to={`/hr/contracts/${c.id}`} onClick={(e) => e.stopPropagation()}>{c.number}</Link>{c.kind === 'annex' && <Badge variant="secondary" className="ml-1.5">{t('Annex')}</Badge>}</TableCell>
                 <TableCell>{humanize(c.contract_type)}</TableCell><TableCell>{formatDate(c.start_date)}</TableCell><TableCell>{c.end_date ? formatDate(c.end_date) : t('No end date')}</TableCell>
                 <TableCell className="text-right tabular font-medium">{formatMoney(c.gross_salary, c.currency_code)}</TableCell>
-                <TableCell className="text-right tabular">{formatQty(c.working_hours_per_week)}</TableCell>
-                {company?.country_code === 'XK' && <TableCell>{c.is_primary_employer ? t('Main employer') : <Badge variant="secondary">{t('Second job · 10% tax')}</Badge>}</TableCell>}
+                <TableCell>{c.signed_on ? formatDate(c.signed_on) : <span className="text-muted-foreground">{t('Not signed')}</span>}</TableCell>
                 <TableCell><StatusBadge status={c.status} /></TableCell>
-                <TableCell><Can perm="payroll.write"><Button size="icon-sm" variant="ghost" aria-label={t('Edit contract')} onClick={() => setEdit(c)}><Pencil /></Button></Can></TableCell>
               </TableRow>))}</TableBody>
           </Table>
         )}
       </CardContent>
-      {edit && <ContractDialog employeeId={employeeId} contract={edit === 'new' ? null : edit} onClose={() => setEdit(null)} />}
+      {newOpen && <NewContractDialog employeeId={employeeId} onClose={() => setNewOpen(false)} />}
     </Card>
-  )
-}
-
-function ContractDialog({ employeeId, contract, onClose }: { employeeId: string; contract: Contract | null; onClose: () => void }) {
-  const { company } = useCompany()
-  const save = useSaveContract()
-  const [v, setV] = React.useState({
-    contract_type: contract?.contract_type ?? 'indefinite', start_date: contract?.start_date ?? todayISO(), end_date: contract?.end_date ?? '',
-    gross_salary: contract ? String(contract.gross_salary) : '', working_hours_per_week: contract ? String(contract.working_hours_per_week) : '40',
-    is_primary_employer: contract?.is_primary_employer ?? true, status: contract?.status ?? 'active',
-  })
-  const set = <K extends keyof typeof v>(k: K) => (x: (typeof v)[K]) => setV((s) => ({ ...s, [k]: x }))
-  const valid = num(v.gross_salary) > 0 && v.start_date && (!v.end_date || v.end_date >= v.start_date) && num(v.working_hours_per_week) > 0
-  return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader><DialogTitle>{contract ? t('Edit contract') : t('New contract')}</DialogTitle>
-          <DialogDescription>{t('Monthly gross pay in {currency}. End the current contract before starting another.', { currency: contract?.currency_code ?? company?.base_currency ?? '' })}</DialogDescription></DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2 grid gap-1.5"><Label>{t('Type')}</Label>
-            <Select value={v.contract_type} onValueChange={set('contract_type')}><SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{['indefinite', 'fixed_term', 'seasonal', 'service'].map((s) => <SelectItem key={s} value={s}>{humanize(s)}</SelectItem>)}</SelectContent></Select></div>
-          <div className="grid gap-1.5"><Label htmlFor="ct-from">{t('From')}</Label><Input id="ct-from" type="date" value={v.start_date} onChange={(e) => set('start_date')(e.target.value)} /></div>
-          <div className="grid gap-1.5"><Label htmlFor="ct-to">{t('To')}</Label><Input id="ct-to" type="date" value={v.end_date} onChange={(e) => set('end_date')(e.target.value)} /></div>
-          <div className="grid gap-1.5"><Label htmlFor="ct-gross">{t('Gross per month')}</Label><Input id="ct-gross" type="number" step="any" className="text-right tabular" value={v.gross_salary} onChange={(e) => set('gross_salary')(e.target.value)} /></div>
-          <div className="grid gap-1.5"><Label htmlFor="ct-h">{t('Hours per week')}</Label><Input id="ct-h" type="number" step="any" className="text-right tabular" value={v.working_hours_per_week} onChange={(e) => set('working_hours_per_week')(e.target.value)} /></div>
-          <div className="grid gap-1.5"><Label>{t('Status')}</Label>
-            <Select value={v.status} onValueChange={set('status')}><SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{['draft', 'active', 'ended'].map((s) => <SelectItem key={s} value={s}>{humanize(s)}</SelectItem>)}</SelectContent></Select></div>
-          {company?.country_code === 'XK' && <div className="flex items-center justify-between gap-2 pt-6"><Label htmlFor="ct-prim">{t('Main employer')}</Label>
-            <Switch id="ct-prim" checked={v.is_primary_employer} onCheckedChange={set('is_primary_employer')} /></div>}
-        </div>
-        {company?.country_code === 'XK' && !v.is_primary_employer && <p className="text-xs text-muted-foreground">{t('A second job is taxed at a flat 10%, with no tax-free amount.')}</p>}
-        <DialogFooter><Button variant="outline" onClick={onClose}>{t('Cancel')}</Button>
-          <Button loading={save.isPending} disabled={!valid} onClick={async () => {
-            await save.mutateAsync({ id: contract?.id, employee_id: employeeId, contract_type: v.contract_type, start_date: v.start_date, end_date: v.end_date || null,
-              gross_salary: num(v.gross_salary), working_hours_per_week: num(v.working_hours_per_week), is_primary_employer: v.is_primary_employer, status: v.status,
-              ...(contract ? {} : { currency_code: company?.base_currency ?? 'ALL' }) })
-            toast.success(t('Contract saved')); onClose()
-          }}>{t('Save contract')}</Button></DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }
 

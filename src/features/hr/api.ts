@@ -113,12 +113,6 @@ export function useContracts(employeeId: string | undefined) {
   return useQuery({ queryKey: [...key, 'contracts', employeeId], enabled: !!companyId && !!employeeId,
     queryFn: async () => unwrap(await supabase.from('employment_contracts').select('*').eq('employee_id', employeeId!).is('deleted_at', null).order('start_date', { ascending: false })) })
 }
-export function useSaveContract() {
-  const { companyId } = useCompany()
-  return useAction(async ({ id, ...v }: Record<string, unknown> & { id?: string }) => id
-    ? unwrap(await supabase.from('employment_contracts').update(v as never).eq('id', id))
-    : unwrap(await supabase.from('employment_contracts').insert({ ...v, company_id: companyId } as never)))
-}
 
 /** Logins of co-members, for linking an employee to a user */
 export function useProfiles() {
@@ -329,4 +323,90 @@ export function useMyTeamLeave() {
     enabled: !!companyId,
     queryFn: async () => unwrap(await supabase.rpc('my_team_leave')) as unknown as TeamLeaveRow[],
   })
+}
+
+/* ------------------------------------------------------------------ contracts as documents */
+export type ContractFull = Contract & {
+  employee: Pick<Tables<'employees'>, 'id' | 'full_name' | 'first_name' | 'last_name' | 'number' | 'personal_number' | 'date_of_birth' | 'address' | 'hire_date' | 'termination_date' | 'employment_status' | 'iban' | 'bank_name'>
+    & { position: { title: string } | null; department: { name: string } | null } | null
+}
+const CONTRACT_SELECT = '*, employee:employees(id, full_name, first_name, last_name, number, personal_number, date_of_birth, address, hire_date, termination_date, employment_status, iban, bank_name, position:job_positions!employees_company_id_position_id_fkey(title), department:departments!employees_company_id_department_id_fkey(name))'
+export function useContractList() {
+  const { companyId, key } = useCo()
+  return useQuery({ queryKey: [...key, 'contracts', 'all'], enabled: !!companyId,
+    queryFn: async () => unwrap(await supabase.from('employment_contracts').select(CONTRACT_SELECT).eq('company_id', companyId)
+      .is('deleted_at', null).order('start_date', { ascending: false })) as unknown as ContractFull[] })
+}
+export function useContract(id: string | undefined) {
+  const { companyId, key } = useCo()
+  return useQuery({ queryKey: [...key, 'contracts', 'one', id], enabled: !!companyId && !!id,
+    queryFn: async () => unwrap(await supabase.from('employment_contracts').select(CONTRACT_SELECT).eq('id', id!).maybeSingle()) as unknown as ContractFull | null })
+}
+/** the contract with its annexes and the one it changed: oldest first */
+export function useContractChain(c: Contract | null | undefined) {
+  const { companyId, key } = useCo()
+  return useQuery({ queryKey: [...key, 'contracts', 'chain', c?.employee_id], enabled: !!companyId && !!c,
+    queryFn: async () => unwrap(await supabase.from('employment_contracts').select('id, number, kind, parent_id, status, start_date, end_date, gross_salary, currency_code, job_title, job_description, workplace, work_schedule, working_hours_per_week, contract_type, annual_leave_days, notice_days, pay_day, signed_on, ended_reason')
+      .eq('employee_id', c!.employee_id).is('deleted_at', null).order('start_date')) })
+}
+export function useMyContracts(employeeId: string | undefined) {
+  const { companyId, key } = useCo()
+  return useQuery({ queryKey: [...key, 'contracts', 'mine', employeeId], enabled: !!companyId && !!employeeId,
+    queryFn: async () => unwrap(await supabase.from('employment_contracts').select(CONTRACT_SELECT).eq('employee_id', employeeId!).neq('status', 'draft')
+      .is('deleted_at', null).order('start_date', { ascending: false })) as unknown as ContractFull[] })
+}
+export function useCreateContract() {
+  const { companyId } = useCo()
+  return useAction(async (v: Partial<Contract> & { employee_id: string; start_date: string; gross_salary: number; currency_code: string }) =>
+    unwrap(await supabase.from('employment_contracts').insert({ ...v, company_id: companyId, status: 'draft' } as never).select('id').single()) as { id: string })
+}
+export function useUpdateContract() {
+  return useAction(async ({ id, ...v }: Partial<Contract> & { id: string }) => unwrap(await supabase.from('employment_contracts').update(v as never).eq('id', id)))
+}
+export function useDeleteContract() {
+  return useAction(async (id: string) => unwrap(await supabase.from('employment_contracts').delete().eq('id', id)))
+}
+export function useSignContract() {
+  return useAction(async ({ id, on }: { id: string; on: string }) => unwrap(await supabase.rpc('contract_sign', { p_id: id, p_signed_on: on })))
+}
+export function useAnnexContract() {
+  return useAction(async ({ id, from, terms, body }: { id: string; from: string; terms: Record<string, unknown>; body?: string | null }) =>
+    unwrap(await supabase.rpc('contract_annex', { p_id: id, p_from: from, p_terms: terms as never, p_body: body ?? undefined })) as unknown as string)
+}
+export function useEndContract() {
+  return useAction(async (v: { id: string; last_day: string; reason: string; notice_given_on: string | null; note: string | null; end_employment: boolean }) =>
+    unwrap(await supabase.rpc('contract_end', { p_id: v.id, p_last_day: v.last_day, p_reason: v.reason, p_notice_given_on: v.notice_given_on ?? undefined,
+      p_note: v.note ?? undefined, p_end_employment: v.end_employment })))
+}
+/** the signed copy: a private file that only payroll people and the person can open */
+export function useUploadSignedCopy() {
+  const { companyId } = useCo()
+  return useAction(async ({ contract, file }: { contract: Contract; file: File }) => {
+    const ext = (file.name.split('.').pop() ?? 'pdf').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5) || 'pdf'
+    const path = `${companyId}/${contract.employee_id}/${contract.number ?? contract.id}-${Date.now()}.${ext}`
+    const up = await supabase.storage.from('hr-files').upload(path, file, { contentType: file.type || undefined, upsert: false })
+    if (up.error) throw up.error
+    unwrap(await supabase.from('employment_contracts').update({ signed_file: path, signed_file_name: file.name } as never).eq('id', contract.id))
+  })
+}
+export async function openSignedCopy(path: string) {
+  const r = await supabase.storage.from('hr-files').createSignedUrl(path, 120)
+  if (r.error) { toast.error(describeError(r.error)); return }
+  window.open(r.data.signedUrl, '_blank', 'noopener')
+}
+
+export type ContractTemplate = Tables<'contract_templates'>
+export function useContractTemplates() {
+  const { companyId, key } = useCo()
+  return useQuery({ queryKey: [...key, 'contract-templates'], enabled: !!companyId,
+    queryFn: async () => unwrap(await supabase.from('contract_templates').select('*').eq('company_id', companyId).is('deleted_at', null).order('name')) })
+}
+export function useSaveContractTemplate() {
+  const { companyId } = useCo()
+  return useAction(async ({ id, ...v }: Partial<ContractTemplate> & { name: string; body: string; kind: string }) => id
+    ? unwrap(await supabase.from('contract_templates').update(v as never).eq('id', id))
+    : unwrap(await supabase.from('contract_templates').insert({ ...v, company_id: companyId } as never)))
+}
+export function useDeleteContractTemplate() {
+  return useAction(async (id: string) => unwrap(await supabase.from('contract_templates').delete().eq('id', id)))
 }

@@ -5,6 +5,7 @@ import {
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, Building, HandCoins, ListTree, Network, Settings2, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, 
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
   BedDouble, BookUser, CalendarRange, ConciergeBell, Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, ReceiptText, IdCard, Settings, CreditCard, type LucideIcon, Activity, ArrowUpDown, BadgeEuro, BookOpen, CalendarPlus, CheckCheck, CircleDollarSign, Clock, Coins, Combine, FileScan, FolderTree, Gift, Handshake, LineChart, Map, Move, NotebookTabs, PieChart, ScanBarcode, Send, ListChecks, ChartSpline, PackageMinus, GraduationCap,
+  FileSignature,
 } from 'lucide-react'
 import { msg } from '@/i18n'
 
@@ -207,6 +208,7 @@ export const NAV: NavSection[] = [
       { label: msg('People overview'), href: '/hr', icon: UsersRound, perm: 'hr.read', keywords: ['hr', 'headcount', 'burime njerëzore'] },
       { label: msg('HR setup'), href: '/hr/setup', icon: Settings2, perm: 'hr.read', hideInMenu: true, keywords: ['cilësimet e punonjësve', 'departamente', 'pozita', 'pushime', 'hr settings', 'departments', 'positions'] },
       { label: msg('Employees|menu'), href: '/hr/employees', icon: Contact, perm: 'hr.read', keywords: ['staff', 'punonjës', 'contracts'] },
+      { label: msg('Contracts|hr'), href: '/hr/contracts', icon: FileSignature, perm: 'payroll.read', keywords: ['kontrata', 'kontratat e punës', 'aneks', 'employment contract', 'annex', 'ndërprerje', 'njoftim'] },
       { label: msg('Leave'), href: '/hr/leave', icon: CalendarDays, perm: 'hr.read', keywords: ['holiday', 'vacation', 'pushime', 'absence', 'sick'] },
       { label: msg('Attendance'), href: '/hr/attendance', icon: Clock, perm: 'hr.read', keywords: ['timesheet', 'clock in', 'prezenca', 'overtime'] },
       { label: msg('Payroll'), href: '/hr/payroll', icon: Banknote, perm: 'payroll.read', keywords: ['salaries', 'payslips', 'listëpagesa', 'tap', 'contributions', 'paga'] },

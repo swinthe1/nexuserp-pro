@@ -15,6 +15,7 @@ import { formatDate, formatMoney, formatMonth, formatQty, num, todayISO } from '
 import { ErrorState } from '@/components/error-state'
 import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { useCompany } from '@/app/company-provider'
+import { MyContracts } from '../components/contract-setup'
 import { useAttendanceRecords, useClock, useDecideLeave, useEmployeePayslips, useLeaveBalances, useLeaveRequests, useMyEmployee, useMyTeamLeave } from '../api'
 import { NewLeaveDialog } from '../components/leave-dialog'
 import { PayslipDialog } from '../components/payslip'
@@ -126,6 +127,7 @@ function MyWorkplace({ employeeId, name, subtitle }: { employeeId: string; name:
           </CardContent>
         </Card>
       </div>
+      <MyContracts employeeId={employeeId} />
       <TeamLeave />
       {newLeave && <NewLeaveDialog employeeId={employeeId} onClose={() => setNewLeave(false)} />}
       {leaveRow && <LeaveDialog self leave={leaveRow} onClose={() => setOpenLeave(null)} />}

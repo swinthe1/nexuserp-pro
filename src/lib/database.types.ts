@@ -2131,6 +2131,9 @@ export type Database = {
           reminder_before_enabled: boolean
           reminder_before_days: number
           reminder_before_text: string | null
+          contract_signatory: string | null
+          contract_signatory_title: string | null
+          contract_place: string | null
         }
         Insert: {
           id?: string
@@ -2195,6 +2198,9 @@ export type Database = {
           reminder_before_enabled?: boolean
           reminder_before_days?: number
           reminder_before_text?: string | null
+          contract_signatory?: string | null
+          contract_signatory_title?: string | null
+          contract_place?: string | null
         }
         Update: {
           id?: string
@@ -2259,6 +2265,9 @@ export type Database = {
           reminder_before_enabled?: boolean
           reminder_before_days?: number
           reminder_before_text?: string | null
+          contract_signatory?: string | null
+          contract_signatory_title?: string | null
+          contract_place?: string | null
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -2370,6 +2379,56 @@ export type Database = {
         Relationships: [
           { foreignKeyName: "compensations_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
           { foreignKeyName: "compensations_company_id_partner_id_fkey"; columns: ["company_id", "partner_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      contract_templates: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          kind: string
+          contract_type: string | null
+          body: string
+          is_default: boolean
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          kind?: string
+          contract_type?: string | null
+          body: string
+          is_default?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string
+          kind?: string
+          contract_type?: string | null
+          body?: string
+          is_default?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "contract_templates_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
         ]
       }
       cost_centers: {
@@ -3354,6 +3413,26 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          number: string | null
+          kind: string
+          parent_id: string | null
+          template_key: string | null
+          job_title: string | null
+          job_description: string | null
+          workplace: string | null
+          work_schedule: string | null
+          probation_months: number
+          notice_days: number | null
+          annual_leave_days: number | null
+          pay_day: number | null
+          employer_signatory: string | null
+          body: string | null
+          signed_on: string | null
+          signed_file: string | null
+          signed_file_name: string | null
+          ended_reason: string | null
+          ended_note: string | null
+          notice_given_on: string | null
         }
         Insert: {
           id?: string
@@ -3375,6 +3454,26 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          number?: string | null
+          kind?: string
+          parent_id?: string | null
+          template_key?: string | null
+          job_title?: string | null
+          job_description?: string | null
+          workplace?: string | null
+          work_schedule?: string | null
+          probation_months?: number
+          notice_days?: number | null
+          annual_leave_days?: number | null
+          pay_day?: number | null
+          employer_signatory?: string | null
+          body?: string | null
+          signed_on?: string | null
+          signed_file?: string | null
+          signed_file_name?: string | null
+          ended_reason?: string | null
+          ended_note?: string | null
+          notice_given_on?: string | null
         }
         Update: {
           id?: string
@@ -3396,10 +3495,31 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          number?: string | null
+          kind?: string
+          parent_id?: string | null
+          template_key?: string | null
+          job_title?: string | null
+          job_description?: string | null
+          workplace?: string | null
+          work_schedule?: string | null
+          probation_months?: number
+          notice_days?: number | null
+          annual_leave_days?: number | null
+          pay_day?: number | null
+          employer_signatory?: string | null
+          body?: string | null
+          signed_on?: string | null
+          signed_file?: string | null
+          signed_file_name?: string | null
+          ended_reason?: string | null
+          ended_note?: string | null
+          notice_given_on?: string | null
         }
         Relationships: [
           { foreignKeyName: "employment_contracts_company_id_employee_id_fkey"; columns: ["company_id", "employee_id"]; isOneToOne: false; referencedRelation: "employees"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "employment_contracts_currency_code_fkey"; columns: ["currency_code"]; isOneToOne: false; referencedRelation: "currencies"; referencedColumns: ["code"] },
+          { foreignKeyName: "employment_contracts_parent_fk"; columns: ["company_id", "parent_id"]; isOneToOne: false; referencedRelation: "employment_contracts"; referencedColumns: ["company_id", "id"] },
         ]
       }
       entity_activities: {
@@ -14222,6 +14342,33 @@ export type Database = {
           p_items?: Json
         }
         Returns: Json
+      }
+      contract_annex: {
+        Args: {
+          p_id: string
+          p_from: string
+          p_terms: Json
+          p_body?: string
+        }
+        Returns: string
+      }
+      contract_end: {
+        Args: {
+          p_id: string
+          p_last_day: string
+          p_reason: string
+          p_notice_given_on?: string
+          p_note?: string
+          p_end_employment?: boolean
+        }
+        Returns: undefined
+      }
+      contract_sign: {
+        Args: {
+          p_id: string
+          p_signed_on?: string
+        }
+        Returns: undefined
       }
       convert_lead: {
         Args: {

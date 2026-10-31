@@ -518,6 +518,48 @@ const BASE: Record<string, Guide> = {
     ],
     after: { sq: 'Te çdo faqe, ⓘ pranë titullit e hap të njëjtin shpjegim kur të duhet përsëri.', en: 'On every page, the ⓘ next to the title opens the same explanation whenever you need it again.' },
   },
+
+  '/hr/contracts': {
+    what: { sq: 'Të gjitha kontratat e punës dhe anekset: cilat janë në fuqi, cilat presin nënshkrimin, cilat mbarojnë së shpejti dhe kush është në provë.', en: 'Every employment contract and annex: which are in force, which wait for a signature, which end soon and who is on probation.' },
+    steps: [
+      { sq: 'Kliko "Kontratë e re", zgjidh punonjësin dhe plotëso kushtet: lloji, data, pozita, paga bruto, orari, prova, pushimi.', en: 'Click "New contract", choose the employee and fill in the terms: type, dates, position, gross pay, hours, probation, leave.' },
+      { sq: 'Programi e shkruan kontratën nga modeli i vendit tënd (Kosovë ose Shqipëri), me nenet që kërkon ligji.', en: 'The program writes the contract from your country\'s model (Kosovo or Albania), with the articles the law asks for.' },
+      { sq: 'Përdor butonat sipër listës: "Pa nënshkruar", "Mbarojnë brenda 60 ditëve", "Në provë".', en: 'Use the buttons above the list: "Not signed yet", "Ending in 60 days", "On probation".' },
+    ],
+    mistakes: [
+      { sq: 'Kontrata që nuk është shënuar e nënshkruar nuk hyn në listëpagesë derisa ta shënosh.', en: 'A draft contract is not in payroll until you mark it signed.' },
+    ],
+    after: { sq: 'Një javë para se të mbarojë prova dhe 30 ditë para se të mbarojë kontrata me afat, menaxheri i HR merr kujtesë.', en: 'A week before probation ends and 30 days before a fixed-term contract ends, the HR manager gets a reminder.' },
+    related: [{ href: '/hr/employees', label: { sq: 'Punonjësit', en: 'Employees' } }, { href: '/hr/setup', label: { sq: 'Modelet e kontratave', en: 'Contract models' } }],
+    tour: [
+      { target: 'New contract', say: { sq: 'Fillo këtu: kushtet, dhe teksti shkruhet vetë.', en: 'Start here: the terms, and the text writes itself.' } },
+      { target: 'Not signed yet', say: { sq: 'Kontratat që ende nuk janë nënshkruar.', en: 'Contracts not signed yet.' } },
+      { target: 'Ending in 60 days', say: { sq: 'Kontratat me afat që duhen zgjatur ose mbyllur.', en: 'Fixed-term contracts to extend or close.' } },
+    ],
+  },
+  '/hr/contracts/:id': {
+    what: { sq: 'Një kontratë pune ose aneks: teksti që printohet, kushtet, kopja e nënshkruar dhe historia e punonjësit.', en: 'One employment contract or annex: the text to print, the terms, the signed copy and the person\'s history.' },
+    steps: [
+      { sq: 'Kontrollo tekstin. Kur është skicë, me "Ndrysho tekstin" e përshtat dhe me "Ndrysho kushtet" ndryshon pagën, datat ose pozitën.', en: 'Check the text. While it is a draft, "Edit the text" changes the wording and "Change terms" changes pay, dates or position.' },
+      { sq: 'Kliko "Printo", nënshkruajeni të dy palët, pastaj "Shëno si të nënshkruar". Nga ajo ditë kontrata nuk ndryshon më.', en: 'Click "Print", have both sides sign, then "Mark as signed". From then on the contract does not change.' },
+      { sq: 'Te "Kopja e nënshkruar" ngarko skanimin ose foton e kontratës së nënshkruar.', en: 'Under "Signed copy" upload the scan or photo of the signed contract.' },
+      { sq: 'Për rritje page, pozitë të re ose orar tjetër kliko "Aneks"; për kontratë me afat kliko "Zgjat".', en: 'For a raise, a new position or other hours click "Annex"; for a fixed-term contract click "Extend".' },
+      { sq: 'Kur punonjësi largohet, kliko "Ndërprit kontratën": arsyeja, data e njoftimit dhe dita e fundit. Pastaj printo njoftimin.', en: 'When the person leaves, click "End the contract": the reason, the notice date and the last day. Then print the notice.' },
+    ],
+    mistakes: [
+      { sq: 'Afati i njoftimit varet nga vjetërsia; programi e llogarit sipas ligjit dhe të paralajmëron kur është më i shkurtër.', en: 'The notice period depends on length of service; the program works it out by law and warns you when it is shorter.' },
+      { sq: 'Para fillimit të punës punonjësi duhet deklaruar në administratën tatimore (ATK / DPT), të paktën një ditë më parë.', en: 'Before work starts, the employee must be declared to the tax office (ATK / DPT), at least one day before.' },
+    ],
+    after: { sq: 'Paga paguan sipas kontratës në fuqi; kur aneksi fillon në mes të muajit, secila pjesë paguan ditët e veta.', en: 'Payroll pays by the contract in force; when an annex starts mid-month, each part pays its own days.' },
+    related: [{ href: '/hr/payroll', label: { sq: 'Pagat', en: 'Payroll' } }],
+    tour: [
+      { target: 'Print', say: { sq: 'Printo kontratën për nënshkrim.', en: 'Print the contract for signing.' } },
+      { target: 'Mark as signed', say: { sq: 'Pasi nënshkruhet, shënoje këtu: kontrata hyn në fuqi.', en: 'Once signed, mark it here: the contract comes into force.' } },
+      { target: 'Annex', say: { sq: 'Rritje page, pozitë e re ose orar tjetër.', en: 'A raise, a new position or other hours.' } },
+      { target: 'End the contract', say: { sq: 'Largimi: arsyeja, njoftimi dhe dita e fundit.', en: 'Leaving: the reason, the notice and the last day.' } },
+      { target: 'Signed copy', say: { sq: 'Ruaj skanimin e kontratës së nënshkruar.', en: 'Keep the scan of the signed contract.' } },
+    ],
+  },
 }
 
 export const GUIDES: Record<string, Guide> = { ...GUIDES_A, ...GUIDES_B, ...GUIDES_C, ...GUIDES_D, ...BASE }

@@ -44,12 +44,12 @@ export const GUIDES_D: Record<string, Guide> = {
     what: { sq: 'Kartela e punonjësit: të dhënat personale, kontrata, lejet, prezenca dhe fletëpagesat.', en: 'The employee\'s file: personal details, contract, leave, attendance and payslips.' },
     steps: [
       { sq: 'Te "Profili" plotëso emrin, numrin personal, departamentin, menaxherin dhe IBAN-in, pastaj kliko "Ruaj ndryshimet".', en: 'Under "Profile" fill in the name, personal number, department, manager and IBAN, then click "Save changes".' },
-      { sq: 'Te "Kontrata" kliko "Kontratë e re" dhe shkruaj "Bruto në muaj" dhe orët në javë.', en: 'Under "Contract" click "New contract" and type the "Gross per month" and the hours per week.' },
+      { sq: 'Te "Kontrata" kliko "Kontratë e re": plotëso pozitën, pagën bruto dhe orët, dhe programi e shkruan kontratën nga modeli. Pastaj printoje dhe shëno që u nënshkrua.', en: 'Under "Contract" click "New contract": fill in the position, gross pay and hours, and the program writes the contract from the model. Then print it and mark it signed.' },
       { sq: 'Te "Llogaria e hyrjes" lidhe punonjësin me përdoruesin e tij: kështu regjistron hyrjen, kërkon leje dhe sheh fletëpagesat vetë.', en: 'Under "Login" link the employee to their user: then they clock in, ask for leave and see their own payslips.' },
       { sq: 'Te "Ndalesat" shto paradhëniet, kreditë ose ndalesat e tjera që mbahen nga paga neto çdo muaj.', en: 'Under "Deductions" add salary advances, loans or other amounts kept back from the net pay every month.' },
     ],
     mistakes: [
-      { sq: 'Pa kontratë aktive punonjësi nuk hyn në listëpagesë. Një person ka vetëm një kontratë aktive: mbyll të vjetrën para se të hapësh të renë.', en: 'Without an active contract the person is left out of payroll. One active contract per person: end the old one before starting another.' },
+      { sq: 'Pa kontratë në fuqi punonjësi nuk hyn në listëpagesë. Rritja e pagës ose pozita e re bëhet me aneks te faqja e kontratës, jo me kontratë të re.', en: 'Without a contract in force the person is left out of payroll. A raise or a new position is an annex on the contract page, not a new contract.' },
       { sq: 'Në Kosovë, për punën e dytë fik "Punëdhënësi kryesor": paga tatohet me 10% të sheshtë, pa shumë të patatueshme.', en: 'In Kosovo, for a second job switch off "Main employer": the pay is taxed at a flat 10%, with no tax-free amount.' },
     ],
     after: { sq: 'Pagat llogariten nga kontrata aktive. Menaxheri i caktuar këtu i sheh kërkesat për leje te "Vendi im i punës" dhe mund t\'i miratojë.', en: 'Payroll uses the active contract. The manager set here sees the leave requests under "My workplace" and can approve them.' },

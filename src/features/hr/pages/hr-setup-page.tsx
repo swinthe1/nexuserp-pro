@@ -1,5 +1,6 @@
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import * as React from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Can, useCompany } from '@/app/company-provider'
@@ -11,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ContractSetup } from '../components/contract-setup'
 import { t, td } from '@/i18n'
 import { formatDateWith } from '@/i18n/format'
 import { formatQty } from '@/lib/utils'
@@ -24,16 +26,20 @@ const NONE = '__none'
 const opt = (s: string | null | undefined) => (s && s !== NONE ? s : null)
 
 export function HrSetupPage() {
+  const { can } = useCompany()
+  const [params] = useSearchParams()
   return (
     <>
-      <PageHeader back={{ href: '/hr', label: t('People') }} title={t('HR setup')} description={t('Departments, job positions, leave types and public holidays.')} />
-      <Tabs defaultValue="departments">
+      <PageHeader back={{ href: '/hr', label: t('People') }} title={t('HR setup')} description={t('Departments, job positions, leave types, public holidays and contract models.')} />
+      <Tabs defaultValue={params.get('tab') ?? 'departments'}>
         <TabsList><TabsTrigger value="departments">{t('Departments')}</TabsTrigger><TabsTrigger value="positions">{t('Positions')}</TabsTrigger>
-          <TabsTrigger value="leave">{t('Leave types')}</TabsTrigger><TabsTrigger value="holidays">{t('Public holidays')}</TabsTrigger></TabsList>
+          <TabsTrigger value="leave">{t('Leave types')}</TabsTrigger><TabsTrigger value="holidays">{t('Public holidays')}</TabsTrigger>
+          {can('payroll.read') && <TabsTrigger value="contracts">{t('Contracts|hr')}</TabsTrigger>}</TabsList>
         <TabsContent value="departments"><Departments /></TabsContent>
         <TabsContent value="positions"><Positions /></TabsContent>
         <TabsContent value="leave"><LeaveTypes /></TabsContent>
         <TabsContent value="holidays"><Holidays /></TabsContent>
+        {can('payroll.read') && <TabsContent value="contracts"><ContractSetup /></TabsContent>}
       </Tabs>
     </>
   )
