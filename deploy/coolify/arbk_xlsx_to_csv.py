@@ -7,6 +7,7 @@ whole 30 MB file never sits in memory as a tree.
 usage: arbk_xlsx_to_csv.py Bizneset.xlsx out.csv
 """
 import csv
+import os
 import re
 import sys
 import zipfile
@@ -46,6 +47,11 @@ def excel_date(v):
 
 
 def main(src, dst):
+    size = os.path.getsize(src)
+    with open(src, 'rb') as fh:
+        sig = fh.read(2)
+    if size < 1_000_000 or sig != b'PK':
+        sys.exit(f'The file is not a complete Excel file ({size} bytes). Download Bizneset_*.xlsx again, wait until the download finishes, then run again.')
     z = zipfile.ZipFile(src)
     shared = []
     if 'xl/sharedStrings.xml' in z.namelist():
