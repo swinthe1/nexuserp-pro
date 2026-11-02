@@ -1,3 +1,4 @@
+import { Wordmark } from '@/components/wordmark'
 import {
   ArrowRight, Boxes, Cable, Cpu, CircleDollarSign, DatabaseBackup, LayoutDashboard, LogOut, Menu, MonitorDown, Plus, ScrollText,
   Search, Server, Settings2, ShieldCheck, Store, Users, type LucideIcon,
@@ -84,7 +85,7 @@ function Brand() {
     <div className="flex h-[52px] items-center gap-2.5 px-3">
       <img src="/favicon.svg" alt="" className="size-7" />
       <div className="leading-tight">
-        <div className="text-sm font-semibold text-white">DrisPRO</div>
+        <Wordmark dark className="block text-[15px] text-white" />
         <div className="text-2xs text-muted-foreground">{t('Platform')}</div>
       </div>
     </div>

@@ -7,7 +7,7 @@ export default {
   theme: {
     container: { center: true, padding: '1rem' },
     extend: {
-      fontFamily: { sans: ['Manrope', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+      fontFamily: { sans: ['Manrope', 'ui-sans-serif', 'system-ui', 'sans-serif'], brand: ['"Red Hat Display"', 'Manrope', 'ui-sans-serif', 'sans-serif'] },
       boxShadow: { card: 'var(--shadow-card)' },
       fontSize: { '2xs': ['0.6875rem', { lineHeight: '1rem' }] },
       colors: {

@@ -1,4 +1,5 @@
 import { Check, Cloud, ShieldCheck, WifiOff } from 'lucide-react'
+import { Wordmark } from '@/components/wordmark'
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '@/app/auth-provider'
 import { DesktopDownload } from '@/features/auth/desktop-download'
@@ -29,7 +30,7 @@ function Receipt({ className }: { className?: string }) {
     <div className={cn('auth-receipt relative w-[280px] rotate-[-2deg] text-[#1d232f] drop-shadow-[0_24px_40px_rgba(0,0,0,0.35)]', className)}>
       <div className="rounded-t-sm bg-[#fdfdfb] px-6 pb-6 pt-7">
         <div className="flex items-center justify-center gap-2 text-[15px] font-semibold">
-          <img src="/favicon.svg" alt="" className="size-5" /> DrisPRO
+          <img src="/favicon.svg" alt="" className="size-5" /> <Wordmark className="text-[17px]" />
         </div>
         <p className="mt-1 text-center text-xs text-[#5b6372]">{t('Your shop · today')}</p>
         <div className="my-4 border-t border-dashed border-[#c9ccd3]" />
@@ -64,7 +65,7 @@ function Backdrop() {
 }
 
 function Brand({ className }: { className?: string }) {
-  return <a href="/" className={cn('flex items-center gap-2 text-[15px] font-semibold', className)}><img src="/favicon.svg" alt="" className="size-7" /> DrisPRO</a>
+  return <a href="/" className={cn('flex items-center gap-2', className)}><img src="/favicon.svg" alt="" className="size-7" /> <Wordmark dark className="text-[19px]" /></a>
 }
 
 function FooterLinks({ className }: { className?: string }) {

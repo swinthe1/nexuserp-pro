@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* the DrisPRO name in the logo (Red Hat Display, SIL Open Font License), kept here so it also works offline */
+@font-face {
+  font-family: 'Red Hat Display';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url('/fonts/red-hat-display-900.woff2') format('woff2');
+}
+
 @layer base {
   :root {
     /* DrisPRO — "dris" is the oak: an oak green to act, a sky blue to inform, ink for the menu */

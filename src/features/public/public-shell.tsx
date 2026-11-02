@@ -1,4 +1,5 @@
 import { Link, NavLink } from 'react-router-dom'
+import { Wordmark } from '@/components/wordmark'
 import { t } from '@/i18n'
 import { LanguageToggle } from '@/i18n/language'
 import { cn } from '@/lib/utils'
@@ -10,7 +11,7 @@ export function PublicHeader({ children }: { children?: React.ReactNode }) {
       <div aria-hidden className="pointer-events-none absolute -left-40 -top-48 size-[520px] rounded-full bg-[#11A06E]/25 blur-[120px]" />
       <div aria-hidden className="pointer-events-none absolute -right-24 top-10 size-[460px] rounded-full bg-[#1583C8]/20 blur-[130px]" />
       <nav className="relative mx-auto flex max-w-6xl items-center gap-2 px-4 py-4 sm:px-6">
-        <Link to="/login" className="mr-auto flex items-center gap-2 text-[15px] font-semibold"><img src="/favicon.svg" alt="" className="size-7" /> DrisPRO</Link>
+        <Link to="/login" className="mr-auto flex items-center gap-2"><img src="/favicon.svg" alt="" className="size-7" /> <Wordmark dark className="text-[19px]" /></Link>
         <PublicLink to="/api">{t('For developers')}</PublicLink>
         <LanguageToggle className="hidden border-white/20 bg-white/10 text-white sm:inline-flex" />
         <Link to="/login" className="ml-1 rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-[hsl(196_48%_11%)] hover:bg-white/90">{t('Sign in')}</Link>
