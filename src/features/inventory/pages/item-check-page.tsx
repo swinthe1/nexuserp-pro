@@ -1,6 +1,6 @@
 import { Barcode, ExternalLink, PackageSearch } from 'lucide-react'
 import * as React from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCompany } from '@/app/company-provider'
 import { ScanInput, scanFeedback } from '@/components/scan-input'
@@ -54,6 +54,14 @@ export function ItemCheckPage() {
       scanFeedback('error'); st.error(t('Unknown code “{code}”', { code }))
     } catch (e) { scanFeedback('error'); st.error(describeError(e)) }
   }
+
+  // opened with ?code=… (from another page): look it up straight away
+  const [params] = useSearchParams()
+  const asked = React.useRef(false)
+  React.useEffect(() => {
+    const c = params.get('code')
+    if (c && !asked.current && companyId) { asked.current = true; void onScan(c) }
+  }, [params, companyId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <ScanShell title={t('Check item')}

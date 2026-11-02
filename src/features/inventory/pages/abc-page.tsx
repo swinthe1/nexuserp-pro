@@ -18,7 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { msg, t, td } from '@/i18n'
 import { cn, formatDate, formatMoney, formatQty } from '@/lib/utils'
 import { useWarehouses } from '../api'
-import { useAbcItems, useAbcRun, useAbcSettingsSave, useAbcSummary, useStockNotSold, type Abc, type AbcSettings, type AbcSummary, type Xyz } from '../abc'
+import { useAbcItems, useAbcRun, useAbcSettingsSave, useAbcSummary, useStockNotSold, type Abc, type AbcRow, type AbcSettings, type AbcSummary, type Xyz } from '../abc'
 
 const ROWS: Abc[] = ['A', 'B', 'C']
 const COLS: Xyz[] = ['X', 'Y', 'Z']
@@ -90,7 +90,7 @@ export function AbcPage() {
           </p>
 
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-            {xyz ? <Matrix s={s} sel={sel} pick={pick} /> : <Classes s={s} sel={sel} pick={pick} />}
+            {xyz ? <Matrix s={s} sel={sel} pick={pick} /> : <Classes s={s} sel={sel} pick={pick} rows={items.data ?? []} />}
 
             <div className="grid content-start gap-3">
               <Card><CardContent className="grid gap-3 p-4 text-[13px]">
@@ -201,7 +201,7 @@ export function AbcPage() {
 }
 
 /** ABC alone: three classes, side by side */
-function Classes({ s, sel, pick }: { s: AbcSummary; sel: string | null; pick: (k: string) => void }) {
+function Classes({ s, sel, pick, rows }: { s: AbcSummary; sel: string | null; pick: (k: string) => void; rows: AbcRow[] }) {
   const of = (a: Abc) => {
     const cells = s.cells.filter((c) => c.abc === a)
     return { items: cells.reduce((t, c) => t + c.items, 0), share: cells.reduce((t, c) => t + c.share, 0), stock: cells.reduce((t, c) => t + c.stock_value, 0) }
@@ -231,8 +231,67 @@ function Classes({ s, sel, pick }: { s: AbcSummary; sel: string | null; pick: (k
             </button>
           )
         })}
+        <ParetoBars s={s} of={of} />
+        <TopA rows={rows} />
+        <AMissing rows={rows} />
       </CardContent>
     </Card>
+  )
+}
+
+const BAR: Record<Abc, string> = { A: 'bg-primary', B: 'bg-sky-500', C: 'bg-muted-foreground/40' }
+/** the Pareto picture: few items make most of the value */
+function ParetoBars({ s, of }: { s: AbcSummary; of: (a: Abc) => { items: number; share: number } }) {
+  const line = (label: string, part: (a: Abc) => number) => (
+    <div className="grid gap-1">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="flex h-7 overflow-hidden rounded-md">
+        {ROWS.map((a) => { const w = part(a); return w > 0 && (
+          <div key={a} className={cn('flex items-center justify-center text-[11px] font-semibold text-white', BAR[a], a === 'C' && 'text-foreground')} style={{ width: `${w}%` }}>
+            {w >= 7 ? `${a} ${pct(w)} %` : a}</div>) })}
+      </div>
+    </div>
+  )
+  return (
+    <div className="grid gap-2.5 rounded-xl border bg-background p-4 md:col-span-3">
+      <div className="text-[13px] font-medium">{t('Few items, most of the value')}</div>
+      {line(t('Share of the items'), (a) => (s.items ? (of(a).items / s.items) * 100 : 0))}
+      {line(t('Share of the value'), (a) => of(a).share)}
+    </div>
+  )
+}
+
+/** the most valuable items */
+function TopA({ rows }: { rows: AbcRow[] }) {
+  const top = rows.filter((r) => r.abc === 'A').slice(0, 6)
+  if (!top.length) return null
+  return (
+    <div className="grid content-start gap-1.5 rounded-xl border bg-background p-4 md:col-span-2">
+      <div className="text-[13px] font-medium">{t('The most valuable items')}</div>
+      {top.map((r) => (
+        <Link key={r.variant_id} to={`/inventory/products/${r.variant?.product_id}`} className="flex items-center gap-2 rounded-md px-1 py-1 text-[13px] hover:bg-muted">
+          <span className="w-5 text-right tabular text-xs text-muted-foreground">{r.rank}</span>
+          <span className="min-w-0 flex-1 truncate">{r.variant?.name}</span>
+          <span className="w-28 overflow-hidden rounded-full bg-muted"><span className="block h-1.5 rounded-full bg-primary" style={{ width: `${Math.min(100, (r.share / (top[0]!.share || 1)) * 100)}%` }} /></span>
+          <span className="w-14 text-right tabular text-xs">{formatQty(Math.round(r.share * 10) / 10)} %</span>
+        </Link>))}
+    </div>
+  )
+}
+
+/** A items with nothing in stock: the ones that must never run out */
+function AMissing({ rows }: { rows: AbcRow[] }) {
+  const out = rows.filter((r) => r.abc === 'A' && r.on_hand <= 0)
+  return (
+    <div className={cn('grid content-start gap-1.5 rounded-xl border p-4', out.length ? 'border-destructive/40 bg-destructive/[0.04]' : 'border-success/40 bg-success/[0.05]')}>
+      <div className="text-[13px] font-medium">{t('A items out of stock')}</div>
+      {!out.length ? <p className="text-xs text-muted-foreground">{t('Every A item is in stock.')}</p> : <>
+        {out.slice(0, 6).map((r) => (
+          <Link key={r.variant_id} to={`/inventory/check?code=${encodeURIComponent(r.variant?.sku ?? '')}`} className="truncate text-[13px] text-destructive hover:underline">{r.variant?.name}</Link>))}
+        {out.length > 6 && <span className="text-xs text-muted-foreground">{t('and {n} more', { n: out.length - 6 })}</span>}
+        <span className="text-xs text-muted-foreground">{t('Tap one to see which unit has it.')}</span>
+      </>}
+    </div>
   )
 }
 

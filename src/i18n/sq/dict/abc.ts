@@ -2,6 +2,13 @@
 const dict: Record<string, string> = {
   'ABC-XYZ classification|menu': 'Klasifikimi ABC',
   'ABC classification': 'Klasifikimi ABC',
+  'Few items, most of the value': 'Pak artikuj, shumica e vlerës',
+  'Share of the items': 'Pjesa e artikujve',
+  'Share of the value': 'Pjesa e vlerës',
+  'The most valuable items': 'Artikujt më të vlefshëm',
+  'A items out of stock': 'Artikuj A pa stok',
+  'Every A item is in stock.': 'Të gjithë artikujt A kanë stok.',
+  'Tap one to see which unit has it.': 'Kliko njërin për të parë cila njësi e ka.',
   'Which items carry the business: A, B and C by the value that leaves the stock. It decides how often each item is counted and how closely it is followed.':
     'Cilët artikuj e mbajnë biznesin: A, B dhe C sipas vlerës që del nga stoku. Nga kjo varet sa shpesh numërohet çdo artikull dhe sa nga afër ndiqet.',
   'In the last year': 'Në vitin e fundit',
