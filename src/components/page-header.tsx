@@ -31,8 +31,8 @@ export function PageHeader({ title, description, actions, back, meta, className,
   icon?: boolean
 }) {
   return (
-    <div className={cn('mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between', className)}>
-      <div className="min-w-0">
+    <div className={cn('mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between', className)}>
+      <div className="min-w-0 sm:min-w-[min(100%,26rem)] sm:flex-1">
         {back && (
           <Link to={back.href} className="mb-2 inline-flex items-center gap-0.5 text-[13px] font-medium text-muted-foreground hover:text-primary">
             <ChevronLeft className="size-4" /> {back.label}
@@ -50,7 +50,7 @@ export function PageHeader({ title, description, actions, back, meta, className,
           </div>
         </div>
       </div>
-      {actions && <div className="flex min-w-0 max-w-full shrink-0 flex-wrap items-center gap-2 print:hidden max-sm:[&_a]:whitespace-normal max-sm:[&_button]:whitespace-normal">{actions}</div>}
+      {actions && <div className="flex min-w-0 max-w-full shrink-0 flex-wrap items-center gap-2 sm:ml-auto sm:justify-end print:hidden max-sm:[&_a]:whitespace-normal max-sm:[&_button]:whitespace-normal">{actions}</div>}
     </div>
   )
 }
