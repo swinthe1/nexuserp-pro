@@ -58,7 +58,17 @@ select t.ok((:'s'::jsonb -> 'dead' ->> 'items')::int = 1 and (:'s'::jsonb -> 'de
 select t.ok((select count(*) from public.item_classes where company_id = :'co' and warehouse_id = :'s1') = 4
         and (select abc from public.item_classes where variant_id = :'ded' and warehouse_id = :'wh') = 'C', 'every unit is classified on its own');
 select t.ok((select jsonb_array_length(public.abc_summary(:'co', :'s1') -> 'cells')) >= 3, 'the matrix of one unit');
-select t.ok((public.item_where(:'co', 'BIG') -> 'item' ->> 'class') = 'AX', 'the class shows where the item is looked up');
+select t.ok((public.item_where(:'co', 'BIG') -> 'item' ->> 'class') = 'A', 'the class shows where the item is looked up: ABC alone, XYZ is off');
+select t.ok(not (public.abc_summary(:'co', null) -> 'settings' ->> 'xyz')::boolean, 'XYZ is optional and starts off');
+select public.abc_settings_save(:'co', '{"xyz":true}');
+select t.ok((public.item_where(:'co', 'BIG') -> 'item' ->> 'class') = 'AX', 'switched on, the class has both letters');
+-- stock that has not sold, for a period
+select t.ok((public.stock_not_sold(:'co', null, 50) ->> 'items')::int = 1 and (public.stock_not_sold(:'co', null, 50) -> 'rows' -> 0 ->> 'sku') = 'DED'
+        and (public.stock_not_sold(:'co', null, 50) -> 'rows' -> 0 ->> 'last_sold') is null, 'not sold in 50 days: only the item that never sold');
+select t.ok((public.stock_not_sold(:'co', null, 30) ->> 'items')::int = 2, 'in 30 days the rare item, last sold about six weeks ago, joins it');
+select t.ok((public.stock_not_sold(:'co', :'s1', 30) ->> 'items')::int = 1 and (public.stock_not_sold(:'co', :'wh', 30) ->> 'items')::int = 1, 'by unit');
+select t.ok((public.stock_not_sold(:'co', null, 5000) ->> 'items')::int = 0 and (public.stock_not_sold(:'co', null, 5000, null, true) ->> 'items')::int = 1,
+  'goods that came in during the period are left out unless asked for');
 
 -- ---------- rules -------------------------------------------------------------------------------
 select public.abc_settings_save(:'co', '{"basis":"qty"}');

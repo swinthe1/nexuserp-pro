@@ -73,7 +73,7 @@ function CountPlan() {
     <div className="grid gap-2 rounded-xl border bg-card p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div className="font-semibold">{t('Due for counting, by class')}</div>
-        <Link to="/inventory/abc" className="text-[13px] text-primary hover:underline">{t('ABC-XYZ classification')}</Link>
+        <Link to="/inventory/abc" className="text-[13px] text-primary hover:underline">{t('ABC classification')}</Link>
       </div>
       <p className="text-[13px] text-muted-foreground">{t('The most valuable items are counted most often. Press "Count" and the program makes a count of what is due, A first.')}</p>
       <div className="grid gap-1.5">

@@ -1,6 +1,35 @@
 /** ABC-XYZ classification and counting by class (src/features/inventory/abc.ts, abc-page, counts-page) */
 const dict: Record<string, string> = {
   'ABC-XYZ classification|menu': 'Klasifikimi ABC',
+  'ABC classification': 'Klasifikimi ABC',
+  'Which items carry the business: A, B and C by the value that leaves the stock. It decides how often each item is counted and how closely it is followed.':
+    'Cilët artikuj e mbajnë biznesin: A, B dhe C sipas vlerës që del nga stoku. Nga kjo varet sa shpesh numërohet çdo artikull dhe sa nga afër ndiqet.',
+  'In the last year': 'Në vitin e fundit',
+  'In the last {n} days': 'Në {n} ditët e fundit',
+  'Since a date…': 'Që nga një datë…',
+  '{n} items · {value}': '{n} artikuj · {value}',
+  'Not one sold since {date}: money standing on the shelf. Goods that came in after that date are left out.':
+    'Asnjë e shitur që nga {date}: para që rrinë në raft. Malli që erdhi pas asaj date nuk llogaritet.',
+  'Show all items': 'Shfaq të gjithë artikujt',
+  'Show them': 'Shfaqi',
+  'In stock since': 'Në stok që nga',
+  'Everything in stock has sold in this period.': 'Gjithçka në stok është shitur në këtë periudhë.',
+  'Every unit is classified on its own too. For how regularly items sell (XYZ), switch it on under Rules.':
+    'Çdo njësi klasifikohet edhe më vete. Për sa rregullisht shiten artikujt (XYZ), ndizeni te Rregullat.',
+  'The few items that make {p} % of the value. Never run out of them: follow them closely, count them every {d} days.':
+    'Pak artikuj që bëjnë {p} % të vlerës. Mos u mbetni kurrë pa to: ndiqini nga afër, numërojini çdo {d} ditë.',
+  'The middle items, the next {p} % of the value: normal care, count them every {d} days.':
+    'Artikujt e mesëm, {p} % e radhës së vlerës: kujdes normal, numërojini çdo {d} ditë.',
+  'Most of the items, little of the value: keep it simple, count them every {d} days.':
+    'Shumica e artikujve, pak nga vlera: mbajini thjesht, numërojini çdo {d} ditë.',
+  'The three classes': 'Tri klasat',
+  'Tap a class to see its items. The share is of the value that left the stock.': 'Kliko një klasë për të parë artikujt e saj. Pjesa është nga vlera që doli nga stoku.',
+  'of the value': 'e vlerës',
+  '{p} % of the items': '{p} % e artikujve',
+  'In stock {value}': 'Në stok {value}',
+  'XYZ: how regularly items sell': 'XYZ: sa rregullisht shiten artikujt',
+  'Optional. Splits each class by how steady the sales are week after week (X steady, Y changing, Z rare) and shows a 3 × 3 matrix.':
+    'Opsionale. E ndan çdo klasë sipas sa të qëndrueshme janë shitjet javë pas jave (X i rregullt, Y ndryshon, Z i rrallë) dhe shfaq matricën 3 × 3.',
   'ABC-XYZ classification': 'Klasifikimi ABC-XYZ',
   'Which items carry the business (A, B, C by the value that leaves the stock) and how regularly they sell (X, Y, Z). It decides how often each item is counted and how it is reordered.':
     'Cilët artikuj e mbajnë biznesin (A, B, C sipas vlerës që del nga stoku) dhe sa rregullisht shiten (X, Y, Z). Nga kjo varet sa shpesh numërohet çdo artikull dhe si porositet.',

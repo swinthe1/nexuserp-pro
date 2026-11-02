@@ -17472,6 +17472,16 @@ export type Database = {
         }
         Returns: Json
       }
+      stock_not_sold: {
+        Args: {
+          p_company: string
+          p_warehouse?: string
+          p_days?: number
+          p_since?: string
+          p_include_new?: boolean
+        }
+        Returns: Json
+      }
       submit_cycle_count: {
         Args: {
           p_id: string

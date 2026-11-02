@@ -7,7 +7,7 @@ import { t } from '@/i18n'
 
 export type Abc = 'A' | 'B' | 'C'
 export type Xyz = 'X' | 'Y' | 'Z'
-export interface AbcSettings { basis: 'value' | 'qty'; months: number; a: number; b: number; x: number; y: number; count_a: number; count_b: number; count_c: number }
+export interface AbcSettings { basis: 'value' | 'qty'; months: number; a: number; b: number; xyz: boolean; x: number; y: number; count_a: number; count_b: number; count_c: number }
 export interface AbcSummary {
   cells: { abc: Abc; xyz: Xyz; items: number; value: number; share: number; stock_value: number }[]
   items: number; value: number; stock_value: number
@@ -70,6 +70,22 @@ export function useAbcSettingsSave() {
     mutationFn: async (s: AbcSettings) => unwrap(await supabase.rpc('abc_settings_save', { p_company: companyId, p_cfg: s as never })),
     onSuccess: () => { toast.success(t('Rules saved; items classified again')); void qc.invalidateQueries({ queryKey: keys.all(companyId) }) },
     onError: (e) => toast.error(describeError(e)),
+  })
+}
+
+/* --------------------------------------------------------------- stock that has not sold */
+export interface NotSoldRow { variant_id: string; sku: string; name: string; product_id: string; on_hand: number; stock_value: number; last_sold: string | null; first_in: string | null }
+export interface NotSold { from: string; items: number; stock_value: number; rows: NotSoldRow[] }
+/** stock with no sale since a date (or for the last … days), in one unit or everywhere */
+export function useStockNotSold(warehouse: string | null, days: number, since: string | null) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...keys.all(companyId), 'not-sold', warehouse ?? '', days, since ?? ''],
+    enabled: !!companyId,
+    queryFn: async () => {
+      const r = unwrap(await supabase.rpc('stock_not_sold', { p_company: companyId, p_warehouse: warehouse ?? undefined, p_days: days, p_since: since ?? undefined })) as unknown as NotSold
+      return { ...r, items: n(r.items), stock_value: n(r.stock_value), rows: (r.rows ?? []).map((x) => ({ ...x, on_hand: n(x.on_hand), stock_value: n(x.stock_value) })) }
+    },
   })
 }
 

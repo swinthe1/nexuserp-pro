@@ -599,15 +599,15 @@ const BASE: Record<string, Guide> = {
     related: [{ href: '/tasks', label: { sq: 'Detyrat', en: 'Tasks' } }],
   },
   '/inventory/abc': {
-    what: { sq: 'Klasifikimi ABC-XYZ: cilët artikuj e mbajnë biznesin dhe sa rregullisht shiten. A janë pak artikuj që bëjnë 80 % të vlerës që del nga stoku; X shitet çdo javë njësoj, Z rrallë.', en: 'ABC-XYZ classification: which items carry the business and how regularly they sell. A are the few items making 80 % of the value that leaves the stock; X sells the same every week, Z rarely.' },
+    what: { sq: 'Klasifikimi ABC: cilët artikuj e mbajnë biznesin. A janë pak artikuj që bëjnë 80 % të vlerës që del nga stoku, B 15 % e radhës, C shumica e artikujve me pak vlerë.', en: 'ABC classification: which items carry the business. A are the few items making 80 % of the value that leaves the stock, B the next 15 %, C most items with little value.' },
     steps: [
-      { sq: 'Shiko matricën: kliko një kuti (p.sh. AX) për të parë artikujt e saj dhe çfarë të bësh me ta.', en: 'Look at the matrix: tap a box (e.g. AX) to see its items and what to do with them.' },
+      { sq: 'Kliko një klasë (A, B ose C) për të parë artikujt e saj, më të vlefshmit së pari.', en: 'Tap a class (A, B or C) to see its items, the most valuable first.' },
       { sq: 'Zgjidh lart një njësi për ta parë klasifikimin vetëm të atij dyqani.', en: 'Pick a unit at the top to see the classification of that store alone.' },
-      { sq: 'Kliko "Në stok, por pa shitje": malli që nuk ka lëvizur në 12 muaj, para që rrinë në raft.', en: 'Tap "In stock, but not sold": goods that have not moved in 12 months, money standing on the shelf.' },
-      { sq: 'Te "Rregullat" ndrysho pragjet (80/95 %, 25/50 %) dhe sa shpesh numërohet çdo klasë.', en: 'Under "Rules" change the limits (80/95 %, 25/50 %) and how often each class is counted.' },
+      { sq: 'Te "Në stok, por pa shitje" zgjidh periudhën (30, 60, 90, 180 ditë, një vit, ose që nga një datë) dhe shiko çka nuk është shitur dhe sa para rrinë në raft.', en: 'Under "In stock, but not sold" choose the period (30, 60, 90, 180 days, a year, or since a date) and see what has not sold and how much money stands on the shelf.' },
+      { sq: 'Te "Rregullat" ndrysho pragjet (80/95 %), sa shpesh numërohet çdo klasë, dhe nëse do, ndiz XYZ (sa rregullisht shiten artikujt).', en: 'Under "Rules" change the limits (80/95 %), how often each class is counted and, if you want, switch on XYZ (how regularly items sell).' },
     ],
     mistakes: [
-      { sq: 'Një artikull i ri ka pak javë historik: klasa e tij bëhet e saktë pas disa javësh shitje.', en: 'A new item has few weeks of history: its class becomes accurate after some weeks of sales.' },
+      { sq: 'Një artikull i ri ka pak histori: klasa e tij bëhet e saktë pas disa javësh shitje.', en: 'A new item has little history: its class becomes accurate after some weeks of sales.' },
     ],
     after: { sq: 'Klasifikimi bëhet vetë çdo të hënë. Te Numërimet, programi tregon çka është me radhë (A çdo muaj, B çdo 3 muaj, C një herë në vit) dhe e krijon numërimin me një klik.', en: 'Items are classified by themselves every Monday. Under Stock counts, the program shows what is due (A monthly, B every 3 months, C yearly) and makes the count in one click.' },
     related: [{ href: '/wms/counts', label: { sq: 'Inventarizimi', en: 'Stock count' } }, { href: '/inventory/check', label: { sq: 'Kontrollo artikullin', en: 'Check item' } }],
