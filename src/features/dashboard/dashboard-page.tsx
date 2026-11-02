@@ -1,3 +1,4 @@
+import { MyTasksCard } from '@/features/tasks/components/linked-tasks'
 import { useQuery } from '@tanstack/react-query'
 import { AlarmClock, ArrowDownLeft, ArrowLeftRight, ArrowRight, ArrowUpRight, Coins, FileQuestion, FileText, PackageMinus, Percent, ReceiptText, Scale, ShoppingCart, Truck, Boxes, ClipboardCheck, Landmark, PackageCheck, ShieldAlert, Ship, TrendingUp, TriangleAlert, Users, Wallet } from 'lucide-react'
 import * as React from 'react'
@@ -152,6 +153,7 @@ export function DashboardPage() {
       <PageHeader title={greeting(firstName)} description={`${company?.name ?? ''} · ${formatDate(new Date())}`}
         actions={<ChooseCards all={cards.map((c) => ({ key: c.key, label: c.label }))} shown={shown} onSave={choice.set} />} />
       <BooksCheckBanner />
+      <div className="mb-4 empty:hidden"><MyTasksCard /></div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {/* until the person's own choice has loaded, so the cards do not jump */}

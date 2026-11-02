@@ -560,6 +560,41 @@ const BASE: Record<string, Guide> = {
       { target: 'Signed copy', say: { sq: 'Ruaj skanimin e kontratës së nënshkruar.', en: 'Keep the scan of the signed contract.' } },
     ],
   },
+
+  '/tasks': {
+    what: { sq: 'Detyrat: çfarë duhet bërë, kush e bën dhe deri kur. Disa i shkruan ti, disa i krijon vetë programi (fatura të vonuara, diferenca në arkë, kontrata që mbarojnë).', en: 'Tasks: what needs doing, by whom and by when. You write some; the program makes others by itself (late invoices, till differences, contracts ending).' },
+    steps: [
+      { sq: 'Shkruaj detyrën në rreshtin sipër dhe shtyp Enter. "nesër", "e premte" ose "15.11" vendosin afatin; "@Ilir" personin; "!lartë" përparësinë.', en: 'Type the task in the line at the top and press Enter. "tomorrow", "friday" or "15.11" set the date; "@Ilir" the person; "!high" the priority.' },
+      { sq: 'Kliko detyrën për ta hapur: pikat e kontrollit, nën-detyrat, komentet dhe fotot si provë.', en: 'Click a task to open it: checklist, sub-tasks, comments and photos as proof.' },
+      { sq: 'Shenjo rrethin majtas kur e kryen. Ai që ta dha e merr vesh menjëherë.', en: 'Tick the circle on the left when it is done. Whoever gave it to you hears at once.' },
+      { sq: 'Ndërro pamjen: Lista sipas afatit, Tabela sipas gjendjes, Kalendari, ose Ekipi për menaxherët.', en: 'Switch the view: List by due date, Board by status, Calendar, or Team for managers.' },
+    ],
+    mistakes: [
+      { sq: 'Detyra të tjerëve u jep vetëm menaxheri; punëtori i shkruan detyrat e veta.', en: 'Only a manager gives tasks to other people; staff write their own.' },
+      { sq: 'Detyra me drynin (private) e sheh vetëm ai që e shkroi.', en: 'A task with the lock (private) is seen only by whoever wrote it.' },
+    ],
+    after: { sq: 'Në orën 7 të mëngjesit secili njoftohet për detyrat e sotme dhe të nesërme, në program dhe në telefon.', en: 'At 7 in the morning everyone hears about the tasks due today and tomorrow, in the app and on the phone.' },
+    related: [{ href: '/tasks/setup', label: { sq: 'Përsëritjet dhe automatiket', en: 'Repeating and automatic' } }],
+    tour: [
+      { target: 'input[aria-label="Detyrë e re"], input[aria-label="New task"]', say: { sq: 'Shkruaj këtu, p.sh. "Porosit kafe nesër @Ilir !lartë", dhe shtyp Enter.', en: 'Type here, e.g. "Order coffee tomorrow @Ilir !high", and press Enter.' } },
+      { target: 'Board', say: { sq: 'Tabela: zvarrit kartën nga një kolonë te tjetra kur ndryshon gjendja.', en: 'Board: drag a card to another column when its status changes.' } },
+      { target: 'Calendar', say: { sq: 'Kalendari: zvarrit detyrën në një ditë tjetër për t’i ndryshuar afatin.', en: 'Calendar: drag a task to another day to move its due date.' } },
+      { target: 'Lists', say: { sq: 'Listat dhe projektet mbledhin detyrat dhe njerëzit që punojnë për to.', en: 'Lists and projects group tasks and the people working on them.' } },
+    ],
+  },
+  '/tasks/setup': {
+    what: { sq: 'Detyrat që përsëriten vetë, modelet (shumë detyra me një klik) dhe detyrat që programi i krijon nga ajo që ndodh.', en: 'Tasks that repeat by themselves, templates (many tasks with one click) and tasks the program makes from what happens.' },
+    steps: [
+      { sq: 'Te "Që përsëriten" shto p.sh. "Hapja e dyqanit" çdo ditë pune, me pikat e kontrollit një për rresht.', en: 'Under "Repeating" add e.g. "Opening the shop" every working day, with its steps one per line.' },
+      { sq: 'Te "Modelet" bëj një grup detyrash (p.sh. "Punëtori i ri") dhe nise me "Fillo" kur të duhet.', en: 'Under "Templates" make a set of tasks (e.g. "New employee") and start it with "Start" when needed.' },
+      { sq: 'Te "Automatik" ndiz rastet që do: faturat e vonuara, diferencat në arkë, stoku i ulët, lotet, kontratat, afatet tatimore, kontaktet e reja.', en: 'Under "Automatic" switch on what you want: late invoices, till differences, low stock, lots, contracts, tax deadlines, new contacts.' },
+    ],
+    mistakes: [
+      { sq: 'Nisni me pak automatizime: shumë detyra automatike bëhen zhurmë dhe njerëzit ndalojnë së lexuari.', en: 'Start with a few automations: too many automatic tasks become noise and people stop reading.' },
+    ],
+    after: { sq: 'Programi kontrollon çdo orë dhe nuk krijon detyrë të dytë për të njëjtën gjë sa kohë e para është e hapur.', en: 'The program checks every hour and never makes a second task for the same thing while the first is open.' },
+    related: [{ href: '/tasks', label: { sq: 'Detyrat', en: 'Tasks' } }],
+  },
 }
 
 export const GUIDES: Record<string, Guide> = { ...GUIDES_A, ...GUIDES_B, ...GUIDES_C, ...GUIDES_D, ...BASE }

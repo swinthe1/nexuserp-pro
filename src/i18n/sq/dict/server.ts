@@ -720,4 +720,10 @@ export default {
   "Choose why the contract ends": "Zgjidh pse përfundon kontrata",
   "The last day cannot be before the contract starts": "Dita e fundit nuk mund të jetë para fillimit të kontratës",
   "Notice is given before the last day": "Njoftimi jepet para ditës së fundit",
+  "That person is not in this company": "Ky person nuk është në këtë kompani",
+  "List not found": "Lista nuk u gjet",
+  "A task cannot be its own sub-task": "Detyra nuk mund të jetë nën-detyrë e vetes",
+  "Sub-tasks go one level deep": "Nën-detyrat kanë vetëm një nivel",
+  "Only a manager gives tasks to other people": "Detyra të tjerëve u jep vetëm menaxheri",
+  "Someone": "Dikush",
 } satisfies Dict

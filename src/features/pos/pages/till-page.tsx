@@ -1,4 +1,5 @@
 import { PageHelpButton, TourHost } from '@/components/help'
+import { TillTasks } from '@/features/tasks/components/till-tasks'
 import {
   ArrowLeft, BadgePercent, Banknote, Camera, Check, CloudOff, CreditCard, Ellipsis, Landmark, ListOrdered, LogOut, Minus, Plus, Printer, ReceiptText, RotateCcw, ScanLine, Search, Ticket, Trash2,
   UserRound, Wallet, X,
@@ -388,6 +389,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
           {!sync.online || offline ? <><CloudOff className="size-3.5" /> {t('Offline')}{pending.length ? ` · ${t('{n} to send', { n: pending.length })}` : ''}</>
             : pending.length ? <>{sync.syncing ? t('Sending') : t('Waiting')} · {pending.length}</> : <><Check className="size-3.5" /> {t('All sent')}</>}
         </button>
+        {sync.online && !offline && <TillTasks />}
         {phone ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label={t('More')}><Ellipsis /></Button></DropdownMenuTrigger>

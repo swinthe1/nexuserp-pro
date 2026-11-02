@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Can, useCompany } from '@/app/company-provider'
 import { ActivityTimeline } from '@/components/activity-timeline'
+import { LinkedTasks } from '@/features/tasks/components/linked-tasks'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { ColumnHeader, DataTable, inFilter } from '@/components/data-table/data-table'
 import { EmptyState } from '@/components/empty-state'
@@ -329,7 +330,7 @@ export function ContractPage() {
             onConfirm={async () => { await del.mutateAsync(c.id); navigate('/hr/contracts') }} />}
         </div>
       </div>
-      <div className="mt-4"><ActivityTimeline table="employment_contracts" id={c.id} /></div>
+      <div className="mt-4 grid max-w-3xl gap-4"><LinkedTasks entityType="employment_contracts" entityId={c.id} label={c.number} /><ActivityTimeline table="employment_contracts" id={c.id} /></div>
 
       {dialog === 'sign' && facts && <SignDialog facts={facts} body={model} onClose={() => setDialog(null)} />}
       {(dialog === 'annex' || dialog === 'extend') && <AnnexDialog contract={c} extend={dialog === 'extend'} onClose={() => setDialog(null)} />}

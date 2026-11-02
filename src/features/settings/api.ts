@@ -329,6 +329,7 @@ export function useAgentLog(connectionId: string | null, problemsOnly: boolean) 
 export type NotificationRow = Pick<Tables<'notifications'>, 'id' | 'type' | 'category' | 'title' | 'body' | 'link' | 'read_at' | 'created_at' | 'entity_type'>
 export const NOTIFICATION_CATEGORIES = [
   { key: 'approvals', label: msg('Approvals'), description: msg('Documents waiting for your decision. Always delivered.') },
+  { key: 'tasks', label: msg('Tasks|menu'), description: msg('Tasks given to you, due today or tomorrow, done, and comments on them.') },
   { key: 'summary', label: msg('Morning summary'), description: msg('Every morning, yesterday in one line: sales, cash, overdue debts, low stock. For owners and administrators.') },
   { key: 'cash', label: msg('Cash and tills'), description: msg('Differences when a till is closed, the safe, money waiting for approval.') },
   { key: 'people', label: msg('People'), description: msg('Leave requests and decisions, payslips, contracts ending.') },

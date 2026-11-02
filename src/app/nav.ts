@@ -5,7 +5,7 @@ import {
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, Building, HandCoins, ListTree, Network, Settings2, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, 
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
   BedDouble, BookUser, CalendarRange, ConciergeBell, Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, ReceiptText, IdCard, Settings, CreditCard, type LucideIcon, Activity, ArrowUpDown, BadgeEuro, BookOpen, CalendarPlus, CheckCheck, CircleDollarSign, Clock, Coins, Combine, FileScan, FolderTree, Gift, Handshake, LineChart, Map, Move, NotebookTabs, PieChart, ScanBarcode, Send, ListChecks, ChartSpline, PackageMinus, GraduationCap,
-  FileSignature,
+  FileSignature, ListTodo,
 } from 'lucide-react'
 import { msg } from '@/i18n'
 
@@ -37,6 +37,7 @@ export const NAV: NavSection[] = [
     items: [
       { label: msg('Dashboard'), href: '/', icon: LayoutDashboard, perm: 'core.read', keywords: ['home', 'kpi'], always: true },
       { label: msg('Approvals|menu'), href: '/approvals', icon: CheckCheck, perm: 'core.read', keywords: ['approve', 'pending', 'inbox'] },
+      { label: msg('Tasks|menu'), href: '/tasks', icon: ListTodo, perm: 'core.read', keywords: ['detyrat', 'detyrë', 'punët', 'to do', 'todo', 'lista', 'kujtesa', 'projekt', 'task', 'kanban'] },
       { label: msg('Training|menu'), href: '/training', icon: GraduationCap, perm: 'core.read', keywords: ['trajnimi', 'trajnim', 'mësime', 'udhëzime', 'si punon', 'ndihmë', 'help', 'tutorial', 'learn'] },
       { label: msg('My clients'), href: '/accountant', icon: BookOpen, perm: 'core.read', hideInMenu: true, keywords: ['kontabilisti', 'kontabilist', 'accountant', 'klientët e kontabilistit', 'zyra e kontabilitetit'] },
       { label: msg('Notifications'), href: '/notifications', icon: Bell, perm: 'core.read', keywords: ['alerts', 'inbox', 'reminders', 'njoftime'], always: true, hideInMenu: true },

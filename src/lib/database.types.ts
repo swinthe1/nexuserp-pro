@@ -2134,6 +2134,8 @@ export type Database = {
           contract_signatory: string | null
           contract_signatory_title: string | null
           contract_place: string | null
+          task_automations: Json
+          task_digest_email: boolean
         }
         Insert: {
           id?: string
@@ -2201,6 +2203,8 @@ export type Database = {
           contract_signatory?: string | null
           contract_signatory_title?: string | null
           contract_place?: string | null
+          task_automations?: Json
+          task_digest_email?: boolean
         }
         Update: {
           id?: string
@@ -2268,6 +2272,8 @@ export type Database = {
           contract_signatory?: string | null
           contract_signatory_title?: string | null
           contract_place?: string | null
+          task_automations?: Json
+          task_digest_email?: boolean
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -11768,6 +11774,414 @@ export type Database = {
           { foreignKeyName: "table_orders_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      task_checklist: {
+        Row: {
+          id: string
+          company_id: string
+          task_id: string
+          title: string
+          done_at: string | null
+          done_by: string | null
+          sort_order: number
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          task_id: string
+          title: string
+          done_at?: string | null
+          done_by?: string | null
+          sort_order?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          task_id?: string
+          title?: string
+          done_at?: string | null
+          done_by?: string | null
+          sort_order?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "task_checklist_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "task_checklist_task_id_fkey"; columns: ["task_id"]; isOneToOne: false; referencedRelation: "tasks"; referencedColumns: ["id"] },
+        ]
+      }
+      task_comments: {
+        Row: {
+          id: string
+          company_id: string
+          task_id: string
+          kind: string
+          body: string | null
+          files: Json
+          event: Json | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          task_id: string
+          kind?: string
+          body?: string | null
+          files?: Json
+          event?: Json | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          task_id?: string
+          kind?: string
+          body?: string | null
+          files?: Json
+          event?: Json | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "task_comments_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "task_comments_task_id_fkey"; columns: ["task_id"]; isOneToOne: false; referencedRelation: "tasks"; referencedColumns: ["id"] },
+        ]
+      }
+      task_list_members: {
+        Row: {
+          company_id: string
+          list_id: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          list_id: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          list_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          { foreignKeyName: "task_list_members_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "task_list_members_list_id_fkey"; columns: ["list_id"]; isOneToOne: false; referencedRelation: "task_lists"; referencedColumns: ["id"] },
+        ]
+      }
+      task_lists: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          color: string
+          kind: string
+          start_date: string | null
+          end_date: string | null
+          is_private: boolean
+          archived_at: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          color?: string
+          kind?: string
+          start_date?: string | null
+          end_date?: string | null
+          is_private?: boolean
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string
+          color?: string
+          kind?: string
+          start_date?: string | null
+          end_date?: string | null
+          is_private?: boolean
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "task_lists_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
+      task_rules: {
+        Row: {
+          id: string
+          company_id: string
+          title: string
+          description: string | null
+          assignee_id: string | null
+          list_id: string | null
+          priority: number
+          checklist: string[]
+          freq: string
+          weekdays: number[]
+          month_day: number | null
+          next_on: string
+          active: boolean
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          title: string
+          description?: string | null
+          assignee_id?: string | null
+          list_id?: string | null
+          priority?: number
+          checklist?: string[]
+          freq: string
+          weekdays?: number[]
+          month_day?: number | null
+          next_on: string
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          title?: string
+          description?: string | null
+          assignee_id?: string | null
+          list_id?: string | null
+          priority?: number
+          checklist?: string[]
+          freq?: string
+          weekdays?: number[]
+          month_day?: number | null
+          next_on?: string
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "task_rules_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "task_rules_list_fk"; columns: ["company_id", "list_id"]; isOneToOne: false; referencedRelation: "task_lists"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      task_templates: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          items: Json
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          items?: Json
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string
+          items?: Json
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "task_templates_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
+      task_watchers: {
+        Row: {
+          company_id: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          { foreignKeyName: "task_watchers_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "task_watchers_task_id_fkey"; columns: ["task_id"]; isOneToOne: false; referencedRelation: "tasks"; referencedColumns: ["id"] },
+        ]
+      }
+      tasks: {
+        Row: {
+          id: string
+          company_id: string
+          number: string | null
+          title: string
+          description: string | null
+          status: string
+          priority: number
+          assignee_id: string | null
+          due_date: string | null
+          due_time: string | null
+          list_id: string | null
+          parent_id: string | null
+          warehouse_id: string | null
+          entity_type: string | null
+          entity_id: string | null
+          entity_label: string | null
+          tags: string[]
+          is_private: boolean
+          source: string
+          auto_key: string | null
+          rule_id: string | null
+          completed_at: string | null
+          completed_by: string | null
+          sort_order: number
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          number?: string | null
+          title: string
+          description?: string | null
+          status?: string
+          priority?: number
+          assignee_id?: string | null
+          due_date?: string | null
+          due_time?: string | null
+          list_id?: string | null
+          parent_id?: string | null
+          warehouse_id?: string | null
+          entity_type?: string | null
+          entity_id?: string | null
+          entity_label?: string | null
+          tags?: string[]
+          is_private?: boolean
+          source?: string
+          auto_key?: string | null
+          rule_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          sort_order?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          number?: string | null
+          title?: string
+          description?: string | null
+          status?: string
+          priority?: number
+          assignee_id?: string | null
+          due_date?: string | null
+          due_time?: string | null
+          list_id?: string | null
+          parent_id?: string | null
+          warehouse_id?: string | null
+          entity_type?: string | null
+          entity_id?: string | null
+          entity_label?: string | null
+          tags?: string[]
+          is_private?: boolean
+          source?: string
+          auto_key?: string | null
+          rule_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          sort_order?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "tasks_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "tasks_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "tasks_list_fk"; columns: ["company_id", "list_id"]; isOneToOne: false; referencedRelation: "task_lists"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "tasks_parent_fk"; columns: ["company_id", "parent_id"]; isOneToOne: false; referencedRelation: "tasks"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
       tax_codes: {
         Row: {
           id: string
@@ -17037,6 +17451,36 @@ export type Database = {
           p_active: boolean
         }
         Returns: undefined
+      }
+      task_apply_template: {
+        Args: {
+          p_template: string
+          p_start?: string
+          p_assignee?: string
+          p_list?: string
+          p_entity_type?: string
+          p_entity_id?: string
+          p_entity_label?: string
+        }
+        Returns: number
+      }
+      task_counts: {
+        Args: {
+          p_company: string
+        }
+        Returns: { open_mine: number | null; overdue_mine: number | null; today_mine: number | null; overdue_team: number | null }[]
+      }
+      task_people: {
+        Args: {
+          p_company: string
+        }
+        Returns: { user_id: string | null; name: string | null; is_me: boolean | null; assignable: boolean | null }[]
+      }
+      tasks_run_now: {
+        Args: {
+          p_company: string
+        }
+        Returns: number
       }
       tax_calendar: {
         Args: {

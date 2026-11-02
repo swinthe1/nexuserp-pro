@@ -16,6 +16,7 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 import { Can, useCompany } from '@/app/company-provider'
 import { ActivityTimeline } from '@/components/activity-timeline'
+import { LinkedTasks } from '@/features/tasks/components/linked-tasks'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { ColumnHeader, DataTable, inFilter } from '@/components/data-table/data-table'
 import { EmptyState } from '@/components/empty-state'
@@ -150,7 +151,7 @@ function PartnerView({ partner }: { partner?: PartnerDetail }) {
         {partner.is_vendor && <TabsContent value="purchasing"><VendorPurchasing vendorId={partner.id} /></TabsContent>}
         {partner.is_vendor && <TabsContent value="vendor-prices"><VendorPricesTable vendorId={partner.id} /></TabsContent>}
         {partner.is_customer && can('invoicing.read') && <TabsContent value="reminders"><CustomerReminders partnerId={partner.id} noReminders={partner.no_reminders} hasContact={!!(partner.email || partner.phone)} /></TabsContent>}
-        <TabsContent value="activity" className="max-w-2xl"><ActivityTimeline table="business_partners" id={partner.id} /></TabsContent>
+        <TabsContent value="activity" className="grid max-w-2xl gap-4"><LinkedTasks entityType="business_partners" entityId={partner.id} label={partner.name} /><ActivityTimeline table="business_partners" id={partner.id} /></TabsContent>
       </Tabs>
     </div>
   )

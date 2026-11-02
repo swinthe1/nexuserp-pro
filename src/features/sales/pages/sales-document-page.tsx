@@ -15,6 +15,7 @@ import { Can, useCompany } from '@/app/company-provider'
 import { useGuard } from '@/components/guard'
 import { isOfflineId } from '@/lib/offline/step'
 import { ActivityTimeline } from '@/components/activity-timeline'
+import { LinkedTasks } from '@/features/tasks/components/linked-tasks'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
@@ -389,7 +390,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
           <Tabs defaultValue="document">
             <TabsList><TabsTrigger value="document">{t('Document')}</TabsTrigger>{kind === 'invoices' && <TabsTrigger value="accounting">{t('Accounting')}</TabsTrigger>}<TabsTrigger value="activity">{t('Activity')}</TabsTrigger></TabsList>
             <TabsContent value="document">{body}</TabsContent>
-            <TabsContent value="activity" className="max-w-2xl"><ActivityTimeline table={cfg.table} id={doc.id} /></TabsContent>
+            <TabsContent value="activity" className="grid max-w-2xl gap-4"><LinkedTasks entityType={cfg.table} entityId={doc.id} label={doc.number ?? null} /><ActivityTimeline table={cfg.table} id={doc.id} /></TabsContent>
             {kind === 'invoices' && <TabsContent value="accounting"><AccountingTab sourceType={doc.document_type as string} sourceId={doc.id} /></TabsContent>}
           </Tabs>
         ) : body}

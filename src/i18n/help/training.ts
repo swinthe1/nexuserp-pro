@@ -22,6 +22,8 @@ export const TRACKS: Track[] = [
         why: { sq: 'Numëro paratë sipas kartëmonedhave; diferenca regjistrohet dhe e sheh pronari.', en: 'Count the cash by note and coin; any difference is recorded and the owner sees it.' } },
       { key: 'cashier.loyalty', title: { sq: 'Kartat e klientëve dhe zbritjet', en: 'Customer cards and discounts' }, href: '/pos/loyalty', minutes: 3,
         why: { sq: 'Si përdoret karta e klientit dhe pse zbritjet e mëdha kërkojnë menaxherin.', en: 'How a customer card is used and why big discounts need the manager.' } },
+      { key: 'cashier.tasks', title: { sq: 'Detyrat e mia', en: 'My tasks' }, href: '/tasks', minutes: 2,
+        why: { sq: 'Çfarë të kanë dhënë për të bërë, deri kur, dhe si e shënon të kryer me foto si provë.', en: 'What you were given to do, by when, and how to mark it done with a photo as proof.' } },
     ],
   },
   {
@@ -44,6 +46,8 @@ export const TRACKS: Track[] = [
         why: { sq: 'Fleta e numërimit, Excel-i, vlera e diferencave dhe rinumërimi.', en: 'The count sheet, Excel, the value of differences and recounting.' } },
       { key: 'warehouse.shrinkage', title: { sq: 'Humbjet dhe firot', en: 'Shrinkage' }, href: '/inventory/shrinkage', minutes: 2,
         why: { sq: 'Ku humbet malli dhe sa kushton.', en: 'Where goods go missing and what it costs.' } },
+      { key: 'warehouse.tasks', title: { sq: 'Detyrat e mia', en: 'My tasks' }, href: '/tasks', minutes: 2,
+        why: { sq: 'Çfarë të kanë dhënë për të bërë, deri kur, dhe si e shënon të kryer me foto si provë.', en: 'What you were given to do, by when, and how to mark it done with a photo as proof.' } },
     ],
   },
   {
@@ -62,6 +66,8 @@ export const TRACKS: Track[] = [
         why: { sq: 'Malli del nga stoku kur niset dërgesa.', en: 'The goods leave stock when the delivery goes.' } },
       { key: 'sales.debts', title: { sq: 'Borxhet dhe kujtesat', en: 'Debts and reminders' }, href: '/finance/receivables', minutes: 4,
         why: { sq: 'Kush vonohet dhe si i dërgon kujtesë me një klikim.', en: 'Who is late and how to send a reminder in one click.' } },
+      { key: 'sales.tasks', title: { sq: 'Detyrat e mia', en: 'My tasks' }, href: '/tasks', minutes: 2,
+        why: { sq: 'Çfarë të kanë dhënë për të bërë, deri kur, dhe si e shënon të kryer me foto si provë.', en: 'What you were given to do, by when, and how to mark it done with a photo as proof.' } },
     ],
   },
   {
@@ -84,6 +90,8 @@ export const TRACKS: Track[] = [
         why: { sq: 'Libri i shitjeve dhe blerjeve, pastaj deklarata e muajit.', en: 'The sales and purchase books, then the month\'s return.' } },
       { key: 'acc.reports', title: { sq: 'Pasqyrat financiare', en: 'Financial statements' }, href: '/finance/reports', minutes: 4,
         why: { sq: 'Fitimi, bilanci dhe rrjedha e parasë për çdo periudhë.', en: 'Profit, balance sheet and cash flow for any period.' } },
+      { key: 'accountant.tasks', title: { sq: 'Detyrat e mia', en: 'My tasks' }, href: '/tasks', minutes: 2,
+        why: { sq: 'Çfarë të kanë dhënë për të bërë, deri kur, dhe si e shënon të kryer me foto si provë.', en: 'What you were given to do, by when, and how to mark it done with a photo as proof.' } },
     ],
   },
   {
@@ -104,6 +112,8 @@ export const TRACKS: Track[] = [
         why: { sq: 'Zbritjet, rregullimet dhe pagesat e mëdha presin fjalën tënde.', en: 'Big discounts, adjustments and payments wait for your word.' } },
       { key: 'owner.automation', title: { sq: 'Automatizimet: kujtesat dhe përmbledhja', en: 'Automations: reminders and the summary' }, href: '/settings/automation', minutes: 4,
         why: { sq: 'Përmbledhja e mëngjesit, kujtesat për klientët dhe emaili i kompanisë.', en: 'The morning summary, customer reminders and the company email.' } },
+      { key: 'owner.tasks', title: { sq: 'Detyrat: jepi punë ekipit', en: 'Tasks: give the team work' }, href: '/tasks', minutes: 4,
+        why: { sq: 'Një rresht bëhet detyrë me afat dhe përgjegjës; sheh kush është vonuar te Ekipi.', en: 'One line becomes a task with a date and a person; Team shows who is late.' } },
     ],
   },
 ]

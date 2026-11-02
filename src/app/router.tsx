@@ -23,6 +23,8 @@ const lazy = <T,>(load: () => Promise<T>, name: keyof T) =>
 
 const DashboardPage = lazy(() => import('@/features/dashboard/dashboard-page'), 'DashboardPage')
 const TrainingPage = lazy(() => import('@/features/training/training-page'), 'TrainingPage')
+const TasksPage = lazy(() => import('@/features/tasks/pages/tasks-page'), 'TasksPage')
+const TasksSetupPage = lazy(() => import('@/features/tasks/pages/tasks-setup-page'), 'TasksSetupPage')
 const ApprovalsPage = lazy(() => import('@/features/approvals/approvals-page'), 'ApprovalsPage')
 const ProductsPage = lazy(() => import('@/features/inventory/pages/products-page'), 'ProductsPage')
 const ProductNewPage = lazy(() => import('@/features/inventory/pages/product-new-page'), 'ProductNewPage')
@@ -218,6 +220,8 @@ const router = createBrowserRouter([
         { index: true, element: <Home /> },
         { path: 'approvals', element: <ApprovalsPage /> },
         { path: 'training', element: <TrainingPage /> },
+        { path: 'tasks', element: <TasksPage /> },
+        { path: 'tasks/setup', element: <TasksSetupPage /> },
       ] },
       { path: 'inventory', element: <RequirePerm perm="inventory.read" />, children: [
         { index: true, element: <Navigate to="products" replace /> },

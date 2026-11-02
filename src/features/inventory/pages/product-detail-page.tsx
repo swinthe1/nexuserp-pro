@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 import { Can, useCompany } from '@/app/company-provider'
 import { ActivityTimeline } from '@/components/activity-timeline'
+import { LinkedTasks } from '@/features/tasks/components/linked-tasks'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
 import { SearchSelect } from '@/components/search-select'
@@ -152,7 +153,7 @@ export function ProductDetailPage() {
         <TabsContent value="packs"><PacksCard product={{ id: p.id, sales_price: p.sales_price, uom_code: units.data?.find((u) => u.id === p.uom_id)?.code }} /></TabsContent>
         <TabsContent value="reorder"><ReorderTab product={p} /></TabsContent>
         <TabsContent value="card"><ProductItemCard variants={p.product_variants} /></TabsContent>
-        <TabsContent value="activity" className="max-w-2xl"><ActivityTimeline table="products" id={p.id} /></TabsContent>
+        <TabsContent value="activity" className="grid max-w-2xl gap-4"><LinkedTasks entityType="products" entityId={p.id} label={p.name} /><ActivityTimeline table="products" id={p.id} /></TabsContent>
       </Tabs>
     </>
   )

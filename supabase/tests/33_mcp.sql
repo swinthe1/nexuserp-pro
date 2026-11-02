@@ -27,7 +27,7 @@ set role anon;
 select set_config('request.headers', json_build_object('x-mcp-key', :'rk', 'x-app-origin', 'https://erp.test')::text, false);
 select t.ok(public.mcp_http('{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}') #>> '{result,serverInfo,title}' = 'DrisPRO · MCP Test', 'initialize names the company');
 select t.ok(public.mcp_http('{"jsonrpc":"2.0","method":"notifications/initialized"}') is null, 'notifications get no answer');
-select t.ok(jsonb_array_length(public.mcp_http('{"jsonrpc":"2.0","id":2,"method":"tools/list"}') #> '{result,tools}') = 8, 'a reading link lists only the reading tools');
+select t.ok(jsonb_array_length(public.mcp_http('{"jsonrpc":"2.0","id":2,"method":"tools/list"}') #> '{result,tools}') = 9, 'a reading link lists only the reading tools (tasks included)');
 select public.mcp_http('{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"find_items","arguments":{"query":"Rugove"}}}') #>> '{result,content,0,text}' as items \gset
 select t.ok(:'items' like '%Ujë Rugove%' and :'items' like '%https://erp.test/inventory/products/%', 'tools answer with links to the app');
 select t.ok((public.mcp_http('{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"draft_sales_invoice","arguments":{"customer":"Viva","lines":[{"item":"UJE","quantity":2}]}}}') #>> '{result,isError}')::boolean,
@@ -36,7 +36,7 @@ select t.ok(public.mcp_http('{"jsonrpc":"2.0","id":5,"method":"nothing"}') #>> '
 select t.ok(public.mcp_http('[{"jsonrpc":"2.0","id":6,"method":"ping"},{"jsonrpc":"2.0","method":"notifications/x"}]') = '[{"id": 6, "result": {}, "jsonrpc": "2.0"}]', 'a list of messages gets a list of answers');
 
 select set_config('request.headers', json_build_object('x-mcp-key', :'wk')::text, false);
-select t.ok(jsonb_array_length(public.mcp_http('{"jsonrpc":"2.0","id":7,"method":"tools/list"}') #> '{result,tools}') = 10, 'a drafting link also lists the two drafts');
+select t.ok(jsonb_array_length(public.mcp_http('{"jsonrpc":"2.0","id":7,"method":"tools/list"}') #> '{result,tools}') = 12, 'a drafting link also lists the two drafts and making a task');
 select (public.mcp_http('{"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"draft_sales_invoice","arguments":{"customer":"Viva","lines":[{"item":"UJE","quantity":10},{"item":"Transport","quantity":1,"price":5}]}}}') #>> '{result,content,0,text}')::jsonb as inv \gset
 reset role;
 select t.ok((select status from public.sales_invoices where id = (:'inv'::jsonb ->> 'id')::uuid) = 'draft'
