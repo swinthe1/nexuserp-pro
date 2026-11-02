@@ -255,6 +255,7 @@ export default {
   'enum:location': 'Sipas raftit',
   'enum:category': 'Sipas kategorisë',
   'enum:full': 'I plotë',
+  'enum:abc_class': 'Sipas klasës ABC',
   'enum:partial_count': 'I pjesshëm',
   "Change|choice": "Ndrysho",
 } satisfies Dict

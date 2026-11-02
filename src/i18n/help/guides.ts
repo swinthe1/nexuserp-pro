@@ -598,6 +598,20 @@ const BASE: Record<string, Guide> = {
     after: { sq: 'Programi kontrollon çdo orë dhe nuk krijon detyrë të dytë për të njëjtën gjë sa kohë e para është e hapur.', en: 'The program checks every hour and never makes a second task for the same thing while the first is open.' },
     related: [{ href: '/tasks', label: { sq: 'Detyrat', en: 'Tasks' } }],
   },
+  '/inventory/abc': {
+    what: { sq: 'Klasifikimi ABC-XYZ: cilët artikuj e mbajnë biznesin dhe sa rregullisht shiten. A janë pak artikuj që bëjnë 80 % të vlerës që del nga stoku; X shitet çdo javë njësoj, Z rrallë.', en: 'ABC-XYZ classification: which items carry the business and how regularly they sell. A are the few items making 80 % of the value that leaves the stock; X sells the same every week, Z rarely.' },
+    steps: [
+      { sq: 'Shiko matricën: kliko një kuti (p.sh. AX) për të parë artikujt e saj dhe çfarë të bësh me ta.', en: 'Look at the matrix: tap a box (e.g. AX) to see its items and what to do with them.' },
+      { sq: 'Zgjidh lart një njësi për ta parë klasifikimin vetëm të atij dyqani.', en: 'Pick a unit at the top to see the classification of that store alone.' },
+      { sq: 'Kliko "Në stok, por pa shitje": malli që nuk ka lëvizur në 12 muaj, para që rrinë në raft.', en: 'Tap "In stock, but not sold": goods that have not moved in 12 months, money standing on the shelf.' },
+      { sq: 'Te "Rregullat" ndrysho pragjet (80/95 %, 25/50 %) dhe sa shpesh numërohet çdo klasë.', en: 'Under "Rules" change the limits (80/95 %, 25/50 %) and how often each class is counted.' },
+    ],
+    mistakes: [
+      { sq: 'Një artikull i ri ka pak javë historik: klasa e tij bëhet e saktë pas disa javësh shitje.', en: 'A new item has few weeks of history: its class becomes accurate after some weeks of sales.' },
+    ],
+    after: { sq: 'Klasifikimi bëhet vetë çdo të hënë. Te Numërimet, programi tregon çka është me radhë (A çdo muaj, B çdo 3 muaj, C një herë në vit) dhe e krijon numërimin me një klik.', en: 'Items are classified by themselves every Monday. Under Stock counts, the program shows what is due (A monthly, B every 3 months, C yearly) and makes the count in one click.' },
+    related: [{ href: '/wms/counts', label: { sq: 'Inventarizimi', en: 'Stock count' } }, { href: '/inventory/check', label: { sq: 'Kontrollo artikullin', en: 'Check item' } }],
+  },
   '/inventory/check': {
     what: { sq: 'Skano një artikull dhe shiko sa ka çdo dyqan dhe magazinë. Kur njësisë sate i mungon, programi të tregon nga cila njësi ta marrësh dhe sa.', en: 'Scan an item and see how much every store and warehouse has. When your unit is short, the program tells you which unit to take it from and how much.' },
     steps: [

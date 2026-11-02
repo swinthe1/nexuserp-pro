@@ -729,4 +729,10 @@ export default {
   "Choose two different units": "Zgjidhni dy njësi të ndryshme",
   "Item not found": "Artikulli nuk u gjet",
   "Unknown warehouse": "Njësi e panjohur",
+  "Nothing is due for counting in this unit": "Në këtë njësi nuk ka asgjë me radhë për numërim",
+  "Choose value or quantity": "Zgjidhni vlerën ose sasinë",
+  "A must be below B, and B below 100 %": "A duhet të jetë nën B, dhe B nën 100 %",
+  "X must be below Y": "X duhet të jetë nën Y",
+  "Choose 3 to 24 months": "Zgjidhni 3 deri në 24 muaj",
+  "Count every day at most": "Numërimi nuk mund të jetë më shpesh se një herë në ditë",
 } satisfies Dict

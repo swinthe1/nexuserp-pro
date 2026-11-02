@@ -28,7 +28,7 @@ export interface WhereSuggestion {
 export interface WhereResult {
   found: boolean
   matches?: { variant_id: string; sku: string; name: string }[]
-  item?: { variant_id: string; product_id: string; sku: string; name: string; product_type: string; price: number; unit: string | null; barcode: string | null }
+  item?: { variant_id: string; product_id: string; sku: string; name: string; product_type: string; price: number; unit: string | null; barcode: string | null; class?: string | null }
   here?: string | null
   units?: UnitStock[]
   suggestions?: WhereSuggestion[]

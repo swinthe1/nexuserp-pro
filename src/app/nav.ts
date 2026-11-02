@@ -5,7 +5,7 @@ import {
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, Building, HandCoins, ListTree, Network, Settings2, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, 
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
   BedDouble, BookUser, CalendarRange, ConciergeBell, Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, ReceiptText, IdCard, Settings, CreditCard, type LucideIcon, Activity, ArrowUpDown, BadgeEuro, BookOpen, CalendarPlus, CheckCheck, CircleDollarSign, Clock, Coins, Combine, FileScan, FolderTree, Gift, Handshake, LineChart, Map, Move, NotebookTabs, PieChart, ScanBarcode, Send, ListChecks, ChartSpline, PackageMinus, GraduationCap,
-  FileSignature, ListTodo, ScanSearch,
+  FileSignature, ListTodo, ScanSearch, Grid3x3,
 } from 'lucide-react'
 import { msg } from '@/i18n'
 
@@ -96,6 +96,7 @@ export const NAV: NavSection[] = [
       { label: msg('Products'), href: '/inventory/products', icon: Boxes, perm: 'inventory.read', group: msg('Items'), keywords: ['items', 'sku', 'variants', 'barcode'], focus: ['sales.write', 'wms.write'] },
       { label: msg('Stock levels'), href: '/inventory/stock', icon: PackageSearch, perm: 'inventory.read', keywords: ['on hand', 'available', 'reserved', 'valuation'], focus: ['sales.write', 'wms.write', 'pos.write'] },
       { label: msg('Check item|menu'), href: '/inventory/check', icon: ScanSearch, perm: 'inventory.read', keywords: ['zebra', 'scanner', 'skano', 'kontrollo', 'ku ka', 'where is', 'stock in stores', 'njësitë', 'dyqanet', 'gjendja', 'transfer'], focus: ['inventory.write', 'wms.write', 'pos.write'] },
+      { label: msg('ABC-XYZ classification|menu'), href: '/inventory/abc', icon: Grid3x3, perm: 'inventory.read', keywords: ['abc', 'xyz', 'pareto', 'klasifikimi', 'kategorizimi', 'klasa', 'analiza abc', 'dead stock', 'pa lëvizje', 'mall i ndenjur'], focus: ['inventory.write', 'procurement.write'] },
       { label: msg('Item card'), href: '/inventory/item-card', icon: FileStack, perm: 'inventory.read', keywords: ['kartela', 'kartela e artikullit', 'item ledger', 'stock card', 'lëvizjet', 'movements', 'ledger', 'history'], focus: ['wms.write'] },
       { label: msg('Low stock|menu'), href: '/inventory/alerts', icon: TriangleAlert, perm: 'inventory.read', keywords: ['reorder', 'alerts', 'replenish'] },
       { label: msg('Lots & expiry|menu'), href: '/wms/lots', icon: Hourglass, perm: 'inventory.read', keywords: ['batch', 'serial', 'traceability', 'recall', 'fefo', 'expiry'] },

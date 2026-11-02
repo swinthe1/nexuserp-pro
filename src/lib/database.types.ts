@@ -2137,6 +2137,7 @@ export type Database = {
           task_automations: Json
           task_digest_email: boolean
           replenish_from_units: boolean
+          abc_settings: Json
         }
         Insert: {
           id?: string
@@ -2207,6 +2208,7 @@ export type Database = {
           task_automations?: Json
           task_digest_email?: boolean
           replenish_from_units?: boolean
+          abc_settings?: Json
         }
         Update: {
           id?: string
@@ -2277,6 +2279,7 @@ export type Database = {
           task_automations?: Json
           task_digest_email?: boolean
           replenish_from_units?: boolean
+          abc_settings?: Json
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -4866,6 +4869,82 @@ export type Database = {
         Relationships: [
           { foreignKeyName: "item_activity_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
           { foreignKeyName: "item_activity_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      item_classes: {
+        Row: {
+          id: string
+          company_id: string
+          variant_id: string
+          warehouse_id: string | null
+          abc: string
+          xyz: string
+          value: number
+          qty: number
+          share: number
+          cum_share: number
+          months_sold: number
+          cv: number | null
+          weeks: number
+          rank: number
+          on_hand: number
+          stock_value: number
+          computed_at: string
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          variant_id: string
+          warehouse_id?: string | null
+          abc: string
+          xyz: string
+          value?: number
+          qty?: number
+          share?: number
+          cum_share?: number
+          months_sold?: number
+          cv?: number | null
+          weeks?: number
+          rank: number
+          on_hand?: number
+          stock_value?: number
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          variant_id?: string
+          warehouse_id?: string | null
+          abc?: string
+          xyz?: string
+          value?: number
+          qty?: number
+          share?: number
+          cum_share?: number
+          months_sold?: number
+          cv?: number | null
+          weeks?: number
+          rank?: number
+          on_hand?: number
+          stock_value?: number
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "item_classes_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "item_classes_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "item_classes_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
         ]
       }
       item_cost_history: {
@@ -14078,6 +14157,26 @@ export type Database = {
       }
     }
     Functions: {
+      abc_run: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
+      abc_settings_save: {
+        Args: {
+          p_company: string
+          p_cfg: Json
+        }
+        Returns: Json
+      }
+      abc_summary: {
+        Args: {
+          p_company: string
+          p_warehouse?: string
+        }
+        Returns: Json
+      }
       accept_all_statement_suggestions: {
         Args: {
           p_statement: string
@@ -14836,6 +14935,12 @@ export type Database = {
         }
         Returns: Json
       }
+      count_plan: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       count_recount: {
         Args: {
           p_id: string
@@ -14872,6 +14977,14 @@ export type Database = {
           p_base_currency?: string
           p_tax_number?: string
           p_legal_name?: string
+        }
+        Returns: string
+      }
+      create_count_due: {
+        Args: {
+          p_warehouse: string
+          p_limit?: number
+          p_blind?: boolean
         }
         Returns: string
       }

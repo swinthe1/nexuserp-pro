@@ -95,7 +95,8 @@ export function ItemCheckPage() {
         <>
           <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border bg-card p-3">
             <div className="min-w-0">
-              <div className="text-lg font-semibold leading-tight">{d.item.name}</div>
+              <div className="flex flex-wrap items-center gap-2 text-lg font-semibold leading-tight">{d.item.name}
+                {d.item.class && <Link to="/inventory/abc" title={t('ABC-XYZ classification')} className="rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-xs font-semibold text-primary">{d.item.class}</Link>}</div>
               <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
                 <span className="font-mono">{d.item.sku}</span>{d.item.barcode && <span className="font-mono">{d.item.barcode}</span>}
                 <span>{t('Price {price}', { price: formatMoney(d.item.price) })}</span>

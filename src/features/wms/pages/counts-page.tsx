@@ -25,6 +25,7 @@ import { cn, formatDate, formatQty, humanize } from '@/lib/utils'
 import { useCategories, useLocations, useWarehouses, type LocationRow } from '@/features/inventory/api'
 import { useCount, useCountItem, useCounts, useCreateCount, usePostCount, useResolveCode, useSubmitCount, wmsKeys, type CountLine } from '../api'
 import { QtyDialog, ScanShell, useScanStatus } from '../components/scan-shell'
+import { useCountPlan, useCreateCountDue } from '@/features/inventory/abc'
 import { CountImportDialog, CountReviewPanel, printCountSheet } from '../components/count-tools'
 
 /** Count lists and screens refresh when someone else counts, submits or posts */
@@ -40,6 +41,7 @@ export function CountsPage() {
   return (
     <ScanShell title={t('Stock counts')} back={{ href: '/wms', label: t('Warehouse floor') }} actions={<Can perm="wms.write"><Button onClick={() => setOpen(true)}><Plus /> {t('New count')}</Button></Can>}>
       <p className="text-[13px] text-muted-foreground">{t('Count a few shelves every day instead of closing for a full inventory. Counters do not see the expected quantity; a manager reviews the differences and confirms them as one adjustment.')}</p>
+      <CountPlan />
       {counts.isError ? <ErrorState error={counts.error} onRetry={() => void counts.refetch()} /> : counts.isLoading ? <Skeleton className="h-40" /> : !counts.data?.length ? <EmptyState icon={ClipboardCheck} title={t('No counts yet')} description={t('Start with the shelves that move the most.')} action={<Can perm="wms.write"><Button onClick={() => setOpen(true)}><Plus /> {t('New count')}</Button></Can>} /> : (
         <div className="grid gap-2">
           {counts.data.map((c) => {
@@ -56,6 +58,41 @@ export function CountsPage() {
       )}
       {open && <NewCountDialog onClose={() => setOpen(false)} />}
     </ScanShell>
+  )
+}
+
+/** what is due for counting by ABC class (A every month, B every three months, C once a year) */
+function CountPlan() {
+  const plan = useCountPlan()
+  const due = useCreateCountDue()
+  const navigate = useNavigate()
+  const { can } = useCompany()
+  const rows = (plan.data ?? []).filter((r) => r.classes)
+  if (!rows.length) return null
+  return (
+    <div className="grid gap-2 rounded-xl border bg-card p-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div className="font-semibold">{t('Due for counting, by class')}</div>
+        <Link to="/inventory/abc" className="text-[13px] text-primary hover:underline">{t('ABC-XYZ classification')}</Link>
+      </div>
+      <p className="text-[13px] text-muted-foreground">{t('The most valuable items are counted most often. Press "Count" and the program makes a count of what is due, A first.')}</p>
+      <div className="grid gap-1.5">
+        {rows.map((r) => (
+          <div key={r.warehouse_id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border px-3 py-2">
+            <span className="min-w-[10rem] flex-1 text-[14px] font-medium">{td(r.name)}</span>
+            {(['A', 'B', 'C'] as const).map((k) => r.classes?.[k] && (
+              <span key={k} className={cn('rounded-md px-2 py-0.5 text-xs tabular', r.classes[k]!.due ? 'bg-warning/10 text-warning' : 'bg-muted text-muted-foreground')}>
+                <b className="font-mono">{k}</b> {t('{due} of {n} due', { due: r.classes[k]!.due, n: r.classes[k]!.items })}
+              </span>))}
+            {!r.due ? <span className="text-xs text-muted-foreground">{t('Nothing due')}</span> : can('wms.write') && (
+              <Button size="sm" loading={due.isPending && due.variables?.warehouse === r.warehouse_id}
+                onClick={async () => { try { const id = await due.mutateAsync({ warehouse: r.warehouse_id }); navigate(`/wms/counts/${id}`) } catch { /* toast */ } }}>
+                <ClipboardCheck /> {t('Count {n}', { n: Math.min(r.due, 80) })}
+              </Button>)}
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
