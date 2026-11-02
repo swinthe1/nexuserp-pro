@@ -11,9 +11,8 @@ android {
         applicationId 'com.drispro.skaner'
         minSdk 24
         targetSdk 35
-        versionCode 1
-        versionName '1.0.0'
-        resValue 'string', 'appName', 'DrisPRO Skaner'
+        versionCode 2
+        versionName '1.1.0'
         resValue 'string', 'launcherName', 'DrisPRO Skaner'
     }
     signingConfigs {
@@ -27,9 +26,7 @@ android {
     buildTypes {
         release { minifyEnabled false; signingConfig signingConfigs.release }
     }
+    buildFeatures { buildConfig true }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
 
-dependencies {
-    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
-}
