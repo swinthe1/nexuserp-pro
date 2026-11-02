@@ -1,0 +1,35 @@
+plugins { id 'com.android.application' }
+
+def ks = new Properties()
+def ksFile = rootProject.file('signing.properties')
+if (ksFile.exists()) ks.load(new FileInputStream(ksFile))
+
+android {
+    namespace 'com.drispro.skaner'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.drispro.skaner'
+        minSdk 24
+        targetSdk 35
+        versionCode 1
+        versionName '1.0.0'
+        resValue 'string', 'appName', 'DrisPRO Skaner'
+        resValue 'string', 'launcherName', 'DrisPRO Skaner'
+    }
+    signingConfigs {
+        release {
+            storeFile file(ks['storeFile'] ?: 'missing.keystore')
+            storePassword ks['storePassword']
+            keyAlias ks['keyAlias']
+            keyPassword ks['keyPassword']
+        }
+    }
+    buildTypes {
+        release { minifyEnabled false; signingConfig signingConfigs.release }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}
