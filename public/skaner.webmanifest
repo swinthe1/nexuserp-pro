@@ -1,0 +1,25 @@
+{
+  "id": "/skaner",
+  "name": "DrisPRO Skaner",
+  "short_name": "Skaner",
+  "description": "DrisPRO për skanerin e magazinës: pranimi, lëvizjet, numërimi, çmimet dhe kontrolli i artikullit.",
+  "lang": "sq",
+  "dir": "ltr",
+  "start_url": "/skaner",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0E8A5F",
+  "background_color": "#ffffff",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "/skaner-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/skaner-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/skaner-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Kontrollo artikullin", "short_name": "Kontrollo", "url": "/inventory/check", "icons": [{ "src": "/skaner-192.png", "sizes": "192x192" }] },
+    { "name": "Numërimi", "short_name": "Numërimi", "url": "/wms/counts", "icons": [{ "src": "/skaner-192.png", "sizes": "192x192" }] },
+    { "name": "Pranimi", "short_name": "Pranimi", "url": "/wms/receive", "icons": [{ "src": "/skaner-192.png", "sizes": "192x192" }] }
+  ]
+}

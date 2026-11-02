@@ -7,6 +7,8 @@ import { CompanySwitcher } from '@/components/layout/company-switcher'
 import { Sidebar, SidebarNav } from '@/components/layout/sidebar'
 import { Topbar } from '@/components/layout/topbar'
 import { SimpleTopbar } from '@/features/simple/simple-shell'
+import { ScannerTopbar } from '@/features/scanner/scanner-home'
+import { isScannerMode } from '@/features/scanner/mode'
 import { Invitations } from '@/components/invitations'
 import { TourHost } from '@/components/help'
 import { TrainingNudge } from '@/features/training/nudge'
@@ -58,6 +60,22 @@ export function AppLayout() {
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />
   if (companyLoading) return <FullPageSkeleton />
   if (!companies.length) return <Navigate to={isSuperAdmin ? '/platform' : '/onboarding'} replace />
+
+  // the handheld app (DrisPRO Skaner): no side menu, one way back to its start screen
+  if (isScannerMode()) {
+    return (
+      <div className="flex min-h-dvh flex-col">
+        <ScannerTopbar />
+        <OfflineBanner />
+        <Invitations />
+        <LicenseBanner />
+        <main id="main" className="flex-1 px-3 py-3 sm:px-5">
+          <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
+          <GuardHost />
+        </main>
+      </div>
+    )
+  }
 
   if (simple) {
     return (

@@ -729,6 +729,7 @@ export default {
   "Choose two different units": "Zgjidhni dy njësi të ndryshme",
   "Item not found": "Artikulli nuk u gjet",
   "Unknown warehouse": "Njësi e panjohur",
+  "A price cannot be below zero": "Çmimi nuk mund të jetë nën zero",
   "Nothing is due for counting in this unit": "Në këtë njësi nuk ka asgjë me radhë për numërim",
   "Choose value or quantity": "Zgjidhni vlerën ose sasinë",
   "A must be below B, and B below 100 %": "A duhet të jetë nën B, dhe B nën 100 %",

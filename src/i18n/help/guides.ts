@@ -598,6 +598,20 @@ const BASE: Record<string, Guide> = {
     after: { sq: 'Programi kontrollon çdo orë dhe nuk krijon detyrë të dytë për të njëjtën gjë sa kohë e para është e hapur.', en: 'The program checks every hour and never makes a second task for the same thing while the first is open.' },
     related: [{ href: '/tasks', label: { sq: 'Detyrat', en: 'Tasks' } }],
   },
+  '/skaner': {
+    what: { sq: 'DrisPRO Skaner: programi për pajisjen e dorës (Zebra). Ka vetëm ekranet e skanimit, me butona të mëdhenj, dhe punon edhe pa internet.', en: 'DrisPRO Skaner: the program for the handheld (Zebra). It has only the scanning screens, with large buttons, and works without internet too.' },
+    steps: [
+      { sq: 'Në pajisje hap Chrome te erp.dris-ks.com/skaner dhe hyr me përdoruesin e saj.', en: 'On the device open Chrome at erp.dris-ks.com/skaner and log in with its user.' },
+      { sq: 'Shtyp "Instalo DrisPRO Skaner në këtë pajisje" (ose ⋮ → Instalo aplikacionin). Del ikona "Skaner" me shiritin portokalli.', en: 'Press "Install DrisPRO Skaner on this device" (or ⋮ → Install app). The "Skaner" icon with the orange bar appears.' },
+      { sq: 'Lart zgjidh njësinë ku punon pajisja. Tastet 1–9 hapin ekranet.', en: 'At the top choose the unit the device works in. Keys 1–9 open the screens.' },
+      { sq: 'Te DataWedge lidhe profilin me aplikacionin Skaner dhe ndiz "Send ENTER".', en: 'In DataWedge link the profile to the Skaner app and switch on "Send ENTER".' },
+    ],
+    mistakes: [
+      { sq: 'Përdoruesi i pajisjes le të ketë rolin e magazinierit: sheh vetëm ekranet e magazinës, jo financat apo pagat.', en: 'Give the device user the warehouse role: they see only the warehouse screens, not finance or payroll.' },
+    ],
+    after: { sq: 'Çmimi i ri që shkruhet te "Çmimi" shkon te nivelimi "Nga skaneri"; ndryshon kur menaxheri e kontabilizon.', en: 'A new price typed under "Price" goes onto the "From the scanner" levelling; it changes when a manager posts it.' },
+    related: [{ href: '/inventory/check', label: { sq: 'Kontrollo artikullin', en: 'Check item' } }, { href: '/wms/counts', label: { sq: 'Inventarizimi', en: 'Stock count' } }],
+  },
   '/inventory/abc': {
     what: { sq: 'Klasifikimi ABC: cilët artikuj e mbajnë biznesin. A janë pak artikuj që bëjnë 80 % të vlerës që del nga stoku, B 15 % e radhës, C shumica e artikujve me pak vlerë.', en: 'ABC classification: which items carry the business. A are the few items making 80 % of the value that leaves the stock, B the next 15 %, C most items with little value.' },
     steps: [

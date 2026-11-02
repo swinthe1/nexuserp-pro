@@ -15599,6 +15599,15 @@ export type Database = {
         }
         Returns: { employee_id: string | null; employee: string | null; leave_type_id: string | null; leave_type: string | null; entitlement: number | null; taken: number | null; pending: number | null; remaining: number | null }[]
       }
+      level_add_line: {
+        Args: {
+          p_company: string
+          p_variant: string
+          p_new_price: number
+          p_warehouse?: string
+        }
+        Returns: Json
+      }
       licence_activate: {
         Args: {
           p_code: string

@@ -32,6 +32,8 @@ const ProductDetailPage = lazy(() => import('@/features/inventory/pages/product-
 const StockPage = lazy(() => import('@/features/inventory/pages/stock-page'), 'StockPage')
 const ItemCheckPage = lazy(() => import('@/features/inventory/pages/item-check-page'), 'ItemCheckPage')
 const AbcPage = lazy(() => import('@/features/inventory/pages/abc-page'), 'AbcPage')
+const ScannerHome = lazy(() => import('@/features/scanner/scanner-home'), 'ScannerHome')
+const ScannerPricePage = lazy(() => import('@/features/scanner/price-page'), 'ScannerPricePage')
 const AlertsPage = lazy(() => import('@/features/inventory/pages/alerts-page'), 'AlertsPage')
 const RecurringPage = lazy(() => import('@/features/sales/recurring'), 'RecurringPage')
 const ReadInvoicePage = lazy(() => import('@/features/inventory/pages/read-invoice-page'), 'ReadInvoicePage')
@@ -224,7 +226,9 @@ const router = createBrowserRouter([
         { path: 'training', element: <TrainingPage /> },
         { path: 'tasks', element: <TasksPage /> },
         { path: 'tasks/setup', element: <TasksSetupPage /> },
+        { path: 'skaner', element: <ScannerHome /> },
       ] },
+      { path: 'skaner/price', element: <RequirePerm perm="inventory.read" />, children: [{ index: true, element: <ScannerPricePage /> }] },
       { path: 'inventory', element: <RequirePerm perm="inventory.read" />, children: [
         { index: true, element: <Navigate to="products" replace /> },
         { path: 'products', element: <ProductsPage /> },
