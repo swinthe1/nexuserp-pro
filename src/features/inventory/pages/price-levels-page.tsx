@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Check, Percent, Plus, Save, Tag, Trash2 } from 'lucide-react'
+import { Check, Percent, Plus, Save, Tag, Trash2, X } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -33,7 +33,8 @@ import { PriceSuggestions } from './prices-page'
 type Level = { id: string; number: string | null; status: string; level_date: string; warehouse_id: string | null; notes: string | null; value_change: number; posted_at: string | null
   warehouse: { name: string } | null; lines: { id: string; variant_id: string; line_no: number; old_price: number | null; new_price: number; quantity: number | null; value_change: number | null }[] }
 type Item = { variant_id: string; sku: string; name: string; price: number; vat_rate: number; cost: number; category: string | null; stock: number }
-type Row = Item & { gross: string }
+/** mtext: the margin as it is being typed; manual: the margin of this row was set by hand (a fixed margin leaves it alone) */
+type Row = Item & { gross: string; mtext?: string; manual?: boolean }
 
 const r2 = (n: number) => Math.round(n * 100) / 100
 const gross = (net: number, vat: number) => r2(net * (1 + vat / 100))
@@ -103,7 +104,14 @@ function Editor({ doc }: { doc?: Level }) {
   const [notes, setNotes] = React.useState(doc?.notes ?? '')
   const [rows, setRows] = React.useState<Row[]>([])
   const [pct, setPct] = React.useState('')
+  const [fixed, setFixed] = React.useState('')
+  /** the fixed margin in force: items added later get it too */
+  const [fixedOn, setFixedOn] = React.useState<number | null>(null)
   const loaded = React.useRef(false)
+  const basis = rules.data?.basis ?? 'markup'
+  // margin the company's way: on the cost (markup) or on the selling price
+  const marginOf = (net: number, cost: number) => cost > 0 && net > 0 ? (basis === 'markup' ? (net - cost) / cost * 100 : (net - cost) / net * 100) : null
+  const netFor = (cost: number, m: number) => basis === 'markup' ? cost * (1 + m / 100) : m < 100 ? cost / (1 - m / 100) : null
 
   const fetchItems = React.useCallback(async (ids: string[]) => ids.length
     ? (unwrap(await supabase.rpc('price_level_items', { p_company: companyId!, p_variants: ids, p_warehouse: (wh === 'all' ? null : wh) as string })) as unknown as Item[]) : [], [companyId, wh])
@@ -124,11 +132,35 @@ function Editor({ doc }: { doc?: Level }) {
   const add = async (ids: string[]) => {
     const have = new Set(rows.map((r) => r.variant_id))
     const items = await fetchItems(ids.filter((x) => !have.has(x)))
-    setRows((rs) => [...rs, ...items.map((i) => ({ ...i, gross: String(gross(i.price, i.vat_rate)) }))])
+    setRows((rs) => [...rs, ...items.map((i) => ({ ...i, gross: String(fixedOn != null && i.cost > 0 ? grossFor(i, fixedOn) ?? gross(i.price, i.vat_rate) : gross(i.price, i.vat_rate)) }))])
   }
   const options = React.useMemo(() => (companyId && catalog.ready ? searchOffline(companyId, '', 1_000_000) : [])
     .map((i) => ({ value: i.variant_id, label: i.name, hint: i.sku, keywords: i.barcodes.map(([b]) => b) })), [companyId, catalog.ready, catalog.count]) // eslint-disable-line react-hooks/exhaustive-deps
   const roundUp = (g: number) => step > 0 ? Math.ceil(Math.round(g / step * 1e6) / 1e6) * step : r2(g)
+  /** the selling price with VAT that gives this margin on the item's cost (rounded up to the company's step) */
+  function grossFor(r: Item, m: number) {
+    const n = netFor(r.cost, m); if (n == null || !(r.cost > 0)) return null
+    // rounded up, never down: the margin asked for is the least the item earns
+    const g = n * (1 + r.vat_rate / 100)
+    return step > 0 ? r2(roundUp(g)) : Math.ceil(Math.round(g * 1e6) / 1e4) / 100
+  }
+  const applyFixed = () => {
+    const m = num(fixed); if (fixed.trim() === '' || !Number.isFinite(m)) return
+    if (basis === 'margin' && m >= 100) return void toast.error(t('A margin on the selling price must be below 100 %'))
+    setFixedOn(m)
+    let skipped = 0
+    setRows((rs) => rs.map((r) => {
+      if (r.manual) return r
+      const g = grossFor(r, m); if (g == null) { skipped++; return r }
+      return { ...r, gross: String(g), mtext: undefined }
+    }))
+    if (skipped) toast.info(t('{n} items have no cost yet; their price did not change', { n: skipped }))
+  }
+  const setMargin = (i: number, text: string) => setRows((rs) => rs.map((x, k) => {
+    if (k !== i) return x
+    const m = num(text); const g = text.trim() !== '' && Number.isFinite(m) ? grossFor(x, m) : null
+    return { ...x, mtext: text, manual: true, gross: g != null ? String(g) : x.gross }
+  }))
   const applyPct = () => {
     const p = num(pct); if (!p) return
     setRows((rs) => rs.map((r) => ({ ...r, gross: String(r2(roundUp(gross(r.price, r.vat_rate) * (1 + p / 100)))) })))
@@ -138,7 +170,7 @@ function Editor({ doc }: { doc?: Level }) {
     const oldG = gross(r.price, r.vat_rate)
     const newG = r.gross === '' ? oldG : num(r.gross)
     const newNet = Math.round(newG / (1 + r.vat_rate / 100) * 10000) / 10000
-    const margin = newNet > 0 && r.cost > 0 ? (newNet - r.cost) / newNet * 100 : null
+    const margin = marginOf(newNet, r.cost)
     return { r, oldG, newG, newNet, diff: newG - oldG, value: r2(r.stock * (newG - oldG)), margin }
   })
   const total = calc.reduce((s, c) => s + c.value, 0)
@@ -226,10 +258,23 @@ function Editor({ doc }: { doc?: Level }) {
               await add(ids)
             }} /></div>
           <div className="flex items-end gap-1.5">
+            <div className="grid gap-1.5"><Label htmlFor="lv-fixed" className="text-xs">{basis === 'markup' ? t('Fixed margin on the cost %') : t('Fixed margin on the price %')}</Label>
+              <Input id="lv-fixed" type="number" step="any" className="h-9 w-24 text-right" placeholder="25" value={fixed} onChange={(e) => setFixed(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyFixed() } }} /></div>
+            <Button variant="outline" disabled={!rows.length || fixed.trim() === ''} onClick={applyFixed}><Percent /> {t('Apply to all')}</Button>
+          </div>
+          <div className="flex items-end gap-1.5">
             <div className="grid gap-1.5"><Label htmlFor="lv-pct" className="text-xs">{t('Change all by %')}</Label>
               <Input id="lv-pct" type="number" step="any" className="h-9 w-24 text-right" placeholder="+5" value={pct} onChange={(e) => setPct(e.target.value)} /></div>
             <Button variant="outline" disabled={!rows.length || !num(pct)} onClick={applyPct}><Percent /> {t('Apply')}</Button>
           </div>
+        </div>
+      )}
+
+      {editable && fixedOn != null && (
+        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-primary/[0.05] px-3 py-2 text-[13px]">
+          <span>{t('Fixed margin {m} % in force: every item added gets it. Type a different margin on a row to set it by hand.', { m: formatQty(fixedOn) })}</span>
+          <Button variant="ghost" size="sm" className="ml-auto h-7" onClick={() => setFixedOn(null)}><X /> {t('Stop')}</Button>
         </div>
       )}
 
@@ -242,7 +287,8 @@ function Editor({ doc }: { doc?: Level }) {
               <th className="px-3 py-2 font-medium">{t('Item')}</th><th className="px-3 py-2 text-right font-medium">{t('Stock')}</th>
               <th className="px-3 py-2 text-right font-medium">{t('Cost (without VAT)')}</th><th className="px-3 py-2 text-right font-medium">{t('Old price (with VAT)')}</th>
               <th className="w-36 px-3 py-2 text-right font-medium">{t('New price (with VAT)')}</th><th className="px-3 py-2 text-right font-medium">{t('Difference')}</th>
-              <th className="px-3 py-2 text-right font-medium">{t('Margin %')}</th><th className="px-3 py-2 text-right font-medium">{t('Value (with VAT)')}</th><th className="w-10" />
+              <th className="w-28 px-3 py-2 text-right font-medium" title={basis === 'markup' ? t('Margin on the cost, without VAT') : t('Margin on the selling price, without VAT')}>{t('Margin %')}
+                <span className="block text-[10px] font-normal">{basis === 'markup' ? t('on the cost') : t('on the price')}</span></th><th className="px-3 py-2 text-right font-medium">{t('Value (with VAT)')}</th><th className="w-10" />
             </tr></thead>
             <tbody>
               {calc.map((c, i) => (
@@ -253,11 +299,19 @@ function Editor({ doc }: { doc?: Level }) {
                   <td className="px-3 py-1.5 text-right tabular-nums">{formatMoney(c.oldG)}</td>
                   <td className="px-2 py-1">{editable
                     ? <Input inputMode="decimal" className="h-8 text-right tabular-nums" value={c.r.gross} aria-label={t('New price of {name}', { name: c.r.name })} onFocus={(e) => e.target.select()}
-                        onChange={(e) => setRows((rs) => rs.map((x, k) => k === i ? { ...x, gross: e.target.value } : x))} />
+                        onChange={(e) => setRows((rs) => rs.map((x, k) => k === i ? { ...x, gross: e.target.value, mtext: undefined } : x))} />
                     : <div className="text-right font-medium tabular-nums">{formatMoney(c.newG)}</div>}</td>
                   <td className={cn('px-3 py-1.5 text-right tabular-nums', c.diff > 0 ? 'text-emerald-700 dark:text-emerald-400' : c.diff < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                     {Math.abs(c.diff) > 0.0001 ? `${c.diff > 0 ? '+' : ''}${formatMoney(c.diff)}` : '—'}</td>
-                  <td className={cn('px-3 py-1.5 text-right tabular-nums', c.margin != null && c.margin < 0 && 'text-destructive')}>{c.margin == null ? '—' : `${nf(c.margin, 1)}`}</td>
+                  <td className={cn('px-2 py-1 text-right tabular-nums', c.margin != null && c.margin < 0 && 'text-destructive')}>{editable && c.r.cost > 0
+                    ? <div className="flex items-center justify-end gap-1">
+                        {c.r.manual && <button type="button" title={t('Set by hand; tap to follow the fixed margin again')} className="rounded bg-warning/15 px-1 text-[10px] text-warning"
+                          onClick={() => setRows((rs) => rs.map((x, k) => k === i ? { ...x, manual: false, mtext: undefined, gross: fixedOn != null ? String(grossFor(x, fixedOn) ?? x.gross) : x.gross } : x))}>{t('by hand')}</button>}
+                        <Input inputMode="decimal" className={cn('h-8 w-20 text-right tabular-nums', c.margin != null && c.margin < 0 && 'text-destructive')} aria-label={t('Margin of {name}', { name: c.r.name })}
+                          value={c.r.mtext ?? (c.margin == null ? '' : String(Math.round(c.margin * 10) / 10))} onFocus={(e) => e.target.select()}
+                          onChange={(e) => setMargin(i, e.target.value.replace(',', '.'))} onBlur={() => setRows((rs) => rs.map((x, k) => k === i ? { ...x, mtext: undefined } : x))} />
+                      </div>
+                    : c.margin == null ? '—' : `${nf(c.margin, 1)}`}</td>
                   <td className="px-3 py-1.5 text-right tabular-nums">{c.value ? formatMoney(c.value) : '—'}</td>
                   <td className="px-1">{editable && <Button variant="ghost" size="icon-sm" aria-label={t('Remove {name}', { name: c.r.name })} onClick={() => setRows((rs) => rs.filter((_, k) => k !== i))}><Trash2 /></Button>}</td>
                 </tr>

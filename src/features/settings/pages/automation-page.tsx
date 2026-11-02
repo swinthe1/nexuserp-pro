@@ -16,7 +16,7 @@ import { t } from '@/i18n'
 import { MessagingSettings } from '../components/messaging'
 import { AutomationCard } from '../components/automation-card'
 
-type Settings = { pos_cash_tolerance: number; payroll_auto_day: number | null; payroll_auto_for: 'previous' | 'current'; payroll_deduct_absence: boolean
+type Settings = { pos_cash_tolerance: number; pos_count_notes: boolean; payroll_auto_day: number | null; payroll_auto_for: 'previous' | 'current'; payroll_deduct_absence: boolean
   payroll_night_pct: number | null; payroll_holiday_pct: number | null }
 
 export function usePayrollTillSettings() {
@@ -25,7 +25,7 @@ export function usePayrollTillSettings() {
     queryKey: ['automation-settings', companyId],
     enabled: !!companyId,
     queryFn: async () => unwrap(await supabase.from('company_settings')
-      .select('pos_cash_tolerance, payroll_auto_day, payroll_auto_for, payroll_deduct_absence, payroll_night_pct, payroll_holiday_pct').eq('company_id', companyId!).single()) as unknown as Settings,
+      .select('pos_cash_tolerance, pos_count_notes, payroll_auto_day, payroll_auto_for, payroll_deduct_absence, payroll_night_pct, payroll_holiday_pct').eq('company_id', companyId!).single()) as unknown as Settings,
   })
 }
 export function useSavePayrollTillSettings() {
@@ -71,6 +71,12 @@ export function AutomationPage() {
             {can('pos.approve') && <Button variant="outline" disabled={tol === String(s.pos_cash_tolerance) || tol === ''} loading={save.isPending}
               onClick={() => save.mutate({ pos_cash_tolerance: Number(tol) })}>{t('Save')}</Button>}
           </div>
+          <label className="flex items-start justify-between gap-3 rounded-md border p-3 text-[13px]">
+            <span><span className="font-medium">{t('Count by note and coin when closing')}</span>
+              <span className="block text-muted-foreground">{t('The cashier types how many of each note and coin; the program adds them up. Off: only the total counted is typed.')}</span></span>
+            <Switch checked={s.pos_count_notes} disabled={!can('pos.approve') || save.isPending} aria-label={t('Count by note and coin when closing')}
+              onCheckedChange={(on) => save.mutate({ pos_count_notes: on })} />
+          </label>
         </AutomationCard>
       )}
 

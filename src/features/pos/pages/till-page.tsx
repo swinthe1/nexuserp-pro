@@ -863,7 +863,12 @@ function CashDialog({ sessionId, currency, onClose }: { sessionId: string; curre
   )
 }
 
-const DENOMS = [5000, 2000, 1000, 500, 200, 100, 50, 20, 10, 5, 1]
+/** the notes and coins of the company's currency, largest first */
+const DENOMS: Record<string, number[]> = {
+  EUR: [500, 200, 100, 50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05],
+  ALL: [10000, 5000, 2000, 1000, 500, 200, 100, 50, 20, 10, 5, 1],
+}
+const denomLabel = (d: number) => (d >= 1 ? String(d) : d.toFixed(2).replace('.', ','))
 function CloseDialog({ data, pending, onClose, onClosed }: { data: TillData; pending: number; onClose: () => void; onClosed: (sessionId: string) => Promise<void> }) {
   const session = data.session!
   const summary = useSessionSummary(session.id)
@@ -871,7 +876,9 @@ function CloseDialog({ data, pending, onClose, onClosed }: { data: TillData; pen
   const [counts, setCounts] = React.useState<Record<number, string>>({})
   const [direct, setDirect] = React.useState('')
   const [notes, setNotes] = React.useState('')
-  const byNotes = DENOMS.reduce((s, d) => s + d * num(counts[d]), 0)
+  const denoms = DENOMS[data.company.base_currency] ?? DENOMS.EUR!
+  const useNotes = data.options?.count_notes ?? true
+  const byNotes = r2(denoms.reduce((s, d) => s + d * num(counts[d]), 0))
   const counted = direct !== '' ? num(direct) : byNotes
   const s = summary.data
   const diff = s ? r2(counted - num(s.expected_cash)) : 0
@@ -899,14 +906,16 @@ function CloseDialog({ data, pending, onClose, onClosed }: { data: TillData; pen
             </>}
           </div>
           <div className="grid content-start gap-2">
-            <Label>{t('Count by note and coin')}</Label>
-            <div className="grid grid-cols-2 gap-1.5">
-              {DENOMS.map((d) => (
-                <label key={d} className="flex items-center gap-2 text-[13px]"><span className="w-12 text-right tabular text-muted-foreground">{d}</span>
-                  <Input inputMode="numeric" className="h-8 tabular" value={counts[d] ?? ''} onChange={(e) => { setDirect(''); setCounts((c) => ({ ...c, [d]: e.target.value.replace(/\D/g, '') })) }} aria-label={t('Count of {value}', { value: d })} /></label>
-              ))}
-            </div>
-            <Label htmlFor="cl-total" className="mt-1">{t('…or the total counted')}</Label>
+            {useNotes && <>
+              <Label>{t('Count by note and coin')}</Label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {denoms.map((d) => (
+                  <label key={d} className="flex items-center gap-2 text-[13px]"><span className="w-12 text-right tabular text-muted-foreground">{denomLabel(d)}</span>
+                    <Input inputMode="numeric" className="h-8 tabular" value={counts[d] ?? ''} onChange={(e) => { setDirect(''); setCounts((c) => ({ ...c, [d]: e.target.value.replace(/\D/g, '') })) }} aria-label={t('Count of {value}', { value: denomLabel(d) })} /></label>
+                ))}
+              </div>
+            </>}
+            <Label htmlFor="cl-total" className={cn(useNotes && 'mt-1')}>{useNotes ? t('…or the total counted') : t('Cash counted in the drawer')}</Label>
             <Input id="cl-total" inputMode="decimal" className="h-11 text-right text-lg tabular" value={direct} onChange={(e) => setDirect(e.target.value.replace(',', '.'))} placeholder={formatMoney(byNotes)} />
             <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('Note for the manager (optional)')} aria-label={t('Notes')} />
           </div>

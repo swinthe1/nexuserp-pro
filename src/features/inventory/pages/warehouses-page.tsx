@@ -1,5 +1,6 @@
 import { MapPin, Pencil, Plus, Trash2, Warehouse as WarehouseIcon } from 'lucide-react'
 import * as React from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Can, useCompany } from '@/app/company-provider'
@@ -12,7 +13,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { cn, formatMoney, num } from '@/lib/utils'
+import { cn, formatMoney, formatQty, num } from '@/lib/utils'
+import { unwrap } from '@/lib/errors'
+import { supabase } from '@/lib/supabase'
 import { useLocations, useMasterData, useStockLevels, useWarehouses, type LocationRow } from '../api'
 import { msg, t, td, tEnum, tn } from '@/i18n'
 import { ErrorState } from '@/components/error-state'
@@ -34,8 +37,36 @@ const locationSchema = z.object({
   is_pickable: z.boolean(),
 })
 
+type Figures = { warehouse_id: string; items: number; pcs: number; other: Record<string, number>; cost: number; sell_net: number; sell_gross: number; margin: number | null; basis: 'markup' | 'margin' }
+/** per unit: stock at purchase and at selling price, the average margin, items and pieces */
+function useWarehouseFigures() {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: ['inv', companyId, 'warehouse-figures'],
+    enabled: !!companyId,
+    queryFn: async () => new Map(((unwrap(await supabase.rpc('warehouse_figures', { p_company: companyId })) ?? []) as unknown as Figures[]).map((f) => [f.warehouse_id, f])),
+  })
+}
+
+function UnitFigures({ f, className }: { f: Figures | undefined; className?: string }) {
+  if (!f) return null
+  const other = Object.entries(f.other ?? {}).filter(([, q]) => Number(q) > 0)
+  return (
+    <span className={cn('grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs', className)}>
+      <span><span className="block text-muted-foreground">{t('Selling price, with VAT')}</span><span className="text-[13px] font-medium tabular">{formatMoney(Number(f.sell_gross))}</span></span>
+      <span><span className="block text-muted-foreground">{t('Selling price, without VAT')}</span><span className="text-[13px] tabular">{formatMoney(Number(f.sell_net))}</span></span>
+      <span><span className="block text-muted-foreground">{f.basis === 'markup' ? t('Average margin on the cost') : t('Average margin on the price')}</span>
+        <span className={cn('text-[13px] font-medium tabular', f.margin != null && f.margin < 0 && 'text-destructive')}>{f.margin == null ? '—' : `${formatQty(Number(f.margin))} %`}</span></span>
+      <span><span className="block text-muted-foreground">{t('Items in stock')}</span><span className="text-[13px] tabular">{formatQty(Number(f.items))}</span></span>
+      <span className="col-span-2"><span className="text-muted-foreground">{t('Quantity')}: </span><span className="tabular">{t('{n} pieces', { n: formatQty(Number(f.pcs)) })}</span>
+        {other.map(([u, q]) => <span key={u} className="tabular"> · {formatQty(Number(q))} {td(u)}</span>)}</span>
+    </span>
+  )
+}
+
 export function WarehousesPage() {
   const { company } = useCompany()
+  const figures = useWarehouseFigures()
   const warehouses = useWarehouses({ all: true })
   const locations = useLocations()
   const levels = useStockLevels()
@@ -86,22 +117,25 @@ export function WarehousesPage() {
             }} />
         </Can>}
       />
-      <div className="grid gap-4 grid-cols-[minmax(0,1fr)] lg:grid-cols-[300px_minmax(0,1fr)]">
+      <div className="grid gap-4 grid-cols-[minmax(0,1fr)] lg:grid-cols-[360px_minmax(0,1fr)]">
         <div className="grid content-start gap-2">
           {warehouses.isLoading && Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16" />)}
           {warehouses.data?.map((w) => (
             <button key={w.id} onClick={() => setSelected(w.id)}
-              className={cn('flex items-center gap-3 rounded-lg border bg-card p-3 text-left transition-colors hover:border-ring/40', current?.id === w.id && 'border-primary ring-1 ring-primary')}>
-              <WarehouseIcon className="size-5 text-muted-foreground" />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium">{td(w.name)}</span>
-                <span className="block text-xs text-muted-foreground">{w.code} · {tEnum(`wh_${w.warehouse_type}`)}{w.city ? ` · ${w.city}` : ''}</span>
+              className={cn('grid gap-2.5 rounded-lg border bg-card p-3 text-left transition-colors hover:border-ring/40', current?.id === w.id && 'border-primary ring-1 ring-primary')}>
+              <span className="flex items-center gap-3">
+                <WarehouseIcon className="size-5 shrink-0 text-muted-foreground" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">{td(w.name)}</span>
+                  <span className="block text-xs text-muted-foreground">{w.code} · {tEnum(`wh_${w.warehouse_type}`)}{w.city ? ` · ${w.city}` : ''}</span>
+                </span>
+                <span className="text-right">
+                  <span className="block text-[13px] font-medium tabular">{formatMoney(valueBy('warehouse_id', w.id))}</span>
+                  <span className="block text-2xs text-muted-foreground">{t('at purchase price, without VAT')}</span>
+                  {!w.is_active && <Badge variant="secondary">{t('Inactive')}</Badge>}
+                </span>
               </span>
-              <span className="text-right">
-                <span className="block text-[13px] tabular">{formatMoney(valueBy('warehouse_id', w.id))}</span>
-                <span className="block text-2xs text-muted-foreground">{t('at purchase price, without VAT')}</span>
-                {!w.is_active && <Badge variant="secondary">{t('Inactive')}</Badge>}
-              </span>
+              <UnitFigures f={figures.data?.get(w.id)} className="border-t pt-2.5" />
             </button>
           ))}
         </div>

@@ -2138,6 +2138,7 @@ export type Database = {
           task_digest_email: boolean
           replenish_from_units: boolean
           abc_settings: Json
+          pos_count_notes: boolean
         }
         Insert: {
           id?: string
@@ -2209,6 +2210,7 @@ export type Database = {
           task_digest_email?: boolean
           replenish_from_units?: boolean
           abc_settings?: Json
+          pos_count_notes?: boolean
         }
         Update: {
           id?: string
@@ -2280,6 +2282,7 @@ export type Database = {
           task_digest_email?: boolean
           replenish_from_units?: boolean
           abc_settings?: Json
+          pos_count_notes?: boolean
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -16494,6 +16497,12 @@ export type Database = {
         }
         Returns: Json
       }
+      pos_till_options: {
+        Args: {
+          p_register: string
+        }
+        Returns: Json
+      }
       post_cycle_count: {
         Args: {
           p_id: string
@@ -17702,6 +17711,12 @@ export type Database = {
           p_return: string
         }
         Returns: string
+      }
+      warehouse_figures: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
       }
       webhook_create: {
         Args: {

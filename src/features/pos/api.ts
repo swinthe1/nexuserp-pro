@@ -101,6 +101,8 @@ export type TillData = {
   customers: { id: string; name: string; code: string | null; tax_number: string | null; kind?: 'company' | 'individual' }[]
   /** the law's daily cash limits (null = none) and whether cash above them is refused */
   cashLimits?: { business: number | null; individual: number | null; block: boolean } | null
+  /** the company's choices for the till (count_notes: closing counts by note and coin) */
+  options?: { count_notes: boolean }
   company: { name: string; legal_name: string | null; tax_number: string | null; base_currency: string; address: string | null }
   /** loyalty cards and their rules, kept so discount cards work offline */
   loyalty?: TillLoyalty
@@ -118,7 +120,7 @@ export function useTill(registerId: string | undefined) {
     if (cached) setState({ data: cached, offline: !navigator.onLine, loading: false, error: null })
     try {
       const reg = unwrap(await supabase.from('pos_registers').select('id, code, name, company_id, receipt_header, receipt_footer, default_customer_id, location_id, warehouse_id').eq('id', registerId).single())
-      const [ses, cat, cus, co, loy, lim, promo] = await Promise.all([
+      const [ses, cat, cus, co, loy, lim, promo, opt] = await Promise.all([
         supabase.from('pos_sessions').select('id, number, opened_at, opening_cash').eq('register_id', registerId).eq('status', 'open').maybeSingle(),
         supabase.rpc('pos_catalog', { p_register: registerId }),
         supabase.from('business_partners').select('id, name, code, tax_number, kind').eq('company_id', reg.company_id).eq('is_customer', true).is('deleted_at', null).order('name').limit(2000),
@@ -126,6 +128,7 @@ export function useTill(registerId: string | undefined) {
         supabase.rpc('pos_loyalty_data', { p_register: registerId }),
         supabase.rpc('pos_cash_limits', { p_register: registerId }),
         supabase.rpc('pos_promotions', { p_register: registerId }),
+        supabase.rpc('pos_till_options', { p_register: registerId }),
       ])
       if (cat.error) throw cat.error
       const data: TillData = {
@@ -136,6 +139,7 @@ export function useTill(registerId: string | undefined) {
         loyalty: loy.error ? cached?.loyalty : (loy.data as unknown as TillLoyalty),
         cashLimits: lim.error ? cached?.cashLimits ?? null : (lim.data as unknown as TillData['cashLimits']),
         promotions: promo.error ? cached?.promotions ?? [] : (promo.data as unknown as TillPromo[]),
+        options: opt.error ? cached?.options ?? { count_notes: true } : (opt.data as unknown as TillData['options']),
         loadedAt: new Date().toISOString(),
       }
       await kvSet(key, data).catch(() => undefined)

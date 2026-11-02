@@ -88,6 +88,9 @@ select t.ok((select array_agg(variant_id order by variant_id) from public.cycle_
 select t.ok((select (x ->> 'due')::int from jsonb_array_elements(public.count_plan(:'co')) x where (x ->> 'warehouse_id')::uuid = :'s1') = 2,
   'what is on an open count is no longer due');
 
+-- the units page: what each unit's stock is worth and how much of it there is
+select t.ok((select (x ->> 'items')::int = 4 and (x ->> 'pcs')::numeric = 320 and (x ->> 'sell_gross')::numeric > (x ->> 'cost')::numeric
+               from jsonb_array_elements(public.warehouse_figures(:'co')) x where (x ->> 'warehouse_id')::uuid = :'s1'), 'per unit: items, pieces, value at selling price');
 select t.login('ana@abc.al');
 select t.ok((public.abc_summary(:'co', null) ->> 'items')::int = 5, 'a cashier may look');
 select t.throws(format($q$select public.abc_run(%L)$q$, :'co'), 'Permission denied', 'but not classify');
