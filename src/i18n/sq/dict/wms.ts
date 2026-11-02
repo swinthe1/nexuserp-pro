@@ -137,7 +137,7 @@ export default {
   'Scan the shelf you put it on (or another item to switch)': 'Skanoni raftin ku e vendosët (ose një artikull tjetër për të ndërruar)',
   'Scan the shelf, then each item': 'Skanoni raftin, pastaj çdo artikull',
   'Scanning any shelf label puts the quantity there; the suggestions are only the fastest choices.': 'Skanimi i çdo etikete rafti e vendos sasinë atje; sugjerimet janë vetëm zgjedhjet më të shpejta.',
-  'Scanning screens for the warehouse. Keys 1–7 open a screen; each works with a scanner, a phone camera or the keyboard.': 'Ekranet e skanimit për njësinë. Tastet 1–7 hapin një ekran; secili punon me skaner, kamerën e telefonit ose tastierën.',
+  'Scanning screens for the warehouse. Keys 1–8 open a screen; each works with a scanner, a phone camera or the keyboard.': 'Ekranet e skanimit për njësinë. Tastet 1–8 hapin një ekran; secili punon me skaner, kamerën e telefonit ose tastierën.',
   'Sell these first — picking and the till already take them first': 'Shitini këto të parat — mbledhja dhe arka i marrin tashmë të parat',
   'Send for review': 'Dërgo për shqyrtim',
   'Sent for review': 'U dërgua për shqyrtim',

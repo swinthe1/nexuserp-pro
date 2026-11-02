@@ -329,13 +329,13 @@ export function useReplenishmentRuns() {
   })
 }
 
-export interface AutomationSettings { auto_replenish_enabled: boolean; auto_replenish_action: RunAction; auto_replenish_hour: number }
+export interface AutomationSettings { auto_replenish_enabled: boolean; auto_replenish_action: RunAction; auto_replenish_hour: number; replenish_from_units: boolean }
 export function useAutomationSettings() {
   const { companyId } = useCompany()
   return useQuery({
     queryKey: procKeys.list(companyId, 'automation'),
     enabled: !!companyId,
-    queryFn: async () => unwrap(await supabase.from('company_settings').select('auto_replenish_enabled, auto_replenish_action, auto_replenish_hour')
+    queryFn: async () => unwrap(await supabase.from('company_settings').select('auto_replenish_enabled, auto_replenish_action, auto_replenish_hour, replenish_from_units')
       .eq('company_id', companyId).maybeSingle()) as AutomationSettings,
   })
 }
@@ -345,6 +345,7 @@ export function useSaveAutomation() {
   return useMutation({
     mutationFn: async (v: Partial<AutomationSettings>) => unwrap(await supabase.rpc('set_replenishment_automation' as never, {
       p_company: companyId, p_enabled: v.auto_replenish_enabled ?? null, p_action: v.auto_replenish_action ?? null, p_hour: v.auto_replenish_hour ?? null,
+      p_from_units: v.replenish_from_units ?? null,
     } as never)),
     onSuccess: () => {
       toast.success(t('Automatic replenishment saved'))

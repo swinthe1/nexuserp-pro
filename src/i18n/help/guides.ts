@@ -595,6 +595,24 @@ const BASE: Record<string, Guide> = {
     after: { sq: 'Programi kontrollon çdo orë dhe nuk krijon detyrë të dytë për të njëjtën gjë sa kohë e para është e hapur.', en: 'The program checks every hour and never makes a second task for the same thing while the first is open.' },
     related: [{ href: '/tasks', label: { sq: 'Detyrat', en: 'Tasks' } }],
   },
+  '/inventory/check': {
+    what: { sq: 'Skano një artikull dhe shiko sa ka çdo dyqan dhe magazinë. Kur njësisë sate i mungon, programi të tregon nga cila njësi ta marrësh dhe sa.', en: 'Scan an item and see how much every store and warehouse has. When your unit is short, the program tells you which unit to take it from and how much.' },
+    steps: [
+      { sq: 'Lart djathtas zgjidh "Njësia ime" (dyqani ku je). Programi e mban mend në këtë pajisje.', en: 'Top right, choose "My unit" (the store you are in). The device remembers it.' },
+      { sq: 'Skano artikullin me Zebra, me kamerën e telefonit, ose shkruaj emrin e tij.', en: 'Scan the item with the Zebra, the phone camera, or type its name.' },
+      { sq: 'Lexo sugjerimin: "Merr 36 nga Market Ulpiana". Ajo njësi jep vetëm atë që ka mbi minimumin e vet, që të mos mbetet vetë pa mall.', en: 'Read the suggestion: "Take 36 from Market Ulpiana". That unit gives only what it has above its own minimum, so it does not run short itself.' },
+      { sq: 'Shtyp "Kërko nga …", kontrollo sasinë dhe dërgoje. Njerëzit e asaj njësie njoftohen menjëherë.', en: 'Press "Ask … for it", check the quantity and send it. The people of that unit are told right away.' },
+    ],
+    mistakes: [
+      { sq: 'Pa minimum dhe maksimum (te artikulli → "Pikat e porosisë") programi e vlerëson sasinë nga shitjet e 2 javëve. Vendosini për artikujt kryesorë dhe sugjerimet bëhen të sakta.', en: 'Without a minimum and maximum (on the item → "Reorder points") the program estimates from two weeks of sales. Set them for the main items and the suggestions become exact.' },
+      { sq: 'Në Zebra, te DataWedge, ndizni "Send ENTER" që çdo skanim të kërkohet vetë.', en: 'On the Zebra, in DataWedge, switch on "Send ENTER" so every scan is looked up by itself.' },
+    ],
+    after: { sq: 'Kërkesa shfaqet te Transferimet. Njësia që e ka e dërgon, dhe njësia jote e numëron kur arrin. Arka gjithashtu tregon kur një artikull mbaron: "e ka: Market Ulpiana 140".', en: 'The request appears under Transfers. The unit that has it sends it, and your unit counts it when it arrives. The till also tells you when an item runs out: "has it: Market Ulpiana 140".' },
+    related: [{ href: '/inventory/transfers', label: { sq: 'Transferimet', en: 'Transfers' } }, { href: '/procurement/replenishment', label: { sq: 'Furnizimi', en: 'Replenishment' } }],
+    tour: [
+      { target: 'input[aria-label="Skano"], input[aria-label="Scan"]', say: { sq: 'Skano artikullin këtu ose shkruaj emrin dhe shtyp Enter.', en: 'Scan the item here or type its name and press Enter.' } },
+    ],
+  },
 }
 
 export const GUIDES: Record<string, Guide> = { ...GUIDES_A, ...GUIDES_B, ...GUIDES_C, ...GUIDES_D, ...BASE }

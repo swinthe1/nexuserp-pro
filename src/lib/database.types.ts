@@ -2136,6 +2136,7 @@ export type Database = {
           contract_place: string | null
           task_automations: Json
           task_digest_email: boolean
+          replenish_from_units: boolean
         }
         Insert: {
           id?: string
@@ -2205,6 +2206,7 @@ export type Database = {
           contract_place?: string | null
           task_automations?: Json
           task_digest_email?: boolean
+          replenish_from_units?: boolean
         }
         Update: {
           id?: string
@@ -2274,6 +2276,7 @@ export type Database = {
           contract_place?: string | null
           task_automations?: Json
           task_digest_email?: boolean
+          replenish_from_units?: boolean
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -15436,6 +15439,26 @@ export type Database = {
         }
         Returns: Json
       }
+      item_request: {
+        Args: {
+          p_company: string
+          p_variant: string
+          p_from: string
+          p_to: string
+          p_qty: number
+          p_note?: string
+        }
+        Returns: Json
+      }
+      item_where: {
+        Args: {
+          p_company: string
+          p_code?: string
+          p_variant?: string
+          p_here?: string
+        }
+        Returns: Json
+      }
       label_items: {
         Args: {
           p_company: string
@@ -17238,6 +17261,7 @@ export type Database = {
           p_enabled?: boolean
           p_action?: string
           p_hour?: number
+          p_from_units?: boolean
         }
         Returns: Json
       }

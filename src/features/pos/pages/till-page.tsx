@@ -1,5 +1,6 @@
 import { PageHelpButton, TourHost } from '@/components/help'
 import { TillTasks } from '@/features/tasks/components/till-tasks'
+import { whereElsewhere } from '@/features/inventory/where'
 import {
   ArrowLeft, BadgePercent, Banknote, Camera, Check, CloudOff, CreditCard, Ellipsis, Landmark, ListOrdered, LogOut, Minus, Plus, Printer, ReceiptText, RotateCcw, ScanLine, Search, Ticket, Trash2,
   UserRound, Wallet, X,
@@ -231,6 +232,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       && words.every((w) => c.name.toLowerCase().includes(w) || c.sku.toLowerCase().includes(w) || c.barcodes.some((b) => b.code.startsWith(w))))
   }, [data.catalog, q, category])
 
+  const lastAdd = React.useRef(0)
   const add = React.useCallback((item: CatalogItem, qty = 1, barcode: string | null = null, mult?: number) => {
     const n = (mult ?? multiplier ?? 1) * qty
     setMultiplier(null)
@@ -247,7 +249,14 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     })
     setFlash({ tone: 'ok', text: `${n === 1 ? '' : `${n} × `}${item.name} · ${formatMoney(item.price)}${item.product_type === 'stockable' && item.on_hand - n < 0 ? ` · ${t('stock on record is short, the sale still goes through')}` : ''}` })
     scanFeedback('ok')
-  }, [multiplier])
+    // sold out here: which other store still has it (so the customer is not sent away)
+    const token = ++lastAdd.current
+    if (item.product_type === 'stockable' && item.on_hand - n <= 0 && navigator.onLine) {
+      void whereElsewhere(data.register.company_id, item.variant_id, data.register.warehouse_id ?? null).then((note) => {
+        if (note && lastAdd.current === token) setFlash((f) => (f && f.tone === 'ok' ? { ...f, text: `${f.text} · ${note}` } : f))
+      })
+    }
+  }, [multiplier, data.register.company_id, data.register.warehouse_id])
 
   const submitQuery = (raw: string) => {
     let v = raw.trim()

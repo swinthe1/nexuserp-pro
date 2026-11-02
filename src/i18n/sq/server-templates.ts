@@ -470,4 +470,6 @@ export const serverTemplates: [string, string][] = [
   ['That time is already taken (%)', 'Ajo orë është e zënë ({0})'],
   ['Memberships ending in 3 days: %', 'Anëtarësime që mbarojnë pas 3 ditësh: {0}'],
   ['A webhook was switched off after 50 failures: %', 'Një webhook u fik pas 50 dështimeve: {0}'],
+  ['The unit % has no shelf for stock', 'Njësia {0} nuk ka raft për stok'],
+  ['Stock request from %', 'Kërkesë për mall nga {0}'],
 ]

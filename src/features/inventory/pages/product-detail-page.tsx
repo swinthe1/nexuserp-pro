@@ -36,6 +36,7 @@ import {
   useAttributes, useCategories, useCostHistory, usePriceChanges, useProduct, useProductStockLevels, useTaxCodes, useUnits, useUpdateProduct,
   useVariantMutations, useVendors, useWarehouses, type ProductDetail,
 } from '../api'
+import { UnitsCard } from '../components/unit-stock'
 import { CostLayersCard } from '../components/cost-layers-card'
 import { PacksCard } from '../components/packs-card'
 import { ProductPhoto } from '../components/product-photo'
@@ -143,6 +144,7 @@ export function ProductDetailPage() {
             </CardContent>
           </Card>
           <div className="grid content-start gap-4">
+            <UnitsCard variants={p.product_variants} />
             <CostHistoryCard productId={p.id} variants={p.product_variants} />
             <CostLayersCard variantIds={p.product_variants.map((v) => v.id)} />
           </div>

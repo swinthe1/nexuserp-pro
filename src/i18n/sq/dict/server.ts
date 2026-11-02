@@ -726,4 +726,7 @@ export default {
   "Sub-tasks go one level deep": "Nën-detyrat kanë vetëm një nivel",
   "Only a manager gives tasks to other people": "Detyra të tjerëve u jep vetëm menaxheri",
   "Someone": "Dikush",
+  "Choose two different units": "Zgjidhni dy njësi të ndryshme",
+  "Item not found": "Artikulli nuk u gjet",
+  "Unknown warehouse": "Njësi e panjohur",
 } satisfies Dict

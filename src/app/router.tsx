@@ -30,6 +30,7 @@ const ProductsPage = lazy(() => import('@/features/inventory/pages/products-page
 const ProductNewPage = lazy(() => import('@/features/inventory/pages/product-new-page'), 'ProductNewPage')
 const ProductDetailPage = lazy(() => import('@/features/inventory/pages/product-detail-page'), 'ProductDetailPage')
 const StockPage = lazy(() => import('@/features/inventory/pages/stock-page'), 'StockPage')
+const ItemCheckPage = lazy(() => import('@/features/inventory/pages/item-check-page'), 'ItemCheckPage')
 const AlertsPage = lazy(() => import('@/features/inventory/pages/alerts-page'), 'AlertsPage')
 const RecurringPage = lazy(() => import('@/features/sales/recurring'), 'RecurringPage')
 const ReadInvoicePage = lazy(() => import('@/features/inventory/pages/read-invoice-page'), 'ReadInvoicePage')
@@ -229,6 +230,7 @@ const router = createBrowserRouter([
         { path: 'products/new', element: <ProductNewPage /> },
         { path: 'products/:id', element: <ProductDetailPage /> },
         { path: 'stock', element: <StockPage /> },
+        { path: 'check', element: <ItemCheckPage /> },
         { path: 'movements', element: <Navigate to="/inventory/item-card" replace /> },
         { path: 'item-card', element: <ItemCardPage /> },
         { path: 'shrinkage', element: <ShrinkagePage /> },

@@ -323,6 +323,13 @@ function AutomationCard() {
               </Select>
             </div>
           </div>
+          <div className="flex items-start justify-between gap-3 border-t pt-3">
+            <div className="grid gap-0.5">
+              <Label htmlFor="from-units">{t('Take from other units before buying')}</Label>
+              <p className="text-xs text-muted-foreground">{t('When another store or warehouse has more than its minimum, that is moved first and only the rest is bought.')}</p>
+            </div>
+            <Switch id="from-units" checked={s.replenish_from_units} disabled={!editable || save.isPending} onCheckedChange={(v) => save.mutate({ replenish_from_units: v })} />
+          </div>
           {!editable && <p className="text-xs text-muted-foreground">{t('People who manage purchasing can change these settings.')}</p>}
         </>}
       </CardContent>
