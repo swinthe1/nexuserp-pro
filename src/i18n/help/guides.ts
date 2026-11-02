@@ -115,13 +115,16 @@ const BASE: Record<string, Guide> = {
     mistakes: [{ sq: 'Për numërimin e gjithë raftit përdor "Inventarizimi": ai i llogarit diferencat vetë.', en: 'To count a whole shelf use "Stock count": it works out the differences itself.' }],
   },
   '/wms/counts': {
-    what: { sq: 'Numërimi i stokut (inventarizimi): numëron raftet dhe programi gjen diferencat.', en: 'Stock counting: count the shelves and the program finds the differences.' },
+    what: { sq: 'Numërimi i stokut (inventarizimi): numëron raftet dhe programi gjen diferencat. Dyqani nuk mbyllet: çdo rresht krahasohet me stokun në minutën kur u numërua, kështu shitjet gjatë numërimit nuk e prishin rezultatin.', en: 'Stock counting: count the shelves and the program finds the differences. The shop stays open: each line is compared with the stock at the minute it was counted, so sales during the count do not spoil the result.' },
     steps: [
       { sq: 'Kliko "Numërim i ri", zgjidh njësinë dhe raftet ose kategorinë.', en: 'Click "New count", choose the unit and the shelves or a category.' },
       { sq: 'Numëro me skaner, me dorë, ose printo fletën dhe fute nga Excel-i.', en: 'Count with a scanner, by hand, or print the sheet and bring it in from Excel.' },
       { sq: 'Kliko "Përfundo numërimin", shiko vlerën e diferencave dhe konfirmo.', en: 'Click "Finish counting", see the value of the differences and confirm.' },
     ],
-    mistakes: [{ sq: 'Numërimi "i verbër" nuk ia tregon punëtorit sa duhet të jetë: kështu numëron pa u ndikuar.', en: 'A "blind" count does not show the counter the expected quantity, so they count without bias.' }],
+    mistakes: [
+      { sq: 'Numërimi "i verbër" nuk ia tregon punëtorit sa duhet të jetë: kështu numëron pa u ndikuar.', en: 'A "blind" count does not show the counter the expected quantity, so they count without bias.' },
+      { sq: 'Numëroni një raft të plotë pa ndërprerje dhe mos e numëroni mallin që klienti e ka tashmë në shportë. Arkat le të jenë në internet gjatë numërimit, që shitjet të hyjnë menjëherë.', en: 'Count a whole shelf in one go and do not count goods already in a customer\'s basket. Keep the tills online during the count so sales come in right away.' },
+    ],
   },
   '/wms/counts/:id': {
     what: { sq: 'Një numërim: skano raftin, pastaj çdo artikull në të.', en: 'One count: scan the shelf, then every item on it.' },
