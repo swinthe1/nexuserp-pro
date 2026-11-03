@@ -151,11 +151,13 @@ function BusinessCard({ s }: { s: Setup }) {
     mutationFn: async () => {
       if (env === 'production' && s.env !== 'production' && !confirm(t('From now on the tills send real coupons to ATK. Every till must be registered again for the live environment. Go on?'))) return false
       unwrap(await supabase.rpc('atk_settings_save', { p_company: companyId!, p_fiscalization_no: no, p_env: env }))
-      if (s.is_super_admin) unwrap(await supabase.rpc('atk_platform_save', { p_test: appTest ? Number(appTest) : null as never, p_production: appProd ? Number(appProd) : null as never }))
+      const idsChanged = appTest !== String(s.application_ids?.test ?? '') || appProd !== String(s.application_ids?.production ?? '')
+      if (s.is_super_admin && idsChanged) unwrap(await supabase.rpc('atk_platform_save', { p_test: appTest ? Number(appTest) : null as never, p_production: appProd ? Number(appProd) : null as never }))
       return true
     },
     onSuccess: (ok) => { if (ok) { toast.success(t('Saved')); void qc.invalidateQueries({ queryKey: ['atk-setup', companyId] }) } },
-    onError: (e) => toast.error(describeError(e)),
+    // what was saved before the error shows at once
+    onError: (e) => { toast.error(describeError(e)); void qc.invalidateQueries({ queryKey: ['atk-setup', companyId] }) },
   })
   return (
     <Card>

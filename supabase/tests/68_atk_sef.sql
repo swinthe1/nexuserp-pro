@@ -33,7 +33,7 @@ select id as water from public.product_variants where product_id = :'p' \gset
 reset role;
 update public.companies set tax_number = '810123456', city = 'Prishtinë' where id = :'co';
 update public.company_settings set fiscalization_enabled = true where company_id = :'co';
-update public.platform_settings set atk_application_id_test = null, atk_application_id_prod = null;
+update public.platform_settings set atk_application_id_test = null, atk_application_id_prod = null where id;
 set role authenticated;
 select t.login(:'boss');
 select t.ok(not (public.atk_till(:'reg') ->> 'required')::boolean, 'a Kosovo company with the old fiscalization switch on: its tills go on selling as before');
@@ -194,6 +194,6 @@ select t.login('kaltrina@atk.al');
 select t.throws(format($q$select public.atk_codes_save('%s', 'TT', null, null)$q$, :'co'), 'tax rights', 'a cashier does not change them');
 
 reset role;
-update public.platform_settings set atk_application_id_test = null, atk_application_id_prod = null;
+update public.platform_settings set atk_application_id_test = null, atk_application_id_prod = null where id;
 \set QUIET off
 select count(*) as assertions_passed from t.results;
