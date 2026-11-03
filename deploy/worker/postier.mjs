@@ -534,6 +534,10 @@ async function atkPost(url, body) {
     const text = await r.text()
     let json = null
     try { json = text ? JSON.parse(text) : null } catch { json = { error: text.slice(0, 300) } }
+    // ATK sometimes wraps its own answer as JSON text inside "error": keep only its message
+    if (json && typeof json.error === 'string' && json.error.trim().startsWith('{')) {
+      try { const inner = JSON.parse(json.error); json = { ...json, error: inner.message || inner.error || json.error, atk_code: inner.code ?? null } } catch { /* keep it as it came */ }
+    }
     return { status: r.status, body: json }
   } catch (e) {
     return { status: 0, body: null, error: String(e.cause?.code || e.message || e) }
