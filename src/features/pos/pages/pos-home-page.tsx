@@ -285,7 +285,7 @@ export function PosSessionPage() {
         printReceipt({ company: { name: fr.header.legal_name, legal_name: null, tax_number: fr.nui, address: null }, register: fr.register,
           ref: fr.device_ref ?? fr.number, number: fr.number, date: new Date(fr.order_at), cashier: fr.cashier ?? '', currency: cur, lines: [], payments: [], change: 0,
           fiscal: { env: fr.atk.env, nui: fr.nui ?? '', header: fr.header, operator: fr.cashier ?? '', operatorNo: fr.atk.operator_no ?? null,
-            coupon: decodePosCoupon(fromBase64(fr.atk.details)), qr: fr.atk.qr, dailyNo: fr.atk.daily_no ?? null, reason: fr.atk.reason ?? null,
+            coupon: decodePosCoupon(fromBase64(fr.atk.details)), qr: fr.atk.qr, dailyNo: fr.atk.daily_no ?? (Number(fr.device_ref?.split('-').at(-1)) || null), reason: fr.atk.reason ?? null,
             offline: fr.fiscal_status !== 'fiscalized', copy: true, footer: fr.register.receipt_footer, blockNo: fr.atk.block_no ?? null } })
         return
       }
@@ -387,11 +387,11 @@ export function PosSessionPage() {
                   <TableRow key={o.id} className="hover:bg-transparent">
                     <TableCell><span className="font-medium">{o.number}</span> {o.is_refund && <Badge variant="destructive" className="ml-1">{t('Refund')}</Badge>} {o.offline_created && <Badge variant="secondary" className="ml-1">{t('Offline')}</Badge>}
                       {o.device_ref && <div className="text-xs text-muted-foreground">{t('Till ref {ref}', { ref: o.device_ref })}</div>}</TableCell>
-                    <TableCell className="text-[13px]">{formatDate(o.order_at, true)}</TableCell>
-                    <TableCell className="text-[13px]">{o.partner?.name ?? t('Walk-in customer')}</TableCell>
-                    <TableCell className="text-[13px] text-muted-foreground">{o.payments.map((p) => humanize(p.method)).join(', ')}</TableCell>
-                    <TableCell className={cn('text-right tabular', o.is_refund && 'text-destructive')}>{formatMoney(o.total)}</TableCell>
-                    <TableCell><Button size="sm" variant="ghost" onClick={() => void reprint(o.id)}><Printer /> {t('Reprint')}</Button></TableCell>
+                    <TableCell className="whitespace-nowrap text-[13px]">{formatDate(o.order_at, true)}</TableCell>
+                    <TableCell className="whitespace-nowrap text-[13px]">{o.partner?.name ?? t('Walk-in customer')}</TableCell>
+                    <TableCell className="whitespace-nowrap text-[13px] text-muted-foreground">{o.payments.map((p) => humanize(p.method)).join(', ')}</TableCell>
+                    <TableCell className={cn('whitespace-nowrap text-right tabular', o.is_refund && 'text-destructive')}>{formatMoney(o.total)}</TableCell>
+                    <TableCell className="whitespace-nowrap"><Button size="sm" variant="ghost" onClick={() => void reprint(o.id)}><Printer /> {t('Reprint')}</Button></TableCell>
                   </TableRow>
                 ))}
                 {!orders.length && <TableRow><TableCell colSpan={6} className="py-8 text-center text-[13px] text-muted-foreground">{t('No receipts in this shift.')}</TableCell></TableRow>}

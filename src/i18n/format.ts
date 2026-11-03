@@ -46,6 +46,8 @@ export function formatDateWith(d: Date, opts: Intl.DateTimeFormatOptions): strin
       const short = l === 'sr' ? SR.weekdayShort : WEEKDAY_SHORT
       return opts.weekday === 'long' ? long[w] : opts.weekday === 'narrow' ? short[w]!.charAt(0) : short[w]
     }
+    // newer browsers write "3 Nov 2026 at 22:58" in en-GB: the English word goes
+    if (p.type === 'literal' && /^\s*at\s*$/.test(p.value)) return ', '
     if (l === 'sr' && p.type === 'literal') {
       // 03/11/2026 → 03.11.2026; "3 November" → "3. novembar"
       if (p.value === '/') return '.'
