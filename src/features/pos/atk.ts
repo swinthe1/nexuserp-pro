@@ -7,8 +7,10 @@ import * as React from 'react'
 import { renderSVG } from 'uqr'
 import { buildCoupons, CouponType, signCoupons, type SignedCoupon } from '@/lib/atk/coupon'
 import { getTillKey, nextCouponSeq, type AtkEnv, type TillKey } from '@/lib/atk/keys'
-import { toBase64, type TaxGroup } from '@/lib/atk/proto'
+import { toBase64 } from '@/lib/atk/proto'
+import type { FiscalHeader, FiscalPrint } from './fiscal-receipt'
 import { t } from '@/i18n'
+import { supabase } from '@/lib/supabase'
 
 export type AtkTill = {
   required: boolean
@@ -29,10 +31,12 @@ export type AtkTill = {
   /** ATK's category code of each item that is not the company's own */
   types?: Record<string, string>
   default_type?: string
+  /** what the coupon prints at its head */
+  header?: FiscalHeader
+  /** the cashier's number in the staff list */
+  operator_no?: string | null
 }
 
-/** printed on the receipt */
-export type ReceiptFiscal = { env: AtkEnv; couponId: number; verificationNo: string; qr: string; nui: string; groups: TaxGroup[]; isReturn: boolean; referenceNo?: number | null }
 
 export type AtkState =
   | { status: 'off' }
@@ -70,18 +74,38 @@ export interface AtkSaleInput {
   /** a refund: the coupon of the original sale */
   returnOf?: number | null
   isReturn?: boolean
+  /** a cancellation of the whole coupon, with its reason (ATK's "Kupon i Anulimit") */
+  cancelReason?: string | null
+  /** the till's count of the day, printed on the coupon */
+  dailyNo?: number | null
+  offline?: boolean
+  footer?: string | null
+}
+
+/** the same item at the same price and discount is one line on a fiscal coupon (Kërkesat, neni 25.18) */
+function mergeLines(lines: AtkSaleInput['lines']) {
+  const out: AtkSaleInput['lines'] = []
+  const at = new Map<string, number>()
+  for (const l of lines) {
+    const k = `${l.variant_id}|${l.price}|${l.rate}|${l.qty ? Math.round(l.total / l.qty * 10000) : 0}`
+    const i = at.get(k)
+    if (i === undefined) { at.set(k, out.length); out.push({ ...l }) }
+    else { const m = out[i]!; m.qty = Math.round((m.qty + l.qty) * 1000) / 1000; m.total = Math.round((m.total + l.total) * 100) / 100 }
+  }
+  return out
 }
 
 /** builds and signs the coupon of a sale; the payload part goes to the server with the sale */
-export async function signAtkSale(s: AtkSaleInput): Promise<{ payload: Record<string, unknown>; receipt: ReceiptFiscal; signed: SignedCoupon }> {
+export async function signAtkSale(s: AtkSaleInput): Promise<{ payload: Record<string, unknown>; receipt: FiscalPrint; signed: SignedCoupon }> {
   const a = s.atk
-  if (s.isReturn && !s.returnOf) throw new Error(t('This receipt was made before the till was registered with ATK, so ATK cannot take a return of it here'))
+  const cancel = !!s.cancelReason
+  if ((s.isReturn || cancel) && !s.returnOf) throw new Error(t('This receipt was made before the till was registered with ATK, so ATK cannot take a return of it here'))
   const exempt = new Set(a.exempt_taxes ?? [])
   const seq = await nextCouponSeq(s.registerId, a.env!, a.last_seq ?? 0)
   const built = buildCoupons({
     nui: a.nui ?? '', branchId: a.branch_id!, posId: a.pos_id!, applicationId: a.application_id!, location: a.location ?? '', operator: s.operator,
-    couponSeq: seq, type: s.isReturn ? CouponType.Return : CouponType.Sale, time: s.time, referenceNo: s.returnOf ?? null,
-    lines: s.lines.map((l) => ({ name: l.name, qty: l.qty, price: l.price, total: l.total, rate: l.rate, exempt: !!l.tax_code_id && exempt.has(l.tax_code_id),
+    couponSeq: seq, type: cancel ? CouponType.Cancel : s.isReturn ? CouponType.Return : CouponType.Sale, time: s.time, referenceNo: s.returnOf ?? null,
+    lines: mergeLines(s.lines).map((l) => ({ name: l.name, qty: l.qty, price: l.price, total: l.total, rate: l.rate, exempt: !!l.tax_code_id && exempt.has(l.tax_code_id),
       unit: a.units?.[l.variant_id] ?? 'CP', category: a.types?.[l.variant_id] ?? a.default_type ?? 'TT' })),
     payments: s.payments, change: s.change,
   })
@@ -90,10 +114,30 @@ export async function signAtkSale(s: AtkSaleInput): Promise<{ payload: Record<st
     signed,
     payload: { env: a.env, coupon_id: signed.couponId, seq, pos_id: a.pos_id, branch_id: a.branch_id, verification_no: signed.verificationNo,
       details: signed.details, signature: signed.signature, qr: signed.qr, type: built.pos.type, reference_no: s.returnOf ?? null,
-      total: signed.total, tax: signed.totalTax },
-    receipt: { env: a.env!, couponId: signed.couponId, verificationNo: signed.verificationNo, qr: signed.qr, nui: a.nui ?? '', groups: signed.taxGroups,
-      isReturn: !!s.isReturn, referenceNo: s.returnOf ?? null },
+      total: signed.total, tax: signed.totalTax, daily_no: s.dailyNo ?? null, reason: s.cancelReason ?? null, operator_no: a.operator_no ?? null },
+    receipt: { env: a.env!, nui: a.nui ?? '', header: a.header ?? { legal_name: a.business ?? '', store: null, store_address: null, city: a.location ?? null, phone: null, vat_number: null },
+      operator: s.operator, operatorNo: a.operator_no ?? null, coupon: built.pos, qr: signed.qr, dailyNo: s.dailyNo ?? null, reason: s.cancelReason ?? null,
+      offline: !!s.offline, change: Math.round(Math.max(s.change, 0) * 100), footer: s.footer ?? null },
   }
+}
+
+/**
+ * After a sale, before its coupon is printed: the coupon goes to ATK first when the till is online (Kërkesat, neni 26.5).
+ * Waits up to a few seconds for the server to hand it to ATK; a coupon ATK has not taken by then prints marked OFFLINE.
+ */
+export async function waitForAtk(registerId: string, couponId: number, ms = 8000): Promise<{ status: string | null; error: string | null; refused: number }> {
+  const until = Date.now() + ms
+  let last: { status: string | null; error: string | null; refused: number } = { status: null, error: null, refused: 0 }
+  while (Date.now() < until) {
+    await new Promise((r) => setTimeout(r, 600))
+    try {
+      const { data } = await supabase.rpc('atk_coupon_status', { p_register: registerId, p_coupon: couponId })
+      const d = data as unknown as { status: string | null; error: string | null; refused: number } | null
+      if (d) last = { status: d.status, error: d.error, refused: Number(d.refused ?? 0) }
+      if (last.status === 'fiscalized' || last.status === 'failed') return last
+    } catch { /* keep waiting */ }
+  }
+  return last
 }
 
 /** the QR code of a receipt, as an SVG that prints sharp on a thermal printer */

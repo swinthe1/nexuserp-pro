@@ -23,13 +23,14 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
-import { formatDateWith, msg, t, td, tEnum, tn } from '@/i18n'
+import { formatDateWith, msg, t, td, tEnum, tn, tServer } from '@/i18n'
 import { cn, formatMoney, num, todayISO } from '@/lib/utils'
 import { lookupReceipt, posApprove, sessionControls, useCashMove, useCloseSession, useOpenSession, useSessionSummary, useTill, type CatalogItem, type ReceiptLookup, type TillData } from '../api'
 import { enqueue, logTill, nextDeviceRef, syncNow, useOnSynced, useSyncState, type QueuedSale, type TillLogEntry } from '../offline'
 import { ManagerDialog, ManagerPinFields, pinReady } from '../manager-pin'
 import { printReceipt, printZReport, type ReceiptData } from '../receipt'
-import { signAtkSale, useAtkState, type ReceiptFiscal } from '../atk'
+import { qrSvg, signAtkSale, useAtkState, waitForAtk } from '../atk'
+import type { FiscalPrint } from '../fiscal-receipt'
 import { SyncPanel } from './pos-home-page'
 import { phoneKey, quoteLoyalty, type TillCardRow, type TillProgram } from '@/features/loyalty/api'
 
@@ -60,7 +61,7 @@ function toApplied(row: TillCardRow, programs: TillProgram[]): AppliedCard | nul
   const program = programs.find((p) => p.id === row[4])
   return program ? { id: row[0], number: row[1], holder: row[3], program, points: num(row[5]), monthUsed: num(row[6]) } : null
 }
-type Done = { ref: string; number: string | null; total: number; change: number; receipt: ReceiptData; offline: boolean }
+type Done = { ref: string; number: string | null; total: number; change: number; receipt: ReceiptData; offline: boolean; printed?: number }
 /** a step that takes something off the sale (it waits for the manager when a confirmation is needed) */
 type VoidStep = { entries: Omit<TillLogEntry, 'id' | 'session_id' | 'at' | 'approval' | 'offline'>[]; apply: () => void }
 
@@ -152,6 +153,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     : atkState.reason === 'setup' ? t('This till cannot sell yet: its ATK numbers are not set up')
     : atkState.reason === 'other_device' ? t('This till is registered with ATK on another device: register it on this one to sell here')
     : t('This till is not registered with ATK yet: register it on this device to sell')
+  const [atkRefused, setAtkRefused] = React.useState(0)
   const openPay = () => { if (atkStop) { setFlash({ tone: 'error', text: atkText }); return } setDialog('pay') }
   const openRefund = () => { if (atkStop) { setFlash({ tone: 'error', text: atkText }); return } setDialog('refund') }
 
@@ -350,7 +352,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   useOnSynced(React.useCallback((it: QueuedSale) => { if (it.number) setLastNumbers((m) => ({ ...m, [it.client_uuid]: it.number! })) }, []))
   const doneUuid = React.useRef<string | null>(null)
 
-  const finish = async (tenders: Tender[], opts?: { refund?: { of: ReceiptLookup; lines: Line[] } }) => {
+  const finish = async (tenders: Tender[], opts?: { refund?: { of: ReceiptLookup; lines: Line[]; cancelReason?: string | null } }) => {
     const refund = opts?.refund
     const saleLines: PricedLine[] = refund ? refund.lines : priced
     const usedCard = !refund && card && saleLines.some((l) => l.card) ? card : null
@@ -361,7 +363,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     const device_ref = await nextDeviceRef(data.register.code)
     const created_at = new Date().toISOString()
     const isOffline = !navigator.onLine || !sync.online
-    let atk: { payload: Record<string, unknown>; receipt: ReceiptFiscal } | null = null
+    let atk: { payload: Record<string, unknown>; receipt: FiscalPrint } | null = null
     if (data.atk?.required) {
       if (atkState.status !== 'ready') { setFlash({ tone: 'error', text: atkText }); setDialog(null); return }
       const taxOf = new Map(data.catalog.map((c) => [c.variant_id, c.tax_code_id]))
@@ -369,7 +371,8 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
         atk = await signAtkSale({ registerId: data.register.id, atk: data.atk, key: atkState.key, operator: cashier, time: new Date(created_at),
           lines: saleLines.map((l) => ({ name: l.name, qty: l.qty, price: l.price, total: lineTotal(l), rate: l.rate, variant_id: l.variant_id, tax_code_id: taxOf.get(l.variant_id) ?? null })),
           payments: tenders.map((x) => ({ method: x.method, amount: x.amount })), change: Math.max(change, 0),
-          isReturn: !!refund, returnOf: refund ? (refund.of.atk_coupon ? Number(refund.of.atk_coupon) : null) : null })
+          isReturn: !!refund, returnOf: refund ? (refund.of.atk_coupon ? Number(refund.of.atk_coupon) : null) : null, cancelReason: refund?.cancelReason ?? null,
+          dailyNo: Number(device_ref.split('-').at(-1)) || null, offline: isOffline, footer: data.register.receipt_footer })
       } catch (e) { toast.error(describeError(e)); return }
     }
     const payload = {
@@ -404,7 +407,26 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     clearSale()
     // the drawer opens for a sale paid (partly) in cash (Windows program with a network receipt printer)
     if (tenders.some((x) => x.method === 'cash')) openCashDrawer()
-    if (autoPrint) printReceipt(receipt)
+    if (atk && !isOffline) {
+      const fiscal = atk.receipt
+      void waitForAtk(data.register.id, fiscal.coupon.couponId as number).then((r) => {
+        const late = r.status !== 'fiscalized'
+        const shown = { ...receipt, fiscal: { ...fiscal, offline: late } }
+        if (r.status === 'failed' && r.error) setFlash({ tone: 'error', text: t('ATK did not take this coupon: {reason}', { reason: tServer(r.error) }) })
+        if (r.refused > 0) setAtkRefused(r.refused)
+        setDone((d) => (d && d.ref === device_ref ? { ...d, receipt: shown, printed: autoPrint ? 1 : 0 } : d))
+        if (autoPrint) printReceipt(shown)
+      })
+      return
+    }
+    if (autoPrint) { printReceipt(receipt); setDone((d) => (d && d.ref === device_ref ? { ...d, printed: 1 } : d)) }
+  }
+  /** the first print is the coupon; every print after it says "KOPJE E KUPONIT" */
+  const printDone = () => {
+    if (!done) return
+    const r = done.receipt
+    printReceipt(r.fiscal && (done.printed ?? 0) > 0 ? { ...r, fiscal: { ...r.fiscal, copy: true } } : r)
+    setDone((d) => (d ? { ...d, printed: (d.printed ?? 0) + 1 } : d))
   }
 
   /* ---------- keyboard */
@@ -412,7 +434,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     const onKey = (e: KeyboardEvent) => {
       if (done) {
         if (e.key === 'Enter' || e.key === 'Escape' || e.key === 'F2') { e.preventDefault(); setDone(null); focusSearch() }
-        else if (e.key.toLowerCase() === 'p' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); printReceipt(done.receipt) }
+        else if (e.key.toLowerCase() === 'p' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); printDone() }
         return
       }
       if (dialog) return
@@ -498,6 +520,12 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
         <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-[13px] text-destructive">
           <ShieldCheck className="size-4 shrink-0" /><span className="flex-1 font-medium">{atkText}</span>
           {(can('pos.approve') || can('tax.write')) && <Button size="sm" variant="outline" asChild><Link to={`/pos/atk?till=${data.register.id}`}>{t('Register with ATK')}</Link></Button>}
+        </div>
+      )}
+      {atkRefused > 0 && (
+        <div role="alert" className="flex flex-wrap items-center gap-x-3 border-b border-destructive/30 bg-destructive/10 px-4 py-1.5 text-[13px] text-destructive">
+          <span className="flex-1 font-medium">{tn(atkRefused, 'ATK refused {n} coupon of this till: they are tried again by themselves', 'ATK refused {n} coupons of this till: they are tried again by themselves')}</span>
+          {can('tax.read') && <Link className="font-medium underline" to="/tax/fiscalization">{t('See why')}</Link>}
         </div>
       )}
       {data.atk?.required && data.atk.env === 'test' && atkState.status === 'ready' && (
@@ -649,7 +677,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       {dialog === 'line' && selectedLine && <LineDialog line={selectedLine} canDiscount={(d) => d <= MAX_DISCOUNT || can('pos.approve')}
         onClose={(p) => { if (p) updateLine(selectedLine.key, p); setDialog(null); focusSearch() }} onRemove={() => { removeLine(selectedLine.key); setDialog(null); focusSearch() }} />}
       {dialog === 'refund' && <RefundDialog data={data} currency={cur} onClose={() => { setDialog(null); focusSearch() }}
-        onRefund={(of, ls, method) => finish([{ method, amount: -r2(ls.reduce((s, l) => s + Math.abs(lineTotal(l)), 0)) }], { refund: { of, lines: ls } })} />}
+        onRefund={(of, ls, method, cancelReason) => finish([{ method, amount: -r2(ls.reduce((s, l) => s + Math.abs(lineTotal(l)), 0)) }], { refund: { of, lines: ls, cancelReason } })} />}
       {dialog === 'cash' && <CashDialog sessionId={session.id} currency={cur} onClose={() => { setDialog(null); focusSearch() }} />}
       {dialog === 'close' && <CloseDialog data={data} pending={pending.length} onClose={() => { setDialog(null); focusSearch() }}
         onClosed={async (sessionId) => { await reload(); navigate(`/pos/sessions/${sessionId}`) }} />}
@@ -660,7 +688,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
             <SyncPanel compact /></DialogContent>
         </Dialog>
       )}
-      {done && <DoneOverlay done={{ ...done, number: doneUuid.current ? lastNumbers[doneUuid.current] ?? null : null }} currency={cur} onNext={() => { setDone(null); focusSearch() }} />}
+      {done && <DoneOverlay onPrint={printDone} done={{ ...done, number: doneUuid.current ? lastNumbers[doneUuid.current] ?? null : null }} currency={cur} onNext={() => { setDone(null); focusSearch() }} />}
     </div>
   )
 }
@@ -788,7 +816,7 @@ export function PayDialog({ total, currency, cashLimit, onCancel, onPaid }: { to
   )
 }
 
-function DoneOverlay({ done, currency, onNext }: { done: Done; currency: string; onNext: () => void }) {
+function DoneOverlay({ done, currency, onNext, onPrint }: { done: Done; currency: string; onNext: () => void; onPrint: () => void }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-6 backdrop-blur-sm" role="dialog" aria-label={t('Sale complete')}>
       <div className="w-full max-w-md rounded-2xl border bg-card p-8 text-center shadow-lg">
@@ -799,8 +827,19 @@ function DoneOverlay({ done, currency, onNext }: { done: Done; currency: string;
             <div className="text-6xl font-semibold tracking-[-0.03em] tabular">{formatMoney(done.change)}</div></>
         ) : <div className="mt-4 text-3xl font-semibold">{done.receipt.isRefund ? t('Refund recorded') : t('Paid')}</div>}
         {done.offline && <p className="mt-3 text-[13px] text-warning">{t('Saved on this device. It reaches the books when the till is back online.')}</p>}
+        {done.receipt.fiscal && (
+          // the coupon on screen: the customer can scan its QR code without a printout (Kërkesat, neni 25.18)
+          <div className="mt-4 flex items-center justify-center gap-3 text-left">
+            <div className="size-28 shrink-0 rounded-md bg-white p-1 [&_svg]:size-full" dangerouslySetInnerHTML={{ __html: qrSvg(done.receipt.fiscal.qr) }} />
+            <div className="text-xs text-muted-foreground">
+              <div className="font-medium text-foreground">{t('Coupon no.')} {String(done.receipt.fiscal.coupon.couponId)}</div>
+              <div>{t('NUIKF: {no}', { no: done.receipt.fiscal.coupon.verificationNo })}</div>
+              <div className="mt-1">{t('The customer can scan the code to check the coupon at ATK.')}</div>
+            </div>
+          </div>
+        )}
         <div className="mt-6 grid grid-cols-2 gap-2">
-          <Button variant="outline" size="lg" onClick={() => printReceipt(done.receipt)}><Printer /> {t('Receipt|pos')} <Kbd>P</Kbd></Button>
+          <Button variant="outline" size="lg" onClick={onPrint}><Printer /> {t('Receipt|pos')} <Kbd>P</Kbd></Button>
           <Button size="lg" autoFocus onClick={onNext}>{t('Next sale')} <Kbd className="ml-1 border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground">{t('Enter|key')}</Kbd></Button>
         </div>
       </div>
@@ -872,12 +911,16 @@ function LineDialog({ line, canDiscount, onClose, onRemove }: { line: Line; canD
   )
 }
 
-function RefundDialog({ data, currency, onClose, onRefund }: { data: TillData; currency: string; onClose: () => void; onRefund: (of: ReceiptLookup, lines: Line[], method: Method) => Promise<void> }) {
+function RefundDialog({ data, currency, onClose, onRefund }: { data: TillData; currency: string; onClose: () => void; onRefund: (of: ReceiptLookup, lines: Line[], method: Method, cancelReason?: string | null) => Promise<void> }) {
   const [code, setCode] = React.useState('')
   const [found, setFound] = React.useState<ReceiptLookup | null>(null)
   const [busy, setBusy] = React.useState(false)
   const [qty, setQty] = React.useState<Record<number, string>>({})
   const [method, setMethod] = React.useState<Method>('cash')
+  // ATK's "Kupon i Anulimit": the whole coupon cancelled for a mistake, with the reason, linked to the original
+  const [cancel, setCancel] = React.useState(false)
+  const [reason, setReason] = React.useState('')
+  const fiscal = !!data.atk?.required
   const look = async () => {
     setBusy(true)
     try {
@@ -894,6 +937,11 @@ function RefundDialog({ data, currency, onClose, onRefund }: { data: TillData; c
     .filter((l) => l.qty < 0) : []
   const total = lines.reduce((s, l) => s + Math.abs(lineTotal(l)), 0)
   const tooMuch = found ? found.lines.some((l, i) => num(qty[i]) > left(found, l.variant_id, num(l.quantity))) : false
+  const untouched = !!found && found.refunds.length === 0
+  const whole = (on: boolean) => {
+    setCancel(on)
+    if (on && found) setQty(Object.fromEntries(found.lines.map((l, i) => [i, String(num(l.quantity))])))
+  }
   return (
     <Dialog open onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent className="max-w-lg">
@@ -913,20 +961,30 @@ function RefundDialog({ data, currency, onClose, onRefund }: { data: TillData; c
                   <div key={i} className="flex items-center gap-3 border-b px-3 py-2 last:border-0">
                     <div className="min-w-0 flex-1"><div className="truncate text-[13px] font-medium">{l.description}</div>
                       <div className="text-xs text-muted-foreground">{t('{a} sold · {b} can be returned · {price} with VAT', { a: num(l.quantity), b: max, price: formatMoney(l.unit_price) })}</div></div>
-                    <Input aria-label={t('Return quantity for {item}', { item: l.description })} inputMode="decimal" className={cn('h-10 w-20 text-right tabular', num(qty[i]) > max && 'border-destructive')}
+                    <Input aria-label={t('Return quantity for {item}', { item: l.description })} inputMode="decimal" disabled={cancel} className={cn('h-10 w-20 text-right tabular', num(qty[i]) > max && 'border-destructive')}
                       value={qty[i] ?? ''} onChange={(e) => setQty((s) => ({ ...s, [i]: e.target.value.replace(',', '.') }))} />
                   </div>
                 )
               })}
             </div>
+            {fiscal && untouched && (
+              <div className="rounded-md border px-3 py-2">
+                <label className="flex items-center gap-2 text-[13px] font-medium">
+                  <input type="checkbox" className="size-4 accent-[hsl(var(--primary))]" checked={cancel} onChange={(e) => whole(e.target.checked)} />
+                  {t('Cancel the whole coupon: it was issued by mistake')}
+                </label>
+                {cancel && <Textarea className="mt-2" rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('Reason for the cancellation (printed on the coupon)')} />}
+              </div>
+            )}
             <div className="flex gap-2">{METHODS.slice(0, 2).map((m) => <Button key={m.id} type="button" variant={method === m.id ? 'default' : 'outline'} onClick={() => setMethod(m.id)}><m.icon /> {m.id === 'cash' ? t('Give back in cash') : t('Give back to the card')}</Button>)}</div>
             <div className="flex items-baseline justify-between"><span className="text-sm">{t('To give back')}</span><span className="text-2xl font-semibold tabular">{formatMoney(total)}</span></div>
           </div>
         )}
         <DialogFooter>
           <Button variant="ghost" onClick={found ? () => setFound(null) : onClose} disabled={busy}>{found ? t('Another receipt') : t('Cancel')}</Button>
-          {found && <Button variant="destructive" loading={busy} disabled={!lines.length || tooMuch}
-            onClick={async () => { setBusy(true); try { await onRefund(found, lines, method) } catch (e) { toast.error(describeError(e)); setBusy(false) } }}>{t('Refund {amount}', { amount: formatMoney(total) })}</Button>}
+          {found && <Button variant="destructive" loading={busy} disabled={!lines.length || tooMuch || (cancel && reason.trim().length < 3)}
+            onClick={async () => { setBusy(true); try { await onRefund(found, lines, method, cancel ? reason.trim() : null) } catch (e) { toast.error(describeError(e)); setBusy(false) } }}>
+            {cancel ? t('Cancel the coupon · {amount}', { amount: formatMoney(total) }) : t('Refund {amount}', { amount: formatMoney(total) })}</Button>}
         </DialogFooter>
       </DialogContent>
     </Dialog>

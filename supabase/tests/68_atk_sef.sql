@@ -133,6 +133,19 @@ select public.atk_done('coupon', :'fr', 200, '{"message":"ok","transaction_id":9
 select t.ok((select status = 'fiscalized' and fic = '987654321' and attempt_count = 2 from public.fiscalization_records where id = :'fr')
   and (select fiscal_status from public.pos_orders where id = (:'s1'::jsonb ->> 'id')::uuid) = 'fiscalized', 'ATK took it: its transaction number is kept');
 
+-- the till asks after its coupon before printing it
+set role authenticated;
+select t.login('kaltrina@atk.al');
+select t.ok(public.atk_coupon_status(:'reg', 301000000001) ->> 'status' = 'fiscalized' and public.atk_coupon_status(:'reg', 301000000001) ->> 'transaction' = '987654321',
+  'the till sees that ATK took its coupon');
+select t.ok(public.atk_receipt((:'s1'::jsonb ->> 'id')::uuid) -> 'atk' ->> 'coupon_id' = '301000000001'
+  and public.atk_receipt((:'s1'::jsonb ->> 'id')::uuid) -> 'header' ->> 'city' = 'Prishtinë', 'a copy is printed from the signed coupon, with the head of the coupon');
+select t.throws(format($q$select public.pos_submit_order('{"client_uuid":"%s","session_id":"%s","lines":[{"variant_id":"%s","quantity":1,"unit_price":0.5}],
+  "payments":[{"method":"cash","amount":0.5}],"fiscal":{"env":"test","coupon_id":301000000009,"seq":9,"type":2,"details":"CMTVAxAKGAEi","signature":"MEUCIQD3XmlSMXXlCoGL1i8FvjpM7cEFG0caI8lo6gwQvHy3jwIhAKP4","qr":"A|B"}}')$q$,
+  gen_random_uuid(), :'ses', :'water'), 'needs its reason', 'a cancellation coupon says why');
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+
 -- ATK refuses a coupon: the tax people are told
 set role authenticated;
 select t.login('kaltrina@atk.al');

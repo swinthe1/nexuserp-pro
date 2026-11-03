@@ -121,3 +121,71 @@ export function fromBase64(s: string) {
   for (let i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i)
   return b
 }
+
+/* ------------------------------------------------------------------ reading a POS coupon back (a copy is printed from what was signed) */
+class Reader {
+  private i = 0
+  constructor(private b: Uint8Array) {}
+  done() { return this.i >= this.b.length }
+  varint(): bigint {
+    let r = 0n, s = 0n
+    for (;;) {
+      const x = this.b[this.i++]
+      if (x === undefined) throw new Error('The coupon is cut short')
+      r |= BigInt(x & 0x7f) << s
+      if (!(x & 0x80)) break
+      s += 7n
+    }
+    return r
+  }
+  tag() { const t = Number(this.varint()); return { field: t >> 3, wire: t & 7 } }
+  bytes() { const n = Number(this.varint()); const v = this.b.subarray(this.i, this.i + n); this.i += n; return v }
+  float() { const v = new DataView(this.b.buffer, this.b.byteOffset + this.i, 4).getFloat32(0, true); this.i += 4; return v }
+  skip(wire: number) { if (wire === 0) this.varint(); else if (wire === 2) this.bytes(); else if (wire === 5) this.i += 4; else if (wire === 1) this.i += 8; else throw new Error('Unknown field in the coupon') }
+}
+const int64 = (v: bigint) => Number(v >= 1n << 63n ? v - (1n << 64n) : v)
+const text = (b: Uint8Array) => new TextDecoder().decode(b)
+
+function readMessage<T>(b: Uint8Array, init: T, on: (r: Reader, field: number, wire: number, m: T) => boolean): T {
+  const r = new Reader(b)
+  while (!r.done()) { const { field, wire } = r.tag(); if (!on(r, field, wire, init)) r.skip(wire) }
+  return init
+}
+
+export function decodePosCoupon(b: Uint8Array): PosCoupon {
+  return readMessage(b, { businessId: 0, couponId: 0, branchId: 0, location: '', operatorId: '', posId: 0, applicationId: 0, verificationNo: '', type: CouponType.Sale,
+    time: 0, items: [], payments: [], total: 0, taxGroups: [], totalTax: 0, totalNoTax: 0, referenceNo: 0, totalDiscount: 0 } as PosCoupon, (r, f, w, m) => {
+    if (w === 0) {
+      const v = r.varint()
+      const k = ({ 1: 'businessId', 2: 'couponId', 3: 'branchId', 6: 'posId', 7: 'applicationId', 9: 'type', 10: 'time', 13: 'total', 15: 'totalTax', 16: 'totalNoTax', 17: 'referenceNo', 19: 'totalDiscount' } as Record<number, keyof PosCoupon>)[f]
+      if (k) (m as unknown as Record<string, number>)[k] = int64(v)
+      return true
+    }
+    if (w !== 2) return false
+    const v = r.bytes()
+    if (f === 4) m.location = text(v)
+    else if (f === 5) m.operatorId = text(v)
+    else if (f === 8) m.verificationNo = text(v)
+    else if (f === 11) m.items.push(readMessage(v, { name: '', price: 0, unit: '', quantity: 0, total: 0, taxRate: 'A', type: '' } as CouponItem, (ir, fi, wi, it) => {
+      if (wi === 5 && fi === 4) { it.quantity = ir.float(); return true }
+      if (wi === 0) { const n = int64(ir.varint()); if (fi === 2) it.price = n; else if (fi === 5) it.total = n; return true }
+      if (wi !== 2) return false
+      const s = text(ir.bytes())
+      if (fi === 1) it.name = s; else if (fi === 3) it.unit = s; else if (fi === 6) it.taxRate = s as TaxLetter; else if (fi === 7) it.type = s
+      return true
+    }))
+    else if (f === 12) m.payments.push(readMessage(v, { type: PaymentType.Cash, amount: 0 } as Payment, (pr, fp, wp, p) => {
+      if (wp !== 0) return false
+      const n = int64(pr.varint()); if (fp === 1) p.type = n; else if (fp === 2) p.amount = n
+      return true
+    }))
+    else if (f === 14) m.taxGroups.push(readMessage(v, { taxRate: 'A', totalForTax: 0, totalTax: 0 } as TaxGroup, (gr, fg, wg, g) => {
+      if (wg === 2 && fg === 1) { g.taxRate = text(gr.bytes()) as TaxLetter; return true }
+      if (wg !== 0) return false
+      const n = int64(gr.varint()); if (fg === 2) g.totalForTax = n; else if (fg === 3) g.totalTax = n
+      return true
+    }))
+    // any other field was read above already
+    return true
+  })
+}

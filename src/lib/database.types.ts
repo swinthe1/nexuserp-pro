@@ -15267,6 +15267,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      atk_coupon_status: {
+        Args: {
+          p_register: string
+          p_coupon: number
+        }
+        Returns: Json
+      }
       atk_done: {
         Args: {
           p_kind: string
@@ -15314,6 +15321,12 @@ export type Database = {
           p_production: number
         }
         Returns: undefined
+      }
+      atk_receipt: {
+        Args: {
+          p_order: string
+        }
+        Returns: Json
       }
       atk_settings_save: {
         Args: {

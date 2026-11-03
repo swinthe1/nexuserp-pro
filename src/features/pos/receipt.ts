@@ -1,8 +1,7 @@
 import { formatDateWith, formatNumberWith, t, tEnum } from '@/i18n'
 import { printHtml } from '@/lib/print'
 import type { SessionControls } from './api'
-import { qrSvg, type ReceiptFiscal } from './atk'
-import { RATE_OF } from '@/lib/atk/coupon'
+import { FISCAL_CSS, fiscalReceiptHtml, type FiscalPrint } from './fiscal-receipt'
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 const money = (n: number) => formatNumberWith(n, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -14,8 +13,7 @@ const method = (m: string) => tEnum(m)
 // 80 mm thermal paper: 72 mm printable, monospace keeps the columns straight on cheap printers
 const CSS = `@page{size:80mm auto;margin:3mm 4mm} *{box-sizing:border-box} body{margin:0;font:12px/1.35 ui-monospace,Menlo,Consolas,monospace;color:#000;width:72mm}
  .c{text-align:center} .r{text-align:right} .b{font-weight:700} .big{font-size:16px} hr{border:0;border-top:1px dashed #000;margin:6px 0}
- table{width:100%;border-collapse:collapse} td{vertical-align:top;padding:1px 0} .muted{font-size:11px}
- .qr{margin:4px 0} .qr svg{width:46mm;height:46mm}`
+ table{width:100%;border-collapse:collapse} td{vertical-align:top;padding:1px 0} .muted{font-size:11px}`
 
 export interface ReceiptData {
   company: { name: string; legal_name: string | null; tax_number: string | null; address: string | null }
@@ -25,11 +23,12 @@ export interface ReceiptData {
   payments: { method: string; amount: number }[]; change: number; currency: string
   /** loyalty card used on this receipt */
   loyalty?: { holder: string; number: string; discount: number; redeemed?: number; earned?: number; balance?: number } | null
-  /** Kosovo: the coupon signed for ATK (its VAT, its number, the QR code) */
-  fiscal?: ReceiptFiscal | null
+  /** Kosovo: the coupon signed for ATK; the receipt is then the fiscal coupon in ATK's layout */
+  fiscal?: FiscalPrint | null
 }
 
 export function receiptHtml(r: ReceiptData) {
+  if (r.fiscal) return fiscalReceiptHtml(r.fiscal)
   const total = r.lines.reduce((s, l) => s + l.total, 0)
   const byRate = new Map<number, { base: number; tax: number }>()
   for (const l of r.lines) {
@@ -38,20 +37,10 @@ export function receiptHtml(r: ReceiptData) {
     v.base += base; v.tax += l.total - base; byRate.set(l.rate, v)
   }
   const lines = r.lines.map((l) => `<tr><td colspan="2">${esc(l.name)}</td></tr><tr><td class="muted">&nbsp;${esc(qty(l.qty))} × ${money(l.price)}${l.discount ? ` −${l.discount}%` : ''}</td><td class="r">${money(l.total)}</td></tr>`).join('')
-  const f = r.fiscal
-  // a fiscal receipt shows the VAT exactly as the signed coupon gives it to ATK
-  const taxes = f
-    // ATK takes a return's sums as they are; on paper they carry the sign of the refund, like its total
-    ? f.groups.map((g) => { const k = f.isReturn ? -1 : 1; return `<tr><td class="muted">${esc(g.taxRate)} · ${esc(g.taxRate === 'A' ? t('Exempt from VAT') : t('VAT {rate}% on {base}', { rate: RATE_OF[g.taxRate], base: money(k * g.totalForTax / 100) }))}</td><td class="r muted">${money(k * g.totalTax / 100)}</td></tr>` }).join('')
-    : [...byRate.entries()].sort((a, b) => b[0] - a[0]).map(([rate, v]) => `<tr><td class="muted">${esc(t('VAT {rate}% on {base}', { rate, base: money(v.base) }))}</td><td class="r muted">${money(v.tax)}</td></tr>`).join('')
-  const fiscal = f ? `<hr><div class="c b">${esc(f.isReturn ? t('FISCAL RETURN COUPON') : t('FISCAL COUPON'))}</div>
-    <table class="muted"><tr><td>${esc(t('Coupon no.'))}</td><td class="r">${esc(f.couponId)}</td></tr>${f.referenceNo ? `<tr><td>${esc(t('Original coupon'))}</td><td class="r">${esc(f.referenceNo)}</td></tr>` : ''}
-    <tr><td>${esc(t('Verification code'))}</td><td class="r">${esc(f.verificationNo)}</td></tr></table>
-    <div class="c qr">${qrSvg(f.qr)}</div><div class="c muted">${esc(t('Scan the code to check this coupon at ATK'))}</div>
-    ${f.env === 'test' ? `<div class="c b">${esc(t('TEST · not a valid fiscal coupon'))}</div>` : ''}` : ''
+  const taxes = [...byRate.entries()].sort((a, b) => b[0] - a[0]).map(([rate, v]) => `<tr><td class="muted">${esc(t('VAT {rate}% on {base}', { rate, base: money(v.base) }))}</td><td class="r muted">${money(v.tax)}</td></tr>`).join('')
   const pays = r.payments.map((p) => `<tr><td>${esc(method(p.method))}</td><td class="r">${money(p.amount)}</td></tr>`).join('')
   return `<div class="c b big">${esc(r.company.name)}</div>
-    <div class="c muted">${esc(r.company.legal_name ?? '')}${r.company.tax_number ? `<br>${esc(f ? t('NUI') : t('NIPT'))} ${esc(r.company.tax_number)}` : ''}${r.company.address ? `<br>${esc(r.company.address)}` : ''}</div>
+    <div class="c muted">${esc(r.company.legal_name ?? '')}${r.company.tax_number ? `<br>${esc(t('NIPT'))} ${esc(r.company.tax_number)}` : ''}${r.company.address ? `<br>${esc(r.company.address)}` : ''}</div>
     ${r.register.receipt_header ? `<div class="c muted">${esc(r.register.receipt_header)}</div>` : ''}
     <hr><div>${r.isRefund ? `<b>${esc(t('REFUND'))}</b><br>` : ''}${esc(t('Receipt {number}', { number: r.number ?? r.ref }))}${r.number && r.number !== r.ref ? `<br><span class="muted">${esc(t('Till ref {ref}', { ref: r.ref }))}</span>` : ''}<br>
     ${esc(stamp(r.date))} · ${esc(r.register.name)}<br>${esc(t('Cashier: {name}', { name: r.cashier }))}${r.customer ? `<br>${esc(t('Customer: {name}', { name: r.customer }))}` : ''}</div><hr>
@@ -63,11 +52,10 @@ export function receiptHtml(r: ReceiptData) {
       ${r.loyalty.redeemed ? `<tr><td>${esc(t('Points spent'))}</td><td class="r">−${esc(r.loyalty.redeemed)}</td></tr>` : ''}
       ${r.loyalty.earned ? `<tr><td>${esc(t('Points earned'))}</td><td class="r">+${esc(r.loyalty.earned)}</td></tr>` : ''}
       ${r.loyalty.balance != null ? `<tr><td>${esc(t('Points on the card'))}</td><td class="r b">${esc(r.loyalty.balance)}</td></tr>` : ''}</table>` : ''}
-    ${fiscal}
-    ${r.offline ? `<hr><div class="c muted">${esc(f ? t('Made without internet: the coupon is signed and goes to ATK when the till is back online.') : t('Recorded offline — sent to the books when the till is back online.'))}</div>` : ''}
+    ${r.offline ? `<hr><div class="c muted">${esc(t('Recorded offline — sent to the books when the till is back online.'))}</div>` : ''}
     <hr><div class="c muted">${esc(r.register.receipt_footer ?? 'Faleminderit! Thank you!')}</div>`
 }
-export function printReceipt(r: ReceiptData) { printHtml(receiptHtml(r), CSS, 'receipt') }
+export function printReceipt(r: ReceiptData) { printHtml(receiptHtml(r), r.fiscal ? FISCAL_CSS : CSS, 'receipt') }
 
 export interface ZData {
   company: string; register: string; number: string; session: string; opened: string; closed: string | null; date: string; currency: string
