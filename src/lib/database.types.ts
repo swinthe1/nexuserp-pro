@@ -2139,6 +2139,10 @@ export type Database = {
           replenish_from_units: boolean
           abc_settings: Json
           pos_count_notes: boolean
+          pos_void_approval: boolean
+          pos_close_witness: string
+          pos_age_check: boolean
+          pos_min_age: number
         }
         Insert: {
           id?: string
@@ -2211,6 +2215,10 @@ export type Database = {
           replenish_from_units?: boolean
           abc_settings?: Json
           pos_count_notes?: boolean
+          pos_void_approval?: boolean
+          pos_close_witness?: string
+          pos_age_check?: boolean
+          pos_min_age?: number
         }
         Update: {
           id?: string
@@ -2283,6 +2291,10 @@ export type Database = {
           replenish_from_units?: boolean
           abc_settings?: Json
           pos_count_notes?: boolean
+          pos_void_approval?: boolean
+          pos_close_witness?: string
+          pos_age_check?: boolean
+          pos_min_age?: number
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -3629,6 +3641,79 @@ export type Database = {
           { foreignKeyName: "exchange_rates_currency_code_fkey"; columns: ["currency_code"]; isOneToOne: false; referencedRelation: "currencies"; referencedColumns: ["code"] },
         ]
       }
+      expiry_markdowns: {
+        Row: {
+          id: string
+          company_id: string
+          warehouse_id: string
+          variant_id: string
+          lot_id: string | null
+          expiry_date: string
+          quantity: number
+          discount_pct: number
+          status: string
+          note: string | null
+          promotion_id: string | null
+          adjustment_id: string | null
+          proposed_by: string
+          decided_by: string | null
+          decided_at: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          warehouse_id: string
+          variant_id: string
+          lot_id?: string | null
+          expiry_date: string
+          quantity: number
+          discount_pct: number
+          status?: string
+          note?: string | null
+          promotion_id?: string | null
+          adjustment_id?: string | null
+          proposed_by?: string
+          decided_by?: string | null
+          decided_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          warehouse_id?: string
+          variant_id?: string
+          lot_id?: string | null
+          expiry_date?: string
+          quantity?: number
+          discount_pct?: number
+          status?: string
+          note?: string | null
+          promotion_id?: string | null
+          adjustment_id?: string | null
+          proposed_by?: string
+          decided_by?: string | null
+          decided_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "expiry_markdowns_adjustment_id_fkey"; columns: ["adjustment_id"]; isOneToOne: false; referencedRelation: "stock_adjustments"; referencedColumns: ["id"] },
+          { foreignKeyName: "expiry_markdowns_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "expiry_markdowns_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "expiry_markdowns_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "expiry_markdowns_lot_id_fkey"; columns: ["lot_id"]; isOneToOne: false; referencedRelation: "lots"; referencedColumns: ["id"] },
+          { foreignKeyName: "expiry_markdowns_promotion_id_fkey"; columns: ["promotion_id"]; isOneToOne: false; referencedRelation: "promotions"; referencedColumns: ["id"] },
+        ]
+      }
       external_documents: {
         Row: {
           id: string
@@ -4692,6 +4777,7 @@ export type Database = {
           name: string
           capacity: number
           rate: number
+          tax_code_id: string | null
           variant_id: string | null
           sort: number
           created_at: string
@@ -4700,7 +4786,6 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
-          tax_code_id: string | null
         }
         Insert: {
           id?: string
@@ -4708,6 +4793,7 @@ export type Database = {
           name: string
           capacity?: number
           rate?: number
+          tax_code_id?: string | null
           variant_id?: string | null
           sort?: number
           created_at?: string
@@ -4716,7 +4802,6 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
-          tax_code_id?: string | null
         }
         Update: {
           id?: string
@@ -4724,6 +4809,7 @@ export type Database = {
           name?: string
           capacity?: number
           rate?: number
+          tax_code_id?: string | null
           variant_id?: string | null
           sort?: number
           created_at?: string
@@ -4732,7 +4818,6 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
-          tax_code_id?: string | null
         }
         Relationships: [
           { foreignKeyName: "hotel_room_types_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -7358,6 +7443,57 @@ export type Database = {
           { foreignKeyName: "portal_links_company_id_partner_id_fkey"; columns: ["company_id", "partner_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      pos_cash_counts: {
+        Row: {
+          id: string
+          company_id: string
+          session_id: string
+          z_report_id: string | null
+          notes_coins: Json | null
+          counted: number
+          difference: number
+          counted_by: string
+          witnessed_by: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          session_id: string
+          z_report_id?: string | null
+          notes_coins?: Json | null
+          counted: number
+          difference?: number
+          counted_by: string
+          witnessed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          session_id?: string
+          z_report_id?: string | null
+          notes_coins?: Json | null
+          counted?: number
+          difference?: number
+          counted_by?: string
+          witnessed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "pos_cash_counts_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "pos_cash_counts_company_id_session_id_fkey"; columns: ["company_id", "session_id"]; isOneToOne: false; referencedRelation: "pos_sessions"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
       pos_cash_movements: {
         Row: {
           id: string
@@ -7813,6 +7949,70 @@ export type Database = {
           { foreignKeyName: "pos_sessions_company_id_journal_entry_id_fkey"; columns: ["company_id", "journal_entry_id"]; isOneToOne: false; referencedRelation: "journal_entries"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "pos_sessions_company_id_register_id_fkey"; columns: ["company_id", "register_id"]; isOneToOne: false; referencedRelation: "pos_registers"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "pos_sessions_opened_by_profile_fkey"; columns: ["opened_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
+      pos_till_log: {
+        Row: {
+          id: string
+          company_id: string
+          session_id: string
+          register_id: string
+          kind: string
+          variant_id: string | null
+          description: string | null
+          quantity: number | null
+          amount: number
+          at: string
+          cashier_id: string
+          approved_by: string | null
+          offline: boolean
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id: string
+          company_id: string
+          session_id: string
+          register_id: string
+          kind: string
+          variant_id?: string | null
+          description?: string | null
+          quantity?: number | null
+          amount?: number
+          at: string
+          cashier_id: string
+          approved_by?: string | null
+          offline?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          session_id?: string
+          register_id?: string
+          kind?: string
+          variant_id?: string | null
+          description?: string | null
+          quantity?: number | null
+          amount?: number
+          at?: string
+          cashier_id?: string
+          approved_by?: string | null
+          offline?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "pos_till_log_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "pos_till_log_company_id_register_id_fkey"; columns: ["company_id", "register_id"]; isOneToOne: false; referencedRelation: "pos_registers"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "pos_till_log_company_id_session_id_fkey"; columns: ["company_id", "session_id"]; isOneToOne: false; referencedRelation: "pos_sessions"; referencedColumns: ["company_id", "id"] },
         ]
       }
       price_changes: {
@@ -8350,6 +8550,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           target_margin_pct: number | null
+          adults_only: boolean
         }
         Insert: {
           id?: string
@@ -8369,6 +8570,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           target_margin_pct?: number | null
+          adults_only?: boolean
         }
         Update: {
           id?: string
@@ -8388,6 +8590,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           target_margin_pct?: number | null
+          adults_only?: boolean
         }
         Relationships: [
           { foreignKeyName: "product_categories_company_id_cogs_account_id_fkey"; columns: ["company_id", "cogs_account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["company_id", "id"] },
@@ -8651,6 +8854,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           target_margin_pct: number | null
+          adults_only: boolean
         }
         Insert: {
           id?: string
@@ -8684,6 +8888,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           target_margin_pct?: number | null
+          adults_only?: boolean
         }
         Update: {
           id?: string
@@ -8717,6 +8922,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           target_margin_pct?: number | null
+          adults_only?: boolean
         }
         Relationships: [
           { foreignKeyName: "products_company_id_category_id_fkey"; columns: ["company_id", "category_id"]; isOneToOne: false; referencedRelation: "product_categories"; referencedColumns: ["company_id", "id"] },
@@ -15335,6 +15541,35 @@ export type Database = {
         }
         Returns: { id: string | null; file_name: string | null; status: string | null; error: string | null; vendor: string | null; number: string | null; date: string | null; total: number | null; category: string | null; bill_id: string | null; bill_number: string | null; created_at: string | null; asset_id: string | null }[]
       }
+      expiry_decide: {
+        Args: {
+          p_id: string
+          p_approve: boolean
+          p_pct?: number
+          p_note?: string
+        }
+        Returns: undefined
+      }
+      expiry_overview: {
+        Args: {
+          p_company: string
+          p_warehouse?: string
+          p_days?: number
+        }
+        Returns: Json
+      }
+      expiry_propose: {
+        Args: {
+          p: Json
+        }
+        Returns: string
+      }
+      expiry_write_off: {
+        Args: {
+          p: Json
+        }
+        Returns: Json
+      }
       finance_overview: {
         Args: {
           p_company: string
@@ -16454,6 +16689,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      pos_approve: {
+        Args: {
+          p_register: string
+          p_member: string
+          p_pin: string
+          p_purpose: string
+        }
+        Returns: Json
+      }
       pos_cash_limits: {
         Args: {
           p_register: string
@@ -16475,6 +16719,20 @@ export type Database = {
         }
         Returns: { variant_id: string | null; sku: string | null; name: string | null; category: string | null; barcodes: Json | null; price: number | null; tax_code_id: string | null; tax_rate: number | null; tracking: string | null; on_hand: number | null; image_path: string | null; product_type: string | null }[]
       }
+      pos_close: {
+        Args: {
+          p_session: string
+          p: Json
+        }
+        Returns: string
+      }
+      pos_log: {
+        Args: {
+          p_session: string
+          p_items: Json
+        }
+        Returns: number
+      }
       pos_loyalty_data: {
         Args: {
           p_register: string
@@ -16493,6 +16751,12 @@ export type Database = {
           p_safe: string
         }
         Returns: undefined
+      }
+      pos_session_controls: {
+        Args: {
+          p_session: string
+        }
+        Returns: Json
       }
       pos_session_summary: {
         Args: {

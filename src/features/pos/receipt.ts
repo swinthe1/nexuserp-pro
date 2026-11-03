@@ -1,5 +1,6 @@
 import { formatDateWith, formatNumberWith, t, tEnum } from '@/i18n'
 import { printHtml } from '@/lib/print'
+import type { SessionControls } from './api'
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 const money = (n: number) => formatNumberWith(n, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -58,8 +59,11 @@ export interface ZData {
   payments: Record<string, number>; taxes: { rate: number; base: number; tax: number }[]
   opening: number; cashIn: number; cashOut: number; expected: number; counted: number | null; difference: number | null
   items: { name: string; quantity: number; total: number }[]
+  /** the count by note and coin, who confirmed it, the till's voids and age checks */
+  controls?: SessionControls | null
 }
 export function printZReport(z: ZData) {
+  const c = z.controls
   const row = (k: string, v: string, cls = '') => `<tr class="${cls}"><td>${esc(k)}</td><td class="r">${esc(v)}</td></tr>`
   const pays = Object.entries(z.payments).filter(([k]) => k !== 'change_given').map(([k, v]) => row(method(k), money(Number(v)))).join('')
   printHtml(`<div class="c b big">${esc(t('Z-REPORT {number}', { number: z.number }))}</div><div class="c muted">${esc(z.company)}<br>${esc(z.register)} · ${esc(t('shift {number}', { number: z.session }))}<br>
@@ -69,7 +73,10 @@ export function printZReport(z: ZData) {
     <div class="b">${esc(t('VAT'))}</div><table>${z.taxes.map((x) => row(t('{rate}% on {base}', { rate: x.rate, base: money(x.base) }), money(x.tax))).join('')}</table><hr>
     <div class="b">${esc(t('Payments'))}</div><table>${pays}${row(t('Change given'), money(Number(z.payments.change_given ?? 0)))}</table><hr>
     <div class="b">${esc(t('Cash drawer'))}</div><table>${row(t('Opening cash'), money(z.opening))}${row(t('Cash in'), money(z.cashIn))}${row(t('Cash out'), `−${money(z.cashOut)}`)}
-    ${row(t('Expected'), money(z.expected), 'b')}${row(t('Counted'), z.counted == null ? '—' : money(z.counted))}${row(t('Difference'), z.difference == null ? '—' : money(z.difference), 'b')}</table><hr>
+    ${row(t('Expected'), money(z.expected), 'b')}${row(t('Counted'), z.counted == null ? '—' : money(z.counted))}${row(t('Difference'), z.difference == null ? '—' : money(z.difference), 'b')}</table>
+    ${c?.count?.notes_coins ? `<table>${Object.entries(c.count.notes_coins).sort((a, b) => Number(b[0]) - Number(a[0])).map(([d, n]) => row(`${n} × ${d}`, money(Number(d) * n))).join('')}</table>` : ''}
+    ${c?.count?.counted_by ? `<div class="muted">${esc(t('Counted by {name}', { name: c.count.counted_by }))}${c.count.witnessed_by ? ` · ${esc(t('confirmed by {name}', { name: c.count.witnessed_by }))}` : ''}</div>` : ''}<hr>
+    ${c && (c.voids.count > 0 || c.age.checked + c.age.refused > 0) ? `<div class="b">${esc(t('Till controls'))}</div><table>${row(t('Voids'), `${c.voids.count} · ${money(c.voids.amount)}`)}${c.voids.unconfirmed ? row(t('Without a manager'), String(c.voids.unconfirmed)) : ''}${c.age.checked + c.age.refused ? row(t('Age checks'), c.age.refused ? t('{a} · {b} refused', { a: c.age.checked, b: c.age.refused }) : String(c.age.checked)) : ''}</table><hr>` : ''}
     <div class="b">${esc(t('Best sellers · sales with VAT'))}</div><table>${z.items.slice(0, 10).map((i) => row(`${qty(Number(i.quantity))} × ${i.name}`, money(Number(i.total)))).join('')}</table>
     <hr><div class="c muted">${esc(t('Printed {date}', { date: stamp(new Date()) }))}</div>`, CSS, 'receipt')
 }

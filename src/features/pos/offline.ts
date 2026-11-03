@@ -104,6 +104,7 @@ export function syncNow(): Promise<void> {
           await tx('queue', 'readwrite', (s) => s.put({ ...it, status: 'failed', error: msg, attempts: it.attempts + 1 }))
         }
       }
+      if (snapshot.online) await flushTillLog().catch(() => undefined)
     } finally {
       await reload()
       emit({ syncing: false })
@@ -111,6 +112,52 @@ export function syncNow(): Promise<void> {
     }
   })()
   return running
+}
+
+/* ------------------------------------------------------------------ the till's log (voids, age checks) */
+export type TillLogEntry = {
+  id: string; session_id: string; kind: 'void_line' | 'void_qty' | 'void_sale' | 'age_ok' | 'age_refused'
+  variant_id?: string | null; description?: string | null; quantity?: number | null; amount?: number; at: string; approval?: string | null; offline?: boolean
+}
+const LOG_KEY = 'tilllog'
+let logChain: Promise<unknown> = Promise.resolve()
+/** kept on the device first, like a sale, then sent; a step sent twice is kept once by the server */
+export function logTill(entries: TillLogEntry[]) {
+  if (!entries.length) return Promise.resolve()
+  logChain = logChain.then(async () => {
+    const cur = (await kvGet<TillLogEntry[]>(LOG_KEY)) ?? []
+    await kvSet(LOG_KEY, [...cur, ...entries])
+  }).catch(() => undefined)
+  return logChain.then(() => { void flushTillLog().catch(() => undefined) })
+}
+let flushing: Promise<void> | null = null
+export function flushTillLog(): Promise<void> {
+  flushing ??= (async () => {
+    try {
+      await logChain
+      const all = (await kvGet<TillLogEntry[]>(LOG_KEY)) ?? []
+      if (!all.length) return
+      const sent = new Set<string>()
+      for (const sid of [...new Set(all.map((e) => e.session_id))]) {
+        const items = all.filter((e) => e.session_id === sid).map(({ session_id: _s, ...e }) => e)
+        const { error } = await supabase.rpc('pos_log', { p_session: sid, p_items: items as never })
+        if (error) {
+          if (isNetworkError(error)) break
+          // a session the server does not know any more: nothing more can be done with these
+          if (!/Session not found/.test(error.message)) continue
+        }
+        items.forEach((e) => sent.add(e.id))
+      }
+      if (sent.size) {
+        logChain = logChain.then(async () => {
+          const now = (await kvGet<TillLogEntry[]>(LOG_KEY)) ?? []
+          await kvSet(LOG_KEY, now.filter((e) => !sent.has(e.id)))
+        }).catch(() => undefined)
+        await logChain
+      }
+    } finally { flushing = null }
+  })()
+  return flushing
 }
 
 const onSynced = new Set<(it: QueuedSale) => void>()
@@ -125,7 +172,7 @@ function start() {
   void reload()
   window.addEventListener('online', () => { emit({ online: true }); void syncNow() })
   window.addEventListener('offline', () => emit({ online: false }))
-  setInterval(() => { if (snapshot.items.some((i) => i.status === 'pending')) void syncNow() }, 15_000)
+  setInterval(() => { if (snapshot.items.some((i) => i.status === 'pending')) void syncNow(); else if (navigator.onLine) void flushTillLog().catch(() => undefined) }, 15_000)
 }
 
 export function useSyncState() {

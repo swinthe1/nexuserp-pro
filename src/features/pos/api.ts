@@ -6,7 +6,7 @@ import { useCompany } from '@/app/company-provider'
 import type { Tables } from '@/lib/database.types'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
-import { kvGet, kvSet } from './offline'
+import { flushTillLog, kvGet, kvSet } from './offline'
 import type { TillLoyalty } from '@/features/loyalty/api'
 
 export const posKeys = { all: (c: string) => ['pos', c] as const }
@@ -88,10 +88,50 @@ export const useOpenSession = () => useAction(async (a: { register: string; cash
   unwrap(await supabase.rpc('open_pos_session', { p_register: a.register, p_opening_cash: a.cash })) as string)
 export const useCashMove = () => useAction(async (a: { session: string; type: 'cash_in' | 'cash_out'; amount: number; reason: string }) =>
   unwrap(await supabase.rpc('pos_cash_move', { p_session: a.session, p_type: a.type, p_amount: a.amount, p_reason: a.reason })))
-export const useCloseSession = () => useAction(async (a: { session: string; counted: number; notes?: string }) =>
-  unwrap(await supabase.rpc('close_pos_session', { p_session: a.session, p_counted_cash: a.counted, p_notes: a.notes })) as string)
+/** closing: the count (by note and coin when it was counted that way) and the manager's confirmation, if one was asked */
+export const useCloseSession = () => useAction(async (a: { session: string; counted: number; notes?: string; notesCoins?: Record<string, number> | null; approval?: string | null }) => {
+  await flushTillLog().catch(() => undefined)
+  const r = await supabase.rpc('pos_close', { p_session: a.session, p: { counted: a.counted, notes: a.notes ?? null, notes_coins: a.notesCoins ?? null, approval: a.approval ?? null } })
+  // a server not updated yet has only the older closing
+  if (r.error?.code === 'PGRST202') return unwrap(await supabase.rpc('close_pos_session', { p_session: a.session, p_counted_cash: a.counted, p_notes: a.notes })) as string
+  return unwrap(r) as string
+})
+
+/** the manager types their PIN on the cashier's screen */
+export async function posApprove(register: string, member: string, pin: string, purpose: 'void' | 'close') {
+  return unwrap(await supabase.rpc('pos_approve', { p_register: register, p_member: member, p_pin: pin, p_purpose: purpose })) as unknown as { approval?: string; name?: string; error?: string }
+}
+
+/** what the shift's count, its voids and its age checks were (the Z report and the shift's page) */
+export type SessionControls = {
+  count: { notes_coins: Record<string, number> | null; counted: number; difference: number; counted_by: string | null; witnessed_by: string | null } | null
+  voids: { count: number; amount: number; unconfirmed: number
+    lines: { kind: 'void_line' | 'void_qty' | 'void_sale'; description: string | null; quantity: number | null; amount: number; at: string; cashier: string | null; approved_by: string | null; offline: boolean }[] }
+  age: { checked: number; refused: number }
+}
+export async function sessionControls(id: string) {
+  return unwrap(await supabase.rpc('pos_session_controls', { p_session: id })) as unknown as SessionControls
+}
+export function useSessionControls(id: string | undefined) {
+  return useQuery({ queryKey: ['pos', 'controls', id], enabled: !!id, queryFn: () => sessionControls(id!) })
+}
 
 /* ------------------------------------------------------------------ till data (cached for offline) */
+export type TillOptions = {
+  /** closing counts by note and coin */
+  count_notes: boolean
+  /** taking an item off a sale, lowering a quantity or clearing a sale needs a manager's PIN */
+  void_approval?: boolean
+  /** when the closing count is confirmed by a manager: never, when the drawer is off by more than the tolerance, always */
+  close_witness?: 'never' | 'difference' | 'always'
+  tolerance?: number
+  /** the till asks the cashier to check the customer's age for these items, once per sale */
+  age_check?: boolean
+  min_age?: number
+  adults_only?: string[]
+  /** the store managers who can confirm with their PIN */
+  managers?: { member_id: string; name: string }[]
+}
 export type CatalogItem = { variant_id: string; sku: string; name: string; category: string | null; barcodes: { code: string; qty: number }[]
   price: number; tax_code_id: string | null; tax_rate: number; tracking: string; on_hand: number; product_type: string }
 export type TillData = {
@@ -101,8 +141,8 @@ export type TillData = {
   customers: { id: string; name: string; code: string | null; tax_number: string | null; kind?: 'company' | 'individual' }[]
   /** the law's daily cash limits (null = none) and whether cash above them is refused */
   cashLimits?: { business: number | null; individual: number | null; block: boolean } | null
-  /** the company's choices for the till (count_notes: closing counts by note and coin) */
-  options?: { count_notes: boolean }
+  /** the company's choices for the till */
+  options?: TillOptions
   company: { name: string; legal_name: string | null; tax_number: string | null; base_currency: string; address: string | null }
   /** loyalty cards and their rules, kept so discount cards work offline */
   loyalty?: TillLoyalty

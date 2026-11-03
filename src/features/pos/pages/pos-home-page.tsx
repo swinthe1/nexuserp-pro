@@ -31,7 +31,7 @@ import { useBankAccounts, useJournals } from '@/features/finance/api'
 import { AccountingTab } from '@/features/finance/components/t-accounts'
 import { useLocations, useWarehouses } from '@/features/inventory/api'
 import { usePartners, usePriceLists } from '@/features/sales/api'
-import { posKeys, useRegisters, useSaveRegister, useSessionDetail, useSessions, type Register, type SessionRow } from '../api'
+import { posKeys, useRegisters, useSaveRegister, useSessionControls, useSessionDetail, useSessions, type Register, type SessionRow } from '../api'
 import { discard, retry, syncNow, useSyncState } from '../offline'
 import { printReceipt, printZReport } from '../receipt'
 
@@ -253,6 +253,7 @@ export function PosSessionPage() {
   const { id } = useParams()
   const { company } = useCompany()
   const q = useSessionDetail(id)
+  const ctl = useSessionControls(id)
   if (q.isLoading) return <Skeleton className="mx-auto h-96 max-w-5xl" />
   if (q.isError) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />
   if (!q.data) return <EmptyState icon={Store} title={t('Shift not found')} description={t('It may have been deleted.')} action={<Button variant="outline" asChild><Link to="/pos">{t('Point of sale')}</Link></Button>} />
@@ -266,8 +267,10 @@ export function PosSessionPage() {
     company: company?.name ?? '', register: s.register?.name ?? '', number: z.number, session: s.number, opened: s.opened_at, closed: s.closed_at, date: z.report_date, currency: cur,
     orders: z.order_count, refunds: z.refund_count, gross: num(z.gross_sales), refundsTotal: num(z.refunds_total), discounts: num(z.discounts_total), net: num(z.net_sales), tax: num(z.tax_total),
     payments: pay, taxes: taxes.map((t) => ({ rate: num(t.rate), base: num(t.base), tax: num(t.tax) })), opening: num(z.opening_cash), cashIn: num(z.cash_in), cashOut: num(z.cash_out),
-    expected: num(z.expected_cash), counted: z.counted_cash, difference: z.cash_difference, items,
+    expected: num(z.expected_cash), counted: z.counted_cash, difference: z.cash_difference, items, controls: ctl.data ?? null,
   })
+  const c = ctl.data
+  const voids = c?.voids
   const reprint = async (orderId: string) => {
     try {
       const o = unwrap(await supabase.from('pos_orders').select('number, device_ref, order_at, is_refund, change_given, partner:business_partners(name), lines:pos_order_lines(description, quantity, unit_price, discount_pct, line_total, tax_rate, line_no), payments:pos_payments(method, amount)')
@@ -292,7 +295,8 @@ export function PosSessionPage() {
           {z && <Button variant="outline" onClick={print}><Printer /> {t('Print Z-report')}</Button>}
         </>} />
       <Tabs defaultValue={z ? 'z' : 'orders'}>
-        <TabsList>{z && <TabsTrigger value="z">{t('Z-report {number}', { number: z.number })}</TabsTrigger>}<TabsTrigger value="orders">{t('Receipts')} ({orders.length})</TabsTrigger><TabsTrigger value="accounting">{t('Accounting')}</TabsTrigger></TabsList>
+        <TabsList>{z && <TabsTrigger value="z">{t('Z-report {number}', { number: z.number })}</TabsTrigger>}<TabsTrigger value="orders">{t('Receipts')} ({orders.length})</TabsTrigger>
+          <TabsTrigger value="controls">{t('Till controls')}{voids?.count ? ` (${voids.count})` : ''}</TabsTrigger><TabsTrigger value="accounting">{t('Accounting')}</TabsTrigger></TabsList>
         {z && (
           <TabsContent value="z" className="grid gap-4">
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -322,6 +326,43 @@ export function PosSessionPage() {
             </CardContent></Card>
           </TabsContent>
         )}
+        <TabsContent value="controls" className="grid gap-4">
+          {ctl.isError ? <ErrorState error={ctl.error} onRetry={() => void ctl.refetch()} /> : !c ? <Skeleton className="h-40" /> : <>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <StatCard label={t('Voids')} value={String(c.voids.count)} hint={t('{amount} taken off sales', { amount: formatMoney(c.voids.amount) })} />
+              <StatCard label={t('Without a manager')} value={String(c.voids.unconfirmed)} tone={c.voids.unconfirmed ? 'warning' : 'default'}
+                hint={t('Offline, or no manager with a PIN')} />
+              <StatCard label={t('Age checks')} value={String(c.age.checked)} hint={c.age.refused ? t('{n} refused', { n: c.age.refused }) : undefined} />
+            </div>
+            {c.count && (
+              <Card><CardHeader className="pb-2"><CardTitle>{t('Cash count')}</CardTitle></CardHeader><CardContent className="grid gap-1.5 text-[13px]">
+                {Object.entries(c.count.notes_coins ?? {}).sort((a, b) => Number(b[0]) - Number(a[0])).map(([d, n]) => <Row key={d} k={`${n} × ${d}`} v={formatMoney(Number(d) * n)} />)}
+                <Row k={t('Counted')} v={formatMoney(c.count.counted)} strong />
+                <Row k={t('Counted by')} v={c.count.counted_by ?? '—'} />
+                <Row k={t('Confirmed by')} v={c.count.witnessed_by ?? t('Nobody')} />
+              </CardContent></Card>
+            )}
+            <Card><CardHeader className="pb-2"><CardTitle>{t('Voids')}</CardTitle></CardHeader><CardContent className="overflow-x-auto p-0">
+              {!c.voids.lines.length ? <EmptyState compact title={t('No voids in this shift')} description={t('Items taken off a sale, quantities lowered and cleared sales show up here.')} /> : (
+                <Table>
+                  <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Time')}</TableHead><TableHead>{t('What')}</TableHead><TableHead>{t('Item')}</TableHead><TableHead className="text-right">{t('Quantity')}</TableHead>
+                    <TableHead className="text-right">{t('Amount (with VAT)')}</TableHead><TableHead>{t('Cashier')}</TableHead><TableHead>{t('Confirmed by')}</TableHead></TableRow></TableHeader>
+                  <TableBody>{c.voids.lines.map((l, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="whitespace-nowrap tabular">{formatDate(l.at, true)}</TableCell>
+                      <TableCell>{l.kind === 'void_sale' ? t('Sale cleared') : l.kind === 'void_qty' ? t('Quantity lowered') : t('Item taken off')}</TableCell>
+                      <TableCell>{l.description ?? '—'}</TableCell>
+                      <TableCell className="text-right tabular">{l.quantity == null ? '—' : num(l.quantity)}</TableCell>
+                      <TableCell className="text-right tabular">{formatMoney(l.amount)}</TableCell>
+                      <TableCell>{l.cashier ?? '—'}</TableCell>
+                      <TableCell>{l.approved_by ?? <span className="text-warning">{l.offline ? t('Nobody (offline)') : t('Nobody')}</span>}</TableCell>
+                    </TableRow>
+                  ))}</TableBody>
+                </Table>
+              )}
+            </CardContent></Card>
+          </>}
+        </TabsContent>
         <TabsContent value="orders">
           <Card><CardContent className="overflow-x-auto p-0">
             <Table>

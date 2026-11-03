@@ -2,8 +2,8 @@ import { PageHelpButton, TourHost } from '@/components/help'
 import { TillTasks } from '@/features/tasks/components/till-tasks'
 import { whereElsewhere } from '@/features/inventory/where'
 import {
-  ArrowLeft, BadgePercent, Banknote, Camera, Check, CloudOff, CreditCard, Ellipsis, Landmark, ListOrdered, LogOut, Minus, Plus, Printer, ReceiptText, RotateCcw, ScanLine, Search, Ticket, Trash2,
-  UserRound, Wallet, X,
+  ArrowLeft, BadgePercent, Banknote, Camera, Check, CloudOff, CreditCard, Ellipsis, IdCard, Landmark, ListOrdered, LogOut, Minus, Plus, Printer, ReceiptText, RotateCcw, ScanLine, Search,
+  ShieldCheck, Ticket, Trash2, UserRound, Wallet, X,
 } from 'lucide-react'
 import * as React from 'react'
 import { bestPromo } from '../promotions'
@@ -25,8 +25,9 @@ import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { formatDateWith, msg, t, td, tEnum, tn } from '@/i18n'
 import { cn, formatMoney, num, todayISO } from '@/lib/utils'
-import { lookupReceipt, useCashMove, useCloseSession, useOpenSession, useSessionSummary, useTill, type CatalogItem, type ReceiptLookup, type TillData } from '../api'
-import { enqueue, nextDeviceRef, syncNow, useOnSynced, useSyncState, type QueuedSale } from '../offline'
+import { lookupReceipt, posApprove, sessionControls, useCashMove, useCloseSession, useOpenSession, useSessionSummary, useTill, type CatalogItem, type ReceiptLookup, type TillData } from '../api'
+import { enqueue, logTill, nextDeviceRef, syncNow, useOnSynced, useSyncState, type QueuedSale, type TillLogEntry } from '../offline'
+import { ManagerDialog, ManagerPinFields, pinReady } from '../manager-pin'
 import { printReceipt, printZReport, type ReceiptData } from '../receipt'
 import { SyncPanel } from './pos-home-page'
 import { phoneKey, quoteLoyalty, type TillCardRow, type TillProgram } from '@/features/loyalty/api'
@@ -59,6 +60,8 @@ function toApplied(row: TillCardRow, programs: TillProgram[]): AppliedCard | nul
   return program ? { id: row[0], number: row[1], holder: row[3], program, points: num(row[5]), monthUsed: num(row[6]) } : null
 }
 type Done = { ref: string; number: string | null; total: number; change: number; receipt: ReceiptData; offline: boolean }
+/** a step that takes something off the sale (it waits for the manager when a confirmation is needed) */
+type VoidStep = { entries: Omit<TillLogEntry, 'id' | 'session_id' | 'at' | 'approval' | 'offline'>[]; apply: () => void }
 
 const prefGet = (k: string, d: string) => { try { return localStorage.getItem(k) ?? d } catch { return d } }
 const prefSet = (k: string, v: string) => { try { localStorage.setItem(k, v) } catch { /* ignore */ } }
@@ -130,7 +133,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   const [category, setCategory] = React.useState<string>('__all')
   const [customer, setCustomer] = React.useState<string | null>(data.register.default_customer_id)
   const [flash, setFlash] = React.useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
-  const [dialog, setDialog] = React.useState<null | 'pay' | 'customer' | 'card' | 'refund' | 'cash' | 'close' | 'line' | 'queue'>(null)
+  const [dialog, setDialog] = React.useState<null | 'pay' | 'customer' | 'card' | 'refund' | 'cash' | 'close' | 'line' | 'queue' | 'manager' | 'age'>(null)
   const [done, setDone] = React.useState<Done | null>(null)
   const [camera, setCamera] = React.useState(false)
   const [autoPrint, setAutoPrint] = React.useState(() => prefGet('pos.autoprint', '1') === '1')
@@ -260,7 +263,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
 
   const submitQuery = (raw: string) => {
     let v = raw.trim()
-    if (!v) { if (lines.length) setDialog('pay'); return }
+    if (!v) { if (lines.length) setDialog(adultLines.length && !ageOk ? 'age' : 'pay'); return }
     let n: number | undefined
     const mult = /^(\d+(?:[.,]\d+)?)\*(.*)$/.exec(v)
     if (mult) {
@@ -280,9 +283,62 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     if (!visible.length) setQuery('')
   }
 
-  const updateLine = (key: string, patchLine: Partial<Line>) => setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patchLine } : l)).filter((l) => l.qty > 0))
-  const removeLine = (key: string) => { setLines((ls) => ls.filter((l) => l.key !== key)); setSelected(null) }
-  const clearSale = () => { setLines([]); setSelected(null); setCustomer(data.register.default_customer_id); setMultiplier(null); setFlash(null); setCard(null); setRedeem(null) }
+  /* ---------- taking something off the sale: kept in the till's log; a manager confirms when the company asks for it */
+  const opt = data.options
+  const managers = opt?.managers ?? []
+  const needsManager = (opt?.void_approval ?? true) && !can('pos.approve') && managers.length > 0
+  const [voidApproval, setVoidApproval] = React.useState<{ approval: string; name: string } | null>(null)
+  const [pendingVoid, setPendingVoid] = React.useState<VoidStep | null>(null)
+  const commitVoid = (step: VoidStep, approval: string | null) => {
+    step.apply()
+    const at = new Date().toISOString()
+    const offlineNow = !navigator.onLine || !sync.online
+    void logTill(step.entries.map((e) => ({ ...e, id: crypto.randomUUID(), session_id: session.id, at, approval, offline: offlineNow })))
+  }
+  const requestVoid = (step: VoidStep) => {
+    if (!step.entries.length) { step.apply(); return }
+    if (needsManager && !voidApproval) {
+      // without internet the PIN cannot be checked: the step goes through and is kept as unconfirmed
+      if (!navigator.onLine || !sync.online) {
+        commitVoid(step, null)
+        setFlash({ tone: 'error', text: t('Offline: kept in the till\'s log without the manager\'s confirmation') })
+        return
+      }
+      setPendingVoid(step); setDialog('manager'); return
+    }
+    commitVoid(step, voidApproval?.approval ?? null)
+  }
+  const pricedOf = (key: string) => priced.find((x) => x.key === key)
+  const voidEntry = (l: Line, qty: number, kind: 'void_line' | 'void_qty') => {
+    const p = pricedOf(l.key) ?? l
+    return { kind, variant_id: l.variant_id, description: l.name, quantity: qty, amount: r2(lineTotal({ qty, price: l.price, discount: p.discount })) }
+  }
+  const setLineRaw = (key: string, patchLine: Partial<Line>) => setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patchLine } : l)).filter((l) => l.qty > 0))
+  const updateLine = (key: string, patchLine: Partial<Line>) => {
+    const l = lines.find((x) => x.key === key)
+    if (!l) return
+    const next = patchLine.qty ?? l.qty
+    // more of an item, or another discount: nothing leaves the sale
+    if (next >= l.qty) { setLineRaw(key, patchLine); return }
+    requestVoid({ entries: [voidEntry(l, r2(l.qty - Math.max(next, 0)), next <= 0 ? 'void_line' : 'void_qty')],
+      apply: () => { setLineRaw(key, patchLine); if (next <= 0) setSelected(null) } })
+  }
+  const removeLine = (key: string) => {
+    const l = lines.find((x) => x.key === key)
+    if (!l) return
+    requestVoid({ entries: [voidEntry(l, l.qty, 'void_line')], apply: () => { setLines((ls) => ls.filter((x) => x.key !== key)); setSelected(null) } })
+  }
+  /* ---------- alcohol and tobacco: the age is checked once per sale */
+  const adults = React.useMemo(() => new Set(opt?.age_check === false ? [] : opt?.adults_only ?? []), [opt])
+  const [ageOk, setAgeOk] = React.useState(false)
+  const adultLines = lines.filter((l) => adults.has(l.variant_id))
+  React.useEffect(() => { if (adultLines.length && !ageOk && !dialog) setDialog('age') }, [adultLines.length, ageOk, dialog])
+  const bornBy = React.useMemo(() => { const d = new Date(); d.setFullYear(d.getFullYear() - (opt?.min_age ?? 18)); return d }, [opt?.min_age])
+
+  const clearSale = () => { setLines([]); setSelected(null); setCustomer(data.register.default_customer_id); setMultiplier(null); setFlash(null); setCard(null); setRedeem(null); setVoidApproval(null); setAgeOk(false) }
+  /** the cashier clears the whole sale: that is a void too */
+  const voidSale = () => requestVoid({ entries: lines.length ? [{ kind: 'void_sale', description: tn(lines.length, '{n} line', '{n} lines'), quantity: itemsCount,
+    amount: r2(total) }] : [], apply: clearSale })
 
   /* ---------- finishing a sale: queue first, then everything else */
   const [lastNumbers, setLastNumbers] = React.useState<Record<string, string>>({})
@@ -347,7 +403,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       else if (e.key === 'F4') { e.preventDefault(); setDialog('customer') }
       else if (e.key === 'F3') { e.preventDefault(); setFlash(null); setDialog('card') }
       else if (e.key === 'F9') { e.preventDefault(); setDialog('refund') }
-      else if ((e.key === 'F12' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) && lines.length) { e.preventDefault(); setDialog('pay') }
+      else if ((e.key === 'F12' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) && lines.length) { e.preventDefault(); setDialog(adultLines.length && !ageOk ? 'age' : 'pay') }
       else if (e.key === 'Escape') { if (query) setQuery(''); else if (multiplier) setMultiplier(null) }
       else if (!query && selected && document.activeElement === search.current) {
         const l = lines.find((x) => x.key === selected)
@@ -467,7 +523,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
                 <span className="flex items-center gap-2"><ListOrdered /> {t('{a} lines · {b} items', { a: lines.length, b: num(itemsCount) })}</span>
                 <span className="text-base font-semibold tabular">{formatMoney(total)} <span className="text-[11px] font-normal text-muted-foreground">{t('with VAT|short')}</span></span>
               </Button>
-              <Button className="h-14 px-5" disabled={!lines.length} onClick={() => setDialog('pay')}>{t('Pay')}</Button>
+              <Button className="h-14 px-5" disabled={!lines.length} onClick={() => setDialog(adultLines.length && !ageOk ? 'age' : 'pay')}>{t('Pay')}</Button>
             </div>
           )}
         </section>
@@ -536,14 +592,20 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
             ))}
           </div>
           <div className="border-t px-4 py-3">
+            {(voidApproval || (ageOk && adultLines.length > 0)) && (
+              <div className="mb-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                {voidApproval && <span className="inline-flex items-center gap-1"><ShieldCheck className="size-3.5 text-primary" /> {t('Voids confirmed by {name}', { name: voidApproval.name })}</span>}
+                {ageOk && adultLines.length > 0 && <span className="inline-flex items-center gap-1"><IdCard className="size-3.5 text-primary" /> {t('Age checked')}</span>}
+              </div>
+            )}
             <div className="flex justify-between text-[13px] text-muted-foreground"><span>{t('{a} lines · {b} items', { a: lines.length, b: num(itemsCount) })}</span><span className="tabular">{t('incl. VAT {amount}', { amount: formatMoney(vat) })}</span></div>
             <div className="mt-1 flex items-baseline justify-between">
               <span className="text-sm font-medium">{t('Total with VAT|till')}</span>
               <span className="text-[34px] font-semibold leading-none tracking-[-0.02em] tabular">{formatMoney(total)} <span className="text-sm font-normal text-muted-foreground">{cur}</span></span>
             </div>
             <div className="mt-3 grid grid-cols-[auto_1fr] gap-2">
-              <Button variant="outline" size="lg" className="h-14" disabled={!lines.length} onClick={() => { if (lines.length < 3 || confirm(t('Clear this sale?'))) clearSale() }}><X /> {t('Clear')}</Button>
-              <Button size="lg" className="h-14 text-lg" disabled={!lines.length} onClick={() => setDialog('pay')}>{t('Pay {amount}', { amount: formatMoney(total) })} <Kbd className="ml-2 border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground">F12</Kbd></Button>
+              <Button variant="outline" size="lg" className="h-14" disabled={!lines.length} onClick={() => { if (lines.length < 3 || confirm(t('Clear this sale?'))) voidSale() }}><X /> {t('Clear')}</Button>
+              <Button size="lg" className="h-14 text-lg" disabled={!lines.length} onClick={() => setDialog(adultLines.length && !ageOk ? 'age' : 'pay')}>{t('Pay {amount}', { amount: formatMoney(total) })} <Kbd className="ml-2 border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground">F12</Kbd></Button>
             </div>
           </div>
         </aside>
@@ -553,6 +615,27 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       {dialog === 'pay' && <PayDialog total={r2(total)} currency={cur} cashLimit={cashLimit} onCancel={() => { setDialog(null); focusSearch() }} onPaid={(t) => finish(t)} />}
       {dialog === 'card' && <CardDialog onClose={() => { setDialog(null); focusSearch() }} onCode={async (c) => { if (await applyCardCode(c)) { setDialog(null); focusSearch() } }} error={flash?.tone === 'error' ? flash.text : null} />}
       {dialog === 'customer' && <CustomerDialog data={data} value={customer} onClose={(v) => { if (v !== undefined) setCustomer(v); setDialog(null); focusSearch() }} />}
+      {dialog === 'manager' && pendingVoid && (
+        <ManagerDialog registerId={data.register.id} managers={managers} title={t('A manager confirms')}
+          description={t('Taking items off a sale needs a manager. One confirmation covers the rest of this sale.')}
+          onCancel={() => { setPendingVoid(null); setDialog(null); focusSearch() }}
+          onApproved={(a) => { setVoidApproval(a); commitVoid(pendingVoid, a.approval); setPendingVoid(null); setDialog(null); focusSearch() }} />
+      )}
+      {dialog === 'age' && adultLines.length > 0 && (
+        <AgeDialog items={adultLines.map((l) => l.name)} minAge={opt?.min_age ?? 18} bornBy={bornBy}
+          onOk={() => {
+            setAgeOk(true); setDialog(null); focusSearch()
+            void logTill(adultLines.map((l) => ({ id: crypto.randomUUID(), session_id: session.id, kind: 'age_ok' as const, variant_id: l.variant_id, description: l.name, quantity: l.qty,
+              at: new Date().toISOString(), offline: !navigator.onLine })))
+          }}
+          onRefuse={() => {
+            const at = new Date().toISOString()
+            void logTill(adultLines.map((l) => ({ id: crypto.randomUUID(), session_id: session.id, kind: 'age_refused' as const, variant_id: l.variant_id, description: l.name, quantity: l.qty,
+              amount: r2(lineTotal(pricedOf(l.key) ?? l)), at, offline: !navigator.onLine })))
+            setLines((ls) => ls.filter((l) => !adults.has(l.variant_id))); setSelected(null); setDialog(null); focusSearch()
+            setFlash({ tone: 'error', text: t('Taken off the sale: the customer is under {age}', { age: opt?.min_age ?? 18 }) })
+          }} />
+      )}
       {dialog === 'line' && selectedLine && <LineDialog line={selectedLine} canDiscount={(d) => d <= MAX_DISCOUNT || can('pos.approve')}
         onClose={(p) => { if (p) updateLine(selectedLine.key, p); setDialog(null); focusSearch() }} onRemove={() => { removeLine(selectedLine.key); setDialog(null); focusSearch() }} />}
       {dialog === 'refund' && <RefundDialog data={data} currency={cur} onClose={() => { setDialog(null); focusSearch() }}
@@ -716,6 +799,28 @@ function DoneOverlay({ done, currency, onNext }: { done: Done; currency: string;
 }
 
 /* ================================================================== small dialogs */
+function AgeDialog({ items, minAge, bornBy, onOk, onRefuse }: { items: string[]; minAge: number; bornBy: Date; onOk: () => void; onRefuse: () => void }) {
+  return (
+    <Dialog open onOpenChange={() => undefined}>
+      <DialogContent className="max-w-md [&>button]:hidden" onEscapeKeyDown={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><IdCard className="size-5 text-primary" /> {t('Check the customer\'s age')}</DialogTitle>
+          <DialogDescription>{t('{items} is sold only to customers aged {age} or over.', { items: items.join(', '), age: minAge })}</DialogDescription>
+        </DialogHeader>
+        <div className="rounded-lg bg-muted/60 px-4 py-3 text-center">
+          <div className="text-[13px] text-muted-foreground">{t('Born on or before')}</div>
+          <div className="text-3xl font-semibold tabular">{formatDateWith(bornBy, { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
+        </div>
+        <p className="text-[13px] text-muted-foreground">{t('When in doubt, ask for an ID card.')}</p>
+        <DialogFooter className="gap-2 sm:justify-between">
+          <Button variant="outline" onClick={onRefuse}><X /> {t('Under {age}: take it off', { age: minAge })}</Button>
+          <Button autoFocus onClick={onOk}><Check /> {t('Age checked')}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function CardDialog({ onClose, onCode, error }: { onClose: () => void; onCode: (code: string) => Promise<void>; error: string | null }) {
   const [code, setCode] = React.useState('')
   const [busy, setBusy] = React.useState(false)
@@ -876,12 +981,48 @@ function CloseDialog({ data, pending, onClose, onClosed }: { data: TillData; pen
   const [counts, setCounts] = React.useState<Record<number, string>>({})
   const [direct, setDirect] = React.useState('')
   const [notes, setNotes] = React.useState('')
+  const [member, setMember] = React.useState(data.options?.managers?.length === 1 ? data.options.managers[0]!.member_id : '')
+  const [pin, setPin] = React.useState('')
+  const { can } = useCompany()
   const denoms = DENOMS[data.company.base_currency] ?? DENOMS.EUR!
   const useNotes = data.options?.count_notes ?? true
   const byNotes = r2(denoms.reduce((s, d) => s + d * num(counts[d]), 0))
   const counted = direct !== '' ? num(direct) : byNotes
   const s = summary.data
   const diff = s ? r2(counted - num(s.expected_cash)) : 0
+  // the manager confirms the count: when the company asks for it (always, or when the drawer is off)
+  const opt = data.options
+  const managers = opt?.managers ?? []
+  const mode = opt?.close_witness ?? 'difference'
+  const canWitness = managers.length > 0 && !can('pos.approve')
+  const mustWitness = canWitness && (mode === 'always' || (mode === 'difference' && Math.abs(diff) > num(opt?.tolerance ?? 0)))
+  const witnessed = pinReady(member, pin)
+  const [error, setError] = React.useState<string | null>(null)
+  const doClose = async () => {
+    setError(null)
+    let approval: string | null = null
+    if (witnessed) {
+      const a = await posApprove(data.register.id, member, pin, 'close')
+      if (a.error || !a.approval) { setError(t(a.error ?? 'Wrong PIN')); setPin(''); return }
+      approval = a.approval
+    }
+    const notesCoins = useNotes && direct === '' ? Object.fromEntries(denoms.filter((d) => num(counts[d]) > 0).map((d) => [String(d), num(counts[d])])) : null
+    const zId = await close.mutateAsync({ session: session.id, counted, notes, notesCoins, approval })
+    try {
+      const z = unwrap(await supabase.from('z_reports').select('*').eq('id', zId).single())
+      const ctl = await sessionControls(session.id).catch(() => null)
+      printZReport({
+        company: data.company.name, register: data.register.name, number: z.number, session: session.number, opened: session.opened_at, closed: new Date().toISOString(), date: z.report_date,
+        currency: data.company.base_currency, orders: z.order_count, refunds: z.refund_count, gross: num(z.gross_sales), refundsTotal: num(z.refunds_total), discounts: num(z.discounts_total),
+        net: num(z.net_sales), tax: num(z.tax_total), payments: z.payments_by_method as Record<string, number>,
+        taxes: ((z.tax_breakdown ?? []) as { rate: number; base: number; tax: number }[]).map((x) => ({ rate: num(x.rate), base: num(x.base), tax: num(x.tax) })),
+        opening: num(z.opening_cash), cashIn: num(z.cash_in), cashOut: num(z.cash_out), expected: num(z.expected_cash), counted: z.counted_cash, difference: z.cash_difference,
+        items: (z.items ?? []) as { name: string; quantity: number; total: number }[], controls: ctl,
+      })
+    } catch { /* the Z-report can be reprinted from the session page */ }
+    toast.success(t('Till closed'))
+    await onClosed(session.id)
+  }
   return (
     <Dialog open onOpenChange={(o) => !o && !close.isPending && onClose()}>
       <DialogContent className="max-w-2xl">
@@ -920,23 +1061,17 @@ function CloseDialog({ data, pending, onClose, onClosed }: { data: TillData; pen
             <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('Note for the manager (optional)')} aria-label={t('Notes')} />
           </div>
         </div>
+        {canWitness && (
+          <div className={cn('grid gap-2 rounded-lg border p-3', mustWitness && !witnessed && 'border-warning/60 bg-warning/5')}>
+            <div className="flex items-center gap-2 text-[13px] font-medium"><ShieldCheck className="size-4 text-primary" />
+              {mustWitness ? (mode === 'always' ? t('A manager confirms the count with their PIN') : t('The drawer is off: a manager confirms the count with their PIN'))
+                : t('Counted in front of a manager (optional)')}</div>
+            <ManagerPinFields managers={managers} member={member} onMember={setMember} pin={pin} onPin={setPin} />
+          </div>
+        )}
+        {error && <p className="text-[13px] text-destructive">{error}</p>}
         <DialogFooter><Button variant="ghost" onClick={onClose} disabled={close.isPending}>{t('Keep selling')}</Button>
-          <Button loading={close.isPending} disabled={!s} onClick={async () => {
-            const zId = await close.mutateAsync({ session: session.id, counted, notes })
-            try {
-              const z = unwrap(await supabase.from('z_reports').select('*').eq('id', zId).single())
-              printZReport({
-                company: data.company.name, register: data.register.name, number: z.number, session: session.number, opened: session.opened_at, closed: new Date().toISOString(), date: z.report_date,
-                currency: data.company.base_currency, orders: z.order_count, refunds: z.refund_count, gross: num(z.gross_sales), refundsTotal: num(z.refunds_total), discounts: num(z.discounts_total),
-                net: num(z.net_sales), tax: num(z.tax_total), payments: z.payments_by_method as Record<string, number>,
-                taxes: ((z.tax_breakdown ?? []) as { rate: number; base: number; tax: number }[]).map((x) => ({ rate: num(x.rate), base: num(x.base), tax: num(x.tax) })),
-                opening: num(z.opening_cash), cashIn: num(z.cash_in), cashOut: num(z.cash_out), expected: num(z.expected_cash), counted: z.counted_cash, difference: z.cash_difference,
-                items: (z.items ?? []) as { name: string; quantity: number; total: number }[],
-              })
-            } catch { /* the Z-report can be reprinted from the session page */ }
-            toast.success(t('Till closed'))
-            await onClosed(session.id)
-          }}>{t('Close till and print Z-report')}</Button></DialogFooter>
+          <Button loading={close.isPending} disabled={!s || (mustWitness && !witnessed)} onClick={() => void doClose().catch((e) => setError(describeError(e)))}>{t('Close till and print Z-report')}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   )

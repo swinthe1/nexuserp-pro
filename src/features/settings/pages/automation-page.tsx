@@ -16,7 +16,8 @@ import { t } from '@/i18n'
 import { MessagingSettings } from '../components/messaging'
 import { AutomationCard } from '../components/automation-card'
 
-type Settings = { pos_cash_tolerance: number; pos_count_notes: boolean; payroll_auto_day: number | null; payroll_auto_for: 'previous' | 'current'; payroll_deduct_absence: boolean
+type Settings = { pos_cash_tolerance: number; pos_count_notes: boolean; pos_void_approval: boolean; pos_close_witness: 'never' | 'difference' | 'always'; pos_age_check: boolean; pos_min_age: number
+  payroll_auto_day: number | null; payroll_auto_for: 'previous' | 'current'; payroll_deduct_absence: boolean
   payroll_night_pct: number | null; payroll_holiday_pct: number | null }
 
 export function usePayrollTillSettings() {
@@ -25,7 +26,7 @@ export function usePayrollTillSettings() {
     queryKey: ['automation-settings', companyId],
     enabled: !!companyId,
     queryFn: async () => unwrap(await supabase.from('company_settings')
-      .select('pos_cash_tolerance, pos_count_notes, payroll_auto_day, payroll_auto_for, payroll_deduct_absence, payroll_night_pct, payroll_holiday_pct').eq('company_id', companyId!).single()) as unknown as Settings,
+      .select('pos_cash_tolerance, pos_count_notes, pos_void_approval, pos_close_witness, pos_age_check, pos_min_age, payroll_auto_day, payroll_auto_for, payroll_deduct_absence, payroll_night_pct, payroll_holiday_pct').eq('company_id', companyId!).single()) as unknown as Settings,
   })
 }
 export function useSavePayrollTillSettings() {
@@ -77,6 +78,36 @@ export function AutomationPage() {
             <Switch checked={s.pos_count_notes} disabled={!can('pos.approve') || save.isPending} aria-label={t('Count by note and coin when closing')}
               onCheckedChange={(on) => save.mutate({ pos_count_notes: on })} />
           </label>
+          <div className="flex flex-wrap items-start justify-between gap-3 rounded-md border p-3 text-[13px]">
+            <span className="min-w-0 flex-1"><span className="font-medium">{t('The manager confirms the count')}</span>
+              <span className="block text-muted-foreground">{t('The manager picks their name and types their PIN on the till. A manager closing their own till, or a shop where no manager has a PIN, closes without it.')}</span></span>
+            <Select value={s.pos_close_witness} disabled={!can('pos.approve') || save.isPending} onValueChange={(v) => save.mutate({ pos_close_witness: v })}>
+              <SelectTrigger className="w-56" aria-label={t('The manager confirms the count')}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="difference">{t('When the drawer is off')}</SelectItem>
+                <SelectItem value="always">{t('Always')}</SelectItem>
+                <SelectItem value="never">{t('Never')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <label className="flex items-start justify-between gap-3 rounded-md border p-3 text-[13px]">
+            <span><span className="font-medium">{t('Voids need a manager')}</span>
+              <span className="block text-muted-foreground">{t('Taking an item off a sale, lowering its quantity or clearing a sale asks for a manager\'s PIN (once per sale). Every void is kept with the shift either way.')}</span></span>
+            <Switch checked={s.pos_void_approval} disabled={!can('pos.approve') || save.isPending} aria-label={t('Voids need a manager')}
+              onCheckedChange={(on) => save.mutate({ pos_void_approval: on })} />
+          </label>
+          <div className="flex flex-wrap items-start justify-between gap-3 rounded-md border p-3 text-[13px]">
+            <span className="min-w-0 flex-1"><span className="font-medium">{t('Check the age for alcohol and tobacco')}</span>
+              <span className="block text-muted-foreground">{t('For the categories and products marked "Adults only", the till asks the cashier to check the customer\'s age once per sale.')}</span></span>
+            <div className="flex items-center gap-2">
+              <Select value={String(s.pos_min_age)} disabled={!can('pos.approve') || save.isPending || !s.pos_age_check} onValueChange={(v) => save.mutate({ pos_min_age: Number(v) })}>
+                <SelectTrigger className="w-24" aria-label={t('Minimum age')}><SelectValue /></SelectTrigger>
+                <SelectContent>{[16, 18, 21].map((a) => <SelectItem key={a} value={String(a)}>{t('{n}+', { n: a })}</SelectItem>)}</SelectContent>
+              </Select>
+              <Switch checked={s.pos_age_check} disabled={!can('pos.approve') || save.isPending} aria-label={t('Check the age for alcohol and tobacco')}
+                onCheckedChange={(on) => save.mutate({ pos_age_check: on })} />
+            </div>
+          </div>
         </AutomationCard>
       )}
 

@@ -472,4 +472,10 @@ export const serverTemplates: [string, string][] = [
   ['A webhook was switched off after 50 failures: %', 'Një webhook u fik pas 50 dështimeve: {0}'],
   ['The unit % has no shelf for stock', 'Njësia {0} nuk ka raft për stok'],
   ['Stock request from %', 'Kërkesë për mall nga {0}'],
+  ['The drawer is % off: a manager confirms the count with their PIN', 'Arka ka diferencë {0}: menaxheri e konfirmon numërimin me PIN-in e vet'],
+  ['This proposal is already %', 'Ky propozim është tashmë {0}'],
+  ['Only % in stock here', 'Këtu ka vetëm {0} në stok'],
+  ['Discount for a short date: %', 'Zbritje për afat të afërt: {0}'],
+  ['Discount approved: %', 'Zbritja u miratua: {0}'],
+  ['Expired stock to take off: %', 'Mall i skaduar për t\'u hequr: {0}'],
 ]
