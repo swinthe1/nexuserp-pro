@@ -77,14 +77,16 @@ export function buildCoupons(s: AtkSale, verification = verificationNo()) {
   const couponId = couponIdOf(s.branchId, s.posId, s.couponSeq)
   const items: CouponItem[] = s.lines.map((l) => ({
     name: l.name.slice(0, 200), price: Math.round(Math.abs(l.price) * 10000), unit: (l.unit || 'CP').slice(0, 20), quantity: Math.abs(l.qty),
-    total: cents(l.total), taxRate: taxLetter(l.rate, l.exempt), type: (l.category || 'TT').slice(0, 20),
+    // ATK's documentation (8 June 2026): a line's total is in ten-thousandths, like its price; the coupon's totals stay in cents
+    total: cents(l.total) * 100, taxRate: taxLetter(l.rate, l.exempt), type: (l.category || 'TT').slice(0, 20),
   }))
-  const total = items.reduce((n, i) => n + i.total, 0)
+  const lineCents = (i: CouponItem) => i.total / 100
+  const total = items.reduce((n, i) => n + lineCents(i), 0)
   const discount = s.lines.reduce((n, l) => n + Math.max(cents(l.qty * l.price) - cents(l.total), 0), 0)
 
   // VAT by letter, from the totals with VAT: the base is rounded, the VAT is what is left, so they always add up
   const gross = new Map<TaxLetter, number>()
-  for (const i of items) gross.set(i.taxRate, (gross.get(i.taxRate) ?? 0) + i.total)
+  for (const i of items) gross.set(i.taxRate, (gross.get(i.taxRate) ?? 0) + lineCents(i))
   const taxGroups: TaxGroup[] = (['A', 'C', 'D', 'E'] as TaxLetter[]).filter((k) => gross.has(k)).map((k) => {
     const g = gross.get(k)!
     const base = Math.round(g / (1 + RATE_OF[k] / 100))

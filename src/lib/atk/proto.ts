@@ -18,7 +18,7 @@ export interface CouponItem {
   price: number
   unit: string
   quantity: number
-  /** line total with VAT, in cents */
+  /** line total with VAT, in ten-thousandths of a euro like the price (ATK's documentation since 8 June 2026) */
   total: number
   taxRate: TaxLetter
   type: string

@@ -107,7 +107,7 @@ Built from ATK's technical documentation (github.com/fiskalizimi/pos-golang and 
   - The signature is ECDSA/SHA-256 over the Base64 text, in ASN.1 form.
   - The QR code is `base64(citizen)|signature`.
   - Units of money:
-    - Item prices are in 0.0001 €.
+    - Item prices and line totals are in 0.0001 € (ATK changed line totals to this unit in its documentation on 8 June 2026).
     - Totals are in cents.
     - VAT by letter: A exempt, C 0 %, D 8 %, E 18 %. The base is rounded and the VAT is the rest, so the groups always add up.
   - Coupon numbers are `(branch × 100 + POS) × 10⁹ + the till's count`. The count never goes back; the server's highest count is the floor.
