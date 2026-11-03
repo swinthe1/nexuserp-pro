@@ -111,9 +111,13 @@ export const receiptSchema = z.object({
     quantity: qty.positive(msg('Must be above 0')),
     unit_price: z.preprocess((v) => (v === '' || v === null || v === undefined ? null : Number(v)), z.number().nonnegative().nullable()),
     qc_status: z.enum(['pending', 'accepted', 'rejected']),
+    temperature: z.preprocess((v) => (v === '' || v === null || v === undefined ? null : Number(v)), z.number().min(-60).max(60).nullable()).optional(),
+    qc_reason: z.string().trim().max(200).optional(),
   })).min(1, msg('Add at least one line')),
+  driver_name: z.string().trim().max(80).optional(),
 }).superRefine((r, ctx) => {
   r.lines.forEach((l, i) => {
+    if (l.qc_status === 'rejected' && !l.qc_reason) ctx.addIssue({ code: 'custom', path: ['lines', i, 'qc_reason'], message: msg('Write why it was refused') })
     if (!l.po_line_id && l.unit_price === null && r.receipt_type !== 'customer_return') ctx.addIssue({ code: 'custom', path: ['lines', i, 'unit_price'], message: msg('Enter the unit price') })
   })
   if (r.is_import && !r.customs_declaration_number) {

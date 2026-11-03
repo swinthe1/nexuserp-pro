@@ -4220,6 +4220,8 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           unit_price: number | null
+          temperature: number | null
+          qc_reason: string | null
         }
         Insert: {
           id?: string
@@ -4238,6 +4240,8 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           unit_price?: number | null
+          temperature?: number | null
+          qc_reason?: string | null
         }
         Update: {
           id?: string
@@ -4256,6 +4260,8 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           unit_price?: number | null
+          temperature?: number | null
+          qc_reason?: string | null
         }
         Relationships: [
           { foreignKeyName: "goods_receipt_lines_company_id_location_id_fkey"; columns: ["company_id", "location_id"]; isOneToOne: false; referencedRelation: "warehouse_locations"; referencedColumns: ["company_id", "id"] },
@@ -4296,6 +4302,7 @@ export type Database = {
           customs_declaration_date: string | null
           clearance_status: string
           cleared_at: string | null
+          driver_name: string | null
         }
         Insert: {
           id?: string
@@ -4327,6 +4334,7 @@ export type Database = {
           customs_declaration_date?: string | null
           clearance_status?: string
           cleared_at?: string | null
+          driver_name?: string | null
         }
         Update: {
           id?: string
@@ -4358,6 +4366,7 @@ export type Database = {
           customs_declaration_date?: string | null
           clearance_status?: string
           cleared_at?: string | null
+          driver_name?: string | null
         }
         Relationships: [
           { foreignKeyName: "goods_receipts_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -8848,6 +8857,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           target_margin_pct: number | null
+          max_temperature: number | null
         }
         Insert: {
           id?: string
@@ -8881,6 +8891,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           target_margin_pct?: number | null
+          max_temperature?: number | null
         }
         Update: {
           id?: string
@@ -8914,6 +8925,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           target_margin_pct?: number | null
+          max_temperature?: number | null
         }
         Relationships: [
           { foreignKeyName: "products_company_id_category_id_fkey"; columns: ["company_id", "category_id"]; isOneToOne: false; referencedRelation: "product_categories"; referencedColumns: ["company_id", "id"] },
@@ -12013,6 +12025,133 @@ export type Database = {
           { foreignKeyName: "stock_transfers_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
           { foreignKeyName: "stock_transfers_company_id_from_warehouse_id_fkey"; columns: ["company_id", "from_warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "stock_transfers_company_id_to_warehouse_id_fkey"; columns: ["company_id", "to_warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      store_checklists: {
+        Row: {
+          id: string
+          company_id: string
+          warehouse_id: string | null
+          name: string
+          kind: string
+          weekdays: number[]
+          due_time: string
+          items: Json
+          position: number
+          is_active: boolean
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          warehouse_id?: string | null
+          name: string
+          kind?: string
+          weekdays?: number[]
+          due_time?: string
+          items?: Json
+          position?: number
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          warehouse_id?: string | null
+          name?: string
+          kind?: string
+          weekdays?: number[]
+          due_time?: string
+          items?: Json
+          position?: number
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "store_checklists_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "store_checklists_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      store_checks: {
+        Row: {
+          id: string
+          company_id: string
+          checklist_id: string
+          warehouse_id: string
+          check_date: string
+          status: string
+          items: Json
+          answers: Json
+          problems: Json
+          note: string | null
+          done_by: string | null
+          done_at: string | null
+          signed_by: string | null
+          signed_at: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          checklist_id: string
+          warehouse_id: string
+          check_date: string
+          status?: string
+          items?: Json
+          answers?: Json
+          problems?: Json
+          note?: string | null
+          done_by?: string | null
+          done_at?: string | null
+          signed_by?: string | null
+          signed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          checklist_id?: string
+          warehouse_id?: string
+          check_date?: string
+          status?: string
+          items?: Json
+          answers?: Json
+          problems?: Json
+          note?: string | null
+          done_by?: string | null
+          done_at?: string | null
+          signed_by?: string | null
+          signed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "store_checks_checklist_id_fkey"; columns: ["checklist_id"]; isOneToOne: false; referencedRelation: "store_checklists"; referencedColumns: ["id"] },
+          { foreignKeyName: "store_checks_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "store_checks_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
         ]
       }
       sync_agent_logs: {
@@ -17436,6 +17575,12 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      receipt_report: {
+        Args: {
+          p_receipt: string
+        }
+        Returns: Json
+      }
       receive_stock_transfer: {
         Args: {
           p_id: string
@@ -18137,6 +18282,58 @@ export type Database = {
           p_days?: number
           p_since?: string
           p_include_new?: boolean
+        }
+        Returns: Json
+      }
+      store_check_sign: {
+        Args: {
+          p_check: string
+        }
+        Returns: undefined
+      }
+      store_check_submit: {
+        Args: {
+          p_checklist: string
+          p_warehouse: string
+          p_date: string
+          p_answers: Json
+          p_note?: string
+          p_done?: boolean
+        }
+        Returns: Json
+      }
+      store_checklist_delete: {
+        Args: {
+          p_id: string
+        }
+        Returns: undefined
+      }
+      store_checklist_save: {
+        Args: {
+          p: Json
+        }
+        Returns: string
+      }
+      store_checklists_defaults: {
+        Args: {
+          p_company: string
+        }
+        Returns: number
+      }
+      store_checks_day: {
+        Args: {
+          p_company: string
+          p_warehouse: string
+          p_date?: string
+        }
+        Returns: Json
+      }
+      store_checks_history: {
+        Args: {
+          p_company: string
+          p_warehouse: string
+          p_from: string
+          p_to: string
         }
         Returns: Json
       }

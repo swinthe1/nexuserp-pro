@@ -70,6 +70,7 @@ export const NAV: NavSection[] = [
     items: [
       { label: msg('Point of sale|menu'), href: '/pos', icon: Store, perm: 'pos.read', keywords: ['pos', 'till', 'cashier', 'arka', 'z-report', 'register'] },
       { label: msg('Safe|nav'), href: '/safe', icon: Vault, perm: 'pos.approve|finance.read', keywords: ['sefi', 'sef', 'kasaforta', 'cash', 'deposit', 'derdhje', 'para', 'count'] },
+      { label: msg('Daily checks|menu'), href: '/pos/checks', icon: ClipboardCheck, perm: 'pos.read|wms.read', keywords: ['kontroll', 'kontrolli', 'checklist', 'listë kontrolli', 'higjiena', 'temperatura', 'frigorifer', 'hapja', 'mbyllja', 'hygiene', 'fridge'] },
       { label: msg('Loyalty cards'), href: '/pos/loyalty', icon: BadgePercent, perm: 'pos.read', keywords: ['kartela', 'zbritje', 'loyalty', 'points', 'pikë', 'besnikëri', 'discount card'] },
       { label: msg('Waiters'), href: '/pos/waiters', icon: UsersRound, perm: 'pos.read', keywords: ['kamarier', 'kamarierët', 'waiter', 'restaurant', 'tavolina', 'report'] },
       { label: msg('Recipes'), href: '/manufacturing/boms', icon: Layers, perm: 'manufacturing.read', keywords: ['receta', 'recipe', 'kit', 'ingredients', 'përbërës', 'kafe', 'restorant'] },

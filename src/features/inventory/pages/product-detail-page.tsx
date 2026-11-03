@@ -19,7 +19,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -275,6 +275,7 @@ const editSchema = z.object({
   hs_code: z.string().trim().optional(),
   weight_kg: z.preprocess((v) => (v === '' || v == null ? null : Number(v)), z.number().nonnegative().nullable()),
   volume_m3: z.preprocess((v) => (v === '' || v == null ? null : Number(v)), z.number().nonnegative().nullable()),
+  max_temperature: z.preprocess((v) => (v === '' || v == null ? null : Number(v)), z.number().min(-40).max(30).nullable()),
 })
 
 function EditProductSheet({ product }: { product: ProductDetail }) {
@@ -288,7 +289,7 @@ function EditProductSheet({ product }: { product: ProductDetail }) {
       name: product.name, description: product.description ?? '', category_id: product.category_id, sales_price: product.sales_price,
       sales_tax_code_id: product.sales_tax_code_id, purchase_tax_code_id: product.purchase_tax_code_id, is_sellable: product.is_sellable,
       is_purchasable: product.is_purchasable, is_active: product.is_active, brand: product.brand ?? '', hs_code: product.hs_code ?? '',
-      weight_kg: product.weight_kg, volume_m3: product.volume_m3,
+      weight_kg: product.weight_kg, volume_m3: product.volume_m3, max_temperature: product.max_temperature,
     },
   })
   const onSubmit = form.handleSubmit(async (v) => {
@@ -324,6 +325,9 @@ function EditProductSheet({ product }: { product: ProductDetail }) {
                 <FormField control={form.control} name="volume_m3" render={({ field }) => (<FormItem><FormLabel optional>{t('Volume (m³)')}</FormLabel><FormControl><Input type="number" step="any" value={field.value ?? ''} onChange={field.onChange} /></FormControl></FormItem>)} />
                 <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel optional>{t('Brand')}</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                 <FormField control={form.control} name="hs_code" render={({ field }) => (<FormItem><FormLabel optional>{t('HS code')}</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                <FormField control={form.control} name="max_temperature" render={({ field }) => (<FormItem className="col-span-2"><FormLabel optional>{t('Kept cold, at most (°C)')}</FormLabel>
+                  <FormControl><Input type="number" step="0.5" className="w-32" placeholder={t('e.g. 4')} value={field.value ?? ''} onChange={field.onChange} /></FormControl>
+                  <FormDescription>{t('Meat, dairy, frozen goods: the receiver writes the temperature at the door, and a warmer delivery is refused.')}</FormDescription></FormItem>)} />
               </div>
               {(['is_sellable', 'is_purchasable', 'is_active'] as const).map((n) => (
                 <FormField key={n} control={form.control} name={n} render={({ field }) => (
