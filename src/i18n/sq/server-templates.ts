@@ -490,4 +490,7 @@ export const serverTemplates: [string, string][] = [
   ['Discount for a short date: %', 'Zbritje për afat të afërt: {0}'],
   ['Discount approved: %', 'Zbritja u miratua: {0}'],
   ['Expired stock to take off: %', 'Mall i skaduar për t\'u hequr: {0}'],
+  ['Not ready for ATK yet: %', 'Ende jo gati për ATK: {0}'],
+  ['ATK answered %', 'ATK-ja u përgjigj {0}'],
+  ['ATK refused a receipt: %', 'ATK-ja refuzoi një kupon: {0}'],
 ]

@@ -1,4 +1,5 @@
 import type { TillPromo } from './promotions'
+import type { AtkTill } from './atk'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as React from 'react'
 import { toast } from 'sonner'
@@ -143,6 +144,8 @@ export type TillData = {
   loyalty?: TillLoyalty
   /** promotions running on this till (kept for offline) */
   promotions?: TillPromo[]
+  /** Kosovo: this till's ATK numbers, so it signs its coupons without internet */
+  atk?: AtkTill
   loadedAt: string
 }
 /** Loads the till from the server when online and keeps a copy on the device; falls back to the copy offline */
@@ -155,7 +158,7 @@ export function useTill(registerId: string | undefined) {
     if (cached) setState({ data: cached, offline: !navigator.onLine, loading: false, error: null })
     try {
       const reg = unwrap(await supabase.from('pos_registers').select('id, code, name, company_id, receipt_header, receipt_footer, default_customer_id, location_id, warehouse_id').eq('id', registerId).single())
-      const [ses, cat, cus, co, loy, lim, promo, opt] = await Promise.all([
+      const [ses, cat, cus, co, loy, lim, promo, opt, atk] = await Promise.all([
         supabase.from('pos_sessions').select('id, number, opened_at, opening_cash').eq('register_id', registerId).eq('status', 'open').maybeSingle(),
         supabase.rpc('pos_catalog', { p_register: registerId }),
         supabase.from('business_partners').select('id, name, code, tax_number, kind').eq('company_id', reg.company_id).eq('is_customer', true).is('deleted_at', null).order('name').limit(2000),
@@ -164,6 +167,7 @@ export function useTill(registerId: string | undefined) {
         supabase.rpc('pos_cash_limits', { p_register: registerId }),
         supabase.rpc('pos_promotions', { p_register: registerId }),
         supabase.rpc('pos_till_options', { p_register: registerId }),
+        supabase.rpc('atk_till', { p_register: registerId }),
       ])
       if (cat.error) throw cat.error
       const data: TillData = {
@@ -175,6 +179,7 @@ export function useTill(registerId: string | undefined) {
         cashLimits: lim.error ? cached?.cashLimits ?? null : (lim.data as unknown as TillData['cashLimits']),
         promotions: promo.error ? cached?.promotions ?? [] : (promo.data as unknown as TillPromo[]),
         options: opt.error ? cached?.options ?? { count_notes: true } : (opt.data as unknown as TillData['options']),
+        atk: atk.error ? cached?.atk : (atk.data as unknown as AtkTill),
         loadedAt: new Date().toISOString(),
       }
       await kvSet(key, data).catch(() => undefined)
@@ -196,12 +201,14 @@ export function useTill(registerId: string | undefined) {
 }
 
 export type ReceiptLookup = { id: string; number: string; device_ref: string | null; order_at: string; total: number; is_refund: boolean
+  /** the ATK coupon of the sale (Kosovo), needed for a return */
+  atk_coupon: string | null
   lines: { variant_id: string; description: string; quantity: number; unit_price: number; discount_pct: number; line_total: number; tax_rate: number }[]
   refunds: { lines: { variant_id: string; quantity: number }[] }[] }
 export async function lookupReceipt(companyId: string, code: string): Promise<ReceiptLookup | null> {
   const c = code.trim().replace(/[,()]/g, '')
   const rows = unwrap(await supabase.from('pos_orders')
-    .select('id, number, device_ref, order_at, total, is_refund, lines:pos_order_lines(variant_id, description, quantity, unit_price, discount_pct, line_total, tax_rate)')
+    .select('id, number, device_ref, order_at, total, is_refund, atk_coupon:atk->>coupon_id, lines:pos_order_lines(variant_id, description, quantity, unit_price, discount_pct, line_total, tax_rate)')
     .eq('company_id', companyId).or(`number.eq.${c},device_ref.eq.${c}`).eq('status', 'paid').limit(1))
   const o = rows[0]
   if (!o) return null

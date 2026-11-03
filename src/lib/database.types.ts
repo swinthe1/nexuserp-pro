@@ -2142,6 +2142,8 @@ export type Database = {
           pos_void_approval: boolean
           pos_close_witness: string
           purchase_price_tolerance: number
+          atk_fiscalization_no: string | null
+          atk_sef_enabled: boolean
         }
         Insert: {
           id?: string
@@ -2217,6 +2219,8 @@ export type Database = {
           pos_void_approval?: boolean
           pos_close_witness?: string
           purchase_price_tolerance?: number
+          atk_fiscalization_no?: string | null
+          atk_sef_enabled?: boolean
         }
         Update: {
           id?: string
@@ -2292,6 +2296,8 @@ export type Database = {
           pos_void_approval?: boolean
           pos_close_witness?: string
           purchase_price_tolerance?: number
+          atk_fiscalization_no?: string | null
+          atk_sef_enabled?: boolean
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -7373,16 +7379,22 @@ export type Database = {
           id: boolean
           self_service: boolean
           updated_at: string
+          atk_application_id_test: number | null
+          atk_application_id_prod: number | null
         }
         Insert: {
           id?: boolean
           self_service?: boolean
           updated_at?: string
+          atk_application_id_test?: number | null
+          atk_application_id_prod?: number | null
         }
         Update: {
           id?: boolean
           self_service?: boolean
           updated_at?: string
+          atk_application_id_test?: number | null
+          atk_application_id_prod?: number | null
         }
         Relationships: []
       }
@@ -7659,6 +7671,7 @@ export type Database = {
           table_order_id: string | null
           waiter_id: string | null
           moved_from_session_id: string | null
+          atk: Json | null
         }
         Insert: {
           id?: string
@@ -7697,6 +7710,7 @@ export type Database = {
           table_order_id?: string | null
           waiter_id?: string | null
           moved_from_session_id?: string | null
+          atk?: Json | null
         }
         Update: {
           id?: string
@@ -7735,6 +7749,7 @@ export type Database = {
           table_order_id?: string | null
           waiter_id?: string | null
           moved_from_session_id?: string | null
+          atk?: Json | null
         }
         Relationships: [
           { foreignKeyName: "pos_orders_cashier_profile_fkey"; columns: ["cashier_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
@@ -7817,6 +7832,13 @@ export type Database = {
           deleted_by: string | null
           mode: string
           safe_id: string | null
+          atk_pos_id: number | null
+          atk_certificate: string | null
+          atk_public_key: string | null
+          atk_cert_env: string | null
+          atk_cert_at: string | null
+          atk_cert_by: string | null
+          atk_device: string | null
         }
         Insert: {
           id?: string
@@ -7842,6 +7864,13 @@ export type Database = {
           deleted_by?: string | null
           mode?: string
           safe_id?: string | null
+          atk_pos_id?: number | null
+          atk_certificate?: string | null
+          atk_public_key?: string | null
+          atk_cert_env?: string | null
+          atk_cert_at?: string | null
+          atk_cert_by?: string | null
+          atk_device?: string | null
         }
         Update: {
           id?: string
@@ -7867,6 +7896,13 @@ export type Database = {
           deleted_by?: string | null
           mode?: string
           safe_id?: string | null
+          atk_pos_id?: number | null
+          atk_certificate?: string | null
+          atk_public_key?: string | null
+          atk_cert_env?: string | null
+          atk_cert_at?: string | null
+          atk_cert_by?: string | null
+          atk_device?: string | null
         }
         Relationships: [
           { foreignKeyName: "pos_registers_company_id_cash_account_id_fkey"; columns: ["company_id", "cash_account_id"]; isOneToOne: false; referencedRelation: "bank_accounts"; referencedColumns: ["company_id", "id"] },
@@ -13929,6 +13965,7 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          atk_branch_id: number | null
         }
         Insert: {
           id?: string
@@ -13947,6 +13984,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          atk_branch_id?: number | null
         }
         Update: {
           id?: string
@@ -13965,6 +14003,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          atk_branch_id?: number | null
         }
         Relationships: [
           { foreignKeyName: "warehouses_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -15199,6 +15238,87 @@ export type Database = {
         Returns: Json
       }
       assistant_wait: {
+        Args: {
+          p_wait_ms?: number
+        }
+        Returns: Json
+      }
+      atk_done: {
+        Args: {
+          p_kind: string
+          p_id: string
+          p_status: number
+          p_body?: Json
+          p_error?: string
+          p_citizen_status?: number
+          p_citizen_body?: Json
+        }
+        Returns: undefined
+      }
+      atk_job: {
+        Args: {
+          p_id: string
+        }
+        Returns: Json
+      }
+      atk_numbers_save: {
+        Args: {
+          p_company: string
+          p_stores: Json
+          p_tills: Json
+        }
+        Returns: undefined
+      }
+      atk_onboard_csr: {
+        Args: {
+          p_verify: string
+          p_csr: string
+          p_public_key: string
+          p_device: string
+        }
+        Returns: string
+      }
+      atk_onboard_verify: {
+        Args: {
+          p_register: string
+        }
+        Returns: string
+      }
+      atk_platform_save: {
+        Args: {
+          p_test: number
+          p_production: number
+        }
+        Returns: undefined
+      }
+      atk_settings_save: {
+        Args: {
+          p_company: string
+          p_fiscalization_no: string
+          p_env?: string
+          p_on?: boolean
+        }
+        Returns: undefined
+      }
+      atk_setup: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
+      atk_till: {
+        Args: {
+          p_register: string
+        }
+        Returns: Json
+      }
+      atk_till_forget: {
+        Args: {
+          p_register: string
+        }
+        Returns: undefined
+      }
+      atk_wait: {
         Args: {
           p_wait_ms?: number
         }

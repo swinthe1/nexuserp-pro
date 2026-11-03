@@ -129,6 +129,7 @@ const AgentsPage = lazy(() => import('@/features/agent/agents-page'), 'AgentsPag
 const LoyaltyPage = lazy(() => import('@/features/loyalty/loyalty-page'), 'LoyaltyPage')
 const WaitersPage = lazy(() => import('@/features/restaurant/waiters-page'), 'WaitersPage')
 const StoreChecksPage = lazy(() => import('@/features/pos/pages/checks-page'), 'StoreChecksPage')
+const AtkPage = lazy(() => import('@/features/pos/pages/atk-page'), 'AtkPage')
 const HistoryPage = lazy(() => import('@/features/history/history-page'), 'HistoryPage')
 const FloorPage = lazy(() => import('@/features/restaurant/floor-page'), 'FloorPage')
 const KitchenPage = lazy(() => import('@/features/restaurant/kitchen-page'), 'KitchenPage')
@@ -369,6 +370,7 @@ const router = createBrowserRouter([
         { path: 'reservations', element: <ReservationsPage /> },
         { path: 'rooms', element: <HotelRoomsPage /> },
       ] },
+      { path: 'pos/atk', element: <RequirePerm perm="pos.approve" anyOf={['pos.approve', 'tax.read']} />, children: [{ index: true, element: <AtkPage /> }] },
       { path: 'pos/checks', element: <RequirePerm perm="pos.read" anyOf={['pos.read', 'wms.read', 'inventory.read']} />, children: [{ index: true, element: <StoreChecksPage /> }] },
       { path: 'pos', element: <RequirePerm perm="pos.read" />, children: [
         { index: true, element: <PosHomePage /> },

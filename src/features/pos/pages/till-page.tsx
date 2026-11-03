@@ -29,6 +29,7 @@ import { lookupReceipt, posApprove, sessionControls, useCashMove, useCloseSessio
 import { enqueue, logTill, nextDeviceRef, syncNow, useOnSynced, useSyncState, type QueuedSale, type TillLogEntry } from '../offline'
 import { ManagerDialog, ManagerPinFields, pinReady } from '../manager-pin'
 import { printReceipt, printZReport, type ReceiptData } from '../receipt'
+import { signAtkSale, useAtkState, type ReceiptFiscal } from '../atk'
 import { SyncPanel } from './pos-home-page'
 import { phoneKey, quoteLoyalty, type TillCardRow, type TillProgram } from '@/features/loyalty/api'
 
@@ -143,6 +144,16 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   const phoneRef = React.useRef(phone); phoneRef.current = phone
   const [pane, setPane] = React.useState<'products' | 'sale'>('products')
   const focusSearch = React.useCallback(() => setTimeout(() => { if (!phoneRef.current) search.current?.focus() }, 0), [])
+
+  /* ---------- Kosovo: every receipt is signed for ATK on this device; a till not registered here does not sell */
+  const atkState = useAtkState(data.register.id, data.atk)
+  const atkStop = atkState.status === 'blocked' || atkState.status === 'loading'
+  const atkText = atkState.status !== 'blocked' ? t('Checking this till with ATK…')
+    : atkState.reason === 'setup' ? t('This till cannot sell yet: its ATK numbers are not set up')
+    : atkState.reason === 'other_device' ? t('This till is registered with ATK on another device: register it on this one to sell here')
+    : t('This till is not registered with ATK yet: register it on this device to sell')
+  const openPay = () => { if (atkStop) { setFlash({ tone: 'error', text: atkText }); return } setDialog('pay') }
+  const openRefund = () => { if (atkStop) { setFlash({ tone: 'error', text: atkText }); return } setDialog('refund') }
 
   /* ---------- loyalty card: the same rule as the server (app.loyalty_eval) */
   const catOf = React.useMemo(() => new Map(data.catalog.map((c) => [c.variant_id, c.category])), [data.catalog])
@@ -263,7 +274,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
 
   const submitQuery = (raw: string) => {
     let v = raw.trim()
-    if (!v) { if (lines.length) setDialog('pay'); return }
+    if (!v) { if (lines.length) openPay(); return }
     let n: number | undefined
     const mult = /^(\d+(?:[.,]\d+)?)\*(.*)$/.exec(v)
     if (mult) {
@@ -350,6 +361,17 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     const device_ref = await nextDeviceRef(data.register.code)
     const created_at = new Date().toISOString()
     const isOffline = !navigator.onLine || !sync.online
+    let atk: { payload: Record<string, unknown>; receipt: ReceiptFiscal } | null = null
+    if (data.atk?.required) {
+      if (atkState.status !== 'ready') { setFlash({ tone: 'error', text: atkText }); setDialog(null); return }
+      const taxOf = new Map(data.catalog.map((c) => [c.variant_id, c.tax_code_id]))
+      try {
+        atk = await signAtkSale({ registerId: data.register.id, atk: data.atk, key: atkState.key, operator: cashier, time: new Date(created_at),
+          lines: saleLines.map((l) => ({ name: l.name, qty: l.qty, price: l.price, total: lineTotal(l), rate: l.rate, variant_id: l.variant_id, tax_code_id: taxOf.get(l.variant_id) ?? null })),
+          payments: tenders.map((x) => ({ method: x.method, amount: x.amount })), change: Math.max(change, 0),
+          isReturn: !!refund, returnOf: refund ? (refund.of.atk_coupon ? Number(refund.of.atk_coupon) : null) : null })
+      } catch (e) { toast.error(describeError(e)); return }
+    }
     const payload = {
       client_uuid, session_id: session.id, order_at: created_at, device_ref, offline: isOffline, partner_id: customer, is_refund: !!refund, refund_of_id: refund?.of.id ?? null,
       // a promotion's line counts as discounted already, so the card does not add to it (the server checks the promotion)
@@ -357,6 +379,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
         promotion_id: l.promo?.id ?? null, barcode: l.barcode, description: l.name })),
       payments: tenders.map((t) => ({ method: t.method, amount: t.amount })),
       loyalty: usedCard ? { card_id: usedCard.id, redeem_points: redeem?.points ?? 0 } : null,
+      fiscal: atk?.payload ?? null,
     }
     const cardLines = saleLines.filter((l) => l.card)
     const saved = r2(cardLines.reduce((s, l) => s + r2(l.qty * l.price) - lineTotal(l), 0))
@@ -368,7 +391,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     const receipt: ReceiptData = {
       company: data.company, register: data.register, ref: device_ref, number: null, date: new Date(created_at), cashier, customer: customerName, isRefund: !!refund, offline: isOffline, currency: cur,
       lines: saleLines.map((l) => ({ name: l.name, qty: l.qty, price: l.price, discount: l.discount, total: lineTotal(l), rate: l.rate })),
-      payments: tenders.map((t) => ({ method: t.method, amount: t.amount })), change: Math.max(change, 0),
+      payments: tenders.map((t) => ({ method: t.method, amount: t.amount })), change: Math.max(change, 0), fiscal: atk?.receipt ?? null,
       loyalty: usedCard ? { holder: usedCard.holder, number: usedCard.number, discount: saved, redeemed: spent || undefined, earned: earned || undefined,
                             balance: usedCard.program.kind === 'points' ? usedCard.points - spent + earned : undefined } : null,
     }
@@ -396,8 +419,8 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       if (e.key === 'F2') { e.preventDefault(); search.current?.focus(); search.current?.select() }
       else if (e.key === 'F4') { e.preventDefault(); setDialog('customer') }
       else if (e.key === 'F3') { e.preventDefault(); setFlash(null); setDialog('card') }
-      else if (e.key === 'F9') { e.preventDefault(); setDialog('refund') }
-      else if ((e.key === 'F12' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) && lines.length) { e.preventDefault(); setDialog('pay') }
+      else if (e.key === 'F9') { e.preventDefault(); openRefund() }
+      else if ((e.key === 'F12' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) && lines.length) { e.preventDefault(); openPay() }
       else if (e.key === 'Escape') { if (query) setQuery(''); else if (multiplier) setMultiplier(null) }
       else if (!query && selected && document.activeElement === search.current) {
         const l = lines.find((x) => x.key === selected)
@@ -453,7 +476,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
           <DropdownMenu>
             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label={t('More')}><Ellipsis /></Button></DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-60">
-              <DropdownMenuItem onSelect={() => setDialog('refund')}><RotateCcw /> {t('Refund')}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={openRefund}><RotateCcw /> {t('Refund')}</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setDialog('cash')}><Wallet /> {t('Cash in/out')}</DropdownMenuItem>
               <DropdownMenuCheckboxItem checked={autoPrint} onCheckedChange={() => setAutoPrint((a) => { prefSet('pos.autoprint', a ? '0' : '1'); return !a })}>
                 <Printer className="mr-2 size-4" /> {t('Print a receipt automatically after each sale')}</DropdownMenuCheckboxItem>
@@ -462,7 +485,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
           </DropdownMenu>
         ) : (
         <div className="ml-auto flex items-center gap-1.5">
-          <Button variant="ghost" size="sm" onClick={() => setDialog('refund')}><RotateCcw /> {t('Refund')} <Kbd>F9</Kbd></Button>
+          <Button variant="ghost" size="sm" onClick={openRefund}><RotateCcw /> {t('Refund')} <Kbd>F9</Kbd></Button>
           <Button variant="ghost" size="sm" onClick={() => setDialog('cash')}><Wallet /> {t('Cash in/out')}</Button>
           <Button variant="ghost" size="sm" onClick={() => { setAutoPrint((a) => { prefSet('pos.autoprint', a ? '0' : '1'); return !a }) }} aria-pressed={autoPrint}
             title={t('Print a receipt automatically after each sale')}><Printer /> {autoPrint ? t('Auto-print on') : t('Auto-print off')}</Button>
@@ -471,6 +494,15 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
         )}
       </header>
 
+      {atkState.status === 'blocked' && (
+        <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-[13px] text-destructive">
+          <ShieldCheck className="size-4 shrink-0" /><span className="flex-1 font-medium">{atkText}</span>
+          {(can('pos.approve') || can('tax.write')) && <Button size="sm" variant="outline" asChild><Link to={`/pos/atk?till=${data.register.id}`}>{t('Register with ATK')}</Link></Button>}
+        </div>
+      )}
+      {data.atk?.required && data.atk.env === 'test' && atkState.status === 'ready' && (
+        <div className="border-b border-warning/30 bg-warning/10 px-4 py-1 text-center text-xs font-medium text-warning">{t('ATK test environment: these coupons are for testing only')}</div>
+      )}
       <div className="flex min-h-0 flex-1">
         {/* ---------- left: search + products */}
         <section className={cn('flex min-w-0 flex-1 flex-col gap-3 p-3', phone && pane === 'sale' && 'hidden')}>
@@ -517,7 +549,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
                 <span className="flex items-center gap-2"><ListOrdered /> {t('{a} lines · {b} items', { a: lines.length, b: num(itemsCount) })}</span>
                 <span className="text-base font-semibold tabular">{formatMoney(total)} <span className="text-[11px] font-normal text-muted-foreground">{t('with VAT|short')}</span></span>
               </Button>
-              <Button className="h-14 px-5" disabled={!lines.length} onClick={() => setDialog('pay')}>{t('Pay')}</Button>
+              <Button className="h-14 px-5" disabled={!lines.length || atkStop} onClick={openPay}>{t('Pay')}</Button>
             </div>
           )}
         </section>
@@ -598,7 +630,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
             </div>
             <div className="mt-3 grid grid-cols-[auto_1fr] gap-2">
               <Button variant="outline" size="lg" className="h-14" disabled={!lines.length} onClick={() => { if (lines.length < 3 || confirm(t('Clear this sale?'))) voidSale() }}><X /> {t('Clear')}</Button>
-              <Button size="lg" className="h-14 text-lg" disabled={!lines.length} onClick={() => setDialog('pay')}>{t('Pay {amount}', { amount: formatMoney(total) })} <Kbd className="ml-2 border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground">F12</Kbd></Button>
+              <Button size="lg" className="h-14 text-lg" disabled={!lines.length || atkStop} onClick={openPay}>{t('Pay {amount}', { amount: formatMoney(total) })} <Kbd className="ml-2 border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground">F12</Kbd></Button>
             </div>
           </div>
         </aside>

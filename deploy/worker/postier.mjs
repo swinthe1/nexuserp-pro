@@ -521,6 +521,39 @@ async function pinLoop() {
 }
 
 /* ------------------------------------------------------------------ one round */
+/* ------------------------------------------------------------------ ATK (Kosovo fiscal coupons)
+ * The tills sign their coupons themselves; this only carries them to ATK and brings the answer back.
+ * The database says where to post and what (atk_wait), so nothing about ATK is decided here. */
+// for trying the whole path on a developer's machine only: ATK's test address is replaced by a stand-in
+const ATK_TEST_BASE = (process.env.ATK_TEST_BASE || '').replace(/\/+$/, '')
+async function atkPost(url, body) {
+  if (ATK_TEST_BASE) url = url.replace('https://fiskalizimi-test.atk-ks.org', ATK_TEST_BASE)
+  try {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(body), signal: AbortSignal.timeout(25000) })
+    const text = await r.text()
+    let json = null
+    try { json = text ? JSON.parse(text) : null } catch { json = { error: text.slice(0, 300) } }
+    return { status: r.status, body: json }
+  } catch (e) {
+    return { status: 0, body: null, error: String(e.cause?.code || e.message || e) }
+  }
+}
+async function atkLoop() {
+  for (;;) {
+    try {
+      const job = await rpc('atk_wait', { p_wait_ms: 6000 })
+      if (!job) continue
+      const r = await atkPost(job.url, job.body)
+      let c = null
+      if (job.kind === 'coupon' && r.status >= 200 && r.status < 300 && job.citizen) c = await atkPost(job.citizen.url, job.citizen.body)
+      if (r.status < 200 || r.status >= 300) log('ATK', job.kind, r.status, r.error || JSON.stringify(r.body)?.slice(0, 200))
+      await rpc('atk_done', { p_kind: job.kind, p_id: job.id, p_status: r.status, p_body: r.body, p_error: r.error ?? null,
+        p_citizen_status: c?.status ?? null, p_citizen_body: c?.body ?? null })
+    } catch (e) { log('ATK wait failed', String(e.message || e)); await new Promise((res) => setTimeout(res, 15000)) }
+  }
+}
+
 async function round() {
   const batch = await rpc('postier_claim', { p_limit: 20 })
   const relay = []
@@ -599,7 +632,7 @@ async function tick() {
 }
 
 log(`postier ${MODE} → ${API}`)
-if (!ONCE) { if (process.env.ASSISTANT !== '0') assistantLoop(); pinLoop(); if (MODE === 'cloud') relayLoop() }
+if (!ONCE) { if (process.env.ASSISTANT !== '0') assistantLoop(); pinLoop(); for (let i = 0; i < 3; i++) atkLoop(); if (MODE === 'cloud') relayLoop() }
 for (;;) {
   try { await tick(); const n = (await round()) + (await pushRound().catch((e) => { log('phone notifications failed', String(e.message || e)); pushPause = Date.now() + 10 * 60 * 1000; return 0 }))
     + (await webhookRound().catch((e) => { log('webhooks failed', String(e.message || e)); hookPause = Date.now() + 10 * 60 * 1000; return 0 })) + (await readerRound().catch((e) => { log('reading failed', String(e.message || e)); return 0 })); if (ONCE) break; await new Promise((r) => setTimeout(r, n ? 2000 : 20000)) }

@@ -31,9 +31,9 @@ export function FiscalMonitorPage() {
     { accessorKey: 'source_doc_type', filterFn: inFilter, header: t('Type'), meta: { label: t('Type') }, cell: ({ getValue }) => { const k = DOC_LABEL[getValue() as string]; return k ? t(k) : humanize(getValue() as string) } },
     { accessorKey: 'status', filterFn: inFilter, header: t('Status'), meta: { label: t('Status') },
       cell: ({ row: { original: r } }) => <span className="flex items-center gap-1.5"><StatusBadge status={r.status} />{r.is_subsequent && <span className="text-xs text-muted-foreground">{t('offline')}</span>}</span> },
-    { accessorKey: 'iic', header: xk ? t('Device code') : t('IIC (NSLF)'), meta: { label: t('IIC') },
+    { accessorKey: 'iic', header: xk ? t('Coupon no.') : t('IIC (NSLF)'), meta: { label: t('IIC') },
       cell: ({ getValue }) => <span className="whitespace-nowrap font-mono text-xs text-muted-foreground" title={(getValue() as string) ?? ''}>{getValue() ? `${(getValue() as string).slice(0, 12)}…` : '—'}</span> },
-    { id: 'code', accessorFn: (r) => r.fic ?? r.verification_code ?? '', header: xk ? t('Verification code') : t('FIC (NIVF)'), meta: { label: t('FIC / verification') },
+    { id: 'code', accessorFn: (r) => (xk ? r.fic : r.fic ?? r.verification_code) ?? '', header: xk ? t('ATK transaction') : t('FIC (NIVF)'), meta: { label: t('FIC / verification') },
       cell: ({ getValue }) => <span className="whitespace-nowrap font-mono text-xs" title={getValue() as string}>{getValue() ? `${(getValue() as string).slice(0, 13)}${(getValue() as string).length > 13 ? '…' : ''}` : '—'}</span> },
     { accessorKey: 'tcr_code', header: xk ? t('Device') : t('TCR'), meta: { label: t('TCR') }, cell: ({ getValue }) => <span className="font-mono text-xs">{(getValue() as string) ?? '—'}</span> },
     { accessorKey: 'attempt_count', header: t('Attempts'), meta: { label: t('Attempts'), align: 'right' }, cell: ({ getValue }) => <span className="tabular">{getValue() as number}</span> },
@@ -50,11 +50,12 @@ export function FiscalMonitorPage() {
     <>
       <PageHeader title={t('Fiscalization')}
         description={xk
-          ? t('Invoices and receipts registered with the ATK through the fiscal devices. Failed ones are sent again when you process the queue.')
+          ? t('Till receipts signed on each till and sent to ATK by the server, also those made without internet. Ones ATK did not take are sent again by themselves.')
           : t('Every invoice and receipt sent to the tax office (CIS) to get its NIVF. Failed ones are sent again when you process the queue.')}
-        actions={<Can perm="tax.write"><Button loading={process.isPending} onClick={() => process.mutate()} disabled={!ov.data?.enabled}><Play /> {t('Send waiting documents')}</Button></Can>} />
+        actions={xk ? <Button variant="outline" asChild><Link to="/pos/atk">{t('Tills at ATK')}</Link></Button> : <Can perm="tax.write"><Button loading={process.isPending} onClick={() => process.mutate()} disabled={!ov.data?.enabled}><Play /> {t('Send waiting documents')}</Button></Can>} />
       <p className="-mt-2 mb-4 text-[13px] text-muted-foreground">
         {!ov.data ? '' : !ov.data.enabled ? t('Fiscalization is turned off for this company in its settings.')
+          : xk ? (env === 'production' ? t('Live: every till receipt goes to ATK (fiskalizimi.atk-ks.org).') : t('Test: till receipts go to ATK\'s test environment (fiskalizimi-test.atk-ks.org). They are not real fiscal coupons.'))
           : env === 'production' ? t('Live mode: documents are sent with the company certificate. Until the fiscalization connector is installed, sending marks them as failed.')
           : t('Test mode: the tax office’s answer is simulated, so codes and QR links are for testing only. Live mode needs the fiscalization connector and the company certificate.')}
       </p>

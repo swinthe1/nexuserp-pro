@@ -86,6 +86,43 @@ All books export to Excel with title lines (company, NIPT/NUI, book, period), as
   - **Test environment:** simulates the answer — FIC (NIVF) and the verification QR link in Albania, a verification code in Kosovo — and marks the documents fiscalized.
   - **Production:** marks the documents failed with "connector not configured" until the `fiscalize` Edge Function (certificate, CIS / ATK endpoint) is deployed.
 
+### Kosovo: DrisPRO as the fiscal software (SEF) — `/pos/atk`
+
+Built from ATK's technical documentation (github.com/fiskalizimi/pos-golang and pos-csharp, `models.proto`), Administrative Instruction MF 01/2026 and ATK's amendment of 22.06.2026.
+
+- **Numbers.** These are what ATK sees:
+  - BusinessId: the company's NUI.
+  - BranchId: `warehouses.atk_branch_id` (1–999).
+  - PosId: `pos_registers.atk_pos_id` (1–99, unique per store).
+  - FiscalizationNo: `company_settings.atk_fiscalization_no`, from EDI.
+  - ApplicationId: DrisPRO's number at ATK, kept in `platform_settings.atk_application_id_test` and `atk_application_id_prod`.
+- **Registering a till** happens on the device it sells on:
+  1. `atk_onboard_verify` → the postier calls `/ca/verify/{nui}` and gets back the business name and a verification code.
+  2. The browser makes an ECDSA P-256 key. It is a non-extractable WebCrypto key over https; on a local server over plain http (no WebCrypto there) it is a software key in IndexedDB.
+  3. The browser makes the CSR (C=RKS, L=branch, O=NUI, OU=POS, CN=business name).
+  4. `atk_onboard_csr` → the postier calls `/ca/signcsr`. The certificate is kept on the register and on the device.
+  5. The key is stored only after ATK signs it, so a failed attempt never loses the working key.
+- **Each sale** is built and signed on the till, so it also works offline (`src/lib/atk`):
+  - The POS coupon and the citizen coupon are encoded as Protobuf.
+  - The signature is ECDSA/SHA-256 over the Base64 text, in ASN.1 form.
+  - The QR code is `base64(citizen)|signature`.
+  - Units of money:
+    - Item prices are in 0.0001 €.
+    - Totals are in cents.
+    - VAT by letter: A exempt, C 0 %, D 8 %, E 18 %. The base is rounded and the VAT is the rest, so the groups always add up.
+  - Coupon numbers are `(branch × 100 + POS) × 10⁹ + the till's count`. The count never goes back; the server's highest count is the floor.
+  - A refund is a RETURN coupon whose ReferenceNo is the original coupon.
+- **Sending.**
+  - The signed coupon rides on the sale (`pos_orders.atk`, then `fiscalization_records.request_payload.atk`).
+  - `atk_wait` / `atk_done` hand each coupon to the postier, which posts it to `/pos/coupon`. In the test environment it also posts the QR to `/citizen/coupon`, so ATK's checks see both halves.
+  - ATK's `transaction_id` is kept in `fic`.
+  - A refusal or a lost connection is retried with backoff (1, 2, 5, 15, 30 min, then hourly). The first refusal notifies `tax.write`.
+  - A receipt from a till that is not registered is marked `NOT_SIGNED` and never sent. A till that is not registered on its device does not sell.
+- **What has not reached ATK** can be downloaded as CSV from `/pos/atk`; ATK asks for this format in its 22.06.2026 amendment.
+- **Testing locally.**
+  - `ATK_TEST_BASE` points the postier's test-environment calls at a stand-in instead of `fiskalizimi-test.atk-ks.org`.
+  - `supabase/tests/68_atk_sef.sql` covers the database side.
+
 ## Tax calendar
 
 `tax_calendar(company, months)` lists, for each past month:
