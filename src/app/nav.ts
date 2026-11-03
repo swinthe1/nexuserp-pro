@@ -5,7 +5,7 @@ import {
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, Building, HandCoins, ListTree, Network, Settings2, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, 
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
   BedDouble, BookUser, CalendarRange, ConciergeBell, Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, ReceiptText, IdCard, Settings, CreditCard, type LucideIcon, Activity, ArrowUpDown, BadgeEuro, BookOpen, CalendarPlus, CheckCheck, CircleDollarSign, Clock, Coins, Combine, FileScan, FolderTree, Gift, Handshake, LineChart, Map, Move, NotebookTabs, PieChart, ScanBarcode, Send, ListChecks, ChartSpline, PackageMinus, GraduationCap,
-  FileSignature, ListTodo, ScanSearch, Grid3x3, Gauge,
+  FileSignature, ListTodo, ScanSearch, Grid3x3, Gauge, Award, Gavel,
 } from 'lucide-react'
 import { msg } from '@/i18n'
 
@@ -85,8 +85,10 @@ export const NAV: NavSection[] = [
       { label: msg('Landed costs|menu'), href: '/inventory/landed-costs', icon: Ship, perm: 'procurement.read', keywords: ['customs', 'freight', 'import', 'clearance'] },
       { label: msg('Vendors'), href: '/partners?role=vendor', icon: Handshake, perm: 'partners.read', group: msg('Suppliers'), keywords: ['suppliers', 'furnitor'], focus: ['procurement.write', 'wms.write'] },
       { label: msg('Vendor prices'), href: '/procurement/vendor-prices', icon: BadgeEuro, perm: 'procurement.read', keywords: ['vendor price list', 'supplier prices', 'lead time', 'moq'] },
+      { label: msg('Vendor scorecard|menu'), href: '/procurement/scorecard', icon: Award, perm: 'procurement.read', keywords: ['scorecard', 'karta', 'vlerësimi', 'furnitor', 'on time', 'në kohë', 'vonesa', 'supplier rating', 'performance'] },
       { label: msg('Replenishment|menu'), href: '/procurement/replenishment', icon: RefreshCw, perm: 'procurement.read', group: msg('Planning'), keywords: ['reorder', 'mrp', 'suggestions', 'restock'] },
       { label: msg('Requisitions|menu'), href: '/procurement/requisitions', icon: ClipboardList, perm: 'requisitions.read', keywords: ['request', 'purchase request', 'pr', 'kërkesë'] },
+      { label: msg('Offers from vendors|menu'), href: '/procurement/rfqs', icon: Gavel, perm: 'procurement.read', keywords: ['rfq', 'oferta', 'ofertë', 'tender', 'krahasim', 'quotation', 'compare offers', 'kërkesë për ofertë'] },
     ],
   },
   {

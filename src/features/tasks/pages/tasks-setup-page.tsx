@@ -222,6 +222,8 @@ function StartDialog({ tpl, onClose }: { tpl: TaskTemplate; onClose: () => void 
 const AUTOS: { key: string; title: string; what: string; who: string; days?: { label: string; def: number } }[] = [
   { key: 'late_invoice', title: msg('Late invoices'), what: msg('Call the customer about an unpaid invoice.'), who: msg('Whoever sells to that customer, else the sales manager'), days: { label: msg('days late'), def: 15 } },
   { key: 'cash_diff', title: msg('Till differences'), what: msg('Explain a difference found when the till was closed.'), who: msg('The cashier of that shift'), days: { label: msg('more than (in money)'), def: 5 } },
+  { key: 'po_confirm', title: msg('Orders not confirmed'), what: msg('Ask the vendor to confirm a purchase order sent some days ago.'), who: msg('The buyer of that order, else the purchasing manager'), days: { label: msg('days after it was sent'), def: 2 } },
+  { key: 'late_po', title: msg('Late purchase orders'), what: msg('Call the vendor about goods that did not come on the promised day, or order them elsewhere.'), who: msg('The buyer of that order, else the purchasing manager'), days: { label: msg('days late'), def: 1 } },
   { key: 'low_stock', title: msg('Low stock'), what: msg('Order goods that fell under their minimum.'), who: msg('The purchasing or stock manager') },
   { key: 'lot_expiry', title: msg('Lots about to expire'), what: msg('Lower the price or take off the shelf goods that expire soon.'), who: msg('The stock manager or the warehouse'), days: { label: msg('days before'), def: 14 } },
   { key: 'contract_end', title: msg('Contracts ending'), what: msg('Extend or close a fixed-term contract.'), who: msg('The HR manager'), days: { label: msg('days before'), def: 30 } },

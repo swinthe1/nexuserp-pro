@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CalendarClock, Coins, Repeat, Tags, Wallet } from 'lucide-react'
+import { CalendarClock, Coins, Repeat, Tags, TrendingUp, Wallet } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -18,7 +18,7 @@ import { AutomationCard } from '../components/automation-card'
 
 type Settings = { pos_cash_tolerance: number; pos_count_notes: boolean; pos_void_approval: boolean; pos_close_witness: 'never' | 'difference' | 'always'
   payroll_auto_day: number | null; payroll_auto_for: 'previous' | 'current'; payroll_deduct_absence: boolean
-  payroll_night_pct: number | null; payroll_holiday_pct: number | null }
+  payroll_night_pct: number | null; payroll_holiday_pct: number | null; purchase_price_tolerance: number }
 
 export function usePayrollTillSettings() {
   const { companyId } = useCompany()
@@ -26,7 +26,7 @@ export function usePayrollTillSettings() {
     queryKey: ['automation-settings', companyId],
     enabled: !!companyId,
     queryFn: async () => unwrap(await supabase.from('company_settings')
-      .select('pos_cash_tolerance, pos_count_notes, pos_void_approval, pos_close_witness, payroll_auto_day, payroll_auto_for, payroll_deduct_absence, payroll_night_pct, payroll_holiday_pct').eq('company_id', companyId!).single()) as unknown as Settings,
+      .select('pos_cash_tolerance, pos_count_notes, pos_void_approval, pos_close_witness, payroll_auto_day, payroll_auto_for, payroll_deduct_absence, payroll_night_pct, payroll_holiday_pct, purchase_price_tolerance').eq('company_id', companyId!).single()) as unknown as Settings,
   })
 }
 export function useSavePayrollTillSettings() {
@@ -46,6 +46,8 @@ export function AutomationPage() {
   const s = q.data
   const [tol, setTol] = React.useState('')
   React.useEffect(() => { if (s) setTol(String(s.pos_cash_tolerance)) }, [s])
+  const [rise, setRise] = React.useState('')
+  React.useEffect(() => { if (s) setRise(String(s.purchase_price_tolerance ?? 1)) }, [s])
 
   return (
     <div className="mx-auto grid max-w-3xl gap-3">
@@ -137,6 +139,18 @@ export function AutomationPage() {
       )}
 
       {can('admin.read') && <MessagingSettings />}
+
+      {can('procurement.read') && s && (
+        <AutomationCard icon={TrendingUp} title={t('Price rises from vendors')}>
+          <p className="text-[13px] text-muted-foreground">{t('A bill priced above what was paid to that vendor before (or their price list) waits for a procurement or finance manager to accept the new price, with a reason. Small changes pass on their own.')}</p>
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="grid gap-1.5"><Label htmlFor="rise">{t('Rises up to this % pass on their own')}</Label>
+              <Input id="rise" type="number" min="0" max="50" step="0.5" className="w-36 text-right tabular" value={rise} onChange={(e) => setRise(e.target.value)} disabled={!can('procurement.approve')} /></div>
+            {can('procurement.approve') && <Button variant="outline" disabled={rise === String(s.purchase_price_tolerance) || rise === '' || Number(rise) < 0 || Number(rise) > 50} loading={save.isPending}
+              onClick={() => save.mutate({ purchase_price_tolerance: Number(rise) })}>{t('Save')}</Button>}
+          </div>
+        </AutomationCard>
+      )}
 
       {can('inventory.read') && (
         <AutomationCard icon={Coins} title={t('Replenishment')} aside={<Button variant="outline" size="sm" asChild><Link to="/procurement/replenishment">{t('Open')}</Link></Button>}>

@@ -30,6 +30,7 @@ export default {
   'enum:in_delivery': 'Në dërgim',
   'enum:failed': 'Dështoi',
   'enum:sent': 'Dërguar',
+  'enum:decided': 'Vendosur',
   'enum:won': 'Fituar',
   'enum:lost': 'Humbur',
   'enum:reversed': 'Stornuar',

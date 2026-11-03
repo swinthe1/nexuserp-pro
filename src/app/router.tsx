@@ -65,6 +65,9 @@ const PurchaseDocumentPage = React.lazy(() => import('@/features/procurement/pag
 const RequisitionPage = lazy(() => import('@/features/procurement/pages/requisition-page'), 'RequisitionPage')
 const ReplenishmentPage = lazy(() => import('@/features/procurement/pages/replenishment-page'), 'ReplenishmentPage')
 const VendorPricesPage = lazy(() => import('@/features/procurement/pages/vendor-prices-page'), 'VendorPricesPage')
+const VendorScorecardPage = lazy(() => import('@/features/procurement/pages/vendor-scorecard-page'), 'VendorScorecardPage')
+const RfqListPage = lazy(() => import('@/features/procurement/pages/rfq-pages'), 'RfqListPage')
+const RfqPage = lazy(() => import('@/features/procurement/pages/rfq-pages'), 'RfqPage')
 const FinanceOverviewPage = lazy(() => import('@/features/finance/pages/finance-overview-page'), 'FinanceOverviewPage')
 const AccountsPage = lazy(() => import('@/features/finance/pages/accounts-page'), 'AccountsPage')
 const AccountLedgerPage = lazy(() => import('@/features/finance/pages/accounts-page'), 'AccountLedgerPage')
@@ -304,6 +307,10 @@ const router = createBrowserRouter([
         { path: 'orders/:id', element: <PurchaseDocumentPage key="po" kind="orders" /> },
         { path: 'replenishment', element: <ReplenishmentPage /> },
         { path: 'vendor-prices', element: <VendorPricesPage /> },
+        { path: 'scorecard', element: <VendorScorecardPage /> },
+        { path: 'rfqs', element: <RfqListPage /> },
+        { path: 'rfqs/new', element: <RfqPage key="rfq-new" /> },
+        { path: 'rfqs/:id', element: <RfqPage key="rfq" /> },
       ] },
       { path: 'procurement/requisitions', element: <RequirePerm perm="requisitions.read" />, children: [
         { index: true, element: <ProcurementListPage key="requisitions" kind="requisitions" /> },

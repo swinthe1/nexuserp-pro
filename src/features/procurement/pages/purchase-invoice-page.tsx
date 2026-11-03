@@ -10,6 +10,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog'
 import { ErrorState } from '@/components/error-state'
 import { PackQty, packsFromPieces } from '@/components/pack-qty'
 import { PageHeader } from '@/components/page-header'
+import { PRICE_KEY, PriceRiseCard } from '../components/price-rise'
 import { SearchSelect } from '@/components/search-select'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -268,7 +269,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
         + (r.prices_changed ? ` · ${tn(r.prices_changed, '{n} price changed', '{n} prices changed')}` : ''))
       navigate(`/procurement/bills/${id}`)
     },
-    onError: (e) => { setConfirm(false); toast.error(tServer(describeError(e))) },
+    onError: (e) => { setConfirm(false); toast.error(tServer(describeError(e))); if (doc) void qc.invalidateQueries({ queryKey: [PRICE_KEY, doc.id] }) },
   })
   const editable = can('invoicing.write')
   const changing = calc.filter((c) => c.newGross != null && c.curGross != null && Math.abs(c.newGross - c.curGross) > 0.004).length
@@ -286,6 +287,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
         </>} />
       {/* why the main button is not active yet, in words, not only on hover */}
       {editable && problem && <p className="-mt-2 mb-3 text-right text-xs text-muted-foreground">{t('To complete: {what}', { what: problem.toLowerCase() })}</p>}
+      {doc && <PriceRiseCard billId={doc.id} version={doc.updated_at} currency={base} />}
 
       <Card className="mb-4">
         <CardContent className="grid gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-4">

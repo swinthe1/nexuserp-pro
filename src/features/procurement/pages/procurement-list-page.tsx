@@ -70,8 +70,9 @@ const buildCfg = (): Record<ProcKind, Cfg> => ({
       {
         accessorKey: 'expected_date', header: ({ column }) => <ColumnHeader column={column} title={t('Expected')} />, meta: { label: t('Expected') },
         cell: ({ row: { original: r } }) => {
-          const late = OPEN_PO.includes(r.status) && !!r.expected_date && (r.expected_date as string) < todayISO()
-          return r.expected_date ? <span className={cn(late && 'font-medium text-destructive')}>{formatDate(r.expected_date as string)}{late && ` · ${t('late')}`}</span> : '—'
+          const due = (r.promised_date ?? r.expected_date) as string | null
+          const late = OPEN_PO.includes(r.status) && !!due && due < todayISO()
+          return due ? <span className={cn(late && 'font-medium text-destructive')}>{formatDate(due)}{late ? ` · ${t('late')}` : r.confirmed_at && OPEN_PO.includes(r.status) ? ` · ${t('confirmed')}` : ''}</span> : '—'
         },
       },
       {

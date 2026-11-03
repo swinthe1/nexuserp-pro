@@ -1,8 +1,9 @@
 import { DocumentActions } from '@/components/document-actions'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
-  Ban, CheckCheck, ClipboardCheck, FileText, PackageCheck, Receipt, Send, ShieldAlert, Tag, Trash2, Undo2,
+  Ban, CheckCheck, ClipboardCheck, FileText, PackageCheck, PhoneCall, Receipt, Repeat, Send, ShieldAlert, Tag, Trash2, Undo2,
 } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import * as React from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -38,6 +39,8 @@ import {
   useSaveProcDocument, useSetProcStatus, useSubmitPurchaseOrder, useVendorCredit, type MatchLine,
 } from '../api'
 import { WithholdingCard } from '../components/withholding-card'
+import { ConfirmOrderDialog, OrderRestDialog, isLate, poDue } from '../components/order-follow'
+import { PRICE_KEY, PriceRiseCard } from '../components/price-rise'
 import { MATCH_LABEL, PurchaseLinesEditor, type PurchaseProgress } from '../components/purchase-lines-editor'
 import { billSchema, purchaseOrderSchema, type BillValues, type PurchaseOrderValues } from '../schemas'
 import { AccountingTab } from '@/features/finance/components/t-accounts'
@@ -94,6 +97,7 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
   const submit = useSubmitPurchaseOrder()
   const receive = useReceiveOrder()
   const [billOpen, setBillOpen] = React.useState(false)
+  const [follow, setFollow] = React.useState<null | 'confirm' | 'rest'>(null)
   const editable = (!doc || doc.status === 'draft') && can('procurement.write')
 
   const form = useForm<PurchaseOrderValues>({
@@ -175,6 +179,9 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
     if (doc.status === 'approved') {
       actions.push(<Button key="sent" variant="outline" onClick={() => setStatus.mutate({ id: doc.id, status: 'sent' }, { onSuccess: () => toast.success(t('Marked as sent')) })}><Send /> {t('Mark as sent')}</Button>)
     }
+    if (['approved', 'sent', 'partially_received'].includes(doc.status)) {
+      actions.push(<Button key="confirm" variant="outline" onClick={() => setFollow('confirm')}><PhoneCall /> {doc.confirmed_at ? t('Change the promised date') : t('Vendor confirmed')}</Button>)
+    }
   }
   if (doc && ['approved', 'sent', 'partially_received'].includes(doc.status) && remaining.length > 0 && (can('wms.write') || can('procurement.write'))) {
     actions.push(<Button key="recv" loading={receive.isPending}
@@ -185,6 +192,9 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
     actions.push(<Button key="bill" variant="outline" onClick={() => setBillOpen(true)}><Receipt /> {t('Enter bill')}</Button>)
   }
   if (doc && can('procurement.write')) {
+    if (['approved', 'sent', 'partially_received'].includes(doc.status) && remaining.some((l) => l.variant_id) && (doc.status === 'partially_received' || isLate(doc))) {
+      actions.push(<Button key="rest" variant="outline" onClick={() => setFollow('rest')}><Repeat /> {t('Order the rest again')}</Button>)
+    }
     if (doc.status === 'partially_received' || (doc.status === 'received' && doc.billing_status !== 'billed')) {
       actions.push(<ConfirmDialog key="close" trigger={<Button variant="ghost"><CheckCheck /> {t('Close')}</Button>} title={t('Close {number}?', { number: doc.number })}
         description={doc.status === 'partially_received' ? t('The rest of the order is no longer expected. It stops counting as incoming stock.') : t('The order is finished; it will not be billed further.')}
@@ -203,7 +213,8 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
         isService: !l.variant_id || variants.data?.find((v) => v.id === l.variant_id)?.product_type === 'service',
       }]))
     : undefined
-  const late = doc && ['approved', 'sent', 'partially_received'].includes(doc.status) && doc.expected_date && doc.expected_date < todayISO()
+  const late = !!doc && isLate(doc)
+  const due = doc ? poDue(doc) : null
 
   const body = (
     <>
@@ -222,7 +233,8 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
             )} />
             <FormField control={form.control} name="second_date" render={({ field }) => (
               <FormItem><FormLabel optional>{t('Expected delivery')}</FormLabel><FormControl><Input type="date" disabled={!editable} {...field} /></FormControl>
-                {late && <FormDescription className="text-destructive">{t('Late — {date} has passed', { date: formatDate(doc!.expected_date) })}</FormDescription>}</FormItem>
+                {doc?.promised_date && doc.promised_date !== doc.expected_date && <FormDescription>{t('The vendor promised {date}', { date: formatDate(doc.promised_date) })}</FormDescription>}
+                {late && <FormDescription className="text-destructive">{t('Late — {date} has passed', { date: formatDate(due) })}</FormDescription>}</FormItem>
             )} />
             <FormField control={form.control} name="warehouse_id" render={({ field }) => (
               <FormItem><FormLabel>{t('Deliver to')}</FormLabel>
@@ -277,6 +289,7 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
             <StatusBadge status={doc.status} />
             {doc.status !== 'draft' && doc.status !== 'cancelled' && <StatusBadge status={doc.billing_status} />}
             {late && <Badge variant="destructive">{t('Late')}</Badge>}
+            {doc.confirmed_at && !late && ['approved', 'sent', 'partially_received'].includes(doc.status) && <Badge variant="outline">{t('Confirmed by the vendor')}</Badge>}
           </>}
           description={doc ? `${doc.vendor?.name ?? ''} · ${t('created {date}', { date: formatDate(doc.created_at, true) })}` : undefined}
           actions={<Can perm="procurement.read">
@@ -303,6 +316,8 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
           </Tabs>
         ) : body}
         {doc && <BillFromPoDialog open={billOpen} onOpenChange={setBillOpen} po={doc} />}
+        {doc && follow === 'confirm' && <ConfirmOrderDialog order={doc} onClose={() => setFollow(null)} />}
+        {doc && follow === 'rest' && <OrderRestDialog order={doc} received={doc.lines.some((l) => num(l.qty_received) > 0 || num(l.qty_billed) > 0)} onClose={() => setFollow(null)} />}
       </div>
     </Form>
   )
@@ -489,8 +504,9 @@ function BillForm({ doc }: { doc?: BillDoc }) {
     : savedMatch
   const matchStatus = matchBill.data?.status ?? doc?.match_status
 
+  const qcPrice = useQueryClient()
   const doPost = async (reason?: string) => {
-    const r = await post.mutateAsync({ id: doc!.id, overrideReason: reason })
+    const r = await post.mutateAsync({ id: doc!.id, overrideReason: reason }).catch((e) => { void qcPrice.invalidateQueries({ queryKey: [PRICE_KEY, doc!.id] }); throw e })
     toast.success(isCredit ? t('Credit note posted') : t('Bill posted'), {
       description: num(r.capitalized_variance) !== 0 ? t('{amount} price difference added to stock value', { amount: `${formatMoney(r.capitalized_variance)} ${base}` }) : undefined,
     })
@@ -535,6 +551,7 @@ function BillForm({ doc }: { doc?: BillDoc }) {
           {canOverride && <Button size="sm" variant="outline" onClick={() => setOverrideOpen(true)}>{t('Post anyway…')}</Button>}
         </div>
       )}
+      {doc && doc.document_type === 'vendor_bill' && (doc.status === 'draft' || doc.price_ok_at) && <PriceRiseCard billId={doc.id} version={doc.updated_at} currency={base} />}
       {doc?.match_status === 'overridden' && (
         <div className="mb-4 rounded-lg border border-warning/40 bg-warning/5 px-4 py-3 text-[13px]">
           {t('Posted despite a mismatch. Reason:')} <span className="font-medium">{doc.match_override_reason}</span>
