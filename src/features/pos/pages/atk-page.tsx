@@ -27,7 +27,9 @@ import { supabase } from '@/lib/supabase'
 import { cn, formatDate } from '@/lib/utils'
 
 type Till = { id: string; code: string; name: string; warehouse_id: string; atk_pos_id: number | null; certified: boolean; cert_env: AtkEnv | null
-  cert_at: string | null; cert_by: string | null; device: string | null; public_key: string | null; missing: string[] }
+  cert_at: string | null; cert_by: string | null; device: string | null; public_key: string | null; missing: string[]
+  /** ATK registered this till number once already: it will not register it again */
+  taken?: boolean; next_free?: number | null }
 type Setup = { country: string; nui: string | null; business: string; enabled: boolean; training: boolean; env: AtkEnv; fiscalization_no: string | null; application_id: number | null
   application_ids: { test: number | null; production: number | null } | null; is_super_admin: boolean; can_setup: boolean; can_register: boolean
   stores: { id: string; code: string; name: string; city: string | null; atk_branch_id: number | null; tills: number }[]; tills: Till[]
@@ -219,7 +221,7 @@ function TillsCard({ s, keys, focus, onRegister, onForgotten }: { s: Setup; keys
   })
   const forget = useMutation({
     mutationFn: async (r: Till) => {
-      if (!confirm(t('{name} stops signing receipts until it is registered again. Go on?', { name: r.name }))) return
+      if (!confirm(t('{name} stops signing receipts. ATK does not register the same till number twice, so to sell again it will need a new number. Go on?', { name: r.name }))) return
       unwrap(await supabase.rpc('atk_till_forget', { p_register: r.id }))
       await removeTillKey(r.id, s.env).catch(() => undefined)
       onForgotten()
@@ -256,6 +258,13 @@ function TillsCard({ s, keys, focus, onRegister, onForgotten }: { s: Setup; keys
                           : t('Not registered')}
                         {r.certified && r.cert_at && <> · {formatDateWith(new Date(r.cert_at), { day: '2-digit', month: '2-digit', year: 'numeric' })}{r.cert_by ? ` · ${r.cert_by}` : ''}</>}
                       </span>
+                      {r.taken && (tills[r.id] ?? '') === String(r.atk_pos_id ?? '') && (
+                        <span className="block text-xs text-warning">
+                          {t('ATK has registered till number {n} once already and does not take it again.', { n: r.atk_pos_id ?? '' })}
+                          {r.next_free && s.can_setup && <> <button type="button" className="font-medium text-primary hover:underline"
+                            onClick={() => setTills((m) => ({ ...m, [r.id]: String(r.next_free) }))}>{t('Use number {n}', { n: r.next_free })}</button>, {t('then save the numbers.')}</>}
+                        </span>
+                      )}
                       {r.missing.length > 0 && r.missing.some((m) => m !== 'pos' && m !== 'branch') && (
                         <span className="block text-xs text-warning">{t('Missing: {list}', { list: r.missing.map((m) => t(MISSING[m] ?? m)).join(', ') })}</span>
                       )}
@@ -266,7 +275,7 @@ function TillsCard({ s, keys, focus, onRegister, onForgotten }: { s: Setup; keys
                     {s.can_register && (here ? (
                       <Button size="sm" variant="ghost" className="text-muted-foreground" loading={forget.isPending && forget.variables?.id === r.id} onClick={() => forget.mutate(r)}><ShieldOff /> {t('Unregister')}</Button>
                     ) : (
-                      <Button size="sm" variant={focus === r.id ? 'default' : 'outline'} disabled={r.missing.length > 0 || dirty} title={dirty ? t('Save the numbers first') : undefined}
+                      <Button size="sm" variant={focus === r.id ? 'default' : 'outline'} disabled={r.missing.length > 0 || dirty || !!r.taken} title={dirty ? t('Save the numbers first') : undefined}
                         onClick={() => onRegister(r)}><ShieldCheck /> {r.certified ? t('Move to this device') : t('Register this device')}</Button>
                     ))}
                   </li>

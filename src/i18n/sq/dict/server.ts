@@ -780,5 +780,6 @@ export default {
   "ATK could not be reached": "ATK-ja nuk u arrit",
   "ATK gave no verification code": "ATK-ja nuk dha kod verifikimi",
   "ATK gave no certificate": "ATK-ja nuk dha certifikatë",
+  "Made before DrisPRO signed the receipts: fiscalized by the shop's own fiscal device": "Bërë para se DrisPRO t'i nënshkruante kuponët: i fiskalizuar nga pajisja e vet fiskale e dyqanit",
   "A training company never sends anything to ATK": "Kompania e trajnimit nuk i dërgon kurrë asgjë ATK-së",
 } satisfies Dict

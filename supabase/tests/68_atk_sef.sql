@@ -169,7 +169,11 @@ select public.atk_done('coupon', :'fr2', 0, null, 'timeout');
 set role authenticated;
 select t.login('lume@atk.al');
 select public.atk_till_forget(:'reg');
-select t.ok(not (public.atk_till(:'reg') ->> 'certified')::boolean, 'a till can be registered again');
+select t.ok(not (public.atk_till(:'reg') ->> 'certified')::boolean, 'a till can be unregistered');
+-- ATK registers each till number once (its /ca/verify answers 404 the second time)
+select t.ok((select (x ->> 'taken')::boolean and (x ->> 'next_free')::int = 3 from jsonb_array_elements(public.atk_setup(:'co') -> 'tills') x where (x ->> 'id')::uuid = :'reg'),
+  'the page says the number is taken and offers a free one (2 belongs to the other till)');
+select t.throws(format($q$select public.atk_onboard_verify('%s')$q$, :'reg'), 'give this till number 3', 'registering it again under the same number is stopped before ATK is asked');
 select t.login('kaltrina@atk.al');
 select t.throws('select public.atk_wait(100)', 'permission denied', 'only the server waits for ATK work');
 

@@ -60,7 +60,12 @@ export default {
   "Save the numbers": "Ruaj numrat",
   "A certificate names its till number. Changing it means registering these tills again: {names}. Go on?":
     "Certifikata e mban numrin e arkës. Po ta ndryshoni, këto arka duhet të regjistrohen sërish: {names}. Të vazhdojmë?",
-  "{name} stops signing receipts until it is registered again. Go on?": "{name} nuk nënshkruan më kuponë derisa të regjistrohet sërish. Të vazhdojmë?",
+  "{name} stops signing receipts. ATK does not register the same till number twice, so to sell again it will need a new number. Go on?":
+    "{name} nuk nënshkruan më kuponë. ATK-ja nuk e regjistron dy herë të njëjtin numër arke, prandaj që të shesë sërish do t'i duhet numër i ri. Të vazhdojmë?",
+  "ATK has registered till number {n} once already and does not take it again.": "ATK-ja e ka regjistruar një herë arkën me numrin {n} dhe nuk e pranon sërish.",
+  "Use number {n}": "Merr numrin {n}",
+  "then save the numbers.": "pastaj ruani numrat.",
+  "Own fiscal device": "Pajisja e vet fiskale",
   "Coupons to ATK": "Kuponët drejt ATK-së",
   "Coupons made without internet wait on the till and then on the server until ATK takes them. On ATK's request, what has not reached it yet can be given as a file.":
     "Kuponët e bërë pa internet presin në arkë e pastaj në server, derisa t'i pranojë ATK-ja. Me kërkesë të ATK-së, ato që ende s'i kanë arritur mund t'i jepen si skedar.",

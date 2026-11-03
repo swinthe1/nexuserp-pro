@@ -10,7 +10,7 @@ import { StatusBadge } from '@/components/status-badge'
 import { Button } from '@/components/ui/button'
 import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { msg, t, tServer } from '@/i18n'
-import { formatDate, humanize } from '@/lib/utils'
+import { cn, formatDate, humanize } from '@/lib/utils'
 import { type FiscalRecord, useFiscalOverview, useFiscalRecords, useProcessQueue } from '../api'
 
 const DOC_LABEL: Record<string, string> = { sales_invoice: msg('Invoice'), credit_note: msg('Credit note'), pos_order: msg('Till receipt') }
@@ -30,7 +30,8 @@ export function FiscalMonitorPage() {
       cell: ({ row: { original: r } }) => r.href ? <Link to={r.href} onClick={(e) => e.stopPropagation()} className="whitespace-nowrap font-medium text-primary hover:underline">{r.doc_number ?? '—'}</Link> : (r.doc_number ?? '—') },
     { accessorKey: 'source_doc_type', filterFn: inFilter, header: t('Type'), meta: { label: t('Type') }, cell: ({ getValue }) => { const k = DOC_LABEL[getValue() as string]; return k ? t(k) : humanize(getValue() as string) } },
     { accessorKey: 'status', filterFn: inFilter, header: t('Status'), meta: { label: t('Status') },
-      cell: ({ row: { original: r } }) => <span className="flex items-center gap-1.5"><StatusBadge status={r.status} />{r.is_subsequent && <span className="text-xs text-muted-foreground">{t('offline')}</span>}</span> },
+      cell: ({ row: { original: r } }) => <span className="flex items-center gap-1.5 whitespace-nowrap">{r.error_code === 'OWN_DEVICE'
+        ? <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">{t('Own fiscal device')}</span> : <StatusBadge status={r.status} />}{r.is_subsequent && <span className="text-xs text-muted-foreground">{t('offline')}</span>}</span> },
     { accessorKey: 'iic', header: xk ? t('Coupon no.') : t('IIC (NSLF)'), meta: { label: t('IIC') },
       cell: ({ getValue }) => <span className="whitespace-nowrap font-mono text-xs text-muted-foreground" title={(getValue() as string) ?? ''}>{getValue() ? `${(getValue() as string).slice(0, 12)}…` : '—'}</span> },
     { id: 'code', accessorFn: (r) => (xk ? r.fic : r.fic ?? r.verification_code) ?? '', header: xk ? t('ATK transaction') : t('FIC (NIVF)'), meta: { label: t('FIC / verification') },
@@ -38,7 +39,10 @@ export function FiscalMonitorPage() {
     { accessorKey: 'tcr_code', header: xk ? t('Device') : t('TCR'), meta: { label: t('TCR') }, cell: ({ getValue }) => <span className="font-mono text-xs">{(getValue() as string) ?? '—'}</span> },
     { accessorKey: 'attempt_count', header: t('Attempts'), meta: { label: t('Attempts'), align: 'right' }, cell: ({ getValue }) => <span className="tabular">{getValue() as number}</span> },
     { accessorKey: 'error_message', header: t('Error'), meta: { label: t('Error') },
-      cell: ({ row: { original: r } }) => r.error_message ? <span className="text-destructive" title={tServer(r.error_message)}>{r.error_code ? `${r.error_code} · ` : ''}{tServer(r.error_message)}</span> : '' },
+      // a long reason stays on one line, cut short (the whole of it on hover), so the table keeps its width
+      cell: ({ row: { original: r } }) => r.error_message
+        ? <span className={cn('block max-w-[18rem] truncate', r.error_code === 'OWN_DEVICE' ? 'text-muted-foreground' : 'text-destructive')} title={tServer(r.error_message)}>
+            {r.error_code && !['OWN_DEVICE', 'NOT_SIGNED', 'UNREACHABLE'].includes(r.error_code) ? `${r.error_code} · ` : ''}{tServer(r.error_message)}</span> : '' },
     { accessorKey: 'fiscalized_at', header: t('Fiscalized'), meta: { label: t('Fiscalized') },
       cell: ({ getValue }) => <span className="whitespace-nowrap tabular">{getValue() ? formatDate(getValue() as string, true) : '—'}</span> },
     { id: 'verify', header: '', enableHiding: false, meta: { noExport: true },
