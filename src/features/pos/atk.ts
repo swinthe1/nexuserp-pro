@@ -80,6 +80,8 @@ export interface AtkSaleInput {
   dailyNo?: number | null
   offline?: boolean
   footer?: string | null
+  /** a coupon from the fiscal receipt book, registered after the till was down: the book's number */
+  blockNo?: string | null
 }
 
 /** the same item at the same price and discount is one line on a fiscal coupon (Kërkesat, neni 25.18) */
@@ -114,10 +116,10 @@ export async function signAtkSale(s: AtkSaleInput): Promise<{ payload: Record<st
     signed,
     payload: { env: a.env, coupon_id: signed.couponId, seq, pos_id: a.pos_id, branch_id: a.branch_id, verification_no: signed.verificationNo,
       details: signed.details, signature: signed.signature, qr: signed.qr, type: built.pos.type, reference_no: s.returnOf ?? null,
-      total: signed.total, tax: signed.totalTax, daily_no: s.dailyNo ?? null, reason: s.cancelReason ?? null, operator_no: a.operator_no ?? null },
+      total: signed.total, tax: signed.totalTax, daily_no: s.dailyNo ?? null, reason: s.cancelReason ?? null, operator_no: a.operator_no ?? null, block_no: s.blockNo ?? null },
     receipt: { env: a.env!, nui: a.nui ?? '', header: a.header ?? { legal_name: a.business ?? '', store: null, store_address: null, city: a.location ?? null, phone: null, vat_number: null },
       operator: s.operator, operatorNo: a.operator_no ?? null, coupon: built.pos, qr: signed.qr, dailyNo: s.dailyNo ?? null, reason: s.cancelReason ?? null,
-      offline: !!s.offline, change: Math.round(Math.max(s.change, 0) * 100), footer: s.footer ?? null },
+      offline: !!s.offline, change: Math.round(Math.max(s.change, 0) * 100), footer: s.footer ?? null, blockNo: s.blockNo ?? null },
   }
 }
 

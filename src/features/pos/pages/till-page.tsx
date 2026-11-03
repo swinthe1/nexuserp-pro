@@ -2,7 +2,7 @@ import { PageHelpButton, TourHost } from '@/components/help'
 import { TillTasks } from '@/features/tasks/components/till-tasks'
 import { whereElsewhere } from '@/features/inventory/where'
 import {
-  ArrowLeft, BadgePercent, Banknote, Camera, Check, CloudOff, CreditCard, Ellipsis, Landmark, ListOrdered, LogOut, Minus, Plus, Printer, ReceiptText, RotateCcw, ScanLine, Search,
+  ArrowLeft, BadgePercent, Banknote, Camera, Check, CloudOff, CreditCard, Ellipsis, Landmark, ListOrdered, LogOut, Minus, NotebookPen, Plus, Printer, ReceiptText, RotateCcw, ScanLine, Search,
   ShieldCheck, Ticket, Trash2, UserRound, Wallet, X,
 } from 'lucide-react'
 import * as React from 'react'
@@ -154,6 +154,9 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     : atkState.reason === 'other_device' ? t('This till is registered with ATK on another device: register it on this one to sell here')
     : t('This till is not registered with ATK yet: register it on this device to sell')
   const [atkRefused, setAtkRefused] = React.useState(0)
+  // a coupon from the fiscal receipt book, written by hand while the till was down (UA 01/2026, neni 45)
+  const [block, setBlock] = React.useState<{ no: string; at: Date } | null>(null)
+  const [blockOpen, setBlockOpen] = React.useState(false)
   const openPay = () => { if (atkStop) { setFlash({ tone: 'error', text: atkText }); return } setDialog('pay') }
   const openRefund = () => { if (atkStop) { setFlash({ tone: 'error', text: atkText }); return } setDialog('refund') }
 
@@ -361,8 +364,9 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     const change = refund ? 0 : r2(paid - saleTotal)
     const client_uuid = crypto.randomUUID()
     const device_ref = await nextDeviceRef(data.register.code)
-    const created_at = new Date().toISOString()
-    const isOffline = !navigator.onLine || !sync.online
+    const fromBook = !refund && data.atk?.required ? block : null
+    const created_at = (fromBook?.at ?? new Date()).toISOString()
+    const isOffline = !navigator.onLine || !sync.online || !!fromBook
     let atk: { payload: Record<string, unknown>; receipt: FiscalPrint } | null = null
     if (data.atk?.required) {
       if (atkState.status !== 'ready') { setFlash({ tone: 'error', text: atkText }); setDialog(null); return }
@@ -372,7 +376,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
           lines: saleLines.map((l) => ({ name: l.name, qty: l.qty, price: l.price, total: lineTotal(l), rate: l.rate, variant_id: l.variant_id, tax_code_id: taxOf.get(l.variant_id) ?? null })),
           payments: tenders.map((x) => ({ method: x.method, amount: x.amount })), change: Math.max(change, 0),
           isReturn: !!refund, returnOf: refund ? (refund.of.atk_coupon ? Number(refund.of.atk_coupon) : null) : null, cancelReason: refund?.cancelReason ?? null,
-          dailyNo: Number(device_ref.split('-').at(-1)) || null, offline: isOffline, footer: data.register.receipt_footer })
+          dailyNo: Number(device_ref.split('-').at(-1)) || null, offline: isOffline, footer: data.register.receipt_footer, blockNo: fromBook?.no ?? null })
       } catch (e) { toast.error(describeError(e)); return }
     }
     const payload = {
@@ -407,6 +411,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     clearSale()
     // the drawer opens for a sale paid (partly) in cash (Windows program with a network receipt printer)
     if (tenders.some((x) => x.method === 'cash')) openCashDrawer()
+    if (fromBook) { setBlock(null); return }   // the customer has the handwritten receipt already
     if (atk && !isOffline) {
       const fiscal = atk.receipt
       void waitForAtk(data.register.id, fiscal.coupon.couponId as number).then((r) => {
@@ -499,6 +504,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label={t('More')}><Ellipsis /></Button></DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-60">
               <DropdownMenuItem onSelect={openRefund}><RotateCcw /> {t('Refund')}</DropdownMenuItem>
+              {data.atk?.required && <DropdownMenuItem onSelect={() => setBlockOpen(true)}><NotebookPen /> {t('From the receipt book')}</DropdownMenuItem>}
               <DropdownMenuItem onSelect={() => setDialog('cash')}><Wallet /> {t('Cash in/out')}</DropdownMenuItem>
               <DropdownMenuCheckboxItem checked={autoPrint} onCheckedChange={() => setAutoPrint((a) => { prefSet('pos.autoprint', a ? '0' : '1'); return !a })}>
                 <Printer className="mr-2 size-4" /> {t('Print a receipt automatically after each sale')}</DropdownMenuCheckboxItem>
@@ -507,6 +513,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
           </DropdownMenu>
         ) : (
         <div className="ml-auto flex items-center gap-1.5">
+          {data.atk?.required && <Button variant="ghost" size="sm" onClick={() => setBlockOpen(true)} title={t('Register a coupon written in the fiscal receipt book while the till was down')}><NotebookPen /> {t('From the receipt book')}</Button>}
           <Button variant="ghost" size="sm" onClick={openRefund}><RotateCcw /> {t('Refund')} <Kbd>F9</Kbd></Button>
           <Button variant="ghost" size="sm" onClick={() => setDialog('cash')}><Wallet /> {t('Cash in/out')}</Button>
           <Button variant="ghost" size="sm" onClick={() => { setAutoPrint((a) => { prefSet('pos.autoprint', a ? '0' : '1'); return !a }) }} aria-pressed={autoPrint}
@@ -522,6 +529,14 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
           {(can('pos.approve') || can('tax.write')) && <Button size="sm" variant="outline" asChild><Link to={`/pos/atk?till=${data.register.id}`}>{t('Register with ATK')}</Link></Button>}
         </div>
       )}
+      {block && (
+        <div className="flex flex-wrap items-center gap-x-3 border-b border-primary/30 bg-primary/10 px-4 py-1.5 text-[13px]">
+          <NotebookPen className="size-4 text-primary" />
+          <span className="flex-1 font-medium">{t('Registering receipt book coupon no. {no} of {date}: enter its lines and take the payment as written on it', { no: block.no, date: formatDateWith(block.at, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) })}</span>
+          <Button size="sm" variant="ghost" onClick={() => setBlock(null)}>{t('Stop|action')}</Button>
+        </div>
+      )}
+      {blockOpen && <BlockDialog onClose={(b) => { setBlockOpen(false); if (b) { setBlock(b); setLines([]); setSelected(null) } focusSearch() }} />}
       {atkRefused > 0 && (
         <div role="alert" className="flex flex-wrap items-center gap-x-3 border-b border-destructive/30 bg-destructive/10 px-4 py-1.5 text-[13px] text-destructive">
           <span className="flex-1 font-medium">{tn(atkRefused, 'ATK refused {n} coupon of this till: they are tried again by themselves', 'ATK refused {n} coupons of this till: they are tried again by themselves')}</span>
@@ -905,6 +920,34 @@ function LineDialog({ line, canDiscount, onClose, onRemove }: { line: Line; canD
           {!allowed && <p className="col-span-2 text-[13px] text-destructive">{t('Discounts above {pct}% need a manager.', { pct: MAX_DISCOUNT })}</p>}
           <div className="col-span-2 flex justify-between text-[13px]"><span className="text-muted-foreground">{t('Line total, with VAT')}</span><span className="font-semibold tabular">{formatMoney(lineTotal({ qty: num(qty), price: line.price, discount: d }))}</span></div>
           <div className="col-span-2 flex gap-2"><Button type="button" variant="ghost" className="text-destructive" onClick={onRemove}><Trash2 /> {t('Remove')}</Button><Button type="submit" className="ml-auto" disabled={!valid}>{t('Apply')}</Button></div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/** a coupon written by hand from the fiscal receipt book while the till was fully down: its number and the time written on it */
+function BlockDialog({ onClose }: { onClose: (b?: { no: string; at: Date }) => void }) {
+  const [no, setNo] = React.useState('')
+  const now = new Date()
+  const local = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+  const [at, setAt] = React.useState(local(now))
+  const when = new Date(at)
+  // the shop has 48 hours to repair the till and then 5 days to register the book (UA 01/2026, neni 45)
+  const tooOld = when.getTime() < now.getTime() - 7 * 864e5
+  const future = when.getTime() > now.getTime() + 60000
+  const ok = no.trim().length > 0 && !Number.isNaN(when.getTime()) && !tooOld && !future
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader><DialogTitle>{t('Coupon from the receipt book')}</DialogTitle>
+          <DialogDescription>{t('When the till was fully down, receipts were written from the fiscal receipt book registered at ATK. Register each one here, as written on it.')}</DialogDescription></DialogHeader>
+        <form className="grid gap-3" onSubmit={(e) => { e.preventDefault(); if (ok) onClose({ no: no.trim(), at: when }) }}>
+          <div className="grid gap-1.5"><Label htmlFor="bk-no">{t('Number in the receipt book')}</Label><Input id="bk-no" autoFocus value={no} onChange={(e) => setNo(e.target.value)} /></div>
+          <div className="grid gap-1.5"><Label htmlFor="bk-at">{t('Date and time written on it')}</Label><Input id="bk-at" type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} /></div>
+          {tooOld && <p className="text-[13px] text-destructive">{t('Older than 7 days: the book is registered within 5 days after the till is back (48 hours to repair it).')}</p>}
+          {future && <p className="text-[13px] text-destructive">{t('The time cannot be in the future.')}</p>}
+          <DialogFooter><Button type="button" variant="ghost" onClick={() => onClose()}>{t('Cancel')}</Button><Button type="submit" disabled={!ok}>{t('Continue')}</Button></DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

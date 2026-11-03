@@ -153,7 +153,8 @@ select public.pos_submit_order(jsonb_build_object('client_uuid', gen_random_uuid
   'lines', jsonb_build_array(jsonb_build_object('variant_id', :'water', 'quantity', 1, 'unit_price', 0.5)),
   'payments', jsonb_build_array(jsonb_build_object('method', 'cash', 'amount', 0.5)),
   'fiscal', jsonb_build_object('env', 'test', 'coupon_id', 301000000002, 'seq', 2, 'pos_id', 1, 'details', 'CMTVAxAKGAEiCVByaXNodGluZQ==',
-    'signature', 'MEUCIQD3XmlSMXXlCoGL1i8FvjpM7cEFG0caI8lo6gwQvHy3jwIhAKP4m5nnbncPANmp', 'qr', 'CMTV|MEUC'))) as s2 \gset
+    'signature', 'MEUCIQD3XmlSMXXlCoGL1i8FvjpM7cEFG0caI8lo6gwQvHy3jwIhAKP4m5nnbncPANmp', 'qr', 'CMTV|MEUC', 'block_no', 'B-0042'))) as s2 \gset
+select t.ok((select atk ->> 'block_no' = 'B-0042' from public.pos_orders where id = (:'s2'::jsonb ->> 'id')::uuid), 'a coupon from the receipt book keeps the book''s number');
 reset role;
 select set_config('request.jwt.claim.sub', '', false);
 select public.atk_wait(100) ->> 'id' as fr2 \gset

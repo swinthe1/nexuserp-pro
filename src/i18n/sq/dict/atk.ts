@@ -178,4 +178,19 @@ export default {
   "Cancel the whole coupon: it was issued by mistake": "Anulo gjithë kuponin: u lëshua gabimisht",
   "Reason for the cancellation (printed on the coupon)": "Arsyeja e anulimit (printohet në kupon)",
   "Cancel the coupon · {amount}": "Anulo kuponin · {amount}",
+  // the fiscal receipt book
+  "From the receipt book": "Nga blloku",
+  "Register a coupon written in the fiscal receipt book while the till was down": "Regjistro një kupon të shkruar në bllokun fiskal kur arka nuk punonte",
+  "Coupon from the receipt book": "Kupon nga blloku fiskal",
+  "When the till was fully down, receipts were written from the fiscal receipt book registered at ATK. Register each one here, as written on it.":
+    "Kur arka nuk punonte fare, kuponët u shkruan nga blloku fiskal i regjistruar në ATK. Regjistrojeni secilin këtu, ashtu siç është shkruar.",
+  "Number in the receipt book": "Numri në bllok",
+  "Date and time written on it": "Data dhe ora e shkruar në të",
+  "Older than 7 days: the book is registered within 5 days after the till is back (48 hours to repair it).":
+    "Më i vjetër se 7 ditë: blloku regjistrohet brenda 5 ditëve pasi rregullohet arka (48 orë për rregullim).",
+  "The time cannot be in the future.": "Ora nuk mund të jetë në të ardhmen.",
+  "Registering receipt book coupon no. {no} of {date}: enter its lines and take the payment as written on it":
+    "Po regjistrohet kuponi nr. {no} i bllokut, i datës {date}: shtoni rreshtat dhe pagesën ashtu siç janë shkruar",
+  "Stop|action": "Ndalo",
+  "From the fiscal receipt book, no. {no}": "Nga blloku fiskal, nr. {no}",
 } satisfies Dict

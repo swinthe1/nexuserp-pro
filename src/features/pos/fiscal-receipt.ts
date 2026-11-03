@@ -37,6 +37,8 @@ export interface FiscalPrint {
   /** cash given back, in cents */
   change?: number
   footer?: string | null
+  /** registered from the fiscal receipt book */
+  blockNo?: string | null
 }
 
 const PAY: Record<number, string> = { [PaymentType.Cash]: 'CASH', [PaymentType.CreditCard]: 'CARD', [PaymentType.Voucher]: 'VOUCHER', [PaymentType.Cheque]: 'CHEQUE',
@@ -81,6 +83,7 @@ export function fiscalReceiptHtml(f: FiscalPrint) {
     <div class="c title">${esc(kind)}</div>
     ${f.copy ? `<div class="c"><span class="mark">${esc(t('COPY OF THE COUPON|fiscal'))}</span></div>` : ''}
     ${c.referenceNo ? `<div class="c sm">${esc(t('Original coupon: {no}|fiscal', { no: String(c.referenceNo) }))}</div>` : ''}
+    ${f.blockNo ? `<div class="c sm b">${esc(t('From the fiscal receipt book, no. {no}', { no: f.blockNo }))}</div>` : ''}
     ${f.reason ? `<div class="sm">${esc(t('Reason for the cancellation: {reason}', { reason: f.reason }))}</div>` : ''}
     <table><tr><th>${esc(t('ITEM|fiscal'))}</th><th class="r">${esc(t('QTY X PRICE|fiscal'))}</th><th class="r">${esc(t('AMOUNT|fiscal'))}</th></tr>${lines}</table>
     ${c.totalDiscount > 0 ? `<table class="sm"><tr><td>${esc(t('Discounts|fiscal'))}</td><td class="r">−${eur(c.totalDiscount)}</td></tr></table>` : ''}
