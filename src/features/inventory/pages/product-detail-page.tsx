@@ -271,7 +271,6 @@ const editSchema = z.object({
   is_sellable: z.boolean(),
   is_purchasable: z.boolean(),
   is_active: z.boolean(),
-  adults_only: z.boolean(),
   brand: z.string().trim().optional(),
   hs_code: z.string().trim().optional(),
   weight_kg: z.preprocess((v) => (v === '' || v == null ? null : Number(v)), z.number().nonnegative().nullable()),
@@ -288,7 +287,7 @@ function EditProductSheet({ product }: { product: ProductDetail }) {
     values: {
       name: product.name, description: product.description ?? '', category_id: product.category_id, sales_price: product.sales_price,
       sales_tax_code_id: product.sales_tax_code_id, purchase_tax_code_id: product.purchase_tax_code_id, is_sellable: product.is_sellable,
-      is_purchasable: product.is_purchasable, is_active: product.is_active, adults_only: product.adults_only, brand: product.brand ?? '', hs_code: product.hs_code ?? '',
+      is_purchasable: product.is_purchasable, is_active: product.is_active, brand: product.brand ?? '', hs_code: product.hs_code ?? '',
       weight_kg: product.weight_kg, volume_m3: product.volume_m3,
     },
   })
@@ -326,9 +325,9 @@ function EditProductSheet({ product }: { product: ProductDetail }) {
                 <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel optional>{t('Brand')}</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                 <FormField control={form.control} name="hs_code" render={({ field }) => (<FormItem><FormLabel optional>{t('HS code')}</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
               </div>
-              {(['is_sellable', 'is_purchasable', 'is_active', 'adults_only'] as const).map((n) => (
+              {(['is_sellable', 'is_purchasable', 'is_active'] as const).map((n) => (
                 <FormField key={n} control={form.control} name={n} render={({ field }) => (
-                  <label className="flex items-center justify-between text-sm">{n === 'is_sellable' ? t('Can be sold') : n === 'is_purchasable' ? t('Can be purchased') : n === 'adults_only' ? t('Adults only (alcohol, tobacco)') : t('Active')}<Switch checked={field.value} onCheckedChange={field.onChange} /></label>
+                  <label className="flex items-center justify-between text-sm">{n === 'is_sellable' ? t('Can be sold') : n === 'is_purchasable' ? t('Can be purchased') : t('Active')}<Switch checked={field.value} onCheckedChange={field.onChange} /></label>
                 )} />
               ))}
               <p className="text-xs text-muted-foreground">{t('Unit, type and tracking can\'t change after creation because stock history depends on them.')}</p>

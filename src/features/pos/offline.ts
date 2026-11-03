@@ -114,9 +114,9 @@ export function syncNow(): Promise<void> {
   return running
 }
 
-/* ------------------------------------------------------------------ the till's log (voids, age checks) */
+/* ------------------------------------------------------------------ the till's log (voids) */
 export type TillLogEntry = {
-  id: string; session_id: string; kind: 'void_line' | 'void_qty' | 'void_sale' | 'age_ok' | 'age_refused'
+  id: string; session_id: string; kind: 'void_line' | 'void_qty' | 'void_sale'
   variant_id?: string | null; description?: string | null; quantity?: number | null; amount?: number; at: string; approval?: string | null; offline?: boolean
 }
 const LOG_KEY = 'tilllog'

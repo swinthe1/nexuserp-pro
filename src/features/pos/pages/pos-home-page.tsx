@@ -328,11 +328,10 @@ export function PosSessionPage() {
         )}
         <TabsContent value="controls" className="grid gap-4">
           {ctl.isError ? <ErrorState error={ctl.error} onRetry={() => void ctl.refetch()} /> : !c ? <Skeleton className="h-40" /> : <>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <StatCard label={t('Voids')} value={String(c.voids.count)} hint={t('{amount} taken off sales', { amount: formatMoney(c.voids.amount) })} />
               <StatCard label={t('Without a manager')} value={String(c.voids.unconfirmed)} tone={c.voids.unconfirmed ? 'warning' : 'default'}
                 hint={t('Offline, or no manager with a PIN')} />
-              <StatCard label={t('Age checks')} value={String(c.age.checked)} hint={c.age.refused ? t('{n} refused', { n: c.age.refused }) : undefined} />
             </div>
             {c.count && (
               <Card><CardHeader className="pb-2"><CardTitle>{t('Cash count')}</CardTitle></CardHeader><CardContent className="grid gap-1.5 text-[13px]">

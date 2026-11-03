@@ -2141,8 +2141,6 @@ export type Database = {
           pos_count_notes: boolean
           pos_void_approval: boolean
           pos_close_witness: string
-          pos_age_check: boolean
-          pos_min_age: number
         }
         Insert: {
           id?: string
@@ -2217,8 +2215,6 @@ export type Database = {
           pos_count_notes?: boolean
           pos_void_approval?: boolean
           pos_close_witness?: string
-          pos_age_check?: boolean
-          pos_min_age?: number
         }
         Update: {
           id?: string
@@ -2293,8 +2289,6 @@ export type Database = {
           pos_count_notes?: boolean
           pos_void_approval?: boolean
           pos_close_witness?: string
-          pos_age_check?: boolean
-          pos_min_age?: number
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -8550,7 +8544,6 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           target_margin_pct: number | null
-          adults_only: boolean
         }
         Insert: {
           id?: string
@@ -8570,7 +8563,6 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           target_margin_pct?: number | null
-          adults_only?: boolean
         }
         Update: {
           id?: string
@@ -8590,7 +8582,6 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           target_margin_pct?: number | null
-          adults_only?: boolean
         }
         Relationships: [
           { foreignKeyName: "product_categories_company_id_cogs_account_id_fkey"; columns: ["company_id", "cogs_account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["company_id", "id"] },
@@ -8854,7 +8845,6 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           target_margin_pct: number | null
-          adults_only: boolean
         }
         Insert: {
           id?: string
@@ -8888,7 +8878,6 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           target_margin_pct?: number | null
-          adults_only?: boolean
         }
         Update: {
           id?: string
@@ -8922,7 +8911,6 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           target_margin_pct?: number | null
-          adults_only?: boolean
         }
         Relationships: [
           { foreignKeyName: "products_company_id_category_id_fkey"; columns: ["company_id", "category_id"]; isOneToOne: false; referencedRelation: "product_categories"; referencedColumns: ["company_id", "id"] },

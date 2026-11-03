@@ -2,7 +2,7 @@ import { PageHelpButton, TourHost } from '@/components/help'
 import { TillTasks } from '@/features/tasks/components/till-tasks'
 import { whereElsewhere } from '@/features/inventory/where'
 import {
-  ArrowLeft, BadgePercent, Banknote, Camera, Check, CloudOff, CreditCard, Ellipsis, IdCard, Landmark, ListOrdered, LogOut, Minus, Plus, Printer, ReceiptText, RotateCcw, ScanLine, Search,
+  ArrowLeft, BadgePercent, Banknote, Camera, Check, CloudOff, CreditCard, Ellipsis, Landmark, ListOrdered, LogOut, Minus, Plus, Printer, ReceiptText, RotateCcw, ScanLine, Search,
   ShieldCheck, Ticket, Trash2, UserRound, Wallet, X,
 } from 'lucide-react'
 import * as React from 'react'
@@ -133,7 +133,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   const [category, setCategory] = React.useState<string>('__all')
   const [customer, setCustomer] = React.useState<string | null>(data.register.default_customer_id)
   const [flash, setFlash] = React.useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
-  const [dialog, setDialog] = React.useState<null | 'pay' | 'customer' | 'card' | 'refund' | 'cash' | 'close' | 'line' | 'queue' | 'manager' | 'age'>(null)
+  const [dialog, setDialog] = React.useState<null | 'pay' | 'customer' | 'card' | 'refund' | 'cash' | 'close' | 'line' | 'queue' | 'manager'>(null)
   const [done, setDone] = React.useState<Done | null>(null)
   const [camera, setCamera] = React.useState(false)
   const [autoPrint, setAutoPrint] = React.useState(() => prefGet('pos.autoprint', '1') === '1')
@@ -263,7 +263,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
 
   const submitQuery = (raw: string) => {
     let v = raw.trim()
-    if (!v) { if (lines.length) setDialog(adultLines.length && !ageOk ? 'age' : 'pay'); return }
+    if (!v) { if (lines.length) setDialog('pay'); return }
     let n: number | undefined
     const mult = /^(\d+(?:[.,]\d+)?)\*(.*)$/.exec(v)
     if (mult) {
@@ -328,14 +328,8 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     if (!l) return
     requestVoid({ entries: [voidEntry(l, l.qty, 'void_line')], apply: () => { setLines((ls) => ls.filter((x) => x.key !== key)); setSelected(null) } })
   }
-  /* ---------- alcohol and tobacco: the age is checked once per sale */
-  const adults = React.useMemo(() => new Set(opt?.age_check === false ? [] : opt?.adults_only ?? []), [opt])
-  const [ageOk, setAgeOk] = React.useState(false)
-  const adultLines = lines.filter((l) => adults.has(l.variant_id))
-  React.useEffect(() => { if (adultLines.length && !ageOk && !dialog) setDialog('age') }, [adultLines.length, ageOk, dialog])
-  const bornBy = React.useMemo(() => { const d = new Date(); d.setFullYear(d.getFullYear() - (opt?.min_age ?? 18)); return d }, [opt?.min_age])
 
-  const clearSale = () => { setLines([]); setSelected(null); setCustomer(data.register.default_customer_id); setMultiplier(null); setFlash(null); setCard(null); setRedeem(null); setVoidApproval(null); setAgeOk(false) }
+  const clearSale = () => { setLines([]); setSelected(null); setCustomer(data.register.default_customer_id); setMultiplier(null); setFlash(null); setCard(null); setRedeem(null); setVoidApproval(null) }
   /** the cashier clears the whole sale: that is a void too */
   const voidSale = () => requestVoid({ entries: lines.length ? [{ kind: 'void_sale', description: tn(lines.length, '{n} line', '{n} lines'), quantity: itemsCount,
     amount: r2(total) }] : [], apply: clearSale })
@@ -403,7 +397,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       else if (e.key === 'F4') { e.preventDefault(); setDialog('customer') }
       else if (e.key === 'F3') { e.preventDefault(); setFlash(null); setDialog('card') }
       else if (e.key === 'F9') { e.preventDefault(); setDialog('refund') }
-      else if ((e.key === 'F12' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) && lines.length) { e.preventDefault(); setDialog(adultLines.length && !ageOk ? 'age' : 'pay') }
+      else if ((e.key === 'F12' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) && lines.length) { e.preventDefault(); setDialog('pay') }
       else if (e.key === 'Escape') { if (query) setQuery(''); else if (multiplier) setMultiplier(null) }
       else if (!query && selected && document.activeElement === search.current) {
         const l = lines.find((x) => x.key === selected)
@@ -523,7 +517,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
                 <span className="flex items-center gap-2"><ListOrdered /> {t('{a} lines · {b} items', { a: lines.length, b: num(itemsCount) })}</span>
                 <span className="text-base font-semibold tabular">{formatMoney(total)} <span className="text-[11px] font-normal text-muted-foreground">{t('with VAT|short')}</span></span>
               </Button>
-              <Button className="h-14 px-5" disabled={!lines.length} onClick={() => setDialog(adultLines.length && !ageOk ? 'age' : 'pay')}>{t('Pay')}</Button>
+              <Button className="h-14 px-5" disabled={!lines.length} onClick={() => setDialog('pay')}>{t('Pay')}</Button>
             </div>
           )}
         </section>
@@ -592,10 +586,9 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
             ))}
           </div>
           <div className="border-t px-4 py-3">
-            {(voidApproval || (ageOk && adultLines.length > 0)) && (
+            {voidApproval && (
               <div className="mb-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                {voidApproval && <span className="inline-flex items-center gap-1"><ShieldCheck className="size-3.5 text-primary" /> {t('Voids confirmed by {name}', { name: voidApproval.name })}</span>}
-                {ageOk && adultLines.length > 0 && <span className="inline-flex items-center gap-1"><IdCard className="size-3.5 text-primary" /> {t('Age checked')}</span>}
+                <span className="inline-flex items-center gap-1"><ShieldCheck className="size-3.5 text-primary" /> {t('Voids confirmed by {name}', { name: voidApproval.name })}</span>
               </div>
             )}
             <div className="flex justify-between text-[13px] text-muted-foreground"><span>{t('{a} lines · {b} items', { a: lines.length, b: num(itemsCount) })}</span><span className="tabular">{t('incl. VAT {amount}', { amount: formatMoney(vat) })}</span></div>
@@ -605,7 +598,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
             </div>
             <div className="mt-3 grid grid-cols-[auto_1fr] gap-2">
               <Button variant="outline" size="lg" className="h-14" disabled={!lines.length} onClick={() => { if (lines.length < 3 || confirm(t('Clear this sale?'))) voidSale() }}><X /> {t('Clear')}</Button>
-              <Button size="lg" className="h-14 text-lg" disabled={!lines.length} onClick={() => setDialog(adultLines.length && !ageOk ? 'age' : 'pay')}>{t('Pay {amount}', { amount: formatMoney(total) })} <Kbd className="ml-2 border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground">F12</Kbd></Button>
+              <Button size="lg" className="h-14 text-lg" disabled={!lines.length} onClick={() => setDialog('pay')}>{t('Pay {amount}', { amount: formatMoney(total) })} <Kbd className="ml-2 border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground">F12</Kbd></Button>
             </div>
           </div>
         </aside>
@@ -620,21 +613,6 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
           description={t('Taking items off a sale needs a manager. One confirmation covers the rest of this sale.')}
           onCancel={() => { setPendingVoid(null); setDialog(null); focusSearch() }}
           onApproved={(a) => { setVoidApproval(a); commitVoid(pendingVoid, a.approval); setPendingVoid(null); setDialog(null); focusSearch() }} />
-      )}
-      {dialog === 'age' && adultLines.length > 0 && (
-        <AgeDialog items={adultLines.map((l) => l.name)} minAge={opt?.min_age ?? 18} bornBy={bornBy}
-          onOk={() => {
-            setAgeOk(true); setDialog(null); focusSearch()
-            void logTill(adultLines.map((l) => ({ id: crypto.randomUUID(), session_id: session.id, kind: 'age_ok' as const, variant_id: l.variant_id, description: l.name, quantity: l.qty,
-              at: new Date().toISOString(), offline: !navigator.onLine })))
-          }}
-          onRefuse={() => {
-            const at = new Date().toISOString()
-            void logTill(adultLines.map((l) => ({ id: crypto.randomUUID(), session_id: session.id, kind: 'age_refused' as const, variant_id: l.variant_id, description: l.name, quantity: l.qty,
-              amount: r2(lineTotal(pricedOf(l.key) ?? l)), at, offline: !navigator.onLine })))
-            setLines((ls) => ls.filter((l) => !adults.has(l.variant_id))); setSelected(null); setDialog(null); focusSearch()
-            setFlash({ tone: 'error', text: t('Taken off the sale: the customer is under {age}', { age: opt?.min_age ?? 18 }) })
-          }} />
       )}
       {dialog === 'line' && selectedLine && <LineDialog line={selectedLine} canDiscount={(d) => d <= MAX_DISCOUNT || can('pos.approve')}
         onClose={(p) => { if (p) updateLine(selectedLine.key, p); setDialog(null); focusSearch() }} onRemove={() => { removeLine(selectedLine.key); setDialog(null); focusSearch() }} />}
@@ -799,28 +777,6 @@ function DoneOverlay({ done, currency, onNext }: { done: Done; currency: string;
 }
 
 /* ================================================================== small dialogs */
-function AgeDialog({ items, minAge, bornBy, onOk, onRefuse }: { items: string[]; minAge: number; bornBy: Date; onOk: () => void; onRefuse: () => void }) {
-  return (
-    <Dialog open onOpenChange={() => undefined}>
-      <DialogContent className="max-w-md [&>button]:hidden" onEscapeKeyDown={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><IdCard className="size-5 text-primary" /> {t('Check the customer\'s age')}</DialogTitle>
-          <DialogDescription>{t('{items} is sold only to customers aged {age} or over.', { items: items.join(', '), age: minAge })}</DialogDescription>
-        </DialogHeader>
-        <div className="rounded-lg bg-muted/60 px-4 py-3 text-center">
-          <div className="text-[13px] text-muted-foreground">{t('Born on or before')}</div>
-          <div className="text-3xl font-semibold tabular">{formatDateWith(bornBy, { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
-        </div>
-        <p className="text-[13px] text-muted-foreground">{t('When in doubt, ask for an ID card.')}</p>
-        <DialogFooter className="gap-2 sm:justify-between">
-          <Button variant="outline" onClick={onRefuse}><X /> {t('Under {age}: take it off', { age: minAge })}</Button>
-          <Button autoFocus onClick={onOk}><Check /> {t('Age checked')}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
 function CardDialog({ onClose, onCode, error }: { onClose: () => void; onCode: (code: string) => Promise<void>; error: string | null }) {
   const [code, setCode] = React.useState('')
   const [busy, setBusy] = React.useState(false)

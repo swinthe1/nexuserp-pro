@@ -1,6 +1,6 @@
 import type { Dict } from '../index'
 
-/** Market controls: voids with the manager's PIN, the count confirmed, adults only, short dates. */
+/** Market controls: voids with the manager's PIN, the count confirmed, short dates. */
 export default {
   // the till
   "A manager confirms": "Konfirmon menaxheri",
@@ -11,22 +11,12 @@ export default {
   "Offline: kept in the till's log without the manager's confirmation": "Pa internet: u ruajt në regjistrin e arkës pa konfirmimin e menaxherit",
   "Voids confirmed by {name}": "Anulimet i konfirmoi {name}",
   "Who confirms": "Kush konfirmon",
-  "Age checked": "Mosha u kontrollua",
-  "Check the customer's age": "Kontrollo moshën e klientit",
-  "{items} is sold only to customers aged {age} or over.": "{items} shitet vetëm për klientë {age} vjeç e lart.",
-  "Born on or before": "Lindur më ose para",
-  "When in doubt, ask for an ID card.": "Kur keni dyshim, kërkoni letërnjoftimin.",
-  "Under {age}: take it off": "Nën {age}: hiqe",
-  "Taken off the sale: the customer is under {age}": "U hoq nga shitja: klienti është nën {age} vjeç",
   // the shift and the Z report
   "Till controls": "Kontrollet e arkës",
   "Voids": "Anulimet",
   "{amount} taken off sales": "{amount} të hequra nga shitjet",
   "Without a manager": "Pa menaxher",
   "Offline, or no manager with a PIN": "Pa internet, ose s'kishte menaxher me PIN",
-  "Age checks": "Kontrolle moshe",
-  "{n} refused": "{n} të refuzuara",
-  "{a} · {b} refused": "{a} · {b} të refuzuara",
   "Cash count": "Numërimi i arkës",
   "Counted by {name}": "Numëroi {name}",
   "confirmed by {name}": "konfirmoi {name}",
@@ -46,14 +36,6 @@ export default {
   "Voids need a manager": "Anulimet kërkojnë menaxherin",
   "Taking an item off a sale, lowering its quantity or clearing a sale asks for a manager's PIN (once per sale). Every void is kept with the shift either way.":
     "Heqja e një artikulli nga shitja, ulja e sasisë ose fshirja e shitjes kërkon PIN-in e menaxherit (një herë për shitje). Çdo anulim ruhet me turnin gjithsesi.",
-  "Check the age for alcohol and tobacco": "Kontrolli i moshës për alkool dhe duhan",
-  "For the categories and products marked \"Adults only\", the till asks the cashier to check the customer's age once per sale.":
-    "Për kategoritë dhe produktet e shënuara \"Vetëm për të rritur\", arka i kërkon arkatares ta kontrollojë moshën e klientit një herë për shitje.",
-  "Minimum age": "Mosha minimale",
-  "{n}+": "{n}+",
-  "Adults only": "Vetëm për të rritur",
-  "Adults only (alcohol, tobacco)": "Vetëm për të rritur (alkool, duhan)",
-  "The till asks the cashier to check the customer's age. Sub-categories follow.": "Arka i kërkon arkatares ta kontrollojë moshën e klientit. Nënkategoritë e ndjekin.",
   // short dates
   "Short dates|menu": "Afatet e afërta",
   "Items about to expire in each store: the shelf worker proposes a discount, the manager approves it and the till sells it at that price until the date. What expired comes off the shelf as a loss.":

@@ -1,6 +1,6 @@
 -- =============================================================================
--- DrisPRO · market controls: voids with the manager's PIN, the count by note and coin, adults only,
--- short dates (runs after 01–63)
+-- DrisPRO · market controls: voids with the manager's PIN, the count by note and coin, short dates
+-- (no age check at the till) (runs after 01–63)
 -- =============================================================================
 \set QUIET on
 \set ON_ERROR_STOP on
@@ -29,10 +29,9 @@ select :'co', 'T10', 'Till 10', :'shop', :'floor', :'drawer', id from public.jou
 select m.id as besa_m from public.company_members m join public.profiles p on p.id = m.user_id where m.company_id = :'co' and p.email = 'besa@kt.al' \gset
 select m.id as cora_m from public.company_members m join public.profiles p on p.id = m.user_id where m.company_id = :'co' and p.email = 'cora@kt.al' \gset
 
--- adults only: a category (and what is under it) or one product
+-- products: beer and cigarettes sell like anything else, no age is asked
 insert into public.product_categories (company_id, name) values (:'co', 'Pije alkoolike') returning id as c_alc \gset
-insert into public.product_categories (company_id, name, parent_id) values (:'co', 'Birra', :'c_alc') returning id as c_beer \gset
-select public.create_product(jsonb_build_object('company_id', :'co', 'code', 'KT-BEER', 'name', 'Birra Peja', 'uom_id', :'pcs', 'sales_price', 1, 'category_id', :'c_beer')) as p \gset
+select public.create_product(jsonb_build_object('company_id', :'co', 'code', 'KT-BEER', 'name', 'Birra Peja', 'uom_id', :'pcs', 'sales_price', 1, 'category_id', :'c_alc')) as p \gset
 select id as beer from public.product_variants where product_id = :'p' \gset
 select public.create_product(jsonb_build_object('company_id', :'co', 'code', 'KT-CIG', 'name', 'Cigare', 'uom_id', :'pcs', 'sales_price', 3)) as p_cig \gset
 select id as cig from public.product_variants where product_id = :'p_cig' \gset
@@ -40,14 +39,11 @@ select public.create_product(jsonb_build_object('company_id', :'co', 'code', 'KT
   'tracking', 'lot', 'track_expiry', true)) as p \gset
 select id as milk from public.product_variants where product_id = :'p' \gset
 
-select t.ok(not ((public.pos_till_options(:'reg') -> 'adults_only') ? :'beer'), 'nothing is for adults only until it is marked');
-update public.product_categories set adults_only = true where id = :'c_alc';
-update public.products set adults_only = true where id = :'p_cig';
 select public.pos_till_options(:'reg') as opt \gset
-select t.ok((:'opt'::jsonb -> 'adults_only') ? :'beer', 'a sub-category follows its parent');
-select t.ok((:'opt'::jsonb -> 'adults_only') ? :'cig', 'one product can be marked by itself');
-select t.ok(not ((:'opt'::jsonb -> 'adults_only') ? :'milk'), 'milk is for everyone');
-select t.ok((:'opt'::jsonb ->> 'min_age')::int = 18 and (:'opt'::jsonb ->> 'void_approval')::boolean and :'opt'::jsonb ->> 'close_witness' = 'difference', 'the defaults: 18, voids need the manager, the count is confirmed when it is off');
+select t.ok(not (:'opt'::jsonb ? 'adults_only') and not (:'opt'::jsonb ? 'age_check') and not (:'opt'::jsonb ? 'min_age'), 'the till is told nothing about ages');
+select t.ok(not exists (select 1 from information_schema.columns where table_schema = 'public' and column_name in ('adults_only', 'pos_age_check', 'pos_min_age')),
+  'no adults-only mark and no age setting is kept anywhere');
+select t.ok((:'opt'::jsonb ->> 'void_approval')::boolean and :'opt'::jsonb ->> 'close_witness' = 'difference', 'the defaults: voids need the manager, the count is confirmed when it is off');
 select t.ok(not (:'opt'::jsonb -> 'managers' @> jsonb_build_array(jsonb_build_object('member_id', :'besa_m'))), 'a manager without a PIN cannot confirm at the till');
 select public.member_set_pin(:'besa_m', '5917');
 select t.ok(public.pos_till_options(:'reg') -> 'managers' @> jsonb_build_array(jsonb_build_object('member_id', :'besa_m')), 'with a PIN the manager is offered');
@@ -61,7 +57,7 @@ select public.pos_approve(:'reg', :'besa_m', '5917', 'void') ->> 'approval' as a
 select t.ok(public.pos_log(:'ses', jsonb_build_array(
   jsonb_build_object('id', gen_random_uuid(), 'kind', 'void_line', 'variant_id', :'beer', 'description', 'Birra Peja', 'quantity', 2, 'amount', 2, 'at', now(), 'approval', :'ap'),
   jsonb_build_object('id', '00000000-0000-4000-8000-000000000064', 'kind', 'void_sale', 'description', 'Sale cleared', 'amount', 7.5, 'at', now(), 'offline', true),
-  jsonb_build_object('id', gen_random_uuid(), 'kind', 'age_ok', 'variant_id', :'cig', 'at', now()))) = 3, 'the till sends its log');
+  jsonb_build_object('id', gen_random_uuid(), 'kind', 'age_ok', 'variant_id', :'cig', 'at', now()))) = 2, 'the till sends its log (an age step from an older till is skipped)');
 select t.ok(public.pos_log(:'ses', jsonb_build_array(jsonb_build_object('id', '00000000-0000-4000-8000-000000000064', 'kind', 'void_sale', 'amount', 7.5, 'at', now()))) = 0,
   'a step sent twice is kept once');
 select t.ok((select approved_by = (select user_id from public.company_members where id = :'besa_m') from public.pos_till_log where session_id = :'ses' and kind = 'void_line'),
@@ -89,22 +85,21 @@ select t.ok(:'ctl'::jsonb -> 'count' -> 'notes_coins' = '{"10": 1, "20": 2}'::js
 select t.ok(:'ctl'::jsonb -> 'count' ->> 'witnessed_by' = 'Besa Përgjegjëse' and (:'ctl'::jsonb -> 'count' ->> 'difference')::numeric = -10, 'with who confirmed it and the difference');
 select t.ok((:'ctl'::jsonb -> 'voids' ->> 'count')::int = 3 and (:'ctl'::jsonb -> 'voids' ->> 'unconfirmed')::int = 2 and (:'ctl'::jsonb -> 'voids' ->> 'amount')::numeric = 10.5,
   'the shift shows its voids');
-select t.ok((:'ctl'::jsonb -> 'age' ->> 'checked')::int = 1, 'and the ages checked');
+select t.ok(not (:'ctl'::jsonb ? 'age') and not exists (select 1 from public.pos_till_log where kind like 'age%'), 'and nothing about ages');
 select t.throws(format($q$select public.pos_close('%s', '{"counted": 50, "approval": "%s"}')$q$, :'ses', :'cap'), 'already', 'a confirmation is good once');
 
 -- a balanced drawer needs nobody; 'always' does
 select public.open_pos_session(:'reg', 0) as ses2 \gset
 select t.ok(public.pos_close(:'ses2', '{"counted": 0}') is not null, 'a drawer that balances closes on the cashier''s word');
 select t.login(:'boss');
-select public.automation_settings_save(:'co', '{"pos_close_witness": "always", "pos_min_age": 21}');
-select t.ok((public.pos_till_options(:'reg') ->> 'min_age')::int = 21, 'the age can be changed');
+select public.automation_settings_save(:'co', '{"pos_close_witness": "always"}');
 select t.login('cora@kt.al');
 select public.open_pos_session(:'reg', 0) as ses3 \gset
 select t.throws(format($q$select public.pos_close('%s', '{"counted": 0}')$q$, :'ses3'), 'manager confirms', 'set to always, every count is confirmed');
 select t.login('besa@kt.al');
 select t.ok(public.pos_close(:'ses3', '{"counted": 0}') is not null, 'a manager closing a till needs nobody else');
 select t.login(:'boss');
-select public.automation_settings_save(:'co', '{"pos_close_witness": "difference", "pos_min_age": 18}');
+select public.automation_settings_save(:'co', '{"pos_close_witness": "difference"}');
 
 -- short dates
 select t.login(:'boss');

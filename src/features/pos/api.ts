@@ -102,12 +102,11 @@ export async function posApprove(register: string, member: string, pin: string, 
   return unwrap(await supabase.rpc('pos_approve', { p_register: register, p_member: member, p_pin: pin, p_purpose: purpose })) as unknown as { approval?: string; name?: string; error?: string }
 }
 
-/** what the shift's count, its voids and its age checks were (the Z report and the shift's page) */
+/** what the shift's count and its voids were (the Z report and the shift's page) */
 export type SessionControls = {
   count: { notes_coins: Record<string, number> | null; counted: number; difference: number; counted_by: string | null; witnessed_by: string | null } | null
   voids: { count: number; amount: number; unconfirmed: number
     lines: { kind: 'void_line' | 'void_qty' | 'void_sale'; description: string | null; quantity: number | null; amount: number; at: string; cashier: string | null; approved_by: string | null; offline: boolean }[] }
-  age: { checked: number; refused: number }
 }
 export async function sessionControls(id: string) {
   return unwrap(await supabase.rpc('pos_session_controls', { p_session: id })) as unknown as SessionControls
@@ -125,10 +124,6 @@ export type TillOptions = {
   /** when the closing count is confirmed by a manager: never, when the drawer is off by more than the tolerance, always */
   close_witness?: 'never' | 'difference' | 'always'
   tolerance?: number
-  /** the till asks the cashier to check the customer's age for these items, once per sale */
-  age_check?: boolean
-  min_age?: number
-  adults_only?: string[]
   /** the store managers who can confirm with their PIN */
   managers?: { member_id: string; name: string }[]
 }
