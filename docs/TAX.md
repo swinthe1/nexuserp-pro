@@ -118,6 +118,10 @@ Built from ATK's technical documentation (github.com/fiskalizimi/pos-golang and 
   - ATK's `transaction_id` is kept in `fic`.
   - A refusal or a lost connection is retried with backoff (1, 2, 5, 15, 30 min, then hourly). The first refusal notifies `tax.write`.
   - A receipt from a till that is not registered is marked `NOT_SIGNED` and never sent. A till that is not registered on its device does not sell.
+- **Units and categories.** Every line carries ATK's codes from its two lists, kept in `src/lib/atk/codes.ts`:
+  - Units ("Njësitë Matëse") are set on `units_of_measure.atk_unit`, guessed from the unit's code (pcs → CP, kg → KGN, l → LTR…). An unmatched unit goes as CP.
+  - Categories ("Kategoritë e mallrave dhe shërbimeve") are set on `product_categories.atk_type`. An unmatched category takes the company's own, `company_settings.atk_default_type` (TT by default).
+  - ATK's list uses PM twice (medical equipment, and flour products).
 - **What has not reached ATK** can be downloaded as CSV from `/pos/atk`; ATK asks for this format in its 22.06.2026 amendment.
 - **Testing locally.**
   - `ATK_TEST_BASE` points the postier's test-environment calls at a stand-in instead of `fiskalizimi-test.atk-ks.org`.

@@ -76,7 +76,7 @@ export function buildCoupons(s: AtkSale, verification = verificationNo()) {
   if ((s.type === CouponType.Return || s.type === CouponType.Cancel) && !s.referenceNo) throw new Error(t('A return or a cancellation needs the original coupon'))
   const couponId = couponIdOf(s.branchId, s.posId, s.couponSeq)
   const items: CouponItem[] = s.lines.map((l) => ({
-    name: l.name.slice(0, 200), price: Math.round(Math.abs(l.price) * 10000), unit: (l.unit || 'copë').slice(0, 20), quantity: Math.abs(l.qty),
+    name: l.name.slice(0, 200), price: Math.round(Math.abs(l.price) * 10000), unit: (l.unit || 'CP').slice(0, 20), quantity: Math.abs(l.qty),
     total: cents(l.total), taxRate: taxLetter(l.rate, l.exempt), type: (l.category || 'TT').slice(0, 20),
   }))
   const total = items.reduce((n, i) => n + i.total, 0)

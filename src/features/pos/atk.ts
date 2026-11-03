@@ -24,7 +24,11 @@ export type AtkTill = {
   last_seq?: number
   missing?: string[]
   exempt_taxes?: string[]
+  /** ATK's unit code of each item that is not CP (copë) */
   units?: Record<string, string>
+  /** ATK's category code of each item that is not the company's own */
+  types?: Record<string, string>
+  default_type?: string
 }
 
 /** printed on the receipt */
@@ -78,7 +82,7 @@ export async function signAtkSale(s: AtkSaleInput): Promise<{ payload: Record<st
     nui: a.nui ?? '', branchId: a.branch_id!, posId: a.pos_id!, applicationId: a.application_id!, location: a.location ?? '', operator: s.operator,
     couponSeq: seq, type: s.isReturn ? CouponType.Return : CouponType.Sale, time: s.time, referenceNo: s.returnOf ?? null,
     lines: s.lines.map((l) => ({ name: l.name, qty: l.qty, price: l.price, total: l.total, rate: l.rate, exempt: !!l.tax_code_id && exempt.has(l.tax_code_id),
-      unit: a.units?.[l.variant_id] ?? null })),
+      unit: a.units?.[l.variant_id] ?? 'CP', category: a.types?.[l.variant_id] ?? a.default_type ?? 'TT' })),
     payments: s.payments, change: s.change,
   })
   const signed = await signCoupons(s.key, built)

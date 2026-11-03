@@ -2144,6 +2144,7 @@ export type Database = {
           purchase_price_tolerance: number
           atk_fiscalization_no: string | null
           atk_sef_enabled: boolean
+          atk_default_type: string
         }
         Insert: {
           id?: string
@@ -2221,6 +2222,7 @@ export type Database = {
           purchase_price_tolerance?: number
           atk_fiscalization_no?: string | null
           atk_sef_enabled?: boolean
+          atk_default_type?: string
         }
         Update: {
           id?: string
@@ -2298,6 +2300,7 @@ export type Database = {
           purchase_price_tolerance?: number
           atk_fiscalization_no?: string | null
           atk_sef_enabled?: boolean
+          atk_default_type?: string
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -8592,6 +8595,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           target_margin_pct: number | null
+          atk_type: string | null
         }
         Insert: {
           id?: string
@@ -8611,6 +8615,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           target_margin_pct?: number | null
+          atk_type?: string | null
         }
         Update: {
           id?: string
@@ -8630,6 +8635,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           target_margin_pct?: number | null
+          atk_type?: string | null
         }
         Relationships: [
           { foreignKeyName: "product_categories_company_id_cogs_account_id_fkey"; columns: ["company_id", "cogs_account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["company_id", "id"] },
@@ -13034,6 +13040,7 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          atk_unit: string | null
         }
         Insert: {
           id?: string
@@ -13051,6 +13058,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          atk_unit?: string | null
         }
         Update: {
           id?: string
@@ -13068,6 +13076,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          atk_unit?: string | null
         }
         Relationships: [
           { foreignKeyName: "units_of_measure_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -15242,6 +15251,21 @@ export type Database = {
           p_wait_ms?: number
         }
         Returns: Json
+      }
+      atk_codes: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
+      atk_codes_save: {
+        Args: {
+          p_company: string
+          p_default_type: string
+          p_units: Json
+          p_categories: Json
+        }
+        Returns: undefined
       }
       atk_done: {
         Args: {

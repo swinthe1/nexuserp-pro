@@ -20,6 +20,7 @@ import { Switch } from '@/components/ui/switch'
 import { formatDateWith, msg, t, tServer } from '@/i18n'
 import { getTillKey, makeCsr, newTillKey, saveCertificate, removeTillKey, type AtkEnv } from '@/lib/atk/keys'
 import { toBase64 } from '@/lib/atk/proto'
+import { ATK_TYPES, ATK_UNITS } from '@/lib/atk/codes'
 import { describeError, unwrap } from '@/lib/errors'
 import { downloadCsv } from '@/lib/export'
 import { supabase } from '@/lib/supabase'
@@ -99,6 +100,7 @@ export function AtkPage() {
       {s && <SwitchCard s={s} />}
       {s && <BusinessCard s={s} />}
       {s && <TillsCard s={s} keys={device.keys} focus={focus} onRegister={setRegistering} onForgotten={() => { device.refresh(); void q.refetch() }} />}
+      {s && <CodesCard canEdit={s.can_setup} />}
       {s && <QueueCard s={s} />}
       {registering && s && (
         <RegisterDialog s={s} till={registering} onClose={(ok) => { setRegistering(null); if (ok) { device.refresh(); void q.refetch() } }} />
@@ -272,6 +274,85 @@ function TillsCard({ s, keys, focus, onRegister, onForgotten }: { s: Setup; keys
           </div>
         ))}
         {s.can_setup && s.stores.length > 0 && <div><Button variant={dirty ? 'default' : 'outline'} disabled={!dirty} loading={save.isPending} onClick={() => save.mutate()}>{t('Save the numbers')}</Button></div>}
+      </CardContent>
+    </Card>
+  )
+}
+
+type Codes = { default_type: string; units: { id: string; code: string; name: string; atk_unit: string | null; items: number }[]
+  categories: { id: string; name: string; atk_type: string | null; items: number }[] }
+const NONE = '__none'
+function CodesCard({ canEdit }: { canEdit: boolean }) {
+  const { companyId } = useCompany()
+  const qc = useQueryClient()
+  const q = useQuery({ queryKey: ['atk-codes', companyId], enabled: !!companyId,
+    queryFn: async () => unwrap(await supabase.rpc('atk_codes', { p_company: companyId! })) as unknown as Codes })
+  const [def, setDef] = React.useState<string | null>(null)
+  const [units, setUnits] = React.useState<Record<string, string>>({})
+  const [cats, setCats] = React.useState<Record<string, string>>({})
+  const c = q.data
+  const save = useMutation({
+    mutationFn: async () => unwrap(await supabase.rpc('atk_codes_save', { p_company: companyId!, p_default_type: def ?? c?.default_type ?? 'TT',
+      p_units: Object.entries(units).map(([id, v]) => ({ id, atk_unit: v === NONE ? null : v })) as never,
+      p_categories: Object.entries(cats).map(([id, v]) => ({ id, atk_type: v === NONE ? null : v })) as never })),
+    onSuccess: () => { toast.success(t('Saved')); setUnits({}); setCats({}); setDef(null); void qc.invalidateQueries({ queryKey: ['atk-codes', companyId] }) },
+    onError: (e) => toast.error(describeError(e)),
+  })
+  if (!c) return null
+  const dirty = def !== null || Object.keys(units).length > 0 || Object.keys(cats).length > 0
+  const usedUnits = c.units.filter((u) => u.items > 0 || u.atk_unit)
+  const typeOptions = ATK_TYPES.map(([code, name]) => <SelectItem key={code} value={code}>{code} · {name}</SelectItem>)
+  return (
+    <Card>
+      <CardHeader><CardTitle>{t('Units and categories for ATK')}</CardTitle>
+        <CardDescription>{t('Every coupon line carries ATK\'s code of its unit and of its category, from ATK\'s own lists. A unit without a match goes as CP (copë); a category without one takes the company\'s.')}</CardDescription></CardHeader>
+      <CardContent className="grid gap-5">
+        <div className="grid gap-1.5 sm:max-w-md">
+          <Label>{t('The company\'s category')}</Label>
+          <Select value={def ?? c.default_type} onValueChange={setDef} disabled={!canEdit}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>{typeOptions}</SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-5 lg:grid-cols-2">
+          <div>
+            <div className="mb-2 text-[13px] font-medium">{t('Units|measure')}</div>
+            <ul className="divide-y rounded-lg border">
+              {usedUnits.map((u) => (
+                <li key={u.id} className="flex items-center gap-3 px-3 py-2">
+                  <span className="min-w-0 flex-1 truncate text-[13px]">{u.name} <span className="text-muted-foreground">{u.code} · {t('{n} items', { n: u.items })}</span></span>
+                  <Select value={units[u.id] ?? u.atk_unit ?? NONE} onValueChange={(v) => setUnits((m) => ({ ...m, [u.id]: v }))} disabled={!canEdit}>
+                    <SelectTrigger className={cn('h-8 w-48', !(units[u.id] ?? u.atk_unit) && u.items > 0 && 'border-warning')}><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE}>{t('Not matched (CP)')}</SelectItem>
+                      {ATK_UNITS.map(([code, name]) => <SelectItem key={code} value={code}>{code} · {name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <div className="mb-2 text-[13px] font-medium">{t('Item categories')}</div>
+            {!c.categories.length ? <p className="text-[13px] text-muted-foreground">{t('No item categories yet: every item takes the company\'s category.')}</p> : (
+              <ul className="max-h-96 divide-y overflow-y-auto rounded-lg border">
+                {c.categories.map((x) => (
+                  <li key={x.id} className="flex items-center gap-3 px-3 py-2">
+                    <span className="min-w-0 flex-1 truncate text-[13px]">{x.name} <span className="text-muted-foreground">· {t('{n} items', { n: x.items })}</span></span>
+                    <Select value={cats[x.id] ?? x.atk_type ?? NONE} onValueChange={(v) => setCats((m) => ({ ...m, [x.id]: v }))} disabled={!canEdit}>
+                      <SelectTrigger className="h-8 w-48"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={NONE}>{t('The company\'s category')}</SelectItem>
+                        {typeOptions}
+                      </SelectContent>
+                    </Select>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+        {canEdit && <div><Button disabled={!dirty} loading={save.isPending} onClick={() => save.mutate()}>{t('Save')}</Button></div>}
       </CardContent>
     </Card>
   )

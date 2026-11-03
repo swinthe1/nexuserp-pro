@@ -173,6 +173,26 @@ select t.ok(not (public.atk_till(:'reg') ->> 'certified')::boolean, 'a till can 
 select t.login('kaltrina@atk.al');
 select t.throws('select public.atk_wait(100)', 'permission denied', 'only the server waits for ATK work');
 
+
+-- ----------------------------------------------------------------------------- ATK's units and categories on each line
+set role authenticated;
+select t.login(:'boss');
+select t.ok((select x ->> 'atk_unit' from jsonb_array_elements(public.atk_codes(:'co') -> 'units') x where x ->> 'code' = 'pcs') = 'CP'
+  and (select x ->> 'atk_unit' from jsonb_array_elements(public.atk_codes(:'co') -> 'units') x where x ->> 'code' = 'kg') = 'KGN', 'the company''s units come matched to ATK''s (pcs = CP, kg = KGN)');
+insert into public.product_categories (company_id, name) values (:'co', 'Pije freskuese') returning id as cat \gset
+select id as kg from public.units_of_measure where company_id = :'co' and code = 'kg' \gset
+select public.create_product(jsonb_build_object('company_id', :'co', 'code', 'S-SOK', 'name', 'Lëng portokalli', 'uom_id', :'pcs', 'sales_price', 1.2, 'category_id', :'cat')) as p \gset
+select id as juice from public.product_variants where product_id = :'p' \gset
+select public.create_product(jsonb_build_object('company_id', :'co', 'code', 'S-MOL', 'name', 'Mollë', 'uom_id', :'kg', 'sales_price', 0.9)) as p \gset
+select id as apple from public.product_variants where product_id = :'p' \gset
+select public.atk_codes_save(:'co', 'AU', null, jsonb_build_array(jsonb_build_object('id', :'cat', 'atk_type', 'PJA')));
+select t.throws(format($q$select public.atk_codes_save('%s', 'XX', null, null)$q$, :'co'), 'check constraint', 'only ATK''s own codes');
+select public.atk_till(:'reg') as till \gset
+select t.ok(:'till'::jsonb ->> 'default_type' = 'AU' and :'till'::jsonb -> 'types' ->> :'juice' = 'PJA' and not (:'till'::jsonb -> 'types' ? :'water')
+  and :'till'::jsonb -> 'units' ->> :'apple' = 'KGN' and not (:'till'::jsonb -> 'units' ? :'water'), 'the till knows each item''s ATK unit and category (only what differs is sent)');
+select t.login('kaltrina@atk.al');
+select t.throws(format($q$select public.atk_codes_save('%s', 'TT', null, null)$q$, :'co'), 'tax rights', 'a cashier does not change them');
+
 reset role;
 update public.platform_settings set atk_application_id_test = null, atk_application_id_prod = null;
 \set QUIET off

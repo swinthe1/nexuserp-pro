@@ -115,4 +115,13 @@ export default {
   "Live: every till receipt goes to ATK (fiskalizimi.atk-ks.org).": "Real: çdo kupon i arkës shkon në ATK (fiskalizimi.atk-ks.org).",
   "Test: till receipts go to ATK's test environment (fiskalizimi-test.atk-ks.org). They are not real fiscal coupons.":
     "Testim: kuponët e arkës shkojnë në ambientin e testimit të ATK-së (fiskalizimi-test.atk-ks.org). Nuk janë kuponë fiskalë realë.",
+  // ATK's units and categories
+  "Units and categories for ATK": "Njësitë dhe kategoritë për ATK",
+  "Every coupon line carries ATK's code of its unit and of its category, from ATK's own lists. A unit without a match goes as CP (copë); a category without one takes the company's.":
+    "Çdo rresht i kuponit e mban kodin e ATK-së për njësinë dhe kategorinë e tij, sipas listave të vetë ATK-së. Njësia pa përputhje shkon si CP (copë), ndërsa kategoria pa përputhje merr atë të kompanisë.",
+  "The company's category": "Kategoria e kompanisë",
+  "Units|measure": "Njësitë matëse",
+  "Item categories": "Kategoritë e artikujve",
+  "Not matched (CP)": "Pa përputhje (CP)",
+  "No item categories yet: every item takes the company's category.": "Ende s'ka kategori artikujsh: çdo artikull merr kategorinë e kompanisë.",
 } satisfies Dict
