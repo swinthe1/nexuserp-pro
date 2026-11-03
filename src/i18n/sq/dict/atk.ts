@@ -66,6 +66,7 @@ export default {
   "Use number {n}": "Merr numrin {n}",
   "then save the numbers.": "pastaj ruani numrat.",
   "Own fiscal device": "Pajisja e vet fiskale",
+  "Not sent to ATK": "Nuk i dërgohet ATK-së",
   "Coupons to ATK": "Kuponët drejt ATK-së",
   "Coupons made without internet wait on the till and then on the server until ATK takes them. On ATK's request, what has not reached it yet can be given as a file.":
     "Kuponët e bërë pa internet presin në arkë e pastaj në server, derisa t'i pranojë ATK-ja. Me kërkesë të ATK-së, ato që ende s'i kanë arritur mund t'i jepen si skedar.",

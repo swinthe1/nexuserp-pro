@@ -781,5 +781,6 @@ export default {
   "ATK gave no verification code": "ATK-ja nuk dha kod verifikimi",
   "ATK gave no certificate": "ATK-ja nuk dha certifikatë",
   "Made before DrisPRO signed the receipts: fiscalized by the shop's own fiscal device": "Bërë para se DrisPRO t'i nënshkruante kuponët: i fiskalizuar nga pajisja e vet fiskale e dyqanit",
+  "Kosovo invoices are not sent to ATK through the fiscal software; only till coupons are": "Faturat në Kosovë nuk i dërgohen ATK-së përmes softuerit fiskal; vetëm kuponët e arkës",
   "A training company never sends anything to ATK": "Kompania e trajnimit nuk i dërgon kurrë asgjë ATK-së",
 } satisfies Dict
