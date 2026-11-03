@@ -41,7 +41,8 @@ export function receiptHtml(r: ReceiptData) {
   const f = r.fiscal
   // a fiscal receipt shows the VAT exactly as the signed coupon gives it to ATK
   const taxes = f
-    ? f.groups.map((g) => `<tr><td class="muted">${esc(g.taxRate)} · ${esc(g.taxRate === 'A' ? t('Exempt from VAT') : t('VAT {rate}% on {base}', { rate: RATE_OF[g.taxRate], base: money(g.totalForTax / 100) }))}</td><td class="r muted">${money(g.totalTax / 100)}</td></tr>`).join('')
+    // ATK takes a return's sums as they are; on paper they carry the sign of the refund, like its total
+    ? f.groups.map((g) => { const k = f.isReturn ? -1 : 1; return `<tr><td class="muted">${esc(g.taxRate)} · ${esc(g.taxRate === 'A' ? t('Exempt from VAT') : t('VAT {rate}% on {base}', { rate: RATE_OF[g.taxRate], base: money(k * g.totalForTax / 100) }))}</td><td class="r muted">${money(k * g.totalTax / 100)}</td></tr>` }).join('')
     : [...byRate.entries()].sort((a, b) => b[0] - a[0]).map(([rate, v]) => `<tr><td class="muted">${esc(t('VAT {rate}% on {base}', { rate, base: money(v.base) }))}</td><td class="r muted">${money(v.tax)}</td></tr>`).join('')
   const fiscal = f ? `<hr><div class="c b">${esc(f.isReturn ? t('FISCAL RETURN COUPON') : t('FISCAL COUPON'))}</div>
     <table class="muted"><tr><td>${esc(t('Coupon no.'))}</td><td class="r">${esc(f.couponId)}</td></tr>${f.referenceNo ? `<tr><td>${esc(t('Original coupon'))}</td><td class="r">${esc(f.referenceNo)}</td></tr>` : ''}
