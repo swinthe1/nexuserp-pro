@@ -43,18 +43,18 @@ function walk(dir, out = []) {
   return out
 }
 
-async function loadDict() {
-  const dir = path.join(ROOT, 'src/i18n/sq/dict')
+async function loadDict(lang = 'sq') {
+  const dir = path.join(ROOT, `src/i18n/${lang}/dict`)
   const merged = {}; const origin = {}; const conflicts = []
   for (const f of fs.readdirSync(dir).filter((f) => f.endsWith('.ts')).sort()) {
     const src = fs.readFileSync(path.join(dir, f), 'utf8')
     const { code } = await esbuild.transform(src, { loader: 'ts', format: 'esm' })
-    const tmp = path.join(ROOT, 'node_modules/.cache', `i18n-${f}.mjs`)
+    const tmp = path.join(ROOT, 'node_modules/.cache', `i18n-${lang}-${f}.mjs`)
     fs.mkdirSync(path.dirname(tmp), { recursive: true })
     fs.writeFileSync(tmp, code.replace(/^import .*$/gm, ''))
     const mod = await import(pathToFileURL(tmp).href + `?v=${Date.now()}`)
     for (const [k, v] of Object.entries(mod.default)) {
-      if (k in merged && merged[k] !== v) conflicts.push(`${JSON.stringify(k)}: ${origin[k]} → ${JSON.stringify(merged[k])} vs ${f} → ${JSON.stringify(v)}`)
+      if (k in merged && merged[k] !== v) conflicts.push(`${lang} ${JSON.stringify(k)}: ${origin[k]} → ${JSON.stringify(merged[k])} vs ${f} → ${JSON.stringify(v)}`)
       if (typeof v !== 'string' || !v.trim()) conflicts.push(`${JSON.stringify(k)} in ${f} has an empty translation`)
       const ph = (s) => (s.match(/\{\w+\}/g) ?? []).sort().join()
       if (typeof v === 'string' && ph(k.replace(/\|[\w-]+$/, '')) !== ph(v)) conflicts.push(`${JSON.stringify(k)} in ${f}: placeholders differ in ${JSON.stringify(v)}`)
@@ -142,6 +142,16 @@ for (const file of files) {
   if ((untr.length || missing.length) && (!filter || rel.startsWith(filter))) report.push({ rel, untr, missing })
 }
 
+// Serbian covers what Kosovo's fiscal rules ask for in both official languages: every key used there needs it
+const SR_SCOPE = ['src/features/pos', 'src/features/tax/pages/fiscal-page.tsx', 'src/components/help.tsx', 'src/features/tasks/components/till-tasks.tsx',
+  'src/features/inventory/where.ts', 'src/features/loyalty/api.ts', 'src/components/scan-input.tsx', 'src/components/confirm-dialog.tsx', 'src/components/data-table',
+  'src/components/empty-state.tsx', 'src/components/error-state.tsx', 'src/components/search-select.tsx', 'src/components/page-header.tsx', 'src/components/stat-card.tsx',
+  'src/components/status-badge.tsx', 'src/lib/errors.ts', 'src/lib/utils.ts', 'src/i18n/language.tsx', 'src/app/nav.ts', 'src/components/layout']
+const { keysOf } = await import(new URL('./i18n-keys-of.mjs', import.meta.url).href)
+const sr = await loadDict('sr')
+conflicts.push(...sr.conflicts)
+const srMissing = keysOf(SR_SCOPE.map((p) => path.join(ROOT, p))).filter((k) => !(k in sr.merged))
+
 report.sort((a, b) => a.rel.localeCompare(b.rel))
 for (const r of report) {
   console.log(`${r.rel}  untranslated ${r.untr.length}  missing ${r.missing.length}`)
@@ -152,8 +162,9 @@ for (const r of report) {
 }
 if (conflicts.length) { console.log(`\nDictionary problems (${conflicts.length}):`); for (const c of conflicts.slice(0, verbose ? 500 : 30)) console.log('  ' + c) }
 if (listUnused) { const unused = Object.keys(dict).filter((k) => !used.has(k) && !k.startsWith('enum:') && !k.startsWith('data:')); console.log(`\nUnused keys (${unused.length}) — fine for data/server text:`); if (verbose) unused.forEach((k) => console.log('  ' + k)) }
-console.log(`\nTotal: ${totalUntr} untranslated, ${totalMissing} missing keys, ${Object.keys(dict).length} dictionary entries, ${conflicts.length} dictionary problems`)
-process.exitCode = totalUntr || totalMissing || conflicts.length ? 1 : 0
+if (srMissing.length) { console.log(`\nNo Serbian yet for ${srMissing.length} key(s) of the till and fiscal pages:`); for (const k of srMissing.slice(0, verbose ? 2000 : 30)) console.log('  ' + k) }
+console.log(`\nTotal: ${totalUntr} untranslated, ${totalMissing} missing keys, ${Object.keys(dict).length} dictionary entries, ${conflicts.length} dictionary problems, ${srMissing.length} without Serbian (${Object.keys(sr.merged).length} Serbian entries)`)
+process.exitCode = totalUntr || totalMissing || conflicts.length || srMissing.length ? 1 : 0
 // the phone notifications carry their own copy of the database texts
 {
   const { spawnSync } = await import('node:child_process')

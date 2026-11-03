@@ -113,7 +113,7 @@ function TemplateDialog({ template, onClose }: { template: ContractTemplate | nu
             <p className="px-1 pb-1 text-xs font-medium text-muted-foreground">{t('Fields')}</p>
             {PLACEHOLDERS.map((p) => (
               <button key={p.key} type="button" onClick={() => insert(p.key)} className="rounded px-1.5 py-1 text-left text-xs hover:bg-muted">
-                <span className="font-mono text-primary">{`{{${p.key}}}`}</span><span className="block text-muted-foreground">{locale === 'en' ? p.en : p.sq}</span>
+                <span className="font-mono text-primary">{`{{${p.key}}}`}</span><span className="block text-muted-foreground">{locale === 'sq' ? p.sq : p.en}</span>
               </button>))}
           </div>
         </div>

@@ -17,7 +17,7 @@ import { useMarkLesson, useMyTraining } from './api'
 export function TrainingPage() {
   const { company } = useCompany()
   const locale = useLocale()
-  const pick = (x: { sq: string; en: string }) => (locale === 'en' ? x.en : x.sq)
+  const pick = (x: { sq: string; en: string }) => (locale === 'sq' ? x.sq : x.en)
   const navigate = useNavigate()
   const done = useMyTraining()
   const mark = useMarkLesson()

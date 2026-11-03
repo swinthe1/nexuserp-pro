@@ -12,7 +12,10 @@ select t.login('lena@lang.al');
 update public.profiles set locale = 'en' where id = auth.uid();
 select t.ok((select locale from public.profiles where id = auth.uid()) = 'en', 'a person can switch to English');
 select t.ok((select (preferences ->> 'locale_chosen')::boolean from public.profiles where id = auth.uid()), 'the choice is remembered as deliberate');
-select t.throws($$ update public.profiles set locale = 'de' where id = auth.uid() $$, 'profiles_locale_check', 'only Shqip and English are allowed');
+select t.throws($$ update public.profiles set locale = 'de' where id = auth.uid() $$, 'profiles_locale_check', 'only Shqip, English and Serbian are allowed');
+update public.profiles set locale = 'sr' where id = auth.uid();
+select t.ok((select locale from public.profiles where id = auth.uid()) = 'sr', 'a person can switch to Serbian');
+update public.profiles set locale = 'en' where id = auth.uid();
 -- nobody changes someone else's language
 select t.login('alice@alba.al');
 update public.profiles set locale = 'sq' where email = 'lena@lang.al';

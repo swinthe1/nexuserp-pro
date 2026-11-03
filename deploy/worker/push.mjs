@@ -33,7 +33,8 @@ function one(m) {
   return null
 }
 export function translate(text, locale) {
-  if (!text || locale === 'en') return text || ''
+  // the phone gets Albanian, or English for English and Serbian
+  if (!text || locale !== 'sq') return text || ''
   const m = String(text).trim()
   if (exact[m]) return exact[m]
   // a line of parts ("Receipts: 74 · Cash: 620,71 €"): each part on its own, when each one is known

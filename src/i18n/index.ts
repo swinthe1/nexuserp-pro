@@ -15,37 +15,50 @@
  */
 import * as React from 'react'
 import { sq } from './sq'
+import { sr } from './sr'
 import { formatNumberWith } from './format'
 import { serverPatterns } from './sq/server-patterns'
+import { serverPatterns as serverPatternsSr } from './sr/server-patterns'
 
-export type Locale = 'sq' | 'en'
+/**
+ * sq is complete; sr (Serbian, Latin script) covers the till, the fiscal coupon, the Z report and the ATK pages
+ * (Kosovo's fiscal software must speak both official languages); what sr does not have shows in English.
+ */
+export type Locale = 'sq' | 'en' | 'sr'
 export const LOCALES: { key: Locale; label: string; short: string }[] = [
   { key: 'sq', label: 'Shqip', short: 'SQ' },
   { key: 'en', label: 'English', short: 'EN' },
+  { key: 'sr', label: 'Srpski', short: 'SR' },
 ]
+export const isLocale = (s: unknown): s is Locale => s === 'sq' || s === 'en' || s === 'sr'
 const STORAGE_KEY = 'drispro.lang'
 
 function initialLocale(): Locale {
   try {
     const s = localStorage.getItem(STORAGE_KEY)
-    if (s === 'sq' || s === 'en') return s
+    if (isLocale(s)) return s
   } catch { /* storage unavailable */ }
   return 'sq'
 }
+
+type Dict = Record<string, string>
+const DICTS: Record<Locale, Dict | null> = { sq, en: null, sr }
+const PATTERNS: Record<Locale, { re: RegExp; sq: string }[]> = { sq: serverPatterns, en: [], sr: serverPatternsSr }
+const htmlLang = (l: Locale) => (l === 'sr' ? 'sr-Latn' : l)
 
 let current: Locale = initialLocale()
 const listeners = new Set<() => void>()
 
 export function getLocale(): Locale { return current }
 /** BCP 47 tag for the current language. Prefer formatDate/formatMoney/formatDateWith/formatNumberWith: some browsers lack Albanian locale data. */
-export function intlLocale(): string { return current === 'sq' ? 'sq-AL' : 'en-GB' }
+export function intlLocale(): string { return current === 'sq' ? 'sq-AL' : current === 'sr' ? 'sr-Latn-RS' : 'en-GB' }
 export { formatDateWith, formatNumberWith } from './format'
 
 export function setLocale(l: Locale) {
   if (l === current) return
   current = l
   try { localStorage.setItem(STORAGE_KEY, l) } catch { /* ignore */ }
-  if (typeof document !== 'undefined') document.documentElement.lang = l
+  if (typeof document !== 'undefined') document.documentElement.lang = htmlLang(l)
   listeners.forEach((fn) => fn())
 }
 
@@ -72,14 +85,14 @@ function interpolate(s: string, params?: Params) {
 
 /** Translate UI text. The key is the English text (optionally "Text|context"). */
 export function t(key: string, params?: Params): string {
-  const s = current === 'sq' ? (sq[key] ?? stripContext(key)) : stripContext(key)
+  const s = DICTS[current]?.[key] ?? stripContext(key)
   return interpolate(s, params)
 }
 
 /** Marks text in a module-level constant as a translation key; translate it with t() at render time. */
 export function msg<T extends string>(key: T): T { return key }
 
-/** Plural: Albanian and English both use one form for 1 and another for everything else. */
+/** Plural: Albanian and English both use one form for 1 and another for everything else (Serbian's "other" is written to fit 2–4 and 5+ alike). */
 export function tn(n: number, one: string, other: string, params?: Params): string {
   return t(Math.abs(n) === 1 ? one : other, { n: formatInt(n), ...params })
 }
@@ -91,28 +104,31 @@ function formatInt(n: number) {
 /** Data values that may be system defaults (role names, default accounts, units…): translated when known, otherwise unchanged. */
 export function td(value: string | null | undefined): string {
   if (value === null || value === undefined) return ''
-  if (current === 'en') return value
-  return sq[value] ?? sq[`data:${value}`] ?? matchPattern(value) ?? value
+  const d = DICTS[current]
+  if (!d) return value
+  return d[value] ?? d[`data:${value}`] ?? matchPattern(value) ?? value
 }
 
 /** Enum values from the database (bank_transfer, in_transit…): translated label, or a readable English fallback. */
 export function tEnum(value: string | null | undefined): string {
   if (!value) return ''
+  const d = DICTS[current]
   const key = `enum:${value}`
-  if (current === 'sq' && sq[key]) return sq[key]
+  if (d?.[key]) return d[key]
   const human = value.replace(/_/g, ' ')
   const en = human.charAt(0).toUpperCase() + human.slice(1)
-  return current === 'sq' ? (sq[en] ?? en) : en
+  return d?.[en] ?? en
 }
 
 /** Messages written by the database: exact matches first, then templates with placeholders. */
 export function tServer(message: string | null | undefined): string {
   if (!message) return ''
-  if (current === 'en') return message
+  const d = DICTS[current]
+  if (!d) return message
   const m = message.replace(/^ERROR:\s*/, '').trim()
-  if (sq[m]) return sq[m]
+  if (d[m]) return d[m]
   // a line of parts ("Receipts: 74 · Cash: 620,71 €"): each part on its own, when each one is known
-  const parts = m.includes(' · ') ? m.split(' · ').map((x) => sq[x] ?? matchPattern(x)) : null
+  const parts = m.includes(' · ') ? m.split(' · ').map((x) => d[x] ?? matchPattern(x)) : null
   if (parts && parts.every(Boolean)) return parts.join(' · ')
   return matchPattern(m) ?? m
 }
@@ -120,9 +136,10 @@ export function tServer(message: string | null | undefined): string {
 // pattern results are cached: lists call td()/tServer() for every row
 const patternCache = new Map<string, string | null>()
 function matchPattern(m: string): string | undefined {
-  if (patternCache.has(m)) return patternCache.get(m) ?? undefined
+  const ck = `${current}\u0000${m}`
+  if (patternCache.has(ck)) return patternCache.get(ck) ?? undefined
   let out: string | null = null
-  for (const p of serverPatterns) {
+  for (const p of PATTERNS[current]) {
     const r = p.re.exec(m)
     if (r) {
       out = p.sq.replace(/\{(\d+)\}/g, (_, i: string, offset: number) => translateArg(r[Number(i) + 1] ?? '', offset > 0 && !/[.!?:]\s*$/.test(p.sq.slice(0, offset))))
@@ -130,15 +147,16 @@ function matchPattern(m: string): string | undefined {
     }
   }
   if (patternCache.size > 5000) patternCache.clear()
-  patternCache.set(m, out)
+  patternCache.set(ck, out)
   return out ?? undefined
 }
 
 function translateArg(a: string, midSentence: boolean) {
   // values are often status words or names of system defaults; a status inside a sentence is lower case ("është anuluar")
-  const e = sq[`enum:${a}`]
+  const d = DICTS[current] ?? {}
+  const e = d[`enum:${a}`]
   if (e) return midSentence ? e.charAt(0).toLowerCase() + e.slice(1) : e
-  return sq[a] ?? a
+  return d[a] ?? a
 }
 
 /** Text with React elements in placeholders. */
@@ -156,4 +174,4 @@ export function tr(key: string, parts: Record<string, React.ReactNode>): React.R
   return out
 }
 
-if (typeof document !== 'undefined') document.documentElement.lang = current
+if (typeof document !== 'undefined') document.documentElement.lang = htmlLang(current)

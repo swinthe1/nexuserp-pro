@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils'
 
 function usePick() {
   const locale = useLocale()
-  return React.useCallback((x: L) => (locale === 'en' ? x.en : x.sq), [locale])
+  return React.useCallback((x: L) => (locale === 'sq' ? x.sq : x.en), [locale])
 }
 
 /** the guide of the page we are on: the most specific address that matches */

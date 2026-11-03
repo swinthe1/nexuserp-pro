@@ -26,11 +26,10 @@ const special: { re: RegExp; sq: string }[] = [
   { re: /^FY (\d{4})$/, sq: 'VF {0}' },
 ]
 
-export const serverPatterns = [
-  ...serverTemplates
-    .filter(([en]) => en.replace(/%%/g, '').includes('%'))
-    // most specific first: more literal text wins over general templates
-    .sort((a, b) => b[0].replace(/%/g, '').length - a[0].replace(/%/g, '').length)
-    .map(([en, sq]) => ({ re: toRegex(en), sq })),
-  ...special,
-]
+/** templates → patterns, most specific first (more literal text wins over general templates); `sq` holds the translation in any language */
+export const buildPatterns = (templates: [string, string][]) => templates
+  .filter(([en]) => en.replace(/%%/g, '').includes('%'))
+  .sort((a, b) => b[0].replace(/%/g, '').length - a[0].replace(/%/g, '').length)
+  .map(([en, sq]) => ({ re: toRegex(en), sq }))
+
+export const serverPatterns = [...buildPatterns(serverTemplates), ...special]

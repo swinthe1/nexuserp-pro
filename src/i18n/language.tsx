@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
-import { LOCALES, type Locale, setLocale, t, useLocale } from './index'
+import { isLocale, LOCALES, type Locale, setLocale, t, useLocale } from './index'
 
 const PENDING = 'drispro.lang.chosen'
 // set once the person picks a language in this tab, so a slower profile read never overrides their choice
@@ -33,16 +33,16 @@ export function LanguageSync() {
     if (!user) return
     let pending: string | null = null
     try { pending = localStorage.getItem(PENDING); localStorage.removeItem(PENDING) } catch { /* ignore */ }
-    if (pending === 'sq' || pending === 'en') { chooseLocale(pending, user.id); return }
+    if (isLocale(pending)) { chooseLocale(pending, user.id); return }
     void supabase.from('profiles').select('locale').eq('id', user.id).maybeSingle().then(({ data }) => {
       const l = data?.locale
-      if (!choseHere && (l === 'sq' || l === 'en')) setLocale(l)
+      if (!choseHere && isLocale(l)) setLocale(l)
     })
   }, [user])
   return null
 }
 
-/** SQ | EN toggle for the top bar and the sign-in pages. */
+/** SQ | EN | SR toggle for the top bar and the sign-in pages. */
 export function LanguageToggle({ className }: { className?: string }) {
   const locale = useLocale()
   const { user } = useAuth()

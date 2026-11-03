@@ -186,14 +186,14 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
                 </CommandGroup>
               )}
               {!query && mode === 'all' && navPages}
-              {mode === 'all' && matches(query, 'theme dark light mode language shqip english gjuha pamja tema', t('Appearance'), t('Language')) && (
+              {mode === 'all' && matches(query, 'theme dark light mode language shqip english srpski jezik gjuha pamja tema', t('Appearance'), t('Language')) && (
                 <CommandGroup heading={t('Preferences')}>
                   <CommandItem value="theme" onSelect={() => { setTheme(resolved === 'dark' ? 'light' : 'dark'); setOpen(false) }}>
                     {resolved === 'dark' ? <Sun /> : <Moon />} {resolved === 'dark' ? t('Switch to the light look') : t('Switch to the dark look')}
                   </CommandItem>
                   {LOCALES.filter((l) => l.key !== locale).map((l) => (
                     <CommandItem key={l.key} value={`lang-${l.key}`} onSelect={() => { setOpen(false); chooseLocale(l.key, user?.id) }}>
-                      <Languages /> <span lang={l.key}>{l.key === 'sq' ? 'Kalo në shqip' : 'Switch to English'}</span>{/* i18n-ignore */}
+                      <Languages /> <span lang={l.key}>{l.key === 'sq' ? 'Kalo në shqip' : l.key === 'sr' ? 'Prebaci na srpski' : 'Switch to English'}</span>{/* i18n-ignore */}
                     </CommandItem>
                   ))}
                 </CommandGroup>
