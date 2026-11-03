@@ -1,4 +1,4 @@
-import { ArrowRight, BarChart3, Bookmark, FileBarChart, Scale, Trash2, Users, Wallet } from 'lucide-react'
+import { ArrowRight, BarChart3, Bookmark, FileBarChart, Gauge, Scale, Trash2, Users, Wallet } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/app/auth-provider'
 import { useCompany } from '@/app/company-provider'
@@ -23,18 +23,20 @@ export function ReportsPage() {
     can('invoicing.read') && { href: '/finance/payables', title: t('Payables aging'), question: t('What we owe each vendor, and when it is due.'), icon: Wallet },
     can('tax.read') && { href: '/tax/books', title: t('Sales and purchase books'), question: t('The official VAT books, laid out as the tax authority asks.'), icon: FileBarChart },
   ].filter(Boolean) as { href: string; title: string; question: string; icon: typeof Scale }[]
+  const panel = can('sales.read') && can('reports.read')
+    ? [{ href: '/reports/kpi', title: t('Manager\'s panel'), question: t('Are we on plan? Customers, average receipt, margin, losses, stock turnover and the tills, against the period before.'), icon: Gauge }] : []
 
   return (
     <>
       <PageHeader title={t('Reports')} description={t('Pick a question. Click any row to see what makes it up, and export to Excel, CSV or PDF.')} />
-      {!runnable.length && !statements.length && (
+      {!runnable.length && !statements.length && !panel.length && (
         <Card><EmptyState title={t('No reports for your role')} description={t('Reports follow your permissions. Ask a company admin if you need sales, stock or finance figures.')} /></Card>
       )}
       <div className="grid gap-6">
         <MyReports />
         {AREAS.map((area) => {
           const list = runnable.filter((r) => r.area === area)
-          const extra = area === 'Finance and tax' ? statements : []
+          const extra = area === 'Finance and tax' ? statements : area === 'Sales' ? panel : []
           if (!list.length && !extra.length) return null
           return (
             <section key={area}>

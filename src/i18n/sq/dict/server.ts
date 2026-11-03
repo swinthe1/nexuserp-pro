@@ -736,4 +736,7 @@ export default {
   "X must be below Y": "X duhet të jetë nën Y",
   "Choose 3 to 24 months": "Zgjidhni 3 deri në 24 muaj",
   "Count every day at most": "Numërimi nuk mund të jetë më shpesh se një herë në ditë",
+  "Permission denied: only a manager sets the sales targets": "Nuk keni të drejtë: planin e shitjeve e vendos vetëm menaxheri",
+  "Choose a period": "Zgjidhni një periudhë",
+  "Choose a period of at most a year": "Zgjidhni një periudhë deri në një vit",
 } satisfies Dict

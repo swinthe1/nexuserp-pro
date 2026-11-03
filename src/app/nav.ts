@@ -5,7 +5,7 @@ import {
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, Building, HandCoins, ListTree, Network, Settings2, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, 
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
   BedDouble, BookUser, CalendarRange, ConciergeBell, Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, ReceiptText, IdCard, Settings, CreditCard, type LucideIcon, Activity, ArrowUpDown, BadgeEuro, BookOpen, CalendarPlus, CheckCheck, CircleDollarSign, Clock, Coins, Combine, FileScan, FolderTree, Gift, Handshake, LineChart, Map, Move, NotebookTabs, PieChart, ScanBarcode, Send, ListChecks, ChartSpline, PackageMinus, GraduationCap,
-  FileSignature, ListTodo, ScanSearch, Grid3x3,
+  FileSignature, ListTodo, ScanSearch, Grid3x3, Gauge,
 } from 'lucide-react'
 import { msg } from '@/i18n'
 
@@ -224,6 +224,7 @@ export const NAV: NavSection[] = [
     label: msg('Reports|menu'),
     items: [
       { label: msg('Reports'), href: '/reports', icon: FileBarChart, perm: 'reports.read', keywords: ['analytics', 'sales analysis', 'margin', 'valuation', 'aging', 'raporte'] },
+      { label: msg('Manager\'s panel|menu'), href: '/reports/kpi', icon: Gauge, perm: 'reports.read', keywords: ['kpi', 'plan', 'target', 'objektiv', 'realizimi', 'kupon mesatar', 'average receipt', 'marzh', 'humbje', 'qarkullimi', 'menaxher', 'performance'] },
       { label: msg('Sales overview|menu'), href: '/sales', icon: BadgeDollarSign, perm: 'sales.read', keywords: ['revenue', 'kpi', 'performance', 'metrics'] },
       { label: msg('Purchasing overview|menu'), href: '/procurement', icon: LineChart, perm: 'procurement.read', keywords: ['spend', 'procurement', 'kpi', 'blerje'] },
       { label: msg('Finance overview|menu'), href: '/finance', icon: Landmark, perm: 'finance.read', keywords: ['accounting', 'kpi', 'kontabilitet'] },

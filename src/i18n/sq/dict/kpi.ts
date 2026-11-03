@@ -1,0 +1,86 @@
+import type { Dict } from '../index'
+
+/** The manager's panel: plan, customers, average receipt, margin, losses, stock, the tills. */
+export default {
+  "Manager's panel": "Paneli i menaxherit",
+  "Manager's panel|menu": "Paneli i menaxherit",
+  "Are we on plan? Customers, average receipt, margin, losses, stock turnover and the tills, against the period before.":
+    "A jemi në plan? Klientët, kuponi mesatar, marzhi, humbjet, qarkullimi i stokut dhe arkat, krahasuar me periudhën e mëparshme.",
+  "The shop's numbers against its plan and the period before: customers, average receipt, margin, losses, stock and the tills. Amounts without VAT.":
+    "Shifrat e dyqanit kundrejt planit dhe periudhës së mëparshme: klientët, kuponi mesatar, marzhi, humbjet, stoku dhe arkat. Shumat pa TVSH.",
+  "Compared with {a} – {b}": "Krahasuar me {a} – {b}",
+  // the plan
+  "Plan reached": "Realizimi i planit",
+  "{sales} of a {target} target": "{sales} nga plani {target}",
+  "{amount} ahead of the pace": "{amount} para ritmit",
+  "{amount} behind the pace": "{amount} pas ritmit",
+  "Where the sales should be by today": "Ku duhet të ishin shitjet deri sot",
+  "of what the plan asks by {date}": "e asaj që plani kërkon deri më {date}",
+  "{sales} of the month's {target}": "{sales} nga {target} të muajit",
+  "The month's target is reached.": "Plani i muajit u arrit.",
+  "The line marks where the plan asks to be. {amount} a day reaches the month in the {n} day left.":
+    "Vija tregon ku kërkon plani të jeni. Me {amount} në ditë arrihet plani i muajit në {n} ditën që mbetet.",
+  "The line marks where the plan asks to be. {amount} a day reaches the month in the {n} days left.":
+    "Vija tregon ku kërkon plani të jeni. Me {amount} në ditë arrihet plani i muajit në {n} ditët që mbeten.",
+  "Plan|target": "Plani",
+  "No sales target for this period": "S'ka plan shitjesh për këtë periudhë",
+  "Set a monthly target for each store, and the panel shows how far you are and where you should be by today.":
+    "Vendosni planin mujor për çdo dyqan, dhe paneli tregon sa keni arritur dhe ku duhet të ishit deri sot.",
+  "Set the targets": "Vendos planin",
+  // the tiles
+  "Average receipt": "Kuponi mesatar",
+  "Losses": "Humbjet",
+  "Stock turnover": "Qarkullimi i stokut",
+  "Sales per hour worked": "Shitjet për orë pune",
+  "At the tills": "Në arka",
+  "vs. the day before": "kundrejt ditës para",
+  "vs. the {n} days before": "kundrejt {n} ditëve para",
+  "vs. the week before": "kundrejt javës para",
+  "vs. the same days last week": "kundrejt të njëjtave ditë të javës para",
+  "vs. the month before": "kundrejt muajit para",
+  "vs. the same days last month": "kundrejt të njëjtave ditë të muajit para",
+  "unchanged": "pa ndryshim",
+  "points|percentage": "pikë",
+  "Last year: {v}": "Vitin e kaluar: {v}",
+  "{n} items per receipt": "{n} artikuj për kupon",
+  "{amount} after the cost of the goods": "{amount} pas kostos së mallit",
+  "{amount} at cost: counts, damage, theft, expiry": "{amount} me kosto: numërime, dëme, vjedhje, skadime",
+  "The stock lasts about {n} days": "Stoku mjafton rreth {n} ditë",
+  "{amount} in stock at cost": "{amount} në stok me kosto",
+  "Nothing sold from stock in this period": "Asgjë e shitur nga stoku në këtë periudhë",
+  "The stock here is below zero: goods were sold before they were received": "Stoku këtu është nën zero: malli u shit para se të pranohej",
+  "The attendance sheet is kept for the whole company, not by store": "Prezenca mbahet për gjithë kompaninë, jo sipas dyqanit",
+  "Fill in the attendance sheet in HR to see this": "Plotësoni prezencën te Burimet njerëzore për ta parë këtë",
+  "{n} hours worked": "{n} orë pune",
+  "{n} void": "{n} anulim",
+  "{n} voids": "{n} anulime",
+  "{n} shift": "{n} turn",
+  "{n} shifts": "{n} turne",
+  "{n} voids per shift": "{n} anulime për turn",
+  "Cash off by {amount} in {n} shift": "Diferencë arke {amount} në {n} turn",
+  "Cash off by {amount} in {n} shifts": "Diferencë arke {amount} në {n} turne",
+  "Every drawer balanced": "Çdo arkë u barazua",
+  "No shift closed in this period": "Asnjë turn i mbyllur në këtë periudhë",
+  // the charts and the stores
+  "Day by day": "Ditë pas dite",
+  "Sales without VAT": "Shitjet pa TVSH",
+  "Sales without VAT, and the day's share of the target": "Shitjet pa TVSH, dhe pjesa e planit për ditën",
+  "No sales in this period": "S'ka shitje në këtë periudhë",
+  "Hours of the day": "Orët e ditës",
+  "Customers at the tills by the hour": "Klientët në arka sipas orës",
+  "Customers at the tills by the hour; the busiest is {h}:00–{h2}:00": "Klientët në arka sipas orës; më e ngarkuara është {h}:00–{h2}:00",
+  "No till sales in this period": "S'ka shitje në arka në këtë periudhë",
+  "Stores side by side": "Dyqanet krah për krah",
+  "Open a store to see its own panel.": "Hapni një dyqan për të parë panelin e tij.",
+  "Cash off": "Diferenca e arkës",
+  "Customers are the receipts and invoices of the period; returns lower the sales but are not counted as customers. Losses are what stock counts and adjustments for damage, theft and expiry took out, less what they found, at cost.":
+    "Klientët janë kuponat dhe faturat e periudhës; kthimet i ulin shitjet, por nuk numërohen si klientë. Humbjet janë ajo që numërimet e stokut dhe korrigjimet për dëme, vjedhje dhe skadime nxorën, minus ajo që gjetën, me kosto.",
+  // the targets
+  "Sales targets": "Plani i shitjeve",
+  "Sales without VAT the month should reach. The panel spreads each month over its days. Leave the company empty and it adds up the stores.":
+    "Shitjet pa TVSH që duhet të arrijë muaji. Paneli e ndan çdo muaj në ditët e tij. Nëse kompaninë e lini bosh, mblidhen dyqanet.",
+  "The stores add up to {amount}": "Dyqanet bëjnë gjithsej {amount}",
+  "Enter an amount for {store}": "Shkruani një shumë për {store}",
+  "Save targets": "Ruaj planin",
+  "Targets saved for {month}": "Plani u ruajt për {month}",
+} satisfies Dict

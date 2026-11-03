@@ -10987,6 +10987,45 @@ export type Database = {
           { foreignKeyName: "sales_quotes_salesperson_profile_fkey"; columns: ["salesperson_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
         ]
       }
+      sales_targets: {
+        Row: {
+          id: string
+          company_id: string
+          warehouse_id: string | null
+          month: string
+          amount: number
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          warehouse_id?: string | null
+          month: string
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          warehouse_id?: string | null
+          month?: string
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "sales_targets_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "sales_targets_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
       saved_reports: {
         Row: {
           id: string
@@ -15797,6 +15836,24 @@ export type Database = {
           p_here?: string
         }
         Returns: Json
+      }
+      kpi_panel: {
+        Args: {
+          p_company: string
+          p_from: string
+          p_to: string
+          p_warehouse?: string
+        }
+        Returns: Json
+      }
+      kpi_target_save: {
+        Args: {
+          p_company: string
+          p_warehouse: string
+          p_month: string
+          p_amount: number
+        }
+        Returns: undefined
       }
       label_items: {
         Args: {
