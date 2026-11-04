@@ -37,3 +37,10 @@ export interface TableViewConfig {
 export interface TableLayout { order?: string[]; sizing?: Record<string, number>; visibility?: Record<string, boolean>; styles?: Record<string, import('./rules').ColumnStyle> }
 
 export type BulkActionsRender<T> = (rows: Row<T>[], clear: () => void) => React.ReactNode
+
+/** what the quick look at a row shows: the document as it prints, or the row's fields and its lines */
+export interface RowPreview {
+  print?: { kind: import('@/lib/documents/model').DocKind; id: string }
+  lines?: () => Promise<{ name: string; qty: number; price?: number | null; total?: number | null }[]>
+  title?: string
+}

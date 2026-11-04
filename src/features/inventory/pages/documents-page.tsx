@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { formatDate, formatMoney, humanize } from '@/lib/utils'
 import { useDocuments, type DocKind } from '../api'
 import { ADJUSTMENT_REASONS } from './adjustment-page'
+import { adjustmentLines, transferLines } from '@/lib/documents/preview-lines'
 import { msg, t, td, tEnum } from '@/i18n'
 
 type Row = Record<string, unknown> & { id: string; number: string; status: string }
@@ -135,6 +136,7 @@ export function DocumentsPage({ kind }: { kind: DocKind }) {
         searchPlaceholder={t('Number, vendor, warehouse…')}
         exportName={kind}
         onRowClick={(r) => navigate(`${HREF[kind]}/${r.id}`)}
+        preview={(r) => kind === 'receipts' ? { print: { kind: 'goods_receipt', id: r.id as string } } : kind === 'transfers' ? { lines: transferLines(r.id as string) } : kind === 'adjustments' ? { lines: adjustmentLines(r.id as string) } : null}
         facets={[
           { columnId: 'status', title: t('Status'), options: cfg.statuses.map((s) => ({ label: tEnum(s), value: s })) },
           ...(kind === 'receipts' ? [{ columnId: 'import', title: t('Customs'), options: [{ label: t('Waiting for customs'), value: 'pending' }, { label: t('Cleared'), value: 'cleared' }, { label: t('Domestic'), value: 'not_required' }] }] : []),

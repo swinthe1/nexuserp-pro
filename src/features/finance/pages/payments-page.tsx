@@ -67,6 +67,7 @@ export function PaymentsPage() {
         </Can>} />
       <DataTable tableKey="finance.payments" columns={columns} data={payments.data} isLoading={payments.isLoading} error={payments.error}
         getRowId={(r) => r.id} exportName={t('payments')} searchPlaceholder={t('Number, partner, reference…')} onRowClick={(r) => navigate(`/finance/payments/${r.id}`)}
+        preview={(r) => ({ print: { kind: 'payment', id: r.id } })}
         facets={[
           { columnId: 'document_type', title: t('Direction'), options: [{ value: 'customer_payment', label: t('Received|payment') }, { value: 'vendor_payment', label: t('Paid out') }] },
           { columnId: 'status', title: t('Status'), options: ['draft', 'pending_approval', 'approved', 'posted', 'reversed'].map((s) => ({ value: s, label: humanize(s) })) },

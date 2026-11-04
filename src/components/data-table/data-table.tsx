@@ -4,7 +4,7 @@ import {
   type ColumnDef, type ColumnFiltersState, type ColumnOrderState, type ColumnSizingState, type FilterFn, type PaginationState, type Row, type RowSelectionState,
   type SortingState, type Table as TanTable, type VisibilityState,
 } from '@tanstack/react-table'
-import { Download, FileSpreadsheet, FileText, MoreHorizontal, Search, X } from 'lucide-react'
+import { Download, Eye, FileSpreadsheet, FileText, MoreHorizontal, Search, X } from 'lucide-react'
 import * as React from 'react'
 import { fuzzyFind } from '@/lib/fuzzy'
 import { Button } from '@/components/ui/button'
@@ -21,7 +21,8 @@ import { usePhone } from '@/hooks/use-phone'
 import { FacetedFilter } from './faceted-filter'
 import { Pagination } from './pagination'
 import { SavedViews, useSavedViews } from './saved-views'
-import type { BulkActionsRender, FacetedFilterDef, TableLayout, TableViewConfig } from './types'
+import type { BulkActionsRender, FacetedFilterDef, RowPreview, TableLayout, TableViewConfig } from './types'
+import { PreviewSheet } from './preview-sheet'
 import { ColumnTools, RuleChips } from './column-tools'
 import { COLOURS, gettersOf, kindOf, ruleIsSet, test, type Colour, type ColumnStyle, type Getter, type Kind, type Rule } from './rules'
 import { tableLayoutKey, useProfilePref } from '@/components/layout/nav-prefs'
@@ -90,6 +91,8 @@ export interface DataTableProps<T> {
   server?: ServerSideOptions
   footer?: (table: TanTable<T>) => React.ReactNode
   dense?: boolean
+  /** the quick look at a row (the eye at its end); a list that opens rows gets the row's fields without it */
+  preview?: (row: T) => RowPreview | null
 }
 
 function exportColumnsFor<T>(table: TanTable<T>): ExportColumn<T>[] {
@@ -123,7 +126,7 @@ function rowSearchText(row: object): { text: string; codes: string[] } {
 
 export function DataTable<T>({
   columns, data, isLoading, error, getRowId, tableKey, searchPlaceholder, facets = [], initialSorting = [],
-  initialHidden = [], initialFilters, bulkActions, toolbar, onRowClick, exportName, empty, server, footer, dense,
+  initialHidden = [], initialFilters, bulkActions, toolbar, onRowClick, exportName, empty, server, footer, dense, preview,
 }: DataTableProps<T>) {
   const storageKey = tableKey ? `drispro.table.${tableKey}.columns` : null
   const [sorting, setSorting] = React.useState<SortingState>(initialSorting)
@@ -273,6 +276,9 @@ export function DataTable<T>({
     }
     return { rowColour, cells }
   }
+  const canPreview = !!preview || !!onRowClick
+  const [peek, setPeek] = React.useState<number | null>(null)
+  const peekRows = canPreview && peek != null ? table.getPrePaginationRowModel().rows.map((r) => r.original) : []
   const labelled = React.useMemo(() => new Map(getters.map((g) => [g.id, { ...g, label: columnLabel(table, g.id) || g.id }])), [getters, table])
   const selectedRows = table.getSelectedRowModel().rows
   const rowCount = server ? server.rowCount : table.getFilteredRowModel().rows.length
@@ -410,6 +416,7 @@ export function DataTable<T>({
                     </TableHead>
                   )
                 })}
+                {canPreview && <TableHead className="sticky right-0 w-9 bg-card px-1"><span className="sr-only">{t('Preview')}</span></TableHead>}
               </TableRow>
             ))}
           </TableHeader>
@@ -424,17 +431,17 @@ export function DataTable<T>({
               ))}
             {!isLoading && !!error && (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={visibleCols} className="h-40 text-center text-sm text-destructive">{describeError(error)}</TableCell>
+                <TableCell colSpan={visibleCols + (canPreview ? 1 : 0)} className="h-40 text-center text-sm text-destructive">{describeError(error)}</TableCell>
               </TableRow>
             )}
             {!isLoading && !error && table.getRowModel().rows.map((row) => { const pt = paint(row.original); return (
               <TableRow
                 key={row.id}
                 data-state={row.getIsSelected() ? 'selected' : undefined}
-                className={cn(onRowClick && 'cursor-pointer', pt.rowColour && COLOURS[pt.rowColour].cell)}
+                className={cn('group/row', onRowClick && 'cursor-pointer', pt.rowColour && COLOURS[pt.rowColour].cell)}
                 tabIndex={onRowClick ? 0 : undefined}
                 onClick={onRowClick ? () => onRowClick(row.original) : undefined}
-                onKeyDown={onRowClick ? (e) => { if (e.key === 'Enter') onRowClick(row.original) } : undefined}
+                onKeyDown={onRowClick ? (e) => { if (e.key === 'Enter') onRowClick(row.original); else if (e.key === ' ' && canPreview) { e.preventDefault(); setPeek(table.getPrePaginationRowModel().rows.findIndex((r) => r.id === row.id)) } } : undefined}
               >
                 {row.getVisibleCells().map((cell) => {
                   const c = pt.cells[cell.column.id]
@@ -450,11 +457,18 @@ export function DataTable<T>({
                     </TableCell>
                   )
                 })}
+                {canPreview && (
+                  <TableCell className={cn('sticky right-0 w-9 bg-card px-1 group-hover/row:bg-muted/50', dense && 'h-8 py-1')}>
+                    <button type="button" aria-label={t('Quick look')} title={t('Quick look (without opening)')}
+                      className="grid size-7 place-items-center rounded-md text-muted-foreground opacity-40 hover:bg-secondary hover:text-foreground hover:opacity-100 focus-visible:opacity-100 group-hover/row:opacity-100"
+                      onClick={(e) => { e.stopPropagation(); setPeek(table.getPrePaginationRowModel().rows.findIndex((r) => r.id === row.id)) }}><Eye className="size-4" /></button>
+                  </TableCell>
+                )}
               </TableRow>
             ) })}
             {!isLoading && !error && table.getRowModel().rows.length === 0 && (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={visibleCols} className="p-0">
+                <TableCell colSpan={visibleCols + (canPreview ? 1 : 0)} className="p-0">
                   {filtered ? (
                     <EmptyState compact title={t('Nothing matches these filters')} description={t('Clear the search or filters to see everything.')}
                       action={<Button variant="outline" size="sm" onClick={() => clearAll()}>{t('Clear filters')}</Button>} />
@@ -470,6 +484,15 @@ export function DataTable<T>({
       </div>
       )}
       <Pagination table={table} rowCount={rowCount} />
+      {canPreview && peek != null && peek >= 0 && (
+        <PreviewSheet rows={peekRows} index={peek} onIndex={setPeek} onClose={() => setPeek(null)} getters={[...labelled.values()]} preview={preview}
+          fields={(i) => {
+            const r = table.getPrePaginationRowModel().rows[i]
+            return r ? r.getAllCells().filter((c) => c.column.id !== '_select' && labelled.has(c.column.id))
+              .map((c) => ({ id: c.column.id, label: labelled.get(c.column.id)!.label, node: flexRender(c.column.columnDef.cell, c.getContext()) })) : []
+          }}
+          onOpen={onRowClick ? (r) => { setPeek(null); onRowClick(r) } : undefined} />
+      )}
     </div>
   )
 }

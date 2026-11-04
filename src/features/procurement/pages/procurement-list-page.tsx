@@ -13,6 +13,7 @@ import { t, td } from '@/i18n'
 import { cn, formatDate, formatMoney, humanize, num, todayISO } from '@/lib/utils'
 import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { PROC_TABLE, procKeys, useProcDocuments, type ProcKind } from '../api'
+import { billLines } from '@/lib/documents/preview-lines'
 import { MatchBadge } from './purchase-document-page'
 
 type Row = Record<string, unknown> & { id: string; number: string; status: string; currency_code?: string }
@@ -173,6 +174,7 @@ export function ProcurementListPage({ kind }: { kind: ProcKind }) {
         tableKey={`procurement.${kind}`} columns={columns} data={docs.data ? rows : undefined} isLoading={docs.isLoading} error={docs.error}
         getRowId={(r) => r.id} searchPlaceholder={kind === 'bills' ? t('Number, vendor, vendor invoice no.…') : t('Number, vendor…')} exportName={kind}
         onRowClick={(r) => navigate(`${cfg.href}/${r.id}`)}
+        preview={kind === 'orders' ? (r) => ({ print: { kind: 'purchase_order', id: r.id } }) : kind === 'bills' ? (r) => ({ lines: billLines(r.id) }) : undefined}
         facets={[{ columnId: 'status', title: t('Status'), options: cfg.statuses.map((s) => ({ label: humanize(s), value: s })) }, ...(cfg.extraFacets?.(docs.data ?? []) ?? [])]}
         empty={{ title: cfg.emptyTitle, description: cfg.empty, action: newButton }}
       />

@@ -47,4 +47,10 @@ export default {
   "on the day": "në ditën",
   "before": "para",
   "from … to": "nga … deri",
+  "Quick look": "Parapamje",
+  "Quick look (without opening)": "Parapamje e shpejtë (pa e hapur)",
+  "{n} of {total} · ↑ ↓ for the next one": "{n} nga {total} · ↑ ↓ për tjetrin",
+  "The one above": "Ai më lart",
+  "The one below": "Ai më poshtë",
+  "No lines": "Pa rreshta",
 } satisfies Dict
