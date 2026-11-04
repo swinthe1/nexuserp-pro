@@ -12,6 +12,10 @@ export default {
   "Electricity, rent, fuel, repairs: booked to its account. From a photo too.": "Rryma, qiraja, nafta, riparimet: regjistrohet në kontin e vet. Edhe me foto.",
   "A bill with lines and accounts": "Faturë me rreshta dhe konto",
   "For the accountant: several services or accounts on one bill, or a bill for a purchase order.": "Për kontabilistin: disa shërbime ose konto në një faturë, ose faturë për një porosi blerjeje.",
+  "What you see on the lines, and in which order. You can also drag a column by its name.": "Çka sheh në rreshta, dhe me çfarë radhe. Kolonën mund ta tërheqësh edhe nga emri i saj.",
+  "Only the main ones": "Vetëm kryesoret",
+  "Show all, in the usual order": "Shfaqi të gjitha, me radhën e zakonshme",
+  "Drag the card to put it where you want": "Tërhiqe kartelën për ta vendosur ku të duash",
   "Lines from the supplier’s file": "Rreshtat nga skedari i furnitorit",
   "Copy the lines in Excel and paste them here, or choose the file. Barcode, code, name, quantity and price are found by themselves.":
     "Kopjo rreshtat në Excel dhe ngjiti këtu, ose zgjidh skedarin. Barkodi, shifra, emërtimi, sasia dhe çmimi gjenden vetë.",

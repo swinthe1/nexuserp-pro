@@ -8,7 +8,9 @@ import { supabase } from '@/lib/supabase'
 /** Most items a person can pin to the top of the menu */
 export const MAX_FAVOURITES = 8
 
-interface Prefs { nav_favourites?: string[]; nav_open?: string[]; dashboard_cards?: Record<string, string[]> }
+interface Prefs { nav_favourites?: string[]; nav_open?: string[]; dashboard_cards?: Record<string, string[]>; table_columns?: Record<string, TableColumns> }
+/** the columns a person hid on a table of lines, and their order */
+export interface TableColumns { order: string[]; hidden: string[] }
 
 function useMyPrefs() {
   const { user } = useAuth()
@@ -113,4 +115,18 @@ export function mostUsed(limit: number, allowed: (href: string) => boolean) {
       .slice(0, limit)
       .map(([href]) => href)
   } catch { return [] }
+}
+
+/** How a person arranged the columns of a table of lines (which they hide, in which order), kept on their profile. */
+export function useTableColumns(table: string) {
+  const prefs = useMyPrefs()
+  const save = useSavePref()
+  const all = prefs.data?.table_columns ?? {}
+  const cols = all[table] ?? null
+  const set = React.useCallback((next: TableColumns | null) => {
+    const copy = { ...all }
+    if (next) copy[table] = next; else delete copy[table]
+    save.mutate({ key: 'table_columns', value: copy })
+  }, [all, table, save])
+  return { cols, set, loaded: prefs.isSuccess }
 }

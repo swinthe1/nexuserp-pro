@@ -21,7 +21,7 @@ import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { formatDateWith, formatNumberWith, t, td, tn } from '@/i18n'
 import { unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
-import { formatCompact, formatDate, formatMoney, formatQty, humanize, num, todayISO } from '@/lib/utils'
+import { cn, formatCompact, formatDate, formatMoney, formatQty, humanize, num, todayISO } from '@/lib/utils'
 import { useSalesOverview } from '@/features/sales/api'
 import { useProcurementOverview } from '@/features/procurement/api'
 import { useInventoryOverview, useLowStock } from '@/features/inventory/api'
@@ -143,7 +143,21 @@ export function DashboardPage() {
   const byKey = new Map(cards.map((c) => [c.key, c]))
   // the usual eight, until the person chooses their own
   const usual = ['stock_value', 'low_stock', 'customs', 'approvals', 'sales_month', can('sales.read') ? 'overdue' : 'customers_late', 'bills_due', can('sales.read') ? 'backlog' : 'net_profit']
-  const shown = (choice.cards ?? usual).filter((k) => byKey.has(k))
+  // the order just dragged shows at once, before the profile has saved it
+  const [dragged, setDragged] = React.useState<string[] | null>(null)
+  React.useEffect(() => setDragged(null), [choice.cards])
+  const shown = (dragged ?? choice.cards ?? usual).filter((k) => byKey.has(k))
+  const [dragKey, setDragKey] = React.useState<string | null>(null)
+  const [overKey, setOverKey] = React.useState<string | null>(null)
+  /** a card dropped on another takes its place; saved on the person's profile, for every device */
+  const dropOn = (to: string) => {
+    const from = dragKey
+    setDragKey(null); setOverKey(null)
+    if (!from || from === to) return
+    const o = shown.filter((k) => k !== from)
+    o.splice(o.indexOf(to) + (shown.indexOf(from) < shown.indexOf(to) ? 1 : 0), 0, from)
+    setDragged(o); choice.set(o)
+  }
 
   const flow = (inv.data?.movements_by_day ?? []).map((d) => ({ day: shortDay(d.day), in: Number(d.value_in), out: Number(d.value_out) }))
   const firstName = ((user?.user_metadata?.full_name as string | undefined) ?? '').split(' ')[0]
@@ -158,7 +172,14 @@ export function DashboardPage() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {/* until the person's own choice has loaded, so the cards do not jump */}
         {!choice.loaded ? Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="h-[136px] rounded-xl" />)
-          : shown.map((k) => <React.Fragment key={k}>{byKey.get(k)!.node}</React.Fragment>)}
+          : shown.map((k) => (
+            <div key={k} draggable title={t('Drag the card to put it where you want')}
+              className={cn('rounded-xl transition-opacity', dragKey === k && 'opacity-40', overKey === k && dragKey !== k && 'ring-2 ring-primary ring-offset-2 ring-offset-background')}
+              onDragStart={(e) => { setDragKey(k); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', k) }}
+              onDragEnter={() => setOverKey(k)} onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }}
+              onDragEnd={() => { setDragKey(null); setOverKey(null) }} onDrop={(e) => { e.preventDefault(); dropOn(k) }}>
+              {byKey.get(k)!.node}
+            </div>))}
       </div>
 
       {legacy && <LegacySales data={legacy} />}

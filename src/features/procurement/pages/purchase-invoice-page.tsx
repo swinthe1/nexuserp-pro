@@ -1,11 +1,12 @@
 import { Hint } from '@/components/help'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCheck, FileSpreadsheet, PackagePlus, Percent, Save, ScanBarcode, Sparkles, Trash2 } from 'lucide-react'
+import { CheckCheck, ChevronDown, ChevronUp, Columns3, FileSpreadsheet, PackagePlus, Percent, Save, ScanBarcode, Sparkles, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useGuard } from '@/components/guard'
 import { useCompany } from '@/app/company-provider'
+import { useTableColumns } from '@/components/layout/nav-prefs'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { ErrorState } from '@/components/error-state'
 import { PackQty, packsFromPieces } from '@/components/pack-qty'
@@ -15,6 +16,7 @@ import { PRICE_KEY, PriceRiseCard } from '../components/price-rise'
 import { SearchSelect } from '@/components/search-select'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -69,6 +71,53 @@ const priceFor = (cost: number, pct: number, basis: string, tax: number, step: n
 const marginOf = (net: number, cost: number, basis: string) => cost > 0 && net > 0 ? (basis === 'margin' ? (net - cost) / net * 100 : (net - cost) / cost * 100) : null
 const newKey = () => Math.random().toString(36).slice(2)
 
+/** the columns of the lines: a person may hide them (not the quantity and the price) and put them in any order */
+const COLUMNS: { key: string; label: () => string; fixed?: boolean }[] = [
+  { key: 'qty', label: () => t('Qty'), fixed: true }, { key: 'price', label: () => t('Purchase price (without VAT)'), fixed: true },
+  { key: 'd1', label: () => t('Disc. %') }, { key: 'd2', label: () => t('Extra %') }, { key: 'cost', label: () => t('Cost (without VAT)') },
+  { key: 'avg', label: () => t('Avg. cost now (without VAT)') }, { key: 'vat', label: () => t('VAT') }, { key: 'net', label: () => t('Without VAT') },
+  { key: 'gross', label: () => t('With VAT') }, { key: 'cur', label: () => t('Selling price now (with VAT)') }, { key: 'rec', label: () => t('Recommended (with VAT)') },
+  { key: 'new', label: () => t('New selling price (with VAT)') }, { key: 'margin', label: () => t('Margin %') },
+]
+/** the few that most invoices need */
+const MAIN_ONLY = new Set(['d2', 'cost', 'avg', 'cur', 'rec'])
+const DEFAULT_ORDER = ['qty', 'price', 'd1', 'd2', 'cost', 'avg', 'vat', 'net', 'gross', 'cur', 'rec', 'new', 'margin']
+/** a saved order, with any column it does not know yet put back in its usual place */
+const fullOrder = (saved: string[] | undefined) => {
+  const o = (saved ?? []).filter((k) => DEFAULT_ORDER.includes(k))
+  for (const k of DEFAULT_ORDER) if (!o.includes(k)) o.splice(Math.min(DEFAULT_ORDER.indexOf(k), o.length), 0, k)
+  return o
+}
+
+function ColumnsMenu({ hidden, onChange, order, onOrder, onReset }: { hidden: Set<string>; onChange: (h: Set<string>) => void; order: string[]; onOrder: (o: string[]) => void; onReset: () => void }) {
+  const label = (k: string) => COLUMNS.find((c) => c.key === k)?.label() ?? k
+  const fixed = (k: string) => !!COLUMNS.find((c) => c.key === k)?.fixed
+  const move = (i: number, d: number) => { const o = order.slice(); const [x] = o.splice(i, 1); o.splice(i + d, 0, x!); onOrder(o) }
+  const optional = COLUMNS.filter((c) => !c.fixed).length
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild><Button variant="outline"><Columns3 /> {t('Columns')}{hidden.size > 0 && <span className="text-muted-foreground">({optional - hidden.size}/{optional})</span>}</Button></DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-72">
+        <DropdownMenuLabel className="text-[12px] font-normal text-muted-foreground">{t('What you see on the lines, and in which order. You can also drag a column by its name.')}</DropdownMenuLabel>
+        {order.map((k, i) => (
+          <div key={k} className="flex items-center gap-1 rounded-sm pr-1 hover:bg-accent">
+            <label className={cn('flex min-w-0 flex-1 cursor-pointer items-center gap-2 px-2 py-1.5 text-[13px]', fixed(k) && 'cursor-default')}>
+              <input type="checkbox" className="size-4" checked={!hidden.has(k)} disabled={fixed(k)}
+                onChange={(e) => { const h = new Set(hidden); if (e.target.checked) h.delete(k); else h.add(k); onChange(h) }} />
+              <span className="truncate">{label(k)}</span>
+            </label>
+            <Button size="icon" variant="ghost" className="size-7" disabled={i === 0} aria-label={t('Move up')} onClick={() => move(i, -1)}><ChevronUp /></Button>
+            <Button size="icon" variant="ghost" className="size-7" disabled={i === order.length - 1} aria-label={t('Move down')} onClick={() => move(i, 1)}><ChevronDown /></Button>
+          </div>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => onChange(new Set(MAIN_ONLY))}>{t('Only the main ones')}</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => onReset()}>{t('Show all, in the usual order')}</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 /** The supplier's invoice with the goods: received into a warehouse at cost, with the new selling prices, in one screen. */
 export function PurchaseInvoicePage() {
   const { id } = useParams()
@@ -116,6 +165,18 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
   const [margin, setMargin] = React.useState('')
   const [confirm, setConfirm] = React.useState(false)
   const [importing, setImporting] = React.useState(false)
+  // how this person arranged the columns, on their profile (every computer shows the same)
+  const tableCols = useTableColumns('purchase_invoice')
+  const colOrder = React.useMemo(() => fullOrder(tableCols.cols?.order), [tableCols.cols])
+  const hiddenCols = React.useMemo(() => new Set((tableCols.cols?.hidden ?? []).filter((k) => !COLUMNS.find((c) => c.key === k)?.fixed)), [tableCols.cols])
+  const setHiddenCols = (h: Set<string>) => tableCols.set({ order: colOrder, hidden: [...h] })
+  const setColOrder = (o: string[]) => tableCols.set({ order: o, hidden: [...hiddenCols] })
+  /** a column dropped on another takes its place */
+  const moveCol = (from: string, to: string) => {
+    if (!from || from === to || !colOrder.includes(from)) return
+    const o = colOrder.filter((k) => k !== from); o.splice(o.indexOf(to) + (colOrder.indexOf(from) < colOrder.indexOf(to) ? 1 : 0), 0, from); setColOrder(o)
+  }
+  const shownCols = colOrder.filter((k) => !hiddenCols.has(k))
   const codeRef = React.useRef<HTMLInputElement>(null)
   const qtyRefs = React.useRef(new Map<string, HTMLInputElement>())
 
@@ -241,7 +302,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
     if (e.key !== 'Enter') return
     e.preventDefault()
     const row = (e.target as HTMLElement).closest('tr')
-    const boxes = Array.from(row?.querySelectorAll<HTMLInputElement>('input[data-nav]') ?? [])
+    const boxes = Array.from(row?.querySelectorAll<HTMLInputElement>('input[data-nav]') ?? []).filter((b) => b.offsetParent !== null)
     const i = boxes.indexOf(e.target as HTMLInputElement)
     if (i >= 0 && i < boxes.length - 1) boxes[i + 1].select(); else codeRef.current?.focus()
   }
@@ -305,6 +366,21 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
   const changing = calc.filter((c) => c.newGross != null && c.curGross != null && Math.abs(c.newGross - c.curGross) > 0.004).length
   const payBank = banks.data?.find((b) => b.id === h.pay_bank_account_id)
 
+  const heads: Record<string, React.ReactNode> = {
+    qty: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'qty'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'qty') }} className="w-20 px-2 py-2 text-right font-medium cursor-grab select-none">{t('Qty')}</th>,
+    price: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'price'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'price') }} className="w-24 px-2 py-2 text-right font-medium cursor-grab select-none">{t('Purchase price (without VAT)')}</th>,
+    d1: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'd1'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'd1') }} data-col="d1" className="w-16 px-2 py-2 text-right font-medium cursor-grab select-none">{t('Disc. %')}</th>,
+    d2: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'd2'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'd2') }} data-col="d2" className="w-16 px-2 py-2 text-right font-medium cursor-grab select-none">{t('Extra %')}</th>,
+    cost: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'cost'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'cost') }} data-col="cost" className="w-24 px-2 py-2 text-right font-medium cursor-grab select-none">{t('Cost (without VAT)')}</th>,
+    avg: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'avg'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'avg') }} data-col="avg" className="w-24 px-2 py-2 text-right font-medium cursor-grab select-none">{t('Avg. cost now (without VAT)')}</th>,
+    vat: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'vat'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'vat') }} data-col="vat" className="w-24 px-2 py-2 font-medium cursor-grab select-none">{t('VAT')}</th>,
+    net: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'net'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'net') }} data-col="net" className="w-24 px-2 py-2 text-right font-medium cursor-grab select-none">{t('Without VAT')}</th>,
+    gross: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'gross'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'gross') }} data-col="gross" className="w-24 px-2 py-2 text-right font-medium cursor-grab select-none">{t('With VAT')}</th>,
+    cur: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'cur'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'cur') }} data-col="cur" className="w-24 px-2 py-2 text-right font-medium cursor-grab select-none">{t('Selling price now (with VAT)')}</th>,
+    rec: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'rec'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'rec') }} data-col="rec" className="w-28 px-2 py-2 text-right font-medium cursor-grab select-none">{t('Recommended (with VAT)')}</th>,
+    new: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'new'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'new') }} data-col="new" className="w-28 px-2 py-2 text-right font-medium cursor-grab select-none">{t('New selling price (with VAT)')}</th>,
+    margin: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'margin'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'margin') }} data-col="margin" className="w-20 px-2 py-2 text-right font-medium cursor-grab select-none" title={basis === 'margin' ? t('Margin on the selling price') : t('Margin on the cost')}>{t('Margin %')}</th>,
+  }
   return (
     <div className="pb-24">
       <PageHeader back={{ href: '/procurement/bills', label: t('Vendor bills') }} title={doc ? `${t('Purchase invoice')} ${doc.number}` : t('New purchase invoice')}
@@ -376,6 +452,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
           </div>
           {editable && <Button variant="outline" onClick={() => setImporting(true)} disabled={!catalog.ready} title={t('Paste the lines from Excel, or choose the supplier’s file')}>
             <FileSpreadsheet /> {t('From Excel')}</Button>}
+          <ColumnsMenu hidden={hiddenCols} onChange={setHiddenCols} order={colOrder} onOrder={setColOrder} onReset={() => tableCols.set(null)} />
           <div className="ml-auto flex flex-wrap items-center gap-1.5">
             <Label htmlFor="pi-margin" className="whitespace-nowrap text-[13px] text-muted-foreground">{t('Margin for all')}<Hint id="margin_all" /></Label>
             <Input id="pi-margin" inputMode="decimal" className="h-8 w-20 text-right" value={margin} onChange={(e) => setMargin(e.target.value)} placeholder="25" />
@@ -384,35 +461,71 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1340px] text-[13px]">
+          <table id="pi-lines" className="w-full text-[13px]" style={{ minWidth: 300 + shownCols.length * 80 }}>
             <thead className="bg-muted/50 text-left text-[12px] text-muted-foreground">
               <tr>
                 <th className="w-8 px-2 py-2 font-medium">#</th>
                 <th className="px-2 py-2 font-medium">{t('Item')}</th>
-                <th className="w-20 px-2 py-2 text-right font-medium">{t('Qty')}</th>
-                <th className="w-24 px-2 py-2 text-right font-medium">{t('Purchase price (without VAT)')}</th>
-                <th className="w-16 px-2 py-2 text-right font-medium">{t('Disc. %')}</th>
-                <th className="w-16 px-2 py-2 text-right font-medium">{t('Extra %')}</th>
-                <th className="w-24 px-2 py-2 text-right font-medium">{t('Cost (without VAT)')}</th>
-                <th className="w-24 px-2 py-2 text-right font-medium">{t('Avg. cost now (without VAT)')}</th>
-                <th className="w-24 px-2 py-2 font-medium">{t('VAT')}</th>
-                <th className="w-24 px-2 py-2 text-right font-medium">{t('Without VAT')}</th>
-                <th className="w-24 px-2 py-2 text-right font-medium">{t('With VAT')}</th>
-                <th className="w-24 px-2 py-2 text-right font-medium">{t('Selling price now (with VAT)')}</th>
-                <th className="w-28 px-2 py-2 text-right font-medium">{t('Recommended (with VAT)')}</th>
-                <th className="w-28 px-2 py-2 text-right font-medium">{t('New selling price (with VAT)')}</th>
-                <th className="w-20 px-2 py-2 text-right font-medium" title={basis === 'margin' ? t('Margin on the selling price') : t('Margin on the cost')}>{t('Margin %')}</th>
+                {shownCols.map((k) => <React.Fragment key={k}>{heads[k]}</React.Fragment>)}
                 <th className="w-8" />
               </tr>
             </thead>
             <tbody>
               {calc.length === 0 && (
-                <tr><td colSpan={16} className="px-3 py-10 text-center text-muted-foreground">
+                <tr><td colSpan={shownCols.length + 3} className="px-3 py-10 text-center text-muted-foreground">
                   <PackagePlus className="mx-auto mb-2 size-6" />{t('Scan or type the first item above.')}</td></tr>
               )}
               {calc.map((c, n) => {
                 const tracked = c.i && c.i.tracking !== 'none'
                 const lastChanged = c.i?.last && c.price > 0 && Math.abs(num(c.i.last.price) - c.price) > 0.0001
+                const cells: Record<string, React.ReactNode> = {
+                      qty: <td className="px-1 py-1"><Input data-nav ref={(el) => { if (el) qtyRefs.current.set(c.r.key, el); else qtyRefs.current.delete(c.r.key) }} inputMode="decimal"
+                      className="h-8 min-w-[64px] text-right tabular-nums" value={c.r.qty} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Quantity')}
+                      onChange={(e) => upd(c.r.key, { qty: e.target.value, ...(c.r.pack ? { pq: packsFromPieces(packs.byId.get(c.r.pack), e.target.value) } : {}) })} />
+                      <PackQty packs={packs.byVariant.get(c.r.variant_id)} packId={c.r.pack} packQty={c.r.pq} quantity={c.r.qty} uom={c.i?.uom} line={n + 1}
+                        onChange={(v) => upd(c.r.key, { pack: v.pack_id, pq: v.pack_qty, ...(v.quantity ? { qty: String(v.quantity) } : {}) })} /></td>,
+                      price: <td className="px-1 py-1"><Input data-nav inputMode="decimal" className={cn('h-8 min-w-[88px] text-right tabular-nums', lastChanged && 'border-amber-500')} value={c.r.price}
+                      title={lastChanged ? t('Last time {price}', { price: fmt(num(c.i!.last!.price), 4) }) : undefined}
+                      onChange={(e) => upd(c.r.key, { price: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Purchase price (without VAT)')} /></td>,
+                      d1: <td data-col="d1" className="px-1 py-1"><Input data-nav inputMode="decimal" className="h-8 min-w-[56px] text-right tabular-nums" value={c.r.d1} placeholder="0" onChange={(e) => upd(c.r.key, { d1: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Disc. %')} /></td>,
+                      d2: <td data-col="d2" className="px-1 py-1"><Input data-nav inputMode="decimal" className="h-8 min-w-[56px] text-right tabular-nums" value={c.r.d2} placeholder="0" onChange={(e) => upd(c.r.key, { d2: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Extra %')} /></td>,
+                      cost: <td data-col="cost" className="px-2 py-2 text-right tabular-nums">{fmt(c.unit, 4)}</td>,
+                      avg: <td data-col="avg" className={cn('px-2 py-2 text-right tabular-nums text-muted-foreground', c.i && c.i.avg_cost > 0 && c.costBase > c.i.avg_cost * 1.05 && 'text-amber-700 dark:text-amber-400')}>{c.i ? fmt(num(c.i.avg_cost), 4) : '…'}</td>,
+                      vat: <td data-col="vat" className="px-1 py-1">
+                      <Select value={c.r.tax ?? ''} onValueChange={(v) => upd(c.r.key, { tax: v })}>
+                        <SelectTrigger className="h-8 min-w-[110px]" aria-label={t('VAT')}><SelectValue placeholder="—" /></SelectTrigger>
+                        <SelectContent>{(taxes.data ?? []).filter((x) => x.is_active !== false).map((x) => <SelectItem key={x.id} value={x.id}>{td(x.name)}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </td>,
+                      net: <td data-col="net" className="px-2 py-2 text-right tabular-nums">{fmt(c.net)}</td>,
+                      gross: <td data-col="gross" className="px-2 py-2 text-right tabular-nums">{fmt(c.net + c.vat)}</td>,
+                      cur: <td data-col="cur" className="px-2 py-2 text-right tabular-nums text-muted-foreground">{c.curGross == null ? '…' : fmt(c.curGross)}</td>,
+                      rec: <td data-col="rec" className="px-1 py-1 text-right">
+                      {c.rec ? (
+                        <button type="button" className="w-full rounded-md px-1.5 py-1 text-right hover:bg-muted disabled:hover:bg-transparent" disabled={c.rec.from === 'current'}
+                          title={c.rec.from === 'current' ? t('The price now already keeps the margin') : t('Click to use this price')}
+                          onClick={() => upd(c.r.key, { gross: String(c.rec!.gross), m: null })}>
+                          <span className={cn('block tabular-nums', c.rec.from !== 'current' && 'font-medium text-primary')}>{fmt(c.rec.gross)}</span>
+                          <span className="block text-[10.5px] leading-tight text-muted-foreground">
+                            {c.rec.from === 'item' ? t('item target {pct}%', { pct: fmt(num(c.rec.pct), 0) })
+                              : c.rec.from === 'category' ? t('{category} {pct}%', { category: c.i?.category ?? '', pct: fmt(num(c.rec.pct), 0) })
+                              : c.rec.from === 'keep' ? t('same margin {pct}%', { pct: fmt(num(c.rec.pct), 1) })
+                              : t('keep the price')}
+                          </span>
+                        </button>
+                      ) : <span className="px-1.5 text-muted-foreground">{c.i ? '—' : '…'}</span>}
+                    </td>,
+                      new: <td data-col="new" className="px-1 py-1"><Input data-nav inputMode="decimal" className={cn('h-8 min-w-[88px] text-right tabular-nums', c.newGross != null && 'border-primary font-medium')} value={c.r.gross.startsWith('net:') ? '' : c.r.gross}
+                      placeholder={c.curGross == null ? '' : fmt(c.curGross)} onChange={(e) => upd(c.r.key, { gross: e.target.value, m: null })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('New selling price (with VAT)')} /></td>,
+                      margin: <td data-col="margin" className="px-1 py-1">
+                      <Input data-nav inputMode="decimal" aria-label={t('Margin %')} disabled={!c.i || c.costBase <= 0}
+                        className={cn('h-8 min-w-[64px] text-right tabular-nums', c.markup != null && c.markup < 0 ? 'font-medium text-destructive' : c.markup != null && c.markup < 5 ? 'text-amber-700 dark:text-amber-400' : '')}
+                        value={c.r.m ?? (c.markup == null ? '' : fmt(c.markup))}
+                        onChange={(e) => upd(c.r.key, { m: e.target.value, ...(c.i && c.costBase > 0 && e.target.value.trim() !== '' && e.target.value.trim() !== '-'
+                          ? { gross: String(priceFor(c.costBase, num(e.target.value.replace(',', '.')), basis, c.i.sales_tax, step)) } : {}) })}
+                        onBlur={() => upd(c.r.key, { m: null })} onKeyDown={next} onFocus={(e) => e.target.select()} />
+                    </td>,
+                }
                 return (
                   <tr key={c.r.key} className="border-t align-top">
                     <td className="px-2 py-1.5 tabular-nums text-muted-foreground">{n + 1}</td>
@@ -427,52 +540,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
                         </div>
                       )}
                     </td>
-                    <td className="px-1 py-1"><Input data-nav ref={(el) => { if (el) qtyRefs.current.set(c.r.key, el); else qtyRefs.current.delete(c.r.key) }} inputMode="decimal"
-                      className="h-8 min-w-[64px] text-right tabular-nums" value={c.r.qty} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Quantity')}
-                      onChange={(e) => upd(c.r.key, { qty: e.target.value, ...(c.r.pack ? { pq: packsFromPieces(packs.byId.get(c.r.pack), e.target.value) } : {}) })} />
-                      <PackQty packs={packs.byVariant.get(c.r.variant_id)} packId={c.r.pack} packQty={c.r.pq} quantity={c.r.qty} uom={c.i?.uom} line={n + 1}
-                        onChange={(v) => upd(c.r.key, { pack: v.pack_id, pq: v.pack_qty, ...(v.quantity ? { qty: String(v.quantity) } : {}) })} /></td>
-                    <td className="px-1 py-1"><Input data-nav inputMode="decimal" className={cn('h-8 min-w-[88px] text-right tabular-nums', lastChanged && 'border-amber-500')} value={c.r.price}
-                      title={lastChanged ? t('Last time {price}', { price: fmt(num(c.i!.last!.price), 4) }) : undefined}
-                      onChange={(e) => upd(c.r.key, { price: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Purchase price (without VAT)')} /></td>
-                    <td className="px-1 py-1"><Input data-nav inputMode="decimal" className="h-8 min-w-[56px] text-right tabular-nums" value={c.r.d1} placeholder="0" onChange={(e) => upd(c.r.key, { d1: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Disc. %')} /></td>
-                    <td className="px-1 py-1"><Input data-nav inputMode="decimal" className="h-8 min-w-[56px] text-right tabular-nums" value={c.r.d2} placeholder="0" onChange={(e) => upd(c.r.key, { d2: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Extra %')} /></td>
-                    <td className="px-2 py-2 text-right tabular-nums">{fmt(c.unit, 4)}</td>
-                    <td className={cn('px-2 py-2 text-right tabular-nums text-muted-foreground', c.i && c.i.avg_cost > 0 && c.costBase > c.i.avg_cost * 1.05 && 'text-amber-700 dark:text-amber-400')}>{c.i ? fmt(num(c.i.avg_cost), 4) : '…'}</td>
-                    <td className="px-1 py-1">
-                      <Select value={c.r.tax ?? ''} onValueChange={(v) => upd(c.r.key, { tax: v })}>
-                        <SelectTrigger className="h-8 min-w-[110px]" aria-label={t('VAT')}><SelectValue placeholder="—" /></SelectTrigger>
-                        <SelectContent>{(taxes.data ?? []).filter((x) => x.is_active !== false).map((x) => <SelectItem key={x.id} value={x.id}>{td(x.name)}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </td>
-                    <td className="px-2 py-2 text-right tabular-nums">{fmt(c.net)}</td>
-                    <td className="px-2 py-2 text-right tabular-nums">{fmt(c.net + c.vat)}</td>
-                    <td className="px-2 py-2 text-right tabular-nums text-muted-foreground">{c.curGross == null ? '…' : fmt(c.curGross)}</td>
-                    <td className="px-1 py-1 text-right">
-                      {c.rec ? (
-                        <button type="button" className="w-full rounded-md px-1.5 py-1 text-right hover:bg-muted disabled:hover:bg-transparent" disabled={c.rec.from === 'current'}
-                          title={c.rec.from === 'current' ? t('The price now already keeps the margin') : t('Click to use this price')}
-                          onClick={() => upd(c.r.key, { gross: String(c.rec!.gross), m: null })}>
-                          <span className={cn('block tabular-nums', c.rec.from !== 'current' && 'font-medium text-primary')}>{fmt(c.rec.gross)}</span>
-                          <span className="block text-[10.5px] leading-tight text-muted-foreground">
-                            {c.rec.from === 'item' ? t('item target {pct}%', { pct: fmt(num(c.rec.pct), 0) })
-                              : c.rec.from === 'category' ? t('{category} {pct}%', { category: c.i?.category ?? '', pct: fmt(num(c.rec.pct), 0) })
-                              : c.rec.from === 'keep' ? t('same margin {pct}%', { pct: fmt(num(c.rec.pct), 1) })
-                              : t('keep the price')}
-                          </span>
-                        </button>
-                      ) : <span className="px-1.5 text-muted-foreground">{c.i ? '—' : '…'}</span>}
-                    </td>
-                    <td className="px-1 py-1"><Input data-nav inputMode="decimal" className={cn('h-8 min-w-[88px] text-right tabular-nums', c.newGross != null && 'border-primary font-medium')} value={c.r.gross.startsWith('net:') ? '' : c.r.gross}
-                      placeholder={c.curGross == null ? '' : fmt(c.curGross)} onChange={(e) => upd(c.r.key, { gross: e.target.value, m: null })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('New selling price (with VAT)')} /></td>
-                    <td className="px-1 py-1">
-                      <Input data-nav inputMode="decimal" aria-label={t('Margin %')} disabled={!c.i || c.costBase <= 0}
-                        className={cn('h-8 min-w-[64px] text-right tabular-nums', c.markup != null && c.markup < 0 ? 'font-medium text-destructive' : c.markup != null && c.markup < 5 ? 'text-amber-700 dark:text-amber-400' : '')}
-                        value={c.r.m ?? (c.markup == null ? '' : fmt(c.markup))}
-                        onChange={(e) => upd(c.r.key, { m: e.target.value, ...(c.i && c.costBase > 0 && e.target.value.trim() !== '' && e.target.value.trim() !== '-'
-                          ? { gross: String(priceFor(c.costBase, num(e.target.value.replace(',', '.')), basis, c.i.sales_tax, step)) } : {}) })}
-                        onBlur={() => upd(c.r.key, { m: null })} onKeyDown={next} onFocus={(e) => e.target.select()} />
-                    </td>
+                    {shownCols.map((k) => <React.Fragment key={k}>{cells[k]}</React.Fragment>)}
                     <td className="px-1 py-1"><Button size="icon" variant="ghost" className="size-8" aria-label={t('Remove')} onClick={() => setRows((rs) => rs.filter((r) => r.key !== c.r.key))}><Trash2 /></Button></td>
                   </tr>
                 )
@@ -489,7 +557,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
           </dl>
           <dl className="grid content-start gap-1 text-sm md:ml-auto md:w-80">
             <div className="flex justify-between"><dt className="text-muted-foreground">{t('Before discount (without VAT)')}</dt><dd className="tabular-nums">{fmt(tot.gross)}</dd></div>
-            <div className="flex justify-between"><dt className="text-muted-foreground">{t('Discounts')}</dt><dd className="tabular-nums">−{fmt(tot.gross - tot.net)}</dd></div>
+            <div className="flex justify-between"><dt className="text-muted-foreground">{t('Discounts')}</dt><dd className="tabular-nums">{Math.abs(tot.gross - tot.net) < 0.005 ? fmt(0) : `−${fmt(tot.gross - tot.net)}`}</dd></div>
             <div className="flex justify-between"><dt className="text-muted-foreground">{t('Amount without VAT')}</dt><dd className="tabular-nums">{fmt(tot.net)}</dd></div>
             <div className="flex justify-between"><dt className="text-muted-foreground">{t('VAT')}</dt><dd className="tabular-nums">{fmt(tot.vat)}</dd></div>
             <div className="flex justify-between border-t pt-1 text-base font-semibold"><dt>{t('Total (with VAT)')}</dt><dd className="tabular-nums">{formatMoney(tot.net + tot.vat, h.currency_code)}</dd></div>

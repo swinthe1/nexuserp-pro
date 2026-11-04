@@ -50,7 +50,7 @@ export default {
   'This took longer than the server allows and nothing was changed. Try again; if it happens again, tell the administrator.': 'Kjo zgjati më shumë se sa lejon serveri dhe nuk u ndryshua asgjë. Provoni përsëri; nëse ndodh prapë, njoftoni administratorin.',
   // paneli
   'Choose cards': 'Personalizo panelin',
-  'Tick what you want to see on the dashboard; the arrows change the order. Only you see this choice.': 'Shëno çka do të shohësh në panel; shigjetat ndryshojnë radhën. Këtë zgjedhje e sheh vetëm ti.',
+  'Tick what you want to see on the dashboard; the arrows change the order. Only you see this choice.': 'Shëno çka do të shohësh në panel; shigjetat ndryshojnë radhën, ose tërhiq kartelën drejtpërdrejt në panel. Këtë zgjedhje e sheh vetëm ti.',
   'Back to the usual cards': 'Kthe kartelat e zakonshme',
   'Gross margin this month (without VAT)': 'Marzha bruto këtë muaj (pa TVSH)',
   '{pct}% of sales': '{pct}% e shitjeve',
