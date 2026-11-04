@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowUp, History, Loader2, MessageSquarePlus, Sparkles, Trash2 } from 'lucide-react'
+import { ArrowLeftRight, ArrowUp, BellRing, Check, FileText, History, ListTodo, Loader2, MessageSquarePlus, ShoppingCart, Sparkles, Sun, Tag, Trash2, X } from 'lucide-react'
 import * as React from 'react'
-import { useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
@@ -11,7 +13,13 @@ import { cn, formatDate } from '@/lib/utils'
 import { msg, t, tServer } from '@/i18n'
 import { Markdown } from './markdown'
 
-type Msg = { id: string; role: 'user' | 'assistant'; content: string; created_at: string }
+type Action = {
+  id: string; kind: 'task' | 'sales_invoice' | 'purchase_order' | 'transfer' | 'price' | 'reminder'
+  preview: { title?: string; rows?: [string, string][]; note?: string }
+  status: 'proposed' | 'done' | 'declined' | 'failed' | 'expired'
+  result: { href?: string; number?: string; messages?: number } | null; error: string | null
+}
+type Msg = { id: string; role: 'user' | 'assistant'; content: string; created_at: string; actions?: Action[] }
 type State = { id: string; title: string | null; messages: Msg[]; job: { id: string; status: 'queued' | 'running' | 'done' | 'failed'; step: string | null; error: string | null } | null }
 
 const busy = (s?: State) => s?.job?.status === 'queued' || s?.job?.status === 'running'
@@ -26,16 +34,109 @@ function stepLabel(step: string | null | undefined) {
     case 'low_stock': return t('Checking the stock…')
     case 'day_summary': return t('Looking at the day…')
     case 'report': return t('Adding up the numbers…')
-    default: return t('Thinking…')
+    case 'page_record': return t('Looking at this page…')
+    case 'app_help': return t('Looking in the guide…')
+    case 'my_tasks': return t('Looking at the tasks…')
+    default: return step?.startsWith('propose_') ? t('Preparing it for you…') : t('Thinking…')
   }
 }
 
 const SUGGESTIONS = [
-  msg('How much did we sell this month, and to whom?'),
-  msg('Who owes us money and how late are they?'),
-  msg('What do I need to order?'),
   msg('How did yesterday go?'),
+  msg('Who owes us money and how late are they?'),
+  msg('What do I need to order? Prepare the order.'),
+  msg('How do I return goods to a supplier?'),
+  msg('Give me a task to count the dairy shelf tomorrow'),
 ]
+
+const KIND: Record<Action['kind'], { icon: typeof ListTodo; label: string }> = {
+  task: { icon: ListTodo, label: msg('A task') },
+  sales_invoice: { icon: FileText, label: msg('A draft invoice') },
+  purchase_order: { icon: ShoppingCart, label: msg('A draft purchase order') },
+  transfer: { icon: ArrowLeftRight, label: msg('A transfer request') },
+  price: { icon: Tag, label: msg('A new price') },
+  reminder: { icon: BellRing, label: msg('A payment reminder') },
+}
+
+/** what the assistant prepared: nothing happens until the person presses "Po" */
+function ActionCard({ a, onNavigate }: { a: Action; onNavigate: () => void }) {
+  const qc = useQueryClient()
+  const decide = useMutation({
+    mutationFn: async (yes: boolean) => unwrap(await supabase.rpc('assistant_decide', { p_action: a.id, p_yes: yes })),
+    onSettled: () => { void qc.invalidateQueries({ queryKey: ['assistant'] }) },
+  })
+  const k = KIND[a.kind]
+  const Icon = k?.icon ?? Sparkles
+  return (
+    <div className={cn('mt-2 rounded-xl border bg-background p-3 text-sm shadow-sm', a.status === 'proposed' && 'border-primary/40')}>
+      <div className="flex items-center gap-2 text-2xs font-medium uppercase tracking-wide text-muted-foreground">
+        <Icon className="size-3.5 text-primary" />{t(k?.label ?? a.kind)}
+      </div>
+      {a.preview.title && <p className="mt-1 font-medium">{a.preview.title}</p>}
+      {!!a.preview.rows?.length && (
+        <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
+          {a.preview.rows.map(([l, v], i) => (
+            <React.Fragment key={i}><dt className="text-muted-foreground">{KIND[a.kind] && ['Person', 'Due', 'Priority', 'Without VAT', 'With VAT', 'Quantity', 'From', 'To', 'Price now with VAT', 'New price with VAT', 'Owed', 'Overdue'].includes(l) ? t(l) : l}</dt>
+              <dd className="text-right tabular-nums">{l === 'Priority' ? tEnumPriority(v) : v}</dd></React.Fragment>
+          ))}
+        </dl>
+      )}
+      {a.preview.note && <p className="mt-1.5 text-2xs text-muted-foreground">{t(a.preview.note)}</p>}
+      {a.status === 'proposed' ? (
+        <div className="mt-2.5 flex gap-2">
+          <Button size="sm" className="gap-1" disabled={decide.isPending} onClick={() => decide.mutate(true)}>
+            {decide.isPending && decide.variables ? <Loader2 className="animate-spin" /> : <Check />}{t('Yes, do it')}
+          </Button>
+          <Button size="sm" variant="outline" className="gap-1" disabled={decide.isPending} onClick={() => decide.mutate(false)}><X />{t('No')}</Button>
+        </div>
+      ) : a.status === 'done' ? (
+        <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs font-medium text-success">
+          <Check className="size-3.5" />{a.kind === 'reminder' ? t('Sent') : t('Done')}
+          {a.result?.href && <Link to={a.result.href} onClick={onNavigate} className="text-primary underline underline-offset-2">{a.result.number ?? t('Open')}</Link>}
+        </p>
+      ) : a.status === 'failed' ? (
+        <p className="mt-2 text-xs text-destructive">{tServer(a.error ?? 'It could not be done')}</p>
+      ) : (
+        <p className="mt-2 text-xs text-muted-foreground">{a.status === 'declined' ? t('Not done') : t('Expired: ask again')}</p>
+      )}
+      {decide.isError && <p className="mt-2 text-xs text-destructive">{describeError(decide.error)}</p>}
+    </div>
+  )
+}
+const tEnumPriority = (v: string) => ({ urgent: t('Urgent'), high: t('High'), normal: t('Normal'), low: t('Low') } as Record<string, string>)[v] ?? v
+
+/** the morning check: the assistant looks at the day by itself at the chosen hour */
+function DailyCard() {
+  const { companyId } = useCompany()
+  const qc = useQueryClient()
+  const q = useQuery({ queryKey: ['assistant-daily', companyId],
+    queryFn: async () => unwrap(await supabase.rpc('assistant_daily_get', { p_company: companyId })) as unknown as { enabled: boolean; hour: number } })
+  const set = useMutation({
+    mutationFn: async (v: { enabled: boolean; hour: number }) => unwrap(await supabase.rpc('assistant_daily_set', { p_company: companyId, p_enabled: v.enabled, p_hour: v.hour })),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['assistant-daily', companyId] }) },
+  })
+  const d = q.data ?? { enabled: false, hour: 7 }
+  return (
+    <div className="mb-3 rounded-xl border bg-secondary/40 p-3">
+      <div className="flex items-start gap-3">
+        <Sun className="mt-0.5 size-4 shrink-0 text-warning" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium">{t('Morning check')}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t('Every morning the assistant looks at yesterday, the debts, the stock and your tasks, tells you what needs doing and prepares it for a "Po". It counts as one question.')}</p>
+          <div className="mt-2 flex items-center gap-2">
+            <Switch checked={d.enabled} disabled={set.isPending || q.isLoading} onCheckedChange={(on) => set.mutate({ enabled: on, hour: d.hour })} aria-label={t('Morning check')} />
+            <span className="text-xs text-muted-foreground">{t('Hour')}</span>
+            <Select value={String(d.hour)} onValueChange={(h) => set.mutate({ enabled: d.enabled, hour: Number(h) })}>
+              <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
+              <SelectContent>{[5, 6, 7, 8, 9, 10, 11, 12].map((h) => <SelectItem key={h} value={String(h)}>{String(h).padStart(2, '0')}:00</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          {set.isError && <p className="mt-1 text-xs text-destructive">{describeError(set.error)}</p>}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export function AssistantButton() {
   const { hasFeature } = useCompany()
@@ -44,6 +145,19 @@ export function AssistantButton() {
 
 function AssistantLauncher() {
   const [open, setOpen] = React.useState(false)
+  const { companyId } = useCompany()
+  const { search, pathname } = useLocation()
+  const navigate = useNavigate()
+  // a notification (the morning check) opens its conversation
+  React.useEffect(() => {
+    const p = new URLSearchParams(search)
+    const id = p.get('assistant')
+    if (!id) return
+    try { sessionStorage.setItem('drispro.assistant.' + companyId, id) } catch { /* private window */ }
+    p.delete('assistant')
+    navigate({ pathname, search: p.toString() ? '?' + p.toString() : '' }, { replace: true })
+    setOpen(true)
+  }, [search, pathname, navigate, companyId])
   React.useEffect(() => {
     const show = () => setOpen(true)
     window.addEventListener('drispro:assistant', show)
@@ -76,6 +190,7 @@ function AssistantPanel({ onClose }: { onClose: () => void }) {
   const { pathname } = useLocation()
   const [conv, setConv] = React.useState<string | null>(() => { try { return sessionStorage.getItem('drispro.assistant.' + companyId) } catch { return null } })
   const [showHistory, setShowHistory] = React.useState(false)
+  const [showDaily, setShowDaily] = React.useState(false)
   const [text, setText] = React.useState('')
   const scroller = React.useRef<HTMLDivElement>(null)
   const input = React.useRef<HTMLTextAreaElement>(null)
@@ -127,6 +242,8 @@ function AssistantPanel({ onClose }: { onClose: () => void }) {
             {usage.data ? t('{used} of {limit} questions this month', { used: usage.data.used, limit: usage.data.limit }) : t('Ask about your sales, stock, debts and documents')}
           </SheetDescription>
         </div>
+        <Button variant="ghost" size="icon-sm" onClick={() => setShowDaily((v) => !v)} aria-label={t('Morning check')} title={t('Morning check')}
+          className={cn(showDaily && 'bg-secondary')}><Sun /></Button>
         <Button variant="ghost" size="icon-sm" onClick={() => setShowHistory((v) => !v)} aria-label={t('Earlier conversations')} title={t('Earlier conversations')}
           className={cn(showHistory && 'bg-secondary')}><History /></Button>
         <Button variant="ghost" size="icon-sm" onClick={() => { setConv(null); setShowHistory(false); input.current?.focus() }} aria-label={t('New conversation')} title={t('New conversation')}>
@@ -135,6 +252,7 @@ function AssistantPanel({ onClose }: { onClose: () => void }) {
       </SheetHeader>
 
       <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+        {showDaily && <DailyCard />}
         {showHistory ? (
           <div className="space-y-1">
             <p className="mb-2 text-xs font-medium text-muted-foreground">{t('Earlier conversations')}</p>
@@ -156,7 +274,7 @@ function AssistantPanel({ onClose }: { onClose: () => void }) {
             <div className="flex h-full flex-col justify-end gap-3 pb-2">
               <div>
                 <p className="text-sm font-medium">{t('What do you want to know?')}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{t('The assistant reads your company\u2019s data with your permissions and answers with links to the documents. For now it only reads: it does not change or send anything.')}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t('The assistant knows every page of DrisPRO and reads your company\u2019s data with your permissions. It can prepare a task, an invoice, an order, a transfer, a price or a reminder: nothing happens until you press "Po".')}</p>
               </div>
               <div className="flex flex-col items-start gap-1.5">
                 {SUGGESTIONS.map((q) => (
@@ -175,7 +293,8 @@ function AssistantPanel({ onClose }: { onClose: () => void }) {
             ) : (
               <div key={m.id} className="flex gap-2">
                 <Sparkles className="mt-1 size-3.5 shrink-0 text-primary" />
-                <div className="min-w-0 flex-1"><Markdown text={m.content} onNavigate={onClose} /></div>
+                <div className="min-w-0 flex-1"><Markdown text={m.content} onNavigate={onClose} />
+                  {m.actions?.map((a) => <ActionCard key={a.id} a={a} onNavigate={onClose} />)}</div>
               </div>
             ))}
             {waiting && (

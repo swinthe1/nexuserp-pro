@@ -15066,6 +15066,13 @@ export type Database = {
         }
         Returns: Json
       }
+      ai_page_record: {
+        Args: {
+          p_company: string
+          p_path: string
+        }
+        Returns: Json
+      }
       ai_partner_balance: {
         Args: {
           p_company: string
@@ -15250,6 +15257,27 @@ export type Database = {
           p_company: string
         }
         Returns: { id: string | null; title: string | null; updated_at: string | null }[]
+      }
+      assistant_daily_get: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
+      assistant_daily_set: {
+        Args: {
+          p_company: string
+          p_enabled: boolean
+          p_hour?: number
+        }
+        Returns: Json
+      }
+      assistant_decide: {
+        Args: {
+          p_action: string
+          p_yes: boolean
+        }
+        Returns: Json
       }
       assistant_done: {
         Args: {

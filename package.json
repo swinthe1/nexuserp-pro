@@ -11,6 +11,7 @@
     "db:types": "python3 scripts/gen-db-types.py > /tmp/db.types.ts && mv /tmp/db.types.ts src/lib/database.types.ts",
     "db:test": "./supabase/tests/run.sh",
     "i18n:check": "node scripts/i18n-check.mjs",
+    "assistant:knowledge": "node scripts/assistant-knowledge.mjs",
     "db:seed": "psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f supabase/seed/demo.sql"
   },
   "dependencies": {
