@@ -30,7 +30,8 @@ table.v th:first-child,table.v td:first-child{text-align:left}table.v td{padding
 .words{margin-top:10px;font-style:italic}.notes{margin-top:10px;white-space:pre-wrap;line-height:1.5}
 .banks{margin-top:10px;font-size:9.5px;line-height:1.5}.fiscal{margin-top:8px;font-size:9px;color:#5b6170;word-break:break-all}
 .sign{display:grid;grid-template-columns:1fr 1fr;gap:60px;margin-top:38px}.sign div{border-top:1px solid #8a8f9c;padding-top:4px;text-align:center;color:#5b6170;font-size:9.5px;position:relative}.sign div.nostroke{border-top:0}.sign.has-stamp{margin-top:84px}
-.stamp{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);max-height:80px;max-width:160px;object-fit:contain;margin-bottom:-14px;mix-blend-mode:multiply}
+.stamp{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);max-height:80px;max-width:160px;object-fit:contain;margin-bottom:-14px;mix-blend-mode:multiply}.has-sig .stamp{transform:translateX(-18%)}
+.sigimg{position:absolute;left:50%;bottom:100%;transform:translateX(-62%);max-height:56px;max-width:170px;object-fit:contain;margin-bottom:-8px;mix-blend-mode:multiply;z-index:1}.signer{display:block;color:#1f2430;font-size:9.5px;margin-top:1px}
 .foot{margin-top:18px;padding-top:6px;border-top:1px solid #e6e8ee;font-size:9px;color:#6b7080;display:flex;justify-content:space-between;gap:12px}
 .amount{font-size:22px;font-weight:700;color:${accent}}.vbox{border:1px solid #d9dce3;border-radius:6px;padding:12px 14px;margin-top:14px;line-height:1.7}
 tr{page-break-inside:avoid}`
@@ -89,7 +90,11 @@ export function renderDocHtml(d: PrintDoc): { body: string; css: string } {
   const [signL, signR] = isVoucher(d) ? [d.kind === 'receipt_voucher' ? t('Received by') : t('Paid by'), d.kind === 'receipt_voucher' ? t('Paid by') : t('Received by')]
     : d.kind === 'goods_receipt' ? [t('Delivered by'), t('Received by')] : [t('Issued by'), t('Received by')]
   const stamp = s.show_stamp && d.company.stamp && !isVoucher(d) && d.kind !== 'goods_receipt' ? `<img class="stamp" src="${esc(d.company.stamp)}" alt="">` : ''
-  const sign = s.show_signatures ? `<div class="sign${stamp ? ' has-stamp' : ''}"><div>${stamp}${esc(signL)}</div><div>${esc(signR)}</div></div>` : stamp ? `<div class="sign has-stamp"><div class="nostroke">${stamp}</div><div class="nostroke"></div></div>` : ''
+  const sig = d.signature ? `<img class="sigimg" src="${esc(d.signature.image)}" alt="">` : ''
+  const signer = d.signature ? `<span class="signer">${esc(d.signature.name)}${d.signature.title ? `, ${esc(d.signature.title)}` : ''}</span>` : ''
+  const sign = s.show_signatures || d.signature
+    ? `<div class="sign${stamp || sig ? ' has-stamp' : ''}${sig ? ' has-sig' : ''}"><div>${stamp}${sig}${esc(signL)}${signer}</div><div>${s.show_signatures ? esc(signR) : ''}</div></div>`
+    : stamp ? `<div class="sign has-stamp"><div class="nostroke">${stamp}</div><div class="nostroke"></div></div>` : ''
   const foot = `<div class="foot"><span>${esc(d.company.footer || s.footer || '')}</span><span>${esc(t('Printed {date}', { date: formatDate(d.printed_at, true) }))}${d.printed_by ? ` · ${esc(d.printed_by)}` : ''}</span></div>`
 
   if (isVoucher(d)) {

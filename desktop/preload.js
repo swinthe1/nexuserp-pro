@@ -15,4 +15,11 @@ contextBridge.exposeInMainWorld('drisproDesktop', {
   activate: (code) => ipcRenderer.invoke('drispro:activate', code),
   finishActivation: (a) => ipcRenderer.invoke('drispro:finish-activation', a),
   reactivate: () => ipcRenderer.invoke('drispro:reactivate'),
+  /** the files the program saved, newest first: name, full path, time, size */
+  downloads: () => ipcRenderer.invoke('drispro:downloads'),
+  /** opens the folder with the file selected (only a file this program saved) */
+  showInFolder: (p) => ipcRenderer.invoke('drispro:show-in-folder', p),
+  openFile: (p) => ipcRenderer.invoke('drispro:open-file', p),
+  /** called each time a download finishes */
+  onDownloaded: (cb) => { const f = (_e, d) => cb(d); ipcRenderer.on('drispro:downloaded', f); return () => ipcRenderer.removeListener('drispro:downloaded', f) },
 })

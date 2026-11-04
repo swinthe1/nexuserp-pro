@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { Providers } from '@/app/providers'
 import { AppRouter } from '@/app/router'
 import './index.css'
+import '@/app/zoom'
 import { applyScannerManifest } from '@/features/scanner/mode'
 import '@/i18n/zod'
 

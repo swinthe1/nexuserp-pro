@@ -463,7 +463,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table id="pi-lines" className="w-full text-[13px]" style={{ minWidth: 300 + shownCols.length * 80 }}>
+          <table id="pi-lines" className="w-full text-[13px]">
             <thead className="bg-muted/50 text-left text-[12px] text-muted-foreground">
               <tr>
                 <th className="w-8 px-2 py-2 font-medium">#</th>
@@ -482,20 +482,20 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
                 const lastChanged = c.i?.last && c.price > 0 && Math.abs(num(c.i.last.price) - c.price) > 0.0001
                 const cells: Record<string, React.ReactNode> = {
                       qty: <td className="px-1 py-1"><Input data-nav ref={(el) => { if (el) qtyRefs.current.set(c.r.key, el); else qtyRefs.current.delete(c.r.key) }} inputMode="decimal"
-                      className="h-8 min-w-[64px] text-right tabular-nums" value={c.r.qty} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Quantity')}
+                      className="h-8 min-w-[52px] text-right tabular-nums" value={c.r.qty} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Quantity')}
                       onChange={(e) => upd(c.r.key, { qty: e.target.value, ...(c.r.pack ? { pq: packsFromPieces(packs.byId.get(c.r.pack), e.target.value) } : {}) })} />
                       <PackQty packs={packs.byVariant.get(c.r.variant_id)} packId={c.r.pack} packQty={c.r.pq} quantity={c.r.qty} uom={c.i?.uom} line={n + 1}
                         onChange={(v) => upd(c.r.key, { pack: v.pack_id, pq: v.pack_qty, ...(v.quantity ? { qty: String(v.quantity) } : {}) })} /></td>,
-                      price: <td className="px-1 py-1"><Input data-nav inputMode="decimal" className={cn('h-8 min-w-[88px] text-right tabular-nums', lastChanged && 'border-amber-500')} value={c.r.price}
+                      price: <td className="px-1 py-1"><Input data-nav inputMode="decimal" className={cn('h-8 min-w-[70px] text-right tabular-nums', lastChanged && 'border-amber-500')} value={c.r.price}
                       title={lastChanged ? t('Last time {price}', { price: fmt(num(c.i!.last!.price), 4) }) : undefined}
                       onChange={(e) => upd(c.r.key, { price: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Purchase price (without VAT)')} /></td>,
-                      d1: <td data-col="d1" className="px-1 py-1"><Input data-nav inputMode="decimal" className="h-8 min-w-[56px] text-right tabular-nums" value={c.r.d1} placeholder="0" onChange={(e) => upd(c.r.key, { d1: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Disc. %')} /></td>,
-                      d2: <td data-col="d2" className="px-1 py-1"><Input data-nav inputMode="decimal" className="h-8 min-w-[56px] text-right tabular-nums" value={c.r.d2} placeholder="0" onChange={(e) => upd(c.r.key, { d2: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Extra %')} /></td>,
+                      d1: <td data-col="d1" className="px-1 py-1"><Input data-nav inputMode="decimal" className="h-8 min-w-[42px] text-right tabular-nums" value={c.r.d1} placeholder="0" onChange={(e) => upd(c.r.key, { d1: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Disc. %')} /></td>,
+                      d2: <td data-col="d2" className="px-1 py-1"><Input data-nav inputMode="decimal" className="h-8 min-w-[42px] text-right tabular-nums" value={c.r.d2} placeholder="0" onChange={(e) => upd(c.r.key, { d2: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Extra %')} /></td>,
                       cost: <td data-col="cost" className="px-2 py-2 text-right tabular-nums">{fmt(c.unit, 4)}</td>,
                       avg: <td data-col="avg" className={cn('px-2 py-2 text-right tabular-nums text-muted-foreground', c.i && c.i.avg_cost > 0 && c.costBase > c.i.avg_cost * 1.05 && 'text-amber-700 dark:text-amber-400')}>{c.i ? fmt(num(c.i.avg_cost), 4) : '…'}</td>,
                       vat: <td data-col="vat" className="px-1 py-1">
                       <Select value={c.r.tax ?? ''} onValueChange={(v) => upd(c.r.key, { tax: v })}>
-                        <SelectTrigger className="h-8 min-w-[110px]" aria-label={t('VAT')}><SelectValue placeholder="—" /></SelectTrigger>
+                        <SelectTrigger className="h-8 min-w-[78px]" aria-label={t('VAT')}><SelectValue placeholder="—" /></SelectTrigger>
                         <SelectContent>{(taxes.data ?? []).filter((x) => x.is_active !== false).map((x) => <SelectItem key={x.id} value={x.id}>{td(x.name)}</SelectItem>)}</SelectContent>
                       </Select>
                     </td>,
@@ -517,11 +517,11 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
                         </button>
                       ) : <span className="px-1.5 text-muted-foreground">{c.i ? '—' : '…'}</span>}
                     </td>,
-                      new: <td data-col="new" className="px-1 py-1"><Input data-nav inputMode="decimal" className={cn('h-8 min-w-[88px] text-right tabular-nums', c.newGross != null && 'border-primary font-medium')} value={c.r.gross.startsWith('net:') ? '' : c.r.gross}
+                      new: <td data-col="new" className="px-1 py-1"><Input data-nav inputMode="decimal" className={cn('h-8 min-w-[70px] text-right tabular-nums', c.newGross != null && 'border-primary font-medium')} value={c.r.gross.startsWith('net:') ? '' : c.r.gross}
                       placeholder={c.curGross == null ? '' : fmt(c.curGross)} onChange={(e) => upd(c.r.key, { gross: e.target.value, m: null })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('New selling price (with VAT)')} /></td>,
                       margin: <td data-col="margin" className="px-1 py-1">
                       <Input data-nav inputMode="decimal" aria-label={t('Margin %')} disabled={!c.i || c.costBase <= 0}
-                        className={cn('h-8 min-w-[64px] text-right tabular-nums', c.markup != null && c.markup < 0 ? 'font-medium text-destructive' : c.markup != null && c.markup < 5 ? 'text-amber-700 dark:text-amber-400' : '')}
+                        className={cn('h-8 min-w-[52px] text-right tabular-nums', c.markup != null && c.markup < 0 ? 'font-medium text-destructive' : c.markup != null && c.markup < 5 ? 'text-amber-700 dark:text-amber-400' : '')}
                         value={c.r.m ?? (c.markup == null ? '' : fmt(c.markup))}
                         onChange={(e) => upd(c.r.key, { m: e.target.value, ...(c.i && c.costBase > 0 && e.target.value.trim() !== '' && e.target.value.trim() !== '-'
                           ? { gross: String(priceFor(c.costBase, num(e.target.value.replace(',', '.')), basis, c.i.sales_tax, step)) } : {}) })}
@@ -531,7 +531,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
                 return (
                   <tr key={c.r.key} className="border-t align-top">
                     <td className="px-2 py-1.5 tabular-nums text-muted-foreground">{n + 1}</td>
-                    <td className="min-w-[190px] px-2 py-1.5">
+                    <td className="min-w-[150px] px-2 py-1.5">
                       <p className="font-medium leading-tight">{c.r.name}</p>
                       <p className="text-[11px] text-muted-foreground">{c.r.sku}{c.i?.uom ? ` · ${c.i.uom}` : ''}{c.i ? ` · ${t('{n} in stock', { n: formatQty(c.i.stock) })}` : ''}
                         {c.i?.last && <> · {t('last {price}', { price: fmt(num(c.i.last.price), 4) })}</>}</p>

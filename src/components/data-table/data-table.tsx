@@ -29,6 +29,7 @@ import { tableLayoutKey, useProfilePref } from '@/components/layout/nav-prefs'
 import { downloadExport, useMyExports } from '@/lib/my-exports'
 import { Link } from 'react-router-dom'
 import { ViewOptions } from './view-options'
+import { useCopyMenu, type CopyGrid } from './copy-menu'
 
 /** Filter fn for faceted (multi-value) filters */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -287,6 +288,17 @@ export function DataTable<T>({
   const visibleCols = table.getVisibleLeafColumns().length
   const phone = usePhone()
 
+  const gridOf = (rows: T[], only?: string): CopyGrid => {
+    const cols = exportColumnsFor(table).filter((_, i) => !only || table.getVisibleLeafColumns().filter((c) => !c.columnDef.meta?.noExport)[i]?.id === only)
+    return { header: cols.map((c) => c.header), rows: rows.map((r) => cols.map((c) => c.value(r))) }
+  }
+  const copy = useCopyMenu({
+    headers: () => Object.fromEntries(table.getVisibleLeafColumns().map((c) => [c.id, c.columnDef.meta?.label ?? (typeof c.columnDef.header === 'string' ? c.columnDef.header : '')])),
+    column: (id) => gridOf(table.getPrePaginationRowModel().rows.map((r) => r.original), id),
+    table: () => gridOf(table.getPrePaginationRowModel().rows.map((r) => r.original)),
+    selected: () => (selectedRows.length ? gridOf(selectedRows.map((r) => r.original)) : null),
+  })
+
   const doExport = async (kind: 'csv' | 'xlsx' | 'pdf') => {
     const rows: T[] = (selectedRows.length ? selectedRows : table.getPrePaginationRowModel().rows).map((r: Row<T>) => r.original)
     const cols = exportColumnsFor(table)
@@ -321,6 +333,7 @@ export function DataTable<T>({
             <DropdownMenuContent align="end">
               <DropdownMenuItem disabled={!rowCount} onSelect={() => void doExport('xlsx')}><FileSpreadsheet /> {t('Export')} Excel</DropdownMenuItem>
               <DropdownMenuItem disabled={!rowCount} onSelect={() => void doExport('pdf')}><FileText /> {t('Export')} PDF</DropdownMenuItem>
+              <DropdownMenuItem disabled={!rowCount} onSelect={() => void doExport('csv')}><FileSpreadsheet /> {t('Export')} CSV</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
@@ -353,8 +366,8 @@ export function DataTable<T>({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={() => void doExport('xlsx')}><FileSpreadsheet /> Excel {selectedRows.length ? t('({n} selected)', { n: selectedRows.length }) : ''}</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => void doExport('csv')}><FileSpreadsheet /> CSV {selectedRows.length ? t('({n} selected)', { n: selectedRows.length }) : ''}</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => void doExport('pdf')}><FileText /> PDF {selectedRows.length ? t('({n} selected)', { n: selectedRows.length }) : ''}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => void doExport('csv')}><FileSpreadsheet /> CSV {selectedRows.length ? t('({n} selected)', { n: selectedRows.length }) : ''}</DropdownMenuItem>
               <LastExports />
             </DropdownMenuContent>
           </DropdownMenu>}
@@ -423,7 +436,7 @@ export function DataTable<T>({
               </TableRow>
             ))}
           </TableHeader>
-          <TableBody>
+          <TableBody onContextMenu={copy.onContextMenu}>
             {isLoading &&
               Array.from({ length: 8 }).map((_, i) => (
                 <TableRow key={`sk-${i}`} className="hover:bg-transparent">
@@ -452,6 +465,7 @@ export function DataTable<T>({
                   return (
                     <TableCell
                       key={cell.id}
+                      data-col={cell.column.id}
                       style={sized ? { maxWidth: sized } : undefined}
                       className={cn('whitespace-nowrap', sized && 'overflow-hidden text-ellipsis', dense && 'h-8 py-1', cell.column.columnDef.meta?.align === 'right' && 'text-right tabular',
                         cell.column.columnDef.meta?.className, c?.colour && !pt.rowColour && COLOURS[c.colour].cell, c?.bold && 'font-semibold')}
@@ -486,6 +500,7 @@ export function DataTable<T>({
         </Table>
       </div>
       )}
+      {!phone && copy.menu}
       <Pagination table={table} rowCount={rowCount} />
       {canPreview && peek != null && peek >= 0 && (
         <PreviewSheet rows={peekRows} index={peek} onIndex={setPeek} onClose={() => setPeek(null)} getters={[...labelled.values()]} preview={preview}

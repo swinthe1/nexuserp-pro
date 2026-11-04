@@ -1,4 +1,3 @@
-import { Download } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
@@ -6,7 +5,6 @@ import { EmptyState } from '@/components/empty-state'
 import { ErrorState } from '@/components/error-state'
 import { PageHeader } from '@/components/page-header'
 import { StatCard } from '@/components/stat-card'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,8 +12,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { t, td, tEnum } from '@/i18n'
-import { downloadCsv } from '@/lib/export'
-import { cn, formatMoney, formatQty, num, todayISO } from '@/lib/utils'
+import { GridExportMenu } from '@/components/export-menu'
+import { cn, formatDate, formatMoney, formatQty, num, todayISO } from '@/lib/utils'
 import { useShrinkage, type ShrinkRow } from '@/features/wms/api'
 
 const yearStart = () => `${todayISO().slice(0, 4)}-01-01`
@@ -47,9 +45,9 @@ export function ShrinkagePage() {
     return [...m.values()].sort((a, b) => (b.value_lost - b.value_found) - (a.value_lost - a.value_found))
   }, [rows, by])
 
-  const exportCsv = () => downloadCsv(`${t('shrinkage')}-${from}-${to}`, [
+  const exportGrid = () => ([
     [t('Reason'), t('Unit'), t('Code'), t('Item'), t('Category'), t('Missing'), t('Found'), t('Value missing'), t('Value found')],
-    ...rows.map((r) => [tEnum(r.reason), td(r.warehouse ?? ''), r.sku, r.name, r.category ?? '', r.qty_lost, r.qty_found, r.value_lost, r.value_found]),
+    ...rows.map((r) => [tEnum(r.reason), td(r.warehouse ?? ''), r.sku, r.name, r.category ?? '', Number(r.qty_lost), Number(r.qty_found), Number(r.value_lost), Number(r.value_found)]),
   ])
 
   return (
@@ -61,7 +59,7 @@ export function ShrinkagePage() {
             <Input id="sh-from" type="date" className="w-[150px]" value={from} onChange={(e) => setFrom(e.target.value || yearStart())} /></div>
           <div className="flex items-center gap-2"><Label htmlFor="sh-to" className="text-[13px] text-muted-foreground">{t('To')}</Label>
             <Input id="sh-to" type="date" className="w-[150px]" value={to} onChange={(e) => setTo(e.target.value || todayISO())} /></div>
-          <Button variant="outline" onClick={exportCsv} disabled={!rows.length}><Download /> {t('Export')}</Button>
+          <GridExportMenu name={`${t('shrinkage')}-${from}-${to}`} title={t('Shrinkage|menu')} subtitle={`${formatDate(from)} – ${formatDate(to)}`} grid={exportGrid} disabled={!rows.length} />
         </>} />
 
       {q.isError ? <ErrorState error={q.error} onRetry={() => void q.refetch()} /> : q.isLoading ? <Skeleton className="h-80" /> : (

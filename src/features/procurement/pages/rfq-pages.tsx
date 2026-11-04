@@ -150,7 +150,7 @@ function RfqDraft({ rfq }: { rfq?: Rfq }) {
   const problem = title.trim().length < 2 ? t('Give the request a name') : !items.length ? t('Add at least one item') : chosen.length < 2 ? t('Choose at least two vendors') : null
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="w-full">
       <PageHeader back={{ href: '/procurement/rfqs', label: t('Offers from vendors') }} title={rfq ? `${rfq.number} · ${rfq.title}` : t('New request for offers')}
         meta={rfq && <StatusBadge status={rfq.status} />}
         description={t('The goods and the vendors to ask. Once sent, the items stay as they are and the offers are written against them.')}
@@ -246,7 +246,7 @@ function RfqOffers({ rfq }: { rfq: Rfq }) {
   ].join('\n')
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="w-full">
       <PageHeader back={{ href: '/procurement/rfqs', label: t('Offers from vendors') }} title={`${rfq.number} · ${rfq.title}`}
         meta={<StatusBadge status={rfq.status} />}
         description={[rfq.needed_by && t('Needed by {date}', { date: formatDate(rfq.needed_by) }), rfq.reply_by && t('Offers by {date}', { date: formatDate(rfq.reply_by) }), td(wh?.name ?? '')].filter(Boolean).join(' · ')}

@@ -312,7 +312,7 @@ export function PosSessionPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="w-full">
       <PageHeader back={{ href: '/pos', label: t('Point of sale') }} title={`${s.register?.name} · ${s.number}`} meta={<StatusBadge status={s.status} />}
         description={s.closed_at ? t('Opened {a} · closed {b}', { a: formatDate(s.opened_at, true), b: formatDate(s.closed_at, true) }) : t('Opened {a}', { a: formatDate(s.opened_at, true) })}
         actions={<>

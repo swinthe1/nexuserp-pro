@@ -92,7 +92,7 @@ function JournalEntryView({ id }: { id: string }) {
   if (e.status === 'draft' && !e.is_automatic) return <ManualEntryForm entry={e} />
   const href = e.source_doc_type && e.source_doc_id ? SOURCE_HREF[e.source_doc_type] : undefined
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="w-full">
       <PageHeader back={{ href: '/finance/journal', label: t('Accounting entries') }} title={e.number}
         meta={<><StatusBadge status={e.status} />{e.is_automatic ? <Badge variant="secondary"><Bot className="size-3" /> {t('Automatic')}</Badge> : <Badge variant="outline">{t('Manual')}</Badge>}</>}
         description={[td(e.journal?.name), formatDate(e.entry_date), tServer(e.memo)].filter(Boolean).join(' · ')}
@@ -162,7 +162,7 @@ function ManualEntryForm({ entry }: { entry?: NonNullable<ReturnType<typeof useJ
   })
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="w-full">
       <PageHeader back={{ href: '/finance/journal', label: t('Accounting entries') }} title={entry ? entry.number : t('New manual entry')} meta={entry && <StatusBadge status={entry.status} />}
         description={t('For accruals, opening balances, reclassifications and corrections. Documents record their own entries automatically.')}
         actions={can('finance.write') && <>

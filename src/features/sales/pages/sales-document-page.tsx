@@ -277,9 +277,10 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
   const title = doc ? doc.number : t(cfg.newTitle)
   const body = (
     <>
-      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="grid min-w-0 content-start">
         <Card>
-          <CardContent className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
+          <CardContent className="grid gap-3 p-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             <FormField control={form.control} name="partner_id" render={({ field }) => (
               <FormItem className="sm:col-span-2 lg:col-span-1"><FormLabel>{t('Customer')}</FormLabel>
                 <FormControl><SearchSelect value={field.value} onChange={onCustomer} disabled={!editable} placeholder={t('Choose a customer')} remote={registry}
@@ -348,24 +349,27 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
               )} />
             )}
             <FormField control={form.control} name="notes" render={({ field }) => (
-              <FormItem className="sm:col-span-2 lg:col-span-3"><FormLabel optional>{t('Notes')}</FormLabel><FormControl><Textarea rows={2} disabled={!editable} {...field} /></FormControl></FormItem>
+              <FormItem className="sm:col-span-2 lg:col-span-3 2xl:col-span-4"><FormLabel optional>{t('Notes')}</FormLabel><FormControl><Textarea rows={2} disabled={!editable} {...field} /></FormControl></FormItem>
             )} />
             {kind === 'quotes' && (
               <FormField control={form.control} name="terms" render={({ field }) => (
-                <FormItem className="sm:col-span-2 lg:col-span-3"><FormLabel optional>{t('Terms shown to the customer')}</FormLabel><FormControl><Textarea rows={2} disabled={!editable} placeholder={t('Delivery within 7 working days. Prices exclude VAT.')} {...field} /></FormControl></FormItem>
+                <FormItem className="sm:col-span-2 lg:col-span-3 2xl:col-span-4"><FormLabel optional>{t('Terms shown to the customer')}</FormLabel><FormControl><Textarea rows={2} disabled={!editable} placeholder={t('Delivery within 7 working days. Prices exclude VAT.')} {...field} /></FormControl></FormItem>
               )} />
             )}
           </CardContent>
         </Card>
+        <SalesLinesEditor form={form} editable={editable} currency={currency} progress={progress} showProgress={!!progress} />
+        </div>
+        <div className="side-compact grid content-start gap-3 lg:sticky lg:top-[64px]">
         <SidePanel kind={kind} doc={doc} availability={availability.data} currency={currency} base={base} />
+        </div>
       </div>
-      <SalesLinesEditor form={form} editable={editable} currency={currency} progress={progress} showProgress={!!progress} />
     </>
   )
 
   return (
     <Form {...form}>
-      <div className="mx-auto max-w-6xl">
+      <div className="w-full">
         <PageHeader
           back={{ href: cfg.list, label: kind === 'quotes' ? t('Quotes') : kind === 'orders' ? t('Sales orders') : t('Invoices') }}
           title={<>{isCredit && <span className="mr-2 text-muted-foreground">{t('Credit note')}</span>}{isDebit && <span className="mr-2 text-muted-foreground">{t('Debit note')}</span>}{kind === 'invoices' && doc?.is_advance && <span className="mr-2 text-muted-foreground">{t('Advance invoice')}</span>}{title}</>}

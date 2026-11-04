@@ -56,6 +56,8 @@ export type PrintDoc = {
   company: PrintParty & { website?: string | null; business_number?: string | null; country: string; base_currency: string; logo: string | null; stamp?: string | null; footer: string | null
     settings: PrintSettings; decimals: number; banks: { bank: string; iban: string; swift: string | null; currency: string }[] }
   printed_by: string | null; printed_at: string
+  /** the signature it goes out with, when the person chose one (document_sign) */
+  signature?: { image: string; name: string; title: string | null } | null
 }
 
 export async function fetchPrintDoc(kind: DocKind, id: string) {

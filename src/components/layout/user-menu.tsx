@@ -1,9 +1,11 @@
-import { Download, IdCard, KeyRound, Languages, LaptopMinimal, LayoutGrid, LogOut, Monitor, Moon, PanelLeft, BriefcaseBusiness, ServerCog, Smartphone, Sparkles, Sun, UserRound, GraduationCap, FolderDown } from 'lucide-react'
+import { Download, IdCard, KeyRound, Languages, LaptopMinimal, LayoutGrid, LogOut, Monitor, Moon, PanelLeft, BriefcaseBusiness, ServerCog, Smartphone, Sparkles, Sun, UserRound, GraduationCap, FolderDown, Minus, Plus, ZoomIn } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/app/auth-provider'
 import { useCompany } from '@/app/company-provider'
 import { useTheme } from '@/app/theme-provider'
+import { setZoom, stepZoom, useZoom, ZOOMS } from '@/app/zoom'
+import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem,
@@ -80,6 +82,7 @@ export function UserMenu() {
             </DropdownMenuRadioGroup>
           </DropdownMenuSubContent>
         </DropdownMenuSub>
+        <ZoomRow />
         {isDesktop && <DropdownMenuItem onSelect={() => setPcOpen(true)}><LaptopMinimal /> {t('This computer: printers')}</DropdownMenuItem>}
         {!isDesktop && canInstall && <DropdownMenuItem onSelect={() => void install()}><Download /> {t('Install the app on this device')}</DropdownMenuItem>}
         <DropdownMenuSeparator />
@@ -91,5 +94,27 @@ export function UserMenu() {
     <AiConnectorDialog open={aiOpen} onOpenChange={setAiOpen} />
     {meOpen && user && <ProfileDialog userId={user.id} self onClose={() => setMeOpen(false)} />}
     </>
+  )
+}
+
+/** Screen size: − 100% +, and "fit the screen" */
+function ZoomRow() {
+  const { setting, zoom } = useZoom()
+  const pct = Math.round(zoom * 100)
+  const btn = 'grid size-7 place-items-center rounded-md border bg-background text-foreground hover:bg-secondary disabled:opacity-40'
+  return (
+    <div className="hidden px-2 py-1.5 sm:block">
+      <div className="flex items-center gap-2 text-sm">
+        <ZoomIn className="size-4 text-muted-foreground" />
+        <span className="flex-1">{t('Screen size')}</span>
+        <button type="button" className={btn} aria-label={t('Smaller')} title={t('Smaller (Ctrl+Alt+−)')} disabled={zoom <= ZOOMS[0]} onClick={() => stepZoom(-1)}><Minus className="size-3.5" /></button>
+        <button type="button" className="w-11 rounded-md py-1 text-center text-[13px] tabular hover:bg-secondary" title={t('Back to 100% (Ctrl+Alt+0)')} onClick={() => setZoom(1)}>{pct}%</button>
+        <button type="button" className={btn} aria-label={t('Bigger')} title={t('Bigger (Ctrl+Alt++)')} disabled={zoom >= ZOOMS[ZOOMS.length - 1]} onClick={() => stepZoom(1)}><Plus className="size-3.5" /></button>
+      </div>
+      <button type="button" onClick={() => setZoom(setting === 'auto' ? 1 : 'auto')}
+        className={cn('mt-1.5 w-full rounded-md border px-2 py-1 text-left text-xs', setting === 'auto' ? 'border-primary bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-secondary')}>
+        {setting === 'auto' ? t('Fits the screen by itself: on') : t('Fit the screen by itself')}
+      </button>
+    </div>
   )
 }

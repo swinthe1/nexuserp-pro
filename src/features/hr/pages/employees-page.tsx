@@ -149,7 +149,7 @@ function EmployeeForm({ emp }: { emp?: EmployeeRow }) {
     </Card>
   )
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="w-full">
       <PageHeader back={{ href: '/hr/employees', label: t('Employees') }} title={emp ? emp.full_name : t('New employee')}
         meta={emp && <><span className="text-[13px] text-muted-foreground">{emp.number}</span><StatusBadge status={emp.employment_status} /></>}
         description={emp ? [td(emp.position?.title), td(emp.department?.name), t('since {date}', { date: formatDate(emp.hire_date) })].filter(Boolean).join(' · ') : t('Add the contract and pay after saving.')}

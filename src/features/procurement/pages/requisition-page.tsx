@@ -119,7 +119,7 @@ function RequisitionForm({ doc }: { doc?: ReqDoc }) {
 
   return (
     <Form {...form}>
-      <div className="mx-auto max-w-5xl">
+      <div className="w-full">
         <PageHeader
           back={{ href: '/procurement/requisitions', label: t('Requisitions') }}
           title={doc ? doc.number : t('New requisition')}

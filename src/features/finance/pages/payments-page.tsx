@@ -215,7 +215,7 @@ function PaymentForm({ payment }: { payment?: PaymentDetail }) {
   )
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="w-full">
       <PageHeader back={{ href: '/finance/payments', label: t('Payments') }} title={title}
         meta={payment && <StatusBadge status={payment.status} />}
         description={payment ? t(isReceipt ? 'Received from {name} · {amount}' : 'Paid to {name} · {amount}', { name: payment.partner?.name ?? '', amount: formatMoney(payment.amount, payment.currency_code) }) : undefined}

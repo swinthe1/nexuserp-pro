@@ -1,0 +1,32 @@
+import type { Dict } from '../index'
+
+/** Signatures and the stamp on documents sent as PDF */
+export default {
+  "A photo or scan of the stamp, on a white background. It is printed over the line of the issuer; the signatures of people are set below, under Signatures.": "Foto ose skanim i vulës, në sfond të bardhë. Printohet mbi vijën e lëshuesit; nënshkrimet e personave vendosen më poshtë, te Nënshkrimet.",
+  "Add a signature": "Shto një nënshkrim",
+  "Another picture": "Foto tjetër",
+  "Change the signature": "Ndrysho nënshkrimin",
+  "Company stamp": "Vula e kompanisë",
+  "Director": "Drejtor",
+  "Executive director": "Drejtor ekzekutiv",
+  "Finance director": "Drejtor financiar",
+  "Documents already sent keep it; new ones can no longer be signed with it.": "Dokumentet e dërguara e mbajnë; të rejat nuk mund të nënshkruhen më me të.",
+  "Every document that goes out signed says so in its history: who sent it, with whose signature, and how (PDF, email, print). It is a picture of the signature, not a qualified electronic signature.": "Çdo dokument që del i nënshkruar e shënon në historikun e vet: kush e dërgoi, me nënshkrimin e kujt dhe si (PDF, email, printim). Është foto e nënshkrimit, jo nënshkrim elektronik i kualifikuar.",
+  "No picture yet": "Ende pa foto",
+  "No signature found in this picture: sign with a dark pen on white paper": "Në këtë foto nuk u gjet nënshkrim: nënshkruaj me stilolaps të errët në letër të bardhë",
+  "No signatures yet": "Ende pa nënshkrime",
+  "Offered first when a document is sent": "Ofrohet i pari kur dërgohet një dokument",
+  "Only the administrators sign with it": "Me të nënshkruajnë vetëm administratorët",
+  "Remove the signature of {name}?": "Të hiqet nënshkrimi i {name}?",
+  "Sign on a white paper, take a photo and add it here: the paper is removed by itself.": "Nënshkruaj në një letër të bardhë, bëji foto dhe shtoje këtu: letra hiqet vetë.",
+  "Sign with a dark pen on white paper, take a photo or scan it. The paper is removed and only the ink is kept.": "Nënshkruaj me stilolaps të errët në letër të bardhë, bëji foto ose skanoje. Letra hiqet dhe mbetet vetëm boja.",
+  "Signatures": "Nënshkrimet",
+  "Signed by": "Nënshkruar nga",
+  "Signed by {name}": "Nënshkruar nga {name}",
+  "Signs with it: {names}, and the administrators": "Nënshkruajnë me të: {names}, dhe administratorët",
+  "The administrators always may. Nobody else sees the picture.": "Administratorët mund gjithmonë. Askush tjetër nuk e sheh foton.",
+  "The signature of the owner, the director or the finance director, to send invoices and documents as a signed and stamped PDF, without printing and scanning them. Each signature says who may sign with it.": "Nënshkrimi i pronarit, drejtorit ose drejtorit financiar, për t'i dërguar faturat dhe dokumentet si PDF të nënshkruar e të vulosur, pa i printuar e skanuar. Për çdo nënshkrim caktohet kush mund të nënshkruajë me të.",
+  "The signature was removed": "Nënshkrimi u hoq",
+  "Who may sign documents with it": "Kush mund të nënshkruajë dokumente me të",
+  "Without a signature": "Pa nënshkrim",
+} satisfies Dict

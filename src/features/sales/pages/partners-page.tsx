@@ -109,14 +109,14 @@ function PartnerView({ partner }: { partner?: PartnerDetail }) {
   const { can } = useCompany()
   if (!partner) {
     return (
-      <div className="mx-auto max-w-5xl">
+      <div className="w-full">
         <PageHeader back={{ href: '/partners', label: t('Customers and vendors') }} title={params.get('vendor') ? t('New vendor') : t('New customer')} />
         <PartnerForm />
       </div>
     )
   }
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="w-full">
       <PageHeader back={{ href: '/partners', label: t('Customers and vendors') }} title={partner.name}
         meta={<>{partner.is_customer && <Badge variant="outline">{t('Customer')}</Badge>}{partner.is_vendor && <Badge variant="outline">{t('Vendor')}</Badge>}{!partner.is_active && <Badge variant="secondary">{t('Inactive')}</Badge>}</>}
         description={[partner.code, partner.tax_number && `NIPT ${partner.tax_number}`, partner.email, partner.phone].filter(Boolean).join(' · ')}

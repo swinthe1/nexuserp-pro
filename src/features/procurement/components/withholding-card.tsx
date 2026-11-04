@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { t, td } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
-import { formatDate, formatMoney, num, todayISO } from '@/lib/utils'
+import { cn, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
 
 export type WhCode = { id: string; code: string; name: string; rate: number; is_active: boolean }
 export const useWithholdingCodes = () => {
@@ -61,9 +61,13 @@ export function WithholdingCard({ bill }: { bill: Bill }) {
 
   return (
     <Card>
-      <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2"><Landmark className="size-4" />{t('Tax withheld at source')}</CardTitle></CardHeader>
-      <CardContent className="grid gap-2 text-[13px]">
-        {rows.length === 0 && <p className="text-muted-foreground">{t('For rent, interest, royalties or services of individuals, part of the payment goes to the tax office instead of the supplier.')}</p>}
+      <CardHeader className={cn('flex-row items-center justify-between gap-2 space-y-0', rows.length === 0 && 'pb-5')}>
+        <CardTitle className="flex items-center gap-2" title={t('For rent, interest, royalties or services of individuals, part of the payment goes to the tax office instead of the supplier.')}><Landmark className="size-4 text-muted-foreground" />{t('Tax withheld at source')}</CardTitle>
+        {rows.length === 0 && editable && num(bill.amount_due) > 0 && (
+          <Button variant="outline" size="sm" className="h-7 px-2 text-[12px]" onClick={() => { setOpen(true); setBase(String(bill.subtotal)); setCode('') }}><Plus /> {t('Withhold tax')}</Button>
+        )}
+      </CardHeader>
+      {rows.length > 0 && <CardContent className="grid gap-2 text-[13px]">
         {rows.map((w) => {
           const c = w.code as unknown as { code: string; name: string } | null
           return (
@@ -83,7 +87,7 @@ export function WithholdingCard({ bill }: { bill: Bill }) {
           <Button variant="outline" size="sm" className="w-fit" onClick={() => { setOpen(true); setBase(String(bill.subtotal)); setCode('') }}>
             <Plus /> {t('Withhold tax')}</Button>
         )}
-      </CardContent>
+      </CardContent>}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-sm">

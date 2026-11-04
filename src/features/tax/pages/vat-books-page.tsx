@@ -36,6 +36,11 @@ export function VatBooksPage() {
     for (const r of rows) { sum.total! += num(r.total); for (const c of cols) sum[c.key] = (sum[c.key] ?? 0) + num(r.cols?.[c.key]) }
     return sum
   }, [rows, cols])
+  // on the screen the columns with nothing in them this period step aside, so the book fits; the
+  // export and the print keep every column of the official layout
+  const [allCols, setAllCols] = React.useState(false)
+  const filled = cols.filter((c) => Math.abs(totals[c.key] ?? 0) > 0.0001 || rows.some((r) => num(r.cols?.[c.key]) !== 0))
+  const shown = allCols ? cols : filled
   const set = (k: string, v: string) => setParams((p) => { p.set(k, v); if (k === 'month') { p.delete('from'); p.delete('to') } return p })
   const taxLabel = xk ? 'NUI' : 'NIPT'
   const showFiscal = book === 'sales'
@@ -78,6 +83,11 @@ export function VatBooksPage() {
           ))}
         </div>
         <span className="text-[13px] text-muted-foreground">{periodText} · {tn(rows.length, '{n} line', '{n} lines')} · {t('amounts in {currency}', { currency: company?.base_currency ?? '' })}</span>
+        {cols.length > filled.length && rows.length > 0 && (
+          <button type="button" className="ml-auto text-[13px] text-primary hover:underline" onClick={() => setAllCols((x) => !x)}>
+            {allCols ? t('Hide the empty columns') : tn(cols.length - filled.length, 'Show the {n} empty column too', 'Show the {n} empty columns too')}
+          </button>
+        )}
       </div>
 
       <Card className="overflow-hidden">
@@ -95,10 +105,10 @@ export function VatBooksPage() {
                   <Th>{t('Number')}</Th>
                   <Th>{book === 'sales' ? t('Note') : t('Vendor invoice / DUD')}</Th>
                   {showFiscal && <Th>{xk ? t('Fiscal code') : t('NIVF')}</Th>}
-                  <Th className="min-w-[180px]">{book === 'sales' ? t('Buyer') : t('Seller')}</Th>
+                  <Th className="min-w-[110px]">{book === 'sales' ? t('Buyer') : t('Seller')}</Th>
                   <Th>{taxLabel}</Th>
-                  {cols.map((c) => (
-                    <Th key={c.key} className={cn('min-w-[112px] text-right', c.vat && 'bg-muted/40')}>
+                  {shown.map((c) => (
+                    <Th key={c.key} className={cn('min-w-[72px] text-right', c.vat && 'bg-muted/40')}>
                       {xk && <span className="block font-mono text-xs text-foreground">[{c.key}]</span>}
                       <span className="block leading-tight text-foreground">{layoutLabel(c)}</span>
                     </Th>
@@ -114,9 +124,9 @@ export function VatBooksPage() {
                     <Td className="whitespace-nowrap">{r.href ? <Link to={r.href} className="font-medium text-primary hover:underline">{tServer(r.number)}</Link> : tServer(r.number)}</Td>
                     <Td className="whitespace-nowrap text-muted-foreground">{r.ref ?? ''}</Td>
                     {showFiscal && <Td className="max-w-[140px] truncate font-mono text-xs text-muted-foreground" title={r.fiscal_code ?? ''}>{r.fiscal_code ? `${r.fiscal_code.slice(0, 8)}…` : ''}</Td>}
-                    <Td className="max-w-[240px] truncate">{tServer(r.partner)}</Td>
+                    <Td className="min-w-[110px] leading-tight">{tServer(r.partner)}</Td>
                     <Td className="whitespace-nowrap tabular text-muted-foreground">{r.tax_number ?? ''}</Td>
-                    {cols.map((c) => {
+                    {shown.map((c) => {
                       const v = r.cols?.[c.key]
                       return <Td key={c.key} className={cn('text-right tabular', c.vat && 'bg-muted/40', num(v) < 0 && 'text-destructive')}>{v === undefined || v === null ? '' : formatMoney(v)}</Td>
                     })}
@@ -127,7 +137,7 @@ export function VatBooksPage() {
               <tfoot className="sticky bottom-0 bg-card">
                 <tr className="font-semibold">
                   <Td className="border-t-2" colSpan={showFiscal ? 7 : 6}>{t('Total')}</Td>
-                  {cols.map((c) => <Td key={c.key} className={cn('border-t-2 text-right tabular', c.vat && 'bg-muted/40')}>{totals[c.key] ? formatMoney(totals[c.key]) : ''}</Td>)}
+                  {shown.map((c) => <Td key={c.key} className={cn('border-t-2 text-right tabular', c.vat && 'bg-muted/40')}>{totals[c.key] ? formatMoney(totals[c.key]) : ''}</Td>)}
                   <Td className="border-t-2 text-right tabular">{formatMoney(totals.total)}</Td>
                 </tr>
               </tfoot>
@@ -140,8 +150,8 @@ export function VatBooksPage() {
 }
 
 function Th({ children, className }: { children?: React.ReactNode; className?: string }) {
-  return <th className={cn('border-b px-3 py-2 text-left text-xs font-medium text-muted-foreground', className)}>{children}</th>
+  return <th className={cn('border-b px-2 py-2 text-left text-xs font-medium text-muted-foreground', className)}>{children}</th>
 }
 function Td({ children, className, colSpan, title }: { children?: React.ReactNode; className?: string; colSpan?: number; title?: string }) {
-  return <td colSpan={colSpan} title={title} className={cn('border-b px-3 py-1.5', className)}>{children}</td>
+  return <td colSpan={colSpan} title={title} className={cn('border-b px-2 py-1.5', className)}>{children}</td>
 }

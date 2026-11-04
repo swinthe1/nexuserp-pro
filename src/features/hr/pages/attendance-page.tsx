@@ -65,13 +65,13 @@ export function AttendancePage() {
       <Card>
         <CardContent className="overflow-x-auto p-0">
           {att.isLoading ? <Skeleton className="m-4 h-64" /> : att.isError ? <ErrorState error={att.error} onRetry={() => void att.refetch()} /> : !att.data?.length ? <EmptyState title={t('Nobody worked here this month')} description={t('Pick another month or department.')} /> : (
-            <table className="w-full border-separate border-spacing-0 text-[12px]">
+            <table className="w-full table-fixed border-separate border-spacing-0 text-[12px]">
               <thead><tr>
-                <th className="sticky left-0 z-10 min-w-[150px] border-b bg-card px-3 py-2 text-left text-[13px] font-medium">{t('Employee')}</th>
+                <th className="sticky left-0 z-10 w-[150px] border-b bg-card px-3 py-2 text-left text-[13px] font-medium">{t('Employee')}</th>
                 {Array.from({ length: daysIn }, (_, i) => i + 1).map((d) => (
-                  <th key={d} className="min-w-[25px] border-b px-0 py-1 text-center font-normal text-muted-foreground"><div className="text-[10px]">{dow(d)}</div>{d}</th>))}
-                <th className="border-b px-2 text-right font-medium">{t('Hours')}</th><th className="border-b px-2 text-right font-medium">{t('Overtime')}</th>
-                <th className="border-b px-2 text-right font-medium">{t('Present')}</th><th className="border-b px-2 text-right font-medium">{t('Leave')}</th><th className="border-b px-3 text-right font-medium">{t('Absent')}</th>
+                  <th key={d} className="border-b px-0 py-1 text-center font-normal text-muted-foreground"><div className="text-[10px]">{dow(d)}</div>{d}</th>))}
+                <th className="w-[58px] border-b px-1.5 text-right text-[11px] font-medium leading-tight">{t('Hours')}</th><th className="w-[58px] border-b px-1.5 text-right text-[11px] font-medium leading-tight">{t('Overtime')}</th>
+                <th className="w-[58px] border-b px-1.5 text-right text-[11px] font-medium leading-tight">{t('Present')}</th><th className="w-[58px] border-b px-1.5 text-right text-[11px] font-medium leading-tight">{t('Leave')}</th><th className="w-[58px] border-b px-2 text-right text-[11px] font-medium leading-tight">{t('Absent')}</th>
               </tr></thead>
               <tbody>{att.data.map((r) => (
                 <tr key={r.employee_id}>
@@ -84,7 +84,7 @@ export function AttendancePage() {
                       <td key={d.d} className="border-b p-0.5">
                         <button type="button" title={title} aria-label={title ?? `${d.d}`} disabled={!can('hr.write') || d.c === '' && !c}
                           onClick={() => setEdit({ row: r, day: d })}
-                          className={cn('flex h-7 w-full min-w-[23px] items-center justify-center rounded tabular text-[11px] disabled:cursor-default', c?.cls ?? '', can('hr.write') && 'hover:ring-1 hover:ring-ring')}>
+                          className={cn('flex h-7 w-full items-center justify-center rounded tabular text-[11px] disabled:cursor-default', c?.cls ?? '', can('hr.write') && 'hover:ring-1 hover:ring-ring')}>
                           {d.c === 'P' ? hoursLabel(d.h) : d.c === 'W' || !c ? '' : t(c.letter)}
                         </button>
                       </td>)

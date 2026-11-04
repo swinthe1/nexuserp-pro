@@ -1,4 +1,4 @@
-import { BellRing, Download } from 'lucide-react'
+import { BellRing } from 'lucide-react'
 import { useSendReminder } from '../components/reminders'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { ErrorState } from '@/components/error-state'
 import { msg, t, tn } from '@/i18n'
 import { cn, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
-import { downloadCsv } from '@/lib/export'
+import { GridExportMenu } from '@/components/export-menu'
 import { useAging, type AgingRow } from '../api'
 
 const BUCKETS = [
@@ -42,9 +42,9 @@ export function AgingPage({ kind }: { kind: 'ar' | 'ap' }) {
   const remind = useSendReminder()
   const overdueOf = (r: AgingRow) => num(r.d1_30) + num(r.d31_60) + num(r.d61_90) + num(r.d90_plus)
 
-  const exportCsv = () => downloadCsv(`${isAR ? t('receivables') : t('payables')}-${asOf}`, [
+  const exportGrid = () => ([
     [isAR ? t('Customer') : t('Vendor'), ...BUCKETS.map((b) => t(b.label)), t('Not matched'), t('Total with VAT'), t('Oldest due date'), t('Documents')],
-    ...rows.map((r) => [r.partner_name, ...BUCKETS.map((b) => r[b.key]), r.unapplied, r.total, r.oldest_due, r.documents]),
+    ...rows.map((r) => [r.partner_name, ...BUCKETS.map((b) => num(r[b.key])), num(r.unapplied), num(r.total), r.oldest_due ? formatDate(r.oldest_due) : '', num(r.documents)]),
   ])
 
   return (
@@ -54,7 +54,7 @@ export function AgingPage({ kind }: { kind: 'ar' | 'ap' }) {
         actions={<>
           <div className="flex items-center gap-2"><Label htmlFor="asof" className="text-[13px] text-muted-foreground">{t('On date')}</Label>
             <Input id="asof" type="date" className="w-[150px]" value={asOf} onChange={(e) => setAsOf(e.target.value || todayISO())} /></div>
-          <Button variant="outline" onClick={exportCsv} disabled={!rows.length}><Download /> {t('Export')}</Button>
+          <GridExportMenu name={`${isAR ? t('receivables') : t('payables')}-${asOf}`} title={t('Debts|menu')} subtitle={`${isAR ? t('Customers') : t('Vendors')} · ${formatDate(asOf)}`} grid={exportGrid} disabled={!rows.length} />
           {!isAR && <Button variant="outline" asChild><Link to="/finance/payment-proposal">{t('Pay several at once')}</Link></Button>}
           <Can perm="invoicing.write"><Button asChild><Link to={`/finance/payments/new?type=${payType}`}>{isAR ? t('Receive a payment') : t('Pay a vendor')}</Link></Button></Can>
         </>} />

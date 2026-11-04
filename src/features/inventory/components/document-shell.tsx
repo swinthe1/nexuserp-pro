@@ -61,7 +61,7 @@ export function DocumentShell({
   const list = { href: LIST_HREF[kind].href, label: t(LIST_HREF[kind].label) }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="w-full">
       <PageHeader
         back={list}
         title={doc ? doc.number : newTitle}

@@ -15,6 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { AssistantButton } from '@/features/assistant/assistant'
 import { t } from '@/i18n'
 import { LanguageToggle } from '@/i18n/language'
+import { LastExportButton } from '@/components/layout/last-export'
 import { cn, formatDate } from '@/lib/utils'
 
 /*
@@ -125,6 +126,7 @@ export function ClassicShell({ children, onOpenMobileNav }: { children: React.Re
           {hasFeature('ai_assistant') && <><span className="mx-1 h-10 w-px shrink-0 bg-[hsl(var(--border))]" />
             <ToolButton icon={Bot} label={t('Assistant')} onClick={() => window.dispatchEvent(new Event('drispro:assistant'))} /></>}
           <div className="ml-auto flex shrink-0 items-center gap-1 pl-2">
+            <LastExportButton />
             <LanguageToggle className="hidden sm:inline-flex" />
             <TillLockButton />
             {/* the assistant's own panel (Ctrl+J) lives in its launcher */}

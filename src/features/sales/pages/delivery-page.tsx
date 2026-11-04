@@ -96,7 +96,7 @@ function DeliveryForm({ doc }: { doc: Delivery }) {
   const units = form.watch('lines').reduce((s, l) => s + num(l.quantity), 0)
   return (
     <Form {...form}>
-      <div className="mx-auto max-w-6xl">
+      <div className="w-full">
         <PageHeader
           back={{ href: '/sales/deliveries', label: t('Deliveries') }}
           title={doc.number}

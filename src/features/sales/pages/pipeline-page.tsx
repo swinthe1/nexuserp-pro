@@ -99,7 +99,7 @@ function Board({ stages, rows, onOpen }: { stages: Stage[]; rows: OpportunityRow
 
   return (
     <>
-      <div className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-3">
+      <div className="grid gap-3 pb-3 [grid-template-columns:repeat(auto-fill,minmax(230px,1fr))]">
         {stages.map((stage) => {
           const cards = rows.filter((r) => r.stage_id === stage.id)
           const value = cards.reduce((s, r) => s + Number(r.expected_value), 0)
@@ -107,7 +107,7 @@ function Board({ stages, rows, onOpen }: { stages: Stage[]; rows: OpportunityRow
             <section
               key={stage.id}
               aria-label={td(stage.name)}
-              className={cn('flex w-[272px] shrink-0 snap-start flex-col rounded-lg border bg-muted/40 transition-colors',
+              className={cn('flex min-w-0 flex-col rounded-lg border bg-muted/40 transition-colors',
                 overStage === stage.id && 'border-primary/50 bg-primary/5', (stage.is_won || stage.is_lost) && 'bg-transparent')}
               onDragOver={(e) => { if (dragId) { e.preventDefault(); setOverStage(stage.id) } }}
               onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverStage(null) }}

@@ -193,7 +193,7 @@ export function AccountLedgerPage() {
   if (!a) return <EmptyState title={t('Account not found')} action={<Button variant="outline" asChild><Link to="/finance/accounts">{t('Back to the chart of accounts')}</Link></Button>} />
   let running = ledger.data?.opening ?? 0
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="w-full">
       <PageHeader back={{ href: '/finance/accounts', label: t('Chart of accounts') }} title={<><span className="font-mono">{a.code}</span> {td(a.name)}</>}
         meta={<Badge variant="outline">{subtypeLabel(a.account_subtype)}</Badge>}
         description={a.account_type === 'asset' || a.account_type === 'expense' ? t('Amounts in {cur}. Debits increase this account.', { cur: company?.base_currency ?? '' }) : t('Amounts in {cur}. Credits increase this account.', { cur: company?.base_currency ?? '' })}

@@ -1,42 +1,27 @@
 import type { Column } from '@tanstack/react-table'
-import { ArrowDown, ArrowUp, ChevronsUpDown, EyeOff } from 'lucide-react'
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { t } from '@/i18n'
 
+/**
+ * A column's heading: a click sorts by it (up, down, then as it was), with the arrow showing which.
+ * No menu on the heading: hiding and ordering columns is under "Columns".
+ */
 export function ColumnHeader<TData, TValue>({ column, title, className }: { column: Column<TData, TValue>; title: string; className?: string }) {
   const right = column.columnDef.meta?.align === 'right'
-  if (!column.getCanSort() && !column.getCanHide()) {
+  if (!column.getCanSort()) {
     return <div className={cn(right && 'text-right', className)}>{title}</div>
   }
   const sorted = column.getIsSorted()
   return (
     <div className={cn('flex', right && 'justify-end', className)}>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          className={cn('-mx-1.5 flex h-7 items-center gap-1 rounded px-1.5 hover:bg-secondary hover:text-foreground data-[state=open]:bg-secondary', sorted && 'text-foreground')}
-          aria-label={t('{title}: sort or hide', { title: typeof title === 'string' ? title : '' })}
-        >
-          {title}
-          {sorted === 'desc' ? <ArrowDown className="size-3.5" /> : sorted === 'asc' ? <ArrowUp className="size-3.5" /> : <ChevronsUpDown className="size-3.5 opacity-50" />}
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align={right ? 'end' : 'start'}>
-          {column.getCanSort() && (
-            <>
-              <DropdownMenuItem onSelect={() => column.toggleSorting(false)}><ArrowUp /> {t('Ascending')}</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => column.toggleSorting(true)}><ArrowDown /> {t('Descending')}</DropdownMenuItem>
-            </>
-          )}
-          {column.getCanHide() && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => column.toggleVisibility(false)}><EyeOff /> {t('Hide column')}</DropdownMenuItem>
-            </>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <button type="button" onClick={column.getToggleSortingHandler()}
+        className={cn('-mx-1.5 flex min-h-7 items-center gap-1 rounded px-1.5 text-left hover:bg-secondary hover:text-foreground', sorted && 'text-foreground')}
+        aria-label={t('Sort by {title}', { title: typeof title === 'string' ? title : '' })}
+        aria-sort={sorted === 'asc' ? 'ascending' : sorted === 'desc' ? 'descending' : undefined}>
+        {title}
+        {sorted === 'desc' ? <ArrowDown className="size-3.5 shrink-0" /> : sorted === 'asc' ? <ArrowUp className="size-3.5 shrink-0" /> : <ChevronsUpDown className="size-3.5 shrink-0 opacity-40" />}
+      </button>
     </div>
   )
 }

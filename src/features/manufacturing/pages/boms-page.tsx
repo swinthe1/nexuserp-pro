@@ -187,7 +187,7 @@ function BomEditor({ bom }: { bom?: BomDetail }) {
   )
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="w-full">
       <PageHeader back={{ href: '/manufacturing/boms', label: t('Recipes') }}
         title={bom ? <>{bom.code} <span className="text-base font-normal text-muted-foreground">v{bom.version}</span></> : t('New recipe')}
         meta={bom && <>{bom.bom_type === 'kit' ? <Badge variant="secondary">{t('Kit')}</Badge> : null}{bom.is_default ? <Badge variant="success">{t('Default')}</Badge> : null}{!bom.is_active ? <Badge variant="secondary">{t('Inactive')}</Badge> : null}</>}

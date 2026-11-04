@@ -18,6 +18,7 @@ import { cn, formatMoney, formatQty, humanize, num } from '@/lib/utils'
 import { useTaxCodes, lookupCode } from '@/features/inventory/api'
 import { fetchPurchasePrice, usePurchasableVariants, type MatchLine, type PurchasePrice } from '../api'
 import type { PurchaseLineValues } from '../schemas'
+import { LinesSheet } from './lines-sheet'
 
 type LinesForm = { vendor_id: string; doc_date: string; currency_code: string; lines: PurchaseLineValues[] }
 export interface PurchaseProgress { ordered: number; received: number; billed: number; isService: boolean }
@@ -127,6 +128,23 @@ export function PurchaseLinesEditor({ form: anyForm, editable, currency, progres
     )
   }
 
+  // a finished document: the lines as a sheet, with its own totals
+  if (!editable && lines.fields.length > 0) return (
+    <div className="mt-3">
+        <LinesSheet tableKey="purchase_lines" title={title ?? t('Lines')} extraLabel={progress ? t('Received · billed') : match ? t('Check against order') : undefined}
+          lines={(watched ?? []).map((l, i) => {
+            const v = l.variant_id ? vmap.get(l.variant_id) : undefined
+            const pr = progress?.[i]
+            return {
+              key: l.key ?? String(i), no: i + 1, code: v?.sku ?? null, name: l.description || v?.name || '', barcode: v?.barcode ?? null, uom: v?.uom_code ? td(v.uom_code) : null,
+              qty: num(l.quantity), price: num(l.unit_price), discount: num(l.discount_pct), vatRate: rateOf(l.tax_code_id), vatName: taxName(l.tax_code_id),
+              sell: v?.sales_price != null ? num(v.sales_price) : null,
+              extra: pr || match?.[i + 1] ? <div className="flex items-center gap-2">{pr && <ProgressBar p={pr} />}{matchCell(i + 1)}</div> : undefined,
+            }
+          })} />
+    </div>
+  )
+
   return (
     <div className="mt-4 rounded-lg border bg-card">
       <div className="flex items-center justify-between px-4 py-3">
@@ -135,36 +153,6 @@ export function PurchaseLinesEditor({ form: anyForm, editable, currency, progres
       </div>
       {lines.fields.length === 0 ? (
         <EmptyState compact title={t('No lines yet')} description={t("Add products, services or free-text items. Prices come from the vendor's price list or the last price paid.")} action={editable && allowAdd && <Button size="sm" type="button" onClick={addLine}><Plus /> {t('Add line')}</Button>} />
-      ) : !editable ? (
-        <div className="overflow-x-auto">
-          <Table className="min-w-[760px]">
-            <TableHeader><TableRow className="hover:bg-transparent">
-              <TableHead className="w-8">#</TableHead><TableHead>{t('Item')}</TableHead><TableHead className="text-right">{t('Qty')}</TableHead>
-              <TableHead className="text-right">{t('Unit price (without VAT)')}</TableHead><TableHead className="text-right">{t('Discount')}</TableHead><TableHead>{t('VAT')}</TableHead>
-              {progress && <TableHead className="w-[220px]">{t('Received · billed')}</TableHead>}
-              <TableHead className="text-right">{t('Amount (without VAT)')}</TableHead>
-            </TableRow></TableHeader>
-            <TableBody>
-              {(watched ?? []).map((l, i) => {
-                const v = l.variant_id ? vmap.get(l.variant_id) : undefined
-                const pr = progress?.[i]
-                return (
-                  <TableRow key={l.key ?? i} className="align-top hover:bg-transparent">
-                    <TableCell className="text-[13px] text-muted-foreground">{i + 1}</TableCell>
-                    <TableCell><div className="font-medium">{v?.sku ?? l.description}</div>{v && <div className="text-xs text-muted-foreground">{l.description}</div>}</TableCell>
-                    <TableCell className="text-right tabular">{formatQty(l.quantity)} <span className="text-xs text-muted-foreground">{td(v?.uom_code)}</span>
-                      {l.pack_id && <PackQty editable={false} packs={l.variant_id ? packs.byVariant.get(l.variant_id) : undefined} packId={l.pack_id} packQty={l.pack_qty} quantity={l.quantity} line={i + 1} onChange={() => undefined} />}</TableCell>
-                    <TableCell className="text-right tabular">{formatMoney(l.unit_price)}</TableCell>
-                    <TableCell className="text-right tabular">{num(l.discount_pct) ? `${num(l.discount_pct)}%` : '—'}</TableCell>
-                    <TableCell className="text-[13px]">{taxName(l.tax_code_id)}</TableCell>
-                    {progress && <TableCell>{pr ? <ProgressBar p={pr} /> : null}</TableCell>}
-                    <TableCell className="text-right tabular font-medium">{formatMoney(lineAmounts(l, rateOf(l.tax_code_id)).sub)}{matchCell(i + 1)}</TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </div>
       ) : (
         <div className="overflow-x-auto">
           <Table className="min-w-[900px]">

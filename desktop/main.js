@@ -52,6 +52,7 @@ function createWindow() {
   win.webContents.on('did-fail-load', (_e, code, _desc, url, isMain) => {
     if (isMain && code !== -3 && !url.startsWith('file:')) void win.loadFile(path.join(__dirname, 'offline.html'), { query: { server: settings.server } })
   })
+  watchDownloads(win.webContents.session)
   if (!settings.licence) void win.loadFile(path.join(__dirname, 'activation.html'))
   else void win.loadURL(settings.server)
 }
@@ -120,10 +121,32 @@ function openDrawer() {
   })
 }
 
+/* ------------------------------------------------------------------ the files it downloaded */
+// every file the program saved (an Excel, a PDF…): where it went, so the page can show it and open
+// its folder; only these paths can be opened, nothing else on the computer
+const downloads = []
+let watched = null
+function watchDownloads(ses) {
+  if (watched === ses) return
+  watched = ses
+  ses.on('will-download', (_e, item) => {
+    item.once('done', (_ev, state) => {
+      if (state !== 'completed') return
+      const d = { name: path.basename(item.getSavePath()), path: item.getSavePath(), at: Date.now(), size: item.getTotalBytes() }
+      downloads.unshift(d); downloads.splice(20)
+      for (const w of BrowserWindow.getAllWindows()) w.webContents.send('drispro:downloaded', d)
+    })
+  })
+}
+const known = (p) => typeof p === 'string' && downloads.some((d) => d.path === p)
+
 /* ------------------------------------------------------------------ what the page can ask */
 const fromApp = (e) => { try { const u = new URL(e.senderFrame?.url ?? e.sender.getURL()); return u.origin === origin() || u.protocol === 'file:' } catch { return false } }
 function handle(name, fn) { ipcMain.handle(name, async (e, arg) => { if (!fromApp(e)) throw new Error('not allowed'); return fn(arg, e) }) }
 
+handle('drispro:downloads', () => downloads.slice(0, 10))
+handle('drispro:show-in-folder', (p) => { if (!known(p)) return false; shell.showItemInFolder(p); return true })
+handle('drispro:open-file', async (p) => { if (!known(p)) return false; return (await shell.openPath(p)) === '' })
 handle('drispro:info', () => ({ version: app.getVersion(), platform: process.platform, server: settings.server }))
 handle('drispro:printers', async (_a, e) => (await e.sender.getPrintersAsync()).map((p) => ({ name: p.name, isDefault: p.isDefault, description: p.description })))
 handle('drispro:print', (a) => printHtml(a))

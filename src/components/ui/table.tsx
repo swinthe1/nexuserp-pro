@@ -1,27 +1,44 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 
-/** a table that scrolls sideways when it is wider than the page; a soft edge shows that more columns are there */
-const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(({ className, ...props }, ref) => {
+/**
+ * A table fits the width it has, without a sideways scrollbar, and without hiding anything: when it
+ * is too wide, first the text in its cells and headings goes onto two lines (numbers stay on one),
+ * then the cells get tighter, then the letters a little smaller, and last the codes may break at their dashes. Only a table that still does not
+ * fit (a very wide official book) scrolls, with a soft edge showing that more columns are there.
+ * `noFit` keeps a table as it is (a grid that scrolls on purpose).
+ */
+const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement> & { noFit?: boolean }>(({ className, noFit, ...props }, ref) => {
   const box = React.useRef<HTMLDivElement>(null)
   const [edge, setEdge] = React.useState<{ left: boolean; right: boolean }>({ left: false, right: false })
+  const [fit, setFit] = React.useState(0)
+  const fitRef = React.useRef(0)
+  const width = React.useRef(0)
   React.useEffect(() => {
     const el = box.current
     if (!el) return
     const measure = () => {
-      const left = el.scrollLeft > 2, right = el.scrollLeft + el.clientWidth < el.scrollWidth - 2
+      const w = el.clientWidth
+      // wider than before (the window grew, the menu closed): start again from the roomy look
+      if (!noFit && w > width.current + 24 && fitRef.current) { fitRef.current = 0; setFit(0); width.current = w; return }
+      width.current = w
+      // a code or number without spaces (FB-2026-00022, 1 662,62) stays on one line
+      if (fitRef.current) el.querySelectorAll('td').forEach((td) => { const x = td.textContent?.trim() ?? ''; td.toggleAttribute('data-one', x.length > 0 && x.length <= 24 && !/\s/.test(x)) })
+      const over = el.scrollWidth > w + 1
+      if (!noFit && over && fitRef.current < 4) { fitRef.current += 1; setFit(fitRef.current); requestAnimationFrame(measure); return }
+      const left = el.scrollLeft > 2, right = el.scrollLeft + w < el.scrollWidth - 2
       setEdge((e) => (e.left === left && e.right === right ? e : { left, right }))
     }
     measure()
     el.addEventListener('scroll', measure, { passive: true })
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => requestAnimationFrame(measure)) : null
     ro?.observe(el); if (el.firstElementChild) ro?.observe(el.firstElementChild)
     return () => { el.removeEventListener('scroll', measure); ro?.disconnect() }
-  }, [])
+  }, [noFit])
   return (
     <div className="relative w-full">
       <div ref={box} className="w-full overflow-auto">
-        <table ref={ref} className={cn('w-full caption-bottom text-[13.5px]', className)} {...props} />
+        <table ref={ref} data-fit={fit || undefined} className={cn('fit-table w-full caption-bottom text-[13.5px]', className)} {...props} />
       </div>
       {edge.left && <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-card to-transparent print:hidden" />}
       {edge.right && <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-card via-card/70 to-transparent print:hidden" />}

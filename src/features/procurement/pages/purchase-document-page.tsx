@@ -219,9 +219,10 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
 
   const body = (
     <>
-      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="grid min-w-0 content-start">
         <Card>
-          <CardContent className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
+          <CardContent className="grid gap-3 p-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             <FormField control={form.control} name="vendor_id" render={({ field }) => (
               <FormItem className="sm:col-span-2 lg:col-span-1"><FormLabel>{t('Vendor')}</FormLabel>
                 <FormControl><SearchSelect value={field.value} onChange={onVendor} disabled={!editable} placeholder={t('Choose a vendor')} remote={registry}
@@ -270,19 +271,22 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
               <FormItem><FormLabel optional>{t("Vendor's reference")}</FormLabel><FormControl><Input disabled={!editable} placeholder={t('Their offer or order no.')} {...field} /></FormControl></FormItem>
             )} />
             <FormField control={form.control} name="notes" render={({ field }) => (
-              <FormItem className="sm:col-span-2 lg:col-span-3"><FormLabel optional>{t('Notes to the vendor')}</FormLabel><FormControl><Textarea rows={2} disabled={!editable} {...field} /></FormControl></FormItem>
+              <FormItem className="sm:col-span-2 lg:col-span-3 2xl:col-span-4"><FormLabel optional>{t('Notes to the vendor')}</FormLabel><FormControl><Textarea rows={2} disabled={!editable} {...field} /></FormControl></FormItem>
             )} />
           </CardContent>
         </Card>
+        <PurchaseLinesEditor form={form} editable={editable} currency={currency} progress={progress} />
+        </div>
+        <div className="side-compact grid content-start gap-3 lg:sticky lg:top-[64px]">
         <PoSidePanel doc={doc} currency={currency} base={base} />
+        </div>
       </div>
-      <PurchaseLinesEditor form={form} editable={editable} currency={currency} progress={progress} />
     </>
   )
 
   return (
     <Form {...form}>
-      <div className="mx-auto max-w-6xl">
+      <div className="w-full">
         <PageHeader
           back={{ href: '/procurement/orders', label: t('Purchase orders') }}
           title={doc ? doc.number : t('New purchase order')}
@@ -564,9 +568,10 @@ function BillForm({ doc }: { doc?: BillDoc }) {
           {t('Posted despite a mismatch. Reason:')} <span className="font-medium">{doc.match_override_reason}</span>
         </div>
       )}
-      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="grid min-w-0 content-start">
         <Card>
-          <CardContent className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
+          <CardContent className="grid gap-3 p-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             <FormField control={form.control} name="vendor_id" render={({ field }) => (
               <FormItem className="sm:col-span-2 lg:col-span-1"><FormLabel>{t('Vendor')}</FormLabel>
                 <FormControl><SearchSelect value={field.value} onChange={onVendor} disabled={!editable || !!doc?.purchase_order_id} placeholder={t('Choose a vendor')} remote={registry}
@@ -591,22 +596,25 @@ function BillForm({ doc }: { doc?: BillDoc }) {
             )} />
             <CurrencyFields form={form} editable={editable && !doc?.purchase_order_id} base={base} currencies={(currencies.data ?? []).map((c) => c.code)} />
             <FormField control={form.control} name="notes" render={({ field }) => (
-              <FormItem className="sm:col-span-2 lg:col-span-3"><FormLabel optional>{t('Notes')}</FormLabel><FormControl><Textarea rows={2} disabled={!editable} {...field} /></FormControl></FormItem>
+              <FormItem className="sm:col-span-2 lg:col-span-3 2xl:col-span-4"><FormLabel optional>{t('Notes')}</FormLabel><FormControl><Textarea rows={2} disabled={!editable} {...field} /></FormControl></FormItem>
             )} />
           </CardContent>
         </Card>
+        <PurchaseLinesEditor form={form} editable={editable} currency={currency} match={match} />
+        </div>
+        <div className="side-compact grid content-start gap-3 lg:sticky lg:top-[64px]">
         <div className="grid content-start gap-4">
           <BillSidePanel doc={doc} currency={currency} base={base} matchStatus={matchStatus} vendorId={vendorId} />
           {doc && doc.status === 'posted' && doc.document_type === 'vendor_bill' && <WithholdingCard bill={doc} />}
         </div>
+        </div>
       </div>
-      <PurchaseLinesEditor form={form} editable={editable} currency={currency} match={match} />
     </>
   )
 
   return (
     <Form {...form}>
-      <div className="mx-auto max-w-6xl">
+      <div className="w-full">
         <PageHeader
           back={{ href: '/procurement/bills', label: t('Vendor bills') }}
           title={<>{isCredit && <span className="mr-2 text-muted-foreground">{t('Credit note')}</span>}{isDebit && <span className="mr-2 text-muted-foreground">{t('Debit note')}</span>}{doc ? doc.number : t('New vendor bill')}</>}

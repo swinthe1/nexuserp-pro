@@ -194,7 +194,7 @@ function ApiDocs() {
         <a href="/api" target="_blank" rel="noreferrer" className="text-[13px] font-medium text-primary hover:underline">{t('The full documentation')}</a></CardHeader>
       <CardContent className="grid gap-4 text-sm">
         <p className="text-[13px] text-muted-foreground">{t('Every call is a POST with JSON. Send the public key in “apikey” and your key in “x-api-key”. Errors come back with an HTTP error code and a message.')}</p>
-        <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-[12px] leading-relaxed">{`curl -X POST '${base}/api_products' \\
+        <pre className="whitespace-pre-wrap break-all rounded-lg bg-muted p-3 text-[12px] leading-relaxed">{`curl -X POST '${base}/api_products' \\
   -H 'apikey: ${supabaseAnonKey}' \\
   -H 'x-api-key: nxa_…' \\
   -H 'Content-Type: application/json' \\
@@ -204,7 +204,7 @@ function ApiDocs() {
             <li key={c.fn} className="rounded-lg border p-3">
               <p className="flex flex-wrap items-center gap-2"><code className="font-semibold">POST /rpc/{c.fn}</code><Badge variant="secondary">{c.scope}</Badge></p> {/* i18n-ignore */}
               <p className="mt-1 text-[13px] text-muted-foreground">{t(c.what)}</p>
-              <pre className="mt-2 overflow-x-auto rounded bg-muted px-2 py-1.5 text-[12px]">{c.body}</pre>
+              <pre className="mt-2 whitespace-pre-wrap break-all rounded bg-muted px-2 py-1.5 text-[12px]">{c.body}</pre>
             </li>
           ))}
         </ul>

@@ -1,5 +1,5 @@
 import { Hint } from '@/components/help'
-import { AlertTriangle, ChevronDown, ChevronRight, CircleCheck, Download, HandCoins, Pencil, Plus, Trash2, Wallet } from 'lucide-react'
+import { AlertTriangle, ChevronDown, ChevronRight, CircleCheck, HandCoins, Pencil, Plus, Trash2, Wallet } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { Bar, CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
@@ -17,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { msg, t } from '@/i18n'
-import { downloadCsv } from '@/lib/export'
+import { GridExportMenu } from '@/components/export-menu'
 import { cn, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
 import { useCashForecast, useCashPlanItems, useDeleteCashPlanItem, useSaveCashPlanItem, type CashForecast, type CashPlanItem, type ForecastWeek } from '../api'
 
@@ -58,7 +58,7 @@ export function CashForecastPage() {
   }), [d])
   const last = d?.weeks.at(-1)
 
-  const exportCsv = () => d && downloadCsv(`${t('cash-forecast')}-${d.as_of}`, [
+  const exportGrid = () => d && ([
     [t('Week'), t('From'), t('To'), ...IN_PARTS.map((p) => t(p.label)), ...OUT_PARTS.map((p) => t(p.label)), t('Coming in'), t('Going out'), t('Net'), t('Cash at the end')],
     ...d.weeks.map((w) => [w.week, w.start, w.end, ...IN_PARTS.map((p) => w[p.key]), ...OUT_PARTS.map((p) => w[p.key]), w.inflow, w.outflow, w.net, w.closing]),
   ])
@@ -76,7 +76,7 @@ export function CashForecastPage() {
             <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>
             <SelectContent>{[8, 13, 26].map((n) => <SelectItem key={n} value={String(n)}>{t('{n} weeks', { n })}</SelectItem>)}</SelectContent>
           </Select>
-          <Button variant="outline" onClick={exportCsv} disabled={!d}><Download /> {t('Export')}</Button>
+          <GridExportMenu name={`${t('cash-forecast')}-${d?.as_of ?? ''}`} title={t('Cash forecast')} grid={exportGrid} disabled={!d} />
           <Can perm="finance.write"><Button onClick={() => setEdit({ direction: 'out', every_months: 1, first_date: todayISO() })}><Plus /> {t('Add a cash item')}</Button></Can>
         </>} />
 

@@ -100,7 +100,7 @@ export function PrintSettingsCard() {
             </div>
           </div>
           <div className="grid gap-2">
-            <Label>{t('Stamp and signature')}</Label>
+            <Label>{t('Company stamp')}</Label>
             <div className="flex flex-wrap items-center gap-3">
               <div className="grid h-16 w-40 place-items-center overflow-hidden rounded-md border bg-white">
                 {curStamp ? <img src={curStamp} alt="" className="max-h-14 max-w-36 object-contain" /> : <span className="text-[12px] text-muted-foreground">{t('No stamp')}</span>}
@@ -109,7 +109,7 @@ export function PrintSettingsCard() {
               <Button variant="outline" size="sm" disabled={ro} onClick={() => stampRef.current?.click()}><ImageUp /> {t('Choose a picture')}</Button>
               {curStamp && <Button variant="ghost" size="sm" disabled={ro} onClick={() => setStamp(null)}><Trash2 /> {t('Remove')}</Button>}
             </div>
-            <p className="text-[12px] text-muted-foreground">{t('A photo or scan of the stamp with the signature, on a white background. It is printed over the line of the issuer.')}</p>
+            <p className="text-[12px] text-muted-foreground">{t('A photo or scan of the stamp, on a white background. It is printed over the line of the issuer; the signatures of people are set below, under Signatures.')}</p>
           </div>
           <div className="grid gap-2">
             <Label>{t('Colour')}</Label>

@@ -1,5 +1,5 @@
 import { useQueries } from '@tanstack/react-query'
-import { AlertTriangle, Download, Printer } from 'lucide-react'
+import { AlertTriangle, Printer } from 'lucide-react'
 import * as React from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
@@ -16,7 +16,7 @@ import { ErrorState } from '@/components/error-state'
 import { formatDateWith, msg, t, td } from '@/i18n'
 import { cn, formatCompact, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
 import { fetchBalances, finKeys, useCostCenters, useFiscalStartMonth, type BalanceRow } from '../api'
-import { downloadCsv } from '@/lib/export'
+import { GridExportMenu } from '@/components/export-menu'
 import { axisTick, iso, tooltipStyle } from './finance-overview-page'
 
 /* ------------------------------------------------------------------ periods */
@@ -262,15 +262,14 @@ export function ReportsPage() {
     : null
   const chartData = chart && yearly ? [...chart].reverse() : chart     // oldest year first
 
-  const exportCsv = () => {
+  const exportGrid = () => {
     if (tab === 'tb') {
-      downloadCsv(`${t('trial-balance')}-${cols[0]!.to}`, [[t('Code'), t('Account'), t('Opening'), t('Debit'), t('Credit'), t('Closing')],
-        ...accounts.filter((a) => a.is_postable && (num(a.opening) || num(a.debit) || num(a.credit))).map((a) => [a.code, td(a.name), a.opening, a.debit, a.credit, a.closing])])
-      return
+      return [[t('Code'), t('Account'), t('Opening'), t('Debit'), t('Credit'), t('Closing')],
+        ...accounts.filter((a) => a.is_postable && (num(a.opening) || num(a.debit) || num(a.credit))).map((a) => [a.code, td(a.name), num(a.opening), num(a.debit), num(a.credit), num(a.closing)])]
     }
-    if (!statement) return
-    downloadCsv(`${t(TABS[tab]).toLowerCase().replace(/\s+/g, '-')}-${cols[0]!.to}`, [[t('Code'), t('Line'), ...cols.map((c) => `${c.label} (${c.from}..${c.to})`)],
-      ...statement.rows.map((r) => [r.code ?? '', rowLabel(r), ...cols.map((_, i) => (r.kind === 'section' ? '' : r.values[i]?.toFixed(2)))])])
+    if (!statement) return null
+    return [[t('Code'), t('Line'), ...cols.map((c) => `${c.label} (${c.from}..${c.to})`)],
+      ...statement.rows.map((r) => [r.code ?? '', rowLabel(r), ...cols.map((_, i) => (r.kind === 'section' ? null : r.values[i] == null ? null : Math.round(r.values[i]! * 100) / 100))])]
   }
 
   const base = cols.find((c) => c.key === 'c0' || c.key === 'total')!
@@ -280,7 +279,7 @@ export function ReportsPage() {
       <PageHeader title={t('Financial statements')}
         description={<>{company?.name} · {cur}{ccName && (tab === 'pl' || tab === 'tb') ? ` · ${t('cost center {name}', { name: `${ccName.code} ${ccName.name}` })}` : ''}. {t('Figures come from posted accounting entries; click an account to see what is behind it.')}</>}
         actions={<>
-          <Button variant="outline" onClick={exportCsv} disabled={loading}><Download /> {t('Export')}</Button>
+          <GridExportMenu name={`${tab === 'tb' ? t('trial-balance') : t(TABS[tab]).toLowerCase().replace(/\s+/g, '-')}-${cols[0]!.to}`} title={t(TABS[tab])} subtitle={`${company?.name ?? ''} · ${cols[0]!.from} – ${cols[0]!.to}`} grid={exportGrid} disabled={loading} />
           <Button variant="outline" onClick={() => window.print()}><Printer /> {t('Print')}</Button>
         </>} />
       <Tabs value={tab} onValueChange={setTab} className="print:hidden">

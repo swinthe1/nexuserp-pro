@@ -1,10 +1,13 @@
-import { ChevronDown, Download, FileText, Mail, Printer, Share2 } from 'lucide-react'
+import { ChevronDown, Download, FileText, Mail, PenLine, Printer, Share2 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { useAuth } from '@/app/auth-provider'
+import { useCompany } from '@/app/company-provider'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -18,13 +21,44 @@ import { supabase } from '@/lib/supabase'
 import { formatMoney } from '@/lib/utils'
 
 /** Print, PDF, email and share of one document. `alt` adds printing the same document as another (an order as a pro forma). */
+type MySignature = { id: string; name: string; title: string | null; is_default: boolean }
+
+/** the signatures this person may sign with, and the one they chose last (kept on this device) */
+function useSignWith() {
+  const { companyId } = useCompany()
+  const { user } = useAuth()
+  const list = useQuery({
+    queryKey: ['my-signatures', companyId], enabled: !!companyId, staleTime: 5 * 60_000,
+    queryFn: async () => unwrap(await supabase.rpc('my_signatures', { p_company: companyId! })) as unknown as MySignature[],
+  })
+  const key = `drispro.sign:${user?.id}:${companyId}`
+  const [chosen, setChosen] = React.useState<string | null | undefined>(() => { try { const v = localStorage.getItem(key); return v === null ? undefined : v || null } catch { return undefined } })
+  const sigs = list.data ?? []
+  // never chosen: the company's default signature; a signature no longer allowed: none
+  const current = chosen === undefined ? sigs.find((x) => x.is_default)?.id ?? null : chosen && sigs.some((x) => x.id === chosen) ? chosen : null
+  const choose = (v: string | null) => { setChosen(v); try { localStorage.setItem(key, v ?? '') } catch { /* this session only */ } }
+  return { sigs, current, choose }
+}
+
+/** the document with the signature drawn on it, and a line in its history (who, whose, how) */
+async function withSignature(d: PrintDoc, k: DocKind, id: string, sig: string | null, how: string): Promise<PrintDoc> {
+  if (!sig) return d
+  const s = unwrap(await supabase.rpc('document_sign', { p_kind: k, p_id: id, p_signature: sig, p_how: how })) as unknown as PrintDoc['signature']
+  return { ...d, signature: s }
+}
+
 export function DocumentActions({ kind, id, alt, size = 'default' }: { kind: DocKind; id: string; alt?: { kind: DocKind; label: string }[]; size?: 'default' | 'sm' }) {
   const [busy, setBusy] = React.useState<string | null>(null)
   const [mail, setMail] = React.useState<{ doc: PrintDoc; kind: DocKind } | null>(null)
+  const signing = useSignWith()
   const run = async (what: string, k: DocKind, fn: (d: PrintDoc) => Promise<void> | void) => {
     setBusy(what)
-    try { await fn(await fetchPrintDoc(k, id)) } catch (e) { toast.error(tServer(describeError(e))) } finally { setBusy(null) }
+    try {
+      const d = await fetchPrintDoc(k, id)
+      await fn(what === 'mail' ? d : await withSignature(d, k, id, signing.current, what))
+    } catch (e) { toast.error(tServer(describeError(e))) } finally { setBusy(null) }
   }
+  const signer = signing.sigs.find((x) => x.id === signing.current)
   const print = (k: DocKind) => run('print', k, (d) => { const { body, css } = renderDocHtml(d); printHtml(body, css, 'document') })
   const pdf = (k: DocKind) => run('pdf', k, async (d) => { (await renderDocPdf(d)).save(fileName(d)) })
   const canShare = typeof navigator !== 'undefined' && 'canShare' in navigator
@@ -37,7 +71,8 @@ export function DocumentActions({ kind, id, alt, size = 'default' }: { kind: Doc
   return (
     <>
       <div className="inline-flex">
-        <Button variant="outline" size={size} className="rounded-r-none" loading={busy === 'print'} onClick={() => print(kind)}><Printer /> {t('Print')}</Button>
+        <Button variant="outline" size={size} className="rounded-r-none" loading={busy === 'print'} onClick={() => print(kind)}
+          title={signer ? t('Signed by {name}', { name: signer.name }) : undefined}><Printer /> {t('Print')}{signer && <PenLine className="size-3.5 text-primary" aria-label={t('Signed by {name}', { name: signer.name })} />}</Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size={size} className="rounded-l-none border-l-0 px-2" aria-label={t('More ways to send it')}>
@@ -48,6 +83,14 @@ export function DocumentActions({ kind, id, alt, size = 'default' }: { kind: Doc
             <DropdownMenuItem onSelect={() => void pdf(kind)}><Download /> {t('Download PDF')}</DropdownMenuItem>
             <DropdownMenuItem onSelect={() => void run('mail', kind, (d) => setMail({ doc: d, kind }))}><Mail /> {t('Send by email')}</DropdownMenuItem>
             {canShare && <DropdownMenuItem onSelect={() => void share(kind)}><Share2 /> {t('Share (WhatsApp, Viber…)')}</DropdownMenuItem>}
+            {signing.sigs.length > 0 && <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="flex items-center gap-1.5 text-[11px] font-normal text-muted-foreground"><PenLine className="size-3.5" /> {t('Signed by')}</DropdownMenuLabel>
+              <DropdownMenuRadioGroup value={signing.current ?? ''} onValueChange={(v) => signing.choose(v || null)}>
+                <DropdownMenuRadioItem value="" onSelect={(e) => e.preventDefault()}>{t('Without a signature')}</DropdownMenuRadioItem>
+                {signing.sigs.map((x) => <DropdownMenuRadioItem key={x.id} value={x.id} onSelect={(e) => e.preventDefault()}><span>{x.name}{x.title && <span className="text-muted-foreground">{`, ${x.title}`}</span>}</span></DropdownMenuRadioItem>)}
+              </DropdownMenuRadioGroup>
+            </>}
             {alt?.length ? <DropdownMenuSeparator /> : null}
             {alt?.map((a) => (
               <React.Fragment key={a.kind}>
@@ -58,12 +101,12 @@ export function DocumentActions({ kind, id, alt, size = 'default' }: { kind: Doc
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      {mail && <EmailDialog doc={mail.doc} kind={mail.kind} id={id} onClose={() => setMail(null)} />}
+      {mail && <EmailDialog doc={mail.doc} kind={mail.kind} id={id} signature={signing.current} signer={signer ? `${signer.name}${signer.title ? `, ${signer.title}` : ''}` : null} onClose={() => setMail(null)} />}
     </>
   )
 }
 
-function EmailDialog({ doc, kind, id, onClose }: { doc: PrintDoc; kind: DocKind; id: string; onClose: () => void }) {
+function EmailDialog({ doc, kind, id, signature, signer, onClose }: { doc: PrintDoc; kind: DocKind; id: string; signature: string | null; signer: string | null; onClose: () => void }) {
   const title = docTitle(doc)
   const [to, setTo] = React.useState(doc.partner?.email ?? '')
   const [subject, setSubject] = React.useState(`${title} ${doc.number} · ${doc.company.name}`)
@@ -75,7 +118,7 @@ function EmailDialog({ doc, kind, id, onClose }: { doc: PrintDoc; kind: DocKind;
   const send = async () => {
     setSending(true); setError(null)
     try {
-      const pdf = await pdfBase64(doc)
+      const pdf = await pdfBase64(await withSignature(doc, kind, id, signature, 'email'))
       unwrap(await supabase.rpc('document_email', { p_kind: kind, p_id: id, p_to: to.trim(), p_subject: subject, p_message: text, p_pdf: pdf, p_filename: fileName(doc) }))
       toast.success(t('Sent to {to}. It goes out within a minute.', { to: to.trim() }))
       onClose()
@@ -93,6 +136,7 @@ function EmailDialog({ doc, kind, id, onClose }: { doc: PrintDoc; kind: DocKind;
           <div className="grid gap-1.5"><Label htmlFor="dm-subject">{t('Subject')}</Label><Input id="dm-subject" value={subject} onChange={(e) => setSubject(e.target.value)} /></div>
           <div className="grid gap-1.5"><Label htmlFor="dm-text">{t('Message')}</Label><Textarea id="dm-text" rows={7} value={text} onChange={(e) => setText(e.target.value)} /></div>
           <p className="flex items-center gap-2 text-[13px] text-muted-foreground"><FileText className="size-4" /> {fileName(doc)}</p>
+          {signer && <p className="flex items-center gap-2 text-[13px] text-muted-foreground"><PenLine className="size-4 text-primary" /> {t('Signed by {name}', { name: signer })}</p>}
           {error && <p className="text-sm text-destructive">{error}{/mailbox/i.test(error) || /kutin/i.test(error) ? <> · <Link className="underline" to="/settings/automation">{t('Set it up')}</Link></> : null}</p>}
         </div>
         <DialogFooter>

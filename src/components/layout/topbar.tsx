@@ -2,6 +2,7 @@ import { Menu, Search } from 'lucide-react'
 import { NewMenu } from '@/components/layout/new-menu'
 import { NotificationsButton } from '@/components/layout/notifications'
 import { UserMenu } from '@/components/layout/user-menu'
+import { LastExportButton } from '@/components/layout/last-export'
 import { useCommandPalette } from '@/components/layout/command-palette'
 import { Button } from '@/components/ui/button'
 import { AssistantButton } from '@/features/assistant/assistant'
@@ -28,6 +29,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
       {/* right next to the search: find something, or make something new */}
       <NewMenu />
       <div className="ml-auto flex items-center gap-1">
+        <LastExportButton />
         <LanguageToggle className="hidden sm:inline-flex" />
         <span className="sm:hidden"><LanguageMenuButton /></span>
         <TillLockButton />

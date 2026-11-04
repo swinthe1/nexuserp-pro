@@ -2366,6 +2366,50 @@ export type Database = {
           { foreignKeyName: "company_settings_company_id_fkey"; columns: ["company_id"]; isOneToOne: true; referencedRelation: "companies"; referencedColumns: ["id"] },
         ]
       }
+      company_signatures: {
+        Row: {
+          id: string
+          company_id: string
+          person_name: string
+          person_title: string | null
+          image: string
+          user_ids: string[]
+          is_default: boolean
+          created_by: string | null
+          created_at: string
+          updated_at: string
+          deleted_at: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          person_name: string
+          person_title?: string | null
+          image: string
+          user_ids?: string[]
+          is_default?: boolean
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+          deleted_at?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          person_name?: string
+          person_title?: string | null
+          image?: string
+          user_ids?: string[]
+          is_default?: boolean
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+          deleted_at?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "company_signatures_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
       compensation_lines: {
         Row: {
           id: string
@@ -16260,6 +16304,15 @@ export type Database = {
         }
         Returns: Json
       }
+      document_sign: {
+        Args: {
+          p_kind: string
+          p_id: string
+          p_signature: string
+          p_how?: string
+        }
+        Returns: Json
+      }
       dunning_preview: {
         Args: {
           p_company: string
@@ -16995,6 +17048,12 @@ export type Database = {
       my_payslip_periods: {
         Args: Record<PropertyKey, never>
         Returns: { payslip_id: string | null; run_number: string | null; period_start: string | null; period_end: string | null; pay_date: string | null; status: string | null }[]
+      }
+      my_signatures: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
       }
       my_team_leave: {
         Args: Record<PropertyKey, never>
@@ -18667,6 +18726,24 @@ export type Database = {
           p_to: string
         }
         Returns: { reason: string | null; warehouse_id: string | null; warehouse: string | null; variant_id: string | null; sku: string | null; name: string | null; category: string | null; qty_lost: number | null; qty_found: number | null; value_lost: number | null; value_found: number | null; adjustments: number | null }[]
+      }
+      signature_delete: {
+        Args: {
+          p_id: string
+        }
+        Returns: undefined
+      }
+      signature_save: {
+        Args: {
+          p_company: string
+          p_id: string
+          p_name: string
+          p_title: string
+          p_image: string
+          p_user_ids: string[]
+          p_default?: boolean
+        }
+        Returns: string
       }
       small_business_tax: {
         Args: {

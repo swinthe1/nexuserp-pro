@@ -243,7 +243,7 @@ function WorkOrderView({ w }: { w: WorkOrderDetail }) {
   </>
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="w-full">
       <PageHeader back={{ href: '/manufacturing/orders', label: t('Work orders') }} title={w.number}
         meta={<><StatusBadge status={w.status} />{isLate(w) && <Badge variant="destructive">{t('Late')}</Badge>}</>}
         description={<>{w.variant?.name} · {t('{qty} planned', { qty: formatQty(w.quantity_planned) })} · {w.warehouse?.code} ({w.component_location?.code} → {w.output_location?.code}) · {t('Recipe')} <Link className="text-primary hover:underline" to={`/manufacturing/boms/${w.bom_id}`}>{w.bom?.code}</Link></>}

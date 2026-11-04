@@ -172,7 +172,7 @@ function AssetForm({ asset }: { asset?: AssetDetail }) {
   )
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="w-full">
       <PageHeader back={{ href: '/finance/assets', label: t('Fixed assets') }} title={asset ? `${asset.number} · ${asset.name}` : t('New fixed asset')}
         meta={asset && <StatusBadge status={asset.status} />}
         description={asset && asset.status !== 'draft' ? t('Book value {value} of {cost}', { value: formatMoney(asset.book_value), cost: formatMoney(asset.acquisition_cost) }) : undefined}

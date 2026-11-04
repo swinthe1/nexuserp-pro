@@ -1,3 +1,4 @@
+import { SignaturesCard } from '../components/signatures-card'
 import { PrintSettingsCard } from '../components/print-settings'
 import { CostingMethodField } from '../components/costing-method'
 import { Fingerprint, TriangleAlert } from 'lucide-react'
@@ -41,7 +42,7 @@ export function CompanySettingsPage() {
         </TabsList>
         <TabsContent value="company"><CompanyProfileForm /></TabsContent>
         <TabsContent value="rules"><RulesForm /></TabsContent>
-        <TabsContent value="print"><PrintSettingsCard /></TabsContent>
+        <TabsContent value="print" className="grid gap-4"><PrintSettingsCard /><SignaturesCard /></TabsContent>
         <TabsContent value="fiscal"><FiscalForm /></TabsContent>
         <TabsContent value="menu"><MenuForm /></TabsContent>
       </Tabs>

@@ -1,6 +1,6 @@
 import { ItemCardView } from './item-card-page'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Barcode, Pencil, Plus, ScanLine, Tag, Trash2 } from 'lucide-react'
+import { Barcode, Maximize2, Pencil, Plus, ScanLine, Tag, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useParams } from 'react-router-dom'
@@ -44,9 +44,19 @@ import { VendorPicker } from '../components/pickers'
 import { barcodeSchema } from '../schemas'
 import { msg, t, td, tn } from '@/i18n'
 import { ErrorState } from '@/components/error-state'
+import { ConfirmDialog } from '@/components/confirm-dialog'
+import { useBulkProducts } from '../api'
 
 export function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
+  return <ProductView id={id} />
+}
+
+/**
+ * The item: its numbers, stock, prices, variants, packaging and history. A page of its own, or a
+ * window over the item list (inDialog), to look, change and delete without leaving the list.
+ */
+export function ProductView({ id, inDialog, onDeleted }: { id: string | undefined; inDialog?: boolean; onDeleted?: () => void }) {
   const { company } = useCompany()
   const product = useProduct(id)
   const levels = useProductStockLevels(id)
@@ -77,7 +87,7 @@ export function ProductDetailPage() {
   return (
     <>
       <PageHeader
-        back={{ href: '/inventory/products', label: t('Products') }}
+        back={inDialog ? undefined : { href: '/inventory/products', label: t('Products') }}
         title={<span className="flex min-w-0 items-center gap-3"><ProductPhoto productId={p.id} name={p.name} hasImage={p.image_path === 'db'} /><span className="truncate">{p.name}</span></span>}
         meta={<>
           <Badge variant="outline">{p.code}</Badge>
@@ -88,6 +98,10 @@ export function ProductDetailPage() {
         actions={<>
           {p.product_type !== 'service' && <Button variant="outline" asChild><Link to={`/inventory/labels?items=${p.product_variants.map((v) => v.id).join(',')}`}><Tag /> {t('Labels')}</Link></Button>}
           <Can perm="inventory.write"><EditProductSheet product={p} /></Can>
+          {inDialog && <>
+            <Can perm="inventory.delete"><DeleteProductButton productId={p.id} name={p.name} onDeleted={onDeleted} /></Can>
+            <Button variant="ghost" size="icon" asChild title={t('Open the full page')} aria-label={t('Open the full page')}><Link to={`/inventory/products/${p.id}`}><Maximize2 /></Link></Button>
+          </>}
         </>}
       />
 
@@ -277,6 +291,20 @@ const editSchema = z.object({
   volume_m3: z.preprocess((v) => (v === '' || v == null ? null : Number(v)), z.number().nonnegative().nullable()),
   max_temperature: z.preprocess((v) => (v === '' || v == null ? null : Number(v)), z.number().min(-40).max(30).nullable()),
 })
+
+function DeleteProductButton({ productId, name, onDeleted }: { productId: string; name: string; onDeleted?: () => void }) {
+  const bulk = useBulkProducts()
+  return (
+    <ConfirmDialog
+      trigger={<Button variant="outline" className="text-destructive"><Trash2 /> {t('Delete')}</Button>}
+      title={t('Delete {name}?', { name })}
+      description={t('They disappear from lists and pickers. Stock history is kept, and an admin can restore them from the audit log.')}
+      confirmLabel={t('Delete')}
+      destructive
+      onConfirm={() => bulk.mutateAsync({ action: 'delete', productIds: [productId] }).then(() => onDeleted?.())}
+    />
+  )
+}
 
 function EditProductSheet({ product }: { product: ProductDetail }) {
   const [open, setOpen] = React.useState(false)

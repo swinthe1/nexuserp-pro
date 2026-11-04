@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { ArrowDownLeft, ArrowUpRight, Download, Hourglass, MoveRight } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Hourglass, MoveRight } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ColumnHeader, DataTable, inFilter } from '@/components/data-table/data-table'
@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/error-state'
 import { t, tn } from '@/i18n'
 import { cn, formatDate, formatQty, humanize } from '@/lib/utils'
-import { downloadCsv } from '@/lib/export'
+import { GridExportMenu } from '@/components/export-menu'
 import { DOC_HREF, useLotsList, useLotTrace } from '../api'
 import { LotGenealogy } from '@/features/manufacturing/components/lot-genealogy'
 
@@ -86,8 +86,8 @@ export function LotTracePage() {
       <PageHeader back={{ href: '/wms/lots', label: t('Lots and expiry') }} title={<span className="font-mono">{lot.lot_number}</span>}
         meta={<Badge variant={s.tone}>{s.label}</Badge>}
         description={<>{lot.sku} · {lot.variant_name}{lot.vendor_name ? ` · ${t('from {vendor}', { vendor: lot.vendor_name })}` : ''}{lot.manufacture_date ? ` · ${t('made {date}', { date: formatDate(lot.manufacture_date) })}` : ''}{lot.expiry_date ? ` · ${t('expires {date}', { date: formatDate(lot.expiry_date) })}` : ''}</>}
-        actions={<Button variant="outline" disabled={!customers.length} onClick={() => downloadCsv(`${t('recall')}-${lot.lot_number}`, [[t('Customer'), t('Quantity'), t('Last delivery')], ...customers.map((c) => [c.name, c.quantity, c.last_date.slice(0, 10)])])}>
-          <Download /> {t('Recall list')}</Button>} />
+        actions={<GridExportMenu label={t('Recall list')} name={`${t('recall')}-${lot.lot_number}`} title={`${t('Recall list')} · ${lot.lot_number}`} subtitle={`${lot.sku} · ${lot.variant_name}`} disabled={!customers.length}
+          grid={() => [[t('Customer'), t('Quantity'), t('Last delivery')], ...customers.map((c) => [c.name, Number(c.quantity), formatDate(c.last_date.slice(0, 10))])]} />} />
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <StatCard label={t('Came in')} value={formatQty(tr.data.received)} hint={t('Received, produced or found')} />
         <StatCard label={t('Went to customers')} value={formatQty(tr.data.shipped)} hint={tn(customers.length, '{n} customer or till', '{n} customers or tills')} />

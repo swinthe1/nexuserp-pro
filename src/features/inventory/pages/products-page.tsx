@@ -1,7 +1,9 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import { Ban, CheckCircle2, Plus, Trash2, Upload } from 'lucide-react'
 import * as React from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { ProductView } from './product-detail-page'
 import { Can, useCompany } from '@/app/company-provider'
 import { ColumnHeader, DataTable, inFilter, selectColumn } from '@/components/data-table/data-table'
 import { PageHeader } from '@/components/page-header'
@@ -34,12 +36,16 @@ function activity(r: ProductStockRow) {
 }
 
 export function ProductsPage() {
-  const navigate = useNavigate()
   const { company } = useCompany()
   const cur = company?.base_currency
   const products = useProductStock()
   const categories = useCategories()
   const bulk = useBulkProducts()
+  // a row opens the item in a window over the list (?item=…), so the list stays as it was: its
+  // filters, its page, where it was scrolled; the browser's back closes it
+  const [params, setParams] = useSearchParams()
+  const openId = params.get('item')
+  const openItem = (id: string | null) => setParams((p) => { const n = new URLSearchParams(p); if (id) n.set('item', id); else n.delete('item'); return n }, { replace: !id })
 
   const columns = React.useMemo<ColumnDef<ProductStockRow>[]>(() => [
     selectColumn<ProductStockRow>(),
@@ -128,7 +134,7 @@ export function ProductsPage() {
         searchPlaceholder={t('Name, code, barcode or supplier code')}
         initialHidden={['sku', 'barcode', 'on_hand', 'reserved', 'incoming', 'last_received', 'activity']}
         initialSorting={[{ id: 'product', desc: false }]}
-        onRowClick={(r) => navigate(`/inventory/products/${r.product_id}`)}
+        onRowClick={(r) => r.product_id && openItem(r.product_id)}
         exportName="products"
         facets={[
           { columnId: 'category', title: t('Category'), options: (categories.data ?? []).map((c) => ({ label: td(c.name), value: c.name })) },
@@ -163,6 +169,12 @@ export function ProductsPage() {
           </Can>
         )}
       />
+      <Dialog open={!!openId} onOpenChange={(o) => { if (!o) openItem(null) }}>
+        <DialogContent className="block h-[92dvh] max-h-[92dvh] w-[calc(100%-2rem)] max-w-[1200px] overflow-y-auto p-0" aria-describedby={undefined}>
+          <DialogTitle className="sr-only">{t('Product')}</DialogTitle>
+          <div className="px-6 pb-6 pt-5 [&>div:first-child]:pr-10">{openId && <ProductView id={openId} inDialog onDeleted={() => openItem(null)} />}</div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

@@ -187,10 +187,10 @@ export function InstalmentsCard({ docType, id, total, date, status, currency }: 
   if (!lines.length && !canEdit) return null
   return (
     <Card>
-      <CardHeader className="flex-row items-start justify-between gap-2 space-y-0 pb-2">
-        <div><CardTitle className="flex items-center gap-2"><CalendarRange className="size-4 text-muted-foreground" /> {t('Instalments')}</CardTitle>
-          {!lines.length && <CardDescription>{t('Paid in one go. Split it if it is paid in parts.')}</CardDescription>}</div>
-        {canEdit && <Can perm="invoicing.write"><Button size="sm" variant="outline" onClick={() => setOpen(true)}>{lines.length ? <><Pencil className="size-3.5" /> {t('Change|edit')}</> : <><Split className="size-3.5" /> {t('Split into instalments')}</>}</Button></Can>}
+      <CardHeader className={cn('flex-row items-center justify-between gap-2 space-y-0', !lines.length && 'pb-5')}>
+        <div className="min-w-0"><CardTitle className="flex items-center gap-2"><CalendarRange className="size-4 text-muted-foreground" /> {t('Instalments')}</CardTitle>
+          {!lines.length && <p className="mt-0.5 text-[12px] text-muted-foreground">{t('Paid in one go')}</p>}</div>
+        {canEdit && <Can perm="invoicing.write"><Button size="sm" variant="outline" className="h-7 px-2 text-[12px]" title={t('Paid in one go. Split it if it is paid in parts.')} onClick={() => setOpen(true)}>{lines.length ? <><Pencil className="size-3.5" /> {t('Change|edit')}</> : <><Split className="size-3.5" /> {t('Split into instalments')}</>}</Button></Can>}
       </CardHeader>
       {!!lines.length && (
         <CardContent className="p-0">

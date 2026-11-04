@@ -108,7 +108,7 @@ function PriceListForm({ pl }: { pl?: Tables<'price_lists'> & { items: Tables<'p
 
   return (
     <Form {...form}>
-      <div className="mx-auto max-w-5xl">
+      <div className="w-full">
         <PageHeader back={{ href: '/sales/price-lists', label: t('Price lists') }} title={pl?.name ? td(pl.name) : t('New price list')}
           actions={writable && <>
             {pl && <ConfirmDialog trigger={<Button variant="ghost" size="sm" className="text-destructive"><Trash2 /> {t('Delete')}</Button>} title={t('Delete {name}?', { name: td(pl.name) })}

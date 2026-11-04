@@ -4,6 +4,14 @@ import type { Dict } from '../index'
 export default {
   "My exports": "Eksportet e mia",
   "Last from this page": "I fundit nga kjo faqe",
+  "Go to the page it came from": "Shko te faqja nga erdhi",
+  "Open the file": "Hape skedarin",
+  "Open the folder where it is saved": "Hap dosjen ku është ruajtur",
+  "The browser saved it in Downloads: Ctrl+J shows it, with \"Show in folder\".": "Shfletuesi e ruajti te Shkarkimet (Downloads): Ctrl+J e tregon, me \"Show in folder\".",
+  "The file exported last": "Skedari i eksportuar së fundi",
+  "Item name": "Emri i artikullit",
+  "Paid in one go": "Paguhet me një pagesë",
+  "Selling price": "Çmimi i shitjes",
   "{file} is in your downloads": "{file} u ruajt te shkarkimet",
   "A copy is kept under My exports, to download again from any computer.": "Një kopje ruhet te Eksportet e mia, për ta shkarkuar sërish nga çdo kompjuter.",
   "Every Excel, CSV and PDF you exported from a list or a report. The browser put each in its Downloads folder; here you get the same file again, on any computer, for 90 days.":

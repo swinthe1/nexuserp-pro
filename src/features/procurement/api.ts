@@ -25,6 +25,7 @@ function useInvalidateProcurement() {
 export type PurchasableVariant = {
   id: string; sku: string; name: string; product_type: string; uom_code: string
   on_hand: number; available: number; incoming: number; avg_cost: number; reorder_min: number | null; codes?: string | null
+  sales_price?: number | null; barcode?: string | null
 }
 export function usePurchasableVariants() {
   const { companyId } = useCompany()
@@ -33,7 +34,7 @@ export function usePurchasableVariants() {
     enabled: !!companyId,
     staleTime: 60_000,
     queryFn: () => fetchAll('sku', (x) => after(supabase.from('v_product_stock')
-      .select('id:variant_id, sku, name:variant_name, product_type, uom_code, on_hand, available, incoming, avg_cost, reorder_min, codes')
+      .select('id:variant_id, sku, name:variant_name, product_type, uom_code, on_hand, available, incoming, avg_cost, reorder_min, codes, sales_price, barcode')
       .eq('company_id', companyId).eq('is_active', true), 'sku', x).order('sku').limit(1000).returns<PurchasableVariant[]>()),
   })
 }

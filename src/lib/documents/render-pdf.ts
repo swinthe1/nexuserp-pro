@@ -27,6 +27,20 @@ async function logoPng(src: string): Promise<{ data: string; w: number; h: numbe
   } catch { return null }
 }
 
+/** a picture with its transparent parts kept (a signature drawn over the stamp) */
+async function alphaPng(src: string): Promise<{ data: string; w: number; h: number } | null> {
+  try {
+    const img = new Image()
+    img.src = src
+    await img.decode()
+    const c = document.createElement('canvas')
+    const scale = Math.min(1, 480 / Math.max(img.naturalWidth, img.naturalHeight))
+    c.width = Math.max(1, Math.round(img.naturalWidth * scale)); c.height = Math.max(1, Math.round(img.naturalHeight * scale))
+    c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height)
+    return { data: c.toDataURL('image/png'), w: c.width, h: c.height }
+  } catch { return null }
+}
+
 export async function renderDocPdf(d: PrintDoc) {
   const [{ jsPDF }, { default: autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])
   const s = settingsOf(d)
@@ -183,18 +197,22 @@ export async function renderDocPdf(d: PrintDoc) {
     pdf.text(f, L, y); y += f.length * 3.4 + 2
   }
   const stamp = s.show_stamp && d.company.stamp && !isVoucher(d) && d.kind !== 'goods_receipt' ? await logoPng(d.company.stamp) : null
-  if (!s.show_signatures && stamp) {
+  const sig = d.signature ? await alphaPng(d.signature.image) : null
+  if (!s.show_signatures && stamp && !sig) {
     y += 6; if (y + 28 > 272) { pdf.addPage(); y = 20 }
     const h = 24, w = Math.min(50, (stamp.w / stamp.h) * h); pdf.addImage(stamp.data, 'JPEG', L, y, w, h, undefined, 'FAST'); y += h + 2
   }
-  if (s.show_signatures) {
+  if (s.show_signatures || sig) {
     const [sl, sr] = isVoucher(d) ? [d.kind === 'receipt_voucher' ? t('Received by') : t('Paid by'), d.kind === 'receipt_voucher' ? t('Paid by') : t('Received by')]
       : d.kind === 'goods_receipt' ? [t('Delivered by'), t('Received by')] : [t('Issued by'), t('Received by')]
-    y = Math.max(y + (stamp ? 30 : 14), 0); if (y > 272) { pdf.addPage(); y = 40 }
-    if (stamp) { const h = 24, w = Math.min(50, (stamp.w / stamp.h) * h); pdf.addImage(stamp.data, 'JPEG', L + 35 - w / 2, y - h + 4, w, h, undefined, 'FAST') }
+    y = Math.max(y + (stamp || sig ? 30 : 14), 0); if (y > 268) { pdf.addPage(); y = 40 }
+    if (stamp) { const h = 24, w = Math.min(50, (stamp.w / stamp.h) * h); pdf.addImage(stamp.data, 'JPEG', L + 35 - w / 2 + (sig ? 9 : 0), y - h + 4, w, h, undefined, 'FAST') }
+    // the signature over the line, on top of the stamp, as a pen would
+    if (sig) { const h = 17, w = Math.min(56, (sig.w / sig.h) * h); pdf.addImage(sig.data, 'PNG', L + 35 - w / 2 - 6, y - h + 2.5, w, h, undefined, 'FAST') }
     pdf.setDrawColor(138, 143, 156); pdf.setLineWidth(0.25)
-    pdf.line(L, y, L + 70, y); pdf.line(R - 70, y, R, y)
-    pdf.setFontSize(8.5); pdf.setTextColor(...gray); pdf.text(sl, L + 35, y + 4, { align: 'center' }); pdf.text(sr, R - 35, y + 4, { align: 'center' })
+    pdf.line(L, y, L + 70, y); if (s.show_signatures) pdf.line(R - 70, y, R, y)
+    pdf.setFontSize(8.5); pdf.setTextColor(...gray); pdf.text(sl, L + 35, y + 4, { align: 'center' }); if (s.show_signatures) pdf.text(sr, R - 35, y + 4, { align: 'center' })
+    if (d.signature) { pdf.setTextColor(31, 36, 48); pdf.text(`${d.signature.name}${d.signature.title ? `, ${d.signature.title}` : ''}`, L + 35, y + 8, { align: 'center' }) }
   }
   // footer on every page
   const pages = pdf.getNumberOfPages()

@@ -91,7 +91,7 @@ export function FulfillmentPage() {
           {queue.isLoading ? <Skeleton className="m-4 h-48" /> : queue.isError ? <ErrorState error={queue.error} onRetry={() => void queue.refetch()} /> : !shown.length ? (
             <EmptyState title={lines.length ? t('No lines match') : t('No open order lines')} description={lines.length ? t('Change the filters.') : t('Confirmed orders that still have something to deliver show up here.')} />
           ) : (
-            <Table className="min-w-[1100px]">
+            <Table>
               <TableHeader><TableRow className="hover:bg-transparent">
                 <TableHead>{t('Order')}</TableHead><TableHead>{t('Item')}</TableHead>
                 <TableHead className="text-right">{t('Ordered')}</TableHead><TableHead className="text-right">{t('Delivered')}</TableHead>

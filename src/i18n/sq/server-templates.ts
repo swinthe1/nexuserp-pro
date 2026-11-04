@@ -242,6 +242,8 @@ export const serverTemplates: [string, string][] = [
   // ---------------------------------------------------------------- notifications (titles and bodies)
   ['Approval required: %', 'Kërkohet miratim: {0}'],
   ['Approved: %', 'U miratua: {0}'],
+  ['Signed: %', 'Nënshkruar: {0}'],
+  ['You may not sign with the signature of %', 'Nuk mund të nënshkruani me nënshkrimin e {0}'],
   ['Rejected: %', 'U refuzua: {0}'],
   ['Low stock: %', 'Stok i ulët: {0}'],
   ['% available in % (reorder point %)', '{0} në dispozicion në {1} (pika e riporositjes {2})'],

@@ -15,7 +15,13 @@ export interface DrisproDesktop {
   setServer: (url: string) => Promise<boolean>
   /** back to the licence page: another licence, or cloud ↔ local server */
   reactivate?: () => Promise<boolean>
+  /** the files the program saved (from version 1.6) */
+  downloads?: () => Promise<DesktopDownload[]>
+  showInFolder?: (path: string) => Promise<boolean>
+  openFile?: (path: string) => Promise<boolean>
+  onDownloaded?: (cb: (d: DesktopDownload) => void) => () => void
 }
+export type DesktopDownload = { name: string; path: string; at: number; size: number }
 export type PrintKind = 'receipt' | 'kitchen' | 'document'
 
 // a Windows program installed before the rename still offers itself under its older name
