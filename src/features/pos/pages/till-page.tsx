@@ -33,6 +33,7 @@ import { qrSvg, signAtkSale, useAtkState, waitForAtk } from '../atk'
 import type { FiscalPrint } from '../fiscal-receipt'
 import { clockNow, useClockCheck } from '../clock'
 import { logSef, watchSef } from '../sef-log'
+import { fuzzyFind } from '@/lib/fuzzy'
 import { SyncPanel } from './pos-home-page'
 import { phoneKey, quoteLoyalty, type TillCardRow, type TillProgram } from '@/features/loyalty/api'
 
@@ -253,11 +254,12 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   }, [data.catalog])
   const categories = React.useMemo(() => [...new Set(data.catalog.map((c) => c.category).filter(Boolean))].sort() as string[], [data.catalog])
   const q = query.trim().toLowerCase().replace(/^\d+(?:[.,]\d+)?\*/, '')
+  // forgiving search (lib/fuzzy): typos, ë/ç, words in any order; a code or barcode typed whole wins
+  const dq = React.useDeferredValue(q)
   const visible = React.useMemo(() => {
-    const words = q.split(/\s+/).filter(Boolean)
-    return data.catalog.filter((c) => (category === '__all' || c.category === category)
-      && words.every((w) => c.name.toLowerCase().includes(w) || c.sku.toLowerCase().includes(w) || c.barcodes.some((b) => b.code.startsWith(w))))
-  }, [data.catalog, q, category])
+    const inCat = category === '__all' ? data.catalog : data.catalog.filter((c) => c.category === category)
+    return dq ? fuzzyFind(inCat, dq, (c) => ({ text: `${c.name} ${c.category ?? ''}`, codes: [c.sku, ...c.barcodes.map((b) => b.code)] })) : inCat
+  }, [data.catalog, dq, category])
 
   const lastAdd = React.useRef(0)
   const add = React.useCallback((item: CatalogItem, qty = 1, barcode: string | null = null, mult?: number) => {

@@ -1,5 +1,6 @@
 import { Check, ChevronsUpDown, X } from 'lucide-react'
 import * as React from 'react'
+import { fuzzyFind } from '@/lib/fuzzy'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
@@ -38,10 +39,12 @@ export const SearchSelect = React.forwardRef<HTMLButtonElement, {
     return () => { live = false; clearTimeout(h) }
   }, [query, open])
   const selected = options.find((o) => o.value === value)
-  const q = query.trim().toLowerCase()
-  const filtered = q
-    ? options.filter((o) => [o.label, o.hint, ...(o.keywords ?? [])].some((s) => s?.toLowerCase().includes(q))).slice(0, 100)
-    : options.slice(0, 100)
+  const q = query.trim()
+  // forgiving: typos, ë/ç, words in any order, codes typed whole (lib/fuzzy)
+  const deferred = React.useDeferredValue(q)
+  const filtered = React.useMemo(() => (deferred
+    ? fuzzyFind(options, deferred, (o) => ({ text: [o.label, o.hint].filter(Boolean).join(' '), codes: [o.label, ...(o.keywords ?? [])] }), 100)
+    : options.slice(0, 100)), [options, deferred])
 
   return (
     <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQuery('') }}>

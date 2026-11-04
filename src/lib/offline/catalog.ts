@@ -6,6 +6,7 @@ import * as React from 'react'
 import { useCompany } from '@/app/company-provider'
 import { supabase } from '@/lib/supabase'
 import { kv } from './idb'
+import { fuzzyFind } from '@/lib/fuzzy'
 
 export interface ScanItem { variant_id: string; product_id: string; sku: string; name: string; tracking: string; barcodes: [string, number][]; price: number; cost: number }
 export interface ScanLot { id: string; variant_id: string; lot_number: string; expiry_date: string | null }
@@ -60,14 +61,9 @@ export function findOffline(company: string, code: string) {
 
 export function searchOffline(company: string, q: string, limit = 30) {
   const c = cache.get(company); if (!c) return []
-  const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean)
-  if (!words.length) return c.items.slice(0, limit)
-  const out: ScanItem[] = []
-  for (const it of c.items) {
-    const hay = `${it.sku} ${it.name}`.toLowerCase()
-    if (words.every((w) => hay.includes(w)) || it.barcodes.some(([b]) => b === q.trim())) { out.push(it); if (out.length >= limit) break }
-  }
-  return out
+  if (!q.trim()) return c.items.slice(0, limit)
+  // forgiving: typos, ë/ç, words in any order; a code or barcode typed whole wins (lib/fuzzy)
+  return fuzzyFind(c.items, q, (it) => ({ text: it.name, codes: [it.sku, ...it.barcodes.map(([b]) => b)] }), limit)
 }
 export const itemOffline = (company: string, variantId: string) => cache.get(company)?.items.find((i) => i.variant_id === variantId) ?? null
 

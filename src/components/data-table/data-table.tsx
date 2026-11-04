@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-table'
 import { Download, FileSpreadsheet, FileText, MoreHorizontal, Search, X } from 'lucide-react'
 import * as React from 'react'
+import { fuzzyFind } from '@/lib/fuzzy'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -103,6 +104,20 @@ function exportColumnsFor<T>(table: TanTable<T>): ExportColumn<T>[] {
     }))
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+/** what a row says, for the search box: its words and its codes, not its internal ids */
+function rowSearchText(row: object): { text: string; codes: string[] } {
+  const parts: string[] = []
+  const add = (k: string, v: unknown, depth: number) => {
+    if (v == null || k === 'id' || k.endsWith('_id')) return
+    if (typeof v === 'string') { if (!UUID.test(v)) parts.push(v) }
+    else if (typeof v === 'number') parts.push(String(v))
+    else if (depth < 1 && typeof v === 'object') for (const [k2, v2] of Object.entries(v as Record<string, unknown>)) add(k2, v2, depth + 1)
+  }
+  for (const [k, v] of Object.entries(row)) add(k, v, 0)
+  return { text: parts.join(' '), codes: parts }
+}
+
 export function DataTable<T>({
   columns, data, isLoading, error, getRowId, tableKey, searchPlaceholder, facets = [], initialSorting = [],
   initialHidden = [], initialFilters, bulkActions, toolbar, onRowClick, exportName, empty, server, footer, dense,
@@ -123,8 +138,14 @@ export function DataTable<T>({
     if (storageKey) try { localStorage.setItem(storageKey, JSON.stringify(columnVisibility)) } catch { /* ignore */ }
   }, [storageKey, columnVisibility])
 
+  // the list's search box forgives (lib/fuzzy): typos, ë/ç, words in any order, across every column
+  const deferredSearch = React.useDeferredValue(globalFilter)
+  const shown = React.useMemo(() => (server || !deferredSearch.trim() || !data ? data : fuzzyFind(data as (T & object)[], deferredSearch, rowSearchText)),
+    [server, data, deferredSearch])
+
   const table = useReactTable<T>({
-    data: data ?? [],
+    data: shown ?? [],
+    globalFilterFn: () => true,
     columns,
     getRowId,
     state: {
