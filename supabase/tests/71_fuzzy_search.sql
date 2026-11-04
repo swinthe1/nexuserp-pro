@@ -32,5 +32,29 @@ select t.ok(jsonb_array_length(:'f1'::jsonb) = 2 and (select bool_and(x ->> 'nam
 select t.ok(exists (select 1 from public.global_search(:'co', 'kaqkavall') g where g.kind = 'product' and g.title ilike 'kaçkavall%'), 'so does the search box');
 reset role;
 
+-- ----------------------------------------------------------------------------- the supplier's file on the purchase invoice
+set role authenticated;
+select t.login('drita@agjent.xk');
+insert into public.business_partners (company_id, code, name, is_vendor, is_customer) values (:'co', 'FX', 'Furnitori Excel', true, false) returning id as ven \gset
+select public.purchase_lines_match(:'co', :'ven', '[{"code":"FX-1","name":"QUMESHT FRESKET 2.8% 1L TETRA"},{"code":"FX-2","name":"Kackavall 400gr"},{"code":"FX-9","name":"Lapsa grafit 2B"}]') as m1 \gset
+select t.ok((:'m1'::jsonb -> 0 ->> 'variant_name') = 'Qumësht i freskët 2,8% 1 L' and (:'m1'::jsonb -> 0 ->> 'matched_by') = 'name'
+            and (:'m1'::jsonb -> 1 ->> 'variant_name') = 'Kaçkavall 400 g' and (:'m1'::jsonb -> 2 ->> 'variant_id') is null,
+            'the supplier''s names find our items, the 2,8% milk and not the 1,5%; a pencil finds nothing');
+select public.purchase_line_new_item(:'co', '{"name":"Lapsa grafit 2B","barcode":"3801234567890","vat_rate":18,"cost":0.1}') as ni \gset
+select t.ok((:'ni'::jsonb ->> 'bad_barcode') = '3801234567890' and not (:'ni'::jsonb ->> 'existed')::boolean
+            and (select p.purchase_tax_code_id is not null and v.sku ~ '^A-\d{5}$' from public.product_variants v join public.products p on p.id = v.product_id where v.id = (:'ni'::jsonb ->> 'variant_id')::uuid),
+            'a new item from a line: its own code, VAT 18%, and a mistyped barcode left out');
+select public.purchase_line_new_item(:'co', '{"name":"Lapsa grafit HB","barcode":"3801234567898"}') ->> 'variant_id' as ni2 \gset
+select t.ok((public.purchase_line_new_item(:'co', '{"name":"Lapsa tjetër","barcode":"3801234567898"}') ->> 'existed')::boolean, 'a barcode we have already is not made twice');
+select public.purchase_lines_learn(:'co', :'ven', jsonb_build_array(jsonb_build_object('code', 'FX-9', 'name', 'Lapsa grafit 2B', 'variant_id', :'ni'::jsonb ->> 'variant_id', 'price', 0.1),
+                                                                 jsonb_build_object('code', 'FX-2', 'name', 'Kackavall 400gr', 'variant_id', (:'m1'::jsonb -> 1 ->> 'variant_id')))) as learned \gset
+select public.purchase_lines_match(:'co', :'ven', '[{"code":"FX-9","name":"LAPSA 2B (12 copë)"},{"code":"FX-2","name":"Djathë i verdhë"}]') as m2 \gset
+select t.ok(:learned = 2 and (:'m2'::jsonb -> 0 ->> 'variant_id') = (:'ni'::jsonb ->> 'variant_id') and (:'m2'::jsonb -> 0 ->> 'matched_by') = 'learned'
+            and (:'m2'::jsonb -> 1 ->> 'variant_name') = 'Kaçkavall 400 g', 'next time the supplier''s codes find what was linked, whatever the name says');
+select t.ok(exists (select 1 from public.vendor_products where vendor_id = :'ven' and vendor_sku = 'FX-9'), 'the supplier''s code is kept on the item');
+select t.login('vesa@agjent.xk');
+select t.throws(format($q$select public.purchase_line_new_item(%L, '{"name":"Diçka"}')$q$, :'co'), 'Permission denied', 'a cashier does not make items');
+reset role;
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;

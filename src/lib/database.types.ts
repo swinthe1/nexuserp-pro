@@ -17804,6 +17804,29 @@ export type Database = {
         }
         Returns: Json
       }
+      purchase_line_new_item: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: Json
+      }
+      purchase_lines_learn: {
+        Args: {
+          p_company: string
+          p_vendor: string
+          p_lines: Json
+        }
+        Returns: number
+      }
+      purchase_lines_match: {
+        Args: {
+          p_company: string
+          p_vendor: string
+          p_lines: Json
+        }
+        Returns: Json
+      }
       push_public_key: {
         Args: Record<PropertyKey, never>
         Returns: string

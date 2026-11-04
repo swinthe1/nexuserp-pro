@@ -165,6 +165,7 @@ const BASE: Record<string, Guide> = {
     steps: [
       { sq: 'Zgjidh furnitorin dhe shkruaj numrin e faturës së tij.', en: 'Choose the vendor and type their invoice number.' },
       { sq: 'Skano ose kërko artikujt; shkruaj sasinë dhe çmimin pa TVSH si në faturë.', en: 'Scan or search the items; type the quantity and the price without VAT as on the invoice.' },
+      { sq: 'Kur furnitori e dërgon faturën në Excel: kliko "Nga Excel-i", kopjo rreshtat në Excel dhe ngjiti (ose zgjidh skedarin, ose foton/PDF-në). Barkodi, shifra, emërtimi, sasia dhe çmimi gjenden vetë; rreshtin pa artikull e lidh me një artikull tëndin ose krijon artikull të ri, dhe herën tjetër për këtë furnitor gjendet vetë.', en: 'When the supplier sends the invoice in Excel: click "From Excel", copy the lines in Excel and paste them (or choose the file, or the photo/PDF). Barcode, code, name, quantity and price are found by themselves; a line without an item is linked to one of yours or made a new item, and next time for this supplier it is found by itself.' },
       { sq: 'Programi propozon çmimet e reja të shitjes sipas marzhës; prano ato që të duken mirë.', en: 'The program suggests new selling prices by margin; take the ones that look right.' },
       { sq: 'Nëse paguan në vend, zgjidh arkën ose bankën te "Pagesa". Kliko "Kompleto".', en: 'If you pay on the spot, choose the cash box or bank under "Payment". Click "Complete".' },
     ],

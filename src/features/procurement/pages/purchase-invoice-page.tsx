@@ -1,6 +1,6 @@
 import { Hint } from '@/components/help'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCheck, PackagePlus, Percent, Save, ScanBarcode, Sparkles, Trash2 } from 'lucide-react'
+import { CheckCheck, FileSpreadsheet, PackagePlus, Percent, Save, ScanBarcode, Sparkles, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -10,6 +10,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog'
 import { ErrorState } from '@/components/error-state'
 import { PackQty, packsFromPieces } from '@/components/pack-qty'
 import { PageHeader } from '@/components/page-header'
+import { ImportLinesDialog, type ImportedLine } from '../components/import-lines'
 import { PRICE_KEY, PriceRiseCard } from '../components/price-rise'
 import { SearchSelect } from '@/components/search-select'
 import { Button } from '@/components/ui/button'
@@ -114,6 +115,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
   const packs = usePacks()
   const [margin, setMargin] = React.useState('')
   const [confirm, setConfirm] = React.useState(false)
+  const [importing, setImporting] = React.useState(false)
   const codeRef = React.useRef<HTMLInputElement>(null)
   const qtyRefs = React.useRef(new Map<string, HTMLInputElement>())
 
@@ -204,6 +206,14 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
       const found = searchOffline(companyId, c, 2)
       if (found.length === 1) { addItem(found[0].variant_id); setCode('') } else toast.error(t('No item with the code {code}', { code: c }))
     }
+  }
+  // the lines of the supplier's file, each as its own row (the same item may come twice at two prices)
+  const addImported = (ls: ImportedLine[]) => {
+    const taxFor = (rate: number | null) => rate == null ? null
+      : (taxes.data ?? []).filter((x) => x.is_active !== false && !x.is_reverse_charge && x.scope !== 'sales' && Math.abs(num(x.rate) - rate) < 0.001)
+          .sort((a, b) => Number(a.is_exempt) - Number(b.is_exempt) || a.code.length - b.code.length)[0]?.id ?? null
+    setRows((rs) => [...rs, ...ls.map((l): Row => ({ key: newKey(), variant_id: l.variant_id, sku: l.sku, name: l.name, qty: String(l.qty), price: String(l.price),
+      d1: l.discount ? String(l.discount) : '', d2: '', tax: taxFor(l.vat_rate), gross: '', lot: '', expiry: '', pack: null, pq: null }))])
   }
   const upd = (key: string, patch: Partial<Row>) => setRows((rs) => rs.map((r) => r.key === key ? { ...r, ...patch } : r))
   // keyboard: Enter goes to the next box of the row; at the end of the row back to the code box
@@ -331,6 +341,8 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
           </div>
           <div className="w-72"><SearchSelect value={null} onChange={(v) => v && addItem(v)} placeholder={t('…or search by name')}
             options={itemOptions} /></div>
+          {editable && <Button variant="outline" onClick={() => setImporting(true)} disabled={!catalog.ready} title={t('Paste the lines from Excel, or choose the supplier’s file')}>
+            <FileSpreadsheet /> {t('From Excel')}</Button>}
           <div className="ml-auto flex flex-wrap items-center gap-1.5">
             <Label htmlFor="pi-margin" className="whitespace-nowrap text-[13px] text-muted-foreground">{t('Margin for all')}<Hint id="margin_all" /></Label>
             <Input id="pi-margin" inputMode="decimal" className="h-8 w-20 text-right" value={margin} onChange={(e) => setMargin(e.target.value)} placeholder="25" />
@@ -474,6 +486,9 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
       )}
       <p className="mt-3 text-[12px] text-muted-foreground">{t('Transport, customs and other costs are added afterwards with')} <Link className="underline" to="/inventory/landed-costs">{t('Landed costs')}</Link>.</p>
       {guard.dialog}
+      <ImportLinesDialog open={importing} onOpenChange={setImporting} vendorId={h.vendor_id || null} itemOptions={itemOptions} onAdd={addImported}
+        onHeader={(x) => setH((v) => ({ ...v, vendor_invoice_number: v.vendor_invoice_number || x.number || '', bill_date: !doc && x.date ? x.date : v.bill_date,
+          vendor_id: v.vendor_id || x.vendor_id || '' }))} />
     </div>
   )
 }
