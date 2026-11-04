@@ -12,6 +12,8 @@ export const serverTemplates: [string, string][] = [
   ['This company has asked % questions this month, the limit of its plan; the assistant starts again on the 1st', 'Kjo kompani ka bërë {0} pyetje këtë muaj, kufiri i paketës; asistenti nis sërish më 1 të muajit'],
   ['This company has read % invoices this month, the limit of its plan; reading starts again on the 1st', 'Kjo kompani ka lexuar {0} fatura këtë muaj, kufiri i paketës; leximi nis sërish më 1 të muajit'],
   ['WhatsApp through the cloud: %', 'WhatsApp përmes cloud-it: {0}'],
+  ['Only a completed invoice is reopened; this one is %', 'Rihapet vetëm fatura e kompletuar; kjo është {0}'],
+  ['The VAT of this month is declared (%); correct it with a credit note', 'TVSH-ja e këtij muaji është deklaruar ({0}); korrigjoje me notë krediti'],
   ['Cash difference at %: % %', 'Diferencë parash në {0}: {1} {2}'],
   ['Shift % · % · expected %, counted %', 'Turni {0} · {1} · pritej {2}, u numërua {3}'],
   ['Tills still open since yesterday: %', 'Arka ende të hapura që nga dje: {0}'],

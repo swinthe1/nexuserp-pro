@@ -18040,11 +18040,25 @@ export type Database = {
         }
         Returns: string
       }
+      reopen_sales_invoice: {
+        Args: {
+          p_invoice: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       reopen_vat_declaration: {
         Args: {
           p_id: string
         }
         Returns: string
+      }
+      reopen_vendor_bill: {
+        Args: {
+          p_bill: string
+          p_reason: string
+        }
+        Returns: Json
       }
       reorder_route: {
         Args: {

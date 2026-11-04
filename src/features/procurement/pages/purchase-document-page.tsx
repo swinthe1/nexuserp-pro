@@ -43,6 +43,7 @@ import { PRICE_KEY, PriceRiseCard } from '../components/price-rise'
 import { MATCH_LABEL, PurchaseLinesEditor, type PurchaseProgress } from '../components/purchase-lines-editor'
 import { billSchema, purchaseOrderSchema, type BillValues, type PurchaseOrderValues } from '../schemas'
 import { DuplicateButton } from '@/components/duplicate-button'
+import { ReopenButton } from '@/components/reopen-button'
 import { AccountingTab } from '@/features/finance/components/t-accounts'
 
 type Kind = 'orders' | 'bills'
@@ -617,6 +618,7 @@ function BillForm({ doc }: { doc?: BillDoc }) {
           description={doc ? `${doc.vendor?.name ?? ''} · ${t('invoice {number}', { number: doc.vendor_invoice_number })}` : t('For bills without a purchase order — or open the order and use “Enter bill”.')}
           actions={<Can perm="invoicing.read">
             {doc && <DuplicateButton table="vendor_bills" id={doc.id} />}
+            {doc && doc.status === 'posted' && !isCredit && !doc.purchase_order_id && <ReopenButton kind="vendor_bill" id={doc.id} number={doc.number} />}
             {doc && editable && (
               <ConfirmDialog trigger={<Button variant="ghost" size="sm" className="text-destructive"><Trash2 /> {t('Delete')}</Button>} title={t('Delete draft {number}?', { number: doc.number })}
                 description={t('The draft disappears; its quantities can be billed again.')} confirmLabel={t('Delete draft')} destructive
