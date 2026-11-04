@@ -3,6 +3,8 @@ import type { Dict } from '../index'
 /** The lines of a purchase invoice from the supplier's file: paste from Excel, an Excel or CSV file, a photo or PDF. */
 export default {
   "Paste the lines from Excel, or choose the supplier’s file": "Ngjit rreshtat nga Excel-i, ose zgjidh skedarin e furnitorit",
+  "Scan the barcode, or type the code or the name": "Skano barkodin, ose shkruaj shifrën ose emrin",
+  "Barcode, code or name": "Barkodi, shifra ose emri",
   "Lines from the supplier’s file": "Rreshtat nga skedari i furnitorit",
   "Copy the lines in Excel and paste them here, or choose the file. Barcode, code, name, quantity and price are found by themselves.":
     "Kopjo rreshtat në Excel dhe ngjiti këtu, ose zgjidh skedarin. Barkodi, shifra, emërtimi, sasia dhe çmimi gjenden vetë.",

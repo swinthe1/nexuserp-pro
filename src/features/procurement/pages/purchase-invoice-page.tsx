@@ -174,7 +174,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
       // the price now already keeps the margin: no need to go down (unless the company wants it)
       if (rec && curGross != null && rec.gross < curGross && !info.data?.down) rec = { gross: curGross, pct: marginOf(i.sales_net, costBase, basis), from: 'current' }
     }
-    return { r, qty, price, disc, unit, net, vat, gross: qty * price, i, costBase, curGross, newGross, saleNet, markup, rec }
+    return { r, qty, price, disc, unit, net, vat, gross: r2(qty * price), i, costBase, curGross, newGross, saleNet, markup, rec }
   })
   const tot = calc.reduce((s, c) => ({ gross: s.gross + c.gross, net: s.net + c.net, vat: s.vat + c.vat, sale: s.sale + c.saleNet * c.qty, cost: s.cost + c.costBase * c.qty }),
     { gross: 0, net: 0, vat: 0, sale: 0, cost: 0 })
@@ -198,15 +198,35 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
       pack: pack?.id ?? null, pq: pack ? 1 : null }])
     setTimeout(() => qtyRefs.current.get(key)?.select(), 30)
   }
+  // one box: a scan or a code with Enter adds the item; a name shows the items that fit, to pick
+  const [pick, setPick] = React.useState(0)
+  const [listOpen, setListOpen] = React.useState(false)
+  const dq = React.useDeferredValue(code)
+  const fits = React.useMemo(() => {
+    const q = dq.trim()
+    if (!companyId || !catalog.ready || !q || (/^\d+$/.test(q) && q.length >= 8)) return []
+    return searchOffline(companyId, q, 8)
+  }, [companyId, catalog.ready, catalog.count, dq]) // eslint-disable-line react-hooks/exhaustive-deps
+  React.useEffect(() => setPick(0), [dq])
+  const take = (variantId: string, perScan = 1) => { addItem(variantId, perScan); setCode(''); setListOpen(false) }
   const onCode = () => {
     const c = code.trim(); if (!c || !companyId) return
     const hit = findOffline(companyId, c)
-    if (hit?.kind === 'variant') { addItem(hit.item.variant_id, num(hit.qty) || 1); setCode('') }
-    else {
-      const found = searchOffline(companyId, c, 2)
-      if (found.length === 1) { addItem(found[0].variant_id); setCode('') } else toast.error(t('No item with the code {code}', { code: c }))
-    }
+    if (hit?.kind === 'variant') return take(hit.item.variant_id, num(hit.qty) || 1)
+    // what is in the list now (the deferred list may still be one letter behind)
+    const now = dq.trim() === c ? fits : searchOffline(companyId, c, 8)
+    const chosen = now[Math.min(pick, now.length - 1)]
+    if (chosen && (now.length === 1 || listOpen)) return take(chosen.variant_id)
+    if (now.length > 1) { setListOpen(true); return }
+    toast.error(t('No item with the code {code}', { code: c }))
   }
+  const onCodeKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') { e.preventDefault(); onCode() }
+    else if (e.key === 'ArrowDown' && fits.length) { e.preventDefault(); setListOpen(true); setPick((i) => Math.min(i + 1, fits.length - 1)) }
+    else if (e.key === 'ArrowUp' && fits.length) { e.preventDefault(); setPick((i) => Math.max(i - 1, 0)) }
+    else if (e.key === 'Escape') setListOpen(false)
+  }
+
   // the lines of the supplier's file, each as its own row (the same item may come twice at two prices)
   const addImported = (ls: ImportedLine[]) => {
     const taxFor = (rate: number | null) => rate == null ? null
@@ -334,13 +354,26 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
 
       <Card>
         <div className="flex flex-wrap items-center gap-2 border-b p-3">
-          <div className="relative w-full max-w-md">
+          <div className="relative w-full max-w-xl">
             <ScanBarcode className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input ref={codeRef} value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onCode() } }}
-              className="pl-8" placeholder={catalog.ready ? t('Scan the barcode or type the code, then Enter') : t('Loading the items…')} aria-label={t('Barcode or code')} disabled={!editable} />
+            <Input ref={codeRef} value={code} onChange={(e) => { setCode(e.target.value); setListOpen(true) }} onKeyDown={onCodeKey}
+              onFocus={() => setListOpen(true)} onBlur={() => window.setTimeout(() => setListOpen(false), 150)}
+              className="pl-8" placeholder={catalog.ready ? t('Scan the barcode, or type the code or the name') : t('Loading the items…')} aria-label={t('Barcode, code or name')}
+              role="combobox" aria-expanded={listOpen && fits.length > 0} aria-controls="pi-fits" aria-autocomplete="list" disabled={!editable} />
+            {listOpen && fits.length > 0 && (
+              <ul id="pi-fits" role="listbox" className="absolute inset-x-0 top-full z-30 mt-1 max-h-80 overflow-y-auto rounded-md border bg-popover p-1 text-[13px] shadow-md">
+                {fits.map((it, i) => (
+                  <li key={it.variant_id} role="option" aria-selected={i === pick}
+                    className={cn('flex cursor-pointer items-center gap-3 rounded-sm px-2 py-1.5', i === pick && 'bg-accent')}
+                    onMouseEnter={() => setPick(i)} onMouseDown={(e) => { e.preventDefault(); take(it.variant_id) }}>
+                    <span className="min-w-0 flex-1 truncate font-medium">{it.name}</span>
+                    <span className="shrink-0 text-[11px] text-muted-foreground">{[it.sku, it.barcodes[0]?.[0]].filter(Boolean).join(' · ')}</span>
+                    {it.cost > 0 && <span className="w-16 shrink-0 text-right tabular-nums text-muted-foreground">{fmt(it.cost, 2)}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          <div className="w-72"><SearchSelect value={null} onChange={(v) => v && addItem(v)} placeholder={t('…or search by name')}
-            options={itemOptions} /></div>
           {editable && <Button variant="outline" onClick={() => setImporting(true)} disabled={!catalog.ready} title={t('Paste the lines from Excel, or choose the supplier’s file')}>
             <FileSpreadsheet /> {t('From Excel')}</Button>}
           <div className="ml-auto flex flex-wrap items-center gap-1.5">
