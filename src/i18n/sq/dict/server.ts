@@ -726,6 +726,7 @@ export default {
   "Sub-tasks go one level deep": "Nën-detyrat kanë vetëm një nivel",
   "Only a manager gives tasks to other people": "Detyra të tjerëve u jep vetëm menaxheri",
   "Your morning check is ready": "Kontrolli yt i mëngjesit është gati",
+  "The assistant is not available right now; try again in a while": "Asistenti nuk është në dispozicion tani; provoni pak më vonë",
   "It could not be done": "Nuk u bë dot",
   "Choose an hour between 5 and 12": "Zgjidhni një orë nga 5 deri në 12",
   "Not found": "Nuk u gjet",

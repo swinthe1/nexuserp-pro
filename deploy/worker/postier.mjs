@@ -533,7 +533,11 @@ async function answer(job) {
     log('assistant answered', tools.map((t) => t.name).join(',') || '-', usage.input + '/' + usage.output)
   } catch (e) {
     log('assistant failed', String(e.message || e))
-    await rpc('assistant_done', { p_job: job.job, p_ok: false, p_error: String(e.message || e), p_tools: tools, p_input_tokens: usage.input, p_output_tokens: usage.output })
+    // the client sees a plain message; the AI service's own words (credits, keys, limits) stay in the log
+    const m = String(e.message || e)
+    const plain = /credit balance|anthropic|api[ _-]?key|x-api-key|rate.?limit|overloaded|authentic|billing|quota|\b(401|403|429|5\d\d)\b|fetch failed|ECONN|timed? ?out|network/i.test(m)
+      ? 'The assistant is not available right now; try again in a while' : m
+    await rpc('assistant_done', { p_job: job.job, p_ok: false, p_error: plain, p_tools: tools, p_input_tokens: usage.input, p_output_tokens: usage.output })
       .catch(() => {})
   }
 }
