@@ -5,8 +5,7 @@ import { DocumentActions } from '@/components/document-actions'
 import { AdvanceButton, AdvancesCard } from '../components/advances'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
-  Ban, Check, CheckCheck, FileText, PackageCheck, PackageOpen, Receipt, Repeat, RotateCcw, Send, ShoppingCart, Trash2, Truck, Undo2, X,
-} from 'lucide-react'
+  Ban, Check, CheckCheck, FileText, PackageCheck, PackageOpen, Receipt, Repeat, RotateCcw, Send, ShoppingCart, Trash2, Truck, Redo2, Undo2, X, } from 'lucide-react'
 import * as React from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -35,7 +34,7 @@ import type { Tables } from '@/lib/database.types'
 import { cn, formatDate, formatMoney, formatQty, num, todayISO } from '@/lib/utils'
 import { useCurrencies, useWarehouses } from '@/features/inventory/api'
 import {
-  useConfirmOrder, useConvertQuote, useCreateDelivery, useCreateInvoice, useCreditNote, useCustomers, useDeleteSalesDocument,
+  useConfirmOrder, useConvertQuote, useCreateDelivery, useCreateInvoice, useCreditNote, useCustomers, useDebitNote, useDeleteSalesDocument,
   useMembers, useOrderAvailability, usePaymentTerms, usePostInvoice, usePriceLists, useReserveOrder, useSalesDocument,
   useSaveSalesDocument, useSetStatus, type SalesKind,
 } from '../api'
@@ -95,9 +94,11 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
   const postInvoice = usePostInvoice()
   const guard = useGuard()
   const creditNote = useCreditNote()
+  const debitNote = useDebitNote()
   const [repeat, setRepeat] = React.useState(false)
 
   const isCredit = kind === 'invoices' && doc?.document_type === 'credit_note'
+  const isDebit = kind === 'invoices' && !!doc?.is_debit_note
   const editable = (!doc || doc.status === 'draft') && can(cfg.writePerm)
   const isOpenOrder = kind === 'orders' && !!doc && ['confirmed', 'partially_delivered'].includes(doc.status)
   const availability = useOrderAvailability(doc?.id, isOpenOrder)
@@ -257,6 +258,8 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
   if (kind === 'invoices' && doc) {
     if (doc.status === 'posted' && !isCredit) {
       actions.push(<Button key="cn" variant="outline" loading={creditNote.isPending} onClick={async () => { const cn = await creditNote.mutateAsync(doc.id); toast.success(t('Draft credit note created — adjust the lines, then post it')); navigate(`/sales/invoices/${cn}`) }}><Undo2 /> {t('Credit note')}</Button>)
+      if (!isDebit && can('invoicing.write')) actions.push(<Button key="dn" variant="outline" loading={debitNote.isPending} title={t('Add to this invoice: a price agreed higher, transport billed later, interest')}
+        onClick={async () => { const dn = await debitNote.mutateAsync(doc.id); toast.success(t('Draft debit note created: write what is added, then post it')); navigate(`/sales/invoices/${dn}`) }}><Redo2 /> {t('Debit note')}</Button>)
     }
     if (!isCredit && can('invoicing.write')) {
       actions.push(<Button key="repeat" variant="outline" onClick={() => setRepeat(true)}><Repeat /> {t('Repeat')}</Button>)
@@ -364,7 +367,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
       <div className="mx-auto max-w-6xl">
         <PageHeader
           back={{ href: cfg.list, label: kind === 'quotes' ? t('Quotes') : kind === 'orders' ? t('Sales orders') : t('Invoices') }}
-          title={<>{isCredit && <span className="mr-2 text-muted-foreground">{t('Credit note')}</span>}{kind === 'invoices' && doc?.is_advance && <span className="mr-2 text-muted-foreground">{t('Advance invoice')}</span>}{title}</>}
+          title={<>{isCredit && <span className="mr-2 text-muted-foreground">{t('Credit note')}</span>}{isDebit && <span className="mr-2 text-muted-foreground">{t('Debit note')}</span>}{kind === 'invoices' && doc?.is_advance && <span className="mr-2 text-muted-foreground">{t('Advance invoice')}</span>}{title}</>}
           meta={doc && <>
             <StatusBadge status={doc.status} />
             {kind === 'orders' && doc.status !== 'draft' && <StatusBadge status={doc.invoice_status as string} />}

@@ -69,7 +69,7 @@ export const PROC_LINES = { requisitions: 'purchase_requisition_lines', orders: 
 const LIST_SELECT: Record<ProcKind, string> = {
   requisitions: 'id, number, status, created_at, required_date, estimated_total, justification, warehouse:warehouses(name), requester:profiles!purchase_requisitions_requester_profile_fkey(full_name), lines:purchase_requisition_lines(count)',
   orders: 'id, number, vendor_id, status, billing_status, order_date, expected_date, promised_date, confirmed_at, currency_code, total, total_base, vendor_reference, vendor:business_partners(name), warehouse:warehouses(name), buyer:profiles!purchase_orders_buyer_profile_fkey(full_name), lines:purchase_order_lines(quantity, qty_received, qty_billed)',
-  bills: 'id, number, vendor_id, document_type, status, payment_status, match_status, vendor_invoice_number, bill_date, due_date, currency_code, total, total_base, amount_due, vendor:business_partners(name), order:purchase_orders(number)',
+  bills: 'id, number, vendor_id, document_type, is_debit_note, status, payment_status, match_status, vendor_invoice_number, bill_date, due_date, currency_code, total, total_base, amount_due, vendor:business_partners(name), order:purchase_orders(number)',
 }
 const DATE_COL: Record<ProcKind, string> = { requisitions: 'created_at', orders: 'order_date', bills: 'bill_date' }
 
@@ -108,7 +108,7 @@ export function useProcDocument<T>(kind: ProcKind, id: string | undefined) {
         row.original = (await supabase.from('vendor_bills').select('id, number').eq('id', row.original_bill_id as string).maybeSingle()).data
       }
       if (kind === 'bills') {
-        row.credits = (await supabase.from('vendor_bills').select('id, number, status, total').eq('original_bill_id', id!).is('deleted_at', null)).data ?? []
+        row.credits = (await supabase.from('vendor_bills').select('id, number, status, total, is_debit_note').eq('original_bill_id', id!).is('deleted_at', null)).data ?? []
       }
       return row as unknown as T
     },
@@ -167,6 +167,7 @@ export const usePostBill = () => useRpcAction(async (a: { id: string; overrideRe
   unwrap(await supabase.rpc('post_vendor_bill', { p_id: a.id, p_override_reason: a.overrideReason || undefined })) as unknown as
   { status: string; match_status: string; capitalized_variance: number; expensed_variance: number })
 export const useVendorCredit = () => useRpcAction(async (id: string) => unwrap(await supabase.rpc('create_vendor_credit', { p_bill: id })) as string)
+export const useVendorDebit = () => useRpcAction(async ({ id, number }: { id: string; number: string }) => unwrap(await supabase.rpc('create_vendor_debit', { p_bill: id, p_number: number })) as string)
 
 export interface MatchLine { line_no: number; status: string; qty_variance: number | null; price_variance: number | null; expected_qty?: number | null; po_net_price?: number | null }
 export interface MatchResult { status: string; qty_tolerance_pct?: number; price_tolerance_pct?: number; lines: MatchLine[] }

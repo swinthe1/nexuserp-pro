@@ -193,7 +193,7 @@ export const SALES_LINES = {
 const LIST_SELECT: Record<SalesKind, string> = {
   quotes: 'id, number, status, quote_date, valid_until, currency_code, total, total_base, partner:business_partners(name), salesperson:profiles!sales_quotes_salesperson_profile_fkey(full_name)',
   orders: 'id, number, status, invoice_status, order_date, requested_date, currency_code, total, total_base, channel, partner:business_partners(name), salesperson:profiles!sales_orders_salesperson_profile_fkey(full_name), lines:sales_order_lines(quantity, qty_delivered, qty_reserved)',
-  invoices: 'id, number, document_type, status, payment_status, fiscal_status, invoice_date, due_date, currency_code, total, total_base, amount_due, partner:business_partners(name), order:sales_orders(number)',
+  invoices: 'id, number, document_type, is_debit_note, status, payment_status, fiscal_status, invoice_date, due_date, currency_code, total, total_base, amount_due, partner:business_partners(name), order:sales_orders(number)',
   deliveries: 'id, number, status, scheduled_date, done_at, total_cost, partner:business_partners(name), order:sales_orders(number), warehouse:warehouses(name), lines:delivery_lines(quantity)',
 }
 const DATE_COL: Record<SalesKind, string> = { quotes: 'quote_date', orders: 'order_date', invoices: 'invoice_date', deliveries: 'scheduled_date' }
@@ -296,6 +296,7 @@ export const usePostDelivery = () => useRpcAction(async (id: string) => unwrap(a
 export const useCreateInvoice = () => useRpcAction(async (id: string) => unwrap(await supabase.rpc('create_invoice_from_order', { p_order: id })))
 export const usePostInvoice = () => useRpcAction(async (id: string) => unwrap(await supabase.rpc('post_sales_invoice', { p_id: id })) as { total: number; fiscal_status: string })
 export const useCreditNote = () => useRpcAction(async (id: string) => unwrap(await supabase.rpc('create_credit_note', { p_invoice: id })))
+export const useDebitNote = () => useRpcAction(async (id: string) => unwrap(await supabase.rpc('create_debit_note', { p_invoice: id })) as string)
 
 export function useOrderAvailability(orderId: string | undefined, enabled: boolean) {
   const { companyId } = useCompany()

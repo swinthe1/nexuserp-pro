@@ -11,7 +11,7 @@ export type Side = 'customer' | 'vendor'
 export type CardRow = { date: string; entry: string; source_type: string | null; source_id: string | null; document: string; reference: string | null; memo: string | null
   due: string | null; debit: number; credit: number; balance: number }
 export type PartnerCard = Common & { side: Side; from: string; to: string; opening: number; debit: number; credit: number; closing: number; rows: CardRow[] }
-export type OpenRow = { kind: 'invoice' | 'credit_note' | 'advance'; id: string; number: string; reference: string | null; date: string; due: string | null; currency: string; total: number; open: number; late: boolean }
+export type OpenRow = { kind: 'invoice' | 'credit_note' | 'debit_note' | 'advance'; id: string; number: string; reference: string | null; date: string; due: string | null; currency: string; total: number; open: number; late: boolean }
 export type OpenItems = Common & { side: Side; date: string; rows: OpenRow[]; totals: Record<string, number> }
 export type CompPrint = Common & { number: string; date: string; status: string; amount: number; notes: string | null; cancel_reason: string | null
   invoices: { number: string; date: string; total: number; amount: number }[]; bills: { number: string; reference: string | null; date: string; total: number; amount: number }[] }
@@ -30,7 +30,7 @@ export const fetchItemCard = async (variant: string, warehouse: string | null, f
   unwrap(await supabase.rpc('item_card', { p_variant: variant, p_warehouse: warehouse as string, p_from: from, p_to: to })) as unknown as ItemCard
 
 export const SOURCE: Record<string, string> = {
-  sales_invoice: msg('Invoice'), credit_note: msg('Credit note'), customer_payment: msg('Receipt|payment'), vendor_payment: msg('Payment'),
+  sales_invoice: msg('Invoice'), credit_note: msg('Credit note'), debit_note: msg('Debit note'), vendor_debit: msg('Supplier’s debit note'), customer_payment: msg('Receipt|payment'), vendor_payment: msg('Payment'),
   vendor_bill: msg('Vendor bill'), vendor_credit: msg('Vendor credit'), compensation: msg('Compensation'), pos_order: msg('POS receipt'),
 }
 export const MOVEMENT: Record<string, string> = {
@@ -65,7 +65,7 @@ export function partnerCardStatement(c: PartnerCard): Statement {
 
 export function openItemsStatement(o: OpenItems): Statement {
   const dec = o.company.decimals ?? 2
-  const kind = (k: OpenRow['kind']) => k === 'advance' ? t('Advance / unallocated payment') : k === 'credit_note' ? t('Credit note') : t('Invoice')
+  const kind = (k: OpenRow['kind']) => k === 'advance' ? t('Advance / unallocated payment') : k === 'credit_note' ? t('Credit note') : k === 'debit_note' ? t('Debit note') : t('Invoice')
   const totals = Object.entries(o.totals).map(([cur, v]) => [t('Total open'), `${nf(v, dec)} ${cur}`, true] as [string, string, boolean])
   return {
     title: t('Statement of open items'), subtitle: t('at {date}', { date: formatDate(o.date) }),

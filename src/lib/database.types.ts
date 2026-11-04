@@ -10856,6 +10856,7 @@ export type Database = {
           is_opening: boolean
           recurring_id: string | null
           is_advance: boolean
+          is_debit_note: boolean
         }
         Insert: {
           id?: string
@@ -10895,6 +10896,7 @@ export type Database = {
           is_opening?: boolean
           recurring_id?: string | null
           is_advance?: boolean
+          is_debit_note?: boolean
         }
         Update: {
           id?: string
@@ -10934,6 +10936,7 @@ export type Database = {
           is_opening?: boolean
           recurring_id?: string | null
           is_advance?: boolean
+          is_debit_note?: boolean
         }
         Relationships: [
           { foreignKeyName: "sales_invoices_company_id_billing_address_id_fkey"; columns: ["company_id", "billing_address_id"]; isOneToOne: false; referencedRelation: "partner_addresses"; referencedColumns: ["company_id", "id"] },
@@ -13511,6 +13514,7 @@ export type Database = {
           price_ok_at: string | null
           price_ok_reason: string | null
           price_ok_prices: Json | null
+          is_debit_note: boolean
         }
         Insert: {
           id?: string
@@ -13557,6 +13561,7 @@ export type Database = {
           price_ok_at?: string | null
           price_ok_reason?: string | null
           price_ok_prices?: Json | null
+          is_debit_note?: boolean
         }
         Update: {
           id?: string
@@ -13603,6 +13608,7 @@ export type Database = {
           price_ok_at?: string | null
           price_ok_reason?: string | null
           price_ok_prices?: Json | null
+          is_debit_note?: boolean
         }
         Relationships: [
           { foreignKeyName: "vendor_bills_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -15922,6 +15928,12 @@ export type Database = {
         }
         Returns: string
       }
+      create_debit_note: {
+        Args: {
+          p_invoice: string
+        }
+        Returns: string
+      }
       create_delivery_from_order: {
         Args: {
           p_order: string
@@ -16022,6 +16034,13 @@ export type Database = {
       create_vendor_credit: {
         Args: {
           p_bill: string
+        }
+        Returns: string
+      }
+      create_vendor_debit: {
+        Args: {
+          p_bill: string
+          p_number: string
         }
         Returns: string
       }

@@ -145,7 +145,7 @@ function OpenTab({ partnerId, side }: { partnerId: string; side: Side }) {
               <TableBody>
                 {o.rows.map((r) => (
                   <TableRow key={`${r.kind}-${r.id}`}>
-                    <TableCell>{r.kind === 'advance' ? t('Advance / unallocated payment') : r.kind === 'credit_note' ? t('Credit note') : t('Invoice')}</TableCell>
+                    <TableCell>{r.kind === 'advance' ? t('Advance / unallocated payment') : r.kind === 'credit_note' ? t('Credit note') : r.kind === 'debit_note' ? t('Debit note') : t('Invoice')}</TableCell>
                     <TableCell className="whitespace-nowrap">{r.number}</TableCell>
                     <TableCell className="text-muted-foreground">{r.reference}</TableCell>
                     <TableCell className="whitespace-nowrap">{formatDate(r.date)}</TableCell>

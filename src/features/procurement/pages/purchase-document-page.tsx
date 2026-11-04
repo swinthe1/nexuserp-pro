@@ -1,8 +1,7 @@
 import { DocumentActions } from '@/components/document-actions'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
-  Ban, CheckCheck, ClipboardCheck, FileText, PackageCheck, PhoneCall, Receipt, Repeat, Send, ShieldAlert, Tag, Trash2, Undo2,
-} from 'lucide-react'
+  Ban, CheckCheck, ClipboardCheck, FileText, PackageCheck, PhoneCall, Receipt, Repeat, Send, ShieldAlert, Tag, Trash2, Undo2, Redo2 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import * as React from 'react'
 import { useForm, useWatch } from 'react-hook-form'
@@ -36,7 +35,7 @@ import { useCurrencies, useWarehouses } from '@/features/inventory/api'
 import { useMembers, usePaymentTerms } from '@/features/sales/api'
 import {
   useActiveVendors, useBillOrder, usePurchasableVariants, useDeleteProcDocument, useMatchBill, usePostBill, useProcDocument, useReceiveOrder,
-  useSaveProcDocument, useSetProcStatus, useSubmitPurchaseOrder, useVendorCredit, type MatchLine,
+  useSaveProcDocument, useSetProcStatus, useSubmitPurchaseOrder, useVendorCredit, useVendorDebit, type MatchLine,
 } from '../api'
 import { WithholdingCard } from '../components/withholding-card'
 import { ConfirmOrderDialog, OrderRestDialog, isLate, poDue } from '../components/order-follow'
@@ -446,8 +445,11 @@ function BillForm({ doc }: { doc?: BillDoc }) {
   const matchBill = useMatchBill()
   const post = usePostBill()
   const credit = useVendorCredit()
+  const debit = useVendorDebit()
+  const [debitNo, setDebitNo] = React.useState<string | null>(null)
   const [overrideOpen, setOverrideOpen] = React.useState(false)
   const isCredit = doc?.document_type === 'vendor_credit'
+  const isDebit = !!doc?.is_debit_note
   const editable = (!doc || doc.status === 'draft') && can('invoicing.write')
   const canOverride = can('invoicing.write') && (can('procurement.approve') || can('invoicing.approve'))
 
@@ -540,6 +542,8 @@ function BillForm({ doc }: { doc?: BillDoc }) {
     actions.push(<Button key="cn" variant="outline" loading={credit.isPending}
       onClick={async () => { const id = await credit.mutateAsync(doc.id); toast.success(t('Draft credit note created — adjust it to the vendor’s document, then post it')); navigate(`/procurement/bills/${id}`) }}>
       <Undo2 /> {t('Record credit note')}</Button>)
+    if (!isDebit) actions.push(<Button key="dn" variant="outline" onClick={() => setDebitNo('')} title={t('The supplier adds to this bill: a price difference, transport, interest')}>
+      <Redo2 /> {t('Record debit note')}</Button>)
   }
   if (doc && doc.status === 'posted' && !isCredit && Number(doc.amount_due) > 0 && can('invoicing.write')) {
     actions.push(<Button key="pay" asChild><Link to={`/finance/payments/new?type=vendor_payment&partner=${doc.vendor_id}&doc=${doc.id}`}>{t('Pay this bill')}</Link></Button>)
@@ -604,7 +608,7 @@ function BillForm({ doc }: { doc?: BillDoc }) {
       <div className="mx-auto max-w-6xl">
         <PageHeader
           back={{ href: '/procurement/bills', label: t('Vendor bills') }}
-          title={<>{isCredit && <span className="mr-2 text-muted-foreground">{t('Credit note')}</span>}{doc ? doc.number : t('New vendor bill')}</>}
+          title={<>{isCredit && <span className="mr-2 text-muted-foreground">{t('Credit note')}</span>}{isDebit && <span className="mr-2 text-muted-foreground">{t('Debit note')}</span>}{doc ? doc.number : t('New vendor bill')}</>}
           meta={doc && <>
             <StatusBadge status={doc.status} />
             {doc.status === 'posted' && <StatusBadge status={doc.payment_status} />}
@@ -635,6 +639,21 @@ function BillForm({ doc }: { doc?: BillDoc }) {
           </Tabs>
         ) : body}
         {doc && <OverrideDialog open={overrideOpen} onOpenChange={setOverrideOpen} onConfirm={doPost} />}
+        {doc && debitNo != null && (
+          <Dialog open onOpenChange={(o) => !o && setDebitNo(null)}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader><DialogTitle>{t('Record the supplier’s debit note')}</DialogTitle>
+                <DialogDescription>{t('A draft for {vendor}, naming {number}; you write its lines as on the supplier’s document.', { vendor: doc.vendor?.name ?? '', number: doc.number })}</DialogDescription></DialogHeader>
+              <form className="grid gap-3" onSubmit={async (e) => { e.preventDefault(); const id = await debit.mutateAsync({ id: doc.id, number: debitNo }); setDebitNo(null)
+                toast.success(t('Draft debit note created: write its lines, then post it')); navigate(`/procurement/bills/${id}`) }}>
+                <div className="grid gap-1.5"><Label htmlFor="dn-no">{t('Number of the supplier’s debit note')}</Label>
+                  <Input id="dn-no" autoFocus value={debitNo} onChange={(e) => setDebitNo(e.target.value)} /></div>
+                <DialogFooter><Button type="button" variant="ghost" onClick={() => setDebitNo(null)}>{t('Cancel')}</Button>
+                  <Button type="submit" loading={debit.isPending} disabled={!debitNo.trim()}>{t('Create the draft')}</Button></DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </Form>
   )
@@ -683,7 +702,7 @@ function BillSidePanel({ doc, currency, base, matchStatus, vendorId }: { doc?: B
             {doc.receipt_id && <DocLink href={`/inventory/receipts/${doc.receipt_id}`} label={t('The goods came in with the receipt')} />}
             {doc.order && <DocLink href={`/procurement/orders/${doc.order.id}`} label={t('Order {number}', { number: doc.order.number })} status={doc.order.status} />}
             {doc.original && <DocLink href={`/procurement/bills/${doc.original.id}`} label={t('Corrects {number}', { number: doc.original.number })} />}
-            {doc.credits?.map((c) => <DocLink key={c.id} href={`/procurement/bills/${c.id}`} label={t('Credit note {number}', { number: c.number })} status={c.status} />)}
+            {doc.credits?.map((c) => <DocLink key={c.id} href={`/procurement/bills/${c.id}`} label={(c as { is_debit_note?: boolean }).is_debit_note ? t('Debit note {number}', { number: c.number }) : t('Credit note {number}', { number: c.number })} status={c.status} />)}
           </div>
         )}
       </CardContent>

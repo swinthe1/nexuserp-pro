@@ -107,7 +107,8 @@ const buildCfg = (): Record<ProcKind, Cfg> => ({
     ],
     columns: (base) => [
       dateCol('bill_date', t('Date')),
-      { accessorKey: 'document_type', header: t('Type'), meta: { label: t('Type') }, cell: ({ getValue }) => getValue() === 'vendor_credit' ? <Badge variant="outline">{t('Credit note')}</Badge> : t('Bill') },
+      { id: 'document_type', accessorFn: (r) => r.is_debit_note ? 'vendor_debit' : r.document_type, header: t('Type'), meta: { label: t('Type'), exportValue: (r) => r.document_type === 'vendor_credit' ? t('Credit note') : r.is_debit_note ? t('Debit note') : t('Bill') },
+        cell: ({ getValue }) => getValue() === 'vendor_credit' ? <Badge variant="outline">{t('Credit note')}</Badge> : getValue() === 'vendor_debit' ? <Badge variant="outline" className="border-amber-500/50">{t('Debit note')}</Badge> : t('Bill') },
       vendorCol(),
       { accessorKey: 'vendor_invoice_number', header: t("Vendor's no."), meta: { label: t('Vendor invoice no.') } },
       { id: 'order', accessorFn: (r) => nm(r.order, 'number'), header: t('Order'), meta: { label: t('Purchase order') }, cell: ({ getValue }) => (getValue() as string) || '—' },

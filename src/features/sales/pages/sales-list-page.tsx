@@ -106,11 +106,12 @@ const CFG: Record<SalesKind, Cfg> = {
     empty: msg('Invoice a delivered order, or invoice a customer directly.'),
     extraFacets: () => [
       { columnId: 'payment_status', title: t('Payment'), options: ['unpaid', 'partially_paid', 'paid', 'overdue'].map((v) => ({ value: v, label: humanize(v) })) },
-      { columnId: 'document_type', title: t('Type'), options: [{ value: 'sales_invoice', label: t('Invoice') }, { value: 'credit_note', label: t('Credit note') }] },
+      { columnId: 'document_type', title: t('Type'), options: [{ value: 'sales_invoice', label: t('Invoice') }, { value: 'credit_note', label: t('Credit note') }, { value: 'debit_note', label: t('Debit note') }] },
     ],
     columns: (base) => [
       dateCol('invoice_date', t('Date')),
-      { accessorKey: 'document_type', filterFn: inFilter, header: t('Type'), meta: { label: t('Type'), exportValue: (r) => r.document_type === 'credit_note' ? t('Credit note') : t('Invoice') }, cell: ({ getValue }) => getValue() === 'credit_note' ? <Badge variant="outline">{t('Credit note')}</Badge> : t('Invoice') },
+      { id: 'document_type', accessorFn: (r) => r.is_debit_note ? 'debit_note' : r.document_type, filterFn: inFilter, header: t('Type'), meta: { label: t('Type'), exportValue: (r) => r.document_type === 'credit_note' ? t('Credit note') : r.is_debit_note ? t('Debit note') : t('Invoice') },
+        cell: ({ getValue }) => getValue() === 'credit_note' ? <Badge variant="outline">{t('Credit note')}</Badge> : getValue() === 'debit_note' ? <Badge variant="outline" className="border-amber-500/50">{t('Debit note')}</Badge> : t('Invoice') },
       customerCol(),
       { id: 'order', accessorFn: (r) => nm(r.order, 'number'), header: t('Order|sales'), meta: { label: t('Sales order') }, cell: ({ getValue }) => (getValue() as string) || '—' },
       {

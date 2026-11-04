@@ -40,7 +40,7 @@ export type PrintLine = {
 }
 export type PrintParty = { name: string; legal_name?: string | null; code?: string | null; tax_number?: string | null; vat_number?: string | null; phone?: string | null; email?: string | null; address?: string | null }
 export type PrintDoc = {
-  kind: 'sales_invoice' | 'advance_invoice' | 'credit_note' | 'sales_quote' | 'proforma' | 'sales_order' | 'delivery' | 'receipt_voucher' | 'payment_voucher' | 'purchase_order' | 'goods_receipt'
+  kind: 'sales_invoice' | 'advance_invoice' | 'credit_note' | 'debit_note' | 'sales_quote' | 'proforma' | 'sales_order' | 'delivery' | 'receipt_voucher' | 'payment_voucher' | 'purchase_order' | 'goods_receipt'
   number: string; date: string; due_date?: string | null; valid_until?: string | null; requested_date?: string | null; expected_date?: string | null
   currency: string; rate?: number; status?: string; notes?: string | null; terms?: string | null; reference?: string | null; payment_term?: string | null
   /** an invoice paid in parts */
@@ -65,7 +65,7 @@ export async function fetchPrintDoc(kind: DocKind, id: string) {
 export const settingsOf = (d: PrintDoc): Required<Omit<PrintSettings, 'footer' | 'texts'>> & PrintSettings => ({ ...PRINT_DEFAULTS, ...(d.company.settings ?? {}) })
 
 const TITLE: Record<PrintDoc['kind'], string> = {
-  sales_invoice: msg('Invoice'), advance_invoice: msg('Advance invoice'), credit_note: msg('Credit note'), sales_quote: msg('Offer'), proforma: msg('Pro forma invoice'),
+  sales_invoice: msg('Invoice'), advance_invoice: msg('Advance invoice'), credit_note: msg('Credit note'), debit_note: msg('Debit note'), sales_quote: msg('Offer'), proforma: msg('Pro forma invoice'),
   sales_order: msg('Order confirmation'), delivery: msg('Delivery note'), receipt_voucher: msg('Cash receipt'), payment_voucher: msg('Payment voucher'),
   purchase_order: msg('Purchase order'), goods_receipt: msg('Goods received note'),
 }
@@ -80,7 +80,7 @@ export const isVoucher = (d: PrintDoc) => d.kind === 'receipt_voucher' || d.kind
 export const showPrices = (d: PrintDoc) => d.kind !== 'delivery' || !!settingsOf(d).delivery_prices
 export const fileName = (d: PrintDoc) => `${docTitle(d)} ${d.number}`.replace(/[\\/:*?"<>|]+/g, '-') + '.pdf'
 /** the key of the per-document text in the settings */
-export const textKey = (d: PrintDoc) => ({ credit_note: 'sales_invoice', advance_invoice: 'sales_invoice', receipt_voucher: 'payment', payment_voucher: 'payment' } as Record<string, string>)[d.kind] ?? d.kind
+export const textKey = (d: PrintDoc) => ({ credit_note: 'sales_invoice', debit_note: 'sales_invoice', advance_invoice: 'sales_invoice', receipt_voucher: 'payment', payment_voucher: 'payment' } as Record<string, string>)[d.kind] ?? d.kind
 
 /* --------------------------------------------------------------- amount in words (Albanian) */
 const ONES = ['zero', 'një', 'dy', 'tre', 'katër', 'pesë', 'gjashtë', 'shtatë', 'tetë', 'nëntë', 'dhjetë', 'njëmbëdhjetë', 'dymbëdhjetë', 'trembëdhjetë',
