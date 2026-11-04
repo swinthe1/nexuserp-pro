@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase'
 /** Most items a person can pin to the top of the menu */
 export const MAX_FAVOURITES = 8
 
-interface Prefs { nav_favourites?: string[]; nav_open?: string[]; dashboard_cards?: Record<string, string[]>; table_columns?: Record<string, TableColumns> }
+interface Prefs { [key: string]: unknown; nav_favourites?: string[]; nav_open?: string[]; dashboard_cards?: Record<string, string[]>; table_columns?: Record<string, TableColumns> }
 /** the columns a person hid on a table of lines, and their order */
 export interface TableColumns { order: string[]; hidden: string[] }
 
@@ -30,7 +30,7 @@ function useSavePref() {
   const { user } = useAuth()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ key, value }: { key: keyof Prefs; value: unknown }) => {
+    mutationFn: async ({ key, value }: { key: string; value: unknown }) => {
       const { error } = await supabase.rpc('save_my_preference', { p_key: key, p_value: value as unknown as Json })
       if (error) throw error
     },
@@ -130,3 +130,17 @@ export function useTableColumns(table: string) {
   }, [all, table, save])
   return { cols, set, loaded: prefs.isSuccess }
 }
+
+/**
+ * One preference of the person's own, on their profile (every device the same). The key is letters and
+ * underscores; undefined until the profile has loaded.
+ */
+export function useProfilePref<T>(key: string | null) {
+  const prefs = useMyPrefs()
+  const save = useSavePref()
+  const value = key ? (prefs.data?.[key] as T | undefined) ?? null : null
+  const set = React.useCallback((next: T | null) => { if (key) save.mutate({ key, value: next }) }, [key, save])
+  return { value, set, loaded: prefs.isSuccess }
+}
+/** the profile key for a list's own layout */
+export const tableLayoutKey = (tableKey: string) => `tl_${tableKey.toLowerCase().replace(/[^a-z]+/g, '_')}`.slice(0, 40)

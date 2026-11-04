@@ -1,7 +1,7 @@
 import {
   flexRender, getCoreRowModel, getFacetedRowModel, getFacetedUniqueValues, getFilteredRowModel, getPaginationRowModel,
   getSortedRowModel, useReactTable,
-  type ColumnDef, type ColumnFiltersState, type FilterFn, type PaginationState, type Row, type RowSelectionState,
+  type ColumnDef, type ColumnFiltersState, type ColumnOrderState, type ColumnSizingState, type FilterFn, type PaginationState, type Row, type RowSelectionState,
   type SortingState, type Table as TanTable, type VisibilityState,
 } from '@tanstack/react-table'
 import { Download, FileSpreadsheet, FileText, MoreHorizontal, Search, X } from 'lucide-react'
@@ -21,7 +21,10 @@ import { usePhone } from '@/hooks/use-phone'
 import { FacetedFilter } from './faceted-filter'
 import { Pagination } from './pagination'
 import { SavedViews, useSavedViews } from './saved-views'
-import type { BulkActionsRender, FacetedFilterDef, TableViewConfig } from './types'
+import type { BulkActionsRender, FacetedFilterDef, TableLayout, TableViewConfig } from './types'
+import { ColumnTools, RuleChips } from './column-tools'
+import { COLOURS, gettersOf, kindOf, ruleIsSet, test, type Colour, type ColumnStyle, type Getter, type Kind, type Rule } from './rules'
+import { tableLayoutKey, useProfilePref } from '@/components/layout/nav-prefs'
 import { ViewOptions } from './view-options'
 
 /** Filter fn for faceted (multi-value) filters */
@@ -137,11 +140,44 @@ export function DataTable<T>({
   React.useEffect(() => {
     if (storageKey) try { localStorage.setItem(storageKey, JSON.stringify(columnVisibility)) } catch { /* ignore */ }
   }, [storageKey, columnVisibility])
+  // the filters on any column, the order and width of the columns, their colours
+  const [rules, setRules] = React.useState<Rule[]>([])
+  const [columnOrder, setColumnOrder] = React.useState<ColumnOrderState>([])
+  const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>({})
+  const [styles, setStyles] = React.useState<Record<string, ColumnStyle>>({})
+  // the layout is the person's own, on their profile: read once, written a moment after each change
+  const layout = useProfilePref<TableLayout>(tableKey ? tableLayoutKey(tableKey) : null)
+  const layoutRead = React.useRef(false)
+  React.useEffect(() => {
+    if (layoutRead.current || !layout.loaded) return
+    layoutRead.current = true
+    const l = layout.value
+    if (!l) return
+    if (l.order) setColumnOrder(l.order)
+    if (l.sizing) setColumnSizing(l.sizing)
+    if (l.visibility) setColumnVisibility((v) => ({ ...v, ...l.visibility }))
+    if (l.styles) setStyles(l.styles)
+  }, [layout.loaded, layout.value])
+  React.useEffect(() => {
+    if (!tableKey || !layoutRead.current) return
+    const id = window.setTimeout(() => layout.set({ order: columnOrder.length ? columnOrder : undefined, sizing: Object.keys(columnSizing).length ? columnSizing : undefined,
+      visibility: columnVisibility, styles: Object.keys(styles).length ? styles : undefined }), 700)
+    return () => window.clearTimeout(id)
+  }, [columnOrder, columnSizing, columnVisibility, styles]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const getters = React.useMemo(() => gettersOf(columns as ColumnDef<never, unknown>[], () => ''), [columns])
+  const getterById = React.useMemo(() => new Map(getters.map((g) => [g.id, g])), [getters])
+  const kinds = React.useMemo(() => new Map<string, Kind>(getters.map((g) => [g.id, kindOf(g, data ?? [])])), [getters, data])
+  const liveRules = React.useMemo(() => rules.filter((r) => getterById.has(r.col) && ruleIsSet(r)), [rules, getterById])
+  const setRule = (col: string, r: Rule | null) => { setRules((rs) => [...rs.filter((x) => x.col !== col), ...(r ? [r] : [])]); setPagination((p) => ({ ...p, pageIndex: 0 })) }
 
   // the list's search box forgives (lib/fuzzy): typos, ë/ç, words in any order, across every column
   const deferredSearch = React.useDeferredValue(globalFilter)
-  const shown = React.useMemo(() => (server || !deferredSearch.trim() || !data ? data : fuzzyFind(data as (T & object)[], deferredSearch, rowSearchText)),
-    [server, data, deferredSearch])
+  const shown = React.useMemo(() => {
+    if (server || !data) return data
+    const kept = liveRules.length ? data.filter((row) => liveRules.every((r) => test(r, getterById.get(r.col)!, kinds.get(r.col) ?? 'text', row))) : data
+    return deferredSearch.trim() ? fuzzyFind(kept as (T & object)[], deferredSearch, rowSearchText) : kept
+  }, [server, data, deferredSearch, liveRules, getterById, kinds])
 
   const table = useReactTable<T>({
     data: shown ?? [],
@@ -155,7 +191,13 @@ export function DataTable<T>({
       pagination: server ? server.pagination : pagination,
       rowSelection,
       columnVisibility,
+      columnOrder,
+      columnSizing,
     },
+    enableColumnResizing: true,
+    columnResizeMode: 'onChange',
+    onColumnOrderChange: setColumnOrder,
+    onColumnSizingChange: setColumnSizing,
     manualPagination: !!server,
     manualSorting: !!server,
     manualFiltering: !!server,
@@ -192,6 +234,10 @@ export function DataTable<T>({
     table.setColumnFilters(c.columnFilters ?? [])
     table.setGlobalFilter(c.globalFilter ?? '')
     if (c.pageSize) table.setPageSize(c.pageSize)
+    setRules(c.rules ?? [])
+    if (c.columnOrder) setColumnOrder(c.columnOrder)
+    if (c.columnSizing) setColumnSizing(c.columnSizing)
+    if (c.styles) setStyles(c.styles)
   }, [table])
   React.useEffect(() => {
     if (appliedDefault.current || !views.data) return
@@ -202,7 +248,32 @@ export function DataTable<T>({
 
   const state = table.getState()
   // "nothing matches these filters" only when there is something to filter; an empty list says how to start
-  const filtered = (!!state.globalFilter || state.columnFilters.length > 0) && (server ? true : (data?.length ?? 0) > 0)
+  const filtered = (!!state.globalFilter || state.columnFilters.length > 0 || liveRules.length > 0) && (server ? true : (data?.length ?? 0) > 0)
+  const clearAll = () => { table.resetColumnFilters(); table.setGlobalFilter(''); setRules([]) }
+  // a column dragged onto another takes its place
+  const [dragCol, setDragCol] = React.useState<string | null>(null)
+  const dropCol = (to: string) => {
+    const from = dragCol; setDragCol(null)
+    if (!from || from === to) return
+    const ids = table.getAllLeafColumns().map((c) => c.id)
+    const cur = columnOrder.length ? [...columnOrder.filter((id) => ids.includes(id)), ...ids.filter((id) => !columnOrder.includes(id))] : ids
+    const o = cur.filter((id) => id !== from)
+    o.splice(o.indexOf(to) + (cur.indexOf(from) < cur.indexOf(to) ? 1 : 0), 0, from)
+    setColumnOrder(o)
+  }
+  // the colours of a row: the column's own, or the first rule that fits (a "whole row" rule colours every cell)
+  const paint = (row: T) => {
+    let rowColour: Colour | undefined
+    const cells: Record<string, { colour?: Colour; bold?: boolean }> = {}
+    for (const [col, st] of Object.entries(styles)) {
+      const g = getterById.get(col); if (!g) continue
+      const hit = st.when?.find((w) => ruleIsSet(w) && test(w, g, kinds.get(col) ?? 'text', row))
+      if (hit?.row) rowColour ??= hit.colour
+      cells[col] = { colour: hit && !hit.row ? hit.colour : st.colour, bold: st.bold }
+    }
+    return { rowColour, cells }
+  }
+  const labelled = React.useMemo(() => new Map(getters.map((g) => [g.id, { ...g, label: columnLabel(table, g.id) || g.id }])), [getters, table])
   const selectedRows = table.getSelectedRowModel().rows
   const rowCount = server ? server.rowCount : table.getFilteredRowModel().rows.length
   const visibleCols = table.getVisibleLeafColumns().length
@@ -250,7 +321,7 @@ export function DataTable<T>({
           return col ? <FacetedFilter key={f.columnId} column={col} title={f.title} options={f.options} /> : null
         })}
         {filtered && (
-          <Button variant="ghost" size="sm" onClick={() => { table.resetColumnFilters(); table.setGlobalFilter('') }}>
+          <Button variant="ghost" size="sm" onClick={() => clearAll()}>
             {t('Reset')} <X />
           </Button>
         )}
@@ -263,6 +334,7 @@ export function DataTable<T>({
               current={() => ({
                 columnVisibility: state.columnVisibility, sorting: state.sorting, columnFilters: state.columnFilters,
                 globalFilter: state.globalFilter, pageSize: state.pagination.pageSize,
+                rules: liveRules, columnOrder, columnSizing, styles,
               })}
             />
           )}
@@ -280,6 +352,7 @@ export function DataTable<T>({
         </div>
       </div>
 
+      <RuleChips rules={liveRules} getters={labelled} onRemove={(col) => setRule(col, null)} onClear={() => setRules([])} />
       {/* a list that opens filtered says so, so nobody thinks records are missing */}
       {state.columnFilters.length > 0 && !isLoading && (
         <div className="-mt-1 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
@@ -300,7 +373,7 @@ export function DataTable<T>({
         <PhoneCards table={table} isLoading={isLoading} error={error} onRowClick={onRowClick} selectable={!!bulkActions}
           emptyNode={filtered ? (
             <EmptyState compact title={t('Nothing matches these filters')} description={t('Clear the search or filters to see everything.')}
-              action={<Button variant="outline" size="sm" onClick={() => { table.resetColumnFilters(); table.setGlobalFilter('') }}>{t('Clear filters')}</Button>} />
+              action={<Button variant="outline" size="sm" onClick={() => clearAll()}>{t('Clear filters')}</Button>} />
           ) : (
             <EmptyState compact title={empty?.title ?? t('Nothing here yet')} description={empty?.description} action={empty?.action} />
           )}
@@ -311,11 +384,32 @@ export function DataTable<T>({
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
               <TableRow key={hg.id} className="hover:bg-transparent">
-                {hg.headers.map((h) => (
-                  <TableHead key={h.id} className={cn(h.column.columnDef.meta?.align === 'right' && 'text-right', h.column.columnDef.meta?.className)}>
-                    {h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext())}
-                  </TableHead>
-                ))}
+                {hg.headers.map((h) => {
+                  const g = labelled.get(h.column.id)
+                  const right = h.column.columnDef.meta?.align === 'right'
+                  const sized = columnSizing[h.column.id]
+                  return (
+                    <TableHead key={h.id} style={sized ? { width: sized, minWidth: sized, maxWidth: sized } : undefined}
+                      className={cn('group/th relative', right && 'text-right', h.column.columnDef.meta?.className, dragCol && dragCol !== h.column.id && 'data-[over=true]:bg-accent')}
+                      draggable={h.column.id !== '_select'} onDragStart={(e) => { if ((e.target as HTMLElement).closest('[data-resize]')) { e.preventDefault(); return } setDragCol(h.column.id); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', h.column.id) }}
+                      onDragOver={(e) => { if (dragCol) { e.preventDefault(); (e.currentTarget as HTMLElement).dataset.over = 'true' } }}
+                      onDragLeave={(e) => { delete (e.currentTarget as HTMLElement).dataset.over }}
+                      onDrop={(e) => { e.preventDefault(); delete (e.currentTarget as HTMLElement).dataset.over; dropCol(h.column.id) }} onDragEnd={() => setDragCol(null)}>
+                      <div className={cn('flex items-center gap-1', right && 'justify-end')}>
+                        {h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext())}
+                        {g && <ColumnTools getter={g} kind={kinds.get(g.id) ?? 'text'} filterable={!server}
+                          rule={rules.find((r) => r.col === g.id) ?? null} onRule={(r) => setRule(g.id, r)}
+                          style={styles[g.id]} onStyle={(st) => setStyles((all) => { const n = { ...all }; if (st && (st.colour || st.bold || st.when?.length)) n[g.id] = st; else delete n[g.id]; return n })}
+                          values={() => distinctTexts(data ?? [], g)} />}
+                      </div>
+                      {h.column.getCanResize() && h.column.id !== '_select' && (
+                        <div data-resize role="separator" aria-orientation="vertical" aria-label={t('Drag to change the width')} onDoubleClick={() => h.column.resetSize()}
+                          onMouseDown={h.getResizeHandler()} onTouchStart={h.getResizeHandler()} onClick={(e) => e.stopPropagation()}
+                          className={cn('absolute inset-y-1 right-0 w-1.5 cursor-col-resize touch-none select-none rounded opacity-0 hover:bg-primary/40 group-hover/th:opacity-100', h.column.getIsResizing() && 'bg-primary opacity-100')} />
+                      )}
+                    </TableHead>
+                  )
+                })}
               </TableRow>
             ))}
           </TableHeader>
@@ -333,31 +427,37 @@ export function DataTable<T>({
                 <TableCell colSpan={visibleCols} className="h-40 text-center text-sm text-destructive">{describeError(error)}</TableCell>
               </TableRow>
             )}
-            {!isLoading && !error && table.getRowModel().rows.map((row) => (
+            {!isLoading && !error && table.getRowModel().rows.map((row) => { const pt = paint(row.original); return (
               <TableRow
                 key={row.id}
                 data-state={row.getIsSelected() ? 'selected' : undefined}
-                className={cn(onRowClick && 'cursor-pointer')}
+                className={cn(onRowClick && 'cursor-pointer', pt.rowColour && COLOURS[pt.rowColour].cell)}
                 tabIndex={onRowClick ? 0 : undefined}
                 onClick={onRowClick ? () => onRowClick(row.original) : undefined}
                 onKeyDown={onRowClick ? (e) => { if (e.key === 'Enter') onRowClick(row.original) } : undefined}
               >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell
-                    key={cell.id}
-                    className={cn('whitespace-nowrap', dense && 'h-8 py-1', cell.column.columnDef.meta?.align === 'right' && 'text-right tabular', cell.column.columnDef.meta?.className)}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
+                {row.getVisibleCells().map((cell) => {
+                  const c = pt.cells[cell.column.id]
+                  const sized = columnSizing[cell.column.id]
+                  return (
+                    <TableCell
+                      key={cell.id}
+                      style={sized ? { maxWidth: sized } : undefined}
+                      className={cn('whitespace-nowrap', sized && 'overflow-hidden text-ellipsis', dense && 'h-8 py-1', cell.column.columnDef.meta?.align === 'right' && 'text-right tabular',
+                        cell.column.columnDef.meta?.className, c?.colour && !pt.rowColour && COLOURS[c.colour].cell, c?.bold && 'font-semibold')}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  )
+                })}
               </TableRow>
-            ))}
+            ) })}
             {!isLoading && !error && table.getRowModel().rows.length === 0 && (
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={visibleCols} className="p-0">
                   {filtered ? (
                     <EmptyState compact title={t('Nothing matches these filters')} description={t('Clear the search or filters to see everything.')}
-                      action={<Button variant="outline" size="sm" onClick={() => { table.resetColumnFilters(); table.setGlobalFilter('') }}>{t('Clear filters')}</Button>} />
+                      action={<Button variant="outline" size="sm" onClick={() => clearAll()}>{t('Clear filters')}</Button>} />
                   ) : (
                     <EmptyState compact title={empty?.title ?? t('Nothing here yet')} description={empty?.description} action={empty?.action} />
                   )}
@@ -374,6 +474,12 @@ export function DataTable<T>({
   )
 }
 
+/** the values a column holds, for "is one of": the most frequent first */
+function distinctTexts(rows: readonly unknown[], g: Getter): string[] {
+  const n = new Map<string, number>()
+  for (const r of rows) { const v = g.text(r); n.set(v, (n.get(v) ?? 0) + 1) }
+  return [...n.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([v]) => v)
+}
 /* ------------------------------------------------------------------ phone: one card per row */
 
 // the column's name: meta.label, a string header, or the title given to ColumnHeader
