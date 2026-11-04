@@ -5,6 +5,13 @@ export default {
   "Paste the lines from Excel, or choose the supplier’s file": "Ngjit rreshtat nga Excel-i, ose zgjidh skedarin e furnitorit",
   "Scan the barcode, or type the code or the name": "Skano barkodin, ose shkruaj shifrën ose emrin",
   "Barcode, code or name": "Barkodi, shifra ose emri",
+  "New invoice|purchase": "Faturë e re",
+  "Goods into the warehouse": "Mall në magazinë",
+  "The goods come into stock at their cost; you set the selling prices. From Excel too.": "Malli hyn në stok me koston e vet; vendos çmimet e shitjes. Edhe nga Excel-i.",
+  "An expense, without goods": "Shpenzim, pa mall",
+  "Electricity, rent, fuel, repairs: booked to its account. From a photo too.": "Rryma, qiraja, nafta, riparimet: regjistrohet në kontin e vet. Edhe me foto.",
+  "A bill with lines and accounts": "Faturë me rreshta dhe konto",
+  "For the accountant: several services or accounts on one bill, or a bill for a purchase order.": "Për kontabilistin: disa shërbime ose konto në një faturë, ose faturë për një porosi blerjeje.",
   "Lines from the supplier’s file": "Rreshtat nga skedari i furnitorit",
   "Copy the lines in Excel and paste them here, or choose the file. Barcode, code, name, quantity and price are found by themselves.":
     "Kopjo rreshtat në Excel dhe ngjiti këtu, ose zgjidh skedarin. Barkodi, shifra, emërtimi, sasia dhe çmimi gjenden vetë.",

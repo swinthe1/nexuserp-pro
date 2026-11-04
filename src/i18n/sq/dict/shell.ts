@@ -155,7 +155,7 @@ export default {
   'New customer': 'Klient i ri',
   'New purchase order': 'Porosi e re blerjeje',
   'New requisition': 'Kërkesë e re blerjeje',
-  'New vendor bill': 'Faturë e re blerjeje',
+  'New vendor bill': 'Faturë me rreshta dhe konto',
   'New vendor': 'Furnitor i ri',
   'New product': 'Produkt i ri',
   'New goods receipt': 'Pranim i ri malli',

@@ -321,7 +321,7 @@ export default {
   "Vendor's invoice no.": 'Nr. i faturës së furnitorit',
   'Follows the payment terms when they change.': 'Ndryshon bashkë me kushtet e pagesës.',
   'invoice {number}': 'fatura {number}',
-  'For bills without a purchase order — or open the order and use “Enter bill”.': 'Për fatura pa porosi blerjeje — ose hapni porosinë dhe përdorni “Regjistro faturën”.',
+  'For bills without a purchase order — or open the order and use “Enter bill”.': 'Për shërbime dhe shpenzime me disa rreshta ose konto, dhe për fatura të porosive. Malli në magazinë futet te “Faturë e re → Mall në magazinë”; shpenzimi i thjeshtë te “Shpenzimet”.',
   'The draft disappears; its quantities can be billed again.': 'Drafti zhduket; sasitë e tij mund të faturohen përsëri.',
   'Cancel bill': 'Anulo faturën',
   'Matches order and receipt': 'Përputhet me porosinë dhe pranimin',

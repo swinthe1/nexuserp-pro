@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { Plus } from 'lucide-react'
+import { ChevronDown, FileText, PackagePlus, Plus, ReceiptText } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Can, useCompany } from '@/app/company-provider'
@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/page-header'
 import { StatusBadge } from '@/components/status-badge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { t, td } from '@/i18n'
 import { cn, formatDate, formatMoney, humanize, num, todayISO } from '@/lib/utils'
 import { useRealtimeInvalidate } from '@/hooks/use-realtime'
@@ -139,9 +140,29 @@ export function ProcurementListPage({ kind }: { kind: ProcKind }) {
     ...cfg.columns(base),
   ], [cfg, base])
   const newButton = kind === 'bills'
+    // one button: what the invoice is for decides where it goes
     ? <Can perm={cfg.perm}>
-        <Button variant="outline" asChild><Link to="/procurement/bills/new"><Plus /> {t('Expense bill (no goods)')}</Link></Button>
-        <Button asChild><Link to="/procurement/invoice/new"><Plus /> {t('Purchase invoice with goods')}</Link></Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild><Button><Plus /> {t('New invoice|purchase')} <ChevronDown className="opacity-70" /></Button></DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-80">
+            <DropdownMenuItem className="items-start gap-3 py-2" onSelect={() => navigate('/procurement/invoice/new')}>
+              <PackagePlus className="mt-0.5 size-5 text-primary" />
+              <span><span className="block font-medium">{t('Goods into the warehouse')}</span>
+                <span className="block text-[12px] text-muted-foreground">{t('The goods come into stock at their cost; you set the selling prices. From Excel too.')}</span></span>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="items-start gap-3 py-2" onSelect={() => navigate('/finance/expenses')}>
+              <ReceiptText className="mt-0.5 size-5 text-primary" />
+              <span><span className="block font-medium">{t('An expense, without goods')}</span>
+                <span className="block text-[12px] text-muted-foreground">{t('Electricity, rent, fuel, repairs: booked to its account. From a photo too.')}</span></span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="items-start gap-3 py-2" onSelect={() => navigate('/procurement/bills/new')}>
+              <FileText className="mt-0.5 size-5 text-muted-foreground" />
+              <span><span className="block">{t('A bill with lines and accounts')}</span>
+                <span className="block text-[12px] text-muted-foreground">{t('For the accountant: several services or accounts on one bill, or a bill for a purchase order.')}</span></span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </Can>
     : <Can perm={cfg.perm}><Button asChild><Link to={`${cfg.href}/new`}><Plus /> {cfg.newLabel}</Link></Button></Can>
 
