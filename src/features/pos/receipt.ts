@@ -1,7 +1,7 @@
 import { formatDateWith, formatNumberWith, t, tEnum } from '@/i18n'
 import { printHtml } from '@/lib/print'
 import type { SessionControls } from './api'
-import { FISCAL_CSS, fiscalReceiptHtml, type FiscalPrint } from './fiscal-receipt'
+import { fiscalCss, fiscalReceiptHtml, paperOf, type FiscalPrint, type Paper } from './fiscal-receipt'
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 const money = (n: number) => formatNumberWith(n, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -14,10 +14,12 @@ const method = (m: string) => tEnum(m)
 const CSS = `@page{size:80mm auto;margin:3mm 4mm} *{box-sizing:border-box} body{margin:0;font:12px/1.35 ui-monospace,Menlo,Consolas,monospace;color:#000;width:72mm}
  .c{text-align:center} .r{text-align:right} .b{font-weight:700} .big{font-size:16px} hr{border:0;border-top:1px dashed #000;margin:6px 0}
  table{width:100%;border-collapse:collapse} td{vertical-align:top;padding:1px 0} .muted{font-size:11px}`
+const css = (mm: Paper) => (mm === 58 ? CSS.replace('size:80mm auto;margin:3mm 4mm', 'size:58mm auto;margin:2mm 2mm').replace('font:12px/1.35', 'font:10px/1.3')
+  .replace('width:72mm', 'width:54mm').replace('.big{font-size:16px}', '.big{font-size:13px}').replace('.muted{font-size:11px}', '.muted{font-size:9.5px}') : CSS)
 
 export interface ReceiptData {
   company: { name: string; legal_name: string | null; tax_number: string | null; address: string | null }
-  register: { code: string; name: string; receipt_header: string | null; receipt_footer: string | null }
+  register: { code: string; name: string; receipt_header: string | null; receipt_footer: string | null; paper_mm?: number | null }
   ref: string; number?: string | null; date: Date; cashier: string; customer?: string | null; isRefund?: boolean; offline?: boolean
   lines: { name: string; qty: number; price: number; discount: number; total: number; rate: number }[]
   payments: { method: string; amount: number }[]; change: number; currency: string
@@ -28,7 +30,7 @@ export interface ReceiptData {
 }
 
 export function receiptHtml(r: ReceiptData) {
-  if (r.fiscal) return fiscalReceiptHtml(r.fiscal)
+  if (r.fiscal) return fiscalReceiptHtml(r.fiscal, paperOf(r.register.paper_mm))
   const total = r.lines.reduce((s, l) => s + l.total, 0)
   const byRate = new Map<number, { base: number; tax: number }>()
   for (const l of r.lines) {
@@ -55,7 +57,10 @@ export function receiptHtml(r: ReceiptData) {
     ${r.offline ? `<hr><div class="c muted">${esc(t('Recorded offline — sent to the books when the till is back online.'))}</div>` : ''}
     <hr><div class="c muted">${esc(r.register.receipt_footer ?? 'Faleminderit! Thank you!')}</div>`
 }
-export function printReceipt(r: ReceiptData) { printHtml(receiptHtml(r), r.fiscal ? FISCAL_CSS : CSS, 'receipt') }
+export function printReceipt(r: ReceiptData) {
+  const mm = paperOf(r.register.paper_mm)
+  printHtml(receiptHtml(r), r.fiscal ? fiscalCss(mm) : css(mm), 'receipt')
+}
 
 export interface ZData {
   company: string; register: string; number: string; session: string; opened: string; closed: string | null; date: string; currency: string
@@ -65,6 +70,8 @@ export interface ZData {
   items: { name: string; quantity: number; total: number }[]
   /** the count by note and coin, who confirmed it, the till's voids */
   controls?: SessionControls | null
+  /** the till's paper, 58 or 80 mm */
+  paper?: number | null
 }
 export function printZReport(z: ZData) {
   const c = z.controls
@@ -82,5 +89,5 @@ export function printZReport(z: ZData) {
     ${c?.count?.counted_by ? `<div class="muted">${esc(t('Counted by {name}', { name: c.count.counted_by }))}${c.count.witnessed_by ? ` · ${esc(t('confirmed by {name}', { name: c.count.witnessed_by }))}` : ''}</div>` : ''}<hr>
     ${c && c.voids.count > 0 ? `<div class="b">${esc(t('Till controls'))}</div><table>${row(t('Voids'), `${c.voids.count} · ${money(c.voids.amount)}`)}${c.voids.unconfirmed ? row(t('Without a manager'), String(c.voids.unconfirmed)) : ''}</table><hr>` : ''}
     <div class="b">${esc(t('Best sellers · sales with VAT'))}</div><table>${z.items.slice(0, 10).map((i) => row(`${qty(Number(i.quantity))} × ${i.name}`, money(Number(i.total)))).join('')}</table>
-    <hr><div class="c muted">${esc(t('Printed {date}', { date: stamp(new Date()) }))}</div>`, CSS, 'receipt')
+    <hr><div class="c muted">${esc(t('Printed {date}', { date: stamp(new Date()) }))}</div>`, css(paperOf(z.paper)), 'receipt')
 }

@@ -5,6 +5,7 @@
  */
 import * as React from 'react'
 import { supabase } from '@/lib/supabase'
+import { clockNow } from './clock'
 import { describeError } from '@/lib/errors'
 import { carryOver } from '@/lib/offline/carry-over'
 
@@ -182,7 +183,7 @@ export function useSyncState() {
 
 /** Local receipt numbers keep counting while offline: T1-241024-0007 */
 export async function nextDeviceRef(registerCode: string) {
-  const day = new Date()
+  const day = clockNow()
   const d = `${String(day.getFullYear()).slice(2)}${String(day.getMonth() + 1).padStart(2, '0')}${String(day.getDate()).padStart(2, '0')}`
   const key = `seq:${registerCode}:${d}`
   const n = ((await kvGet<number>(key)) ?? 0) + 1

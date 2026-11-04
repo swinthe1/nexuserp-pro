@@ -1,4 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
+import { useQuery } from '@tanstack/react-query'
 import { ChefHat, CloudOff, MonitorSmartphone, Plus, Printer, RefreshCw, Store, UtensilsCrossed } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -197,7 +198,7 @@ function RegisterDialog({ register, onClose }: { register: Register | null; onCl
   const [v, setV] = React.useState(() => ({
     code: register?.code ?? '', name: register?.name ?? '', warehouse_id: register?.warehouse_id ?? null as string | null, location_id: register?.location_id ?? null as string | null,
     cash_account_id: register?.cash_account_id ?? null as string | null, journal_id: register?.journal_id ?? null as string | null, price_list_id: register?.price_list_id ?? null as string | null,
-    default_customer_id: register?.default_customer_id ?? null as string | null, receipt_header: register?.receipt_header ?? '', receipt_footer: register?.receipt_footer ?? 'Faleminderit! Thank you!',
+    default_customer_id: register?.default_customer_id ?? null as string | null, paper_mm: register?.paper_mm ?? 80, receipt_header: register?.receipt_header ?? '', receipt_footer: register?.receipt_footer ?? 'Faleminderit! Thank you!',
     is_active: register?.is_active ?? true, mode: (register?.mode ?? (restaurantOk && (company?.business_type === 'cafe' || company?.business_type === 'restaurant') ? 'restaurant' : 'retail')) as string,
   }))
   const set = <K extends keyof typeof v>(k: K) => (x: (typeof v)[K]) => setV((s) => ({ ...s, [k]: x }))
@@ -242,11 +243,16 @@ function RegisterDialog({ register, onClose }: { register: Register | null; onCl
             </div></div>}
           <div className="col-span-2 grid gap-1.5"><Label htmlFor="rg-head">{t('Receipt header')}</Label><Input id="rg-head" value={v.receipt_header} onChange={(e) => set('receipt_header')(e.target.value)} placeholder="Rruga Pjetër Bogdani 12, Tiranë" /></div> {/* i18n-ignore */}
           <div className="col-span-2 grid gap-1.5"><Label htmlFor="rg-foot">{t('Receipt footer')}</Label><Input id="rg-foot" value={v.receipt_footer} onChange={(e) => set('receipt_footer')(e.target.value)} /></div>
+          <div className="col-span-2 grid gap-1.5"><Label>{t('Receipt paper')}</Label>
+            <Select value={String(v.paper_mm)} onValueChange={(x) => set('paper_mm')(Number(x))}><SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="80">{t('80 mm (most receipt printers)')}</SelectItem><SelectItem value="58">{t('58 mm (small and mobile printers)')}</SelectItem></SelectContent></Select></div>
           <div className="col-span-2 flex items-center justify-between"><Label htmlFor="rg-active">{t('Till in use')}</Label><Switch id="rg-active" checked={v.is_active} onCheckedChange={set('is_active')} /></div>
         </div>
         <DialogFooter><Button variant="ghost" onClick={onClose}>{t('Cancel')}</Button>
           <Button disabled={!valid} loading={save.isPending} onClick={async () => {
-            await save.mutateAsync({ id: register?.id, ...v, code: v.code.trim(), name: v.name.trim(), receipt_header: v.receipt_header || null, receipt_footer: v.receipt_footer || null })
+            // the paper is sent only once the server knows it (a server not yet updated would refuse the whole save)
+            const { paper_mm, ...rest } = v
+            await save.mutateAsync({ id: register?.id, ...rest, ...(register?.paper_mm !== undefined || paper_mm !== 80 ? { paper_mm } : {}), code: v.code.trim(), name: v.name.trim(), receipt_header: v.receipt_header || null, receipt_footer: v.receipt_footer || null })
             toast.success(t('Till saved')); onClose()
           }}>{t('Save')}</Button></DialogFooter>
       </DialogContent>
@@ -260,6 +266,9 @@ export function PosSessionPage() {
   const { company } = useCompany()
   const q = useSessionDetail(id)
   const ctl = useSessionControls(id)
+  const regId = q.data?.session.register_id
+  const paper = useQuery({ queryKey: ['pos-paper', regId], enabled: !!regId, staleTime: 300_000,
+    queryFn: async () => (unwrap(await supabase.from('pos_registers').select('*').eq('id', regId!).single()) as { paper_mm?: number }).paper_mm ?? 80 })
   if (q.isLoading) return <Skeleton className="mx-auto h-96 max-w-5xl" />
   if (q.isError) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />
   if (!q.data) return <EmptyState icon={Store} title={t('Shift not found')} description={t('It may have been deleted.')} action={<Button variant="outline" asChild><Link to="/pos">{t('Point of sale')}</Link></Button>} />
@@ -273,7 +282,7 @@ export function PosSessionPage() {
     company: company?.name ?? '', register: s.register?.name ?? '', number: z.number, session: s.number, opened: s.opened_at, closed: s.closed_at, date: z.report_date, currency: cur,
     orders: z.order_count, refunds: z.refund_count, gross: num(z.gross_sales), refundsTotal: num(z.refunds_total), discounts: num(z.discounts_total), net: num(z.net_sales), tax: num(z.tax_total),
     payments: pay, taxes: taxes.map((t) => ({ rate: num(t.rate), base: num(t.base), tax: num(t.tax) })), opening: num(z.opening_cash), cashIn: num(z.cash_in), cashOut: num(z.cash_out),
-    expected: num(z.expected_cash), counted: z.counted_cash, difference: z.cash_difference, items, controls: ctl.data ?? null,
+    expected: num(z.expected_cash), counted: z.counted_cash, difference: z.cash_difference, items, controls: ctl.data ?? null, paper: paper.data,
   })
   const c = ctl.data
   const voids = c?.voids
@@ -282,7 +291,7 @@ export function PosSessionPage() {
       // a fiscal coupon is printed again from what was signed, marked "KOPJE E KUPONIT"
       const fr = unwrap(await supabase.rpc('atk_receipt', { p_order: orderId })) as unknown as AtkReceipt | null
       if (fr?.atk?.details) {
-        printReceipt({ company: { name: fr.header.legal_name, legal_name: null, tax_number: fr.nui, address: null }, register: fr.register,
+        printReceipt({ company: { name: fr.header.legal_name, legal_name: null, tax_number: fr.nui, address: null }, register: { ...fr.register, paper_mm: paper.data },
           ref: fr.device_ref ?? fr.number, number: fr.number, date: new Date(fr.order_at), cashier: fr.cashier ?? '', currency: cur, lines: [], payments: [], change: 0,
           fiscal: { env: fr.atk.env, nui: fr.nui ?? '', header: fr.header, operator: fr.cashier ?? '', operatorNo: fr.atk.operator_no ?? null,
             coupon: decodePosCoupon(fromBase64(fr.atk.details)), qr: fr.atk.qr, dailyNo: fr.atk.daily_no ?? (Number(fr.device_ref?.split('-').at(-1)) || null), reason: fr.atk.reason ?? null,
@@ -292,7 +301,7 @@ export function PosSessionPage() {
       const o = unwrap(await supabase.from('pos_orders').select('number, device_ref, order_at, is_refund, change_given, partner:business_partners(name), lines:pos_order_lines(description, quantity, unit_price, discount_pct, line_total, tax_rate, line_no), payments:pos_payments(method, amount)')
         .eq('id', orderId).single().returns<{ number: string; device_ref: string | null; order_at: string; is_refund: boolean; change_given: number; partner: { name: string } | null
           lines: { description: string; quantity: number; unit_price: number; discount_pct: number; line_total: number; tax_rate: number; line_no: number }[]; payments: { method: string; amount: number }[] }>())
-      const reg = unwrap(await supabase.from('pos_registers').select('code, name, receipt_header, receipt_footer').eq('id', s.register_id).single())
+      const reg = unwrap(await supabase.from('pos_registers').select('*').eq('id', s.register_id).single())
       printReceipt({
         company: { name: company?.name ?? '', legal_name: null, tax_number: null, address: null }, register: reg,
         ref: o.device_ref ?? o.number, number: o.number, date: new Date(o.order_at), cashier: '', customer: o.partner?.name, isRefund: o.is_refund, currency: cur,

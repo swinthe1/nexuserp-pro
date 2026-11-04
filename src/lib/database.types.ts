@@ -731,6 +731,63 @@ export type Database = {
           { foreignKeyName: "asset_depreciation_lines_company_id_journal_entry_id_fkey"; columns: ["company_id", "journal_entry_id"]; isOneToOne: false; referencedRelation: "journal_entries"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      atk_events: {
+        Row: {
+          id: number
+          company_id: string
+          register_id: string | null
+          client_id: string | null
+          kind: string
+          at: string
+          recorded_at: string
+          user_id: string | null
+          coupon_no: number | null
+          amount: number | null
+          details: Json
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: number
+          company_id: string
+          register_id?: string | null
+          client_id?: string | null
+          kind: string
+          at: string
+          recorded_at?: string
+          user_id?: string | null
+          coupon_no?: number | null
+          amount?: number | null
+          details?: Json
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: number
+          company_id?: string
+          register_id?: string | null
+          client_id?: string | null
+          kind?: string
+          at?: string
+          recorded_at?: string
+          user_id?: string | null
+          coupon_no?: number | null
+          amount?: number | null
+          details?: Json
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "atk_events_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "atk_events_register_id_fkey"; columns: ["register_id"]; isOneToOne: false; referencedRelation: "pos_registers"; referencedColumns: ["id"] },
+        ]
+      }
       attachments: {
         Row: {
           id: string
@@ -7842,6 +7899,7 @@ export type Database = {
           atk_cert_at: string | null
           atk_cert_by: string | null
           atk_device: string | null
+          paper_mm: number
         }
         Insert: {
           id?: string
@@ -7874,6 +7932,7 @@ export type Database = {
           atk_cert_at?: string | null
           atk_cert_by?: string | null
           atk_device?: string | null
+          paper_mm?: number
         }
         Update: {
           id?: string
@@ -7906,6 +7965,7 @@ export type Database = {
           atk_cert_at?: string | null
           atk_cert_by?: string | null
           atk_device?: string | null
+          paper_mm?: number
         }
         Relationships: [
           { foreignKeyName: "pos_registers_company_id_cash_account_id_fkey"; columns: ["company_id", "cash_account_id"]; isOneToOne: false; referencedRelation: "bank_accounts"; referencedColumns: ["company_id", "id"] },
@@ -15292,6 +15352,12 @@ export type Database = {
         }
         Returns: Json
       }
+      atk_log_events: {
+        Args: {
+          p_events: Json
+        }
+        Returns: number
+      }
       atk_numbers_save: {
         Args: {
           p_company: string
@@ -18283,6 +18349,10 @@ export type Database = {
           p_partner: string
         }
         Returns: Json
+      }
+      server_now: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       set_depreciation_auto: {
         Args: {

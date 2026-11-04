@@ -31,6 +31,8 @@ import { ManagerDialog, ManagerPinFields, pinReady } from '../manager-pin'
 import { printReceipt, printZReport, type ReceiptData } from '../receipt'
 import { qrSvg, signAtkSale, useAtkState, waitForAtk } from '../atk'
 import type { FiscalPrint } from '../fiscal-receipt'
+import { clockNow, useClockCheck } from '../clock'
+import { logSef, watchSef } from '../sef-log'
 import { SyncPanel } from './pos-home-page'
 import { phoneKey, quoteLoyalty, type TillCardRow, type TillProgram } from '@/features/loyalty/api'
 
@@ -157,6 +159,12 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   // a coupon from the fiscal receipt book, written by hand while the till was down (UA 01/2026, neni 45)
   const [block, setBlock] = React.useState<{ no: string; at: Date } | null>(null)
   const [blockOpen, setBlockOpen] = React.useState(false)
+  // ATK's log: when this till was opened, lost and found the internet; its clock is set by the server's
+  const waitingRef = React.useRef(0)
+  waitingRef.current = sync.items.filter((i) => i.status === 'pending').length
+  const sef = !!data.atk?.required
+  React.useEffect(() => (sef ? watchSef(data.register.id, () => waitingRef.current) : undefined), [sef, data.register.id])
+  const clockOff = useClockCheck((ms) => { if (sef) void logSef(data.register.id, 'clock', { offset_seconds: Math.round(ms / 1000) }) })
   const openPay = () => { if (atkStop) { setFlash({ tone: 'error', text: atkText }); return } setDialog('pay') }
   const openRefund = () => { if (atkStop) { setFlash({ tone: 'error', text: atkText }); return } setDialog('refund') }
 
@@ -365,7 +373,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     const client_uuid = crypto.randomUUID()
     const device_ref = await nextDeviceRef(data.register.code)
     const fromBook = !refund && data.atk?.required ? block : null
-    const created_at = (fromBook?.at ?? new Date()).toISOString()
+    const created_at = (fromBook?.at ?? clockNow()).toISOString()
     const isOffline = !navigator.onLine || !sync.online || !!fromBook
     let atk: { payload: Record<string, unknown>; receipt: FiscalPrint } | null = null
     if (data.atk?.required) {
@@ -542,6 +550,10 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
           <span className="flex-1 font-medium">{tn(atkRefused, 'ATK refused {n} coupon of this till: they are tried again by themselves', 'ATK refused {n} coupons of this till: they are tried again by themselves')}</span>
           {can('tax.read') && <Link className="font-medium underline" to="/tax/fiscalization">{t('See why')}</Link>}
         </div>
+      )}
+      {clockOff !== 0 && (
+        <div role="alert" className="border-b border-warning/30 bg-warning/10 px-4 py-1.5 text-center text-[13px] font-medium text-warning">
+          {t('The clock of this device is {n} min off. Receipts take the right time from the server; set the device clock right.', { n: Math.round(Math.abs(clockOff) / 60_000) })}</div>
       )}
       {data.atk?.required && data.atk.env === 'test' && atkState.status === 'ready' && (
         <div className="border-b border-warning/30 bg-warning/10 px-4 py-1 text-center text-xs font-medium text-warning">{t('ATK test environment: these coupons are for testing only')}</div>
@@ -929,7 +941,7 @@ function LineDialog({ line, canDiscount, onClose, onRemove }: { line: Line; canD
 /** a coupon written by hand from the fiscal receipt book while the till was fully down: its number and the time written on it */
 function BlockDialog({ onClose }: { onClose: (b?: { no: string; at: Date }) => void }) {
   const [no, setNo] = React.useState('')
-  const now = new Date()
+  const now = clockNow()
   const local = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
   const [at, setAt] = React.useState(local(now))
   const when = new Date(at)
@@ -1105,7 +1117,7 @@ function CloseDialog({ data, pending, onClose, onClosed }: { data: TillData; pen
         currency: data.company.base_currency, orders: z.order_count, refunds: z.refund_count, gross: num(z.gross_sales), refundsTotal: num(z.refunds_total), discounts: num(z.discounts_total),
         net: num(z.net_sales), tax: num(z.tax_total), payments: z.payments_by_method as Record<string, number>,
         taxes: ((z.tax_breakdown ?? []) as { rate: number; base: number; tax: number }[]).map((x) => ({ rate: num(x.rate), base: num(x.base), tax: num(x.tax) })),
-        opening: num(z.opening_cash), cashIn: num(z.cash_in), cashOut: num(z.cash_out), expected: num(z.expected_cash), counted: z.counted_cash, difference: z.cash_difference,
+        opening: num(z.opening_cash), cashIn: num(z.cash_in), cashOut: num(z.cash_out), expected: num(z.expected_cash), counted: z.counted_cash, difference: z.cash_difference, paper: data.register.paper_mm,
         items: (z.items ?? []) as { name: string; quantity: number; total: number }[], controls: ctl,
       })
     } catch { /* the Z-report can be reprinted from the session page */ }

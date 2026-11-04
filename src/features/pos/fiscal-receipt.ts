@@ -46,6 +46,14 @@ const PAY: Record<number, string> = { [PaymentType.Cash]: 'CASH', [PaymentType.C
 const payName = (k: number) => ({ CASH: t('CASH|fiscal'), CARD: t('CARD|fiscal'), VOUCHER: t('VOUCHER|fiscal'), CHEQUE: t('CHEQUE|fiscal'),
   CRYPTO: t('CRYPTO|fiscal'), OTHER: t('OTHER|fiscal') } as Record<string, string>)[PAY[k] ?? 'OTHER']!
 
+/** ATK allows thermal paper 58–100 mm wide; each till says which it has (58 or 80) */
+export type Paper = 58 | 80
+export const paperOf = (mm: number | null | undefined): Paper => (mm === 58 ? 58 : 80)
+export const fiscalCss = (mm: Paper = 80) => mm === 58
+  ? FISCAL_CSS.replace('size:80mm auto;margin:3mm 4mm', 'size:58mm auto;margin:2mm 2mm').replace('font:11.5px/1.35', 'font:10px/1.3').replace('width:72mm', 'width:54mm')
+      .replace('.title{font-size:17px', '.title{font-size:14px').replace('.big{font-size:15px}', '.big{font-size:13px}').replace('.qr svg{width:40mm;height:40mm}', '.qr svg{width:34mm;height:34mm}')
+      .replace('.logo{height:10mm', '.logo{height:8mm')
+  : FISCAL_CSS
 export const FISCAL_CSS = `@page{size:80mm auto;margin:3mm 4mm} *{box-sizing:border-box} body{margin:0;font:11.5px/1.35 Arial,Helvetica,sans-serif;color:#000;width:72mm}
  .c{text-align:center} .r{text-align:right} .b{font-weight:700} .big{font-size:15px} .title{font-size:17px;font-weight:700;letter-spacing:.5px}
  .rule{border-top:2px dotted #000;margin:5px 0} hr{border:0;border-top:1px solid #000;margin:4px 0}
@@ -53,7 +61,8 @@ export const FISCAL_CSS = `@page{size:80mm auto;margin:3mm 4mm} *{box-sizing:bor
  .sm{font-size:10px} .qr{margin:4px 0 2px} .qr svg{width:40mm;height:40mm} .logo{height:10mm;width:auto;margin:2px auto 0;display:block}
  .ek{font-style:italic;font-weight:700;font-size:13px;font-family:Georgia,serif} .mark{border:1.5px solid #000;padding:1px 4px;font-weight:700;display:inline-block;margin:2px 0}`
 
-export function fiscalReceiptHtml(f: FiscalPrint) {
+export function fiscalReceiptHtml(f: FiscalPrint, paper: Paper = 80) {
+  const narrow = paper === 58
   const c = f.coupon
   const h = f.header
   const kind = c.type === CouponType.Return ? t('RETURN COUPON|fiscal') : c.type === CouponType.Cancel ? t('CANCELLATION COUPON|fiscal') : t('FISCAL COUPON|fiscal')
@@ -71,7 +80,10 @@ export function fiscalReceiptHtml(f: FiscalPrint) {
     const net = Math.round(i.total / 100)                      // cents, after it
     const off = gross - net
     const pct = gross > 0 && off > 0 ? Math.round(off / gross * 10000) / 100 : 0
-    return `<tr><td>${esc(i.name)}</td><td class="r">${esc(qtyText(i.quantity))} X ${esc(unitPrice(i.price))}</td><td class="r">${eur(gross)} ${esc(i.taxRate)}</td></tr>`
+    // on 58 mm paper the name takes its own line, the quantity and the amount go under it
+    return (narrow
+      ? `<tr><td colspan="3">${esc(i.name)}</td></tr><tr><td colspan="2" class="r">${esc(qtyText(i.quantity))} X ${esc(unitPrice(i.price))}</td><td class="r">${eur(gross)} ${esc(i.taxRate)}</td></tr>`
+      : `<tr><td>${esc(i.name)}</td><td class="r">${esc(qtyText(i.quantity))} X ${esc(unitPrice(i.price))}</td><td class="r">${eur(gross)} ${esc(i.taxRate)}</td></tr>`)
       + (off > 0 ? `<tr class="sm"><td colspan="2">&nbsp;${esc(t('Discount {pct}%|fiscal', { pct: formatNumberWith(pct, { maximumFractionDigits: 2 }) }))}</td><td class="r">−${eur(off)}</td></tr>` : '')
   }).join('')
   const pays = c.payments.map((p) => `<tr><td>${esc(payName(p.type))}</td><td class="r">${eur(p.amount)}</td></tr>`).join('')

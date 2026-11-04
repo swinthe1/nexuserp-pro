@@ -131,7 +131,7 @@ export type TillOptions = {
 export type CatalogItem = { variant_id: string; sku: string; name: string; category: string | null; barcodes: { code: string; qty: number }[]
   price: number; tax_code_id: string | null; tax_rate: number; tracking: string; on_hand: number; product_type: string }
 export type TillData = {
-  register: Pick<Register, 'id' | 'code' | 'name' | 'company_id' | 'receipt_header' | 'receipt_footer' | 'default_customer_id' | 'location_id' | 'warehouse_id'>
+  register: Pick<Register, 'id' | 'code' | 'name' | 'company_id' | 'receipt_header' | 'receipt_footer' | 'default_customer_id' | 'location_id' | 'warehouse_id' | 'paper_mm'>
   session: { id: string; number: string; opened_at: string; opening_cash: number } | null
   catalog: CatalogItem[]
   customers: { id: string; name: string; code: string | null; tax_number: string | null; kind?: 'company' | 'individual' }[]
@@ -157,7 +157,7 @@ export function useTill(registerId: string | undefined) {
     const cached = await kvGet<TillData>(key).catch(() => undefined)
     if (cached) setState({ data: cached, offline: !navigator.onLine, loading: false, error: null })
     try {
-      const reg = unwrap(await supabase.from('pos_registers').select('id, code, name, company_id, receipt_header, receipt_footer, default_customer_id, location_id, warehouse_id').eq('id', registerId).single())
+      const reg = unwrap(await supabase.from('pos_registers').select('*').eq('id', registerId).single())
       const [ses, cat, cus, co, loy, lim, promo, opt, atk] = await Promise.all([
         supabase.from('pos_sessions').select('id, number, opened_at, opening_cash').eq('register_id', registerId).eq('status', 'open').maybeSingle(),
         supabase.rpc('pos_catalog', { p_register: registerId }),

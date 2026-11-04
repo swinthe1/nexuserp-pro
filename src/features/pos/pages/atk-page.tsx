@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { formatDateWith, msg, t, tServer } from '@/i18n'
+import { formatDateWith, formatNumberWith, msg, t, tServer } from '@/i18n'
 import { getTillKey, makeCsr, newTillKey, saveCertificate, removeTillKey, type AtkEnv } from '@/lib/atk/keys'
 import { toBase64 } from '@/lib/atk/proto'
 import { ATK_TYPES, ATK_UNITS } from '@/lib/atk/codes'
@@ -104,6 +104,7 @@ export function AtkPage() {
       {s && <TillsCard s={s} keys={device.keys} focus={focus} onRegister={setRegistering} onForgotten={() => { device.refresh(); void q.refetch() }} />}
       {s && <CodesCard canEdit={s.can_setup} />}
       {s && <QueueCard s={s} />}
+      {s && <LogCard />}
       {registering && s && (
         <RegisterDialog s={s} till={registering} onClose={(ok) => { setRegistering(null); if (ok) { device.refresh(); void q.refetch() } }} />
       )}
@@ -398,6 +399,102 @@ function QueueCard({ s }: { s: Setup }) {
           <StatCard label={t('Taken by ATK today')} value={s.queue.sent_today} />
         </div>
         <div><Button variant="outline" loading={exp.isPending} onClick={() => exp.mutate()}><Download /> {t('Download what has not reached ATK (CSV)')}</Button></div>
+      </CardContent>
+    </Card>
+  )
+}
+
+/* ------------------------------------------------------------------ the log ATK checks (Kërkesat specifike, neni 25.15 and "Verifikimi dhe Kontrolli") */
+type LogRow = { id: number; kind: string; at: string; register_id: string | null; coupon_no: number | null; amount: number | null; details: Record<string, unknown> }
+const KINDS: Record<string, string> = {
+  started: msg('Till opened|log'), offline: msg('Internet lost|log'), online: msg('Internet back|log'), clock: msg('Clock off|log'),
+  sent: msg('Sent to ATK|log'), failed: msg('Not taken by ATK|log'), change: msg('Change to the SEF|log'),
+}
+const CHANGES: Record<string, string> = {
+  fiscalization_no: msg('Fiscalization number (EDI)'), sef_enabled: msg('DrisPRO signs the till receipts'), environment: msg('Environment'),
+  store_number: msg('Store no. at ATK'), till_number: msg('Till no.'), till_registered: msg('Registered with ATK|log'), till_unregistered: msg('Unregistered from ATK|log'),
+}
+const FILTERS: { v: string; l: string; kinds: string[] | null }[] = [
+  { v: 'all', l: msg('Everything|log'), kinds: null },
+  { v: 'sends', l: msg('Sends to ATK|log'), kinds: ['sent', 'failed'] },
+  { v: 'failed', l: msg('Errors|log'), kinds: ['failed', 'clock'] },
+  { v: 'offline', l: msg('Interruptions|log'), kinds: ['offline', 'online', 'started'] },
+  { v: 'change', l: msg('Changes to the SEF|log'), kinds: ['change'] },
+]
+const secs = (d: string) => formatDateWith(new Date(d), { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+const dur = (s: number) => (s >= 3600 ? t('{h} h {m} min', { h: Math.floor(s / 3600), m: Math.floor((s % 3600) / 60) }) : s >= 60 ? t('{m} min', { m: Math.round(s / 60) }) : t('{s} s', { s }))
+function logText(r: LogRow) {
+  const d = r.details
+  const v = (k: string) => (d[k] === undefined || d[k] === null ? '' : String(d[k]))
+  switch (r.kind) {
+    case 'sent': return t('ATK transaction {no}', { no: v('transaction') }) + (Number(d.attempt) > 1 ? ` · ${t('try {n}', { n: v('attempt') })}` : '')
+    case 'failed': return `${tServer(v('error')) || v('error_code')}${d.attempt ? ` · ${t('try {n}', { n: v('attempt') })}` : ''}`
+    case 'online': return t('After {time} without internet · {n} sales were waiting', { time: dur(Number(d.offline_seconds) || 0), n: Number(d.waiting) || 0 })
+    case 'clock': return t('The device clock was {s} s off', { s: v('offset_seconds') })
+    case 'started': return d.online === false ? t('Opened without internet') : ''
+    case 'change': return `${t(CHANGES[v('what')] ?? v('what'))}: ${v('from') || '—'} → ${v('to') || '—'}`
+    default: return ''
+  }
+}
+function LogCard() {
+  const { companyId } = useCompany()
+  const day = (n: number) => { const d = new Date(Date.now() - n * 864e5); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
+  const [from, setFrom] = React.useState(() => day(7))
+  const [to, setTo] = React.useState(() => day(0))
+  const [filter, setFilter] = React.useState('all')
+  const kinds = FILTERS.find((f) => f.v === filter)?.kinds ?? null
+  const tills = useQuery({ queryKey: ['atk-log-tills', companyId], enabled: !!companyId, staleTime: 300_000,
+    queryFn: async () => new Map(unwrap(await supabase.from('pos_registers').select('id, name').eq('company_id', companyId!)).map((r) => [r.id, r.name])) })
+  const fetchRows = async (limit: number) => {
+    let q = supabase.from('atk_events').select('id, kind, at, register_id, coupon_no, amount, details').eq('company_id', companyId!)
+      .gte('at', new Date(`${from}T00:00:00`).toISOString()).lt('at', new Date(new Date(`${to}T00:00:00`).getTime() + 864e5).toISOString())
+    if (kinds) q = q.in('kind', kinds)
+    return unwrap(await q.order('at', { ascending: false }).order('id', { ascending: false }).limit(limit)) as unknown as LogRow[]
+  }
+  const rows = useQuery({ queryKey: ['atk-log', companyId, from, to, filter], enabled: !!companyId && !!from && !!to, queryFn: () => fetchRows(100) })
+  const exp = useMutation({
+    mutationFn: async () => {
+      const all = await fetchRows(50000)
+      downloadCsv(`atk-log-${from}-${to}`, [
+        [t('Date and time'), t('Event|log'), t('Till'), t('Coupon no.'), t('Total'), t('Details')],
+        ...[...all].reverse().map((r) => [secs(r.at), t(KINDS[r.kind] ?? r.kind), r.register_id ? tills.data?.get(r.register_id) ?? '' : '', r.coupon_no ?? '', r.amount ?? '', logText(r)]),
+      ])
+    },
+    onError: (e) => toast.error(describeError(e)),
+  })
+  return (
+    <Card>
+      <CardHeader><CardTitle>{t('The SEF log')}</CardTitle>
+        <CardDescription>{t('Every send to ATK and every failed one, the errors, the times the internet dropped and came back, and the changes made to the SEF, to the second. Nothing in it can be changed or deleted; ATK can get it as a file.')}</CardDescription></CardHeader>
+      <CardContent className="grid gap-3">
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="grid gap-1"><Label htmlFor="lg-from" className="text-xs">{t('From|date')}</Label><Input id="lg-from" type="date" className="h-9 w-40" value={from} max={to} onChange={(e) => setFrom(e.target.value)} /></div>
+          <div className="grid gap-1"><Label htmlFor="lg-to" className="text-xs">{t('To|date')}</Label><Input id="lg-to" type="date" className="h-9 w-40" value={to} min={from} onChange={(e) => setTo(e.target.value)} /></div>
+          <Select value={filter} onValueChange={setFilter}><SelectTrigger className="h-9 w-48" aria-label={t('Show|log')}><SelectValue /></SelectTrigger>
+            <SelectContent>{FILTERS.map((f) => <SelectItem key={f.v} value={f.v}>{t(f.l)}</SelectItem>)}</SelectContent></Select>
+          <Button variant="outline" className="ml-auto" loading={exp.isPending} onClick={() => exp.mutate()}><Download /> {t('Download the log (CSV)')}</Button>
+        </div>
+        <div className="overflow-x-auto rounded-md border">
+          <table className="w-full text-[13px]">
+            <thead className="bg-muted/50 text-left text-xs text-muted-foreground"><tr>
+              <th className="px-3 py-2 font-medium">{t('Date and time')}</th><th className="px-3 py-2 font-medium">{t('Event|log')}</th><th className="px-3 py-2 font-medium">{t('Till')}</th>
+              <th className="px-3 py-2 text-right font-medium">{t('Coupon no.')}</th><th className="px-3 py-2 text-right font-medium">{t('Total')}</th><th className="px-3 py-2 font-medium">{t('Details')}</th></tr></thead>
+            <tbody>
+              {(rows.data ?? []).map((r) => (
+                <tr key={r.id} className="border-t align-top">
+                  <td className="whitespace-nowrap px-3 py-1.5 tabular">{secs(r.at)}</td>
+                  <td className={cn('whitespace-nowrap px-3 py-1.5 font-medium', (r.kind === 'failed' || r.kind === 'clock') && 'text-destructive', r.kind === 'offline' && 'text-warning')}>{t(KINDS[r.kind] ?? r.kind)}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5">{r.register_id ? tills.data?.get(r.register_id) ?? '' : ''}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5 text-right tabular">{r.coupon_no ?? ''}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5 text-right tabular">{r.amount != null ? formatNumberWith(r.amount, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}</td>
+                  <td className="max-w-[22rem] truncate px-3 py-1.5 text-muted-foreground" title={logText(r)}>{logText(r)}</td>
+                </tr>
+              ))}
+              {rows.data && !rows.data.length && <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">{t('Nothing in the log for these days')}</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        {(rows.data?.length ?? 0) >= 100 && <p className="text-xs text-muted-foreground">{t('The newest 100 are shown; the file has them all.')}</p>}
       </CardContent>
     </Card>
   )

@@ -211,6 +211,36 @@ select t.ok(:'till'::jsonb ->> 'default_type' = 'AU' and :'till'::jsonb -> 'type
 select t.login('kaltrina@atk.al');
 select t.throws(format($q$select public.atk_codes_save('%s', 'TT', null, null)$q$, :'co'), 'tax rights', 'a cashier does not change them');
 
+
+-- ----------------------------------------------------------------------------- the log ATK checks (sends, errors, interruptions, changes)
+set role authenticated;
+select t.login(:'boss');
+select t.ok((select count(*) from public.atk_events where company_id = :'co' and kind = 'sent' and coupon_no is not null and amount > 0) >= 1
+  and (select count(*) from public.atk_events where company_id = :'co' and kind = 'failed' and details ->> 'error' is not null) >= 2,
+  'every try to send a coupon is in the log, with its number, total and the error of the failed ones');
+select t.ok((select count(*) from public.atk_events where company_id = :'co' and kind = 'change' and details ->> 'what' in ('fiscalization_no', 'sef_enabled')) >= 2
+  and exists (select 1 from public.atk_events where company_id = :'co' and kind = 'change' and details ->> 'what' = 'till_unregistered')
+  and exists (select 1 from public.atk_events where company_id = :'co' and kind = 'change' and details ->> 'what' = 'store_number'),
+  'changes to the SEF are logged: the numbers, the switch, a till unregistered');
+select t.login('kaltrina@atk.al');
+select public.atk_log_events(jsonb_build_array(
+  jsonb_build_object('id', '6f9b1c1e-0000-4000-8000-000000000001', 'register_id', :'reg', 'kind', 'offline', 'at', now() - interval '20 minutes'),
+  jsonb_build_object('id', '6f9b1c1e-0000-4000-8000-000000000002', 'register_id', :'reg', 'kind', 'online', 'at', now() - interval '5 minutes', 'details', jsonb_build_object('offline_seconds', 900, 'waiting', 3)),
+  jsonb_build_object('id', '6f9b1c1e-0000-4000-8000-000000000003', 'register_id', :'reg', 'kind', 'sent', 'at', now()),
+  jsonb_build_object('id', '6f9b1c1e-0000-4000-8000-000000000004', 'register_id', :'reg', 'kind', 'clock', 'at', now() + interval '1 day'))) as n \gset
+select t.ok(:n = 3, 'the till sends what it saw; it cannot write a send to ATK itself');
+select public.atk_log_events(jsonb_build_array(jsonb_build_object('id', '6f9b1c1e-0000-4000-8000-000000000001', 'register_id', :'reg', 'kind', 'offline', 'at', now())));
+select t.ok(not exists (select 1 from public.atk_events where company_id = :'co'), 'a cashier does not read the log');
+select t.login('lume@atk.al');
+select t.ok((select count(*) from public.atk_events where company_id = :'co' and kind = 'offline') = 1
+  and (select (details ->> 'offline_seconds')::int from public.atk_events where company_id = :'co' and kind = 'online') = 900
+  and (select at <= now() from public.atk_events where company_id = :'co' and kind = 'clock'), 'a step sent twice is kept once, and no time is in the future');
+select t.throws(format($q$update public.atk_events set kind = 'sent' where company_id = '%s'$q$, :'co'), 'permission denied', 'the log is never changed');
+select t.throws(format($q$delete from public.atk_events where company_id = '%s'$q$, :'co'), 'permission denied', 'nor deleted');
+select t.ok(abs(extract(epoch from public.server_now() - now())) < 5, 'the till can read the server''s clock');
+reset role;
+select t.throws(format($q$update public.pos_registers set paper_mm = 70 where id = '%s'$q$, :'reg'), 'check constraint', 'a till prints on 58 or 80 mm paper');
+
 reset role;
 update public.platform_settings set atk_application_id_test = null, atk_application_id_prod = null where id;
 \set QUIET off
