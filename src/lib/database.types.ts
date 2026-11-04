@@ -17012,6 +17012,14 @@ export type Database = {
         }
         Returns: { partner_id: string | null; partner_name: string | null; not_due: number | null; d1_30: number | null; d31_60: number | null; d61_90: number | null; d90_plus: number | null; unapplied: number | null; total: number | null; oldest_due: string | null; documents: number | null }[]
       }
+      partner_balances: {
+        Args: {
+          p_company: string
+          p_side: string
+          p_date?: string
+        }
+        Returns: Json
+      }
       partner_card: {
         Args: {
           p_partner: string
@@ -17054,6 +17062,24 @@ export type Database = {
           p: Json
         }
         Returns: undefined
+      }
+      partner_invoices_card: {
+        Args: {
+          p_partner: string
+          p_side: string
+          p_from: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      partner_items_card: {
+        Args: {
+          p_partner: string
+          p_side: string
+          p_from: string
+          p_to: string
+        }
+        Returns: Json
       }
       partner_registry: {
         Args: {

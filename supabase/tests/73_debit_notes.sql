@@ -25,6 +25,15 @@ select t.ok(exists (select 1 from jsonb_array_elements(public.open_items_stateme
             'and among the open items');
 select t.ok((public.document_print('sales_invoice', :'dn') ->> 'kind') = 'debit_note' and (public.document_print('sales_invoice', :'dn') ->> 'original') is not null,
             'printed as a debit note that names the invoice');
+-- the kinds of card
+select public.partner_invoices_card(:'cust', 'customer', current_date - 365, current_date) as ic \gset
+select t.ok(exists (select 1 from jsonb_array_elements(:'ic'::jsonb -> 'rows') r where r ->> 'id' = :'inv'
+                      and exists (select 1 from jsonb_array_elements(r -> 'notes') n where n ->> 'kind' = 'debit_note'))
+            and exists (select 1 from jsonb_array_elements(:'ic'::jsonb -> 'rows') r where r ->> 'kind' = 'debit_note' and (r ->> 'open')::numeric = 1200),
+            'by invoice: the invoice lists the debit note on it, and the debit note is open on its own');
+select t.ok(jsonb_array_length(public.partner_items_card(:'cust', 'customer', current_date - 365, current_date) -> 'rows') >= 1, 'by item: what the customer bought');
+select t.ok(exists (select 1 from jsonb_array_elements(public.partner_balances(:'co', 'customer') -> 'rows') r where r ->> 'id' = :'cust' and (r ->> 'balance')::numeric > 0),
+            'balances of all: the customer with what they owe');
 select t.throws(format($q$update public.sales_invoices set is_debit_note = false where id = %L$q$, :'dn'), 'cannot be changed|stays a debit note', 'a debit note stays one');
 select t.throws(format($q$select public.create_debit_note(%L)$q$, (select id from public.sales_invoices where company_id = :'co' and document_type = 'credit_note' limit 1)), 'posted invoices', 'not for a credit note');
 reset role;

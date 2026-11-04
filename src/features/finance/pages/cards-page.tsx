@@ -20,6 +20,7 @@ import {
 import { cn, formatDate, formatMoney, todayISO } from '@/lib/utils'
 import { usePartners } from '@/features/sales/api'
 import { SOURCE_HREF, sourceLabel } from '../api'
+import { BalancesView, InvoicesTab, ItemsTab, ReconTab } from '../components/card-kinds'
 
 const yearStart = () => `${new Date().getFullYear()}-01-01`
 
@@ -29,9 +30,18 @@ export function CardsPage() {
   const partners = usePartners()
   const id = params.get('p')
   const p = partners.data?.find((x) => x.id === id)
+  const view = params.get('view') === 'balances' && !id ? 'balances' : 'one'
+  const setView = (v: 'one' | 'balances') => { const n = new URLSearchParams(params); if (v === 'balances') { n.set('view', 'balances'); n.delete('p') } else n.delete('view'); setParams(n, { replace: true }) }
   return (
     <>
       <PageHeader title={t('Partner cards|menu')} description={t('The account card of a customer or supplier with the running balance, and the statement of open items to confirm balances (IOS).')} />
+      <div className="mb-3 inline-flex w-fit rounded-lg bg-muted p-1 text-sm">
+        {(['one', 'balances'] as const).map((v) => (
+          <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)}
+            className={cn('rounded-md px-3 py-1.5 font-medium', view === v ? 'bg-background shadow-sm' : 'text-muted-foreground')}>{v === 'one' ? t('One partner') : t('Balances of all, by group')}</button>
+        ))}
+      </div>
+      {view === 'balances' ? <BalancesView onOpen={(pid) => setParams({ p: pid }, { replace: false })} /> : <>
       <div className="mb-4 max-w-md">
         <SearchSelect value={id} onChange={(v) => { const n = new URLSearchParams(params); if (v) n.set('p', v); else n.delete('p'); setParams(n, { replace: true }) }}
           placeholder={t('Choose a customer or supplier')}
@@ -39,6 +49,7 @@ export function CardsPage() {
       </div>
       {!p ? <EmptyState icon={BookOpenText} title={t('Choose a customer or supplier')} description={t('Their card shows every invoice, payment and compensation with the balance after each.')} />
         : <PartnerCards key={p.id} partnerId={p.id} isCustomer={p.is_customer} isVendor={p.is_vendor} />}
+      </>}
     </>
   )
 }
@@ -59,9 +70,16 @@ export function PartnerCards({ partnerId, isCustomer, isVendor }: { partnerId: s
         </div>
       )}
       <Tabs defaultValue="card">
-        <TabsList><TabsTrigger value="card">{t('Card')}</TabsTrigger><TabsTrigger value="open">{t('Open items (IOS)')}</TabsTrigger></TabsList>
+        <TabsList className="h-auto flex-wrap">
+          <TabsTrigger value="card">{t('Card')}</TabsTrigger><TabsTrigger value="open">{t('Open items (IOS)')}</TabsTrigger>
+          <TabsTrigger value="invoices">{t('By invoice')}</TabsTrigger><TabsTrigger value="items">{t('By item|card')}</TabsTrigger>
+          {isCustomer && isVendor && <TabsTrigger value="recon">{t('Reconciliation')}</TabsTrigger>}
+        </TabsList>
         <TabsContent value="card"><CardTab partnerId={partnerId} side={side} /></TabsContent>
         <TabsContent value="open"><OpenTab partnerId={partnerId} side={side} /></TabsContent>
+        <TabsContent value="invoices"><InvoicesTab key={side} partnerId={partnerId} side={side} /></TabsContent>
+        <TabsContent value="items"><ItemsTab key={side} partnerId={partnerId} side={side} /></TabsContent>
+        {isCustomer && isVendor && <TabsContent value="recon"><ReconTab partnerId={partnerId} renderOpen={(s) => <OpenTab partnerId={partnerId} side={s} />} /></TabsContent>}
       </Tabs>
     </div>
   )

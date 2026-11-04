@@ -32,7 +32,8 @@ type Row = { id: string; number: string; status: string; comp_date: string; amou
 export function CompensationsPage() {
   const { companyId } = useCompany()
   const [params, setParams] = useSearchParams()
-  const [adding, setAdding] = React.useState(false)
+  // from a partner's reconciliation card: ?new=<partner>
+  const [adding, setAdding] = React.useState(() => !!params.get('new'))
   const list = useQuery({
     queryKey: ['compensations', companyId], enabled: !!companyId,
     queryFn: async () => unwrap(await supabase.from('compensations').select('id, number, status, comp_date, amount, currency_code, partner:business_partners(name)')
@@ -61,7 +62,7 @@ export function CompensationsPage() {
             </Table>
           </div>
         )}
-      {adding && <NewCompensation onClose={() => setAdding(false)} onDone={(id) => { setAdding(false); setParams({ c: id }) }} />}
+      {adding && <NewCompensation partnerId={params.get('new')} onClose={() => setAdding(false)} onDone={(id) => { setAdding(false); setParams({ c: id }) }} />}
       {open && <CompensationDialog id={open} onClose={() => setParams({})} />}
     </>
   )
@@ -69,11 +70,11 @@ export function CompensationsPage() {
 
 type Pick = { on: boolean; amount: string }
 
-function NewCompensation({ onClose, onDone }: { onClose: () => void; onDone: (id: string) => void }) {
+function NewCompensation({ onClose, onDone, partnerId }: { onClose: () => void; onDone: (id: string) => void; partnerId?: string | null }) {
   const { companyId } = useCompany()
   const qc = useQueryClient()
   const partners = usePartners()
-  const [partner, setPartner] = React.useState<string | null>(null)
+  const [partner, setPartner] = React.useState<string | null>(partnerId ?? null)
   const [date, setDate] = React.useState(todayISO())
   const [notes, setNotes] = React.useState('')
   const [picks, setPicks] = React.useState<Record<string, Pick>>({})

@@ -1,0 +1,31 @@
+import type { Dict } from '../index'
+
+/** The kinds of partner card: by invoice, by item, reconciliation, balances by group. */
+export default {
+  "One partner": "Një partner",
+  "Balances of all, by group": "Saldot e të gjithëve, sipas grupit",
+  "By invoice": "Sipas faturave",
+  "By item|card": "Sipas artikujve",
+  "Reconciliation": "Barazimi",
+  "Card by invoice": "Kartela sipas faturave",
+  "Card by item": "Kartela sipas artikujve",
+  "Only those still open": "Vetëm të pambyllurat",
+  "No invoices in this period": "Asnjë faturë në këtë periudhë",
+  "Credit notes": "Notat e kreditit",
+  "Value without VAT": "Vlera pa TVSH",
+  "Average price (without VAT)": "Çmimi mesatar (pa TVSH)",
+  "Last time": "Herën e fundit",
+  "What we bought from this supplier, item by item, credit notes taken off.": "Çka kemi blerë nga ky furnitor, artikull për artikull, pa notat e kreditit.",
+  "What this customer bought from us, item by item, credit notes taken off.": "Çka ka blerë ky klient nga ne, artikull për artikull, pa notat e kreditit.",
+  "The partner is customer and supplier both: what they owe us set against what we owe them. The difference is what is left to pay after a compensation.": "Partneri është edhe klient edhe furnitor: çka na detyrohet përballë asaj që i detyrohemi. Diferenca është ajo që mbetet për t'u paguar pas kompensimit.",
+  "Owes us (as a customer)": "Na detyrohet (si klient)",
+  "We owe (as a supplier)": "I detyrohemi (si furnitor)",
+  "After compensation they owe us": "Pas kompensimit na detyrohet",
+  "After compensation we owe them": "Pas kompensimit i detyrohemi",
+  "Compensate {amount}": "Kompenso {amount}",
+  "Without a group": "Pa grup",
+  "{amount} late": "{amount} me vonesë",
+  "Customer balances": "Saldot e klientëve",
+  "Supplier balances": "Saldot e furnitorëve",
+  "Of which late": "Prej tyre me vonesë",
+} satisfies Dict
