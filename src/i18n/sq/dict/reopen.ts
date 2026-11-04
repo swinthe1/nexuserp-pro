@@ -3,7 +3,6 @@ import type { Dict } from '../index'
 /** "Rihape për ndryshim": a completed invoice back to a draft. */
 export default {
   "Reopen to change": "Rihape për ndryshim",
-  "Reopen": "Rihape",
   "Back to a draft, to correct it and complete it again": "Kthehet në skicë, që ta korrigjosh dhe ta kompletosh përsëri",
   "Reopen {number} to change it?": "Ta rihap {number} për ndryshim?",
   "The accounting entry is reversed and the goods it brought in go back out at the same cost. The invoice keeps its number; you correct it and complete it again. The history keeps who reopened it and why.":
