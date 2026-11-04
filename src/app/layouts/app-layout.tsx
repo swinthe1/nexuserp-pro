@@ -22,6 +22,7 @@ import { GuardHost } from '@/components/guard'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useHotkey } from '@/hooks/use-hotkey'
+import { ExportsRecorder } from '@/features/exports/recorder'
 import { t } from '@/i18n'
 
 const KEY = 'drispro.sidebar.collapsed'
@@ -74,7 +75,7 @@ export function AppLayout() {
         <LicenseBanner />
         <main id="main" className="flex-1 px-3 py-3 sm:px-5">
           <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
-          <GuardHost />
+          <GuardHost /><ExportsRecorder />
         </main>
       </div>
     )
@@ -92,7 +93,7 @@ export function AppLayout() {
           <LicenseBanner />
           <main id="main" className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
             <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
-            <GuardHost />
+            <GuardHost /><ExportsRecorder />
             <TourHost />
           </main>
         </div>
@@ -125,7 +126,7 @@ export function AppLayout() {
           <LicenseBanner />
           <main id="main" className="flex-1 px-3 py-3 sm:px-4">
             <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
-            <GuardHost />
+            <GuardHost /><ExportsRecorder />
             <TourHost />
           </main>
         </ClassicShell>
@@ -152,7 +153,7 @@ export function AppLayout() {
           <LicenseBanner />
           <main id="main" className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
             <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
-            <GuardHost />
+            <GuardHost /><ExportsRecorder />
             <TourHost />
           </main>
         </div>

@@ -6569,6 +6569,50 @@ export type Database = {
           { foreignKeyName: "migration_runs_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
         ]
       }
+      my_exports: {
+        Row: {
+          id: string
+          company_id: string
+          user_id: string
+          file_name: string
+          kind: string
+          page: string | null
+          page_title: string | null
+          row_count: number | null
+          size_bytes: number | null
+          path: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          user_id?: string
+          file_name: string
+          kind: string
+          page?: string | null
+          page_title?: string | null
+          row_count?: number | null
+          size_bytes?: number | null
+          path: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          user_id?: string
+          file_name?: string
+          kind?: string
+          page?: string | null
+          page_title?: string | null
+          row_count?: number | null
+          size_bytes?: number | null
+          path?: string
+          created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "my_exports_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
       notification_preferences: {
         Row: {
           user_id: string

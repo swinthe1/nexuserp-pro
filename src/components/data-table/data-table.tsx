@@ -4,12 +4,12 @@ import {
   type ColumnDef, type ColumnFiltersState, type ColumnOrderState, type ColumnSizingState, type FilterFn, type PaginationState, type Row, type RowSelectionState,
   type SortingState, type Table as TanTable, type VisibilityState,
 } from '@tanstack/react-table'
-import { Download, Eye, FileSpreadsheet, FileText, MoreHorizontal, Search, X } from 'lucide-react'
+import { Download, Eye, FileSpreadsheet, FileText, FolderDown, History, MoreHorizontal, Search, X } from 'lucide-react'
 import * as React from 'react'
 import { fuzzyFind } from '@/lib/fuzzy'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -26,6 +26,8 @@ import { PreviewSheet } from './preview-sheet'
 import { ColumnTools, RuleChips } from './column-tools'
 import { COLOURS, gettersOf, kindOf, ruleIsSet, test, type Colour, type ColumnStyle, type Getter, type Kind, type Rule } from './rules'
 import { tableLayoutKey, useProfilePref } from '@/components/layout/nav-prefs'
+import { downloadExport, useMyExports } from '@/lib/my-exports'
+import { Link } from 'react-router-dom'
 import { ViewOptions } from './view-options'
 
 /** Filter fn for faceted (multi-value) filters */
@@ -353,6 +355,7 @@ export function DataTable<T>({
               <DropdownMenuItem onSelect={() => void doExport('xlsx')}><FileSpreadsheet /> Excel {selectedRows.length ? t('({n} selected)', { n: selectedRows.length }) : ''}</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => void doExport('csv')}><FileSpreadsheet /> CSV {selectedRows.length ? t('({n} selected)', { n: selectedRows.length }) : ''}</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => void doExport('pdf')}><FileText /> PDF {selectedRows.length ? t('({n} selected)', { n: selectedRows.length }) : ''}</DropdownMenuItem>
+              <LastExports />
             </DropdownMenuContent>
           </DropdownMenu>}
         </div>
@@ -494,6 +497,23 @@ export function DataTable<T>({
           onOpen={onRowClick ? (r) => { setPeek(null); onRowClick(r) } : undefined} />
       )}
     </div>
+  )
+}
+
+/** under Export: the last file exported from this page, to download again, and all of them */
+function LastExports() {
+  const list = useMyExports()
+  const here = typeof window !== 'undefined' ? window.location.pathname : ''
+  const last = list.data?.find((x) => (x.page ?? '').split('?')[0] === here)
+  return (
+    <>
+      <DropdownMenuSeparator />
+      {last && <>
+        <DropdownMenuLabel className="text-[11px] font-normal text-muted-foreground">{t('Last from this page')}</DropdownMenuLabel>
+        <DropdownMenuItem onSelect={() => void downloadExport(last)}><History /> <span className="max-w-[220px] truncate">{last.file_name}</span></DropdownMenuItem>
+      </>}
+      <DropdownMenuItem asChild><Link to="/exports"><FolderDown /> {t('My exports')}</Link></DropdownMenuItem>
+    </>
   )
 }
 

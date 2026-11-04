@@ -1,4 +1,4 @@
-import { Download, IdCard, KeyRound, Languages, LaptopMinimal, LayoutGrid, LogOut, Monitor, Moon, PanelLeft, BriefcaseBusiness, ServerCog, Smartphone, Sparkles, Sun, UserRound, GraduationCap } from 'lucide-react'
+import { Download, IdCard, KeyRound, Languages, LaptopMinimal, LayoutGrid, LogOut, Monitor, Moon, PanelLeft, BriefcaseBusiness, ServerCog, Smartphone, Sparkles, Sun, UserRound, GraduationCap, FolderDown } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/app/auth-provider'
@@ -47,6 +47,7 @@ export function UserMenu() {
         {company && user && <DropdownMenuItem onSelect={() => setMeOpen(true)}><IdCard /> {t('My details')}</DropdownMenuItem>}
         <DropdownMenuItem asChild><Link to="/hr/me"><UserRound /> {t('My workplace')}</Link></DropdownMenuItem>
         <DropdownMenuItem asChild><Link to="/training"><GraduationCap /> {t('Training|menu')}</Link></DropdownMenuItem>
+        <DropdownMenuItem asChild><Link to="/exports"><FolderDown /> {t('My exports')}</Link></DropdownMenuItem>
         <DropdownMenuItem onSelect={() => setPwOpen(true)}><KeyRound /> {t('Change password')}</DropdownMenuItem>
         {company && (simple
           ? <DropdownMenuItem onSelect={() => setSimple(false)}><PanelLeft /> {t('Show all menus')}</DropdownMenuItem>

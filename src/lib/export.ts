@@ -10,7 +10,18 @@ function escapeCsv(v: unknown) {
   return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
+/**
+ * What happens to every exported file besides the download: the app keeps a copy for the person
+ * ("Eksportet e mia"). Set once by the app; a failure there never stops the download.
+ */
+type Recorder = (blob: Blob, filename: string, rows: number | null) => void
+let recorder: Recorder | null = null
+let pendingRows: number | null = null
+export function setExportRecorder(fn: Recorder | null) { recorder = fn }
+
 function download(blob: Blob, filename: string) {
+  try { recorder?.(blob, filename, pendingRows) } catch { /* the copy is a convenience */ }
+  pendingRows = null
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -25,6 +36,7 @@ export function downloadCsv(name: string, rows: (string | number | null | undefi
 }
 
 export function exportCsv<T>(rows: T[], columns: ExportColumn<T>[], filename: string) {
+  pendingRows = rows.length
   downloadCsv(filename, [columns.map((c) => c.header), ...rows.map((r) => columns.map((c) => c.value(r)))])
 }
 
@@ -47,7 +59,8 @@ export async function exportPdf<T>(rows: T[], columns: ExportColumn<T>[], filena
     headStyles: { fillColor: [43, 89, 195] },
     alternateRowStyles: { fillColor: [246, 247, 250] },
   })
-  doc.save(`${filename}.pdf`)
+  pendingRows = rows.length
+  download(doc.output('blob') as Blob, `${filename}.pdf`)
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -70,6 +83,7 @@ const xmlEscape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').
 const colName = (i: number) => { let s = ''; i += 1; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26) } return s }
 
 export async function exportXlsx<T>(rows: T[], columns: XlsxColumn<T>[], filename: string, opts: XlsxOptions = {}) {
+  const count = rows.length
   const { zipSync, strToU8 } = await import('fflate')
   // styles: 0 normal · 1 bold · 2 #,##0.00 · 3 #,##0 · 4 bold #,##0.00 · 5 title · 6 date
   const styleFor = (c: XlsxColumn<T>, bold = false) => c.format === 'int' ? 3 : c.format === 'date' ? 6 : c.format === 'text' ? (bold ? 1 : 0) : bold ? 4 : 2
@@ -119,5 +133,6 @@ export async function exportXlsx<T>(rows: T[], columns: XlsxColumn<T>[], filenam
     'xl/styles.xml': strToU8(styles),
     'xl/worksheets/sheet1.xml': strToU8(sheet),
   }
+  pendingRows = count
   download(new Blob([zipSync(files)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `${filename}.xlsx`)
 }
