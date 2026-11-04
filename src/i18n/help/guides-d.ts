@@ -182,6 +182,18 @@ export const GUIDES_D: Record<string, Guide> = {
     mistakes: [{ sq: '"Numri i radhës" vetëm rritet, nuk zbret. Numërimi që rifillon çdo vit duhet ta ketë vitin në numër, përndryshe numrat e dy viteve do të ishin të njëjtë.', en: '"Next number" only moves forward. Numbering that restarts every year must show the year, or two years would get the same numbers.' }],
     after: { sq: 'Ndryshimi vlen nga dokumenti i ardhshëm; numrat e dhënë mbeten siç janë.', en: 'The change applies from the next document; numbers already given stay as they are.' },
   },
+  '/settings/assistant': {
+    what: { sq: 'Çka di agjenti AI për kompaninë tuaj: rregullat, fjalët dhe emrat tuaj, si e bëni një punë dhe si i doni përgjigjet. Agjenti i ndjek në çdo përgjigje dhe në kontrollin e mëngjesit.', en: 'What the AI agent knows about your company: your rules, words and names, how you do a job and how you like the answers. It follows them in every answer and in the morning check.' },
+    steps: [
+      { sq: 'Kliko "Mësoji diçka të re", zgjidh çka është (rregull, fjalë ose emër, si e bëjmë, preferencë) dhe shkruaje si do t\'ia thoshe një punëtori të ri.', en: 'Click "Teach something new", choose what it is (a rule, a word or a name, how we do it, a preference) and write it as you would tell a new worker.' },
+      { sq: 'Ndize "Për gjithë kompaninë" që ta ndjekë asistenti i të gjithëve; fikur, e ndjek vetëm asistenti yt. Për gjithë kompaninë e mëson vetëm menaxheri.', en: 'Turn on "For the whole company" so everyone\'s assistant follows it; off, only yours does. Only a manager teaches it for the whole company.' },
+      { sq: 'Në bisedë (Ctrl+J), kur e korrigjon agjentin ose i thua si punoni, ai të pyet "Ta mbaj mend?"; me "Po" mësimi shtohet këtu.', en: 'In the chat (Ctrl+J), when you correct the agent or tell it how you work, it asks "Remember this?"; with "Yes" the lesson is added here.' },
+      { sq: 'Kur shtyp "Jo" te një kartë, shkruaj pse: arsyeja ruhet këtu dhe propozimi i ardhshëm del më i mirë.', en: 'When you press "No" on a card, write why: the reason is kept here and the next proposal is better.' },
+      { sq: 'Me lapsin e ndryshon një mësim, me koshin e harron.', en: 'Change a lesson with the pencil, forget it with the bin.' },
+    ],
+    mistakes: [{ sq: 'Një mësim nuk jep leje: arkëtari nuk sheh paga edhe nëse shkruhet "tregoja pagat".', en: 'A lesson gives no permissions: a cashier sees no salaries even if it says "show them the salaries".' }],
+    related: [{ href: '/settings/automation', label: { sq: 'Automatizimet', en: 'Automations' } }, { href: '/tasks', label: { sq: 'Detyrat', en: 'Tasks' } }],
+  },
   '/settings/automation': {
     what: { sq: 'Automatizimet: çfarë bën DrisPRO vetë dhe kur. Çdo gjë që prek paratë, ligjin ose mallin pret konfirmimin e një personi.', en: 'Automations: what DrisPRO does by itself, and when. Whatever touches money, the law or goods waits for a person to confirm.' },
     steps: [

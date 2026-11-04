@@ -12,11 +12,13 @@ const MigrationPage = lazyPage(() => import('./pages/migration-page'), 'Migratio
 const AutomationPage = lazyPage(() => import('./pages/automation-page'), 'AutomationPage')
 const IntegrationsPage = lazyPage(() => import('@/features/portal/integrations-page'), 'IntegrationsPage')
 const NotificationsPage = lazyPage(() => import('./pages/notifications-page'), 'NotificationsPage')
+const AssistantKnowledgePage = lazyPage(() => import('./pages/assistant-page'), 'AssistantKnowledgePage')
 
 export const settingsRoutes: RouteObject[] = [
   { path: 'settings/audit', element: <RequirePerm perm="audit.read" />, children: [{ index: true, element: <AuditPage /> }] },
   { path: 'settings/automation', element: <RequirePerm perm="core.read" />, children: [{ index: true, element: <AutomationPage /> }] },
   { path: 'settings/import', element: <RequirePerm perm="core.read" />, children: [{ index: true, element: <ImportPage /> }] },
+  { path: 'settings/assistant', element: <RequirePerm perm="core.read" />, children: [{ index: true, element: <AssistantKnowledgePage /> }] },
   { path: 'settings', element: <RequirePerm perm="admin.read" />, children: [
     { index: true, element: <CompanySettingsPage /> },
     { path: 'users', element: <UsersPage /> },

@@ -32,6 +32,7 @@ export default {
   "Attendance": "Prisustvo",
   "Audit log|menu": "Ko je šta menjao",
   "Automations": "Automatizacije",
+  "AI agent|menu": "AI agent",
   "B2B portal and API|menu": "Veze sa programima",
   "Bank and cash": "Banka i blagajna",
   "Bill of materials": "Normativ",

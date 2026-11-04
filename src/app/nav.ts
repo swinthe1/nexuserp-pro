@@ -5,7 +5,7 @@ import {
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, Building, HandCoins, ListTree, Network, Settings2, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, 
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
   BedDouble, BookUser, CalendarRange, ConciergeBell, Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, ReceiptText, IdCard, Settings, CreditCard, type LucideIcon, Activity, ArrowUpDown, BadgeEuro, BookOpen, CalendarPlus, CheckCheck, CircleDollarSign, Clock, Coins, Combine, FileScan, FolderTree, Gift, Handshake, LineChart, Map, Move, NotebookTabs, PieChart, ScanBarcode, Send, ListChecks, ChartSpline, PackageMinus, GraduationCap,
-  FileSignature, ListTodo, ScanSearch, Grid3x3, Gauge, Award, Gavel,
+  FileSignature, ListTodo, ScanSearch, Grid3x3, Gauge, Award, Gavel, Brain,
 } from 'lucide-react'
 import { msg } from '@/i18n'
 
@@ -245,6 +245,7 @@ export const NAV: NavSection[] = [
       { label: msg('Users and roles'), href: '/settings/users', icon: KeyRound, perm: 'admin.read', keywords: ['invite', 'members', 'permissions', 'roles', 'access', 'security', 'siguria', 'permission matrix', 'custom role'] },
       { label: msg('Numbering'), href: '/settings/numbering', icon: ListOrdered, perm: 'admin.read', keywords: ['sequences', 'prefix', 'document numbers'] },
       { label: msg('Automations'), href: '/settings/automation', icon: Zap, perm: 'core.read', keywords: ['automatic', 'schedule', 'automatizim', 'email', 'whatsapp', 'reminders'] },
+      { label: msg('AI agent|menu'), href: '/settings/assistant', icon: Brain, perm: 'core.read', keywords: ['agjenti', 'asistenti', 'ai', 'inteligjenca artificiale', 'trajno', 'mëso', 'rregulla', 'çka di agjenti', 'teach', 'knowledge', 'memory'] },
       { label: msg('Approval workflows|menu'), href: '/settings/workflows', icon: Workflow, perm: 'admin.read', keywords: ['approval limits', 'approvers'] },
       { label: msg('Import data'), href: '/settings/import', icon: Import, perm: 'core.read', keywords: ['csv', 'excel', 'upload', 'migration', 'opening balances'] },
       { label: msg('Move from another program'), href: '/settings/migration', icon: ArrowDownToLine, perm: 'admin.write', keywords: ['migration', 'kubit', 'logmicro', 'bilanc', 'pantheon', 'opening balances', 'cut-over', 'kalimi', 'migrimi'] },

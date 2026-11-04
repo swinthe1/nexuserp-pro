@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeftRight, ArrowUp, BellRing, Check, FileText, History, ListTodo, Loader2, MessageSquarePlus, ShoppingCart, Sparkles, Sun, Tag, Trash2, X } from 'lucide-react'
+import { ArrowLeftRight, ArrowUp, BellRing, Brain, Check, FileText, History, ListTodo, Loader2, MessageSquarePlus, ShoppingCart, Sparkles, Sun, Tag, Trash2, X } from 'lucide-react'
 import * as React from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
@@ -14,7 +14,7 @@ import { msg, t, tServer } from '@/i18n'
 import { Markdown } from './markdown'
 
 type Action = {
-  id: string; kind: 'task' | 'sales_invoice' | 'purchase_order' | 'transfer' | 'price' | 'reminder'
+  id: string; kind: 'task' | 'sales_invoice' | 'purchase_order' | 'transfer' | 'price' | 'reminder' | 'memory'
   preview: { title?: string; rows?: [string, string][]; note?: string }
   status: 'proposed' | 'done' | 'declined' | 'failed' | 'expired'
   result: { href?: string; number?: string; messages?: number } | null; error: string | null
@@ -37,6 +37,7 @@ function stepLabel(step: string | null | undefined) {
     case 'page_record': return t('Looking at this page…')
     case 'app_help': return t('Looking in the guide…')
     case 'my_tasks': return t('Looking at the tasks…')
+    case 'company_knowledge': return t('Looking at what you taught it…')
     default: return step?.startsWith('propose_') ? t('Preparing it for you…') : t('Thinking…')
   }
 }
@@ -56,13 +57,18 @@ const KIND: Record<Action['kind'], { icon: typeof ListTodo; label: string }> = {
   transfer: { icon: ArrowLeftRight, label: msg('A transfer request') },
   price: { icon: Tag, label: msg('A new price') },
   reminder: { icon: BellRing, label: msg('A payment reminder') },
+  memory: { icon: Brain, label: msg('Remember this?') },
 }
+const ROW_LABELS = ['Person', 'Due', 'Priority', 'Without VAT', 'With VAT', 'Quantity', 'From', 'To', 'Price now with VAT', 'New price with VAT', 'Owed', 'Overdue', 'For']
+const ROW_VALUES: string[] = [msg('the whole company'), msg('only you')]
 
 /** what the assistant prepared: nothing happens until the person presses "Po" */
 function ActionCard({ a, onNavigate }: { a: Action; onNavigate: () => void }) {
   const qc = useQueryClient()
+  const [why, setWhy] = React.useState<string | null>(null)
   const decide = useMutation({
-    mutationFn: async (yes: boolean) => unwrap(await supabase.rpc('assistant_decide', { p_action: a.id, p_yes: yes })),
+    mutationFn: async (v: { yes: boolean; reason?: string }) =>
+      unwrap(await supabase.rpc('assistant_decide', { p_action: a.id, p_yes: v.yes, ...(v.reason?.trim() ? { p_reason: v.reason.trim() } : {}) })),
     onSettled: () => { void qc.invalidateQueries({ queryKey: ['assistant'] }) },
   })
   const k = KIND[a.kind]
@@ -76,23 +82,34 @@ function ActionCard({ a, onNavigate }: { a: Action; onNavigate: () => void }) {
       {!!a.preview.rows?.length && (
         <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
           {a.preview.rows.map(([l, v], i) => (
-            <React.Fragment key={i}><dt className="text-muted-foreground">{KIND[a.kind] && ['Person', 'Due', 'Priority', 'Without VAT', 'With VAT', 'Quantity', 'From', 'To', 'Price now with VAT', 'New price with VAT', 'Owed', 'Overdue'].includes(l) ? t(l) : l}</dt>
-              <dd className="text-right tabular-nums">{l === 'Priority' ? tEnumPriority(v) : v}</dd></React.Fragment>
+            <React.Fragment key={i}><dt className="text-muted-foreground">{ROW_LABELS.includes(l) ? t(l) : l}</dt>
+              <dd className="text-right tabular-nums">{l === 'Priority' ? tEnumPriority(v) : ROW_VALUES.includes(v) ? t(v) : v}</dd></React.Fragment>
           ))}
         </dl>
       )}
       {a.preview.note && <p className="mt-1.5 text-2xs text-muted-foreground">{t(a.preview.note)}</p>}
-      {a.status === 'proposed' ? (
+      {a.status === 'proposed' && why !== null ? (
+        <form className="mt-2.5 space-y-2" onSubmit={(e) => { e.preventDefault(); decide.mutate({ yes: false, reason: why }) }}>
+          <label className="block text-xs text-muted-foreground" htmlFor={'why-' + a.id}>{t('Why not? The agent learns from it (optional).')}</label>
+          <textarea id={'why-' + a.id} rows={2} maxLength={500} value={why} autoFocus onChange={(e) => setWhy(e.target.value)}
+            placeholder={t('e.g. We order from this vendor on Mondays only')}
+            className="w-full resize-none rounded-md border bg-background px-2 py-1.5 text-base outline-none focus-visible:border-ring sm:text-sm" />
+          <div className="flex gap-2">
+            <Button size="sm" type="submit" variant="outline" disabled={decide.isPending}>{decide.isPending && <Loader2 className="animate-spin" />}{why.trim() ? t('Not this, and remember why') : t('Not this')}</Button>
+            <Button size="sm" type="button" variant="ghost" disabled={decide.isPending} onClick={() => setWhy(null)}>{t('Back')}</Button>
+          </div>
+        </form>
+      ) : a.status === 'proposed' ? (
         <div className="mt-2.5 flex gap-2">
-          <Button size="sm" className="gap-1" disabled={decide.isPending} onClick={() => decide.mutate(true)}>
-            {decide.isPending && decide.variables ? <Loader2 className="animate-spin" /> : <Check />}{t('Yes, do it')}
+          <Button size="sm" className="gap-1" disabled={decide.isPending} onClick={() => decide.mutate({ yes: true })}>
+            {decide.isPending ? <Loader2 className="animate-spin" /> : <Check />}{a.kind === 'memory' ? t('Yes, remember it') : t('Yes, do it')}
           </Button>
-          <Button size="sm" variant="outline" className="gap-1" disabled={decide.isPending} onClick={() => decide.mutate(false)}><X />{t('No')}</Button>
+          <Button size="sm" variant="outline" className="gap-1" disabled={decide.isPending} onClick={() => (a.kind === 'memory' ? decide.mutate({ yes: false }) : setWhy(''))}><X />{t('No')}</Button>
         </div>
       ) : a.status === 'done' ? (
         <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs font-medium text-success">
-          <Check className="size-3.5" />{a.kind === 'reminder' ? t('Sent') : t('Done')}
-          {a.result?.href && <Link to={a.result.href} onClick={onNavigate} className="text-primary underline underline-offset-2">{a.result.number ?? t('Open')}</Link>}
+          <Check className="size-3.5" />{a.kind === 'reminder' ? t('Sent') : a.kind === 'memory' ? t('Remembered') : t('Done')}
+          {a.result?.href && <Link to={a.result.href} onClick={onNavigate} className="text-primary underline underline-offset-2">{a.result.number ?? (a.kind === 'memory' ? t('What the agent knows') : t('Open'))}</Link>}
         </p>
       ) : a.status === 'failed' ? (
         <p className="mt-2 text-xs text-destructive">{tServer(a.error ?? 'It could not be done')}</p>
@@ -242,6 +259,9 @@ function AssistantPanel({ onClose }: { onClose: () => void }) {
             {usage.data ? t('{used} of {limit} questions this month', { used: usage.data.used, limit: usage.data.limit }) : t('Ask about your sales, stock, debts and documents')}
           </SheetDescription>
         </div>
+        <Button variant="ghost" size="icon-sm" asChild aria-label={t('What the agent knows')} title={t('What the agent knows')}>
+          <Link to="/settings/assistant" onClick={onClose}><Brain /></Link>
+        </Button>
         <Button variant="ghost" size="icon-sm" onClick={() => setShowDaily((v) => !v)} aria-label={t('Morning check')} title={t('Morning check')}
           className={cn(showDaily && 'bg-secondary')}><Sun /></Button>
         <Button variant="ghost" size="icon-sm" onClick={() => setShowHistory((v) => !v)} aria-label={t('Earlier conversations')} title={t('Earlier conversations')}

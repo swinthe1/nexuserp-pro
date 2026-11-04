@@ -15276,6 +15276,7 @@ export type Database = {
         Args: {
           p_action: string
           p_yes: boolean
+          p_reason?: string
         }
         Returns: Json
       }
@@ -15297,6 +15298,29 @@ export type Database = {
           p_conversation: string
         }
         Returns: undefined
+      }
+      assistant_memory_delete: {
+        Args: {
+          p_id: string
+        }
+        Returns: undefined
+      }
+      assistant_memory_list: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
+      assistant_memory_save: {
+        Args: {
+          p_company: string
+          p_id: string
+          p_kind: string
+          p_title: string
+          p_body: string
+          p_company_wide?: boolean
+        }
+        Returns: Json
       }
       assistant_send: {
         Args: {
