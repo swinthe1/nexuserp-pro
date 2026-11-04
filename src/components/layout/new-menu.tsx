@@ -1,3 +1,4 @@
+import * as React from 'react'
 import {
   ArrowDownLeft, ArrowUpRight, Boxes, CalendarClock, FileText, PackageCheck, Plus, Receipt, ReceiptText, ShoppingBag, Store, UserPlus, type LucideIcon,
 } from 'lucide-react'
@@ -31,7 +32,8 @@ const CHOICES = (photo: boolean): Choice[] => [
   { label: msg('A new item'), hint: msg('Something you sell or keep in stock'), href: '/inventory/products/new', icon: Boxes, perm: 'inventory.write', page: '/inventory/products' },
 ]
 
-export function NewMenu() {
+/** trigger: the classic toolbar shows its own big "E re" button */
+export function NewMenu({ trigger }: { trigger?: React.ReactNode } = {}) {
   const { can, pageAllowed, hasFeature } = useCompany()
   const hidden = useHiddenSections()
   const navigate = useNavigate()
@@ -45,7 +47,7 @@ export function NewMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button size="icon" className="size-9 shrink-0 rounded-full" aria-label={t('New|create')} title={t('New|create')}><Plus className="size-5" /></Button>
+        {trigger ?? <Button size="icon" className="size-9 shrink-0 rounded-full" aria-label={t('New|create')} title={t('New|create')}><Plus className="size-5" /></Button>}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-80 p-1.5">
         <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">{t('What happened?')}</DropdownMenuLabel>

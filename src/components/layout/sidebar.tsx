@@ -145,6 +145,25 @@ function Item({ item, collapsed, onNavigate, active, pinned, onTogglePin, sub }:
   )
 }
 
+/** the parts of the menu and their pages this person sees, as in the side menu (the classic menu bar uses them too) */
+export function useMenuSections() {
+  const { can, pageAllowed } = useCompany()
+  const hidden = useHiddenSections()
+  const [fullMenu] = useFullMenu()
+  const focused = !can('reports.read') && !can('finance.read') && !can('admin.read')
+  const short = focused && !fullMenu
+  const mine = React.useCallback((i: NavItem) => !short || !!i.always || (i.focus ? i.focus.some(can) : writes(i.perm).some(can)), [short, can])
+  return React.useMemo(() => NAV
+    // an item without its own group heading belongs to the one above it
+    .map((s) => { let g: string | undefined; return { ...s, items: s.items.map((i): NavItem => { g = i.group ?? g; return { ...i, group: g } }) } })
+    .filter((s) => ALWAYS_SHOWN.has(s.label) || !hidden.includes(s.label))
+    .map((s) => ({ ...s, items: s.items.filter((i) => !i.hideInMenu && can(i.perm) && pageAllowed(i.href) && !hidden.includes(i.href) && mine(i)) }))
+    // a page shows once: where it first appears among the parts this business sees
+    .map((s, _, all) => ({ ...s, items: s.items.filter((i) => i.also || !all.slice(0, all.indexOf(s)).some((p) => p.items.some((x) => x.href === i.href))) }))
+    .filter((s) => s.items.length), [can, pageAllowed, hidden, mine])
+}
+export { useActiveHref }
+
 export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
   const { can, pageAllowed } = useCompany()
   const activeHref = useActiveHref()

@@ -27,7 +27,7 @@ export function UserMenu() {
   const [pcOpen, setPcOpen] = React.useState(false)
   const [aiOpen, setAiOpen] = React.useState(false)
   const [meOpen, setMeOpen] = React.useState(false)
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme, look, setLook } = useTheme()
   const locale = useLocale()
   const { canInstall, install } = useInstallApp()
   const name = (user?.user_metadata?.full_name as string | undefined) ?? user?.email ?? ''
@@ -70,6 +70,12 @@ export function UserMenu() {
               <DropdownMenuRadioItem value="light">{t('Light')}</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="dark">{t('Dark')}</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="system">{t('Same as device')}</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-2xs font-medium text-muted-foreground">{t('The look of the program')}</DropdownMenuLabel>
+            <DropdownMenuRadioGroup value={look} onValueChange={(v) => setLook(v as 'modern' | 'classic')}>
+              <DropdownMenuRadioItem value="modern">{t('Modern')}</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="classic">{t('Classic (Windows)')}</DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
           </DropdownMenuSubContent>
         </DropdownMenuSub>

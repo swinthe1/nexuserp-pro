@@ -1,10 +1,13 @@
 import * as React from 'react'
 
 type Theme = 'light' | 'dark' | 'system'
-interface ThemeCtx { theme: Theme; resolved: 'light' | 'dark'; setTheme: (t: Theme) => void }
+/** modern: the DrisPRO look; classic: a Windows program (title bar, menu bar, toolbar, tree, status bar) */
+export type Look = 'modern' | 'classic'
+interface ThemeCtx { theme: Theme; resolved: 'light' | 'dark'; setTheme: (t: Theme) => void; look: Look; setLook: (l: Look) => void }
 
 const ThemeContext = React.createContext<ThemeCtx | null>(null)
 const KEY = 'drispro.theme'
+const LOOK_KEY = 'drispro.look'
 
 function systemDark() {
   return window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -15,6 +18,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     try { return (localStorage.getItem(KEY) as Theme) || 'light' } catch { return 'light' }
   })
   const [sysDark, setSysDark] = React.useState(systemDark)
+  const [look, setLookState] = React.useState<Look>(() => {
+    try { return localStorage.getItem(LOOK_KEY) === 'classic' ? 'classic' : 'modern' } catch { return 'modern' }
+  })
+  React.useEffect(() => { document.documentElement.classList.toggle('classic', look === 'classic') }, [look])
+  const setLook = React.useCallback((l: Look) => {
+    setLookState(l)
+    try { localStorage.setItem(LOOK_KEY, l) } catch { /* private mode */ }
+  }, [])
 
   React.useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
@@ -33,7 +44,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     try { localStorage.setItem(KEY, t) } catch { /* private mode */ }
   }, [])
 
-  return <ThemeContext.Provider value={{ theme, resolved, setTheme }}>{children}</ThemeContext.Provider>
+  return <ThemeContext.Provider value={{ theme, resolved, setTheme, look, setLook }}>{children}</ThemeContext.Provider>
 }
 
 export function useTheme() {

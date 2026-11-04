@@ -6,6 +6,8 @@ import { CommandPaletteProvider } from '@/components/layout/command-palette'
 import { CompanySwitcher } from '@/components/layout/company-switcher'
 import { Sidebar, SidebarNav } from '@/components/layout/sidebar'
 import { Topbar } from '@/components/layout/topbar'
+import { ClassicShell } from '@/components/layout/classic-shell'
+import { useTheme } from '@/app/theme-provider'
 import { SimpleTopbar } from '@/features/simple/simple-shell'
 import { ScannerTopbar } from '@/features/scanner/scanner-home'
 import { isScannerMode } from '@/features/scanner/mode'
@@ -47,6 +49,7 @@ export function AppLayout() {
     try { return localStorage.getItem(KEY) === '1' } catch { return false }
   })
   const [mobileOpen, setMobileOpen] = React.useState(false)
+  const { look } = useTheme()
 
   const toggle = React.useCallback(() => {
     setCollapsed((c) => {
@@ -97,6 +100,39 @@ export function AppLayout() {
     )
   }
 
+  const mobileNav = (
+    <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+      <SheetContent side="left" className="sidebar-navy w-[280px] gap-3 border-sidebar-border bg-sidebar p-3 text-sidebar-foreground">
+        <SheetTitle className="sr-only">{t('Main menu')}</SheetTitle>
+        <div className="pr-8"><CompanySwitcher /></div>
+        <div className="overflow-y-auto"><SidebarNav onNavigate={() => setMobileOpen(false)} /></div>
+      </SheetContent>
+    </Sheet>
+  )
+
+  // the classic look: a Windows program with a menu bar, a toolbar, a tree and a status bar
+  if (look === 'classic') {
+    return (
+      <CommandPaletteProvider>
+        <ClassicShell onOpenMobileNav={() => setMobileOpen(true)}>
+          {mobileNav}
+          <OfflineBanner />
+          <TrainingBanner />
+          <LiveLinkBanner />
+          <SupportBanner />
+          <Invitations />
+          <TrainingNudge />
+          <LicenseBanner />
+          <main id="main" className="flex-1 px-3 py-3 sm:px-4">
+            <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
+            <GuardHost />
+            <TourHost />
+          </main>
+        </ClassicShell>
+      </CommandPaletteProvider>
+    )
+  }
+
   return (
     <CommandPaletteProvider>
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-card focus:px-3 focus:py-2">
@@ -104,13 +140,7 @@ export function AppLayout() {
       </a>
       <div className="flex min-h-dvh">
         <Sidebar collapsed={collapsed} onToggle={toggle} />
-        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetContent side="left" className="sidebar-navy w-[280px] gap-3 border-sidebar-border bg-sidebar p-3 text-sidebar-foreground">
-            <SheetTitle className="sr-only">{t('Main menu')}</SheetTitle>
-            <div className="pr-8"><CompanySwitcher /></div>
-            <div className="overflow-y-auto"><SidebarNav onNavigate={() => setMobileOpen(false)} /></div>
-          </SheetContent>
-        </Sheet>
+        {mobileNav}
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar onOpenMobileNav={() => setMobileOpen(true)} />
           <OfflineBanner />

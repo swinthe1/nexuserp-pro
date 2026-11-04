@@ -50,4 +50,12 @@ export default {
   "Only a manager teaches the agent for the whole company.": "Agjentin për gjithë kompaninë e mëson vetëm menaxheri.",
   "The agent follows it from now on; it is on the page \"What the agent knows\"": "Agjenti e ndjek që tani; e gjen te faqja \"Çka di agjenti\"",
   "AI agent|menu": "Agjenti AI",
+  "Help": "Ndihmë",
+  "Forward": "Para",
+  "Connected to the server": "Lidhur me serverin",
+  "No connection: the till keeps selling": "Pa lidhje: arka vazhdon të shesë",
+  "Server": "Serveri",
+  "The look of the program": "Pamja e programit",
+  "Modern": "Moderne",
+  "Classic (Windows)": "Klasike (Windows)",
 } satisfies Dict
