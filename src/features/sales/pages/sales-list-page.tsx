@@ -158,7 +158,8 @@ export function SalesListPage({ kind }: { kind: SalesKind }) {
         searchPlaceholder={t('Number, customer…')}
         exportName={kind}
         onRowClick={(r) => navigate(`${cfg.href}/${r.id}`)}
-        preview={(r) => ({ print: { kind: ({ quotes: 'sales_quote', orders: 'sales_order', deliveries: 'delivery', invoices: 'sales_invoice' } as const)[kind], id: r.id } })}
+        preview={(r) => ({ print: { kind: ({ quotes: 'sales_quote', orders: 'sales_order', deliveries: 'delivery', invoices: 'sales_invoice' } as const)[kind], id: r.id }, id: r.id,
+          duplicate: kind === 'deliveries' ? undefined : ({ quotes: 'sales_quotes', orders: 'sales_orders', invoices: 'sales_invoices' } as const)[kind] })}
         facets={[{ columnId: 'status', title: t('Status'), options: cfg.statuses.map((s) => ({ label: humanize(s), value: s })) }, ...(cfg.extraFacets?.() ?? [])]}
         empty={{ title: t(cfg.emptyTitle), description: t(cfg.empty), action: newButton }}
       />

@@ -53,4 +53,6 @@ export default {
   "The one above": "Ai më lart",
   "The one below": "Ai më poshtë",
   "No lines": "Pa rreshta",
+  "A new draft with the same lines": "Një skicë e re me të njëjtat rreshta",
+  "Copy {number} made as a draft: check the dates and change what is different": "Kopja {number} u krijua si skicë: kontrollo datat dhe ndrysho çka është ndryshe",
 } satisfies Dict

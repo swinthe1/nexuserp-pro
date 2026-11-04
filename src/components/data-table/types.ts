@@ -43,4 +43,7 @@ export interface RowPreview {
   print?: { kind: import('@/lib/documents/model').DocKind; id: string }
   lines?: () => Promise<{ name: string; qty: number; price?: number | null; total?: number | null }[]>
   title?: string
+  /** the document's table, for "Duplicate" in the quick look */
+  duplicate?: import('@/components/duplicate-button').DuplicableTable
+  id?: string
 }

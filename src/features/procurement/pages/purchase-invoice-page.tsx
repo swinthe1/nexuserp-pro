@@ -35,6 +35,7 @@ import { useCurrencies, useWarehouses } from '@/features/inventory/api'
 import { useBankAccounts } from '@/features/finance/api'
 import { usePaymentTerms } from '@/features/sales/api'
 import { useTaxCodes } from '@/features/tax/api'
+import { DuplicateButton } from '@/components/duplicate-button'
 import { useActiveVendors, useDeleteProcDocument, useProcDocument, useSaveProcDocument } from '../api'
 
 type BillDoc = Tables<'vendor_bills'> & { lines: Tables<'vendor_bill_lines'>[] }
@@ -388,6 +389,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
         actions={editable && <>
           {doc && <ConfirmDialog trigger={<Button variant="ghost"><Trash2 /> {t('Delete')}</Button>} title={t('Delete this draft?')} description={t('Nothing was received or posted yet.')}
             destructive confirmLabel={t('Delete')} onConfirm={async () => { await del.mutateAsync(doc.id); navigate('/procurement/bills') }} />}
+          {doc && <DuplicateButton table="vendor_bills" id={doc.id} />}
           <Button variant="outline" loading={save.isPending && !complete.isPending} disabled={!h.vendor_id || !h.vendor_invoice_number.trim()} onClick={() => void saveDraft()}><Save /> {t('Save draft')}</Button>
           <Button disabled={!!problem} title={problem ?? undefined} onClick={() => setConfirm(true)}><CheckCheck /> {t('Complete')}</Button>
         </>} />

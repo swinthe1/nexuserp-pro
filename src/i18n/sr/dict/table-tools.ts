@@ -60,4 +60,7 @@ export default {
   "Qty": "Kol.",
   "Price": "Cena",
   "No lines": "Bez stavki",
+  "Duplicate": "Dupliraj",
+  "A new draft with the same lines": "Novi nacrt sa istim stavkama",
+  "Copy {number} made as a draft: check the dates and change what is different": "Kopija {number} je napravljena kao nacrt: proverite datume i izmenite ono što je drugačije",
 } satisfies Dict

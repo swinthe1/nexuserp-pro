@@ -56,7 +56,7 @@ export default {
   'Reload': 'Ringarko',
   'Copy': 'Kopjo',
   'Copied': 'U kopjua',
-  'Duplicate': 'Dyfisho',
+  'Duplicate': 'Dupliko',
   'Archive': 'Arkivo',
   'Restore': 'Rikthe',
   'Undo': 'Zhbëj',

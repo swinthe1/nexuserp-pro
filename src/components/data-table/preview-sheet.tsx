@@ -11,6 +11,7 @@ import { describeError } from '@/lib/errors'
 import { printHtml } from '@/lib/print'
 import { formatMoney, formatQty } from '@/lib/utils'
 import type { Getter } from './rules'
+import { DuplicateButton } from '@/components/duplicate-button'
 import type { RowPreview } from './types'
 
 /**
@@ -45,6 +46,7 @@ export function PreviewSheet<T>({ rows, index, onIndex, onClose, getters, previe
           <Button size="icon" variant="outline" className="size-8" disabled={index === 0} onClick={() => go(-1)} aria-label={t('The one above')}><ChevronUp /></Button>
           <Button size="icon" variant="outline" className="size-8" disabled={index >= rows.length - 1} onClick={() => go(1)} aria-label={t('The one below')}><ChevronDown /></Button>
           {doc.data && <Button size="sm" variant="outline" onClick={() => printHtml(doc.data.body, doc.data.css, 'document')}><Printer /> {t('Print')}</Button>}
+          {spec?.duplicate && spec.id && <DuplicateButton size="sm" table={spec.duplicate} id={spec.id} />}
           {onOpen && row && <Button size="sm" onClick={() => onOpen(row)}><ExternalLink /> {t('Open')}</Button>}
         </SheetHeader>
         <div className="min-h-0 flex-1 overflow-y-auto bg-muted/40">

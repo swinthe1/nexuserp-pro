@@ -44,6 +44,7 @@ import { salesDocSchema, type SalesDocValues } from '../schemas'
 import { AccountingTab } from '@/features/finance/components/t-accounts'
 import { ErrorState } from '@/components/error-state'
 import { RepeatInvoiceDialog } from '../recurring'
+import { DuplicateButton } from '@/components/duplicate-button'
 import { msg, t, td, tr } from '@/i18n'
 
 type DocKind = Exclude<SalesKind, 'deliveries'>
@@ -371,7 +372,8 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
           </>}
           description={doc ? t('Created {date}', { date: formatDate(doc.created_at, true) }) : undefined}
           actions={<>{doc && <DocumentActions id={doc.id} kind={kind === 'quotes' ? 'sales_quote' : kind === 'orders' ? 'sales_order' : 'sales_invoice'}
-            alt={kind === 'quotes' ? [{ kind: 'proforma_quote', label: t('pro forma') }] : kind === 'orders' ? [{ kind: 'proforma', label: t('pro forma') }] : undefined} />}<Can perm={kind === 'orders' ? 'sales.read' : cfg.writePerm}>
+            alt={kind === 'quotes' ? [{ kind: 'proforma_quote', label: t('pro forma') }] : kind === 'orders' ? [{ kind: 'proforma', label: t('pro forma') }] : undefined} />}
+            {doc && <Can perm={cfg.writePerm}><DuplicateButton table={kind === 'quotes' ? 'sales_quotes' : kind === 'orders' ? 'sales_orders' : 'sales_invoices'} id={doc.id} /></Can>}<Can perm={kind === 'orders' ? 'sales.read' : cfg.writePerm}>
             {doc && editable && (
               <ConfirmDialog trigger={<Button variant="ghost" size="sm" className="text-destructive"><Trash2 /> {t('Delete')}</Button>} title={t('Delete draft {number}?', { number: doc.number })}
                 description={t('The draft disappears from the lists. Its number is not used again.')} confirmLabel={t('Delete draft')} destructive

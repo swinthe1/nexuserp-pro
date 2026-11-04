@@ -43,6 +43,7 @@ import { ConfirmOrderDialog, OrderRestDialog, isLate, poDue } from '../component
 import { PRICE_KEY, PriceRiseCard } from '../components/price-rise'
 import { MATCH_LABEL, PurchaseLinesEditor, type PurchaseProgress } from '../components/purchase-lines-editor'
 import { billSchema, purchaseOrderSchema, type BillValues, type PurchaseOrderValues } from '../schemas'
+import { DuplicateButton } from '@/components/duplicate-button'
 import { AccountingTab } from '@/features/finance/components/t-accounts'
 
 type Kind = 'orders' | 'bills'
@@ -294,6 +295,7 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
           description={doc ? `${doc.vendor?.name ?? ''} · ${t('created {date}', { date: formatDate(doc.created_at, true) })}` : undefined}
           actions={<Can perm="procurement.read">
             {doc && <DocumentActions id={doc.id} kind="purchase_order" />}
+            {doc && <DuplicateButton table="purchase_orders" id={doc.id} />}
             {doc && editable && (
               <ConfirmDialog trigger={<Button variant="ghost" size="sm" className="text-destructive"><Trash2 /> {t('Delete')}</Button>} title={t('Delete draft {number}?', { number: doc.number })}
                 description={t('The draft disappears from lists. Its number is not reused.')} confirmLabel={t('Delete draft')} destructive
@@ -610,6 +612,7 @@ function BillForm({ doc }: { doc?: BillDoc }) {
           </>}
           description={doc ? `${doc.vendor?.name ?? ''} · ${t('invoice {number}', { number: doc.vendor_invoice_number })}` : t('For bills without a purchase order — or open the order and use “Enter bill”.')}
           actions={<Can perm="invoicing.read">
+            {doc && <DuplicateButton table="vendor_bills" id={doc.id} />}
             {doc && editable && (
               <ConfirmDialog trigger={<Button variant="ghost" size="sm" className="text-destructive"><Trash2 /> {t('Delete')}</Button>} title={t('Delete draft {number}?', { number: doc.number })}
                 description={t('The draft disappears; its quantities can be billed again.')} confirmLabel={t('Delete draft')} destructive

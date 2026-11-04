@@ -728,6 +728,7 @@ export default {
   "Your morning check is ready": "Kontrolli yt i mëngjesit është gati",
   "Only a manager teaches the agent for the whole company": "Agjentin për gjithë kompaninë e mëson vetëm menaxheri",
   "Write the item's name": "Shkruaj emërtimin e artikullit",
+  "This document cannot be duplicated": "Ky dokument nuk mund të dyfishohet",
   "At most 2000 lines at once": "Së shumti 2000 rreshta njëherësh",
   "Write what the agent should know": "Shkruani çka duhet të dijë agjenti",
   "Write it in at most 4000 characters": "Shkruajeni me jo më shumë se 4000 shkronja",

@@ -16203,6 +16203,13 @@ export type Database = {
         }
         Returns: { partner_id: string | null; partner_name: string | null; email: string | null; phone: string | null; step: number | null; total: number | null; invoices: number | null; kind: string | null }[]
       }
+      duplicate_document: {
+        Args: {
+          p_table: string
+          p_id: string
+        }
+        Returns: Json
+      }
       employee_advance_pay: {
         Args: {
           p: Json

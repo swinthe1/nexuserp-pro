@@ -174,7 +174,7 @@ export function ProcurementListPage({ kind }: { kind: ProcKind }) {
         tableKey={`procurement.${kind}`} columns={columns} data={docs.data ? rows : undefined} isLoading={docs.isLoading} error={docs.error}
         getRowId={(r) => r.id} searchPlaceholder={kind === 'bills' ? t('Number, vendor, vendor invoice no.…') : t('Number, vendor…')} exportName={kind}
         onRowClick={(r) => navigate(`${cfg.href}/${r.id}`)}
-        preview={kind === 'orders' ? (r) => ({ print: { kind: 'purchase_order', id: r.id } }) : kind === 'bills' ? (r) => ({ lines: billLines(r.id) }) : undefined}
+        preview={kind === 'orders' ? (r) => ({ print: { kind: 'purchase_order', id: r.id }, id: r.id, duplicate: 'purchase_orders' }) : kind === 'bills' ? (r) => ({ lines: billLines(r.id), id: r.id, duplicate: 'vendor_bills' }) : undefined}
         facets={[{ columnId: 'status', title: t('Status'), options: cfg.statuses.map((s) => ({ label: humanize(s), value: s })) }, ...(cfg.extraFacets?.(docs.data ?? []) ?? [])]}
         empty={{ title: cfg.emptyTitle, description: cfg.empty, action: newButton }}
       />
