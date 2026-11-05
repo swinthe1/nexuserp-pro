@@ -97,6 +97,7 @@ const MovePage = lazy(() => import('@/features/wms/pages/move-page'), 'MovePage'
 const WastePage = lazy(() => import('@/features/wms/pages/waste-page'), 'WastePage')
 const OutputsPage = lazy(() => import('@/features/inventory/pages/outputs-page'), 'OutputsPage')
 const BalancingPage = lazy(() => import('@/features/inventory/pages/balancing-page'), 'BalancingPage')
+const SmallAssetsPage = lazy(() => import('@/features/finance/pages/small-assets-page'), 'SmallAssetsPage')
 const CountsPage = lazy(() => import('@/features/wms/pages/counts-page'), 'CountsPage')
 const CountPage = lazy(() => import('@/features/wms/pages/counts-page'), 'CountPage')
 const LotsPage = lazy(() => import('@/features/wms/pages/lots-page'), 'LotsPage')
@@ -366,6 +367,7 @@ const router = createBrowserRouter([
         { path: 'bank', element: <BankPage /> },
         { path: 'bank/statements/:id', element: <StatementPage /> },
         { path: 'assets', element: <AssetsPage /> },
+        { path: 'small-assets', element: <SmallAssetsPage /> },
         { path: 'assets/new', element: <AssetPage key="asset-new" /> },
         { path: 'assets/:id', element: <AssetPage key="asset" /> },
         { path: 'cost-centers', element: <CostCentersPage /> },

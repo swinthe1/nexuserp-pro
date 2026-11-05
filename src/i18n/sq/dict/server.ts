@@ -846,4 +846,5 @@ export default {
   "Write what was paid": "Shkruaj çfarë u pagua",
   "Choose why the goods go out": "Zgjidh pse del malli",
   "Scan what is thrown away": "Skano çfarë hidhet",
+  "Choose customers or suppliers": "Zgjidh klientët ose furnitorët",
 } satisfies Dict

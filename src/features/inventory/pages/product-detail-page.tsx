@@ -91,7 +91,7 @@ export function ProductView({ id, inDialog, onDeleted }: { id: string | undefine
         title={<span className="flex min-w-0 items-center gap-3"><ProductPhoto productId={p.id} name={p.name} hasImage={p.image_path === 'db'} /><span className="truncate">{p.name}</span></span>}
         meta={<>
           <Badge variant="outline">{p.code}</Badge>
-          {!p.is_active && <Badge variant="secondary">{t('Inactive')}</Badge>}
+          {!p.is_active && <Badge variant="secondary">{t('Suspended|item')}</Badge>}
           {p.tracking !== 'none' && <Badge variant="default">{p.tracking === 'lot' ? t('Tracked by lot') : t('Tracked by serial number')}</Badge>}
         </>}
         description={p.description ?? undefined}

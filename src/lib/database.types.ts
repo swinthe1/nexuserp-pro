@@ -1359,6 +1359,7 @@ export type Database = {
           default_discount_pct: number
           bank_iban: string | null
           no_reminders: boolean
+          vendor_kinds: string[]
         }
         Insert: {
           id?: string
@@ -1393,6 +1394,7 @@ export type Database = {
           default_discount_pct?: number
           bank_iban?: string | null
           no_reminders?: boolean
+          vendor_kinds?: string[]
         }
         Update: {
           id?: string
@@ -1427,6 +1429,7 @@ export type Database = {
           default_discount_pct?: number
           bank_iban?: string | null
           no_reminders?: boolean
+          vendor_kinds?: string[]
         }
         Relationships: [
           { foreignKeyName: "business_partners_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -11887,6 +11890,81 @@ export type Database = {
           { foreignKeyName: "shipments_company_id_shipping_address_id_fkey"; columns: ["company_id", "shipping_address_id"]; isOneToOne: false; referencedRelation: "partner_addresses"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      small_assets: {
+        Row: {
+          id: string
+          company_id: string
+          code: string
+          name: string
+          category: string | null
+          warehouse_id: string | null
+          holder_id: string | null
+          quantity: number
+          unit_value: number
+          acquired_on: string | null
+          serial_no: string | null
+          status: string
+          notes: string | null
+          counted_at: string | null
+          counted_by: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          code: string
+          name: string
+          category?: string | null
+          warehouse_id?: string | null
+          holder_id?: string | null
+          quantity?: number
+          unit_value?: number
+          acquired_on?: string | null
+          serial_no?: string | null
+          status?: string
+          notes?: string | null
+          counted_at?: string | null
+          counted_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          code?: string
+          name?: string
+          category?: string | null
+          warehouse_id?: string | null
+          holder_id?: string | null
+          quantity?: number
+          unit_value?: number
+          acquired_on?: string | null
+          serial_no?: string | null
+          status?: string
+          notes?: string | null
+          counted_at?: string | null
+          counted_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "small_assets_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "small_assets_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
       status_transitions: {
         Row: {
           doc_type: string
@@ -16476,6 +16554,14 @@ export type Database = {
         }
         Returns: Json
       }
+      debts_by_due: {
+        Args: {
+          p_company: string
+          p_kind: string
+          p?: Json
+        }
+        Returns: Json
+      }
       decide_approval: {
         Args: {
           p_request_id: string
@@ -19117,6 +19203,14 @@ export type Database = {
           p_default?: boolean
         }
         Returns: string
+      }
+      small_asset_count: {
+        Args: {
+          p_company: string
+          p_code: string
+          p_warehouse?: string
+        }
+        Returns: Json
       }
       small_business_tax: {
         Args: {

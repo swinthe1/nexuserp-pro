@@ -18,6 +18,13 @@ import { msg, t, tn } from '@/i18n'
 import { cn, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
 import { GridExportMenu } from '@/components/export-menu'
 import { useAging, type AgingRow } from '../api'
+import { useQuery } from '@tanstack/react-query'
+import { MultiPick } from '@/components/multi-pick'
+import { td } from '@/i18n'
+import { unwrap } from '@/lib/errors'
+import { supabase } from '@/lib/supabase'
+import { useWarehouses } from '@/features/inventory/api'
+import { VENDOR_KINDS } from '@/features/sales/vendor-kinds'
 
 const BUCKETS = [
   { key: 'not_due', label: msg('Not due') },
@@ -27,7 +34,84 @@ const BUCKETS = [
   { key: 'd90_plus', label: msg('Over 90 days') },
 ] as const
 
+type Due = { id: string; number: string; ref: string | null; partner_id: string; partner: string; date: string; due_date: string; days: number; total: number; due: number
+  unit: string | null; unit_id?: string | null; kinds?: string[]; href: string }
+
+/**
+ * Every open invoice or bill by its due date (from the meeting with the staff): late ones first,
+ * then week by week, with what falls due each week; bills also by unit and by kind of supplier.
+ */
+function DueList({ kind }: { kind: 'ar' | 'ap' }) {
+  const { companyId } = useCompany()
+  const whs = useWarehouses()
+  const [units, setUnits] = React.useState<string[]>([])
+  const [kinds, setKinds] = React.useState<string[]>([])
+  const q = useQuery({
+    queryKey: ['fin', companyId, 'debts-by-due', kind, units, kinds], enabled: !!companyId,
+    queryFn: async () => unwrap(await supabase.rpc('debts_by_due', { p_company: companyId!, p_kind: kind, p: { units, kinds } as never })) as unknown as { rows: Due[]; as_of: string },
+  })
+  const rows = q.data?.rows ?? []
+  // the week a due date falls in: late, this week, next week, then the Monday it starts
+  const groups = React.useMemo(() => {
+    const today = new Date(`${q.data?.as_of ?? todayISO()}T00:00:00`)
+    const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7))
+    const m = new Map<string, { label: string; tone?: 'late'; rows: Due[]; sum: number }>()
+    for (const r of rows) {
+      let k: string, label: string, tone: 'late' | undefined
+      if (r.days < 0) { k = '0'; label = t('Late'); tone = 'late' } else {
+        const d = new Date(`${r.due_date}T00:00:00`)
+        const w = Math.floor((d.getTime() - monday.getTime()) / (7 * 864e5))
+        const start = new Date(monday); start.setDate(monday.getDate() + w * 7)
+        const end = new Date(start); end.setDate(start.getDate() + 6)
+        k = `1${String(w).padStart(4, '0')}`
+        label = w === 0 ? t('This week') : w === 1 ? t('Next week') : `${formatDate(start.toISOString().slice(0, 10))} – ${formatDate(end.toISOString().slice(0, 10))}`
+      }
+      const g = m.get(k) ?? { label, tone, rows: [], sum: 0 }
+      g.rows.push(r); g.sum += num(r.due); m.set(k, g)
+    }
+    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([, g]) => g)
+  }, [rows, q.data?.as_of])
+  const isAR = kind === 'ar'
+  return (
+    <div className="mt-4 grid gap-3">
+      {!isAR && (
+        <div className="flex flex-wrap items-center gap-2">
+          <MultiPick label={t('Units|stores')} value={units} onChange={setUnits} options={(whs.data ?? []).map((w) => ({ value: w.id, label: td(w.name), hint: w.code }))} />
+          <MultiPick label={t('Kind of supplier')} value={kinds} onChange={setKinds} options={VENDOR_KINDS.map(([value, label]) => ({ value, label: t(label) }))} />
+        </div>
+      )}
+      {q.isLoading ? <Skeleton className="h-60" /> : q.isError ? <ErrorState error={q.error} onRetry={() => void q.refetch()} /> : !rows.length ? (
+        <Card><EmptyState title={isAR ? t('No customer owes you anything') : t('Nothing to pay')} description={t('Change the dates or the filters.')} /></Card>
+      ) : groups.map((g) => (
+        <Card key={g.label} className="overflow-hidden">
+          <div className={cn('flex items-center justify-between border-b px-4 py-2.5', g.tone === 'late' ? 'bg-destructive/5' : 'bg-muted/40')}>
+            <span className={cn('font-semibold', g.tone === 'late' && 'text-destructive')}>{g.label} <span className="font-normal text-muted-foreground">· {g.rows.length}</span></span>
+            <span className="font-semibold tabular">{formatMoney(g.sum)}</span>
+          </div>
+          <Table>
+            <TableBody>
+              {g.rows.map((r) => (
+                <TableRow key={r.id} className="hover:bg-muted/30">
+                  <TableCell className="w-28 whitespace-nowrap tabular">{formatDate(r.due_date)}</TableCell>
+                  <TableCell className={cn('w-36 whitespace-nowrap text-[12.5px]', r.days < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                    {r.days < 0 ? tn(-r.days, '{n} day late', '{n} days late') : r.days === 0 ? t('Due today') : tn(r.days, 'in {n} day', 'in {n} days')}</TableCell>
+                  <TableCell><Link to={`/partners/${r.partner_id}`} className="font-medium hover:underline">{r.partner}</Link></TableCell>
+                  <TableCell className="whitespace-nowrap text-[13px]"><Link to={r.href} className="hover:text-primary hover:underline">{r.number}</Link>{r.ref && <span className="ml-1.5 text-muted-foreground">{r.ref}</span>}</TableCell>
+                  {!isAR && <TableCell className="text-[13px] text-muted-foreground">{r.unit ? td(r.unit) : ''}</TableCell>}
+                  <TableCell className="text-right text-[12.5px] text-muted-foreground tabular">{formatMoney(num(r.total))}</TableCell>
+                  <TableCell className="text-right font-medium tabular">{formatMoney(num(r.due))}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
 export function AgingPage({ kind }: { kind: 'ar' | 'ap' }) {
+  const [view, setView] = React.useState<'partner' | 'due'>('partner')
   const navigate = useNavigate()
   const { company } = useCompany()
   const [asOf, setAsOf] = React.useState(todayISO())
@@ -65,6 +149,13 @@ export function AgingPage({ kind }: { kind: 'ar' | 'ap' }) {
           <TabsTrigger value="ap">{t('Payables|menu')}</TabsTrigger>
         </TabsList>
       </Tabs>
+      <div className="mb-3 inline-flex w-fit rounded-lg bg-muted p-1 text-sm">
+        {(['partner', 'due'] as const).map((v) => (
+          <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)}
+            className={cn('rounded-md px-3 py-1.5 font-medium', view === v ? 'bg-background shadow-sm' : 'text-muted-foreground')}>{v === 'partner' ? t('By partner') : t('By due date')}</button>
+        ))}
+      </div>
+      {view === 'due' ? <DueList kind={kind} /> : <>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label={isAR ? t('Total to collect (with VAT)') : t('Total to pay (with VAT)')} value={formatMoney(total)} loading={aging.isLoading} hint={[isAR ? tn(rows.length, '{n} customer', '{n} customers') : tn(rows.length, '{n} vendor', '{n} vendors'), company?.base_currency].filter(Boolean).join(' · ')} />
         <StatCard label={t('Overdue (with VAT)')} value={formatMoney(overdue)} loading={aging.isLoading} tone={overdue ? (isAR ? 'warning' : 'destructive') : 'default'} hint={total ? t('{pct}% of the balance', { pct: ((overdue / total) * 100).toFixed(0) }) : undefined} />
@@ -115,6 +206,7 @@ export function AgingPage({ kind }: { kind: 'ar' | 'ap' }) {
           )}
         </CardContent>
       </Card>
+      </>}
     </>
   )
 }

@@ -18,6 +18,7 @@ import { unwrap } from '@/lib/errors'
 import { fetchPartnerCard, type Side, sideBalance } from '@/lib/documents/statements'
 import { supabase } from '@/lib/supabase'
 import { cn, formatDate, formatMoney, formatQty, todayISO } from '@/lib/utils'
+import { VENDOR_KINDS } from '@/features/sales/vendor-kinds'
 
 /**
  * The other kinds of partner card: by invoice (each with its payments and notes), by item (what was
@@ -30,7 +31,7 @@ type InvoiceRow = { id: string; number: string; kind: Kind; reference: string | 
   credited: number; open: number; late: boolean; payments: { id: string; number: string; date: string; amount: number; method: string }[]
   notes: { id: string; number: string; date: string; total: number; kind: Kind }[] }
 type ItemRow = { variant_id: string | null; sku: string | null; name: string; uom: string | null; qty: number; net: number; avg_price: number | null; documents: number; last: string }
-type BalanceRow = { id: string; name: string; code: string | null; tax_number: string | null; groups: string[]; balance: number; late: number; credit_limit: number | null }
+type BalanceRow = { id: string; name: string; code: string | null; tax_number: string | null; groups: string[]; balance: number; late: number; credit_limit: number | null; kinds?: string[] }
 
 const kindLabel = (k: Kind) => (k === 'credit_note' ? t('Credit note') : k === 'debit_note' ? t('Debit note') : t('Invoice'))
 const docHref = (side: Side, id: string) => (side === 'vendor' ? `/procurement/bills/${id}` : `/sales/invoices/${id}`)
@@ -223,7 +224,10 @@ export function BalancesView({ onOpen }: { onOpen: (id: string) => void }) {
     }
     return [...m.entries()].sort((a, b) => (a[0] === '' ? 1 : b[0] === '' ? -1 : a[0].localeCompare(b[0])))
   }, [all])
-  const rows = group === '' ? all : all.filter((r) => (group === '—' ? !r.groups.length : r.groups.includes(group)))
+  const [kind, setKind] = React.useState<string>('')
+  const byKind = kind === '' || side !== 'vendor' ? all : all.filter((r) => (kind === '—' ? !(r.kinds ?? []).length : (r.kinds ?? []).includes(kind)))
+  const rows = group === '' ? byKind : byKind.filter((r) => (group === '—' ? !r.groups.length : r.groups.includes(group)))
+  const hasKinds = side === 'vendor' && all.some((r) => (r.kinds ?? []).length)
   const cur = q.data?.currency
   return (
     <div className="grid gap-3">
@@ -236,6 +240,17 @@ export function BalancesView({ onOpen }: { onOpen: (id: string) => void }) {
         </div>
         <div className="grid gap-1.5"><Label htmlFor="pb-date">{t('At|date')}</Label><Input id="pb-date" type="date" className="w-40" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} /></div>
       </div>
+      {hasKinds && (
+        <div className="flex flex-wrap items-center gap-1.5 text-[13px]">
+          <span className="mr-1 text-muted-foreground">{t('Kind of supplier')}:</span>
+          {([['', t('All')], ...VENDOR_KINDS.map(([k, l]) => [k, t(l)]), ['—', t('Not set')]] as [string, string][]).map(([k, l]) => (
+            <button key={k || 'all'} type="button" onClick={() => setKind(k)}
+              className={cn('h-8 rounded-full border px-3', kind === k ? 'border-primary bg-primary/10 font-medium text-primary' : 'text-muted-foreground hover:bg-muted')}>
+              {l}{k !== '' && <span className="ml-1 tabular text-muted-foreground">{formatMoney(all.filter((r) => (k === '—' ? !(r.kinds ?? []).length : (r.kinds ?? []).includes(k))).reduce((s2, r) => s2 + Number(r.balance), 0), cur)}</span>}
+            </button>
+          ))}
+        </div>
+      )}
       {groups.length > 1 && (
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => setGroup('')} className={cn('rounded-lg border px-3 py-2 text-left text-[13px]', group === '' && 'border-primary bg-accent')}>
@@ -256,6 +271,7 @@ export function BalancesView({ onOpen }: { onOpen: (id: string) => void }) {
           { accessorKey: 'code', header: t('Code'), meta: { label: t('Code') } },
           { accessorKey: 'tax_number', header: t('NIPT'), meta: { label: t('NIPT') } },
           { id: 'groups', accessorFn: (r) => r.groups.join(', '), header: t('Group'), meta: { label: t('Group') } },
+          ...(side === 'vendor' ? [{ id: 'kinds', accessorFn: (r: BalanceRow) => (r.kinds ?? []).map((k) => t(VENDOR_KINDS.find(([x]) => x === k)?.[1] ?? k)).join(', '), header: t('Kind of supplier'), meta: { label: t('Kind of supplier') } }] : []),
           { accessorKey: 'balance', header: side === 'customer' ? t('Owes us') : t('We owe'), meta: { label: side === 'customer' ? t('Owes us') : t('We owe'), align: 'right' },
             cell: ({ getValue }) => <span className="font-medium tabular-nums">{formatMoney(Number(getValue()))}</span> },
           { accessorKey: 'late', header: t('Of which late'), meta: { label: t('Of which late'), align: 'right' },

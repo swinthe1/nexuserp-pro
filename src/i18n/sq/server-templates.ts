@@ -504,6 +504,8 @@ export const serverTemplates: [string, string][] = [
   ['Enter how much of % is thrown away', 'Shkruaj sa nga {0} hidhet'],
   ['Only % of % in stock here', 'Këtu ka vetëm {0} nga {1}'],
   ['Goods thrown away to confirm: %', 'Hedhje malli për konfirmim: {0}'],
+  ['% has stock history: suspend it instead of deleting it', '{0} ka histori stoku: pezulloje në vend që ta fshish'],
+  ['% is suspended: it is neither bought nor sold', '{0} është i pezulluar: nuk blihet dhe nuk shitet'],
   ['Expense from %: %', 'Shpenzim nga {0}: {1}'],
   ['The drawer holds %; it cannot pay %', 'Sirtari ka {0}; nuk mund të paguajë {1}'],
   ['Invoice % is not an open invoice of this supplier', 'Fatura {0} nuk është faturë e hapur e këtij furnitori'],

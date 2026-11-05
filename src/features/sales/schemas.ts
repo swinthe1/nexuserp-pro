@@ -70,6 +70,8 @@ export const partnerSchema = z.object({
   kind: z.enum(['company', 'individual']),
   is_customer: z.boolean(),
   is_vendor: z.boolean(),
+  /** the kind of a supplier: goods, expenses, investments (one or more) */
+  vendor_kinds: z.array(z.enum(['goods', 'expenses', 'investments'])).default([]),
   tax_number: z.string().trim().optional(),
   vat_number: z.string().trim().optional(),
   email: z.string().trim().email('Enter a valid email').or(z.literal('')).optional(),

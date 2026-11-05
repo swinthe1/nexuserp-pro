@@ -578,4 +578,5 @@ export default {
   "Stock outputs|menu": "Izlazi robe",
   "Thrown away|scanner": "Otpis",
   "Stock balancing": "Balansiranje zaliha",
+  "Small inventory|menu": "Sitan inventar",
 } satisfies Dict

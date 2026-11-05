@@ -158,6 +158,7 @@ export const NAV: NavSection[] = [
       { label: msg('Account card'), href: '/finance/account-card', icon: NotebookTabs, hideInMenu: true, perm: 'finance.read', keywords: ['kartela e kontos', 'libri kryesor', 'general ledger', 'account ledger'] },
       { label: msg('Chart of accounts'), href: '/finance/accounts', icon: ListTree, perm: 'finance.read', keywords: ['coa', 'ledger', 'plan kontabel', 'accounts'] },
       { label: msg('Fixed assets|menu'), href: '/finance/assets', icon: Building, perm: 'finance.read', keywords: ['depreciation', 'amortization', 'aktive'] },
+      { label: msg('Small inventory|menu'), href: '/finance/small-assets', icon: Archive, perm: 'finance.read', keywords: ['inventari', 'inventar i imët', 'pajisje', 'mjete', 'karrige', 'rafte', 'peshore', 'small assets', 'equipment'] },
       { label: msg('Assets from invoices'), href: '/finance/asset-invoices', icon: FileScan, hideInMenu: true, perm: 'finance.read', keywords: ['mjete themelore', 'faturë', 'foto', 'investim', 'veturë', 'kompjuter', 'asset invoice'] },
       { label: msg('Cost centers|menu'), href: '/finance/cost-centers', icon: Network, perm: 'finance.read', keywords: ['departments', 'branches', 'projects'] },
       { label: msg('Year-end close'), href: '/finance/year-end', icon: CalendarCheck, perm: 'finance.read', keywords: ['mbyllja e vitit', 'mbyllje', 'year end', 'closing', 'fitimi i vitit', '109', '108'] },

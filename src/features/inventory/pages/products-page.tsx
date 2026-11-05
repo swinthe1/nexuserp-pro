@@ -13,7 +13,7 @@ import { StockBar } from '@/components/stock-bar'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { formatDate, formatMoney, formatQty } from '@/lib/utils'
+import { formatDate, formatMoney, formatQty, num } from '@/lib/utils'
 import { useBulkProducts, useCategories, useProductStock, type ProductStockRow } from '../api'
 import { t, td, tEnum, tn } from '@/i18n'
 
@@ -159,12 +159,23 @@ export function ProductsPage() {
           <Button size="xs" variant="outline" onClick={() => setByUnit(rows.map((r) => r.original.variant_id!).filter(Boolean))}><Warehouse /> {t('Stock in every unit')}</Button>
           <Can perm="inventory.write">
             <Button size="xs" variant="outline" onClick={() => bulk.mutate({ action: 'activate', productIds: productIds(rows) }, { onSuccess: clear })}><CheckCircle2 /> {t('Activate')}</Button>
-            <Button size="xs" variant="outline" onClick={() => bulk.mutate({ action: 'deactivate', productIds: productIds(rows) }, { onSuccess: clear })}><Ban /> {t('Deactivate')}</Button>
+            {(() => {
+              // suspending: the item stays in reports and history, but is neither bought nor sold; with stock left, ask first
+              const withStock = rows.filter((r) => num(r.original.on_hand) > 0)
+              const run = () => bulk.mutateAsync({ action: 'deactivate', productIds: productIds(rows) }).then(clear)
+              return withStock.length ? (
+                <ConfirmDialog trigger={<Button size="xs" variant="outline"><Ban /> {t('Suspend')}</Button>}
+                  title={tn(withStock.length, '{n} item still has stock', '{n} items still have stock')}
+                  description={t('{items}. Suspended, they are neither bought nor sold, but stay in stock, reports and history. Sell or move the stock first, or suspend anyway.',
+                    { items: withStock.slice(0, 5).map((r) => `${r.original.variant_name} (${formatQty(num(r.original.on_hand))})`).join(', ') + (withStock.length > 5 ? '…' : '') })}
+                  confirmLabel={t('Suspend anyway')} onConfirm={run} />
+              ) : <Button size="xs" variant="outline" onClick={() => void run()}><Ban /> {t('Suspend')}</Button>
+            })()}
             <Can perm="inventory.delete">
               <ConfirmDialog
                 trigger={<Button size="xs" variant="outline" className="text-destructive"><Trash2 /> {t('Delete')}</Button>}
                 title={tn(productIds(rows).length, 'Delete {n} product?', 'Delete {n} products?')}
-                description={t('They disappear from lists and pickers. Stock history is kept, and an admin can restore them from the audit log.')}
+                description={t('Only items that never moved in stock can be deleted. An item with stock history is suspended instead: it stays in reports and history.')}
                 confirmLabel={t('Delete products')}
                 destructive
                 onConfirm={() => bulk.mutateAsync({ action: 'delete', productIds: productIds(rows) }).then(clear)}

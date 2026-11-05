@@ -39,7 +39,7 @@ import { Textarea } from '@/components/ui/textarea'
 import type { Tables } from '@/lib/database.types'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
-import { formatDate, formatMoney, humanize, num } from '@/lib/utils'
+import { cn, formatDate, formatMoney, humanize, num } from '@/lib/utils'
 import { useCurrencies } from '@/features/inventory/api'
 import { VariantPicker } from '@/features/inventory/components/pickers'
 import { useDeleteRecord, useMembers, usePartner, usePartnerActivity, usePartners, usePaymentTerms, usePriceLists, useSaveRecord, type PartnerDetail } from '../api'
@@ -48,6 +48,7 @@ import { VendorPurchasing } from '@/features/procurement/components/vendor-purch
 import { VendorPricesTable } from '@/features/procurement/pages/vendor-prices-page'
 import { ErrorState } from '@/components/error-state'
 import { t, td } from '@/i18n'
+import { VENDOR_KINDS } from '../vendor-kinds'
 
 type PartnerRow = NonNullable<ReturnType<typeof usePartners>['data']>[number]
 const roleLabel = (r: string) => (r === 'both' ? t('Customer and vendor') : r === 'customer' ? t('Customer') : t('Vendor'))
@@ -236,7 +237,7 @@ function PartnerForm({ partner }: { partner?: PartnerDetail }) {
     resolver: zodResolver(partnerSchema),
     defaultValues: {
       code: partner?.code ?? '', name: partner?.name ?? '', legal_name: partner?.legal_name ?? '', kind: (partner?.kind as PartnerValues['kind']) ?? 'company',
-      is_customer: partner?.is_customer ?? !vendor, is_vendor: partner?.is_vendor ?? vendor, tax_number: partner?.tax_number ?? '', vat_number: partner?.vat_number ?? '',
+      is_customer: partner?.is_customer ?? !vendor, is_vendor: partner?.is_vendor ?? vendor, vendor_kinds: ((partner as { vendor_kinds?: string[] } | undefined)?.vendor_kinds ?? []) as PartnerValues['vendor_kinds'], tax_number: partner?.tax_number ?? '', vat_number: partner?.vat_number ?? '',
       email: partner?.email ?? '', phone: partner?.phone ?? '', website: partner?.website ?? '', currency_code: partner?.currency_code ?? null,
       payment_term_id: partner?.payment_term_id ?? null, price_list_id: partner?.price_list_id ?? null, default_discount_pct: partner?.default_discount_pct ?? 0,
       credit_limit: partner?.credit_limit ?? null, salesperson_id: partner?.salesperson_id ?? null, notes: partner?.notes ?? '', is_active: partner?.is_active ?? true,
@@ -247,8 +248,11 @@ function PartnerForm({ partner }: { partner?: PartnerDetail }) {
       let code = v.code
       if (!code) code = unwrap(await supabase.rpc('next_partner_code', { p_company: companyId, p_kind: v.is_customer ? 'customer' : 'vendor' }))
       const blank = (s?: string | null) => (s ? s : null)
+      // a server not updated yet has no kinds of supplier: they are left out
+      const { vendor_kinds, ...rest } = v
+      const kinds = (partner && 'vendor_kinds' in partner) || vendor_kinds.length ? { vendor_kinds } : {}
       const row = await save.mutateAsync({
-        id: partner?.id, ...v, code, legal_name: blank(v.legal_name), tax_number: blank(v.tax_number), vat_number: blank(v.vat_number), email: blank(v.email),
+        id: partner?.id, ...rest, ...kinds, code, legal_name: blank(v.legal_name), tax_number: blank(v.tax_number), vat_number: blank(v.vat_number), email: blank(v.email),
         phone: blank(v.phone), website: blank(v.website), notes: blank(v.notes), currency_code: v.currency_code ?? null, payment_term_id: v.payment_term_id ?? null,
         price_list_id: v.price_list_id ?? null, salesperson_id: v.salesperson_id ?? null,
       })
@@ -257,6 +261,7 @@ function PartnerForm({ partner }: { partner?: PartnerDetail }) {
     } catch (e) { toast.error(describeError(e)) }
   })
   const isCustomer = form.watch('is_customer')
+  const isVendor = form.watch('is_vendor')
   return (
     <Form {...form}>
       <form onSubmit={submit} className="grid gap-4">
@@ -297,6 +302,19 @@ function PartnerForm({ partner }: { partner?: PartnerDetail }) {
                 )} />
               ))}
             </div>
+            {isVendor && (
+              <FormField control={form.control} name="vendor_kinds" render={({ field }) => (
+                <FormItem className="sm:col-span-2 lg:col-span-3"><FormLabel optional>{t('Kind of supplier')}</FormLabel>
+                  <div className="flex flex-wrap gap-2">
+                    {VENDOR_KINDS.map(([k, label]) => {
+                      const on = field.value.includes(k)
+                      return <button key={k} type="button" disabled={!writable} onClick={() => field.onChange(on ? field.value.filter((x) => x !== k) : [...field.value, k])}
+                        className={cn('h-8 rounded-full border px-3 text-[13px]', on ? 'border-primary bg-primary/10 font-medium text-primary' : 'text-muted-foreground hover:bg-muted')}>{t(label)}</button>
+                    })}
+                  </div>
+                  <FormDescription>{t('Filled in by itself from the supplier\'s invoices; the partner cards are filtered by it.')}</FormDescription></FormItem>
+              )} />
+            )}
           </CardContent>
         </Card>
         {isCustomer && (
