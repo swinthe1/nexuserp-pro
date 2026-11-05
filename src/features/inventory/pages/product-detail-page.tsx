@@ -323,7 +323,11 @@ function EditProductSheet({ product }: { product: ProductDetail }) {
     },
   })
   const onSubmit = form.handleSubmit(async (v) => {
-    await update.mutateAsync({ ...v, description: v.description || null, brand: v.brand || null, hs_code: v.hs_code || null, scale_plu: v.scale_plu || null })
+    // the PLU goes only when it changed: a server not yet updated has no such column, and the rest still saves
+    const { scale_plu, ...rest } = v
+    const plu = scale_plu || null
+    const pluChanged = plu !== ((product as { scale_plu?: string | null }).scale_plu ?? null)
+    await update.mutateAsync({ ...rest, description: v.description || null, brand: v.brand || null, hs_code: v.hs_code || null, ...(pluChanged ? { scale_plu: plu } : {}) })
     setOpen(false)
   })
   return (
