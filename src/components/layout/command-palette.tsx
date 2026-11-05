@@ -122,9 +122,9 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
   const hiddenMenu = useHiddenSections()
   const navItems = NAV.flatMap((s) => s.items.map((i) => ({ ...i, section: s.label, sectionTitle: s.title ?? s.label })))
     .filter((i) => can(i.perm) && pageAllowed(i.href)
-      && (i.section === 'Overview' || i.section === 'Company' || !hiddenMenu.includes(i.section)) && !hiddenMenu.includes(i.href))
+      && (i.section === 'Overview' || i.section === 'Company' || !hiddenMenu.includes(i.section)) && !hiddenMenu.includes(i.href) && !(i.part && hiddenMenu.includes(i.part)))
     // a page once, where this business sees it first
-    .filter((i, n, all) => all.findIndex((x) => x.href === i.href) === n && matches(query, i.label, t(i.label), i.section, t(i.section), t(i.sectionTitle), ...(i.keywords ?? [])))
+    .filter((i, n, all) => all.findIndex((x) => x.href === i.href) === n && matches(query, i.label, t(i.label), i.section, t(i.section), t(i.sectionTitle), ...(i.hub ? [i.hub, t(i.hub)] : []), ...(i.keywords ?? [])))
   const actions = mode === 'pages' ? [] : CREATE_ACTIONS.filter((a) => can(a.perm) && pageAllowed(a.href) && matches(query, a.label, t(a.label)))
   const navPages = navItems.length > 0 && (
     <CommandGroup heading={t('Go to')}>

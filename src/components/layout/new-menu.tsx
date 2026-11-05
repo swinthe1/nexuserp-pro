@@ -40,8 +40,9 @@ export function NewMenu({ trigger }: { trigger?: React.ReactNode } = {}) {
   const items = CHOICES(hasFeature('ai_reads')).filter((c) => {
     const page = c.page ?? c.href.split('?')[0]!
     // the part of the menu it belongs to, when the company switched that part off
-    const part = NAV.find((s) => s.items.some((i) => i.href.split('?')[0] === page))?.label
-    return can(c.perm) && pageAllowed(page) && !(part && hidden.includes(part)) && !hidden.some((h) => h === page || page.startsWith(`${h}/`))
+    const sec = NAV.find((s) => s.items.some((i) => i.href.split('?')[0] === page))
+    const part = sec?.items.find((i) => i.href.split('?')[0] === page)?.part
+    return can(c.perm) && pageAllowed(page) && !(sec && hidden.includes(sec.label)) && !(part && hidden.includes(part)) && !hidden.some((h) => h === page || page.startsWith(`${h}/`))
   })
   if (!items.length) return null
   return (

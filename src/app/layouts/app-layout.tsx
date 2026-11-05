@@ -7,6 +7,7 @@ import { CompanySwitcher } from '@/components/layout/company-switcher'
 import { Sidebar, SidebarNav } from '@/components/layout/sidebar'
 import { Topbar } from '@/components/layout/topbar'
 import { ClassicShell } from '@/components/layout/classic-shell'
+import { SectionTabs } from '@/components/layout/section-tabs'
 import { useTheme } from '@/app/theme-provider'
 import { SimpleTopbar } from '@/features/simple/simple-shell'
 import { ScannerTopbar } from '@/features/scanner/scanner-home'
@@ -92,6 +93,7 @@ export function AppLayout() {
           <TrainingNudge />
           <LicenseBanner />
           <main id="main" className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
+            <SectionTabs />
             <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
             <GuardHost /><ExportsRecorder />
             <TourHost />
@@ -125,6 +127,7 @@ export function AppLayout() {
           <TrainingNudge />
           <LicenseBanner />
           <main id="main" className="flex-1 px-3 py-3 sm:px-4">
+            <SectionTabs />
             <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
             <GuardHost /><ExportsRecorder />
             <TourHost />
@@ -152,6 +155,7 @@ export function AppLayout() {
           <TrainingNudge />
           <LicenseBanner />
           <main id="main" className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
+            <SectionTabs />
             <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
             <GuardHost /><ExportsRecorder />
             <TourHost />

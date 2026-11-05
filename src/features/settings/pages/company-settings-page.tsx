@@ -306,7 +306,11 @@ function MenuForm() {
   if (settings.error) return <ErrorState error={settings.error} onRetry={() => void settings.refetch()} />
   // one list for both: a part of the menu by its name, a single page by its address
   const hidden = settings.data?.hidden_menu_sections ?? []
-  const sections = NAV.filter((s) => s.label !== 'Overview' && s.label !== 'Company')
+  // the parts joined to another (the scanner into Stock, the taxes into Accounting) still switch off on their own
+  const sections = NAV.filter((s) => s.label !== 'Overview' && s.label !== 'Company').flatMap((s) => {
+    const parts = [...new Set(s.items.map((i) => i.part).filter((x): x is string => !!x))]
+    return [{ ...s, items: s.items.filter((i) => !i.part) }, ...parts.map((p) => ({ label: p, title: undefined, items: s.items.filter((i) => i.part === p) }))]
+  })
   const toggle = (key: string, shown: boolean, name: string) => {
     const next = shown ? hidden.filter((h) => h !== key) : [...hidden, key]
     void save.mutateAsync({ hidden_menu_sections: next }).then(() =>

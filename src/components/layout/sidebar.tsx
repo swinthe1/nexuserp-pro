@@ -4,6 +4,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
 import { moduleLook } from '@/app/modules'
 import { NAV, type NavItem } from '@/app/nav'
+import { menuEntries, type MenuEntry } from '@/components/layout/hubs'
 import { useCommandPalette } from '@/components/layout/command-palette'
 import { CompanySwitcher } from '@/components/layout/company-switcher'
 import { recordVisit, useFavourites, useHiddenSections, useOpenSections } from '@/components/layout/nav-prefs'
@@ -37,6 +38,9 @@ function useActiveHref() {
 
 const ALWAYS_SHOWN = new Set(['Overview', 'Company'])
 
+/** an entry of the menu drawn like a page: the hub's name, its first page's address */
+const entryItem = (e: MenuEntry): NavItem => ({ ...e.items[0]!, label: e.label, href: e.href })
+
 /*
  * The short menu: a person whose job is one part (the till, the warehouse, field sales) sees the pages
  * of the work they do, not every page they may open. Whoever sees the numbers (reports, finance) or runs
@@ -58,6 +62,7 @@ function SectionIcon({ label, className, active }: { label: string; className?: 
 }
 
 function SectionFlyout({ label, title, items, activeHref, onNavigate }: { label: string; title?: string; items: NavItem[]; activeHref: string | null; onNavigate?: () => void }) {
+  const entries = menuEntries(items)
   const [open, setOpen] = React.useState(false)
   const timer = React.useRef<number | undefined>(undefined)
   const show = () => { window.clearTimeout(timer.current); setOpen(true) }
@@ -76,14 +81,14 @@ function SectionFlyout({ label, title, items, activeHref, onNavigate }: { label:
         onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
         <p className="px-2 pb-1 pt-1 text-xs font-medium text-muted-foreground">{t(title ?? label)}</p>
         <div className="flex flex-col gap-0.5">
-          {items.map((i) => (
-            <NavLink key={i.href} to={i.href} onClick={() => { setOpen(false); onNavigate?.() }}
+          {entries.map((e) => { const on = e.items.some((i) => i.href === activeHref); return (
+            <NavLink key={e.key} to={e.href} onClick={() => { setOpen(false); onNavigate?.() }}
               className={cn('flex h-8 items-center gap-2.5 rounded-md px-2 text-[13px] font-medium hover:bg-secondary',
-                i.href === activeHref ? 'bg-secondary text-foreground' : 'text-popover-foreground')}>
-              <i.icon className={cn('size-4 shrink-0', i.href === activeHref ? 'text-primary' : 'text-muted-foreground')} />
-              <span className="truncate">{t(i.label)}</span>
+                on ? 'bg-secondary text-foreground' : 'text-popover-foreground')}>
+              <e.icon className={cn('size-4 shrink-0', on ? 'text-primary' : 'text-muted-foreground')} />
+              <span className="truncate">{t(e.label)}</span>
             </NavLink>
-          ))}
+          ) })}
         </div>
       </PopoverContent>
     </Popover>
@@ -154,10 +159,10 @@ export function useMenuSections() {
   const short = focused && !fullMenu
   const mine = React.useCallback((i: NavItem) => !short || !!i.always || (i.focus ? i.focus.some(can) : writes(i.perm).some(can)), [short, can])
   return React.useMemo(() => NAV
-    // an item without its own group heading belongs to the one above it
-    .map((s) => { let g: string | undefined; return { ...s, items: s.items.map((i): NavItem => { g = i.group ?? g; return { ...i, group: g } }) } })
+    // the classic menu bar heads each hub's pages with its name
+    .map((s) => ({ ...s, items: s.items.map((i): NavItem => ({ ...i, group: i.hub })) }))
     .filter((s) => ALWAYS_SHOWN.has(s.label) || !hidden.includes(s.label))
-    .map((s) => ({ ...s, items: s.items.filter((i) => !i.hideInMenu && can(i.perm) && pageAllowed(i.href) && !hidden.includes(i.href) && mine(i)) }))
+    .map((s) => ({ ...s, items: s.items.filter((i) => !i.hideInMenu && can(i.perm) && pageAllowed(i.href) && !hidden.includes(i.href) && !(i.part && hidden.includes(i.part)) && mine(i)) }))
     // a page shows once: where it first appears among the parts this business sees
     .map((s, _, all) => ({ ...s, items: s.items.filter((i) => i.also || !all.slice(0, all.indexOf(s)).some((p) => p.items.some((x) => x.href === i.href))) }))
     .filter((s) => s.items.length), [can, pageAllowed, hidden, mine])
@@ -179,10 +184,10 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
   React.useEffect(() => { if (activeHref) recordVisit(activeHref) }, [activeHref])
 
   const sections = React.useMemo(() => NAV
-    // an item without its own group heading belongs to the one above it
-    .map((s) => { let g: string | undefined; return { ...s, items: s.items.map((i): NavItem => { g = i.group ?? g; return { ...i, group: g } }) } })
+    // the classic menu bar heads each hub's pages with its name
+    .map((s) => ({ ...s, items: s.items.map((i): NavItem => ({ ...i, group: i.hub })) }))
     .filter((s) => ALWAYS_SHOWN.has(s.label) || !hidden.includes(s.label))
-    .map((s) => ({ ...s, items: s.items.filter((i) => !i.hideInMenu && can(i.perm) && pageAllowed(i.href) && !hidden.includes(i.href) && mine(i)) }))
+    .map((s) => ({ ...s, items: s.items.filter((i) => !i.hideInMenu && can(i.perm) && pageAllowed(i.href) && !hidden.includes(i.href) && !(i.part && hidden.includes(i.part)) && mine(i)) }))
     // a page shows once: where it first appears among the parts this business sees
     .map((s, _, all) => ({ ...s, items: s.items.filter((i) => i.also || !all.slice(0, all.indexOf(s)).some((p) => p.items.some((x) => x.href === i.href))) }))
     .filter((s) => s.items.length), [can, pageAllowed, hidden, mine])
@@ -209,7 +214,7 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
     const overview = sections.find((s) => s.label === 'Overview')
     return (
       <nav className="flex flex-col gap-1" aria-label={t('Main menu')}>
-        {overview?.items.map((i) => <Item key={i.href} item={i} collapsed onNavigate={onNavigate} active={i.href === activeHref} />)}
+        {overview && menuEntries(overview.items).map((e) => <Item key={e.key} item={entryItem(e)} collapsed onNavigate={onNavigate} active={e.items.some((i) => i.href === activeHref)} />)}
         {pinnedItems.length > 0 && (
           <div className="my-1 flex flex-col gap-0.5 border-y border-sidebar-border py-2">
             {pinnedItems.slice(0, 6).map((i) => <Item key={`p-${i.href}`} item={i} collapsed onNavigate={onNavigate} active={i.href === activeHref} />)}
@@ -232,7 +237,7 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
       {/* the start page and what waits for approval, then the pages starred, then the parts */}
       {sections.filter((x) => x.label === 'Overview').map((section) => (
         <div key={section.label} className="flex flex-col gap-px">
-          {section.items.map((i) => <Item key={i.href} item={i} collapsed={false} onNavigate={onNavigate} active={i.href === activeHref} />)}
+          {menuEntries(section.items).map((e) => <Item key={e.key} item={entryItem(e)} collapsed={false} onNavigate={onNavigate} active={e.items.some((i) => i.href === activeHref)} />)}
         </div>
       ))}
       {quick.length > 0 && (
@@ -249,8 +254,25 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
         if (section.label === 'Overview') return null
         const expanded = isOpen(section.label)
         const id = `nav-${section.label.replace(/\W+/g, '-')}`
+        const entries = menuEntries(section.items)
+        const divided = section.label === 'Reports|menu' || (section.label === 'Company' && !sections.some((x) => x.label === 'Reports|menu'))
+        // a part with one entry (Reports, Settings, Hotel…): its name opens it straight away
+        if (entries.length === 1) {
+          const e = entries[0]!
+          const on = e.items.some((i) => i.href === activeHref)
+          return (
+            <div key={section.label} className={cn('flex flex-col', divided && 'mt-2 border-t border-sidebar-border pt-3')}>
+              <NavLink to={e.href} onClick={onNavigate} aria-current={on ? 'page' : undefined}
+                className={cn('flex h-9 items-center gap-2.5 rounded-md px-2 text-[13.5px] font-medium text-sidebar-foreground hover:bg-primary/[0.08] hover:text-foreground',
+                  on && 'bg-primary/[0.14] text-white')}>
+                <SectionIcon label={section.label} active={on} />
+                <span className="flex-1 truncate text-left">{t(section.title ?? section.label)}</span>
+              </NavLink>
+            </div>
+          )
+        }
         return (
-          <div key={section.label} className={cn('flex flex-col', (section.label === 'Reports|menu' || (section.label === 'Company' && !sections.some((x) => x.label === 'Reports|menu'))) && 'mt-2 border-t border-sidebar-border pt-3')}>
+          <div key={section.label} className={cn('flex flex-col', divided && 'mt-2 border-t border-sidebar-border pt-3')}>
             <button type="button" aria-expanded={expanded} aria-controls={id}
               onClick={() => toggleSection(section.label)}
               className={cn('flex h-9 items-center gap-2.5 rounded-md px-2 text-[13.5px] font-medium text-sidebar-foreground hover:bg-primary/[0.08] hover:text-foreground',
@@ -261,16 +283,10 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
             </button>
             {expanded && (
               <div id={id} className="flex flex-col gap-px pb-2 pt-0.5">
-                {section.items.map((i, k) => {
-                  // headings inside a long part only; a short one reads fine as it is
-                  const heading = section.items.length > 7 && i.group && i.group !== section.items[k - 1]?.group ? i.group : null
-                  return (
-                    <React.Fragment key={i.href}>
-                      {heading && <div className={cn('pb-0.5 pl-[30px] text-2xs font-medium text-primary/70', k > 0 && 'pt-2.5')}>{t(heading)}</div>}
-                      <Item item={i} sub collapsed={false} onNavigate={onNavigate} active={i.href === activeHref} {...pinProps(i)} />
-                    </React.Fragment>
-                  )
-                })}
+                {entries.map((e) => (
+                  <Item key={e.key} item={entryItem(e)} sub collapsed={false} onNavigate={onNavigate}
+                    active={e.items.some((i) => i.href === activeHref)} {...pinProps(e.items[0]!)} />
+                ))}
               </div>
             )}
           </div>
