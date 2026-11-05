@@ -2325,6 +2325,7 @@ export type Database = {
           atk_fiscalization_no: string | null
           atk_sef_enabled: boolean
           atk_default_type: string
+          new_items_from_bills: string
         }
         Insert: {
           id?: string
@@ -2403,6 +2404,7 @@ export type Database = {
           atk_fiscalization_no?: string | null
           atk_sef_enabled?: boolean
           atk_default_type?: string
+          new_items_from_bills?: string
         }
         Update: {
           id?: string
@@ -2481,6 +2483,7 @@ export type Database = {
           atk_fiscalization_no?: string | null
           atk_sef_enabled?: boolean
           atk_default_type?: string
+          new_items_from_bills?: string
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -5370,6 +5373,64 @@ export type Database = {
         }
         Relationships: [
           { foreignKeyName: "item_costs_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: true; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      item_requests: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          barcode: string | null
+          code: string | null
+          vat_rate: number | null
+          cost: number | null
+          vendor_id: string | null
+          status: string
+          variant_id: string | null
+          reason: string | null
+          requested_by: string | null
+          decided_by: string | null
+          decided_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          barcode?: string | null
+          code?: string | null
+          vat_rate?: number | null
+          cost?: number | null
+          vendor_id?: string | null
+          status?: string
+          variant_id?: string | null
+          reason?: string | null
+          requested_by?: string | null
+          decided_by?: string | null
+          decided_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string
+          barcode?: string | null
+          code?: string | null
+          vat_rate?: number | null
+          cost?: number | null
+          vendor_id?: string | null
+          status?: string
+          variant_id?: string | null
+          reason?: string | null
+          requested_by?: string | null
+          decided_by?: string | null
+          decided_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "item_requests_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "item_requests_variant_id_fkey"; columns: ["variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["id"] },
+          { foreignKeyName: "item_requests_vendor_id_fkey"; columns: ["vendor_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["id"] },
         ]
       }
       job_positions: {
@@ -16852,6 +16913,14 @@ export type Database = {
         }
         Returns: Json
       }
+      item_request_decide: {
+        Args: {
+          p_id: string
+          p_make: boolean
+          p_reason?: string
+        }
+        Returns: Json
+      }
       item_where: {
         Args: {
           p_company: string
@@ -17282,6 +17351,13 @@ export type Database = {
           p_company: string
         }
         Returns: string[]
+      }
+      new_items_setting_save: {
+        Args: {
+          p_company: string
+          p_mode: string
+        }
+        Returns: undefined
       }
       next_partner_code: {
         Args: {
@@ -19256,6 +19332,16 @@ export type Database = {
           p_to: string
           p_credit_bf?: number
           p_refund?: number
+        }
+        Returns: Json
+      }
+      vendor_bill_duplicate: {
+        Args: {
+          p_company: string
+          p_vendor: string
+          p_number: string
+          p_exclude?: string
+          p_doc_type?: string
         }
         Returns: Json
       }

@@ -2,7 +2,10 @@ import type { ColumnDef } from '@tanstack/react-table'
 import * as React from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
-import { ColumnHeader, DataTable, inFilter } from '@/components/data-table/data-table'
+import { ColumnHeader, DataTable, inFilter, selectColumn } from '@/components/data-table/data-table'
+import { Button } from '@/components/ui/button'
+import { Warehouse } from 'lucide-react'
+import { StockByUnitDialog } from '../components/stock-by-unit'
 import { PageHeader } from '@/components/page-header'
 import { StatCard } from '@/components/stat-card'
 import { StockBar } from '@/components/stock-bar'
@@ -21,12 +24,14 @@ export function StockPage() {
   const onlyWarehouse = params.get('warehouse')
   const { company, companyId } = useCompany()
   const levels = useStockLevels()
+  const [byUnit, setByUnit] = React.useState<string[] | null>(null)
   const overview = useInventoryOverview()
   const warehouses = useWarehouses()
   const today = new Date().toISOString().slice(0, 10)
   useRealtimeInvalidate('stock_levels', companyId, [invKeys.stockLevels(companyId), invKeys.overview(companyId), invKeys.productStock(companyId)])
 
   const columns = React.useMemo<ColumnDef<Level>[]>(() => [
+    selectColumn<Level>(),
     {
       id: 'product', accessorFn: (r) => `${r.sku} ${r.variant_name}`, enableHiding: false,
       header: ({ column }) => <ColumnHeader column={column} title={t('Product')} />, meta: { label: t('Product'), exportValue: (r) => r.sku },
@@ -75,6 +80,7 @@ export function StockPage() {
         initialHidden={['category', 'avg_cost', 'reserved']}
         exportName="stock-levels"
         onRowClick={(r) => navigate(`/inventory/products/${r.product_id}`)}
+        bulkActions={(rows) => <Button size="xs" variant="outline" onClick={() => setByUnit([...new Set(rows.map((r) => r.original.variant_id!).filter(Boolean))])}><Warehouse /> {t('Stock in every unit')}</Button>}
         facets={[
           { columnId: 'warehouse', title: t('Warehouse'), options: (warehouses.data ?? []).map((w) => ({ label: td(w.name), value: w.name })) },
           { columnId: 'category', title: t('Category'), options: Array.from(new Set((levels.data ?? []).map((l) => l.category_name).filter(Boolean))).map((c) => ({ label: td(c!), value: c! })) },
@@ -92,6 +98,7 @@ export function StockPage() {
           )
         }}
       />
+      {byUnit && <StockByUnitDialog variantIds={byUnit} onClose={() => setByUnit(null)} />}
     </>
   )
 }

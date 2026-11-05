@@ -30,7 +30,7 @@ import { findOffline, searchOffline, useScanCatalog, itemOffline } from '@/lib/o
 import { packForScan, usePacks } from '@/lib/packs'
 import { supabase } from '@/lib/supabase'
 import { useRegistryRemote } from '@/lib/registry'
-import { cn, formatMoney, formatQty, num, todayISO } from '@/lib/utils'
+import { cn, formatDate, formatMoney, formatQty, num, todayISO } from '@/lib/utils'
 import { useCurrencies, useWarehouses } from '@/features/inventory/api'
 import { useBankAccounts } from '@/features/finance/api'
 import { usePaymentTerms } from '@/features/sales/api'
@@ -335,7 +335,16 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
       pack_id: c.r.pack ?? null, pack_qty: c.r.pack ? c.r.pq ?? null : null,
     })),
   })
+  // the same supplier invoice already in DrisPRO (also under the same tax number, or written a little differently)
+  const [dupKey, setDupKey] = React.useState('')
+  React.useEffect(() => { const k = `${h.vendor_id}|${h.vendor_invoice_number.trim()}`; const id = window.setTimeout(() => setDupKey(k), 400); return () => window.clearTimeout(id) }, [h.vendor_id, h.vendor_invoice_number])
+  const dup = useQuery({
+    queryKey: ['bill-duplicate', companyId, dupKey, doc?.id], enabled: !!companyId && !!h.vendor_id && dupKey.split('|')[1]!.length > 0,
+    queryFn: async () => unwrap(await supabase.rpc('vendor_bill_duplicate', { p_company: companyId!, p_vendor: dupKey.split('|')[0]!, p_number: dupKey.split('|')[1]!, p_exclude: (doc?.id ?? null) as string })) as unknown as
+      { id: string; number: string | null; vendor_invoice_number: string; date: string; total: number; status: string; vendor: string } | null,
+  })
   const problem = !h.vendor_id ? t('Choose the supplier') : !h.vendor_invoice_number.trim() ? t('Write the supplier’s invoice number')
+    : dup.data ? t('This invoice is already in: {number}', { number: dup.data.number ?? dup.data.vendor_invoice_number })
     : !h.warehouse_id ? t('Choose the warehouse') : !rows.length ? t('Add at least one item')
     : calc.some((c) => c.qty <= 0) ? t('Every line needs a quantity') : null
 
@@ -402,7 +411,9 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
           <div className="grid gap-1.5 sm:col-span-2"><Label>{t('Supplier')}</Label>
             <SearchSelect value={h.vendor_id || null} onChange={(v) => set('vendor_id', v ?? '')} placeholder={t('Choose the supplier')} remote={registry}
               options={(vendors.data ?? []).filter((v) => v.is_active || v.id === h.vendor_id).map((v) => ({ value: v.id, label: v.name, hint: [v.code, v.tax_number].filter(Boolean).join(' · ') }))} /></div>
-          <div className="grid gap-1.5"><Label htmlFor="pi-no">{t('Supplier’s invoice no.')}</Label><Input id="pi-no" value={h.vendor_invoice_number} onChange={(e) => set('vendor_invoice_number', e.target.value)} /></div>
+          <div className="grid gap-1.5"><Label htmlFor="pi-no">{t('Supplier’s invoice no.')}</Label><Input id="pi-no" value={h.vendor_invoice_number} onChange={(e) => set('vendor_invoice_number', e.target.value)} className={cn(dup.data && 'border-destructive')} aria-invalid={!!dup.data} />
+            {dup.data && <p className="text-[12px] text-destructive">{t('Already entered as {number} on {date}, {total} ({vendor}).', { number: dup.data.number ?? dup.data.vendor_invoice_number, date: formatDate(dup.data.date), total: fmt(num(dup.data.total)), vendor: dup.data.vendor })}{' '}
+              <Link className="underline" to={`/procurement/bills/${dup.data.id}`}>{t('Open it')}</Link></p>}</div>
           <div className="grid gap-1.5"><Label htmlFor="pi-fiscal">{t('Fiscal number')}</Label><Input id="pi-fiscal" value={h.vendor_fiscal_number} onChange={(e) => set('vendor_fiscal_number', e.target.value)} placeholder={t('From the supplier’s fiscal invoice')} /></div>
           <div className="grid gap-1.5"><Label htmlFor="pi-date">{t('Invoice date')}</Label><Input id="pi-date" type="date" value={h.bill_date} onChange={(e) => set('bill_date', e.target.value)} /></div>
           <div className="grid gap-1.5"><Label htmlFor="pi-recv">{t('Received on')}</Label><Input id="pi-recv" type="date" value={h.receive_date} placeholder={h.bill_date} onChange={(e) => set('receive_date', e.target.value)} /></div>

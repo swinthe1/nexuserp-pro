@@ -135,7 +135,13 @@ export function ImportLinesDialog({ open, onOpenChange, vendorId, itemOptions, o
     setMaking(row)
     try {
       const it = unwrap(await supabase.rpc('purchase_line_new_item', { p_company: companyId, p: {
-        name: l.name, barcode: l.barcode, code: l.code, vat_rate: l.vat, cost: netUnitPrice(l, l.vat) } as never })) as unknown as { variant_id: string; sku: string; name: string; existed: boolean; bad_barcode: string | null }
+        name: l.name, barcode: l.barcode, code: l.code, vat_rate: l.vat, cost: netUnitPrice(l, l.vat), vendor_id: vendorId } as never })) as unknown as { variant_id: string; sku: string; name: string; existed: boolean; bad_barcode: string | null; requested?: boolean }
+      if (it.requested) {
+        // the company has new items approved: the line waits, the people who approve are told
+        setLines((ls) => ls.map((x) => x.row === row ? { ...x, how: 'requested', use: false, touched: true } : x))
+        toast.info(t('{name} is not in DrisPRO yet: it was sent for approval. Once it is made, the line is found.', { name: l.name }))
+        return
+      }
       setLines((ls) => ls.map((x) => x.row === row ? { ...x, variant_id: it.variant_id, ours: it.name, sku: it.sku, how: 'new', touched: true, itemVat: l.vat } : x))
       toast.success(it.existed ? t('{name} was there already, with this barcode', { name: it.name }) : t('New item {name} ({code}); set its selling price on the invoice', { name: it.name, code: it.sku }))
       if (it.bad_barcode) toast.warning(t('The barcode {code} has a wrong check digit (copied wrong?): the item was made without it', { code: it.bad_barcode }))
@@ -244,7 +250,8 @@ export function ImportLinesDialog({ open, onOpenChange, vendorId, itemOptions, o
                       <div className="flex items-center gap-1.5">
                         <div className="min-w-0 flex-1"><SearchSelect value={l.variant_id} options={itemOptions} placeholder={t('Link it to an item…')} aria-invalid={l.use && !l.variant_id}
                           onChange={(v) => { const o = v ? optionOf.get(v) : null; set({ variant_id: v, ours: o?.label ?? null, sku: o?.hint ?? null, how: v ? 'hand' : null, touched: true }) }} /></div>
-                        {!l.variant_id && can('inventory.write') && (
+                        {!l.variant_id && l.how === 'requested' && <span className="shrink-0 rounded-md bg-warning/15 px-2 py-1 text-[11px] font-medium text-warning">{t('Waiting for approval')}</span>}
+                        {!l.variant_id && l.how !== 'requested' && can('inventory.write') && (
                           <Button size="sm" variant="outline" className="h-9 shrink-0" loading={making === l.row} disabled={making != null} onClick={() => void makeItem(l.row)}
                             title={t('Make a new item with this name and barcode')}><PackagePlus /> {t('New item|make')}</Button>)}
                       </div>

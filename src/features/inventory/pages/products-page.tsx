@@ -1,9 +1,11 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { Ban, CheckCircle2, Plus, Trash2, Upload } from 'lucide-react'
+import { Ban, CheckCircle2, PackagePlus, Plus, Trash2, Upload, Warehouse } from 'lucide-react'
 import * as React from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { ProductView } from './product-detail-page'
+import { usePendingItemRequests } from './item-requests-page'
+import { StockByUnitDialog } from '../components/stock-by-unit'
 import { Can, useCompany } from '@/app/company-provider'
 import { ColumnHeader, DataTable, inFilter, selectColumn } from '@/components/data-table/data-table'
 import { PageHeader } from '@/components/page-header'
@@ -41,6 +43,7 @@ export function ProductsPage() {
   const products = useProductStock()
   const categories = useCategories()
   const bulk = useBulkProducts()
+  const [byUnit, setByUnit] = React.useState<string[] | null>(null)
   // a row opens the item in a window over the list (?item=…), so the list stays as it was: its
   // filters, its page, where it was scrolled; the browser's back closes it
   const [params, setParams] = useSearchParams()
@@ -122,7 +125,7 @@ export function ProductsPage() {
       <PageHeader
         title={t('Products')}
         description={t('Every sellable and stocked item, one row per variant (SKU). Average cost updates automatically on every receipt.')}
-        actions={<Can perm="inventory.write"><Button variant="outline" asChild><Link to="/settings/import?kind=products"><Upload /> {t('Import')}</Link></Button><Button asChild><Link to="/inventory/products/new"><Plus /> {t('New product')}</Link></Button></Can>}
+        actions={<><RequestsButton /><Can perm="inventory.write"><Button variant="outline" asChild><Link to="/settings/import?kind=products"><Upload /> {t('Import')}</Link></Button><Button asChild><Link to="/inventory/products/new"><Plus /> {t('New product')}</Link></Button></Can></>}
       />
       <DataTable
         tableKey="inventory.products"
@@ -152,7 +155,8 @@ export function ProductsPage() {
           description: t('Create your first product, or add opening stock to an existing catalog.'),
           action: <Can perm="inventory.write"><Button size="sm" asChild><Link to="/inventory/products/new"><Plus /> {t('New product')}</Link></Button></Can>,
         }}
-        bulkActions={(rows, clear) => (
+        bulkActions={(rows, clear) => (<>
+          <Button size="xs" variant="outline" onClick={() => setByUnit(rows.map((r) => r.original.variant_id!).filter(Boolean))}><Warehouse /> {t('Stock in every unit')}</Button>
           <Can perm="inventory.write">
             <Button size="xs" variant="outline" onClick={() => bulk.mutate({ action: 'activate', productIds: productIds(rows) }, { onSuccess: clear })}><CheckCircle2 /> {t('Activate')}</Button>
             <Button size="xs" variant="outline" onClick={() => bulk.mutate({ action: 'deactivate', productIds: productIds(rows) }, { onSuccess: clear })}><Ban /> {t('Deactivate')}</Button>
@@ -167,8 +171,9 @@ export function ProductsPage() {
               />
             </Can>
           </Can>
-        )}
+        </>)}
       />
+      {byUnit && <StockByUnitDialog variantIds={byUnit} onClose={() => setByUnit(null)} />}
       <Dialog open={!!openId} onOpenChange={(o) => { if (!o) openItem(null) }}>
         <DialogContent className="block h-[92dvh] max-h-[92dvh] w-[calc(100%-2rem)] max-w-[1200px] overflow-y-auto p-0" aria-describedby={undefined}>
           <DialogTitle className="sr-only">{t('Product')}</DialogTitle>
@@ -177,4 +182,11 @@ export function ProductsPage() {
       </Dialog>
     </>
   )
+}
+
+/** for whoever approves items: new items asked for from supplier invoices */
+function RequestsButton() {
+  const n = usePendingItemRequests().data ?? 0
+  if (!n) return null
+  return <Button variant="outline" asChild className="border-warning/50 text-warning"><Link to="/inventory/item-requests"><PackagePlus /> {t('{n} new items to approve', { n })}</Link></Button>
 }

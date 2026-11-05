@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CalendarClock, Coins, Repeat, Tags, TrendingUp, Wallet } from 'lucide-react'
+import { CalendarClock, Coins, PackagePlus, Repeat, Tags, TrendingUp, Wallet } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -18,7 +18,8 @@ import { AutomationCard } from '../components/automation-card'
 
 type Settings = { pos_cash_tolerance: number; pos_count_notes: boolean; pos_void_approval: boolean; pos_close_witness: 'never' | 'difference' | 'always'
   payroll_auto_day: number | null; payroll_auto_for: 'previous' | 'current'; payroll_deduct_absence: boolean
-  payroll_night_pct: number | null; payroll_holiday_pct: number | null; purchase_price_tolerance: number }
+  payroll_night_pct: number | null; payroll_holiday_pct: number | null; purchase_price_tolerance: number
+  new_items_from_bills: 'anyone' | 'approval' }
 
 export function usePayrollTillSettings() {
   const { companyId } = useCompany()
@@ -26,7 +27,7 @@ export function usePayrollTillSettings() {
     queryKey: ['automation-settings', companyId],
     enabled: !!companyId,
     queryFn: async () => unwrap(await supabase.from('company_settings')
-      .select('pos_cash_tolerance, pos_count_notes, pos_void_approval, pos_close_witness, payroll_auto_day, payroll_auto_for, payroll_deduct_absence, payroll_night_pct, payroll_holiday_pct, purchase_price_tolerance').eq('company_id', companyId!).single()) as unknown as Settings,
+      .select('pos_cash_tolerance, pos_count_notes, pos_void_approval, pos_close_witness, payroll_auto_day, payroll_auto_for, payroll_deduct_absence, payroll_night_pct, payroll_holiday_pct, purchase_price_tolerance, new_items_from_bills').eq('company_id', companyId!).single()) as unknown as Settings,
   })
 }
 export function useSavePayrollTillSettings() {
@@ -152,11 +153,33 @@ export function AutomationPage() {
         </AutomationCard>
       )}
 
+      {can('inventory.read') && s && <NewItemsCard mode={s.new_items_from_bills} />}
+
       {can('inventory.read') && (
         <AutomationCard icon={Coins} title={t('Replenishment')} aside={<Button variant="outline" size="sm" asChild><Link to="/procurement/replenishment">{t('Open')}</Link></Button>}>
           <p className="text-[13px] text-muted-foreground">{t('Every morning: what to order from whom, from stock levels and open orders, as suggestions or draft purchase orders.')}</p>
         </AutomationCard>
       )}
     </div>
+  )
+}
+
+/** who makes the new items that come on supplier invoices */
+function NewItemsCard({ mode }: { mode: 'anyone' | 'approval' }) {
+  const { companyId, can } = useCompany()
+  const qc = useQueryClient()
+  const save = useMutation({
+    mutationFn: async (m: string) => unwrap(await supabase.rpc('new_items_setting_save', { p_company: companyId!, p_mode: m })),
+    onSuccess: () => { toast.success(t('Saved')); void qc.invalidateQueries({ queryKey: ['automation-settings', companyId] }) },
+    onError: (e) => toast.error(describeError(e)),
+  })
+  const may = can('admin.write') || can('inventory.approve')
+  return (
+    <AutomationCard icon={PackagePlus} title={t('New items from supplier invoices')}
+      aside={<Switch checked={mode === 'approval'} disabled={!may || save.isPending} aria-label={t('New items need approval')} onCheckedChange={(on) => save.mutate(on ? 'approval' : 'anyone')} />}>
+      <p className="text-[13px] text-muted-foreground">{mode === 'approval'
+        ? t('On: an item that is not in DrisPRO yet is not made from an invoice by whoever enters it. The line waits, and the people who approve items make it or refuse it under Products → New items to approve.')
+        : t('Off: whoever enters a supplier invoice may make a new item from its line. Turn it on so that new items wait for someone who approves items.')}</p>
+    </AutomationCard>
   )
 }

@@ -23,6 +23,7 @@ const lazy = <T,>(load: () => Promise<T>, name: keyof T) =>
 
 const DashboardPage = lazy(() => import('@/features/dashboard/dashboard-page'), 'DashboardPage')
 const TrainingPage = lazy(() => import('@/features/training/training-page'), 'TrainingPage')
+const ItemRequestsPage = lazy(() => import('@/features/inventory/pages/item-requests-page'), 'ItemRequestsPage')
 const ExportsPage = lazy(() => import('@/features/exports/exports-page'), 'ExportsPage')
 const ChatPage = lazy(() => import('@/features/chat/chat-page'), 'ChatPage')
 const TasksPage = lazy(() => import('@/features/tasks/pages/tasks-page'), 'TasksPage')
@@ -246,6 +247,7 @@ const router = createBrowserRouter([
         { path: 'products/:id', element: <ProductDetailPage /> },
         { path: 'stock', element: <StockPage /> },
         { path: 'check', element: <ItemCheckPage /> },
+        { path: 'item-requests', element: <ItemRequestsPage /> },
         { path: 'abc', element: <AbcPage /> },
         { path: 'movements', element: <Navigate to="/inventory/item-card" replace /> },
         { path: 'item-card', element: <ItemCardPage /> },
