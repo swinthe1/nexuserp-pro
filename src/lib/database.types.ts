@@ -4462,6 +4462,75 @@ export type Database = {
           { foreignKeyName: "fixed_assets_company_id_vendor_id_fkey"; columns: ["company_id", "vendor_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      gift_vouchers: {
+        Row: {
+          id: string
+          company_id: string
+          code: string
+          amount: number
+          balance: number
+          valid_until: string | null
+          status: string
+          session_id: string | null
+          sold_method: string | null
+          client_uuid: string | null
+          note: string | null
+          void_reason: string | null
+          journal_entry_id: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          code: string
+          amount: number
+          balance: number
+          valid_until?: string | null
+          status?: string
+          session_id?: string | null
+          sold_method?: string | null
+          client_uuid?: string | null
+          note?: string | null
+          void_reason?: string | null
+          journal_entry_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          code?: string
+          amount?: number
+          balance?: number
+          valid_until?: string | null
+          status?: string
+          session_id?: string | null
+          sold_method?: string | null
+          client_uuid?: string | null
+          note?: string | null
+          void_reason?: string | null
+          journal_entry_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "gift_vouchers_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "gift_vouchers_session_id_fkey"; columns: ["session_id"]; isOneToOne: false; referencedRelation: "pos_sessions"; referencedColumns: ["id"] },
+        ]
+      }
       goods_receipt_lines: {
         Row: {
           id: string
@@ -8112,6 +8181,7 @@ export type Database = {
           waiter_id: string | null
           moved_from_session_id: string | null
           atk: Json | null
+          refund_reason: string | null
         }
         Insert: {
           id?: string
@@ -8151,6 +8221,7 @@ export type Database = {
           waiter_id?: string | null
           moved_from_session_id?: string | null
           atk?: Json | null
+          refund_reason?: string | null
         }
         Update: {
           id?: string
@@ -8190,6 +8261,7 @@ export type Database = {
           waiter_id?: string | null
           moved_from_session_id?: string | null
           atk?: Json | null
+          refund_reason?: string | null
         }
         Relationships: [
           { foreignKeyName: "pos_orders_cashier_profile_fkey"; columns: ["cashier_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
@@ -8216,6 +8288,7 @@ export type Database = {
           created_by: string | null
           updated_at: string
           updated_by: string | null
+          voucher_id: string | null
         }
         Insert: {
           id?: string
@@ -8229,6 +8302,7 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          voucher_id?: string | null
         }
         Update: {
           id?: string
@@ -8242,9 +8316,11 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          voucher_id?: string | null
         }
         Relationships: [
           { foreignKeyName: "pos_payments_company_id_pos_order_id_fkey"; columns: ["company_id", "pos_order_id"]; isOneToOne: false; referencedRelation: "pos_orders"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "pos_payments_voucher_id_fkey"; columns: ["voucher_id"]; isOneToOne: false; referencedRelation: "gift_vouchers"; referencedColumns: ["id"] },
         ]
       }
       pos_registers: {
@@ -18229,12 +18305,33 @@ export type Database = {
         }
         Returns: { variant_id: string | null; sku: string | null; name: string | null; category: string | null; barcodes: Json | null; price: number | null; tax_code_id: string | null; tax_rate: number | null; tracking: string | null; on_hand: number | null; image_path: string | null; product_type: string | null; uom: string | null; scale_plu: string | null }[]
       }
+      pos_catalog_changes: {
+        Args: {
+          p_register: string
+          p_since: string
+        }
+        Returns: Json
+      }
+      pos_catalog_part: {
+        Args: {
+          p_register: string
+          p_ids: string[]
+        }
+        Returns: { variant_id: string | null; sku: string | null; name: string | null; category: string | null; barcodes: Json | null; price: number | null; tax_code_id: string | null; tax_rate: number | null; tracking: string | null; on_hand: number | null; image_path: string | null; product_type: string | null; uom: string | null; scale_plu: string | null }[]
+      }
       pos_close: {
         Args: {
           p_session: string
           p: Json
         }
         Returns: string
+      }
+      pos_customer_credit: {
+        Args: {
+          p_register: string
+          p_partner: string
+        }
+        Returns: Json
       }
       pos_log: {
         Args: {
@@ -18309,6 +18406,20 @@ export type Database = {
         Args: {
           p_register: string
           p_vendor: string
+        }
+        Returns: Json
+      }
+      pos_voucher_check: {
+        Args: {
+          p_register: string
+          p_code: string
+        }
+        Returns: Json
+      }
+      pos_voucher_sell: {
+        Args: {
+          p_session: string
+          p: Json
         }
         Returns: Json
       }
@@ -19765,6 +19876,13 @@ export type Database = {
           p_to: string
         }
         Returns: Json
+      }
+      voucher_block: {
+        Args: {
+          p_id: string
+          p_reason: string
+        }
+        Returns: undefined
       }
       warehouse_figures: {
         Args: {

@@ -137,6 +137,7 @@ const PriceLevelPage = lazy(() => import('@/features/inventory/pages/price-level
 const AgentPage = lazy(() => import('@/features/agent/agent-page'), 'AgentPage')
 const AgentsPage = lazy(() => import('@/features/agent/agents-page'), 'AgentsPage')
 const LoyaltyPage = lazy(() => import('@/features/loyalty/loyalty-page'), 'LoyaltyPage')
+const VouchersPage = lazy(() => import('@/features/pos/pages/vouchers-page'), 'VouchersPage')
 const WaitersPage = lazy(() => import('@/features/restaurant/waiters-page'), 'WaitersPage')
 const StoreChecksPage = lazy(() => import('@/features/pos/pages/checks-page'), 'StoreChecksPage')
 const AtkPage = lazy(() => import('@/features/pos/pages/atk-page'), 'AtkPage')
@@ -395,6 +396,7 @@ const router = createBrowserRouter([
         { index: true, element: <PosHomePage /> },
         { path: 'sessions/:id', element: <PosSessionPage /> },
         { path: 'loyalty', element: <LoyaltyPage /> },
+        { path: 'vouchers', element: <VouchersPage /> },
         { path: 'waiters', element: <WaitersPage /> },
       ] },
       { path: 'wms', element: <RequirePerm perm="wms.read" />, children: [

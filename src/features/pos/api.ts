@@ -6,8 +6,9 @@ import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
 import type { Tables } from '@/lib/database.types'
 import { describeError, unwrap } from '@/lib/errors'
-import { after, byName, fetchAll, supabase } from '@/lib/supabase'
+import { after, byName, fetchAll, fetchPages, supabase } from '@/lib/supabase'
 import { flushTillLog, kvGet, kvSet } from './offline'
+import { t } from '@/i18n'
 import type { TillLoyalty } from '@/features/loyalty/api'
 
 export const posKeys = { all: (c: string) => ['pos', c] as const }
@@ -114,6 +115,30 @@ export function usePayOut() {
     onError: (e) => toast.error(describeError(e)),
   })
 }
+/** gift vouchers: what is left on one (null: no such code) */
+export type VoucherInfo = { id: string; code: string; amount: number; balance: number; valid_until: string | null; status: 'active' | 'used' | 'void' | 'expired' }
+export async function checkVoucher(register: string, code: string) {
+  return unwrap(await supabase.rpc('pos_voucher_check', { p_register: register, p_code: code })) as unknown as VoucherInfo | null
+}
+export async function sellVoucher(session: string, p: { amount: number; method: 'cash' | 'card'; valid_until?: string | null; note?: string | null; client_uuid: string }) {
+  return unwrap(await supabase.rpc('pos_voucher_sell', { p_session: session, p: p as never })) as unknown as { id: string; code: string; amount: number; valid_until: string; duplicate: boolean }
+}
+/** a customer's credit at the till: the limit, what they owe now (shifts still open included), what is left */
+export type CustomerCredit = { name: string; limit: number | null; owes: number; available: number }
+export function useCustomerCredit(register: string | undefined, partner: string | null | undefined) {
+  return useQuery({ queryKey: ['pos', 'credit', register, partner], enabled: !!register && !!partner, staleTime: 0,
+    queryFn: async () => unwrap(await supabase.rpc('pos_customer_credit', { p_register: register!, p_partner: partner! })) as unknown as CustomerCredit | null })
+}
+export type Voucher = { id: string; code: string; amount: number; balance: number; valid_until: string | null; status: 'active' | 'used' | 'void'
+  sold_method: 'cash' | 'card' | null; note: string | null; void_reason: string | null; created_at: string; session: { number: string } | null }
+export function useVouchers() {
+  const { companyId } = useCompany()
+  return useQuery({ queryKey: [...posKeys.all(companyId!), 'vouchers'], enabled: !!companyId,
+    queryFn: async () => (await fetchPages((from, to) => supabase.from('gift_vouchers')
+      .select('id, code, amount, balance, valid_until, status, sold_method, note, void_reason, created_at, session:pos_sessions(number)')
+      .eq('company_id', companyId!).is('deleted_at', null).order('created_at', { ascending: false }).order('id').range(from, to))) as unknown as Voucher[] })
+}
+export const useBlockVoucher = () => useAction(async (a: { id: string; reason: string }) => unwrap(await supabase.rpc('voucher_block', { p_id: a.id, p_reason: a.reason })))
 export type SessionPayout = { id: string; kind: 'cash' | 'supplier' | 'expense'; movement_type: 'cash_in' | 'cash_out'; amount: number; reason: string
   partner: string | null; payment: string | null; account: string | null; document_no: string | null; at: string; by: string | null; approved_by: string | null }
 export function useSessionPayouts(id: string | undefined) {
@@ -195,7 +220,14 @@ export type TillData = {
   /** Kosovo: this till's ATK numbers, so it signs its coupons without internet */
   atk?: AtkTill
   loadedAt: string
+  /** the server's time of the last look at prices (the next look asks what changed after it) */
+  pricesAt?: string
 }
+type CatalogRow = { price: number | string | null; tax_rate: number | string | null; on_hand: number | string | null; barcodes: unknown } & Record<string, unknown>
+const toCatalogItem = (c: CatalogRow): CatalogItem =>
+  ({ ...c, price: Number(c.price), tax_rate: Number(c.tax_rate), on_hand: Number(c.on_hand), barcodes: (c.barcodes ?? []) as CatalogItem['barcodes'] }) as unknown as CatalogItem
+/** a minute early: a change saved while the catalog was being read is taken again, not lost */
+const minuteBefore = (at: string) => new Date(Date.parse(at) - 60_000).toISOString()
 /** Loads the till from the server when online and keeps a copy on the device; falls back to the copy offline */
 export function useTill(registerId: string | undefined) {
   const [state, setState] = React.useState<{ data: TillData | null; offline: boolean; loading: boolean; error: string | null }>({ data: null, offline: false, loading: true, error: null })
@@ -206,7 +238,7 @@ export function useTill(registerId: string | undefined) {
     if (cached) setState({ data: cached, offline: !navigator.onLine, loading: false, error: null })
     try {
       const reg = unwrap(await supabase.from('pos_registers').select('*').eq('id', registerId).single())
-      const [ses, cat, cus, co, loy, lim, promo, opt, atk] = await Promise.all([
+      const [ses, cat, cus, co, loy, lim, promo, opt, atk, clock] = await Promise.all([
         supabase.from('pos_sessions').select('id, number, opened_at, opening_cash').eq('register_id', registerId).eq('status', 'open').maybeSingle(),
         // a supermarket has thousands of items: read them all, 1 000 at a time (the server gives no more in one call)
         fetchAll('variant_id', (a) => after(supabase.rpc('pos_catalog', { p_register: registerId }), 'variant_id', a).order('variant_id').limit(1000)).then((data) => ({ data, error: null })),
@@ -218,11 +250,12 @@ export function useTill(registerId: string | undefined) {
         supabase.rpc('pos_promotions', { p_register: registerId }),
         supabase.rpc('pos_till_options', { p_register: registerId }),
         supabase.rpc('atk_till', { p_register: registerId }),
+        supabase.rpc('pos_catalog_changes', { p_register: registerId, p_since: null as unknown as string }),
       ])
       if (cat.error) throw cat.error
       const data: TillData = {
         register: reg as TillData['register'], session: ses.data ?? null,
-        catalog: (cat.data ?? []).map((c) => ({ ...c, price: Number(c.price), tax_rate: Number(c.tax_rate), on_hand: Number(c.on_hand), barcodes: (c.barcodes ?? []) as CatalogItem['barcodes'] })) as CatalogItem[],
+        catalog: (cat.data ?? []).map(toCatalogItem),
         customers: (cus.data ?? []) as TillData['customers'],
         company: { name: co.data?.name ?? '', legal_name: co.data?.legal_name ?? null, tax_number: co.data?.tax_number ?? null, base_currency: co.data?.base_currency ?? 'ALL', address: [co.data?.address_line1, co.data?.city].filter(Boolean).join(', ') || null },
         loyalty: loy.error ? cached?.loyalty : (loy.data as unknown as TillLoyalty),
@@ -231,6 +264,7 @@ export function useTill(registerId: string | undefined) {
         options: opt.error ? cached?.options ?? { count_notes: true } : (opt.data as unknown as TillData['options']),
         atk: atk.error ? cached?.atk : (atk.data as unknown as AtkTill),
         loadedAt: new Date().toISOString(),
+        pricesAt: clock.error ? undefined : minuteBefore((clock.data as unknown as { at: string }).at),
       }
       await kvSet(key, data).catch(() => undefined)
       setState({ data, offline: false, loading: false, error: null })
@@ -239,6 +273,51 @@ export function useTill(registerId: string | undefined) {
     }
   }, [registerId])
   React.useEffect(() => { void load() }, [load])
+  // a till open all day: every few minutes, the prices that changed (the receipt on the screen keeps its own)
+  const dataRef = React.useRef(state.data)
+  dataRef.current = state.data
+  React.useEffect(() => {
+    if (!registerId) return
+    let busy = false
+    const look = async () => {
+      const d = dataRef.current
+      if (busy || !d?.pricesAt || !navigator.onLine) return
+      busy = true
+      try {
+        const { data: ch, error } = await supabase.rpc('pos_catalog_changes', { p_register: registerId, p_since: d.pricesAt })
+        if (error || !ch) return
+        const c = ch as unknown as { at: string; full: boolean; items?: CatalogRow[]; gone?: string[]; promotions?: boolean }
+        if (c.full) { await load(); return }
+        const promo = c.promotions ? await supabase.rpc('pos_promotions', { p_register: registerId }) : null
+        const items = (c.items ?? []).map(toCatalogItem)
+        const changed = new Map(items.map((i) => [i.variant_id, i]))
+        const gone = new Set(c.gone ?? [])
+        const now = dataRef.current
+        if (!now) return
+        let prices = 0
+        const seen = new Set<string>()
+        const catalog = now.catalog.filter((i) => !gone.has(i.variant_id)).map((i) => {
+          const n = changed.get(i.variant_id)
+          if (!n) return i
+          seen.add(i.variant_id)
+          if (n.price !== i.price) prices += 1
+          return n
+        })
+        for (const n of items) if (!seen.has(n.variant_id)) catalog.push(n)
+        catalog.sort((a, b) => a.name.localeCompare(b.name))
+        const promotions = promo && !promo.error ? (promo.data as unknown as TillPromo[]) : undefined
+        setState((s) => {
+          if (!s.data) return s
+          const next: TillData = { ...s.data, catalog, pricesAt: minuteBefore(c.at), promotions: promotions ?? s.data.promotions }
+          void kvSet(`till:${registerId}`, next).catch(() => undefined)
+          return { ...s, data: next }
+        })
+        if (prices > 0) toast.info(t('New prices on {n} items', { n: prices }))
+      } finally { busy = false }
+    }
+    const timer = window.setInterval(() => void look(), 3 * 60_000)
+    return () => window.clearInterval(timer)
+  }, [registerId, load])
   const patch = React.useCallback((fn: (d: TillData) => TillData) => {
     setState((s) => {
       if (!s.data) return s

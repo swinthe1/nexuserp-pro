@@ -3,7 +3,7 @@ import { TillTasks } from '@/features/tasks/components/till-tasks'
 import { whereElsewhere } from '@/features/inventory/where'
 import {
   ArrowLeft, BadgePercent, Banknote, Camera, Check, CloudOff, CreditCard, Ellipsis, Landmark, ListOrdered, LogOut, Minus, NotebookPen, Plus, Printer, ReceiptText, RotateCcw, ScanLine, Search,
-  ShieldCheck, Ticket, Trash2, UserRound, Wallet, X,
+  NotebookTabs, ShieldCheck, Ticket, Trash2, UserRound, Wallet, X,
 } from 'lucide-react'
 import * as React from 'react'
 import { bestPromo } from '../promotions'
@@ -26,11 +26,11 @@ import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { formatDateWith, msg, t, td, tEnum, tn, tServer } from '@/i18n'
 import { cn, formatDate, formatMoney, formatQty, num, todayISO } from '@/lib/utils'
-import { lookupReceipt, posApprove, sessionControls, useCashMove, useCloseSession, useOpenSession, usePayees, usePayOut, useSessionSummary, useTill, useVendorBills, type CatalogItem, type ReceiptLookup, type TillData } from '../api'
+import { checkVoucher, lookupReceipt, posApprove, sellVoucher, sessionControls, useCustomerCredit, type VoucherInfo, useCashMove, useCloseSession, useOpenSession, usePayees, usePayOut, useSessionSummary, useTill, useVendorBills, type CatalogItem, type ReceiptLookup, type TillData } from '../api'
 import { enqueue, logTill, nextDeviceRef, syncNow, useOnSynced, useSyncState, type QueuedSale, type TillLogEntry } from '../offline'
 import { ManagerDialog, ManagerPinFields, pinReady } from '../manager-pin'
 import { readScaleBarcode } from '@/lib/scale-barcode'
-import { printReceipt, printZReport, type ReceiptData } from '../receipt'
+import { printReceipt, printVoucher, printZReport, type ReceiptData } from '../receipt'
 import { qrSvg, signAtkSale, useAtkState, waitForAtk } from '../atk'
 import type { FiscalPrint } from '../fiscal-receipt'
 import { clockNow, useClockCheck } from '../clock'
@@ -49,12 +49,14 @@ const METHODS = [
   { id: 'card', label: msg('enum:card'), icon: CreditCard, key: 'F6' },
   { id: 'bank_transfer', label: msg('enum:bank_transfer'), icon: Landmark, key: 'F7' },
   { id: 'voucher', label: msg('enum:voucher'), icon: Ticket, key: 'F8' },
+  // on account: only with a known customer, up to their credit limit
+  { id: 'account', label: msg('enum:account'), icon: NotebookTabs, key: 'F10' },
 ] as const
 type Method = (typeof METHODS)[number]['id']
 
 type Line = { key: string; variant_id: string; name: string; sku: string; price: number; qty: number; discount: number; rate: number; barcode: string | null }
 type PricedLine = Line & { card?: boolean; promo?: { id: string; name: string } }
-export type Tender = { method: Method; amount: number }
+export type Tender = { method: Method; amount: number; reference?: string | null }
 type AppliedCard = { id: string; number: string; holder: string; program: TillProgram; points: number; monthUsed: number }
 type Redeem = { points: number; amount: number; pct: Record<string, number> }
 
@@ -140,7 +142,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   const [category, setCategory] = React.useState<string>('__all')
   const [customer, setCustomer] = React.useState<string | null>(data.register.default_customer_id)
   const [flash, setFlash] = React.useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
-  const [dialog, setDialog] = React.useState<null | 'pay' | 'customer' | 'card' | 'refund' | 'cash' | 'close' | 'line' | 'queue' | 'manager' | 'refund-manager'>(null)
+  const [dialog, setDialog] = React.useState<null | 'pay' | 'customer' | 'card' | 'refund' | 'cash' | 'close' | 'line' | 'queue' | 'manager' | 'refund-manager' | 'voucher'>(null)
   const [done, setDone] = React.useState<Done | null>(null)
   const [camera, setCamera] = React.useState(false)
   const [autoPrint, setAutoPrint] = React.useState(() => prefGet('pos.autoprint', '1') === '1')
@@ -385,7 +387,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   useOnSynced(React.useCallback((it: QueuedSale) => { if (it.number) setLastNumbers((m) => ({ ...m, [it.client_uuid]: it.number! })) }, []))
   const doneUuid = React.useRef<string | null>(null)
 
-  const finish = async (tenders: Tender[], opts?: { refund?: { of: ReceiptLookup; lines: Line[]; cancelReason?: string | null }; approval?: string | null }) => {
+  const finish = async (tenders: Tender[], opts?: { refund?: { of: ReceiptLookup | null; lines: Line[]; cancelReason?: string | null; reason?: string | null }; approval?: string | null }) => {
     const refund = opts?.refund
     const saleLines: PricedLine[] = refund ? refund.lines : priced
     const usedCard = !refund && card && saleLines.some((l) => l.card) ? card : null
@@ -405,16 +407,16 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
         atk = await signAtkSale({ registerId: data.register.id, atk: data.atk, key: atkState.key, operator: cashier, time: new Date(created_at),
           lines: saleLines.map((l) => ({ name: l.name, qty: l.qty, price: l.price, total: lineTotal(l), rate: l.rate, variant_id: l.variant_id, tax_code_id: taxOf.get(l.variant_id) ?? null })),
           payments: tenders.map((x) => ({ method: x.method, amount: x.amount })), change: Math.max(change, 0),
-          isReturn: !!refund, returnOf: refund ? (refund.of.atk_coupon ? Number(refund.of.atk_coupon) : null) : null, cancelReason: refund?.cancelReason ?? null,
+          isReturn: !!refund, returnOf: refund?.of?.atk_coupon ? Number(refund.of.atk_coupon) : null, cancelReason: refund?.cancelReason ?? null,
           dailyNo: Number(device_ref.split('-').at(-1)) || null, offline: isOffline, footer: data.register.receipt_footer, blockNo: fromBook?.no ?? null })
       } catch (e) { toast.error(describeError(e)); return }
     }
     const payload = {
-      client_uuid, session_id: session.id, order_at: created_at, device_ref, offline: isOffline, partner_id: customer, is_refund: !!refund, refund_of_id: refund?.of.id ?? null,
+      client_uuid, session_id: session.id, order_at: created_at, device_ref, offline: isOffline, partner_id: customer, is_refund: !!refund, refund_of_id: refund?.of?.id ?? null, refund_reason: refund?.reason ?? null,
       // a promotion's line counts as discounted already, so the card does not add to it (the server checks the promotion)
       lines: saleLines.map((l) => ({ variant_id: l.variant_id, quantity: l.qty, unit_price: l.price, discount_pct: l.discount, manual_pct: l.card ? 0 : l.discount,
         promotion_id: l.promo?.id ?? null, barcode: l.barcode, description: l.name })),
-      payments: tenders.map((t) => ({ method: t.method, amount: t.amount })),
+      payments: tenders.map((t) => ({ method: t.method, amount: t.amount, reference: t.reference ?? null })),
       loyalty: usedCard ? { card_id: usedCard.id, redeem_points: redeem?.points ?? 0 } : null,
       fiscal: atk?.payload ?? null,
       // a refund confirmed by a manager (when the company asks for it); the server checks it
@@ -536,6 +538,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label={t('More')}><Ellipsis /></Button></DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-60">
               <DropdownMenuItem onSelect={openRefund}><RotateCcw /> {t('Refund')}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setDialog('voucher')}><Ticket /> {t('Sell a gift voucher')}</DropdownMenuItem>
               {data.atk?.required && <DropdownMenuItem onSelect={() => setBlockOpen(true)}><NotebookPen /> {t('From the receipt book')}</DropdownMenuItem>}
               <DropdownMenuItem onSelect={() => setDialog('cash')}><Wallet /> {t('Cash and payments')}</DropdownMenuItem>
               <DropdownMenuCheckboxItem checked={autoPrint} onCheckedChange={() => setAutoPrint((a) => { prefSet('pos.autoprint', a ? '0' : '1'); return !a })}>
@@ -547,6 +550,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
         <div className="ml-auto flex items-center gap-1.5">
           {data.atk?.required && <Button variant="ghost" size="sm" onClick={() => setBlockOpen(true)} title={t('Register a coupon written in the fiscal receipt book while the till was down')}><NotebookPen /> {t('From the receipt book')}</Button>}
           <Button variant="ghost" size="sm" onClick={openRefund}><RotateCcw /> {t('Refund')} <Kbd>F9</Kbd></Button>
+          <Button variant="ghost" size="sm" onClick={() => setDialog('voucher')}><Ticket /> {t('Gift voucher')}</Button>
           <Button variant="ghost" size="sm" onClick={() => setDialog('cash')}><Wallet /> {t('Cash and payments')}</Button>
           <Button variant="ghost" size="sm" onClick={() => { setAutoPrint((a) => { prefSet('pos.autoprint', a ? '0' : '1'); return !a }) }} aria-pressed={autoPrint}
             title={t('Print a receipt automatically after each sale')}><Printer /> {autoPrint ? t('Auto-print on') : t('Auto-print off')}</Button>
@@ -748,7 +752,8 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       </div>
 
       {camera && <CameraScanner onClose={() => setCamera(false)} onCode={(c) => { setCamera(false); submitQuery(c) }} />}
-      {dialog === 'pay' && <PayDialog total={r2(total)} currency={cur} cashLimit={cashLimit} onCancel={() => { setDialog(null); focusSearch() }} onPaid={(t) => finish(t)} />}
+      {dialog === 'pay' && <PayDialog total={r2(total)} currency={cur} cashLimit={cashLimit} registerId={data.register.id} canOverLimit={can('sales.approve')}
+        account={customer && customer !== data.register.default_customer_id ? { id: customer, name: customerName ?? '' } : null} onCancel={() => { setDialog(null); focusSearch() }} onPaid={(t) => finish(t)} />}
       {dialog === 'card' && <CardDialog onClose={() => { setDialog(null); focusSearch() }} onCode={async (c) => { if (await applyCardCode(c)) { setDialog(null); focusSearch() } }} error={flash?.tone === 'error' ? flash.text : null} />}
       {dialog === 'customer' && <CustomerDialog data={data} value={customer} onClose={(v) => { if (v !== undefined) setCustomer(v); setDialog(null); focusSearch() }} />}
       {dialog === 'manager' && pendingVoid && (
@@ -760,10 +765,10 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       {dialog === 'line' && selectedLine && <LineDialog line={selectedLine} canDiscount={(d) => d <= MAX_DISCOUNT || can('pos.approve')}
         onClose={(p) => { if (p) updateLine(selectedLine.key, p); setDialog(null); focusSearch() }} onRemove={() => { removeLine(selectedLine.key); setDialog(null); focusSearch() }} />}
       {dialog === 'refund' && <RefundDialog data={data} currency={cur} onClose={() => { setDialog(null); focusSearch() }}
-        onRefund={(of, ls, method, cancelReason) => {
-          const go = (approval: string | null) => finish([{ method, amount: -r2(ls.reduce((s, l) => s + Math.abs(lineTotal(l)), 0)) }], { refund: { of, lines: ls, cancelReason }, approval })
-          // money back needs a manager, as taking items off a sale does
-          if (needsManager) { setPendingRefund(() => go); setDialog('refund-manager'); return Promise.resolve() } return go(null)
+        onRefund={(of, ls, method, cancelReason, reason) => {
+          const go = (approval: string | null) => finish([{ method, amount: -r2(ls.reduce((s, l) => s + Math.abs(lineTotal(l)), 0)) }], { refund: { of, lines: ls, cancelReason, reason }, approval })
+          // money back needs a manager, as taking items off a sale does; without a receipt, always
+          if (of ? needsManager : !can('pos.approve') && managers.length > 0) { setPendingRefund(() => go); setDialog('refund-manager'); return Promise.resolve() } return go(null)
         }} />}
       {dialog === 'refund-manager' && pendingRefund && (
         <ManagerDialog registerId={data.register.id} managers={managers} purpose="refund" title={t('A manager confirms the refund')}
@@ -771,6 +776,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
           onCancel={() => { setPendingRefund(null); setDialog(null); focusSearch() }}
           onApproved={(a) => { const go = pendingRefund; setPendingRefund(null); void go(a.approval) }} />
       )}
+      {dialog === 'voucher' && <VoucherDialog data={data} sessionId={session.id} currency={cur} onClose={() => { setDialog(null); focusSearch() }} />}
       {dialog === 'cash' && <CashDialog data={data} sessionId={session.id} currency={cur} onClose={() => { setDialog(null); focusSearch() }} />}
       {dialog === 'close' && <CloseDialog data={data} pending={pending.length} onClose={() => { setDialog(null); focusSearch() }}
         onClosed={async (sessionId) => { await reload(); navigate(`/pos/sessions/${sessionId}`) }} />}
@@ -791,8 +797,18 @@ export function Kbd({ children, className }: { children: React.ReactNode; classN
 }
 
 /* ================================================================== payment */
-export function PayDialog({ total, currency, cashLimit, onCancel, onPaid }: { total: number; currency: string; cashLimit?: { limit: number; block: boolean; business: boolean } | null
-  onCancel: () => void; onPaid: (t: Tender[]) => Promise<void> }) {
+export function PayDialog({ total, currency, cashLimit, onCancel, onPaid, registerId, account, canOverLimit }: { total: number; currency: string; cashLimit?: { limit: number; block: boolean; business: boolean } | null
+  onCancel: () => void; onPaid: (t: Tender[]) => Promise<void>
+  /** the till: vouchers are checked against it */
+  registerId?: string
+  /** the customer chosen, when it is not the walk-in customer: they can take it on account */
+  account?: { id: string; name: string } | null
+  canOverLimit?: boolean }) {
+  const methods = METHODS.filter((m) => m.id !== 'account' || !!account)
+  // a voucher: its code, and what is left on it
+  const [vcode, setVcode] = React.useState('')
+  const [voucher, setVoucher] = React.useState<VoucherInfo | null>(null)
+  const [vbusy, setVbusy] = React.useState(false)
   const [tenders, setTenders] = React.useState<Tender[]>([])
   const [method, setMethod] = React.useState<Method>('cash')
   const paid = r2(tenders.reduce((s, t) => s + t.amount, 0))
@@ -812,9 +828,40 @@ export function PayDialog({ total, currency, cashLimit, onCancel, onPaid }: { to
     try { await onPaid(ts) } catch (e) { toast.error(describeError(e)); setBusy(false) }
   }
   /** a tender that covers the rest finishes the sale straight away */
+  const credit = useCustomerCredit(registerId, method === 'account' ? account?.id : null)
+  const lookVoucher = async () => {
+    const code = vcode.trim().toUpperCase()
+    if (!code || !registerId) return
+    if (!navigator.onLine) { toast.warning(t('Offline: what is left on the voucher is checked when the sale is sent')); return }
+    setVbusy(true)
+    try {
+      const v = await checkVoucher(registerId, code)
+      setVoucher(v)
+      if (!v) { toast.error(t('No voucher {code}', { code })); return }
+      if (v.status !== 'active') { toast.error(v.status === 'void' ? t('Voucher {code} is blocked', { code }) : v.status === 'expired' ? t('Voucher {code} has expired', { code }) : t('Voucher {code} is used up', { code })); return }
+      setAmount(String(Math.min(remaining, num(v.balance))))
+      input.current?.focus(); input.current?.select()
+    } catch (e) { toast.error(describeError(e)) } finally { setVbusy(false) }
+  }
   const addTender = (m: Method, v: number) => {
     if (!(v > 0)) return
-    const next = [...tenders, { method: m, amount: r2(v) }]
+    let reference: string | null = null
+    if (m === 'voucher') {
+      reference = vcode.trim().toUpperCase()
+      if (!reference) { toast.error(t('Scan or type the voucher\'s code')); return }
+      const already = tenders.filter((x) => x.reference === reference).reduce((s, x) => s + x.amount, 0)
+      if (voucher && voucher.code === reference && v + already > num(voucher.balance) + 0.001) {
+        toast.error(t('The voucher has {amount} left', { amount: formatMoney(num(voucher.balance) - already) })); return
+      }
+    }
+    if (m === 'account') {
+      if (!account) return
+      if (credit.data && !canOverLimit && v > num(credit.data.available) + 0.001) {
+        toast.error(num(credit.data.limit) > 0 ? t('{name} can take at most {amount} more on account', { name: account.name, amount: formatMoney(credit.data.available) })
+          : t('{name} has no credit limit: set one on the customer to sell on account', { name: account.name })); return
+      }
+    }
+    const next = [...tenders, { method: m, amount: r2(v), reference }]
     const p = r2(next.reduce((s, t) => s + t.amount, 0))
     const cash = next.filter((t) => t.method === 'cash').reduce((s, t) => s + t.amount, 0)
     if (m !== 'cash' && p > total + 0.001) { toast.error(t('Only cash can be more than what is due — change is given in cash')); return }
@@ -834,12 +881,12 @@ export function PayDialog({ total, currency, cashLimit, onCancel, onPaid }: { to
 
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const m = METHODS.find((x) => x.key === e.key)
+      const m = methods.find((x) => x.key === e.key)
       if (m) { e.preventDefault(); setMethod(m.id); input.current?.focus() }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [methods])
 
   return (
     <Dialog open onOpenChange={(o) => !o && !busy && onCancel()}>
@@ -858,8 +905,8 @@ export function PayDialog({ total, currency, cashLimit, onCancel, onPaid }: { to
             {t('Take the part above it by card or bank.')}
           </p>
         )}
-        <div className="grid grid-cols-4 gap-2">
-          {METHODS.map((m) => (
+        <div className={cn('grid gap-2', methods.length > 4 ? 'grid-cols-5' : 'grid-cols-4')}>
+          {methods.map((m) => (
             <button key={m.id} type="button" onClick={() => { setMethod(m.id); input.current?.focus() }} aria-pressed={method === m.id}
               className={cn('flex flex-col items-center gap-1 rounded-lg border-2 py-3 text-[13px] font-medium transition-colors', method === m.id ? 'border-primary bg-primary/5 text-primary' : 'hover:bg-muted')}>
               <m.icon className="size-5" />{t(m.label)}<span className="font-mono text-[10px] text-muted-foreground">{m.key}</span>
@@ -873,6 +920,23 @@ export function PayDialog({ total, currency, cashLimit, onCancel, onPaid }: { to
                 className="h-14 flex-1 text-right text-2xl font-semibold tabular" />
               <Button type="submit" size="lg" className="h-14 px-6" disabled={!(num(amount) > 0) || busy}>{t('Add')}</Button>
             </div>
+            {method === 'voucher' && (
+              <div className="flex gap-2">
+                <Input aria-label={t('Voucher code')} placeholder={t('Voucher code')} value={vcode} className="h-11 font-mono"
+                  onChange={(e) => { setVcode(e.target.value); setVoucher(null) }} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void lookVoucher() } }} />
+                <Button type="button" variant="outline" className="h-11" loading={vbusy} onClick={() => void lookVoucher()}>{t('Check')}</Button>
+              </div>
+            )}
+            {method === 'voucher' && voucher && voucher.status === 'active' && (
+              <p className="text-[13px] text-muted-foreground">{t('Voucher {code}: {amount} left', { code: voucher.code, amount: formatMoney(voucher.balance) })}{voucher.valid_until ? ` · ${t('valid until {date}', { date: formatDate(voucher.valid_until) })}` : ''}</p>
+            )}
+            {method === 'account' && account && (
+              <p className={cn('text-[13px]', credit.data && num(credit.data.available) < remaining ? 'text-destructive' : 'text-muted-foreground')}>
+                {credit.isLoading ? t('Checking the customer\'s credit…') : !credit.data ? t('Offline: the credit limit is checked when the sale is sent')
+                  : num(credit.data.limit) > 0 ? t('{name}: limit {limit} · owes {owes} · can take {available}', { name: account.name, limit: formatMoney(credit.data.limit ?? 0), owes: formatMoney(credit.data.owes), available: formatMoney(credit.data.available) })
+                  : t('{name} has no credit limit: set one on the customer to sell on account', { name: account.name })}
+              </p>
+            )}
             {method === 'cash' ? (
               <div className="flex flex-wrap gap-2">
                 {quickNotes.map((v, i) => (
@@ -892,7 +956,7 @@ export function PayDialog({ total, currency, cashLimit, onCancel, onPaid }: { to
           <div className="grid gap-1 rounded-lg bg-muted/50 p-3 text-[13px]">
             {tenders.map((x, i) => (
               <div key={i} className="flex items-center justify-between gap-2">
-                <span>{t(METHODS.find((m) => m.id === x.method)!.label)}</span>
+                <span>{t(METHODS.find((m) => m.id === x.method)!.label)}{x.reference ? <span className="ml-1.5 font-mono text-xs text-muted-foreground">{x.reference}</span> : null}</span>
                 <span className="flex items-center gap-2 tabular">{formatMoney(x.amount)}
                   <button type="button" className="text-muted-foreground hover:text-destructive" aria-label={t('Remove payment')} onClick={() => setTenders((ts) => ts.filter((_, j) => j !== i))}><X className="size-3.5" /></button></span>
               </div>
@@ -1032,7 +1096,10 @@ function BlockDialog({ onClose }: { onClose: (b?: { no: string; at: Date }) => v
   )
 }
 
-function RefundDialog({ data, currency, onClose, onRefund }: { data: TillData; currency: string; onClose: () => void; onRefund: (of: ReceiptLookup, lines: Line[], method: Method, cancelReason?: string | null) => Promise<void> }) {
+function RefundDialog({ data, currency, onClose, onRefund }: { data: TillData; currency: string; onClose: () => void
+  onRefund: (of: ReceiptLookup | null, lines: Line[], method: Method, cancelReason?: string | null, reason?: string | null) => Promise<void> }) {
+  // the customer lost the receipt: the items picked by hand, a reason, the till's price, a manager's PIN
+  const [noReceipt, setNoReceipt] = React.useState(false)
   const [code, setCode] = React.useState('')
   const [found, setFound] = React.useState<ReceiptLookup | null>(null)
   const [busy, setBusy] = React.useState(false)
@@ -1063,10 +1130,14 @@ function RefundDialog({ data, currency, onClose, onRefund }: { data: TillData; c
     setCancel(on)
     if (on && found) setQty(Object.fromEntries(found.lines.map((l, i) => [i, String(num(l.quantity))])))
   }
+  if (noReceipt) return <NoReceiptRefund data={data} currency={currency} onBack={() => setNoReceipt(false)} onClose={onClose} onRefund={(ls, m, why) => onRefund(null, ls, m, null, why)} />
   return (
     <Dialog open onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle>{t('Refund')}</DialogTitle><DialogDescription>{t('Scan or type the receipt number. Items come back into the till\'s stock at the cost they left with.')}</DialogDescription></DialogHeader>
+        {!found && (fiscal
+          ? <p className="text-xs text-muted-foreground">{t('Without the receipt there is no refund here: ATK takes a return only against the original coupon.')}</p>
+          : <button type="button" className="justify-self-start text-[13px] font-medium text-primary hover:underline" onClick={() => setNoReceipt(true)}>{t('The customer has no receipt')}</button>)}
         {!found ? (
           <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); if (code.trim()) void look() }}>
             <Input autoFocus className="h-12 font-mono" value={code} onChange={(e) => setCode(e.target.value)} placeholder={t('{a} or {b}', { a: 'POS-2026-00012', b: 'T1-261024-0007' })} />
@@ -1106,6 +1177,124 @@ function RefundDialog({ data, currency, onClose, onRefund }: { data: TillData; c
           {found && <Button variant="destructive" loading={busy} disabled={!lines.length || tooMuch || (cancel && reason.trim().length < 3)}
             onClick={async () => { setBusy(true); try { await onRefund(found, lines, method, cancel ? reason.trim() : null) } catch (e) { toast.error(describeError(e)); setBusy(false) } }}>
             {cancel ? t('Cancel the coupon · {amount}', { amount: formatMoney(total) }) : t('Refund {amount}', { amount: formatMoney(total) })}</Button>}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/** selling a gift voucher: the money is owed to whoever holds the code until it is spent (no VAT now, VAT on what it buys) */
+function VoucherDialog({ data, sessionId, currency, onClose }: { data: TillData; sessionId: string; currency: string; onClose: () => void }) {
+  const [amount, setAmount] = React.useState('')
+  const [method, setMethod] = React.useState<'cash' | 'card'>('cash')
+  const [until, setUntil] = React.useState(() => { const d = new Date(); d.setFullYear(d.getFullYear() + 1); return d.toISOString().slice(0, 10) })
+  const [note, setNote] = React.useState('')
+  const [busy, setBusy] = React.useState(false)
+  const [sold, setSold] = React.useState<{ code: string; amount: number; valid_until: string } | null>(null)
+  const uuid = React.useRef(crypto.randomUUID())
+  const print = (v: { code: string; amount: number; valid_until: string }) =>
+    printVoucher({ company: data.company.name, register: data.register, code: v.code, amount: v.amount, currency, validUntil: v.valid_until, date: new Date() })
+  const sell = async () => {
+    if (!navigator.onLine) { toast.error(t('Selling a voucher needs internet: its code must be unique')); return }
+    setBusy(true)
+    try {
+      const v = await sellVoucher(sessionId, { amount: num(amount), method, valid_until: until || null, note: note.trim() || null, client_uuid: uuid.current })
+      setSold(v)
+      if (method === 'cash') openCashDrawer()
+      print(v)
+    } catch (e) { toast.error(describeError(e)) } finally { setBusy(false) }
+  }
+  return (
+    <Dialog open onOpenChange={(o) => !o && !busy && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader><DialogTitle>{t('Sell a gift voucher')}</DialogTitle>
+          <DialogDescription>{t('The customer pays now and spends it later at any till, all at once or in parts. No VAT now: VAT comes on what it buys.')}</DialogDescription></DialogHeader>
+        {sold ? (
+          <div className="grid gap-3 text-center">
+            <div className="text-[13px] text-muted-foreground">{t('Voucher sold')}</div>
+            <div className="text-3xl font-semibold tabular">{formatMoney(sold.amount)} <span className="text-sm font-normal text-muted-foreground">{currency}</span></div>
+            <div className="font-mono text-lg tracking-wider">{sold.code}</div>
+            <div className="text-xs text-muted-foreground">{t('Valid until {date}', { date: formatDate(sold.valid_until) })}</div>
+            <DialogFooter><Button variant="outline" onClick={() => print(sold)}><Printer /> {t('Print again')}</Button><Button onClick={onClose}>{t('Done')}</Button></DialogFooter>
+          </div>
+        ) : (
+          <form className="grid gap-3" onSubmit={(e) => { e.preventDefault(); if (num(amount) > 0) void sell() }}>
+            <div className="grid gap-1.5"><Label htmlFor="gv-amt">{t('Value')}</Label>
+              <Input id="gv-amt" autoFocus inputMode="decimal" className="h-12 text-right text-xl tabular" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.,]/g, '').replace(',', '.'))} /></div>
+            <div className="flex gap-2">
+              <Button type="button" variant={method === 'cash' ? 'default' : 'outline'} onClick={() => setMethod('cash')}><Banknote /> {t('enum:cash')}</Button>
+              <Button type="button" variant={method === 'card' ? 'default' : 'outline'} onClick={() => setMethod('card')}><CreditCard /> {t('enum:card')}</Button>
+            </div>
+            <div className="grid gap-1.5"><Label htmlFor="gv-until">{t('Valid until')}</Label><Input id="gv-until" type="date" value={until} onChange={(e) => setUntil(e.target.value)} /></div>
+            <div className="grid gap-1.5"><Label htmlFor="gv-note" optional>{t('Note')}</Label><Input id="gv-note" value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('e.g. for whom')} /></div>
+            <DialogFooter><Button type="button" variant="ghost" onClick={onClose} disabled={busy}>{t('Cancel')}</Button>
+              <Button type="submit" loading={busy} disabled={!(num(amount) > 0)}>{t('Sell {amount}', { amount: formatMoney(num(amount)) })}</Button></DialogFooter>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/** a refund without the receipt: the till's price today, never more; a reason; a manager's PIN (the server checks all three) */
+function NoReceiptRefund({ data, currency, onBack, onClose, onRefund }: { data: TillData; currency: string; onBack: () => void; onClose: () => void
+  onRefund: (lines: Line[], method: Method, reason: string) => Promise<void> }) {
+  const [q, setQ] = React.useState('')
+  const [picked, setPicked] = React.useState<{ item: CatalogItem; qty: string }[]>([])
+  const [reason, setReason] = React.useState('')
+  const [method, setMethod] = React.useState<Method>('cash')
+  const [busy, setBusy] = React.useState(false)
+  const found = React.useMemo(() => {
+    const v = q.trim().toLowerCase()
+    if (v.length < 2) return []
+    return data.catalog.filter((c) => c.barcodes.some((b) => b.code === v) || c.sku?.toLowerCase() === v || c.name.toLowerCase().includes(v)).slice(0, 6)
+  }, [q, data.catalog])
+  const add = (item: CatalogItem) => { setPicked((p) => p.some((x) => x.item.variant_id === item.variant_id) ? p : [...p, { item, qty: '1' }]); setQ('') }
+  const lines: Line[] = picked.filter((p) => num(p.qty) > 0).map((p, i) => ({ key: String(i), variant_id: p.item.variant_id, name: p.item.name, sku: p.item.sku ?? '',
+    price: p.item.price, qty: -num(p.qty), discount: 0, rate: p.item.tax_rate, barcode: null }))
+  const total = lines.reduce((s, l) => s + Math.abs(lineTotal(l)), 0)
+  return (
+    <Dialog open onOpenChange={(o) => !o && !busy && onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader><DialogTitle>{t('Refund without a receipt')}</DialogTitle>
+          <DialogDescription>{t('At the till\'s price today, never more. A manager confirms it with their PIN and the managers are told.')}</DialogDescription></DialogHeader>
+        <div className="grid gap-3">
+          <div className="relative">
+            <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Scan or type the item')}
+              onKeyDown={(e) => { if (e.key === 'Enter' && found[0]) { e.preventDefault(); add(found[0]) } }} />
+            {found.length > 0 && (
+              <div className="absolute inset-x-0 top-full z-10 mt-1 overflow-hidden rounded-md border bg-popover shadow-md">
+                {found.map((c) => (
+                  <button key={c.variant_id} type="button" className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[13px] hover:bg-muted" onClick={() => add(c)}>
+                    <span className="truncate">{c.name}</span><span className="shrink-0 tabular text-muted-foreground">{formatMoney(c.price)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {picked.length > 0 && (
+            <div className="max-h-56 overflow-y-auto rounded-md border">
+              {picked.map((p, i) => (
+                <div key={p.item.variant_id} className="flex items-center gap-3 border-b px-3 py-2 last:border-0">
+                  <div className="min-w-0 flex-1"><div className="truncate text-[13px] font-medium">{p.item.name}</div>
+                    <div className="text-xs text-muted-foreground">{t('{price} with VAT', { price: formatMoney(p.item.price) })}</div></div>
+                  <Input aria-label={t('Return quantity for {item}', { item: p.item.name })} inputMode="decimal" className="h-10 w-20 text-right tabular" value={p.qty}
+                    onChange={(e) => setPicked((s) => s.map((x, j) => (j === i ? { ...x, qty: e.target.value.replace(',', '.') } : x)))} />
+                  <Button type="button" variant="ghost" size="icon" aria-label={t('Remove')} onClick={() => setPicked((s) => s.filter((_, j) => j !== i))}><X /></Button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="grid gap-1.5"><Label htmlFor="nr-why">{t('Why there is no receipt')}</Label>
+            <Textarea id="nr-why" rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('e.g. the customer lost it; a gift')} /></div>
+          <div className="flex gap-2">{METHODS.slice(0, 2).map((m) => <Button key={m.id} type="button" variant={method === m.id ? 'default' : 'outline'} onClick={() => setMethod(m.id)}><m.icon /> {m.id === 'cash' ? t('Give back in cash') : t('Give back to the card')}</Button>)}</div>
+          <div className="flex items-baseline justify-between"><span className="text-sm">{t('To give back')}</span><span className="text-2xl font-semibold tabular">{formatMoney(total)} <span className="text-sm font-normal text-muted-foreground">{currency}</span></span></div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onBack} disabled={busy}>{t('Back')}</Button>
+          <Button variant="destructive" loading={busy} disabled={!lines.length || reason.trim().length < 3}
+            onClick={async () => { setBusy(true); try { await onRefund(lines, method, reason.trim()) } catch (e) { toast.error(describeError(e)); setBusy(false) } }}>
+            {t('Refund {amount}', { amount: formatMoney(total) })}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

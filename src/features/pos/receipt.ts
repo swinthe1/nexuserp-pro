@@ -1,5 +1,6 @@
 import { formatDateWith, formatNumberWith, t, tEnum } from '@/i18n'
 import { printHtml } from '@/lib/print'
+import { labelledBarcodeSvg } from '@/lib/barcode'
 import type { SessionControls } from './api'
 import { fiscalCss, fiscalReceiptHtml, paperOf, type FiscalPrint, type Paper } from './fiscal-receipt'
 
@@ -60,6 +61,18 @@ export function receiptHtml(r: ReceiptData) {
 export function printReceipt(r: ReceiptData) {
   const mm = paperOf(r.register.paper_mm)
   printHtml(receiptHtml(r), r.fiscal ? fiscalCss(mm) : css(mm), 'receipt')
+}
+
+/** a gift voucher: what it is worth, its code as a barcode, until when */
+export function printVoucher(v: { company: string; register: { paper_mm?: number | null }; code: string; amount: number; currency: string; validUntil: string | null; date: Date }) {
+  const mm = paperOf(v.register.paper_mm)
+  printHtml(`<div class="c b big">${esc(v.company)}</div><hr>
+    <div class="c b big">${esc(t('GIFT VOUCHER'))}</div>
+    <div class="c b" style="font-size:22px;margin:6px 0">${money(v.amount)} ${esc(v.currency)}</div>
+    <div class="c">${labelledBarcodeSvg(v.code, { module: 2, height: 50 })}</div>
+    ${v.validUntil ? `<div class="c">${esc(t('Valid until {date}', { date: formatDateWith(new Date(v.validUntil), { day: '2-digit', month: '2-digit', year: 'numeric' }) }))}</div>` : ''}
+    <hr><div class="c muted">${esc(t('Pay with it at the till, all at once or in parts. Keep the code safe: whoever has it can spend it.'))}</div>
+    <div class="c muted">${esc(stamp(v.date))}</div>`, css(mm), 'receipt')
 }
 
 export interface ZData {
