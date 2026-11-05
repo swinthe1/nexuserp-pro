@@ -5,7 +5,7 @@ import {
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, Building, HandCoins, ListTree, Network, Settings2, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, 
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
   BedDouble, BookUser, CalendarRange, ConciergeBell, Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, ReceiptText, IdCard, Settings, CreditCard, type LucideIcon, Activity, ArrowUpDown, BadgeEuro, BookOpen, CalendarPlus, CheckCheck, CircleDollarSign, Clock, Coins, Combine, FileScan, FolderTree, Gift, Handshake, LineChart, Map, Move, NotebookTabs, PieChart, ScanBarcode, Send, ListChecks, ChartSpline, PackageMinus, GraduationCap,
-  FileSignature, ListTodo, ScanSearch, Grid3x3, Gauge, Award, Gavel, Brain, FolderDown, MessageSquare, Trash2 } from 'lucide-react'
+  FileSignature, ListTodo, ScanSearch, Grid3x3, Gauge, Award, Gavel, Brain, FolderDown, MessageSquare, Trash2, Shuffle } from 'lucide-react'
 import { msg } from '@/i18n'
 
 export interface NavItem {
@@ -107,6 +107,7 @@ export const NAV: NavSection[] = [
       { label: msg('Lots & expiry|menu'), href: '/wms/lots', icon: Hourglass, perm: 'inventory.read', keywords: ['batch', 'serial', 'traceability', 'recall', 'fefo', 'expiry'] },
       { label: msg('Goods receipts|menu'), href: '/inventory/receipts', icon: PackageCheck, perm: 'inventory.read', group: msg('Goods in and out'), keywords: ['grn', 'receive', 'import'] },
       { label: msg('Transfers'), href: '/inventory/transfers', icon: ArrowLeftRight, perm: 'inventory.read', keywords: ['move', 'warehouse'] },
+      { label: msg('Stock balancing'), href: '/inventory/balancing', icon: Shuffle, perm: 'inventory.read', keywords: ['balancim', 'balancimi', 'rishpërndarje', 'mbistok', 'mungesë', 'rebalance', 'redistribute'] },
       { label: msg('Adjustments'), href: '/inventory/adjustments', icon: SlidersHorizontal, perm: 'inventory.read', keywords: ['opening', 'write-off', 'damage'] },
       { label: msg('Cycle counts|menu'), href: '/wms/counts', icon: ClipboardCheck, perm: 'wms.read', keywords: ['inventory count', 'stocktake', 'inventarizim', 'inventarizimi', 'numërimi', 'regjistrimi i mallit'] },
       { label: msg('Shrinkage|menu'), href: '/inventory/shrinkage', icon: PackageMinus, perm: 'inventory.read', keywords: ['humbje', 'firo', 'vjedhje', 'dëmtim', 'skadim', 'mungesa', 'shrinkage', 'loss', 'theft'] },

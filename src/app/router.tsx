@@ -96,6 +96,7 @@ const ShippingPage = lazy(() => import('@/features/wms/pages/flow-pages'), 'Ship
 const MovePage = lazy(() => import('@/features/wms/pages/move-page'), 'MovePage')
 const WastePage = lazy(() => import('@/features/wms/pages/waste-page'), 'WastePage')
 const OutputsPage = lazy(() => import('@/features/inventory/pages/outputs-page'), 'OutputsPage')
+const BalancingPage = lazy(() => import('@/features/inventory/pages/balancing-page'), 'BalancingPage')
 const CountsPage = lazy(() => import('@/features/wms/pages/counts-page'), 'CountsPage')
 const CountPage = lazy(() => import('@/features/wms/pages/counts-page'), 'CountPage')
 const LotsPage = lazy(() => import('@/features/wms/pages/lots-page'), 'LotsPage')
@@ -255,6 +256,7 @@ const router = createBrowserRouter([
         { path: 'item-card', element: <ItemCardPage /> },
         { path: 'shrinkage', element: <ShrinkagePage /> },
         { path: 'outputs', element: <OutputsPage /> },
+        { path: 'balancing', element: <BalancingPage /> },
         { path: 'expiry', element: <ExpiryPage /> },
         { path: 'labels', element: <LabelsPage /> },
         { path: 'levelling', element: <PriceLevelsPage /> },

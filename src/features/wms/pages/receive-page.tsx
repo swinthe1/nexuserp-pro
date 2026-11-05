@@ -2,7 +2,8 @@ import { AlertTriangle, Check, PackageCheck, RotateCcw } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Can } from '@/app/company-provider'
+import { useQuery } from '@tanstack/react-query'
+import { Can, useCompany } from '@/app/company-provider'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState } from '@/components/empty-state'
 import { ScanInput, scanFeedback } from '@/components/scan-input'
@@ -11,18 +12,33 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
-import { describeError } from '@/lib/errors'
+import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { ErrorState } from '@/components/error-state'
-import { t, tn } from '@/i18n'
+import { t, td, tn } from '@/i18n'
 import { cn, formatDate, formatQty, todayISO } from '@/lib/utils'
 import { useLocations } from '@/features/inventory/api'
 import { useEnsureLot, useFinishReceipt, useOpenReceipts, useReceiptForScan, useResolveCode, type DockCount, type ReceiptLine } from '../api'
 import { Progress, QtyDialog, ScanShell, useScanStatus } from '../components/scan-shell'
 
+/** transfers from another unit, shipped and on the way: received on the transfer's page */
+function useIncomingTransfers() {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: ['inv', companyId, 'incoming-transfers'], enabled: !!companyId,
+    queryFn: async () => unwrap(await supabase.from('stock_transfers').select('id, number, shipped_at, from_wh:warehouses!stock_transfers_company_id_from_warehouse_id_fkey(name), to_wh:warehouses!stock_transfers_company_id_to_warehouse_id_fkey(id, name), lines:stock_transfer_lines(quantity_done)')
+      .eq('company_id', companyId!).eq('status', 'in_transit').is('deleted_at', null).order('shipped_at').limit(100)) as unknown as
+      { id: string; number: string; shipped_at: string | null; from_wh: { name: string } | null; to_wh: { id: string; name: string } | null; lines: { quantity_done: number }[] }[],
+  })
+}
+
 export function ReceiveListPage() {
   const navigate = useNavigate()
   const receipts = useOpenReceipts()
+  const incoming = useIncomingTransfers()
+  // the floor's own unit first (chosen on the floor's home)
+  const myWh = (() => { try { return localStorage.getItem('drispro.wms.warehouse') } catch { return null } })()
+  const transfers = (incoming.data ?? []).filter((x) => !myWh || x.to_wh?.id === myWh)
   const { status, error } = useScanStatus()
   const open = (code: string) => {
     const c = code.toUpperCase()
@@ -32,6 +48,18 @@ export function ReceiveListPage() {
   return (
     <ScanShell title={t('Receive goods')} back={{ href: '/wms', label: t('Warehouse floor') }}>
       <ScanInput onScan={open} placeholder={t('Scan the order, receipt or delivery note number')} status={status} />
+      {transfers.length > 0 && (
+        <div className="grid gap-2">
+          <div className="text-[13px] font-medium text-muted-foreground">{t('Goods waiting to be received from other units')}</div>
+          {transfers.map((x) => (
+            <Link key={x.id} to={`/inventory/transfers/${x.id}`} className="flex items-center justify-between gap-3 rounded-xl border border-primary/40 bg-primary/5 p-4 hover:border-primary">
+              <div className="min-w-0"><div className="font-semibold">{td(x.from_wh?.name ?? '')} → {td(x.to_wh?.name ?? '')}</div>
+                <div className="text-[13px] text-muted-foreground">{x.number}{x.shipped_at ? ` · ${t('shipped {date}', { date: formatDate(x.shipped_at, true) })}` : ''}</div></div>
+              <div className="text-right text-[13px] font-medium tabular">{t('{n} units', { n: formatQty(x.lines.reduce((a, l) => a + Number(l.quantity_done), 0)) })}</div>
+            </Link>
+          ))}
+        </div>
+      )}
       {receipts.isError ? <ErrorState error={receipts.error} onRetry={() => void receipts.refetch()} /> : receipts.isLoading ? <Skeleton className="h-40" /> : !receipts.data?.length ? (
         <EmptyState icon={PackageCheck} title={t('Nothing to receive')} description={t('Receipts appear here when a purchase order is ready to be received, or when someone starts a receipt in the office.')} />
       ) : (

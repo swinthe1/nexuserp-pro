@@ -577,4 +577,5 @@ export default {
   "Here: {qty}": "Ovde: {qty}",
   "Stock outputs|menu": "Izlazi robe",
   "Thrown away|scanner": "Otpis",
+  "Stock balancing": "Balansiranje zaliha",
 } satisfies Dict

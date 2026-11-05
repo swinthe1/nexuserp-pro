@@ -19131,6 +19131,20 @@ export type Database = {
         }
         Returns: number
       }
+      stock_balance: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: Json
+      }
+      stock_balance_create: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: Json
+      }
       stock_by_warehouse: {
         Args: {
           p_company: string
