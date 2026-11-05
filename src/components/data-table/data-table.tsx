@@ -4,7 +4,7 @@ import {
   type ColumnDef, type ColumnFiltersState, type ColumnOrderState, type ColumnSizingState, type FilterFn, type PaginationState, type Row, type RowSelectionState,
   type SortingState, type Table as TanTable, type VisibilityState,
 } from '@tanstack/react-table'
-import { Download, Eye, FileSpreadsheet, FileText, FolderDown, History, MoreHorizontal, Search, X } from 'lucide-react'
+import { Download, Eye, FileSpreadsheet, FileText, FolderDown, History, MoreHorizontal, Printer, Search, X } from 'lucide-react'
 import * as React from 'react'
 import { fuzzyFind } from '@/lib/fuzzy'
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { EmptyState } from '@/components/empty-state'
 import { describeError } from '@/lib/errors'
 import { exportCsv, exportPdf, exportXlsx, type ExportColumn } from '@/lib/export'
+import { printTable } from '@/lib/print-table'
 import { cn } from '@/lib/utils'
 import { usePhone } from '@/hooks/use-phone'
 import { FacetedFilter } from './faceted-filter'
@@ -335,14 +336,15 @@ export function DataTable<T>({
     selected: () => (selectedRows.length ? gridOf(selectedRows.map((r) => r.original)) : null),
   })
 
-  const doExport = async (kind: 'csv' | 'xlsx' | 'pdf') => {
+  const doExport = async (kind: 'csv' | 'xlsx' | 'pdf' | 'print') => {
     const rows: T[] = (selectedRows.length ? selectedRows : table.getPrePaginationRowModel().rows).map((r: Row<T>) => r.original)
     const cols = exportColumnsFor(table)
     // the page heading is already in the reader's language; use it for the file and the PDF title
     const heading = typeof document !== 'undefined' ? document.querySelector('main h1')?.textContent?.trim() : undefined
     const title = heading || (exportName ?? tableKey ?? t('Export'))
     const name = exportName ?? (heading ? heading.replace(/[\\/:*?"<>|]+/g, ' ').trim() : tableKey ?? 'export')
-    if (kind === 'csv') exportCsv(rows, cols, name)
+    if (kind === 'print') printTable({ title, columns: cols.map((c) => ({ header: c.header })), rows: rows.map((r) => cols.map((c) => c.value(r))) })
+    else if (kind === 'csv') exportCsv(rows, cols, name)
     else if (kind === 'xlsx') await exportXlsx(rows, cols.map((c) => ({ ...c, format: 'qty' as const })), name, { sheet: title, title: [title] })
     else await exportPdf(rows, cols, name, title)
   }
@@ -404,6 +406,7 @@ export function DataTable<T>({
               <DropdownMenuItem onSelect={() => void doExport('xlsx')}><FileSpreadsheet /> Excel {selectedRows.length ? t('({n} selected)', { n: selectedRows.length }) : ''}</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => void doExport('pdf')}><FileText /> PDF {selectedRows.length ? t('({n} selected)', { n: selectedRows.length }) : ''}</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => void doExport('csv')}><FileSpreadsheet /> CSV {selectedRows.length ? t('({n} selected)', { n: selectedRows.length }) : ''}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => void doExport('print')}><Printer /> {t('Print')} {selectedRows.length ? t('({n} selected)', { n: selectedRows.length }) : ''}</DropdownMenuItem>
               <LastExports />
             </DropdownMenuContent>
           </DropdownMenu>}

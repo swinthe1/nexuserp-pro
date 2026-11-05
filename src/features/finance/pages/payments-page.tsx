@@ -32,6 +32,7 @@ import {
   type PaymentDetail, type PaymentRow,
 } from '../api'
 import { AccountingTab } from '../components/t-accounts'
+import { CashBook, useCashAccounts } from '../components/cash-book'
 
 const METHODS = ['bank_transfer', 'cash', 'card', 'cheque', 'offset', 'other'] as const
 
@@ -53,11 +54,19 @@ export function PaymentsPage() {
     { accessorKey: 'amount', header: ({ column }) => <ColumnHeader column={column} title={t('Amount')} />, meta: { label: t('Amount'), align: 'right' },
       cell: ({ row: { original: r } }) => <span className="tabular">{formatMoney(r.amount)} <span className="text-muted-foreground">{r.currency_code !== company?.base_currency ? r.currency_code : ''}</span></span> },
     { id: 'bank', accessorFn: (r) => td(r.bank?.name ?? ''), filterFn: inFilter, header: t('Bank or cash'), meta: { label: t('Bank or cash account') } },
-    { accessorKey: 'method', header: t('Method'), meta: { label: t('Method') }, cell: ({ getValue }) => tEnum(getValue() as string) },
+    { accessorKey: 'method', filterFn: inFilter, header: t('Method'), meta: { label: t('Method') }, cell: ({ getValue }) => tEnum(getValue() as string) },
     { accessorKey: 'status', filterFn: inFilter, header: t('Status'), meta: { label: t('Status') }, cell: ({ getValue }) => <StatusBadge status={getValue() as string} /> },
     { accessorKey: 'unallocated', header: t('Not matched'), meta: { label: t('Not matched'), align: 'right' }, cell: ({ getValue }) => num(getValue()) ? <span className="tabular text-warning">{formatMoney(getValue() as number)}</span> : '—' },
   ], [company?.base_currency])
   const banks = [...new Set((payments.data ?? []).map((p) => td(p.bank?.name)).filter(Boolean))] as string[]
+  const [params, setParams] = useSearchParams()
+  const tab = params.get('tab') === 'cash' ? 'cash' : 'list'
+  // the unit of a payment: the unit of its cash account (a till's drawer, a unit's safe)
+  const cashAccounts = useCashAccounts()
+  const unitsOf = React.useMemo(() => new Map((cashAccounts.data ?? []).map((a) => [a.id, a.units.map((u) => td(u.name))])), [cashAccounts.data])
+  const unitNames = [...new Set((cashAccounts.data ?? []).flatMap((a) => a.units.map((u) => td(u.name))))]
+  const unitColumn = React.useMemo<ColumnDef<PaymentRow>[]>(() => unitNames.length ? [{ id: 'unit', accessorFn: (r) => (unitsOf.get(r.bank_account_id) ?? []).join(', '),
+    filterFn: (row, id, v: string[]) => !v?.length || v.some((u) => String(row.getValue(id)).split(', ').includes(u)), header: t('Unit'), meta: { label: t('Unit') } }] : [], [unitsOf]) // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <>
       <PageHeader title={t('Payments|menu')} description={t('Money received from customers and paid to vendors, matched to their invoices. Posting records the bank movement and settles the invoices.')}
@@ -65,15 +74,22 @@ export function PaymentsPage() {
           <Button variant="outline" asChild><Link to="/finance/payments/new?type=vendor_payment"><ArrowUpRight /> {t('Pay a vendor')}</Link></Button>
           <Button asChild><Link to="/finance/payments/new?type=customer_payment"><ArrowDownLeft /> {t('Receive a payment')}</Link></Button>
         </Can>} />
-      <DataTable tableKey="finance.payments" columns={columns} data={payments.data} isLoading={payments.isLoading} error={payments.error}
+      <Tabs value={tab} onValueChange={(v) => setParams((p) => { const n = new URLSearchParams(p); if (v === 'cash') n.set('tab', 'cash'); else n.delete('tab'); return n }, { replace: true })} className="mb-3">
+        <TabsList><TabsTrigger value="list">{t('Payments|menu')}</TabsTrigger><TabsTrigger value="cash">{t('Cash book|by day')}</TabsTrigger></TabsList>
+      </Tabs>
+      {tab === 'cash' ? <CashBook /> : (
+      <DataTable tableKey="finance.payments" columns={[...columns, ...unitColumn]} data={payments.data} isLoading={payments.isLoading} error={payments.error}
         getRowId={(r) => r.id} exportName={t('payments')} searchPlaceholder={t('Number, partner, reference…')} onRowClick={(r) => navigate(`/finance/payments/${r.id}`)}
         preview={(r) => ({ print: { kind: 'payment', id: r.id } })}
         facets={[
           { columnId: 'document_type', title: t('Direction'), options: [{ value: 'customer_payment', label: t('Received|payment') }, { value: 'vendor_payment', label: t('Paid out') }] },
           { columnId: 'status', title: t('Status'), options: ['draft', 'pending_approval', 'approved', 'posted', 'reversed'].map((s) => ({ value: s, label: humanize(s) })) },
           { columnId: 'bank', title: t('Bank or cash'), options: banks.map((b) => ({ value: b, label: b })) },
+          { columnId: 'method', title: t('Method'), options: METHODS.map((m) => ({ value: m, label: tEnum(m) })) },
+          ...(unitNames.length ? [{ columnId: 'unit', title: t('Unit'), options: unitNames.map((u) => ({ value: u, label: u })) }] : []),
         ]}
         empty={{ title: t('No payments yet'), description: t('Record what customers paid and what you paid vendors, or create payments from bank statement lines.') }} />
+      )}
     </>
   )
 }

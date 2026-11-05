@@ -11,7 +11,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/error-state'
-import { t, tn } from '@/i18n'
+import { t, td, tn } from '@/i18n'
+import { useCategories } from '@/features/inventory/api'
 import { cn, formatDate, formatQty, humanize } from '@/lib/utils'
 import { GridExportMenu } from '@/components/export-menu'
 import { DOC_HREF, useLotsList, useLotTrace } from '../api'
@@ -31,17 +32,28 @@ function expiryState(d: string | null): { label: string; tone: 'secondary' | 'wa
 export function LotsPage() {
   const navigate = useNavigate()
   const lots = useLotsList()
-  const rows = React.useMemo(() => (lots.data ?? []).map((l) => {
-    const onHand = l.levels.reduce((s, x) => s + Number(x.on_hand), 0)
-    const n = daysLeft(l.expiry_date)
-    return { ...l, on_hand: onHand, days: n, band: n == null ? 'none' : n < 0 ? 'expired' : n <= 30 ? 'soon' : 'ok', stock: onHand > 0 ? 'in_stock' : 'used_up' }
-  }), [lots.data])
+  const cats = useCategories()
+  const rows = React.useMemo(() => {
+    const byId = new Map((cats.data ?? []).map((c) => [c.id, c]))
+    return (lots.data ?? []).map((l) => {
+      const onHand = l.levels.reduce((s, x) => s + Number(x.on_hand), 0)
+      const n = daysLeft(l.expiry_date)
+      // the group (the top category) and the sub-group (the item's own, when it sits under a group)
+      const c = byId.get(l.variant?.product?.category_id ?? '')
+      const group = c ? td((c.parent_id ? byId.get(c.parent_id)?.name : c.name) ?? '') : ''
+      const sub = c && c.parent_id ? td(c.name) : ''
+      return { ...l, on_hand: onHand, days: n, band: n == null ? 'none' : n < 0 ? 'expired' : n <= 30 ? 'soon' : 'ok', stock: onHand > 0 ? 'in_stock' : 'used_up',
+        vendor_name: l.vendor?.name ?? '', group, sub }
+    })
+  }, [lots.data, cats.data])
   type Row = (typeof rows)[number]
   const cols = React.useMemo<ColumnDef<Row>[]>(() => [
     { accessorKey: 'lot_number', enableHiding: false, header: ({ column }) => <ColumnHeader column={column} title={t('Lot')} />, meta: { label: t('Lot') }, cell: ({ getValue }) => <span className="font-mono font-medium">{getValue() as string}</span> },
     { id: 'item', accessorFn: (r) => `${r.variant?.sku} ${r.variant?.name}`, header: ({ column }) => <ColumnHeader column={column} title={t('Item')} />, meta: { label: t('Item') },
       cell: ({ row: { original: r } }) => <span><span className="text-muted-foreground">{r.variant?.sku}</span> {r.variant?.name}</span> },
-    { id: 'vendor', accessorFn: (r) => r.vendor?.name ?? '', header: t('Vendor'), meta: { label: t('Vendor') } },
+    { accessorKey: 'vendor_name', filterFn: inFilter, header: t('Vendor'), meta: { label: t('Vendor') } },
+    { accessorKey: 'group', filterFn: inFilter, header: t('Group'), meta: { label: t('Group') } },
+    { accessorKey: 'sub', filterFn: inFilter, header: t('Sub-group'), meta: { label: t('Sub-group') } },
     { accessorKey: 'expiry_date', header: ({ column }) => <ColumnHeader column={column} title={t('Expires')} />, meta: { label: t('Expires') }, cell: ({ getValue }) => formatDate(getValue() as string) },
     { accessorKey: 'band', filterFn: inFilter, header: t('Shelf life'), meta: { label: t('Shelf life') }, cell: ({ row: { original: r } }) => { const s = expiryState(r.expiry_date); return <Badge variant={s.tone}>{s.label}</Badge> } },
     { accessorKey: 'stock', filterFn: inFilter, header: t('Stock'), meta: { label: t('Stock') }, cell: () => null, enableHiding: true },
@@ -63,6 +75,9 @@ export function LotsPage() {
         facets={[
           { columnId: 'band', title: t('Shelf life'), options: [{ value: 'expired', label: t('Expired') }, { value: 'soon', label: t('Within 30 days') }, { value: 'ok', label: t('More than 30 days') }, { value: 'none', label: t('No expiry') }] },
           { columnId: 'stock', title: t('Stock'), options: [{ value: 'in_stock', label: t('In stock') }, { value: 'used_up', label: t('Used up') }] },
+          { columnId: 'vendor_name', title: t('Vendor'), options: [...new Set(rows.map((r) => r.vendor_name).filter(Boolean))].sort().map((v) => ({ value: v, label: v })) },
+          { columnId: 'group', title: t('Group'), options: [...new Set(rows.map((r) => r.group).filter(Boolean))].sort().map((v) => ({ value: v, label: v })) },
+          { columnId: 'sub', title: t('Sub-group'), options: [...new Set(rows.map((r) => r.sub).filter(Boolean))].sort().map((v) => ({ value: v, label: v })) },
         ]}
         empty={{ title: t('No lots recorded'), description: t('Lots are created when items tracked by lot are received.') }} />
     </>

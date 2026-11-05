@@ -571,4 +571,8 @@ export default {
   "What was paid, e.g. Cleaning products": "Šta je plaćeno, npr. Sredstva za čišćenje",
   "A manager confirms a payment from the till with their PIN": "Plaćanje iz kase potvrđuje menadžer svojim PIN-om",
   "No manager has a PIN yet. The administrator gives one in Settings → Users.": "Nijedan menadžer još nema PIN. Administrator ga dodeljuje u Podešavanja → Korisnici.",
+  "Barcode": "Barkod",
+  "Pack of {n}": "Pakovanje od {n}",
+  "{amount} without VAT": "{amount} bez PDV-a",
+  "Here: {qty}": "Ovde: {qty}",
 } satisfies Dict

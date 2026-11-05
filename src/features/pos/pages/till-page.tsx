@@ -25,7 +25,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { formatDateWith, msg, t, td, tEnum, tn, tServer } from '@/i18n'
-import { cn, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
+import { cn, formatDate, formatMoney, formatQty, num, todayISO } from '@/lib/utils'
 import { lookupReceipt, posApprove, sessionControls, useCashMove, useCloseSession, useOpenSession, usePayees, usePayOut, useSessionSummary, useTill, useVendorBills, type CatalogItem, type ReceiptLookup, type TillData } from '../api'
 import { enqueue, logTill, nextDeviceRef, syncNow, useOnSynced, useSyncState, type QueuedSale, type TillLogEntry } from '../offline'
 import { ManagerDialog, ManagerPinFields, pinReady } from '../manager-pin'
@@ -588,6 +588,37 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
               </button>
             ))}
           </div>
+          {dq && visible.length > 0 ? (
+            // searching: each item in detail, so the cashier picks the right one
+            <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border bg-card">
+              {visible.slice(0, 60).map((c, i) => {
+                const promo = bestPromo(data.promotions, c.variant_id, c.price, 1, new Date(clock))
+                const packs = c.barcodes.filter((b) => num(b.qty) > 1)
+                const net = c.tax_rate ? c.price / (1 + num(c.tax_rate) / 100) : c.price
+                return (
+                  <button key={c.variant_id} type="button" onClick={() => add(c)}
+                    className={cn('grid w-full grid-cols-[1fr_auto] items-center gap-3 border-b px-3 py-2 text-left last:border-0 hover:bg-primary/5', i === 0 && 'bg-muted/50')}>
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-2"><span className="truncate text-[14px] font-medium">{c.name}</span>
+                        {promo && <span className="shrink-0 rounded bg-success/15 px-1.5 py-0.5 text-[11px] font-medium text-success">−{formatQty(promo.pct)}% {promo.name}</span>}</span>
+                      <span className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] text-muted-foreground">
+                        <span>{t('Code')}: <span className="tabular text-foreground/80">{c.sku}</span></span>
+                        {c.barcodes[0] && <span>{t('Barcode')}: <span className="tabular text-foreground/80">{c.barcodes.find((b) => num(b.qty) <= 1)?.code ?? c.barcodes[0].code}</span></span>}
+                        {c.uom && <span>{t('Unit')}: {td(c.uom)}</span>}
+                        {packs.map((b) => <span key={b.code}>{t('Pack of {n}', { n: formatQty(num(b.qty)) })}: <span className="tabular">{b.code}</span></span>)}
+                        {c.category && <span>{td(c.category)}</span>}
+                      </span>
+                    </span>
+                    <span className="text-right">
+                      <span className="block text-base font-semibold tabular" title={t('Price with VAT')}>{formatMoney(c.price)}</span>
+                      <span className="block text-[11px] text-muted-foreground tabular">{t('{amount} without VAT', { amount: formatMoney(Math.round(net * 100) / 100) })}</span>
+                      {c.product_type === 'stockable' && <span className={cn('block text-[11px] tabular', c.on_hand <= 0 ? 'font-medium text-destructive' : 'text-muted-foreground')}>{t('Here: {qty}', { qty: formatQty(num(c.on_hand)) })}</span>}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
           <div className="grid min-h-0 flex-1 auto-rows-[96px] grid-cols-[repeat(auto-fill,minmax(150px,1fr))] content-start gap-2 overflow-y-auto pr-1 max-sm:auto-rows-[84px] max-sm:grid-cols-3 max-sm:pr-0">
             {visible.slice(0, 120).map((c) => (
               <button key={c.variant_id} type="button" onClick={() => add(c)}
@@ -601,6 +632,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
             ))}
             {!visible.length && <div className="col-span-full py-12 text-center text-[13px] text-muted-foreground">{t('No product matches. Clear the search with Esc.')}</div>}
           </div>
+          )}
           {phone && (
             <div className="-mx-3 -mb-3 grid grid-cols-[1fr_auto] gap-2 border-t bg-card p-3">
               <Button variant="outline" className="h-14 justify-between" onClick={() => setPane('sale')}>

@@ -25,13 +25,16 @@ import { msg, t, td, tn } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { cn, formatDate, formatMoney, formatQty, num } from '@/lib/utils'
-import { useVariantOptions, useWarehouses } from '../api'
+import { useCategories, useVariantOptions, useWarehouses } from '../api'
+import { MultiPick } from '@/components/multi-pick'
 
 type Lot = { lot_id: string; lot_number: string; variant_id: string; sku: string; name: string; warehouse_id: string; warehouse: string; expiry_date: string
-  days_left: number; on_hand: number; value: number; price: number | null; markdown: { id: string; status: 'proposed' | 'approved'; discount_pct: number } | null }
+  days_left: number; on_hand: number; value: number; price: number | null; markdown: { id: string; status: 'proposed' | 'approved'; discount_pct: number } | null
+  supplier_id?: string | null; supplier?: string | null; category_id?: string | null; group_id?: string | null }
 type Markdown = { id: string; status: 'proposed' | 'approved' | 'rejected' | 'written_off'; variant_id: string; sku: string; name: string; warehouse_id: string; warehouse: string
   lot_number: string | null; expiry_date: string; days_left: number; quantity: number; discount_pct: number; note: string | null; price: number | null
-  proposed_by: string | null; decided_by: string | null; created_at: string; decided_at: string | null; mine: boolean; adjustment_number: string | null; adjustment_status: string | null }
+  proposed_by: string | null; decided_by: string | null; created_at: string; decided_at: string | null; mine: boolean; adjustment_number: string | null; adjustment_status: string | null
+  supplier_id?: string | null; supplier?: string | null; category_id?: string | null; group_id?: string | null }
 type Overview = { today: string; can: { propose: boolean; decide: boolean; write_off: boolean }; lots: Lot[]; markdowns: Markdown[] }
 
 const KEY = 'expiry'
@@ -73,9 +76,25 @@ export function ExpiryPage() {
   const [decide, setDecide] = React.useState<Markdown | null>(null)
   const [writeOff, setWriteOff] = React.useState<{ lot?: Lot; markdown?: Markdown } | null>(null)
 
-  const soon = (o?.lots ?? []).filter((l) => l.days_left >= 0)
-  const expiredLots = (o?.lots ?? []).filter((l) => l.days_left < 0)
-  const md = o?.markdowns ?? []
+  // filters by supplier, group and sub-group (from the meeting with the staff)
+  const cats = useCategories()
+  const [sups, setSups] = React.useState<string[]>([])
+  const [groups, setGroups] = React.useState<string[]>([])
+  const [subs, setSubs] = React.useState<string[]>([])
+  const keep = (x: { supplier_id?: string | null; group_id?: string | null; category_id?: string | null }) =>
+    (!sups.length || sups.includes(x.supplier_id ?? '')) && (!groups.length || groups.includes(x.group_id ?? '')) && (!subs.length || subs.includes(x.category_id ?? ''))
+  const supOptions = React.useMemo(() => {
+    const m = new Map<string, string>()
+    for (const x of [...(o?.lots ?? []), ...(o?.markdowns ?? [])]) if (x.supplier_id) m.set(x.supplier_id, x.supplier ?? '')
+    return [...m].sort((a, b) => a[1].localeCompare(b[1])).map(([value, label]) => ({ value, label }))
+  }, [o])
+  const groupOptions = (cats.data ?? []).filter((c) => !c.parent_id).map((c) => ({ value: c.id, label: td(c.name) }))
+  const subOptions = (cats.data ?? []).filter((c) => c.parent_id && (!groups.length || groups.includes(c.parent_id)))
+    .map((c) => ({ value: c.id, label: td(c.name), hint: td((cats.data ?? []).find((p) => p.id === c.parent_id)?.name ?? '') }))
+  const lots = (o?.lots ?? []).filter(keep)
+  const soon = lots.filter((l) => l.days_left >= 0)
+  const expiredLots = lots.filter((l) => l.days_left < 0)
+  const md = (o?.markdowns ?? []).filter(keep)
   const waiting = md.filter((m) => m.status === 'proposed')
   // a discounted item whose date passed (without a lot): it also comes off the shelf
   const expiredMd = md.filter((m) => m.status === 'approved' && m.days_left < 0 && !expiredLots.some((l) => l.markdown?.id === m.id))
@@ -96,6 +115,13 @@ export function ExpiryPage() {
           </Select>
           {o?.can.propose && <Button onClick={() => setPropose({})}><Plus /> {t('Note a short date')}</Button>}
         </>} />
+
+      <div className="-mt-2 flex flex-wrap items-center gap-2">
+        <MultiPick label={t('Suppliers')} value={sups} onChange={setSups} options={supOptions} />
+        <MultiPick label={t('Groups')} value={groups} onChange={(v) => { setGroups(v); setSubs((x) => x.filter((id) => !v.length || v.includes((cats.data ?? []).find((c) => c.id === id)?.parent_id ?? ''))) }} options={groupOptions} />
+        <MultiPick label={t('Sub-groups')} value={subs} onChange={setSubs} options={subOptions} />
+        {(sups.length > 0 || groups.length > 0 || subs.length > 0) && <Button variant="ghost" size="sm" onClick={() => { setSups([]); setGroups([]); setSubs([]) }}><X /> {t('Clear filters')}</Button>}
+      </div>
 
       {q.isError ? <ErrorState error={q.error} onRetry={() => void q.refetch()} /> : !o ? <Skeleton className="h-72" /> : <>
         <div className="grid gap-3 sm:grid-cols-3">

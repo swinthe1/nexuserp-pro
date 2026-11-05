@@ -1,11 +1,16 @@
-import { FileSpreadsheet } from 'lucide-react'
+import { FileSpreadsheet, Printer, Search, X } from 'lucide-react'
 import * as React from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
 import { EmptyState } from '@/components/empty-state'
 import { ExportMenu } from '@/components/export-menu'
 import { PageHeader } from '@/components/page-header'
+import { MultiPick } from '@/components/multi-pick'
+import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { printTable } from '@/lib/print-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { XlsxColumn } from '@/lib/export'
 import { ErrorState } from '@/components/error-state'
@@ -30,7 +35,23 @@ export function VatBooksPage() {
     ? ((b === 'sales' ? layout.data?.sales_title : layout.data?.purchase_title) ?? (b === 'sales' ? t('Sales book') : t('Purchase book')))
     : (b === 'sales' ? t('Sales book') : t('Purchase book'))
   const title = bookTitle(book)
-  const rows = data.data ?? []
+  const all = data.data ?? []
+  // the book's filters: a search, the partners, invoices or credit notes, the VAT columns that have an amount
+  const [q, setQ] = React.useState('')
+  const [partners, setPartners] = React.useState<string[]>([])
+  const [kind, setKind] = React.useState<'all' | 'docs' | 'credits'>('all')
+  const [withCols, setWithCols] = React.useState<string[]>([])
+  const isCredit = (r: BookRow) => r.doc_type === 'credit_note' || r.doc_type === 'vendor_credit' || num(r.total) < 0
+  const rows = React.useMemo(() => {
+    const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean)
+    return all.filter((r) => (!partners.length || partners.includes(r.partner ?? ''))
+      && (kind === 'all' || (kind === 'credits') === isCredit(r))
+      && (!withCols.length || withCols.some((k) => num(r.cols?.[k]) !== 0))
+      && (!words.length || words.every((w) => `${tServer(r.number)} ${r.ref ?? ''} ${tServer(r.partner)} ${r.tax_number ?? ''} ${r.fiscal_code ?? ''}`.toLowerCase().includes(w))))
+  }, [all, q, partners, kind, withCols]) // eslint-disable-line react-hooks/exhaustive-deps
+  const filtering = !!(q.trim() || partners.length || kind !== 'all' || withCols.length)
+  const partnerOptions = React.useMemo(() => [...new Set(all.map((r) => r.partner ?? '').filter(Boolean))].sort((a, b) => a.localeCompare(b))
+    .map((p) => ({ value: p, label: tServer(p) })), [all])
   const totals = React.useMemo(() => {
     const sum: Record<string, number> = { total: 0 }
     for (const r of rows) { sum.total! += num(r.total); for (const c of cols) sum[c.key] = (sum[c.key] ?? 0) + num(r.cols?.[c.key]) }
@@ -39,7 +60,7 @@ export function VatBooksPage() {
   // on the screen the columns with nothing in them this period step aside, so the book fits; the
   // export and the print keep every column of the official layout
   const [allCols, setAllCols] = React.useState(false)
-  const filled = cols.filter((c) => Math.abs(totals[c.key] ?? 0) > 0.0001 || rows.some((r) => num(r.cols?.[c.key]) !== 0))
+  const filled = cols.filter((c) => all.some((r) => num(r.cols?.[c.key]) !== 0))
   const shown = allCols ? cols : filled
   const set = (k: string, v: string) => setParams((p) => { p.set(k, v); if (k === 'month') { p.delete('from'); p.delete('to') } return p })
   const taxLabel = xk ? 'NUI' : 'NIPT'
@@ -68,6 +89,9 @@ export function VatBooksPage() {
                         : t('Every final document of the period by VAT type, in the layout of the DPT books. Credit notes are negative; till sales are daily totals per till.')}
         actions={<>
           <MonthPicker value={ym} onChange={(v) => set('month', v)} />
+          <Button variant="outline" size="sm" disabled={!rows.length} onClick={() => printTable({ title, subtitle: `${profile.data?.legal_name ?? profile.data?.name ?? company?.name ?? ''} · ${taxLabel} ${profile.data?.tax_number ?? '—'} · ${periodText}`,
+            columns: exportCols.map((c) => ({ header: c.header, format: c.format === 'money' ? 'money' : c.format === 'int' ? 'int' : 'text' })),
+            rows: rows.map((r) => exportCols.map((c) => c.value(r))), totals: exportCols.map((c) => exportTotals[c.header] ?? null) })}><Printer /> {t('Print')}</Button>
           <ExportMenu rows={rows} columns={exportCols} filename={`${book === 'sales' ? t('sales-book|file') : t('purchase-book|file')}-${ym}`} title={title}
             subtitle={`${profile.data?.legal_name ?? profile.data?.name ?? company?.name ?? ''} · ${taxLabel} ${profile.data?.tax_number ?? '—'} · ${periodText}`}
             xlsx={{ title: [profile.data?.legal_name ?? profile.data?.name ?? '', `${taxLabel} ${profile.data?.tax_number ?? '—'}`, `${title} · ${periodText}`], totals: exportTotals }} />
@@ -82,7 +106,7 @@ export function VatBooksPage() {
             </button>
           ))}
         </div>
-        <span className="text-[13px] text-muted-foreground">{periodText} · {tn(rows.length, '{n} line', '{n} lines')} · {t('amounts in {currency}', { currency: company?.base_currency ?? '' })}</span>
+        <span className="text-[13px] text-muted-foreground">{periodText} · {filtering ? t('{n} of {total} lines', { n: rows.length, total: all.length }) : tn(rows.length, '{n} line', '{n} lines')} · {t('amounts in {currency}', { currency: company?.base_currency ?? '' })}</span>
         {cols.length > filled.length && rows.length > 0 && (
           <button type="button" className="ml-auto text-[13px] text-primary hover:underline" onClick={() => setAllCols((x) => !x)}>
             {allCols ? t('Hide the empty columns') : tn(cols.length - filled.length, 'Show the {n} empty column too', 'Show the {n} empty columns too')}
@@ -90,9 +114,29 @@ export function VatBooksPage() {
         )}
       </div>
 
+      {all.length > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <div className="relative w-64 max-w-full"><Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input className="h-9 pl-8" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Number, partner, {tax}…', { tax: taxLabel })} aria-label={t('Search')} /></div>
+          <MultiPick label={book === 'sales' ? t('Buyer') : t('Seller')} value={partners} onChange={setPartners} options={partnerOptions} />
+          <Select value={kind} onValueChange={(v) => setKind(v as typeof kind)}>
+            <SelectTrigger className="h-9 w-48" aria-label={t('Documents')}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('All documents')}</SelectItem>
+              <SelectItem value="docs">{t('Invoices only')}</SelectItem>
+              <SelectItem value="credits">{t('Credit notes only')}</SelectItem>
+            </SelectContent>
+          </Select>
+          <MultiPick label={t('With an amount in')} value={withCols} onChange={setWithCols} options={filled.map((c) => ({ value: c.key, label: colLabel(c) }))} />
+          {filtering && <Button variant="ghost" size="sm" onClick={() => { setQ(''); setPartners([]); setKind('all'); setWithCols([]) }}><X /> {t('Clear filters')}</Button>}
+        </div>
+      )}
+
       <Card className="overflow-hidden">
         {data.isLoading || layout.isLoading ? <Skeleton className="m-4 h-64" /> : data.error ? (
           <ErrorState error={data.error} onRetry={() => void data.refetch()} />
+        ) : all.length > 0 && !rows.length ? (
+          <EmptyState icon={Search} title={t('Nothing matches these filters')} description={t('Clear the search or filters to see everything.')} />
         ) : !rows.length ? (
           <EmptyState icon={FileSpreadsheet} title={t('Nothing in the {book} for {period}', { book: title, period: periodText })} description={t('Only final invoices, purchase invoices, till receipts and customs declarations appear here.')} />
         ) : (

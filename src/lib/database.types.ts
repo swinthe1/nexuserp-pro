@@ -15922,6 +15922,19 @@ export type Database = {
         }
         Returns: string
       }
+      cash_accounts: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
+      cash_book: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: Json
+      }
       cash_forecast: {
         Args: {
           p_company: string
@@ -17943,7 +17956,7 @@ export type Database = {
         Args: {
           p_register: string
         }
-        Returns: { variant_id: string | null; sku: string | null; name: string | null; category: string | null; barcodes: Json | null; price: number | null; tax_code_id: string | null; tax_rate: number | null; tracking: string | null; on_hand: number | null; image_path: string | null; product_type: string | null }[]
+        Returns: { variant_id: string | null; sku: string | null; name: string | null; category: string | null; barcodes: Json | null; price: number | null; tax_code_id: string | null; tax_rate: number | null; tracking: string | null; on_hand: number | null; image_path: string | null; product_type: string | null; uom: string | null }[]
       }
       pos_close: {
         Args: {

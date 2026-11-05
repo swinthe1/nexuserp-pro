@@ -333,14 +333,14 @@ export const usePostCount = () => useAction(async (id: string) =>
 
 /* ------------------------------------------------------------------ lots */
 export type LotRow = { id: string; lot_number: string; lot_type: string; expiry_date: string | null; manufacture_date: string | null; created_at: string
-  variant: { id: string; sku: string; name: string } | null; vendor: { name: string } | null; levels: { on_hand: number }[] }
+  variant: { id: string; sku: string; name: string; product: { category_id: string | null } | null } | null; vendor: { name: string } | null; levels: { on_hand: number }[] }
 export function useLotsList() {
   const { companyId } = useCompany()
   return useQuery({
     queryKey: [...wmsKeys.all(companyId), 'lots'],
     enabled: !!companyId,
     queryFn: async () => unwrap(await supabase.from('lots')
-      .select('id, lot_number, lot_type, expiry_date, manufacture_date, created_at, variant:product_variants(id, sku, name), vendor:business_partners(name), levels:stock_levels(on_hand)')
+      .select('id, lot_number, lot_type, expiry_date, manufacture_date, created_at, variant:product_variants(id, sku, name, product:products(category_id)), vendor:business_partners(name), levels:stock_levels(on_hand)')
       .eq('company_id', companyId).is('deleted_at', null).order('expiry_date', { nullsFirst: false }).limit(1000).returns<LotRow[]>()),
   })
 }
