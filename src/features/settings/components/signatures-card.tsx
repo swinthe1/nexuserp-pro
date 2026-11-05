@@ -13,12 +13,17 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { t } from '@/i18n'
+import { msg, t } from '@/i18n'
+import { cn } from '@/lib/utils'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { useMembers } from '@/features/sales/api'
 
-type Signature = { id: string; person_name: string; person_title: string | null; image: string; user_ids: string[]; is_default: boolean }
+type Signature = { id: string; person_name: string; person_title: string | null; image: string; user_ids: string[]; is_default: boolean; doc_kinds?: string[] }
+
+/** the documents a signature can be for (empty: all) */
+const SIGN_KINDS: [string[], string][] = [[['sales_invoice'], msg('Invoices')], [['payment'], msg('Payments')], [['sales_quote', 'proforma_quote'], msg('Offers')],
+  [['sales_order', 'proforma'], msg('Orders and pro formas')], [['delivery'], msg('Delivery notes')], [['purchase_order'], msg('Purchase orders')], [['goods_receipt'], msg('Goods receipts')]]
 
 /**
  * A photo of a signature on paper, made ready for documents: the paper (white, grey, a shadow)
@@ -70,7 +75,7 @@ export function SignaturesCard() {
   const qc = useQueryClient()
   const list = useQuery({
     queryKey: ['company-signatures', companyId], enabled: !!companyId && admin,
-    queryFn: async () => unwrap(await supabase.from('company_signatures').select('id, person_name, person_title, image, user_ids, is_default')
+    queryFn: async () => unwrap(await supabase.from('company_signatures').select('*')
       .eq('company_id', companyId!).is('deleted_at', null).order('is_default', { ascending: false }).order('person_name')) as unknown as Signature[],
   })
   const members = useMembers()
@@ -78,6 +83,11 @@ export function SignaturesCard() {
   const del = useMutation({
     mutationFn: async (id: string) => unwrap(await supabase.rpc('signature_delete', { p_id: id })),
     onSuccess: () => { void qc.invalidateQueries({ queryKey: ['company-signatures', companyId] }); void qc.invalidateQueries({ queryKey: ['my-signatures', companyId] }); toast.success(t('The signature was removed')) },
+    onError: (e) => toast.error(describeError(e)),
+  })
+  const kinds = useMutation({
+    mutationFn: async (v: { id: string; kinds: string[] }) => unwrap(await supabase.rpc('signature_set_kinds' as never, { p_id: v.id, p_kinds: v.kinds } as never)),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['company-signatures', companyId] }); void qc.invalidateQueries({ queryKey: ['my-signatures', companyId] }) },
     onError: (e) => toast.error(describeError(e)),
   })
   if (!admin) return null
@@ -101,8 +111,20 @@ export function SignaturesCard() {
               <p className="font-medium">{s.person_name}{s.person_title && <span className="font-normal text-muted-foreground">, {s.person_title}</span>}
                 {s.is_default && <Badge variant="secondary" className="ml-2"><Star className="size-3" /> {t('Default')}</Badge>}</p>
               <p className="text-[13px] text-muted-foreground">{s.user_ids.length ? t('Signs with it: {names}, and the administrators', { names: who(s.user_ids).join(', ') }) : t('Only the administrators sign with it')}</p>
+              {s.doc_kinds !== undefined && (
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[12px]">
+                  <span className="text-muted-foreground">{t('For')}:</span>
+                  <button type="button" onClick={() => kinds.mutate({ id: s.id, kinds: [] })}
+                    className={cn('h-7 rounded-full border px-2.5', !s.doc_kinds.length ? 'border-primary bg-primary/10 font-medium text-primary' : 'text-muted-foreground hover:bg-muted')}>{t('Every document')}</button>
+                  {SIGN_KINDS.map(([ks, label]) => {
+                    const on = ks.every((k) => s.doc_kinds!.includes(k))
+                    return <button key={ks[0]} type="button" onClick={() => kinds.mutate({ id: s.id, kinds: on ? s.doc_kinds!.filter((k) => !ks.includes(k)) : [...s.doc_kinds!, ...ks] })}
+                      className={cn('h-7 rounded-full border px-2.5', on ? 'border-primary bg-primary/10 font-medium text-primary' : 'text-muted-foreground hover:bg-muted')}>{t(label)}</button>
+                  })}
+                </div>
+              )}
             </div>
-            <Button variant="outline" size="sm" onClick={() => setEdit(s)}>{t('Change')}</Button>
+            <Button variant="outline" size="sm" onClick={() => setEdit(s)}>{t('Change|edit')}</Button>
             <ConfirmDialog trigger={<Button variant="ghost" size="sm" className="text-destructive" aria-label={t('Remove')}><Trash2 /></Button>}
               title={t('Remove the signature of {name}?', { name: s.person_name })} description={t('Documents already sent keep it; new ones can no longer be signed with it.')}
               confirmLabel={t('Remove')} destructive onConfirm={() => del.mutateAsync(s.id)} />

@@ -79,7 +79,7 @@ export function AnalysisPage() {
     ]
     if (comparing) cols.push({ id: 'qty_b', accessorFn: (r) => r.b?.qty ?? 0, meta: { label: t('Quantity, compared'), align: 'right' }, header: ({ column }) => <ColumnHeader column={column} title={t('Quantity, compared')} />, cell: ({ row }) => <span className="text-muted-foreground">{formatQty(row.original.b?.qty ?? 0)}</span> })
     cols.push(money('net', t('Value without VAT'), (r) => r.a?.net, { strong: true }))
-    if (comparing) { cols.push(money('net_b', t('Without VAT, compared'), (r) => r.b?.net)); cols.push(delta('net_d', t('Change'), (r) => r.a?.net, (r) => r.b?.net)) }
+    if (comparing) { cols.push(money('net_b', t('Without VAT, compared'), (r) => r.b?.net)); cols.push(delta('net_d', t('Change|difference'), (r) => r.a?.net, (r) => r.b?.net)) }
     cols.push(money('vat', t('VAT'), (r) => r.a?.vat))
     cols.push(money('gross', t('Value with VAT'), (r) => r.a?.gross))
     if (comparing) cols.push(money('gross_b', t('With VAT, compared'), (r) => r.b?.gross))

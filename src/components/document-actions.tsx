@@ -21,7 +21,9 @@ import { supabase } from '@/lib/supabase'
 import { formatMoney } from '@/lib/utils'
 
 /** Print, PDF, email and share of one document. `alt` adds printing the same document as another (an order as a pro forma). */
-type MySignature = { id: string; name: string; title: string | null; is_default: boolean }
+type MySignature = { id: string; name: string; title: string | null; is_default: boolean; kinds?: string[] }
+/** a signature is for every document, or only for the kinds it lists */
+const signsFor = (x: MySignature, k: DocKind) => !x.kinds?.length || x.kinds.includes(k)
 
 /** the signatures this person may sign with, and the one they chose last (kept on this device) */
 function useSignWith() {
@@ -37,7 +39,14 @@ function useSignWith() {
   // never chosen: the company's default signature; a signature no longer allowed: none
   const current = chosen === undefined ? sigs.find((x) => x.is_default)?.id ?? null : chosen && sigs.some((x) => x.id === chosen) ? chosen : null
   const choose = (v: string | null) => { setChosen(v); try { localStorage.setItem(key, v ?? '') } catch { /* this session only */ } }
-  return { sigs, current, choose }
+  // for one kind of document: the chosen signature when it is for this kind, else the default one that is, else none
+  const forKind = (k: DocKind) => {
+    const c = sigs.find((x) => x.id === current)
+    if (c && signsFor(c, k)) return c.id
+    if (chosen === null) return null
+    return sigs.find((x) => x.is_default && signsFor(x, k))?.id ?? null
+  }
+  return { sigs, current, choose, forKind }
 }
 
 /** the document with the signature drawn on it, and a line in its history (who, whose, how) */
@@ -55,10 +64,10 @@ export function DocumentActions({ kind, id, alt, size = 'default' }: { kind: Doc
     setBusy(what)
     try {
       const d = await fetchPrintDoc(k, id)
-      await fn(what === 'mail' ? d : await withSignature(d, k, id, signing.current, what))
+      await fn(what === 'mail' ? d : await withSignature(d, k, id, signing.forKind(k), what))
     } catch (e) { toast.error(tServer(describeError(e))) } finally { setBusy(null) }
   }
-  const signer = signing.sigs.find((x) => x.id === signing.current)
+  const signer = signing.sigs.find((x) => x.id === signing.forKind(kind))
   const print = (k: DocKind) => run('print', k, (d) => { const { body, css } = renderDocHtml(d); printHtml(body, css, 'document') })
   const pdf = (k: DocKind) => run('pdf', k, async (d) => { (await renderDocPdf(d)).save(fileName(d)) })
   const canShare = typeof navigator !== 'undefined' && 'canShare' in navigator
@@ -86,9 +95,9 @@ export function DocumentActions({ kind, id, alt, size = 'default' }: { kind: Doc
             {signing.sigs.length > 0 && <>
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="flex items-center gap-1.5 text-[11px] font-normal text-muted-foreground"><PenLine className="size-3.5" /> {t('Signed by')}</DropdownMenuLabel>
-              <DropdownMenuRadioGroup value={signing.current ?? ''} onValueChange={(v) => signing.choose(v || null)}>
+              <DropdownMenuRadioGroup value={signing.forKind(kind) ?? ''} onValueChange={(v) => signing.choose(v || null)}>
                 <DropdownMenuRadioItem value="" onSelect={(e) => e.preventDefault()}>{t('Without a signature')}</DropdownMenuRadioItem>
-                {signing.sigs.map((x) => <DropdownMenuRadioItem key={x.id} value={x.id} onSelect={(e) => e.preventDefault()}><span>{x.name}{x.title && <span className="text-muted-foreground">{`, ${x.title}`}</span>}</span></DropdownMenuRadioItem>)}
+                {signing.sigs.filter((x) => signsFor(x, kind)).map((x) => <DropdownMenuRadioItem key={x.id} value={x.id} onSelect={(e) => e.preventDefault()}><span>{x.name}{x.title && <span className="text-muted-foreground">{`, ${x.title}`}</span>}</span></DropdownMenuRadioItem>)}
               </DropdownMenuRadioGroup>
             </>}
             {alt?.length ? <DropdownMenuSeparator /> : null}
@@ -101,7 +110,8 @@ export function DocumentActions({ kind, id, alt, size = 'default' }: { kind: Doc
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      {mail && <EmailDialog doc={mail.doc} kind={mail.kind} id={id} signature={signing.current} signer={signer ? `${signer.name}${signer.title ? `, ${signer.title}` : ''}` : null} onClose={() => setMail(null)} />}
+      {mail && (() => { const sid = signing.forKind(mail.kind); const sg = signing.sigs.find((x) => x.id === sid)
+        return <EmailDialog doc={mail.doc} kind={mail.kind} id={id} signature={sid} signer={sg ? `${sg.name}${sg.title ? `, ${sg.title}` : ''}` : null} onClose={() => setMail(null)} /> })()}
     </>
   )
 }

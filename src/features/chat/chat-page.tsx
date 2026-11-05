@@ -316,7 +316,7 @@ function Bubble({ m, mine, showName, grouped, name, replyTo, replyName, onReply,
               {m.body && <DropdownMenuItem onSelect={() => void copyText(m.body!).then(() => toast.success(t('Copied')))}><Copy /> {t('Copy')}</DropdownMenuItem>}
               {mine && fresh && <>
                 <DropdownMenuSeparator />
-                {m.body !== null && <DropdownMenuItem onSelect={onEdit}><Pencil /> {t('Change')}</DropdownMenuItem>}
+                {m.body !== null && <DropdownMenuItem onSelect={onEdit}><Pencil /> {t('Change|edit')}</DropdownMenuItem>}
                 <DropdownMenuItem className="text-destructive" onSelect={onDelete}><Trash2 /> {t('Delete')}</DropdownMenuItem>
               </>}
             </DropdownMenuContent>

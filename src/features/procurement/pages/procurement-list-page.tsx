@@ -4,6 +4,7 @@ import * as React from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Can, useCompany } from '@/app/company-provider'
 import { ColumnHeader, DataTable, inFilter } from '@/components/data-table/data-table'
+import { useDocGroups } from '../doc-groups'
 import { PageHeader } from '@/components/page-header'
 import { StatusBadge } from '@/components/status-badge'
 import { Badge } from '@/components/ui/badge'
@@ -136,11 +137,14 @@ export function ProcurementListPage({ kind }: { kind: ProcKind }) {
   const vendorFilter = params.get('vendor')
   const rows = React.useMemo(() => (docs.data ?? []).filter((r) => !vendorFilter || (r as { vendor_id?: string }).vendor_id === vendorFilter || nm(r.vendor) === vendorFilter), [docs.data, vendorFilter])
 
+  // the groups of the items on each invoice or order (from the meeting with the staff)
+  const groups = useDocGroups<Row>(kind === 'bills' ? 'vendor_bills' : kind === 'orders' ? 'purchase_orders' : null, docs.data)
   const columns = React.useMemo<ColumnDef<Row>[]>(() => [
     { accessorKey: 'number', enableHiding: false, header: ({ column }) => <ColumnHeader column={column} title={t('Number')} />, meta: { label: t('Number') }, cell: ({ getValue }) => <span className="font-medium">{getValue() as string}</span> },
     { accessorKey: 'status', filterFn: inFilter, header: t('Status'), meta: { label: t('Status'), exportValue: (r) => humanize(r.status) }, cell: ({ getValue }) => <StatusBadge status={getValue() as string} /> },
     ...cfg.columns(base),
-  ], [cfg, base])
+    ...groups.columns,
+  ], [cfg, base, groups.columns])
   const newButton = kind === 'bills'
     // one button: what the invoice is for decides where it goes
     ? <Can perm={cfg.perm}>
@@ -176,7 +180,8 @@ export function ProcurementListPage({ kind }: { kind: ProcKind }) {
         getRowId={(r) => r.id} searchPlaceholder={kind === 'bills' ? t('Number, vendor, vendor invoice no.…') : t('Number, vendor…')} exportName={kind}
         onRowClick={(r) => navigate(`${cfg.href}/${r.id}`)}
         preview={kind === 'orders' ? (r) => ({ print: { kind: 'purchase_order', id: r.id }, id: r.id, duplicate: 'purchase_orders' }) : kind === 'bills' ? (r) => ({ lines: billLines(r.id), id: r.id, duplicate: 'vendor_bills' }) : undefined}
-        facets={[{ columnId: 'status', title: t('Status'), options: cfg.statuses.map((s) => ({ label: humanize(s), value: s })) }, ...(cfg.extraFacets?.(docs.data ?? []) ?? [])]}
+        facets={[{ columnId: 'status', title: t('Status'), options: cfg.statuses.map((s) => ({ label: humanize(s), value: s })) }, ...(cfg.extraFacets?.(docs.data ?? []) ?? []), ...groups.facets]}
+        initialHidden={groups.hidden}
         empty={{ title: cfg.emptyTitle, description: cfg.empty, action: newButton }}
       />
     </>

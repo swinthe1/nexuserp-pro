@@ -100,7 +100,7 @@ function Section({ icon: Icon, title, note, items, onEdit, onDelete }: {
                   </div>
                   {l.can_edit && (
                     <div className="flex shrink-0 gap-1 opacity-70 group-hover:opacity-100">
-                      <Button variant="ghost" size="icon-sm" aria-label={t('Change')} title={t('Change')} onClick={() => onEdit(l)}><Pencil /></Button>
+                      <Button variant="ghost" size="icon-sm" aria-label={t('Change|edit')} title={t('Change|edit')} onClick={() => onEdit(l)}><Pencil /></Button>
                       <Button variant="ghost" size="icon-sm" aria-label={t('Forget')} title={t('Forget')} onClick={() => onDelete(l.id)}><Trash2 /></Button>
                     </div>
                   )}

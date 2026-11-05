@@ -9,6 +9,7 @@ import { StatusBadge } from '@/components/status-badge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatMoney, humanize } from '@/lib/utils'
+import { useDocGroups } from '@/features/procurement/doc-groups'
 import { useDocuments, type DocKind } from '../api'
 import { ADJUSTMENT_REASONS } from './adjustment-page'
 import { adjustmentLines, transferLines } from '@/lib/documents/preview-lines'
@@ -110,6 +111,8 @@ export function DocumentsPage({ kind }: { kind: DocKind }) {
   const docs = useDocuments<Row>(kind)
   const cfg = CONFIG[kind]
   const cur = company?.base_currency ?? ''
+  // receipts: the groups of their items (from the meeting with the staff)
+  const groups = useDocGroups<Row>(kind === 'receipts' ? 'goods_receipts' : null, docs.data)
 
   const columns = React.useMemo<ColumnDef<Row>[]>(() => [
     {
@@ -118,7 +121,8 @@ export function DocumentsPage({ kind }: { kind: DocKind }) {
     },
     { accessorKey: 'status', filterFn: inFilter, header: t('Status'), meta: { label: t('Status'), exportValue: (r) => humanize(r.status) }, cell: ({ getValue }) => <StatusBadge status={getValue() as string} /> },
     ...cfg.columns(cur),
-  ], [cfg, cur])
+    ...groups.columns,
+  ], [cfg, cur, groups.columns])
 
   const newButton = <Can perm={cfg.perm}>
     {kind === 'receipts' && hasFeature('ai_reads') && <Button variant="outline" asChild><Link to="/inventory/read-invoice"><ScanText /> {t('Invoice from a photo')}</Link></Button>}
@@ -144,7 +148,9 @@ export function DocumentsPage({ kind }: { kind: DocKind }) {
           ...(kind === 'receipts' ? [{ columnId: 'import', title: t('Customs'), options: [{ label: t('Waiting for customs'), value: 'pending' }, { label: t('Cleared'), value: 'cleared' }, { label: t('Domestic'), value: 'not_required' }] }] : []),
           ...(kind === 'transfers' ? [{ columnId: 'flag', title: t('Attention'), options: [{ label: t('Request'), value: 'request' }, { label: t('On the road over a day'), value: 'late' }, { label: t('Received with differences'), value: 'difference' }] }] : []),
           ...(kind === 'adjustments' ? [{ columnId: 'reason', title: t('Reason'), options: Object.entries(ADJUSTMENT_REASONS).map(([value, label]) => ({ label: t(label), value })) }] : []),
+          ...groups.facets,
         ]}
+        initialHidden={groups.hidden}
         empty={{ title: t(cfg.emptyTitle), description: t(cfg.empty), action: newButton }}
       />
     </>
