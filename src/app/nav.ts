@@ -5,7 +5,7 @@ import {
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, Building, HandCoins, ListTree, Network, Settings2, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, 
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
   BedDouble, BookUser, CalendarRange, ConciergeBell, Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, ReceiptText, IdCard, Settings, CreditCard, type LucideIcon, Activity, ArrowUpDown, BadgeEuro, BookOpen, CalendarPlus, CheckCheck, CircleDollarSign, Clock, Coins, Combine, FileScan, FolderTree, Gift, Handshake, LineChart, Map, Move, NotebookTabs, PieChart, ScanBarcode, Send, ListChecks, ChartSpline, PackageMinus, GraduationCap,
-  FileSignature, ListTodo, ScanSearch, Grid3x3, Gauge, Award, Gavel, Brain, FolderDown, MessageSquare } from 'lucide-react'
+  FileSignature, ListTodo, ScanSearch, Grid3x3, Gauge, Award, Gavel, Brain, FolderDown, MessageSquare, Trash2 } from 'lucide-react'
 import { msg } from '@/i18n'
 
 export interface NavItem {
@@ -110,6 +110,7 @@ export const NAV: NavSection[] = [
       { label: msg('Adjustments'), href: '/inventory/adjustments', icon: SlidersHorizontal, perm: 'inventory.read', keywords: ['opening', 'write-off', 'damage'] },
       { label: msg('Cycle counts|menu'), href: '/wms/counts', icon: ClipboardCheck, perm: 'wms.read', keywords: ['inventory count', 'stocktake', 'inventarizim', 'inventarizimi', 'numërimi', 'regjistrimi i mallit'] },
       { label: msg('Shrinkage|menu'), href: '/inventory/shrinkage', icon: PackageMinus, perm: 'inventory.read', keywords: ['humbje', 'firo', 'vjedhje', 'dëmtim', 'skadim', 'mungesa', 'shrinkage', 'loss', 'theft'] },
+      { label: msg('Stock outputs|menu'), href: '/inventory/outputs', icon: PackageMinus, perm: 'inventory.read', keywords: ['dalje', 'daljet', 'hedhje', 'hedhjet', 'pemë', 'perime', 'shpenzim i brendshëm', 'outputs', 'waste', 'write-off'] },
       { label: msg('Short dates|menu'), href: '/inventory/expiry', icon: CalendarClock, perm: 'inventory.read', keywords: ['afat', 'afati', 'skadenca', 'skadim', 'zbritje', 'expiry', 'short date', 'markdown', 'fefo'] },
       { label: msg('Price levelling'), href: '/inventory/levelling', icon: ArrowUpDown, perm: 'inventory.read', group: msg('Prices and labels'), keywords: ['nivelim', 'nivelimi', 'nivelimi i cmimeve', 'ndryshim cmimi', 'price change', 'repricing', 'çmimet e reja', 'new selling prices', 'margin', 'markup', 'cost', 'marzh', 'cmim'] },
       { label: msg('Labels'), href: '/inventory/labels', icon: Tag, perm: 'inventory.read', keywords: ['etiketa', 'etiketat', 'barkod', 'barcode', 'shelf', 'raft', 'çmim', 'printo'] },
@@ -208,6 +209,7 @@ export const NAV: NavSection[] = [
       { label: msg('Pick'), href: '/wms/picking', icon: ShoppingBasket, perm: 'wms.read', keywords: ['picking', 'pick list', 'orders'] },
       { label: msg('Ship'), href: '/wms/shipping', icon: Send, perm: 'wms.read', keywords: ['shipping', 'dispatch', 'tracking', 'carrier'] },
       { label: msg('Move stock'), href: '/wms/move', icon: Move, perm: 'wms.read', keywords: ['bin to bin', 'relocate', 'internal transfer'] },
+      { label: msg('Thrown away|scanner'), href: '/wms/waste', icon: Trash2, perm: 'wms.read', keywords: ['hedhje', 'hedhjet', 'pemë', 'perime', 'zebra', 'peshim', 'waste'] },
     ],
   },
   {

@@ -466,6 +466,8 @@ export default {
   'enum:theft': 'Vjedhje',
   'enum:found': 'Stok i gjetur',
   'enum:expiry': 'Skadim',
+  'enum:waste': 'Hedhje',
+  'enum:internal_use': 'Përdorim i brendshëm',
   'enum:count': 'Numërim',
   'enum:alloc_value': 'Sipas vlerës',
   'enum:alloc_quantity': 'Sipas sasisë',

@@ -94,6 +94,8 @@ const PutawayListPage = lazy(() => import('@/features/wms/pages/flow-pages'), 'P
 const PickingPage = lazy(() => import('@/features/wms/pages/flow-pages'), 'PickingPage')
 const ShippingPage = lazy(() => import('@/features/wms/pages/flow-pages'), 'ShippingPage')
 const MovePage = lazy(() => import('@/features/wms/pages/move-page'), 'MovePage')
+const WastePage = lazy(() => import('@/features/wms/pages/waste-page'), 'WastePage')
+const OutputsPage = lazy(() => import('@/features/inventory/pages/outputs-page'), 'OutputsPage')
 const CountsPage = lazy(() => import('@/features/wms/pages/counts-page'), 'CountsPage')
 const CountPage = lazy(() => import('@/features/wms/pages/counts-page'), 'CountPage')
 const LotsPage = lazy(() => import('@/features/wms/pages/lots-page'), 'LotsPage')
@@ -252,6 +254,7 @@ const router = createBrowserRouter([
         { path: 'movements', element: <Navigate to="/inventory/item-card" replace /> },
         { path: 'item-card', element: <ItemCardPage /> },
         { path: 'shrinkage', element: <ShrinkagePage /> },
+        { path: 'outputs', element: <OutputsPage /> },
         { path: 'expiry', element: <ExpiryPage /> },
         { path: 'labels', element: <LabelsPage /> },
         { path: 'levelling', element: <PriceLevelsPage /> },
@@ -393,6 +396,7 @@ const router = createBrowserRouter([
         { path: 'shipping', element: <ShippingPage /> },
         { path: 'tasks/:id', element: <TaskPage /> },
         { path: 'move', element: <MovePage /> },
+        { path: 'waste', element: <WastePage /> },
         { path: 'counts', element: <CountsPage /> },
         { path: 'counts/:id', element: <CountPage /> },
         { path: 'lots', element: <LotsPage /> },

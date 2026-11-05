@@ -19147,6 +19147,13 @@ export type Database = {
         }
         Returns: Json
       }
+      stock_outputs: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: Json
+      }
       store_check_sign: {
         Args: {
           p_check: string
@@ -19448,6 +19455,19 @@ export type Database = {
       warehouse_figures: {
         Args: {
           p_company: string
+        }
+        Returns: Json
+      }
+      waste_submit: {
+        Args: {
+          p: Json
+        }
+        Returns: Json
+      }
+      waste_vs_sales: {
+        Args: {
+          p_company: string
+          p: Json
         }
         Returns: Json
       }

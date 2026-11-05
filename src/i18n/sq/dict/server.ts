@@ -844,4 +844,6 @@ export default {
   "Choose a supplier or an expense": "Zgjidh një furnitor ose një shpenzim",
   "Choose what the expense is for": "Zgjidh për çfarë është shpenzimi",
   "Write what was paid": "Shkruaj çfarë u pagua",
+  "Choose why the goods go out": "Zgjidh pse del malli",
+  "Scan what is thrown away": "Skano çfarë hidhet",
 } satisfies Dict

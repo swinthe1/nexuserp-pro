@@ -1,4 +1,4 @@
-import { ArrowLeftRight, ClipboardCheck, ScanSearch, Hourglass, PackageCheck, PackageOpen, ShoppingBasket, Truck, type LucideIcon } from 'lucide-react'
+import { ArrowLeftRight, ClipboardCheck, ScanSearch, Hourglass, PackageCheck, PackageOpen, ShoppingBasket, Trash2, Truck, type LucideIcon } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Can } from '@/app/company-provider'
@@ -33,12 +33,13 @@ export function WmsHomePage() {
     { key: '7', href: '/wms/lots', title: t('Lots and expiry'), icon: Hourglass, count: (d?.expired ?? 0) + (d?.expiring_30 ?? 0),
       hint: d?.expired ? tn(d.expired, '{n} expired lot still in stock', '{n} expired lots still in stock') : t('{n} expiring within 30 days', { n: d?.expiring_30 ?? 0 }), tone: d?.expired ? 'bad' : d?.expiring_30 ? 'warn' : undefined },
     { key: '8', href: '/inventory/check', title: t('Check item'), icon: ScanSearch, hint: t('How much every store has, and where to take it from') },
+    { key: '9', href: '/wms/waste', title: t('Thrown away|scanner'), icon: Trash2, hint: t('Fruit, vegetables, bread: scan, weigh, send') },
   ]
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement
       if (e.metaKey || e.ctrlKey || e.altKey || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || document.querySelector('[role=dialog]')) return
-      const href = ['/wms/receive', '/wms/putaway', '/wms/picking', '/wms/shipping', '/wms/move', '/wms/counts', '/wms/lots', '/inventory/check'][Number(e.key) - 1]
+      const href = ['/wms/receive', '/wms/putaway', '/wms/picking', '/wms/shipping', '/wms/move', '/wms/counts', '/wms/lots', '/inventory/check', '/wms/waste'][Number(e.key) - 1]
       if (href) { e.preventDefault(); navigate(href) }
     }
     window.addEventListener('keydown', onKey)

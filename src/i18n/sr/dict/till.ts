@@ -575,4 +575,6 @@ export default {
   "Pack of {n}": "Pakovanje od {n}",
   "{amount} without VAT": "{amount} bez PDV-a",
   "Here: {qty}": "Ovde: {qty}",
+  "Stock outputs|menu": "Izlazi robe",
+  "Thrown away|scanner": "Otpis",
 } satisfies Dict

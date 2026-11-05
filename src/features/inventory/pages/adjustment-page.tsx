@@ -33,6 +33,8 @@ export const ADJUSTMENT_REASONS: Record<AdjustmentFormValues['reason'], string> 
   expiry: msg('Expired (to scrap)'),
   loss: msg('Loss or shrinkage'),
   theft: msg('Theft'),
+  waste: msg('Thrown away (to scrap)'),
+  internal_use: msg('Used in the company'),
 }
 
 export function AdjustmentPage() {

@@ -66,7 +66,7 @@ export function PaymentsPage() {
   const unitsOf = React.useMemo(() => new Map((cashAccounts.data ?? []).map((a) => [a.id, a.units.map((u) => td(u.name))])), [cashAccounts.data])
   const unitNames = [...new Set((cashAccounts.data ?? []).flatMap((a) => a.units.map((u) => td(u.name))))]
   const unitColumn = React.useMemo<ColumnDef<PaymentRow>[]>(() => unitNames.length ? [{ id: 'unit', accessorFn: (r) => (unitsOf.get(r.bank_account_id) ?? []).join(', '),
-    filterFn: (row, id, v: string[]) => !v?.length || v.some((u) => String(row.getValue(id)).split(', ').includes(u)), header: t('Unit'), meta: { label: t('Unit') } }] : [], [unitsOf]) // eslint-disable-line react-hooks/exhaustive-deps
+    filterFn: (row, id, v: string[]) => !v?.length || v.some((u) => String(row.getValue(id)).split(', ').includes(u)), header: t('Unit|store'), meta: { label: t('Unit|store') } }] : [], [unitsOf]) // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <>
       <PageHeader title={t('Payments|menu')} description={t('Money received from customers and paid to vendors, matched to their invoices. Posting records the bank movement and settles the invoices.')}
@@ -86,7 +86,7 @@ export function PaymentsPage() {
           { columnId: 'status', title: t('Status'), options: ['draft', 'pending_approval', 'approved', 'posted', 'reversed'].map((s) => ({ value: s, label: humanize(s) })) },
           { columnId: 'bank', title: t('Bank or cash'), options: banks.map((b) => ({ value: b, label: b })) },
           { columnId: 'method', title: t('Method'), options: METHODS.map((m) => ({ value: m, label: tEnum(m) })) },
-          ...(unitNames.length ? [{ columnId: 'unit', title: t('Unit'), options: unitNames.map((u) => ({ value: u, label: u })) }] : []),
+          ...(unitNames.length ? [{ columnId: 'unit', title: t('Unit|store'), options: unitNames.map((u) => ({ value: u, label: u })) }] : []),
         ]}
         empty={{ title: t('No payments yet'), description: t('Record what customers paid and what you paid vendors, or create payments from bank statement lines.') }} />
       )}

@@ -130,7 +130,7 @@ export const adjustmentSchema = z.object({
   id: z.string().optional(),
   warehouse_id: uuid(msg('Choose a warehouse')),
   adjustment_date: z.string().min(1),
-  reason: z.enum(['opening', 'correction', 'damage', 'loss', 'theft', 'found', 'expiry', 'count']),
+  reason: z.enum(['opening', 'correction', 'damage', 'loss', 'theft', 'found', 'expiry', 'count', 'waste', 'internal_use']),
   notes: z.string().trim().max(2000).optional(),
   lines: z.array(z.object({
     variant_id: uuid(msg('Choose a product')),
