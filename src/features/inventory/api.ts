@@ -603,7 +603,7 @@ export function useBarcodesOf(variantIds: string[]) {
     queryKey: [...invKeys.all(companyId), 'barcodes-of', ids.join(',')],
     enabled: !!companyId && ids.length > 0,
     staleTime: 5 * 60_000,
-    queryFn: async () => unwrap(await supabase.from('product_barcodes').select('variant_id, barcode').in('variant_id', ids).is('deleted_at', null)),
+    queryFn: async () => unwrap(await supabase.from('product_barcodes').select('variant_id, barcode, quantity').in('variant_id', ids).is('deleted_at', null)),
   })
 }
 

@@ -1,4 +1,5 @@
-import { ArrowLeftRight, Bot, Factory, Play, RefreshCw, ShoppingCart, X } from 'lucide-react'
+import { ArrowLeftRight, Bot, Factory, Gauge, Play, RefreshCw, ShoppingCart, X } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import * as React from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -22,6 +23,8 @@ import { ErrorState } from '@/components/error-state'
 import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { msg, t, td, tn } from '@/i18n'
 import { cn, formatDate, formatMoney, formatQty, num } from '@/lib/utils'
+import { describeError, unwrap } from '@/lib/errors'
+import { supabase } from '@/lib/supabase'
 import { useWarehouses } from '@/features/inventory/api'
 import {
   procKeys, useActiveVendors, useAutomationSettings, useCreateTransfers, useCreateWorkOrders, useGenerateReplenishment, useOrderSuggestions, useReplenishmentRuns, useRunReplenishment,
@@ -51,6 +54,7 @@ export function ReplenishmentPage() {
   const [selected, setSelected] = React.useState<Set<string>>(new Set())
   const [runOpen, setRunOpen] = React.useState(false)
   const [result, setResult] = React.useState<RunResult | null>(null)
+  const [fromSales, setFromSales] = React.useState(false)
   const writable = can('procurement.write') || can('oms.write')
 
   const open = (suggestions.data ?? []).filter((s) => s.status === 'open' && (warehouse === 'all' || s.warehouse_id === warehouse))
@@ -79,10 +83,12 @@ export function ReplenishmentPage() {
             setSelected(new Set())
             toast.success(n ? tn(n, '{n} item needs replenishing', '{n} items need replenishing') : t('Everything is above its reorder point'))
           }}><RefreshCw /> {t('Check stock now')}</Button>}
+          <Can perm="procurement.read"><Button variant="outline" onClick={() => setFromSales(true)}><Gauge /> {t('Min and max from sales')}</Button></Can>
           <Can perm="procurement.write"><Button onClick={() => setRunOpen(true)}><Play /> {t('Run replenishment')}</Button></Can>
         </>}
       />
       {result && <RunResultCard result={result} onClose={() => setResult(null)} />}
+      {fromSales && <FromSalesDialog warehouses={(warehouses.data ?? []).map((w) => ({ id: w.id, name: td(w.name) }))} initial={warehouse === 'all' ? null : warehouse} onClose={() => setFromSales(false)} />}
       {suggestions.isLoading ? <Skeleton className="h-64" /> : suggestions.isError ? <Card><ErrorState error={suggestions.error} onRetry={() => void suggestions.refetch()} /></Card> : open.length === 0 ? (
         <Card><EmptyState title={t('Nothing to reorder')} description={generatedAt ? undefined : t('Check stock to calculate what needs ordering. Reorder points are set per product and warehouse on the product page.')}
           action={writable && <Button onClick={() => generate.mutate(warehouse === 'all' ? null : warehouse)}><RefreshCw /> {t('Check stock now')}</Button>} /></Card>
@@ -334,5 +340,85 @@ function AutomationCard() {
         </>}
       </CardContent>
     </Card>
+  )
+}
+
+type FromSalesRow = { variant_id: string; sku: string; name: string; sold: number; per_day: number; lead: number; cur_min: number | null; cur_max: number | null
+  new_min: number; new_max: number; has_rule: boolean }
+/**
+ * Min and max for many items at once, from how fast they sold: min = daily sales × (delivery days + safety
+ * days), max = min + daily sales × days of cover. Shown first; written to the items' reorder rules on request.
+ */
+function FromSalesDialog({ warehouses, initial, onClose }: { warehouses: { id: string; name: string }[]; initial: string | null; onClose: () => void }) {
+  const { companyId, can } = useCompany()
+  const qc = useQueryClient()
+  const [wh, setWh] = React.useState<string>(initial ?? warehouses[0]?.id ?? '')
+  const [days, setDays] = React.useState('28')
+  const [lead, setLead] = React.useState('')
+  const [safety, setSafety] = React.useState('2')
+  const [cover, setCover] = React.useState('7')
+  const [method, setMethod] = React.useState<'buy' | 'transfer'>('buy')
+  const [source, setSource] = React.useState<string>('')
+  const [rows, setRows] = React.useState<FromSalesRow[] | null>(null)
+  const [busy, setBusy] = React.useState(false)
+  const params = (apply: boolean) => ({ days: num(days) || 28, lead_days: lead === '' ? null : num(lead), safety_days: num(safety), cover_days: num(cover) || 7,
+    method, source_warehouse_id: method === 'transfer' ? source || null : null, apply })
+  const run = async (apply: boolean) => {
+    setBusy(true)
+    try {
+      const r = unwrap(await supabase.rpc('replenishment_from_sales', { p_company: companyId!, p_warehouse: wh, p: params(apply) as never })) as unknown as { rows: FromSalesRow[]; written: number }
+      setRows(r.rows)
+      if (apply) {
+        toast.success(tn(r.written, '{n} reorder rule written', '{n} reorder rules written'))
+        void qc.invalidateQueries({ queryKey: procKeys.all(companyId) })
+        onClose()
+      }
+    } catch (e) { toast.error(describeError(e)) } finally { setBusy(false) }
+  }
+  return (
+    <Dialog open onOpenChange={(o) => !o && !busy && onClose()}>
+      <DialogContent className="sm:max-w-3xl">
+        <DialogHeader><DialogTitle>{t('Min and max from sales')}</DialogTitle>
+          <DialogDescription>{t('For every item the unit sold: minimum = daily sales × (delivery days + safety days); maximum = the minimum + daily sales × days of cover. Look first, then write them.')}</DialogDescription></DialogHeader>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-1.5"><Label>{t('Warehouse or store')}</Label>
+            <Select value={wh} onValueChange={(v) => { setWh(v); setRows(null) }}><SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{warehouses.map((w) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
+          <div className="grid gap-1.5"><Label htmlFor="fs-days">{t('Sales of the last days')}</Label><Input id="fs-days" type="number" min="7" value={days} onChange={(e) => { setDays(e.target.value); setRows(null) }} /></div>
+          <div className="grid gap-1.5"><Label htmlFor="fs-lead" optional>{t('Delivery days')}</Label><Input id="fs-lead" type="number" min="0" placeholder={t('Each item\'s own, else 2')} value={lead} onChange={(e) => { setLead(e.target.value); setRows(null) }} /></div>
+          <div className="grid gap-1.5"><Label htmlFor="fs-safety">{t('Safety days')}</Label><Input id="fs-safety" type="number" min="0" value={safety} onChange={(e) => { setSafety(e.target.value); setRows(null) }} /></div>
+          <div className="grid gap-1.5"><Label htmlFor="fs-cover">{t('Days of cover above the minimum')}</Label><Input id="fs-cover" type="number" min="1" value={cover} onChange={(e) => { setCover(e.target.value); setRows(null) }} /></div>
+          <div className="grid gap-1.5"><Label>{t('New rules fill from')}</Label>
+            <Select value={method} onValueChange={(v) => { setMethod(v as 'buy' | 'transfer'); setRows(null) }}><SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="buy">{t('A supplier')}</SelectItem><SelectItem value="transfer">{t('Another warehouse')}</SelectItem></SelectContent></Select></div>
+          {method === 'transfer' && (
+            <div className="grid gap-1.5 sm:col-span-3"><Label>{t('The warehouse the goods come from')}</Label>
+              <Select value={source} onValueChange={(v) => { setSource(v); setRows(null) }}><SelectTrigger className="sm:w-72"><SelectValue placeholder={t('Choose…')} /></SelectTrigger>
+                <SelectContent>{warehouses.filter((w) => w.id !== wh).map((w) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
+          )}
+        </div>
+        {rows && (rows.length === 0 ? <p className="text-[13px] text-muted-foreground">{t('Nothing sold here in those days.')}</p> : (
+          <div className="max-h-80 overflow-auto rounded-md border">
+            <Table>
+              <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Item')}</TableHead><TableHead className="text-right">{t('Sold')}</TableHead>
+                <TableHead className="text-right">{t('A day')}</TableHead><TableHead className="text-right">{t('Now|min max')}</TableHead><TableHead className="text-right">{t('New|min max')}</TableHead></TableRow></TableHeader>
+              <TableBody>{rows.map((r) => (
+                <TableRow key={r.variant_id}>
+                  <TableCell><div className="font-medium">{r.name}</div><div className="text-xs text-muted-foreground">{r.sku} · {tn(r.lead, '{n} delivery day', '{n} delivery days')}</div></TableCell>
+                  <TableCell className="text-right tabular">{formatQty(r.sold)}</TableCell>
+                  <TableCell className="text-right tabular">{formatQty(Math.round(num(r.per_day) * 10) / 10)}</TableCell>
+                  <TableCell className="text-right tabular text-muted-foreground">{r.has_rule ? `${formatQty(num(r.cur_min))} / ${formatQty(num(r.cur_max))}` : '—'}</TableCell>
+                  <TableCell className="text-right font-medium tabular">{formatQty(r.new_min)} / {formatQty(r.new_max)}</TableCell>
+                </TableRow>))}</TableBody>
+            </Table>
+          </div>
+        ))}
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>{t('Cancel')}</Button>
+          <Button variant="outline" loading={busy && !rows} disabled={!wh || (method === 'transfer' && !source)} onClick={() => void run(false)}>{t('Show')}</Button>
+          {can('procurement.write') && <Button loading={busy && !!rows} disabled={!rows?.length} onClick={() => void run(true)}>{t('Write {n} rules', { n: rows?.length ?? 0 })}</Button>}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

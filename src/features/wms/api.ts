@@ -213,6 +213,29 @@ export function useOutboundDeliveries(statuses: string[]) {
     },
   })
 }
+/** the shops' transfers not yet sent: the central warehouse picks them like deliveries */
+export type TransferToPick = { id: string; number: string; from_warehouse_id: string; transfer_date: string | null; expected_date: string | null; picked_at: string | null
+  from: { code: string; name: string } | null; to: { code: string; name: string } | null; lines: { quantity: number }[]; pick_list: string | null }
+export function useTransfersToPick() {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...wmsKeys.all(companyId), 'transfers-to-pick'],
+    enabled: !!companyId,
+    queryFn: async () => {
+      const r = await supabase.from('stock_transfers')
+        .select('id, number, from_warehouse_id, transfer_date, expected_date, picked_at, from:warehouses!stock_transfers_company_id_from_warehouse_id_fkey(code, name), to:warehouses!stock_transfers_company_id_to_warehouse_id_fkey(code, name), lines:stock_transfer_lines(quantity)')
+        .eq('company_id', companyId).eq('status', 'draft').eq('is_request', false).is('deleted_at', null).order('transfer_date')
+      if (r.error) return [] as TransferToPick[]   // a server not updated yet
+      const rows = (r.data ?? []) as unknown as Omit<TransferToPick, 'pick_list'>[]
+      const open = unwrap(await supabase.from('warehouse_task_lines').select('source_doc_id, task:warehouse_tasks!inner(number, status, task_type)')
+        .eq('company_id', companyId).eq('task.task_type', 'pick').in('task.status', ['open', 'in_progress'])
+        .returns<{ source_doc_id: string; task: { number: string } }[]>())
+      const onList = new Map(open.map((o) => [o.source_doc_id, o.task.number]))
+      return rows.map((x) => ({ ...x, pick_list: onList.get(x.id) ?? null }))
+    },
+  })
+}
+export const useCreateTransferPickList = () => useAction(async (ids: string[]) => unwrap(await supabase.rpc('create_transfer_pick_list', { p_transfers: ids })) as string)
 export function useShippedToday() {
   const { companyId } = useCompany()
   return useQuery({
@@ -226,7 +249,7 @@ export const useCreatePickList = () => useAction(async (ids: string[]) => unwrap
 export const useConfirmPick = () => useAction(async (a: { line: string; qty: number; location?: string | null; lot?: string | null }) =>
   unwrap(await supabase.rpc('confirm_pick', { p_line: a.line, p_qty: a.qty, p_location: a.location ?? undefined, p_lot: a.lot ?? undefined })), true)
 export const useCompletePickList = () => useAction(async (id: string) =>
-  unwrap(await supabase.rpc('complete_pick_list', { p_task: id })) as unknown as { ready: number; short_lines: number; nothing_picked: number })
+  unwrap(await supabase.rpc('complete_pick_list', { p_task: id })) as unknown as { ready: number; transfers?: number; short_lines: number; nothing_picked: number })
 export const useConfirmShipment = () => useAction(async (a: { id: string; carrier?: string; tracking?: string; packages?: number | null; weight?: number | null }) =>
   unwrap(await supabase.rpc('confirm_shipment', { p_delivery: a.id, p_carrier: a.carrier ?? undefined, p_tracking: a.tracking ?? undefined,
     p_packages: a.packages ?? undefined, p_weight: a.weight ?? undefined })) as unknown as { number: string; cost: number })

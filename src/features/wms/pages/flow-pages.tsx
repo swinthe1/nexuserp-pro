@@ -20,7 +20,7 @@ import { printHtml } from '@/lib/print'
 import { supabase } from '@/lib/supabase'
 import { cn, formatDate, formatQty } from '@/lib/utils'
 import { useLocations } from '@/features/inventory/api'
-import { useConfirmShipment, useCreatePickList, useCreatePutaway, useOutboundDeliveries, useShippedToday, useTasks, wmsKeys, type DeliveryRow, type TaskRow } from '../api'
+import { useConfirmShipment, useCreatePickList, useCreatePutaway, useCreateTransferPickList, useOutboundDeliveries, useShippedToday, useTasks, useTransfersToPick, wmsKeys, type DeliveryRow, type TaskRow } from '../api'
 import { ScanShell, useScanStatus } from '../components/scan-shell'
 
 /** Task lists refresh by themselves when someone else starts or finishes a task */
@@ -68,6 +68,12 @@ export function PickingPage() {
   const deliveries = useOutboundDeliveries(['draft'])
   const tasks = useTasks('pick')
   const create = useCreatePickList()
+  const transfers = useTransfersToPick()
+  const createT = useCreateTransferPickList()
+  const [selT, setSelT] = React.useState<Set<string>>(new Set())
+  const freeT = (transfers.data ?? []).filter((x) => !x.pick_list && x.lines.length)
+  const selectedT = freeT.filter((x) => selT.has(x.id))
+  const mixedT = new Set(selectedT.map((x) => x.from_warehouse_id)).size > 1
   const [sel, setSel] = React.useState<Set<string>>(new Set())
   const free = (deliveries.data ?? []).filter((d) => !d.pick_list && d.lines.length)
   const selected = free.filter((d) => sel.has(d.id))
@@ -77,7 +83,8 @@ export function PickingPage() {
   return (
     <ScanShell title={t('Pick')} back={{ href: '/wms', label: t('Warehouse floor') }}>
       <Tabs defaultValue={tasks.data?.length ? 'lists' : 'todo'}>
-        <TabsList><TabsTrigger value="todo">{t('To pick ({n})', { n: free.length })}</TabsTrigger><TabsTrigger value="lists">{t('Pick lists ({n})', { n: tasks.data?.length ?? 0 })}</TabsTrigger></TabsList>
+        <TabsList><TabsTrigger value="todo">{t('To pick ({n})', { n: free.length })}</TabsTrigger>
+          {freeT.length > 0 && <TabsTrigger value="transfers">{t('Transfers to the shops ({n})', { n: freeT.length })}</TabsTrigger>}<TabsTrigger value="lists">{t('Pick lists ({n})', { n: tasks.data?.length ?? 0 })}</TabsTrigger></TabsList>
         <TabsContent value="todo" className="grid gap-2">
           {deliveries.isError ? <ErrorState error={deliveries.error} onRetry={() => void deliveries.refetch()} /> : deliveries.isLoading ? <Skeleton className="h-40" /> : !free.length ? <EmptyState icon={ShoppingBasket} title={t('No deliveries waiting')} description={t('Deliveries are created from confirmed sales orders.')} /> : <>
             <div className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
@@ -102,6 +109,29 @@ export function PickingPage() {
               </div>
             </div>
           </>}
+        </TabsContent>
+        <TabsContent value="transfers" className="grid gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
+            <button type="button" className="text-primary hover:underline" onClick={() => setSelT(new Set(freeT.map((x) => x.id)))}>{t('Select all')}</button>
+            <span className="text-muted-foreground">{t('Pick the shops\' transfers bin by bin; each transfer then leaves with what was picked.')}</span>
+          </div>
+          {freeT.map((x) => (
+            <label key={x.id} className={cn('flex cursor-pointer items-center gap-3 rounded-xl border bg-card p-4', selT.has(x.id) && 'border-primary ring-1 ring-primary/40')}>
+              <Checkbox checked={selT.has(x.id)} onCheckedChange={() => setSelT((s) => { const n = new Set(s); if (n.has(x.id)) n.delete(x.id); else n.add(x.id); return n })} aria-label={t('Select {number}', { number: x.number })} className="size-5" />
+              <div className="min-w-0 flex-1"><div className="font-semibold">{x.to?.name}</div>
+                <div className="text-[13px] text-muted-foreground">{[x.number, x.from?.code && t('from {code}', { code: x.from.code }), x.picked_at && t('picked {date}', { date: formatDate(x.picked_at, true) })].filter(Boolean).join(' · ')}</div></div>
+              <div className="text-right text-[13px]"><div className="font-medium tabular">{t('{n} units', { n: formatQty(x.lines.reduce((s, l) => s + Number(l.quantity), 0)) })}</div>
+                {x.expected_date && <div className={cn('text-muted-foreground', x.expected_date < new Date().toISOString().slice(0, 10) && 'text-warning')}>{formatDate(x.expected_date)}</div>}</div>
+            </label>
+          ))}
+          <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/95 p-3 backdrop-blur lg:left-[244px]">
+            <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
+              <span className="text-[13px] text-muted-foreground">{mixedT ? t('A pick list covers one warehouse at a time') : t('{n} selected', { n: selectedT.length })}</span>
+              <Can perm="wms.write"><Button size="lg" disabled={!selectedT.length || mixedT} loading={createT.isPending}
+                onClick={async () => { try { const id = await createT.mutateAsync(selectedT.map((x) => x.id)); navigate(`/wms/tasks/${id}`) } catch { /* toast */ } }}>
+                <ShoppingBasket /> {t('Start picking')}</Button></Can>
+            </div>
+          </div>
         </TabsContent>
         <TabsContent value="lists" className="grid gap-2">
           {tasks.isError ? <ErrorState compact error={tasks.error} onRetry={() => void tasks.refetch()} /> : !tasks.data?.length ? <EmptyState icon={ShoppingBasket} title={t('No pick lists in progress')} compact /> : tasks.data.map((x) => <TaskCard key={x.id} task={x} />)}

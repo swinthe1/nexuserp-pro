@@ -18,7 +18,7 @@ set role authenticated;
 -- ---------------------------------------------------------------- new prices during the day
 select t.login('cora@kt.al');
 select t.ok((public.pos_catalog_changes(:'reg', null) ->> 'full')::boolean, 'the first look reads the whole catalog');
-select now() - interval '1 second' as since \gset
+select clock_timestamp() as since \gset
 select t.login(:'boss');
 update public.products set sales_price = sales_price + 1 where id = :'beer_p';
 select t.login('cora@kt.al');
@@ -27,7 +27,7 @@ select t.ok(not (:'ch'::jsonb ->> 'full')::boolean and jsonb_path_exists(:'ch'::
             and (select count(*) from jsonb_array_elements(:'ch'::jsonb -> 'items')) = 1, 'later looks bring only the item whose price changed');
 select (e ->> 'price')::numeric as beer_price from jsonb_array_elements(:'ch'::jsonb -> 'items') e \gset
 select t.ok(:beer_price = (select price from public.pos_catalog(:'reg') where variant_id = :'beer'), 'at the new price');
-select now() - interval '1 second' as since2 \gset
+select clock_timestamp() as since2 \gset
 select t.login(:'boss');
 update public.products set is_sellable = false where id = :'beer_p';
 select t.login('cora@kt.al');

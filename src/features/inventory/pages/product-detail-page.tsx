@@ -291,6 +291,7 @@ const editSchema = z.object({
   volume_m3: z.preprocess((v) => (v === '' || v == null ? null : Number(v)), z.number().nonnegative().nullable()),
   max_temperature: z.preprocess((v) => (v === '' || v == null ? null : Number(v)), z.number().min(-40).max(30).nullable()),
   scale_plu: z.string().trim().regex(/^\d{0,6}$/, msg('The PLU is a number of up to 6 digits')).optional(),
+  min_shelf_days: z.preprocess((v) => (v === '' || v == null ? null : Number(v)), z.number().int().min(1).max(3650).nullable()),
 })
 
 function DeleteProductButton({ productId, name, onDeleted }: { productId: string; name: string; onDeleted?: () => void }) {
@@ -320,14 +321,17 @@ function EditProductSheet({ product }: { product: ProductDetail }) {
       is_purchasable: product.is_purchasable, is_active: product.is_active, brand: product.brand ?? '', hs_code: product.hs_code ?? '',
       weight_kg: product.weight_kg, volume_m3: product.volume_m3, max_temperature: product.max_temperature,
       scale_plu: (product as { scale_plu?: string | null }).scale_plu ?? '',
+      min_shelf_days: (product as { min_shelf_days?: number | null }).min_shelf_days ?? null,
     },
   })
   const onSubmit = form.handleSubmit(async (v) => {
     // the PLU goes only when it changed: a server not yet updated has no such column, and the rest still saves
-    const { scale_plu, ...rest } = v
+    const { scale_plu, min_shelf_days, ...rest } = v
     const plu = scale_plu || null
     const pluChanged = plu !== ((product as { scale_plu?: string | null }).scale_plu ?? null)
-    await update.mutateAsync({ ...rest, description: v.description || null, brand: v.brand || null, hs_code: v.hs_code || null, ...(pluChanged ? { scale_plu: plu } : {}) })
+    const shelfChanged = (min_shelf_days ?? null) !== ((product as { min_shelf_days?: number | null }).min_shelf_days ?? null)
+    await update.mutateAsync({ ...rest, description: v.description || null, brand: v.brand || null, hs_code: v.hs_code || null, ...(pluChanged ? { scale_plu: plu } : {}),
+      ...(shelfChanged ? { min_shelf_days: min_shelf_days ?? null } : {}) })
     setOpen(false)
   })
   return (
@@ -360,6 +364,9 @@ function EditProductSheet({ product }: { product: ProductDetail }) {
                 <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel optional>{t('Brand')}</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                 <FormField control={form.control} name="hs_code" render={({ field }) => (<FormItem><FormLabel optional>{t('HS code')}</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                 <FormField control={form.control} name="scale_plu" render={({ field }) => (<FormItem><FormLabel optional>{t('PLU on the scale')}</FormLabel><FormControl><Input inputMode="numeric" {...field} placeholder={t('e.g. 1234')} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="min_shelf_days" render={({ field }) => (<FormItem className="col-span-2"><FormLabel optional>{t('Days it must still have at receiving')}</FormLabel>
+                  <FormControl><Input type="number" step="1" className="w-32" placeholder={t('e.g. 10')} value={field.value ?? ''} onChange={field.onChange} /></FormControl>
+                  <FormDescription>{t('Goods that expire sooner are refused at receiving; a manager can still accept them. Empty: the company\'s default.')}</FormDescription><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="max_temperature" render={({ field }) => (<FormItem className="col-span-2"><FormLabel optional>{t('Kept cold, at most (°C)')}</FormLabel>
                   <FormControl><Input type="number" step="0.5" className="w-32" placeholder={t('e.g. 4')} value={field.value ?? ''} onChange={field.onChange} /></FormControl>
                   <FormDescription>{t('Meat, dairy, frozen goods: the receiver writes the temperature at the door, and a warmer delivery is refused.')}</FormDescription></FormItem>)} />

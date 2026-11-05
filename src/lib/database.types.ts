@@ -2335,6 +2335,7 @@ export type Database = {
           pos_void_whatsapp: string[]
           pos_receipt_max: number | null
           scale_barcode: Json
+          min_shelf_days: number | null
         }
         Insert: {
           id?: string
@@ -2420,6 +2421,7 @@ export type Database = {
           pos_void_whatsapp?: string[]
           pos_receipt_max?: number | null
           scale_barcode?: Json
+          min_shelf_days?: number | null
         }
         Update: {
           id?: string
@@ -2505,6 +2507,7 @@ export type Database = {
           pos_void_whatsapp?: string[]
           pos_receipt_max?: number | null
           scale_barcode?: Json
+          min_shelf_days?: number | null
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -9417,6 +9420,7 @@ export type Database = {
           target_margin_pct: number | null
           max_temperature: number | null
           scale_plu: string | null
+          min_shelf_days: number | null
         }
         Insert: {
           id?: string
@@ -9452,6 +9456,7 @@ export type Database = {
           target_margin_pct?: number | null
           max_temperature?: number | null
           scale_plu?: string | null
+          min_shelf_days?: number | null
         }
         Update: {
           id?: string
@@ -9487,6 +9492,7 @@ export type Database = {
           target_margin_pct?: number | null
           max_temperature?: number | null
           scale_plu?: string | null
+          min_shelf_days?: number | null
         }
         Relationships: [
           { foreignKeyName: "products_company_id_category_id_fkey"; columns: ["company_id", "category_id"]; isOneToOne: false; referencedRelation: "product_categories"; referencedColumns: ["company_id", "id"] },
@@ -12611,6 +12617,7 @@ export type Database = {
           received_by: string | null
           has_difference: boolean
           receive_note: string | null
+          picked_at: string | null
         }
         Insert: {
           id?: string
@@ -12635,6 +12642,7 @@ export type Database = {
           received_by?: string | null
           has_difference?: boolean
           receive_note?: string | null
+          picked_at?: string | null
         }
         Update: {
           id?: string
@@ -12659,6 +12667,7 @@ export type Database = {
           received_by?: string | null
           has_difference?: boolean
           receive_note?: string | null
+          picked_at?: string | null
         }
         Relationships: [
           { foreignKeyName: "stock_transfers_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -16755,6 +16764,12 @@ export type Database = {
         }
         Returns: string
       }
+      create_transfer_pick_list: {
+        Args: {
+          p_transfers: string[]
+        }
+        Returns: string
+      }
       create_transfers_from_suggestions: {
         Args: {
           p_ids: string[]
@@ -18931,6 +18946,14 @@ export type Database = {
           p_stop_ids: string[]
         }
         Returns: undefined
+      }
+      replenishment_from_sales: {
+        Args: {
+          p_company: string
+          p_warehouse: string
+          p?: Json
+        }
+        Returns: Json
       }
       reserve_sales_order: {
         Args: {

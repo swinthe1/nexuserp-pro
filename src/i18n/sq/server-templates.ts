@@ -535,4 +535,11 @@ export const serverTemplates: [string, string][] = [
   ['Voucher % spent offline beyond what it allowed', 'Kuponi dhuratë {0} u shpenzua pa internet përtej vlerës që kishte'],
   ['Sold on account over the credit limit of %', 'U shit me borxh mbi limitin e {0}'],
   ['Voucher sold %', 'U shit kuponi dhuratë {0}'],
+  ["Line %: % expires on %, % days from receiving; it must have at least %. A purchasing manager can accept it.", "Rreshti {0}: {1} skadon më {2}, {3} ditë pas pranimit; duhet të ketë të paktën {4}. Menaxheri i blerjeve mund ta pranojë."],
+  ["Lot % expires on %, % days from today; this item must have at least % when it comes in. A manager can accept it.", "Loti {0} skadon më {1}, {2} ditë nga sot; ky artikull duhet të ketë të paktën {3} kur hyn. Menaxheri mund ta pranojë."],
+  ["A pick list covers one warehouse; % leaves from another", "Një listë mbledhjeje mbulon një depo; {0} niset nga një tjetër"],
+  ["Transfer % is %; only transfers not yet sent are picked", "Transferi {0} është {1}; mblidhen vetëm transferet ende të panisura"],
+  ["% is still a request: accept it first", "{0} është ende kërkesë: pranojeni së pari"],
+  ["Transfer % is already on an open pick list", "Transferi {0} është tashmë në një listë mbledhjeje të hapur"],
+  ["Transfer % is on a pick list still open: finish the picking first", "Transferi {0} është në një listë mbledhjeje ende të hapur: përfundoni mbledhjen së pari"],
 ]

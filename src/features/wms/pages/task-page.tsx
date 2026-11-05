@@ -216,7 +216,10 @@ function PickScreen({ task }: { task: TaskDetail }) {
             try {
               const r = await complete.mutateAsync(task.id)
               try { localStorage.removeItem(storeKey) } catch { /* ignore */ }
-              toast.success(tn(r.ready, '{n} delivery ready to ship', '{n} deliveries ready to ship'), { description: r.short_lines ? tn(r.short_lines, '{n} line short', '{n} lines short') : undefined })
+              const short = r.short_lines ? tn(r.short_lines, '{n} line short', '{n} lines short') : undefined
+              // the shops' transfers: picked, they leave from the transfer's own page
+              if (r.transfers && !r.ready) { toast.success(tn(r.transfers, '{n} transfer picked: send it from its page', '{n} transfers picked: send them from their pages'), { description: short }); navigate('/inventory/transfers'); return }
+              toast.success(tn(r.ready, '{n} delivery ready to ship', '{n} deliveries ready to ship'), { description: short })
               navigate('/wms/shipping')
             } catch { /* toast */ }
           }}><ShoppingBasket /> {t('Finish pick list')}</Button></Can>

@@ -41,17 +41,20 @@ export function ReceiveTransferCard({ doc }: { doc: Doc }) {
   const short = doc.lines.filter((l) => diff(l) < 0)
   const extra = doc.lines.filter((l) => diff(l) > 0)
 
-  // a scan counts one unit on the first line of that item that is not yet full (or the last one)
+  // a scan counts on the first line of that item that is not yet full (or the last one): one unit, or a
+  // whole box when the barcode is the box's (a box of 12 counts 12)
   const onScan = (e: React.FormEvent) => {
     e.preventDefault()
     const code = scan.trim()
     if (!code) return
-    const variant = barcodes.data?.find((b) => b.barcode === code)?.variant_id
-      ?? variants.data?.find((v) => v.sku.toUpperCase() === code.toUpperCase())?.id
+    const bc = barcodes.data?.find((b) => b.barcode === code)
+    const variant = bc?.variant_id ?? variants.data?.find((v) => v.sku.toUpperCase() === code.toUpperCase())?.id
+    const per = Math.max(num(bc?.quantity) || 1, 1)
     const lines = doc.lines.filter((l) => l.variant_id === variant)
     if (!lines.length) { toast.error(t('This item is not on the transfer'), { description: code }); setScan(''); return }
     const target = lines.find((l) => num(got[l.id]) < shipped(l)) ?? lines[lines.length - 1]
-    setGot((g) => ({ ...g, [target.id]: String(num(g[target.id]) + 1) }))
+    setGot((g) => ({ ...g, [target.id]: String(num(g[target.id]) + per) }))
+    if (per > 1) toast.info(t('A box: {n} counted', { n: per }), { description: item(target.variant_id)?.name })
     setScan('')
   }
 

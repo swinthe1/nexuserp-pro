@@ -22,7 +22,7 @@ type Settings = { pos_cash_tolerance: number; pos_count_notes: boolean; pos_void
   payroll_night_pct: number | null; payroll_holiday_pct: number | null; purchase_price_tolerance: number
   new_items_from_bills: 'anyone' | 'approval'
   /** a server not updated yet has none of these */
-  pos_payouts?: 'off' | 'manager' | 'anyone'; pos_receipt_max?: number | null; scale_barcode?: ScaleSetup; pos_void_notify?: boolean; pos_void_notify_over?: number; pos_void_whatsapp?: string[] }
+  pos_payouts?: 'off' | 'manager' | 'anyone'; pos_receipt_max?: number | null; scale_barcode?: ScaleSetup; pos_void_notify?: boolean; pos_void_notify_over?: number; pos_void_whatsapp?: string[]; min_shelf_days?: number | null }
 
 export function usePayrollTillSettings() {
   const { companyId } = useCompany()
@@ -55,6 +55,8 @@ export function AutomationPage() {
   const [rmax, setRmax] = React.useState('')
   React.useEffect(() => { if (s) setRmax(s.pos_receipt_max == null ? '' : String(s.pos_receipt_max)) }, [s])
   React.useEffect(() => { if (s) { setOver(String(s.pos_void_notify_over ?? 0)); setPhones((s.pos_void_whatsapp ?? []).join(', ')) } }, [s])
+  const [shelf, setShelf] = React.useState('')
+  React.useEffect(() => { if (s) setShelf(s.min_shelf_days == null ? '' : String(s.min_shelf_days)) }, [s])
   const [rise, setRise] = React.useState('')
   React.useEffect(() => { if (s) setRise(String(s.purchase_price_tolerance ?? 1)) }, [s])
 
@@ -205,6 +207,18 @@ export function AutomationPage() {
               <Input id="rise" type="number" min="0" max="50" step="0.5" className="w-36 text-right tabular" value={rise} onChange={(e) => setRise(e.target.value)} disabled={!can('procurement.approve')} /></div>
             {can('procurement.approve') && <Button variant="outline" disabled={rise === String(s.purchase_price_tolerance) || rise === '' || Number(rise) < 0 || Number(rise) > 50} loading={save.isPending}
               onClick={() => save.mutate({ purchase_price_tolerance: Number(rise) })}>{t('Save')}</Button>}
+          </div>
+        </AutomationCard>
+      )}
+
+      {can('procurement.read') && s && s.min_shelf_days !== undefined && (
+        <AutomationCard icon={CalendarClock} title={t('Shortest shelf life at receiving')}>
+          <p className="text-[13px] text-muted-foreground">{t('Goods that expire sooner than this are refused when they come in (a lot scanned in the warehouse, a purchase invoice with expiry dates); a manager can still accept them. An item can ask for more or fewer days on its own card.')}</p>
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="grid gap-1.5"><Label htmlFor="shelf">{t('Days it must still have')}</Label>
+              <Input id="shelf" type="number" min="1" max="3650" step="1" className="w-36 text-right tabular" placeholder={t('No check')} value={shelf} onChange={(e) => setShelf(e.target.value)} disabled={!can('procurement.approve')} /></div>
+            {can('procurement.approve') && <Button variant="outline" disabled={shelf === (s.min_shelf_days == null ? '' : String(s.min_shelf_days)) || (shelf !== '' && (Number(shelf) < 1 || Number(shelf) > 3650))} loading={save.isPending}
+              onClick={() => save.mutate({ min_shelf_days: shelf === '' ? '' : Math.round(Number(shelf)) })}>{t('Save')}</Button>}
           </div>
         </AutomationCard>
       )}
