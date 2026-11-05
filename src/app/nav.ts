@@ -89,7 +89,7 @@ export const NAV: NavSection[] = [
     // buying: documents, suppliers, planning
     label: msg('Buy|menu'),
     items: [
-      { label: msg('Vendor bills'), href: '/procurement/bills', icon: FileCheck2, perm: 'invoicing.read', keywords: ['bill', 'ap', 'payable', 'three-way match', 'faturë blerje'], hub: msg('Purchase documents|menu') },
+      { label: msg('Vendor bills'), href: '/procurement/bills', match: ['/procurement/invoice'], icon: FileCheck2, perm: 'invoicing.read', keywords: ['bill', 'ap', 'payable', 'three-way match', 'faturë blerje'], hub: msg('Purchase documents|menu') },
       { label: msg('Purchase orders'), href: '/procurement/orders', icon: ShoppingCart, perm: 'procurement.read', keywords: ['po', 'buy', 'order', 'porosi blerje'], hub: msg('Purchase documents|menu') },
       { label: msg('Goods waiting for the invoice|menu'), href: '/procurement/pending-invoices', icon: Hourglass, perm: 'procurement.read', keywords: ['pa faturë', 'mall pa faturë', 'pranim pa faturë', 'fletëdërgesë', 'në pritje të faturës', '4081', 'grni', 'goods received not invoiced', 'pending invoice'], hub: msg('Purchase documents|menu') },
       { label: msg('Invoice from a photo|menu'), href: '/inventory/read-invoice', icon: ScanText, perm: 'inventory.read', keywords: ['ocr', 'scan', 'photo', 'foto', 'fatura', 'ai', 'pdf'], hub: msg('Purchase documents|menu') },
