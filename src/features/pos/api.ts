@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
 import type { Tables } from '@/lib/database.types'
 import { describeError, unwrap } from '@/lib/errors'
-import { supabase } from '@/lib/supabase'
+import { after, byName, fetchAll, supabase } from '@/lib/supabase'
 import { flushTillLog, kvGet, kvSet } from './offline'
 import type { TillLoyalty } from '@/features/loyalty/api'
 
@@ -135,7 +135,7 @@ export const useCloseSession = () => useAction(async (a: { session: string; coun
 })
 
 /** the manager types their PIN on the cashier's screen */
-export async function posApprove(register: string, member: string, pin: string, purpose: 'void' | 'close' | 'payout') {
+export async function posApprove(register: string, member: string, pin: string, purpose: 'void' | 'close' | 'payout' | 'refund') {
   return unwrap(await supabase.rpc('pos_approve', { p_register: register, p_member: member, p_pin: pin, p_purpose: purpose })) as unknown as { approval?: string; name?: string; error?: string }
 }
 
@@ -204,8 +204,10 @@ export function useTill(registerId: string | undefined) {
       const reg = unwrap(await supabase.from('pos_registers').select('*').eq('id', registerId).single())
       const [ses, cat, cus, co, loy, lim, promo, opt, atk] = await Promise.all([
         supabase.from('pos_sessions').select('id, number, opened_at, opening_cash').eq('register_id', registerId).eq('status', 'open').maybeSingle(),
-        supabase.rpc('pos_catalog', { p_register: registerId }),
-        supabase.from('business_partners').select('id, name, code, tax_number, kind').eq('company_id', reg.company_id).eq('is_customer', true).is('deleted_at', null).order('name').limit(2000),
+        // a supermarket has thousands of items: read them all, 1 000 at a time (the server gives no more in one call)
+        fetchAll('variant_id', (a) => after(supabase.rpc('pos_catalog', { p_register: registerId }), 'variant_id', a).order('variant_id').limit(1000)).then((data) => ({ data, error: null })),
+        fetchAll('id', (a) => after(supabase.from('business_partners').select('id, name, code, tax_number, kind').eq('company_id', reg.company_id).eq('is_customer', true).is('deleted_at', null), 'id', a).order('id').limit(1000))
+          .then((data) => ({ data: byName(data) })),
         supabase.from('companies').select('name, legal_name, tax_number, base_currency, address_line1, city').eq('id', reg.company_id).single(),
         supabase.rpc('pos_loyalty_data', { p_register: registerId }),
         supabase.rpc('pos_cash_limits', { p_register: registerId }),

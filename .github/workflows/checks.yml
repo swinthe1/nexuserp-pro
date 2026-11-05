@@ -1,0 +1,39 @@
+# The checks: on every change to main and on every pull request, the types of the app and the whole
+# database test suite (all migrations on an empty PostgreSQL, then every test file). A red mark here means
+# something broke before it reached the clients' servers.
+name: Checks
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['desktop/**', '**/*.md']
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  types:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run -s typecheck
+      - run: node scripts/i18n-check.mjs
+  database:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      # the runner's own PostgreSQL 16 (with its contrib extensions: pgcrypto, pg_trgm, fuzzystrmatch, btree_gist)
+      - name: Start PostgreSQL
+        run: |
+          sudo systemctl start postgresql.service
+          sudo -u postgres createuser --superuser "$USER"
+          psql -h /var/run/postgresql -d postgres -qc "create database drispro_ci" -c "alter database drispro_ci set timezone to 'Europe/Tirane'"
+      - name: Migrations and tests
+        run: DATABASE_URL="postgresql:///drispro_ci?host=/var/run/postgresql" bash ./supabase/tests/run.sh

@@ -23,7 +23,8 @@ store() { curl -fsS --max-time 900 -H "apikey: $CLOUD_ANON_KEY" -H "Authorizatio
 
 name="$(basename "$latest").enc"
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
-openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -pass "pass:$key" -in "$latest" -out "$tmp/$name"
+# the key through the environment, never on the command line (where every process list shows it)
+DRISPRO_KEY="$key" openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -pass env:DRISPRO_KEY -in "$latest" -out "$tmp/$name"
 bytes="$(stat -c %s "$tmp/$name")"
 split -b 40m -d -a 3 "$tmp/$name" "$tmp/$name.part"
 parts=0

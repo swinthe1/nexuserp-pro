@@ -32,7 +32,7 @@ done
 cat "$tmp/$pick".part* > "$tmp/$pick"
 dump="/root/backups/${pick%.enc}"
 mkdir -p /root/backups
-openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass "pass:$key" -in "$tmp/$pick" -out "$dump"
+DRISPRO_KEY="$key" openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:DRISPRO_KEY -in "$tmp/$pick" -out "$dump"
 chmod 600 "$dump"
 echo "==> decrypted into $dump"
 bash deploy/coolify/restore-database.sh drispro-db "$dump"

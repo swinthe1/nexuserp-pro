@@ -606,4 +606,6 @@ export default {
   "Other taxes|menu": "Ostali porezi",
   "Bookkeeping|menu": "Knjigovodstvo",
   "Accounting setup|menu": "Podešavanja",
+  "A manager confirms the refund": "Menadžer potvrđuje povraćaj",
+  "Money given back needs a manager's PIN.": "Za vraćanje novca potreban je PIN menadžera.",
 } satisfies Dict

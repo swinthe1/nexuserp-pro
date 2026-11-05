@@ -50,5 +50,11 @@ echo "==> saved $out ($(numfmt --to=iec "$size"))"
 trap - ERR
 report true "$out" "$size" ""
 
+# the same copy outside this server, encrypted (only once /root/.drispro-offsite is set up; see offsite-copy.sh)
+if [ -f /root/.drispro-offsite ]; then
+  if /usr/local/bin/drispro-offsite "$out"; then report true "$out" "$size" "sent outside the server"
+  else report false "$out" "$size" "the copy outside the server failed"; fi
+fi
+
 find "$dir" -maxdepth 1 -name 'drispro-*.dump' -mtime +"$keep" -print -delete | sed 's/^/    removed old copy /'
 echo "==> copies kept: $(find "$dir" -maxdepth 1 -name 'drispro-*.dump' | wc -l)"

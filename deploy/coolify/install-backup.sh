@@ -10,6 +10,7 @@ container="${1:?usage: install-backup.sh <db-container>}"
 here="$(cd "$(dirname "$0")" && pwd)"
 install -m 700 "$here/backup-database.sh" /usr/local/bin/drispro-backup
 install -m 700 "$here/restore-database.sh" /usr/local/bin/drispro-restore
+install -m 700 "$here/offsite-copy.sh" /usr/local/bin/drispro-offsite
 cat > /etc/cron.d/drispro-backup <<EOF
 # DrisPRO nightly database copy
 SHELL=/bin/bash

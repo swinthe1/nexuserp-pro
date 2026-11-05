@@ -521,4 +521,8 @@ export const serverTemplates: [string, string][] = [
   ['ATK refused a receipt: %', 'ATK-ja refuzoi një kupon: {0}'],
   ['ATK registers each till number once, and number % of this store is taken: give this till number %', 'ATK-ja e regjistron çdo numër arke vetëm një herë, dhe numri {0} i kësaj njësie është zënë: jepini kësaj arke numrin {1}'],
   ['Goods receipt % from % has waited % days for its invoice', 'Pranimi {0} nga {1} pret {2} ditë për faturën'],
+  ['You cannot give rights you do not have yourself: %', 'Nuk mund të jepni të drejta që nuk i keni vetë: {0}'],
+  ['Refund is more than what was paid on %', 'Kthimi është më shumë se sa u pagua te {0}'],
+  ['Line %: % received, % billed already, % on this bill', 'Rreshti {0}: u pranuan {1}, janë faturuar tashmë {2}, në këtë faturë {3}'],
+  ['Till receipt % of % arrived after the VAT for % was declared (%)', 'Kuponi {0} i datës {1} erdhi pasi TVSH-ja për {2} ishte deklaruar ({3}): korrigjoni deklaratën'],
 ]

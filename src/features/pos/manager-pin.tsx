@@ -36,8 +36,8 @@ export function ManagerPinFields({ managers, member, onMember, pin, onPin, autoF
 export const pinReady = (member: string, pin: string) => !!member && /^\d{4,6}$/.test(pin)
 
 /** a void at the till: one confirmation covers the rest of the sale */
-export function ManagerDialog({ registerId, managers, title, description, onCancel, onApproved }: {
-  registerId: string; managers: Manager[]; title: string; description: string
+export function ManagerDialog({ registerId, managers, title, description, onCancel, onApproved, purpose = 'void' }: {
+  registerId: string; managers: Manager[]; title: string; description: string; purpose?: 'void' | 'refund'
   onCancel: () => void; onApproved: (a: { approval: string; name: string }) => void
 }) {
   const [member, setMember] = React.useState(managers.length === 1 ? managers[0]!.member_id : '')
@@ -48,7 +48,7 @@ export function ManagerDialog({ registerId, managers, title, description, onCanc
     if (!pinReady(member, pin) || busy) return
     setBusy(true); setError(null)
     try {
-      const r = await posApprove(registerId, member, pin, 'void')
+      const r = await posApprove(registerId, member, pin, purpose)
       if (r.error || !r.approval) { setError(t(r.error ?? 'Wrong PIN')); setPin(''); return }
       onApproved({ approval: r.approval, name: r.name ?? '' })
     } catch (e) { setError(describeError(e)) } finally { setBusy(false) }

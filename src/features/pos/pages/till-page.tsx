@@ -139,7 +139,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   const [category, setCategory] = React.useState<string>('__all')
   const [customer, setCustomer] = React.useState<string | null>(data.register.default_customer_id)
   const [flash, setFlash] = React.useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
-  const [dialog, setDialog] = React.useState<null | 'pay' | 'customer' | 'card' | 'refund' | 'cash' | 'close' | 'line' | 'queue' | 'manager'>(null)
+  const [dialog, setDialog] = React.useState<null | 'pay' | 'customer' | 'card' | 'refund' | 'cash' | 'close' | 'line' | 'queue' | 'manager' | 'refund-manager'>(null)
   const [done, setDone] = React.useState<Done | null>(null)
   const [camera, setCamera] = React.useState(false)
   const [autoPrint, setAutoPrint] = React.useState(() => prefGet('pos.autoprint', '1') === '1')
@@ -325,6 +325,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   const needsManager = (opt?.void_approval ?? true) && !can('pos.approve') && managers.length > 0
   const [voidApproval, setVoidApproval] = React.useState<{ approval: string; name: string } | null>(null)
   const [pendingVoid, setPendingVoid] = React.useState<VoidStep | null>(null)
+  const [pendingRefund, setPendingRefund] = React.useState<((approval: string | null) => Promise<void>) | null>(null)
   const commitVoid = (step: VoidStep, approval: string | null) => {
     step.apply()
     const at = new Date().toISOString()
@@ -375,7 +376,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   useOnSynced(React.useCallback((it: QueuedSale) => { if (it.number) setLastNumbers((m) => ({ ...m, [it.client_uuid]: it.number! })) }, []))
   const doneUuid = React.useRef<string | null>(null)
 
-  const finish = async (tenders: Tender[], opts?: { refund?: { of: ReceiptLookup; lines: Line[]; cancelReason?: string | null } }) => {
+  const finish = async (tenders: Tender[], opts?: { refund?: { of: ReceiptLookup; lines: Line[]; cancelReason?: string | null }; approval?: string | null }) => {
     const refund = opts?.refund
     const saleLines: PricedLine[] = refund ? refund.lines : priced
     const usedCard = !refund && card && saleLines.some((l) => l.card) ? card : null
@@ -407,6 +408,8 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       payments: tenders.map((t) => ({ method: t.method, amount: t.amount })),
       loyalty: usedCard ? { card_id: usedCard.id, redeem_points: redeem?.points ?? 0 } : null,
       fiscal: atk?.payload ?? null,
+      // a refund confirmed by a manager (when the company asks for it); the server checks it
+      approval: opts?.approval ?? null,
     }
     const cardLines = saleLines.filter((l) => l.card)
     const saved = r2(cardLines.reduce((s, l) => s + r2(l.qty * l.price) - lineTotal(l), 0))
@@ -748,7 +751,17 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       {dialog === 'line' && selectedLine && <LineDialog line={selectedLine} canDiscount={(d) => d <= MAX_DISCOUNT || can('pos.approve')}
         onClose={(p) => { if (p) updateLine(selectedLine.key, p); setDialog(null); focusSearch() }} onRemove={() => { removeLine(selectedLine.key); setDialog(null); focusSearch() }} />}
       {dialog === 'refund' && <RefundDialog data={data} currency={cur} onClose={() => { setDialog(null); focusSearch() }}
-        onRefund={(of, ls, method, cancelReason) => finish([{ method, amount: -r2(ls.reduce((s, l) => s + Math.abs(lineTotal(l)), 0)) }], { refund: { of, lines: ls, cancelReason } })} />}
+        onRefund={(of, ls, method, cancelReason) => {
+          const go = (approval: string | null) => finish([{ method, amount: -r2(ls.reduce((s, l) => s + Math.abs(lineTotal(l)), 0)) }], { refund: { of, lines: ls, cancelReason }, approval })
+          // money back needs a manager, as taking items off a sale does
+          if (needsManager) { setPendingRefund(() => go); setDialog('refund-manager'); return Promise.resolve() } return go(null)
+        }} />}
+      {dialog === 'refund-manager' && pendingRefund && (
+        <ManagerDialog registerId={data.register.id} managers={managers} purpose="refund" title={t('A manager confirms the refund')}
+          description={t('Money given back needs a manager\'s PIN.')}
+          onCancel={() => { setPendingRefund(null); setDialog(null); focusSearch() }}
+          onApproved={(a) => { const go = pendingRefund; setPendingRefund(null); void go(a.approval) }} />
+      )}
       {dialog === 'cash' && <CashDialog data={data} sessionId={session.id} currency={cur} onClose={() => { setDialog(null); focusSearch() }} />}
       {dialog === 'close' && <CloseDialog data={data} pending={pending.length} onClose={() => { setDialog(null); focusSearch() }}
         onClosed={async (sessionId) => { await reload(); navigate(`/pos/sessions/${sessionId}`) }} />}

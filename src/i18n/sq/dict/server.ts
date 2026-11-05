@@ -848,4 +848,6 @@ export default {
   "Scan what is thrown away": "Skano çfarë hidhet",
   "Choose customers or suppliers": "Zgjidh klientët ose furnitorët",
   "A document outside the VAT book has no VAT to deduct: enter the whole amount with 0 % VAT": "Një dokument jashtë librit të TVSH-së nuk ka TVSH për të zbritur: shkruani shumën e plotë me TVSH 0 %",
+  "Only a company admin can change the roles of a company admin": "Vetëm administratori i kompanisë i ndryshon rolet e një administratori",
+  "A refund needs a manager's confirmation": "Kthimi i parave kërkon konfirmimin e menaxherit",
 } satisfies Dict

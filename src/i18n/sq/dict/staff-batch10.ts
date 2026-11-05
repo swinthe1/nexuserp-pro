@@ -77,4 +77,7 @@ export default {
   "Those months have it already": "Ata muaj e kanë tashmë",
   "Repeat every month": "Përsërite çdo muaj",
   "{name}, {amount} a month, from {month} until the month chosen. Months that have it already are skipped.": "{name}, {amount} në muaj, nga {month} deri te muaji i zgjedhur. Muajt që e kanë tashmë kapërcehen.",
+  // the deep check, phase 1
+  "A manager confirms the refund": "Menaxheri konfirmon kthimin",
+  "Money given back needs a manager's PIN.": "Paratë që kthehen kërkojnë PIN-in e menaxherit.",
 } satisfies Dict
