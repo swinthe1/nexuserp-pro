@@ -66,6 +66,8 @@ export default {
   "My exports": "Moji izvozi",
   "Last from this page": "Poslednji sa ove stranice",
   "Download again": "Preuzmi ponovo",
+  "Chat": "Čet",
+  "Chat, {n} unread": "Čet, nepročitano: {n}",
   "Go to the page it came from": "Idi na stranicu odakle je",
   "Open the file": "Otvori datoteku",
   "Open the folder where it is saved": "Otvori fasciklu gde je sačuvan",

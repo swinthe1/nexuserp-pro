@@ -1,6 +1,7 @@
 import { Menu, Search } from 'lucide-react'
 import { NewMenu } from '@/components/layout/new-menu'
 import { NotificationsButton } from '@/components/layout/notifications'
+import { ChatButton } from '@/features/chat/chat-button'
 import { UserMenu } from '@/components/layout/user-menu'
 import { LastExportButton } from '@/components/layout/last-export'
 import { useCommandPalette } from '@/components/layout/command-palette'
@@ -34,6 +35,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
         <span className="sm:hidden"><LanguageMenuButton /></span>
         <TillLockButton />
         <AssistantButton />
+        <ChatButton />
         <NotificationsButton />
         <UserMenu />
       </div>

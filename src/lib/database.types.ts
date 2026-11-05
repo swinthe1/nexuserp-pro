@@ -1820,6 +1820,129 @@ export type Database = {
           { foreignKeyName: "channel_sync_logs_company_id_channel_id_fkey"; columns: ["company_id", "channel_id"]; isOneToOne: false; referencedRelation: "sales_channels"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      chat_conversations: {
+        Row: {
+          id: string
+          company_id: string
+          kind: string
+          title: string | null
+          direct_key: string | null
+          created_by: string | null
+          created_at: string
+          last_message_at: string | null
+          last_preview: string | null
+          last_sender: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          kind: string
+          title?: string | null
+          direct_key?: string | null
+          created_by?: string | null
+          created_at?: string
+          last_message_at?: string | null
+          last_preview?: string | null
+          last_sender?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          kind?: string
+          title?: string | null
+          direct_key?: string | null
+          created_by?: string | null
+          created_at?: string
+          last_message_at?: string | null
+          last_preview?: string | null
+          last_sender?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "chat_conversations_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
+      chat_members: {
+        Row: {
+          conversation_id: string
+          user_id: string
+          company_id: string
+          role: string
+          joined_at: string
+          last_read_at: string
+          last_seen_at: string | null
+          muted_until: string | null
+        }
+        Insert: {
+          conversation_id: string
+          user_id: string
+          company_id: string
+          role?: string
+          joined_at?: string
+          last_read_at?: string
+          last_seen_at?: string | null
+          muted_until?: string | null
+        }
+        Update: {
+          conversation_id?: string
+          user_id?: string
+          company_id?: string
+          role?: string
+          joined_at?: string
+          last_read_at?: string
+          last_seen_at?: string | null
+          muted_until?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "chat_members_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "chat_members_conversation_id_fkey"; columns: ["conversation_id"]; isOneToOne: false; referencedRelation: "chat_conversations"; referencedColumns: ["id"] },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          id: number
+          conversation_id: string
+          company_id: string
+          sender_id: string | null
+          kind: string
+          body: string | null
+          reply_to: number | null
+          attachments: Json
+          created_at: string
+          edited_at: string | null
+          deleted_at: string | null
+        }
+        Insert: {
+          id?: number
+          conversation_id: string
+          company_id: string
+          sender_id?: string | null
+          kind?: string
+          body?: string | null
+          reply_to?: number | null
+          attachments?: Json
+          created_at?: string
+          edited_at?: string | null
+          deleted_at?: string | null
+        }
+        Update: {
+          id?: number
+          conversation_id?: string
+          company_id?: string
+          sender_id?: string | null
+          kind?: string
+          body?: string | null
+          reply_to?: number | null
+          attachments?: Json
+          created_at?: string
+          edited_at?: string | null
+          deleted_at?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "chat_messages_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "chat_messages_conversation_id_fkey"; columns: ["conversation_id"]; isOneToOne: false; referencedRelation: "chat_conversations"; referencedColumns: ["id"] },
+          { foreignKeyName: "chat_messages_reply_to_fkey"; columns: ["reply_to"]; isOneToOne: false; referencedRelation: "chat_messages"; referencedColumns: ["id"] },
+        ]
+      }
       cit_returns: {
         Row: {
           id: string
@@ -15740,6 +15863,101 @@ export type Database = {
           p_block: boolean
         }
         Returns: undefined
+      }
+      chat_add_members: {
+        Args: {
+          p_conv: string
+          p_users: string[]
+        }
+        Returns: undefined
+      }
+      chat_create_group: {
+        Args: {
+          p_company: string
+          p_title: string
+          p_users: string[]
+        }
+        Returns: string
+      }
+      chat_delete: {
+        Args: {
+          p_id: number
+        }
+        Returns: undefined
+      }
+      chat_edit: {
+        Args: {
+          p_id: number
+          p_body: string
+        }
+        Returns: undefined
+      }
+      chat_leave: {
+        Args: {
+          p_conv: string
+        }
+        Returns: undefined
+      }
+      chat_link_card: {
+        Args: {
+          p_kind: string
+          p_id: string
+        }
+        Returns: Json
+      }
+      chat_list: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
+      chat_mute: {
+        Args: {
+          p_conv: string
+          p_until: string
+        }
+        Returns: undefined
+      }
+      chat_open_direct: {
+        Args: {
+          p_company: string
+          p_user: string
+        }
+        Returns: string
+      }
+      chat_people: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
+      chat_read: {
+        Args: {
+          p_conv: string
+        }
+        Returns: undefined
+      }
+      chat_rename: {
+        Args: {
+          p_conv: string
+          p_title: string
+        }
+        Returns: undefined
+      }
+      chat_send: {
+        Args: {
+          p_conv: string
+          p_body: string
+          p_reply_to?: number
+          p_attachments?: Json
+        }
+        Returns: Json
+      }
+      chat_unread: {
+        Args: {
+          p_company: string
+        }
+        Returns: number
       }
       check_sync_health: {
         Args: Record<PropertyKey, never>

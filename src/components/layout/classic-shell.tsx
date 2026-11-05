@@ -8,6 +8,7 @@ import { useCommandPalette } from '@/components/layout/command-palette'
 import { CompanySwitcher } from '@/components/layout/company-switcher'
 import { NewMenu } from '@/components/layout/new-menu'
 import { NotificationsButton } from '@/components/layout/notifications'
+import { ChatButton } from '@/features/chat/chat-button'
 import { SidebarNav, useActiveHref, useMenuSections } from '@/components/layout/sidebar'
 import { TillLockButton } from '@/components/layout/till-lock'
 import { UserMenu } from '@/components/layout/user-menu'
@@ -131,6 +132,7 @@ export function ClassicShell({ children, onOpenMobileNav }: { children: React.Re
             <TillLockButton />
             {/* the assistant's own panel (Ctrl+J) lives in its launcher */}
             <span className="hidden"><AssistantButton /></span>
+            <ChatButton />
             <NotificationsButton />
             <UserMenu />
           </div>

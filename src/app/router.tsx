@@ -24,6 +24,7 @@ const lazy = <T,>(load: () => Promise<T>, name: keyof T) =>
 const DashboardPage = lazy(() => import('@/features/dashboard/dashboard-page'), 'DashboardPage')
 const TrainingPage = lazy(() => import('@/features/training/training-page'), 'TrainingPage')
 const ExportsPage = lazy(() => import('@/features/exports/exports-page'), 'ExportsPage')
+const ChatPage = lazy(() => import('@/features/chat/chat-page'), 'ChatPage')
 const TasksPage = lazy(() => import('@/features/tasks/pages/tasks-page'), 'TasksPage')
 const TasksSetupPage = lazy(() => import('@/features/tasks/pages/tasks-setup-page'), 'TasksSetupPage')
 const ApprovalsPage = lazy(() => import('@/features/approvals/approvals-page'), 'ApprovalsPage')
@@ -232,6 +233,7 @@ const router = createBrowserRouter([
         { path: 'approvals', element: <ApprovalsPage /> },
         { path: 'training', element: <TrainingPage /> },
         { path: 'exports', element: <ExportsPage /> },
+        { path: 'chat', element: <ChatPage /> },
         { path: 'tasks', element: <TasksPage /> },
         { path: 'tasks/setup', element: <TasksSetupPage /> },
         { path: 'skaner', element: <ScannerHome /> },
