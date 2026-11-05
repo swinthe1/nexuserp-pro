@@ -40,12 +40,23 @@ const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&
 const TICKET_CSS = `@page{size:80mm auto;margin:3mm 4mm} body{margin:0;font:14px/1.35 ui-monospace,Menlo,Consolas,monospace;color:#000;width:72mm}
   .big{font-size:20px;font-weight:700} .c{text-align:center} hr{border:0;border-top:1px dashed #000;margin:6px 0} .n{font-size:13px;padding-left:4mm} table{width:100%;border-collapse:collapse} td{padding:1px 0;vertical-align:top}`
 
+/**
+ * One ticket for each station, each on its own printer: the bar (set to print the whole order) gets
+ * every item, the kitchen only its own (the food). A station without a printer prints on the
+ * kitchen printer of this computer.
+ */
 function printKitchen(s: SentTickets) {
   const when = formatDateWith(new Date(s.at), { hour: '2-digit', minute: '2-digit' })
-  const body = s.tickets.map((tk, i) => `${i ? '<div style="page-break-before:always"></div>' : ''}<div class="c big">${esc(tk.station || t('Kitchen'))}</div>
+  const ticket = (tk: SentTickets['tickets'][number]) => `<div class="c big">${esc(tk.station || t('Kitchen'))}</div>
     <div class="c big">${esc(s.table ? t('Table {name}', { name: s.table }) : s.label || s.number)}</div><div class="c">${esc(when)} · ${esc(s.waiter)}</div><hr>
-    <table>${tk.lines.map((l) => `<tr><td class="big">${esc(num(l.quantity))} ×</td><td class="big">${esc(l.name)}</td></tr>${l.note ? `<tr><td></td><td class="n">» ${esc(l.note)}</td></tr>` : ''}`).join('')}</table>`).join('')
-  if (body) printHtml(body, TICKET_CSS, 'kitchen')
+    <table>${tk.lines.map((l) => `<tr><td class="big">${esc(num(l.quantity))} ×</td><td class="big">${esc(l.name)}</td></tr>${l.note ? `<tr><td></td><td class="n">» ${esc(l.note)}</td></tr>` : ''}`).join('')}</table>`
+  // the tickets that go to the same printer come out together
+  const byPrinter = new Map<string, SentTickets['tickets']>()
+  for (const tk of s.tickets) { const k = tk.printer ?? ''; byPrinter.set(k, [...(byPrinter.get(k) ?? []), tk]) }
+  for (const [printer, tks] of byPrinter) {
+    const body = tks.map((tk, i) => `${i ? '<div style="page-break-before:always"></div>' : ''}${ticket(tk)}`).join('')
+    if (body) printHtml(body, TICKET_CSS, 'kitchen', printer || null)
+  }
 }
 function printBill(company: TillData['company'], tab: Tab) {
   const lines = tab.lines.filter((l) => l.status !== 'void' && !l.paid)

@@ -36,6 +36,7 @@ import { useBankAccounts } from '@/features/finance/api'
 import { usePaymentTerms } from '@/features/sales/api'
 import { useTaxCodes } from '@/features/tax/api'
 import { DuplicateButton } from '@/components/duplicate-button'
+import { contractTerms, type Contract } from '../contracts'
 import { useActiveVendors, useDeleteProcDocument, useProcDocument, useSaveProcDocument } from '../api'
 
 type BillDoc = Tables<'vendor_bills'> & { lines: Tables<'vendor_bill_lines'>[] }
@@ -79,10 +80,11 @@ const COLUMNS: { key: string; label: () => string; fixed?: boolean }[] = [
   { key: 'avg', label: () => t('Avg. cost now (without VAT)') }, { key: 'vat', label: () => t('VAT') }, { key: 'net', label: () => t('Without VAT') },
   { key: 'gross', label: () => t('With VAT') }, { key: 'cur', label: () => t('Selling price now (with VAT)') }, { key: 'rec', label: () => t('Recommended (with VAT)') },
   { key: 'new', label: () => t('New selling price (with VAT)') }, { key: 'margin', label: () => t('Margin %') },
+  { key: 'expiry', label: () => t('Expiry date') },
 ]
 /** the few that most invoices need */
 const MAIN_ONLY = new Set(['d2', 'cost', 'avg', 'cur', 'rec'])
-const DEFAULT_ORDER = ['qty', 'price', 'd1', 'd2', 'cost', 'avg', 'vat', 'net', 'gross', 'cur', 'rec', 'new', 'margin']
+const DEFAULT_ORDER = ['qty', 'price', 'd1', 'd2', 'cost', 'avg', 'vat', 'net', 'gross', 'cur', 'rec', 'new', 'margin', 'expiry']
 /** a saved order, with any column it does not know yet put back in its usual place */
 const fullOrder = (saved: string[] | undefined) => {
   const o = (saved ?? []).filter((k) => DEFAULT_ORDER.includes(k))
@@ -338,6 +340,15 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
   // the same supplier invoice already in DrisPRO (also under the same tax number, or written a little differently)
   const [dupKey, setDupKey] = React.useState('')
   React.useEffect(() => { const k = `${h.vendor_id}|${h.vendor_invoice_number.trim()}`; const id = window.setTimeout(() => setDupKey(k), 400); return () => window.clearTimeout(id) }, [h.vendor_id, h.vendor_invoice_number])
+  // the supplier's contract in force on the invoice date: its terms show under the supplier
+  const contract = useQuery({
+    queryKey: ['proc', 'contract-for', h.vendor_id, h.bill_date], enabled: !!h.vendor_id, staleTime: 60_000,
+    queryFn: async () => {
+      const r = await supabase.rpc('supplier_contract_for' as never, { p_vendor: h.vendor_id, p_date: h.bill_date || todayISO() } as never)
+      if (r.error) return null   // a server not updated yet
+      return r.data as unknown as Contract | null
+    },
+  })
   const dup = useQuery({
     queryKey: ['bill-duplicate', companyId, dupKey, doc?.id], enabled: !!companyId && !!h.vendor_id && dupKey.split('|')[1]!.length > 0,
     queryFn: async () => unwrap(await supabase.rpc('vendor_bill_duplicate', { p_company: companyId!, p_vendor: dupKey.split('|')[0]!, p_number: dupKey.split('|')[1]!, p_exclude: (doc?.id ?? null) as string })) as unknown as
@@ -390,6 +401,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
     rec: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'rec'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'rec') }} data-col="rec" className="w-28 px-2 py-2 text-right font-medium cursor-grab select-none">{t('Recommended (with VAT)')}</th>,
     new: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'new'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'new') }} data-col="new" className="w-28 px-2 py-2 text-right font-medium cursor-grab select-none">{t('New selling price (with VAT)')}</th>,
     margin: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'margin'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'margin') }} data-col="margin" className="w-20 px-2 py-2 text-right font-medium cursor-grab select-none" title={basis === 'margin' ? t('Margin on the selling price') : t('Margin on the cost')}>{t('Margin %')}</th>,
+    expiry: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'expiry'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'expiry') }} data-col="expiry" className="w-36 px-2 py-2 font-medium cursor-grab select-none">{t('Expiry date')}</th>,
   }
   return (
     <div className="pb-24">
@@ -410,7 +422,16 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
         <CardContent className="grid gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-4">
           <div className="grid gap-1.5 sm:col-span-2"><Label>{t('Supplier')}</Label>
             <SearchSelect value={h.vendor_id || null} onChange={(v) => set('vendor_id', v ?? '')} placeholder={t('Choose the supplier')} remote={registry}
-              options={(vendors.data ?? []).filter((v) => v.is_active || v.id === h.vendor_id).map((v) => ({ value: v.id, label: v.name, hint: [v.code, v.tax_number].filter(Boolean).join(' · ') }))} /></div>
+              options={(vendors.data ?? []).filter((v) => v.is_active || v.id === h.vendor_id).map((v) => ({ value: v.id, label: v.name, hint: [v.code, v.tax_number].filter(Boolean).join(' · ') }))} />
+            {contract.data && (
+              <p className="flex flex-wrap items-center gap-x-2 text-[12px] text-muted-foreground">
+                <Link to={`/procurement/contracts?c=${contract.data.id}`} className="font-medium text-primary hover:underline">{t('Contract {number}', { number: contract.data.number })}</Link>
+                <span>{contractTerms(contract.data)}</span>
+                {editable && contract.data.payment_days != null && h.bill_date && (
+                  <button type="button" className="text-primary underline" onClick={() => set('due_date', dueFrom(h.bill_date, contract.data!.payment_days!) ?? '')}>{t('Due date from the contract')}</button>
+                )}
+              </p>
+            )}</div>
           <div className="grid gap-1.5"><Label htmlFor="pi-no">{t('Supplier’s invoice no.')}</Label><Input id="pi-no" value={h.vendor_invoice_number} onChange={(e) => set('vendor_invoice_number', e.target.value)} className={cn(dup.data && 'border-destructive')} aria-invalid={!!dup.data} />
             {dup.data && <p className="text-[12px] text-destructive">{t('Already entered as {number} on {date}, {total} ({vendor}).', { number: dup.data.number ?? dup.data.vendor_invoice_number, date: formatDate(dup.data.date), total: fmt(num(dup.data.total)), vendor: dup.data.vendor })}{' '}
               <Link className="underline" to={`/procurement/bills/${dup.data.id}`}>{t('Open it')}</Link></p>}</div>
@@ -538,6 +559,9 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
                           ? { gross: String(priceFor(c.costBase, num(e.target.value.replace(',', '.')), basis, c.i.sales_tax, step)) } : {}) })}
                         onBlur={() => upd(c.r.key, { m: null })} onKeyDown={next} onFocus={(e) => e.target.select()} />
                     </td>,
+                      // every line: required for an item kept by lot with expiry, otherwise noted for Short dates
+                      expiry: <td data-col="expiry" className="px-1 py-1"><Input type="date" className={cn('h-8 w-36 text-[12.5px]', c.i?.track_expiry && !c.r.expiry && 'border-amber-500')} value={c.r.expiry}
+                        onChange={(e) => upd(c.r.key, { expiry: e.target.value })} aria-label={t('Expiry date')} title={c.i?.track_expiry ? t('Required for this item') : undefined} /></td>,
                 }
                 return (
                   <tr key={c.r.key} className="border-t align-top">
@@ -549,7 +573,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
                       {tracked && (
                         <div className="mt-1 flex gap-1.5">
                           <Input data-nav className="h-7 w-28 text-[12px]" placeholder={t('Lot')} value={c.r.lot} onChange={(e) => upd(c.r.key, { lot: e.target.value })} onKeyDown={next} aria-label={t('Lot')} />
-                          {c.i?.track_expiry && <Input className="h-7 w-36 text-[12px]" type="date" value={c.r.expiry} onChange={(e) => upd(c.r.key, { expiry: e.target.value })} aria-label={t('Expiry date')} />}
+                          {c.i?.track_expiry && !shownCols.includes('expiry') && <Input className="h-7 w-36 text-[12px]" type="date" value={c.r.expiry} onChange={(e) => upd(c.r.key, { expiry: e.target.value })} aria-label={t('Expiry date')} />}
                         </div>
                       )}
                     </td>

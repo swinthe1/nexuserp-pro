@@ -90,10 +90,14 @@ function buildMenu() {
 
 /* ------------------------------------------------------------------ printing */
 const microns = (mm) => Math.round(mm * 1000)
-async function printHtml({ html, kind }) {
-  const device = kind === 'receipt' ? settings.receiptPrinter : kind === 'kitchen' ? settings.kitchenPrinter : settings.documentPrinter
-  const silent = (kind === 'receipt' || kind === 'kitchen') && !!device
+async function printHtml({ html, kind, printer }) {
+  // a station's own printer (the bar, the kitchen) when the page names one; otherwise the one set for the kind
+  let named = typeof printer === 'string' && printer.trim() ? printer.trim() : null
   const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true, javascript: false } })
+  // a station's printer that this computer does not have: the kind's printer instead
+  if (named) { const list = await w.webContents.getPrintersAsync().catch(() => []); if (!list.some((p) => p.name === named)) named = null }
+  const device = named || (kind === 'receipt' ? settings.receiptPrinter : kind === 'kitchen' ? settings.kitchenPrinter : settings.documentPrinter)
+  const silent = (kind === 'receipt' || kind === 'kitchen') && !!device
   try {
     await w.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html))
     const opts = { silent, printBackground: false, deviceName: device || undefined, margins: { marginType: 'none' } }

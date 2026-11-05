@@ -28,7 +28,7 @@ import { cn, formatDate, formatMoney, formatQty, num } from '@/lib/utils'
 import { useCategories, useVariantOptions, useWarehouses } from '../api'
 import { MultiPick } from '@/components/multi-pick'
 
-type Lot = { lot_id: string; lot_number: string; variant_id: string; sku: string; name: string; warehouse_id: string; warehouse: string; expiry_date: string
+type Lot = { lot_id: string | null; lot_number: string; from_invoice?: boolean; variant_id: string; sku: string; name: string; warehouse_id: string; warehouse: string; expiry_date: string
   days_left: number; on_hand: number; value: number; price: number | null; markdown: { id: string; status: 'proposed' | 'approved'; discount_pct: number } | null
   supplier_id?: string | null; supplier?: string | null; category_id?: string | null; group_id?: string | null }
 type Markdown = { id: string; status: 'proposed' | 'approved' | 'rejected' | 'written_off'; variant_id: string; sku: string; name: string; warehouse_id: string; warehouse: string
@@ -216,8 +216,8 @@ function LotTable({ rows, onPropose, onWriteOff }: { rows: Lot[]; onPropose?: (l
         <TableHead className="text-right">{t('Value at cost')}</TableHead><TableHead className="w-[1%]" />
       </TableRow></TableHeader>
       <TableBody>{rows.map((l) => (
-        <TableRow key={`${l.lot_id}-${l.warehouse_id}`}>
-          <TableCell><div className="font-medium">{l.name}</div><div className="text-xs text-muted-foreground">{l.sku} · {t('lot {n}', { n: l.lot_number })}</div></TableCell>
+        <TableRow key={`${l.lot_id ?? l.variant_id}-${l.warehouse_id}-${l.expiry_date}`}>
+          <TableCell><div className="font-medium">{l.name}</div><div className="text-xs text-muted-foreground">{l.sku} · {l.from_invoice ? t('invoice {n}', { n: l.lot_number }) : t('lot {n}', { n: l.lot_number })}</div></TableCell>
           <TableCell>{td(l.warehouse)}</TableCell>
           <TableCell className="whitespace-nowrap"><div className="tabular">{formatDate(l.expiry_date)}</div><DaysBadge d={l.days_left} /></TableCell>
           <TableCell className="text-right tabular">{formatQty(l.on_hand)}</TableCell>

@@ -579,4 +579,6 @@ export default {
   "Thrown away|scanner": "Otpis",
   "Stock balancing": "Balansiranje zaliha",
   "Small inventory|menu": "Sitan inventar",
+  "One receipt can be at most {max}; this one is {total}. Split the sale into two receipts.": "Jedan račun može biti najviše {max}; ovaj je {total}. Podelite prodaju na dva računa.",
+  "Supplier contracts|menu": "Ugovori sa dobavljačima",
 } satisfies Dict

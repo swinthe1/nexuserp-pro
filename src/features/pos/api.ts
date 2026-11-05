@@ -167,6 +167,8 @@ export type TillOptions = {
   payouts?: 'off' | 'manager' | 'anyone'
   /** the managers are told of every item taken off */
   void_notify?: boolean
+  /** the highest value of one receipt (null = no limit) */
+  receipt_max?: number | null
 }
 export type CatalogItem = { variant_id: string; sku: string; name: string; category: string | null; barcodes: { code: string; qty: number }[]
   price: number; tax_code_id: string | null; tax_rate: number; tracking: string; on_hand: number; product_type: string

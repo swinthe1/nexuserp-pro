@@ -5,7 +5,8 @@ contextBridge.exposeInMainWorld('drisproDesktop', {
   info: () => ipcRenderer.invoke('drispro:info'),
   printers: () => ipcRenderer.invoke('drispro:printers'),
   /** kind: 'receipt' and 'kitchen' go straight to the chosen printer; 'document' opens the print window */
-  print: (html, kind) => ipcRenderer.invoke('drispro:print', { html, kind }),
+  /** printer: a printer by its name (a restaurant station's), from version 1.7 */
+  print: (html, kind, printer) => ipcRenderer.invoke('drispro:print', { html, kind, printer }),
   openDrawer: () => ipcRenderer.invoke('drispro:drawer'),
   settings: () => ipcRenderer.invoke('drispro:settings'),
   saveSettings: (s) => ipcRenderer.invoke('drispro:save-settings', s),

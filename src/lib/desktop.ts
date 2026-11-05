@@ -8,7 +8,8 @@ export interface DrisproDesktop {
   isDesktop: true
   info: () => Promise<{ version: string; platform: string; server: string }>
   printers: () => Promise<{ name: string; isDefault: boolean; description: string }[]>
-  print: (html: string, kind: PrintKind) => Promise<{ ok: boolean; printer: string | null; silent: boolean }>
+  /** printer: a printer by its name (a restaurant station's), from version 1.7; older versions use the kind's */
+  print: (html: string, kind: PrintKind, printer?: string | null) => Promise<{ ok: boolean; printer: string | null; silent: boolean }>
   openDrawer: () => Promise<{ ok: boolean; reason?: string }>
   settings: () => Promise<DesktopSettings>
   saveSettings: (s: Partial<DesktopSettings>) => Promise<boolean>

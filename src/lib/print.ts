@@ -5,10 +5,10 @@ import { desktop, type PrintKind } from '@/lib/desktop'
  * printer chosen for it (no print window); in a browser, through an invisible iframe (works offline,
  * no pop-up blockers).
  */
-export function printHtml(body: string, css: string, kind: PrintKind = 'document') {
+export function printHtml(body: string, css: string, kind: PrintKind = 'document', printer?: string | null) {
   const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="format-detection" content="telephone=no,date=no,address=no,email=no"><style>a{color:inherit;text-decoration:none} ${css}</style></head><body>${body}</body></html>`
   if (desktop) {
-    void desktop.print(html, kind).catch((e: unknown) => console.error('print', e))
+    void desktop.print(html, kind, printer || null).catch((e: unknown) => console.error('print', e))
     return
   }
   const f = document.createElement('iframe')

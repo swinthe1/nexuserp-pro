@@ -21,7 +21,7 @@ type Settings = { pos_cash_tolerance: number; pos_count_notes: boolean; pos_void
   payroll_night_pct: number | null; payroll_holiday_pct: number | null; purchase_price_tolerance: number
   new_items_from_bills: 'anyone' | 'approval'
   /** a server not updated yet has none of these */
-  pos_payouts?: 'off' | 'manager' | 'anyone'; pos_void_notify?: boolean; pos_void_notify_over?: number; pos_void_whatsapp?: string[] }
+  pos_payouts?: 'off' | 'manager' | 'anyone'; pos_receipt_max?: number | null; pos_void_notify?: boolean; pos_void_notify_over?: number; pos_void_whatsapp?: string[] }
 
 export function usePayrollTillSettings() {
   const { companyId } = useCompany()
@@ -51,6 +51,8 @@ export function AutomationPage() {
   React.useEffect(() => { if (s) setTol(String(s.pos_cash_tolerance)) }, [s])
   const [over, setOver] = React.useState('')
   const [phones, setPhones] = React.useState('')
+  const [rmax, setRmax] = React.useState('')
+  React.useEffect(() => { if (s) setRmax(s.pos_receipt_max == null ? '' : String(s.pos_receipt_max)) }, [s])
   React.useEffect(() => { if (s) { setOver(String(s.pos_void_notify_over ?? 0)); setPhones((s.pos_void_whatsapp ?? []).join(', ')) } }, [s])
   const [rise, setRise] = React.useState('')
   React.useEffect(() => { if (s) setRise(String(s.purchase_price_tolerance ?? 1)) }, [s])
@@ -123,6 +125,18 @@ export function AutomationPage() {
                     <span className="text-[12px] text-muted-foreground">{t('Needs WhatsApp set up under Messages, with the template drispro_fshirje_arke approved.')}</span></div>
                 </div>
               )}
+            </div>
+          )}
+          {s.pos_receipt_max !== undefined && (
+            <div className="flex flex-wrap items-start justify-between gap-3 rounded-md border p-3 text-[13px]">
+              <span className="min-w-0 flex-1"><span className="font-medium">{t('The highest value of one receipt')}</span>
+                <span className="block text-muted-foreground">{t('A sale above it is not made at the till: the cashier splits it or asks. Empty: no limit.')}</span></span>
+              <div className="flex items-center gap-2">
+                <Input type="number" min="0" step="any" className="w-32 text-right tabular" value={rmax} placeholder={t('No limit')} disabled={!can('pos.approve')}
+                  onChange={(e) => setRmax(e.target.value)} aria-label={t('The highest value of one receipt')} />
+                {can('pos.approve') && <Button variant="outline" size="sm" disabled={rmax === (s.pos_receipt_max == null ? '' : String(s.pos_receipt_max)) || save.isPending}
+                  onClick={() => save.mutate({ pos_receipt_max: rmax.trim() === '' ? '' : Number(rmax) })}>{t('Save')}</Button>}
+              </div>
             </div>
           )}
           {s.pos_payouts !== undefined && (

@@ -15,6 +15,8 @@ import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { useCategories } from '@/features/inventory/api'
 import { type Station, useSaveRoom, useStations } from './api'
+import { desktop } from '@/lib/desktop'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { FloorPlanEditor } from './floor-plan'
 
 type AreaRow = { id: string; name: string; sort_order: number; tables: { id: string; name: string; seats: number; sort_order: number; is_active: boolean; deleted_at: string | null; pos_x: number | null; pos_y: number | null; shape: string }[] }
@@ -131,6 +133,9 @@ function Stations({ warehouseId }: { warehouseId: string }) {
   const room = useSaveRoom()
   const categories = useCategories()
   const [name, setName] = React.useState('')
+  // the printers of this computer (the Windows program only)
+  const [printers, setPrinters] = React.useState<{ name: string }[]>([])
+  React.useEffect(() => { if (desktop) void desktop.printers().then(setPrinters).catch(() => setPrinters([])) }, [])
   const reload = () => void stations.refetch()
   const save = (s: Station, patch: Partial<Station>) => void guard(async () => { await room.saveStation({ ...s, ...patch, warehouse_id: warehouseId }); reload() })
   return (
@@ -141,9 +146,28 @@ function Stations({ warehouseId }: { warehouseId: string }) {
           <div className="flex items-center gap-2">
             <Input defaultValue={s.name} className="h-9 max-w-xs font-medium" aria-label={t('Station name')} onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== s.name) save(s, { name: v }) }} />
             <label className="ml-2 flex items-center gap-2 text-[13px]"><Switch checked={s.is_default} onCheckedChange={(on) => save(s, { is_default: on })} aria-label={t('The rest')} />{t('The rest')}</label>
+            {s.whole_order !== undefined && <label className="ml-2 flex items-center gap-2 text-[13px]" title={t('Gets every item of the order, e.g. the bar; the other stations only their own')}>
+              <Switch checked={!!s.whole_order} onCheckedChange={(on) => save(s, { whole_order: on })} aria-label={t('The whole order')} />{t('The whole order')}</label>}
             <Button variant="ghost" size="icon" className="ml-auto text-destructive" aria-label={t('Remove {name}', { name: s.name })}
               onClick={() => void guard(async () => { await room.removeStation(s.id); reload() })}><Trash2 /></Button>
           </div>
+          {s.printer !== undefined && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px]">
+              <span className="text-muted-foreground">{t('Printer')}:</span>
+              {printers.length ? (
+                <Select value={s.printer ?? '__none'} onValueChange={(v) => save(s, { printer: v === '__none' ? null : v })}>
+                  <SelectTrigger className="h-8 w-64" aria-label={t('Printer')}><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="__none">{t('The kitchen printer of the program')}</SelectItem>
+                    {printers.map((p) => <SelectItem key={p.name} value={p.name}>{p.name}</SelectItem>)}
+                    {s.printer && !printers.some((p) => p.name === s.printer) && <SelectItem value={s.printer}>{s.printer}</SelectItem>}</SelectContent>
+                </Select>
+              ) : (
+                <Input defaultValue={s.printer ?? ''} className="h-8 w-64" placeholder={t('The printer\'s name in Windows')} aria-label={t('Printer')}
+                  onBlur={(e) => { const v = e.target.value.trim() || null; if (v !== (s.printer ?? null)) save(s, { printer: v }) }} />
+              )}
+              <span className="text-[12px] text-muted-foreground">{t('In the Windows program the ticket goes straight to it.')}</span>
+            </div>
+          )}
           <div className="mt-3 grid max-h-40 grid-cols-2 gap-1.5 overflow-y-auto sm:grid-cols-3">
             {(categories.data ?? []).map((c) => (
               <label key={c.id} className="flex items-center gap-2 text-[13px]">

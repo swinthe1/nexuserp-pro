@@ -88,6 +88,7 @@ export const NAV: NavSection[] = [
       { label: msg('Landed costs|menu'), href: '/inventory/landed-costs', icon: Ship, perm: 'procurement.read', keywords: ['customs', 'freight', 'import', 'clearance'] },
       { label: msg('Vendors'), href: '/partners?role=vendor', icon: Handshake, perm: 'partners.read', group: msg('Suppliers'), keywords: ['suppliers', 'furnitor'], focus: ['procurement.write', 'wms.write'] },
       { label: msg('Vendor prices'), href: '/procurement/vendor-prices', icon: BadgeEuro, perm: 'procurement.read', keywords: ['vendor price list', 'supplier prices', 'lead time', 'moq'] },
+      { label: msg('Supplier contracts|menu'), href: '/procurement/contracts', icon: FileSignature, perm: 'procurement.read', keywords: ['kontrata', 'kontratat', 'marrëveshje', 'rabat', 'afati i pagesës', 'contract', 'agreement'] },
       { label: msg('Vendor scorecard|menu'), href: '/procurement/scorecard', icon: Award, perm: 'procurement.read', keywords: ['scorecard', 'karta', 'vlerësimi', 'furnitor', 'on time', 'në kohë', 'vonesa', 'supplier rating', 'performance'] },
       { label: msg('Replenishment|menu'), href: '/procurement/replenishment', icon: RefreshCw, perm: 'procurement.read', group: msg('Planning'), keywords: ['reorder', 'mrp', 'suggestions', 'restock'] },
       { label: msg('Requisitions|menu'), href: '/procurement/requisitions', icon: ClipboardList, perm: 'requisitions.read', keywords: ['request', 'purchase request', 'pr', 'kërkesë'] },

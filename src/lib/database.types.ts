@@ -2333,6 +2333,7 @@ export type Database = {
           pos_void_notify: boolean
           pos_void_notify_over: number
           pos_void_whatsapp: string[]
+          pos_receipt_max: number | null
         }
         Insert: {
           id?: string
@@ -2416,6 +2417,7 @@ export type Database = {
           pos_void_notify?: boolean
           pos_void_notify_over?: number
           pos_void_whatsapp?: string[]
+          pos_receipt_max?: number | null
         }
         Update: {
           id?: string
@@ -2499,6 +2501,7 @@ export type Database = {
           pos_void_notify?: boolean
           pos_void_notify_over?: number
           pos_void_whatsapp?: string[]
+          pos_receipt_max?: number | null
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -5726,6 +5729,8 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          whole_order: boolean
+          printer: string | null
         }
         Insert: {
           id?: string
@@ -5741,6 +5746,8 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          whole_order?: boolean
+          printer?: string | null
         }
         Update: {
           id?: string
@@ -5756,6 +5763,8 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          whole_order?: boolean
+          printer?: string | null
         }
         Relationships: [
           { foreignKeyName: "kitchen_stations_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -12642,6 +12651,96 @@ export type Database = {
           { foreignKeyName: "store_checks_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      supplier_contracts: {
+        Row: {
+          id: string
+          company_id: string
+          vendor_id: string
+          number: string
+          title: string | null
+          start_date: string
+          end_date: string | null
+          payment_days: number | null
+          rebate_pct: number | null
+          rebate_terms: string | null
+          delivery_days: number | null
+          min_order: number | null
+          returns_expired: boolean
+          returns_terms: string | null
+          other_terms: string | null
+          file_path: string | null
+          file_name: string | null
+          remind_days: number
+          status: string
+          notes: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          vendor_id: string
+          number: string
+          title?: string | null
+          start_date: string
+          end_date?: string | null
+          payment_days?: number | null
+          rebate_pct?: number | null
+          rebate_terms?: string | null
+          delivery_days?: number | null
+          min_order?: number | null
+          returns_expired?: boolean
+          returns_terms?: string | null
+          other_terms?: string | null
+          file_path?: string | null
+          file_name?: string | null
+          remind_days?: number
+          status?: string
+          notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          vendor_id?: string
+          number?: string
+          title?: string | null
+          start_date?: string
+          end_date?: string | null
+          payment_days?: number | null
+          rebate_pct?: number | null
+          rebate_terms?: string | null
+          delivery_days?: number | null
+          min_order?: number | null
+          returns_expired?: boolean
+          returns_terms?: string | null
+          other_terms?: string | null
+          file_path?: string | null
+          file_name?: string | null
+          remind_days?: number
+          status?: string
+          notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "supplier_contracts_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "supplier_contracts_company_id_vendor_id_fkey"; columns: ["company_id", "vendor_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
       sync_agent_logs: {
         Row: {
           id: number
@@ -19366,6 +19465,13 @@ export type Database = {
           p_company: string
         }
         Returns: number
+      }
+      supplier_contract_for: {
+        Args: {
+          p_vendor: string
+          p_date?: string
+        }
+        Returns: Json
       }
       switch_company: {
         Args: {

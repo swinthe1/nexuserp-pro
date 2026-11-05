@@ -167,7 +167,16 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   const sef = !!data.atk?.required
   React.useEffect(() => (sef ? watchSef(data.register.id, () => waitingRef.current) : undefined), [sef, data.register.id])
   const clockOff = useClockCheck((ms) => { if (sef) void logSef(data.register.id, 'clock', { offset_seconds: Math.round(ms / 1000) }) })
-  const openPay = () => { if (atkStop) { setFlash({ tone: 'error', text: atkText }); return } setDialog('pay') }
+  const openPay = () => {
+    if (atkStop) { setFlash({ tone: 'error', text: atkText }); return }
+    // the company's highest value of one receipt (not for refunds)
+    const max = num(data.options?.receipt_max)
+    if (max > 0 && total > max + 0.004) {
+      const text = t('One receipt can be at most {max}; this one is {total}. Split the sale into two receipts.', { max: formatMoney(max), total: formatMoney(total) })
+      setFlash({ tone: 'error', text }); toast.error(text); return
+    }
+    setDialog('pay')
+  }
   const openRefund = () => { if (atkStop) { setFlash({ tone: 'error', text: atkText }); return } setDialog('refund') }
 
   /* ---------- loyalty card: the same rule as the server (app.loyalty_eval) */

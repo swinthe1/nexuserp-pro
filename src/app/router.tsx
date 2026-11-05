@@ -69,6 +69,7 @@ const RequisitionPage = lazy(() => import('@/features/procurement/pages/requisit
 const ReplenishmentPage = lazy(() => import('@/features/procurement/pages/replenishment-page'), 'ReplenishmentPage')
 const VendorPricesPage = lazy(() => import('@/features/procurement/pages/vendor-prices-page'), 'VendorPricesPage')
 const VendorScorecardPage = lazy(() => import('@/features/procurement/pages/vendor-scorecard-page'), 'VendorScorecardPage')
+const ContractsPage = lazy(() => import('@/features/procurement/pages/contracts-page'), 'ContractsPage')
 const RfqListPage = lazy(() => import('@/features/procurement/pages/rfq-pages'), 'RfqListPage')
 const RfqPage = lazy(() => import('@/features/procurement/pages/rfq-pages'), 'RfqPage')
 const FinanceOverviewPage = lazy(() => import('@/features/finance/pages/finance-overview-page'), 'FinanceOverviewPage')
@@ -322,6 +323,7 @@ const router = createBrowserRouter([
         { path: 'replenishment', element: <ReplenishmentPage /> },
         { path: 'vendor-prices', element: <VendorPricesPage /> },
         { path: 'scorecard', element: <VendorScorecardPage /> },
+        { path: 'contracts', element: <ContractsPage /> },
         { path: 'rfqs', element: <RfqListPage /> },
         { path: 'rfqs/new', element: <RfqPage key="rfq-new" /> },
         { path: 'rfqs/:id', element: <RfqPage key="rfq" /> },
