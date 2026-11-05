@@ -61,6 +61,17 @@ select public.chat_mute(:'grp', now() + interval '1 day');
 select public.chat_leave(:'grp');
 select t.ok(not exists (select 1 from jsonb_array_elements(public.chat_list(:'co')) x where x ->> 'id' = :'grp'), 'and out of it once she leaves');
 
+-- someone whose account has no profile row yet still shows up, by the name on the account
+reset role;
+insert into auth.users (email, raw_user_meta_data) values ('pa.profil@agjent.xk', '{"full_name":"Agim Pa Profil"}') on conflict do nothing;
+select id as agim from auth.users where email = 'pa.profil@agjent.xk' \gset
+delete from public.profiles where id = :'agim';
+insert into public.company_members (company_id, user_id, status) values (:'co', :'agim', 'active');
+set role authenticated;
+select t.login('drita@agjent.xk');
+select t.ok(exists (select 1 from jsonb_array_elements(public.chat_people(:'co')) x where x ->> 'name' = 'Agim Pa Profil'), 'a person without a profile is in the list, by the account''s name');
+select t.ok(public.chat_open_direct(:'co', :'agim') is not null, 'and one can write to them');
+
 -- a DrisPRO link: the reader's own rights
 select t.login('fiona@shop.al');
 select t.ok(public.chat_link_card('sales_invoice', (select id from public.sales_invoices where company_id = :'co' limit 1)) is null, 'a link to another company''s invoice shows nothing');
