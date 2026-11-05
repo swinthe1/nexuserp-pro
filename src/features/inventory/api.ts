@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
 import type { Json, Tables, TablesUpdate, Views } from '@/lib/database.types'
 import { describeError, unwrap } from '@/lib/errors'
-import { after, byName, fetchAll, supabase } from '@/lib/supabase'
+import { after, byName, fetchAll, fetchPages, supabase } from '@/lib/supabase'
 import { t, tn } from '@/i18n'
 import { isNetError, postReceiptOffline, saveDocumentOffline } from '@/lib/offline/step'
 
@@ -473,11 +473,10 @@ export function useDocuments<T = Record<string, unknown>>(kind: DocKind) {
     queryKey: invKeys.docs(companyId, kind),
     enabled: !!companyId,
     queryFn: async () => {
-      const { data, error } = await supabase.from(DOC_TABLE[kind]).select(LIST_SELECT[kind])
-        .eq('company_id', companyId).is('deleted_at', null)
-        .order(DATE_COL[kind], { ascending: false }).order('number', { ascending: false }).limit(1000)
-      if (error) throw error
-      return data as unknown as T[]
+      // every document, 1 000 at a time, newest first
+      return await fetchPages((from, to) => supabase.from(DOC_TABLE[kind]).select(LIST_SELECT[kind])
+        .eq('company_id', companyId!).is('deleted_at', null)
+        .order(DATE_COL[kind], { ascending: false }).order('number', { ascending: false }).order('id').range(from, to)) as unknown as T[]
     },
   })
 }

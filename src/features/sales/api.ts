@@ -4,7 +4,7 @@ import { useCompany } from '@/app/company-provider'
 import { saveDocumentOffline } from '@/lib/offline/step'
 import type { Json, Tables } from '@/lib/database.types'
 import { describeError, unwrap } from '@/lib/errors'
-import { after, byName, fetchAll, supabase } from '@/lib/supabase'
+import { after, byName, fetchAll, fetchPages, supabase } from '@/lib/supabase'
 import { t } from '@/i18n'
 
 export const salesKeys = {
@@ -204,11 +204,10 @@ export function useSalesDocuments<T>(kind: SalesKind) {
     queryKey: salesKeys.list(companyId, kind),
     enabled: !!companyId,
     queryFn: async () => {
-      const { data, error } = await supabase.from(SALES_TABLE[kind]).select(LIST_SELECT[kind])
-        .eq('company_id', companyId).is('deleted_at', null)
-        .order(DATE_COL[kind], { ascending: false }).order('number', { ascending: false }).limit(1000)
-      if (error) throw error
-      return data as unknown as T[]
+      // every document, 1 000 at a time, newest first
+      return await fetchPages((from, to) => supabase.from(SALES_TABLE[kind]).select(LIST_SELECT[kind])
+        .eq('company_id', companyId!).is('deleted_at', null)
+        .order(DATE_COL[kind], { ascending: false }).order('number', { ascending: false }).order('id').range(from, to)) as unknown as T[]
     },
   })
 }

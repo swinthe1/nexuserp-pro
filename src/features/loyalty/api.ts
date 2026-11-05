@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
 import type { Tables } from '@/lib/database.types'
 import { describeError, unwrap } from '@/lib/errors'
-import { supabase } from '@/lib/supabase'
+import { fetchPages, supabase } from '@/lib/supabase'
 
 export type LoyaltyKind = 'discount' | 'points' | 'staff'
 export type Program = Tables<'loyalty_programs'>
@@ -36,8 +36,8 @@ export function useCards() {
   return useQuery({
     queryKey: [...key(companyId), 'cards'],
     enabled: !!companyId,
-    queryFn: async () => unwrap(await supabase.from('loyalty_cards').select('*, program:loyalty_programs(name, kind)')
-      .eq('company_id', companyId).is('deleted_at', null).order('created_at', { ascending: false }).limit(20000).returns<Card[]>()),
+    queryFn: () => fetchPages((from, to) => supabase.from('loyalty_cards').select('*, program:loyalty_programs(name, kind)')
+      .eq('company_id', companyId!).is('deleted_at', null).order('created_at', { ascending: false }).order('id').range(from, to).returns<Card[]>(), 100000),
   })
 }
 

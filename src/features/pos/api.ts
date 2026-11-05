@@ -169,11 +169,15 @@ export type TillOptions = {
   void_notify?: boolean
   /** the highest value of one receipt (null = no limit) */
   receipt_max?: number | null
+  /** how this company's scales print their barcodes */
+  scale?: import('@/lib/scale-barcode').ScaleSetup
 }
 export type CatalogItem = { variant_id: string; sku: string; name: string; category: string | null; barcodes: { code: string; qty: number }[]
   price: number; tax_code_id: string | null; tax_rate: number; tracking: string; on_hand: number; product_type: string
   /** the unit it is sold in (a server not updated yet sends none) */
-  uom?: string | null }
+  uom?: string | null
+  /** the item's number on the scale (its PLU), for the scale's barcodes */
+  scale_plu?: string | null }
 export type TillData = {
   register: Pick<Register, 'id' | 'code' | 'name' | 'company_id' | 'receipt_header' | 'receipt_footer' | 'default_customer_id' | 'location_id' | 'warehouse_id' | 'paper_mm'>
   session: { id: string; number: string; opened_at: string; opening_cash: number } | null

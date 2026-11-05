@@ -2334,6 +2334,7 @@ export type Database = {
           pos_void_notify_over: number
           pos_void_whatsapp: string[]
           pos_receipt_max: number | null
+          scale_barcode: Json
         }
         Insert: {
           id?: string
@@ -2418,6 +2419,7 @@ export type Database = {
           pos_void_notify_over?: number
           pos_void_whatsapp?: string[]
           pos_receipt_max?: number | null
+          scale_barcode?: Json
         }
         Update: {
           id?: string
@@ -2502,6 +2504,7 @@ export type Database = {
           pos_void_notify_over?: number
           pos_void_whatsapp?: string[]
           pos_receipt_max?: number | null
+          scale_barcode?: Json
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -9337,6 +9340,7 @@ export type Database = {
           deleted_by: string | null
           target_margin_pct: number | null
           max_temperature: number | null
+          scale_plu: string | null
         }
         Insert: {
           id?: string
@@ -9371,6 +9375,7 @@ export type Database = {
           deleted_by?: string | null
           target_margin_pct?: number | null
           max_temperature?: number | null
+          scale_plu?: string | null
         }
         Update: {
           id?: string
@@ -9405,6 +9410,7 @@ export type Database = {
           deleted_by?: string | null
           target_margin_pct?: number | null
           max_temperature?: number | null
+          scale_plu?: string | null
         }
         Relationships: [
           { foreignKeyName: "products_company_id_category_id_fkey"; columns: ["company_id", "category_id"]; isOneToOne: false; referencedRelation: "product_categories"; referencedColumns: ["company_id", "id"] },
@@ -18221,7 +18227,7 @@ export type Database = {
         Args: {
           p_register: string
         }
-        Returns: { variant_id: string | null; sku: string | null; name: string | null; category: string | null; barcodes: Json | null; price: number | null; tax_code_id: string | null; tax_rate: number | null; tracking: string | null; on_hand: number | null; image_path: string | null; product_type: string | null; uom: string | null }[]
+        Returns: { variant_id: string | null; sku: string | null; name: string | null; category: string | null; barcodes: Json | null; price: number | null; tax_code_id: string | null; tax_rate: number | null; tracking: string | null; on_hand: number | null; image_path: string | null; product_type: string | null; uom: string | null; scale_plu: string | null }[]
       }
       pos_close: {
         Args: {

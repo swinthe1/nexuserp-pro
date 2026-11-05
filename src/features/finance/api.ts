@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
 import type { Json, Tables } from '@/lib/database.types'
 import { describeError, unwrap } from '@/lib/errors'
-import { supabase } from '@/lib/supabase'
+import { fetchPages, supabase } from '@/lib/supabase'
 import { msg, t, tEnum } from '@/i18n'
 
 export const finKeys = {
@@ -131,7 +131,7 @@ export function useJournalEntries(from: string, to: string) {
     queryFn: async () => unwrap(await supabase.from('journal_entries')
       .select('id, number, status, entry_date, reference, memo, source_doc_type, source_doc_id, is_automatic, total_debit, journal:journals(code, name)')
       .eq('company_id', companyId).is('deleted_at', null).gte('entry_date', from).lte('entry_date', to)
-      .order('entry_date', { ascending: false }).order('number', { ascending: false }).limit(2000)),
+      .order('entry_date', { ascending: false }).order('number', { ascending: false }).order('id').limit(2000)),
   })
 }
 export function useJournalEntry(id: string | undefined) {
@@ -201,8 +201,8 @@ export function usePayments() {
   return useQuery({
     queryKey: finKeys.list(companyId, 'payments'),
     enabled: !!companyId,
-    queryFn: async () => unwrap(await supabase.from('payments').select('*, partner:business_partners(name), bank:bank_accounts(name)')
-      .eq('company_id', companyId).is('deleted_at', null).order('payment_date', { ascending: false }).order('number', { ascending: false }).limit(1000)
+    queryFn: () => fetchPages((from, to) => supabase.from('payments').select('*, partner:business_partners(name), bank:bank_accounts(name)')
+      .eq('company_id', companyId!).is('deleted_at', null).order('payment_date', { ascending: false }).order('number', { ascending: false }).order('id').range(from, to)
       .returns<PaymentRow[]>()),
   })
 }

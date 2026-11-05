@@ -99,5 +99,10 @@ select t.ok(exists (select 1 from public.notifications where user_id = :'ivo_u' 
   'the sale stands, and the accountant is told the declaration needs correcting');
 select t.ok(not has_function_privilege('anon', 'app.rights_lacking(uuid, text[])', 'execute'), 'not for anonymous callers');
 
+-- ---------------------------------------------------------------- the scales' barcodes: the item's PLU
+update public.products set scale_plu = '01234' where id = (select product_id from public.product_variants where id = :'beer');
+select t.ok((select scale_plu from public.pos_catalog(:'reg') where variant_id = :'beer') = '1234', 'the till knows the item''s scale PLU');
+select t.throws(format($q$update public.products set scale_plu = '1234' where company_id = %L and code = 'KT-MILK'$q$, :'co'), 'duplicate', 'one PLU, one item');
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;

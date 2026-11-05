@@ -29,6 +29,7 @@ import { cn, formatDate, formatMoney, formatQty, num, todayISO } from '@/lib/uti
 import { lookupReceipt, posApprove, sessionControls, useCashMove, useCloseSession, useOpenSession, usePayees, usePayOut, useSessionSummary, useTill, useVendorBills, type CatalogItem, type ReceiptLookup, type TillData } from '../api'
 import { enqueue, logTill, nextDeviceRef, syncNow, useOnSynced, useSyncState, type QueuedSale, type TillLogEntry } from '../offline'
 import { ManagerDialog, ManagerPinFields, pinReady } from '../manager-pin'
+import { readScaleBarcode } from '@/lib/scale-barcode'
 import { printReceipt, printZReport, type ReceiptData } from '../receipt'
 import { qrSvg, signAtkSale, useAtkState, waitForAtk } from '../atk'
 import type { FiscalPrint } from '../fiscal-receipt'
@@ -310,6 +311,14 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     }
     const hit = byCode.get(v.toLowerCase())
     if (hit) { add(hit.item, hit.qty, v, n); setQuery(''); return }
+    // a scale's label: the item by its PLU, the quantity from the weight (or the price) inside the barcode
+    const sc = readScaleBarcode(v, data.options?.scale)
+    const scItem = sc ? data.catalog.find((c) => c.scale_plu === sc.plu) : null
+    if (sc && scItem) {
+      const qty = sc.weight ?? Math.round((sc.price! / (num(scItem.price) || 1)) * 1000) / 1000
+      add(scItem, qty, v); setQuery(''); return
+    }
+    if (sc && !scItem) { scanFeedback('error'); setFlash({ tone: 'error', text: t('No item has the scale PLU {plu}', { plu: sc.plu }) }); setQuery(''); return }
     const scannedCard = !n ? findCard(v) : null
     if (scannedCard && scannedCard.number === v) { applyCard(scannedCard); setQuery(''); return }
     if (visible.length === 1) { add(visible[0]!, 1, null, n); setQuery(''); return }

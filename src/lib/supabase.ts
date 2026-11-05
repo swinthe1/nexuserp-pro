@@ -40,6 +40,23 @@ export async function fetchAll<T>(key: string, page: (after: string | null) => P
   }
 }
 
+/**
+ * Reads a list page by page, in the order the query sets (newest first for documents): the server gives at
+ * most 1,000 rows a call, so a busy company's older invoices would otherwise not be in the list at all.
+ * Stops at `max` rows; `page(from, to)` adds `.range(from, to)` to its query.
+ */
+export async function fetchPages<T>(page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>, max = 30000, size = 1000): Promise<T[]> {
+  const out: T[] = []
+  for (let from = 0; from < max; from += size) {
+    const { data, error } = await page(from, from + size - 1)
+    if (error) throw error
+    const rows = data ?? []
+    out.push(...rows)
+    if (rows.length < size) break
+  }
+  return out
+}
+
 /** `.gt(key, after)` only when there is a previous page. */
 export function after<Q extends { gt: (column: string, value: string) => Q }>(q: Q, key: string, value: string | null): Q {
   return value === null ? q : q.gt(key, value)

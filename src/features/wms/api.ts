@@ -341,7 +341,7 @@ export function useLotsList() {
     enabled: !!companyId,
     queryFn: async () => unwrap(await supabase.from('lots')
       .select('id, lot_number, lot_type, expiry_date, manufacture_date, created_at, variant:product_variants(id, sku, name, product:products(category_id)), vendor:business_partners(name), levels:stock_levels(on_hand)')
-      .eq('company_id', companyId).is('deleted_at', null).order('expiry_date', { nullsFirst: false }).limit(1000).returns<LotRow[]>()),
+      .eq('company_id', companyId!).is('deleted_at', null).order('expiry_date', { nullsFirst: false }).order('id').range(0, 999).returns<LotRow[]>()),
   })
 }
 export type LotTrace = {

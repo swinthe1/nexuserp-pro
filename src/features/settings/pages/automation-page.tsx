@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarClock, Coins, PackagePlus, Repeat, Tags, TrendingUp, Wallet } from 'lucide-react'
 import * as React from 'react'
+import type { ScaleSetup } from '@/lib/scale-barcode'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
@@ -21,7 +22,7 @@ type Settings = { pos_cash_tolerance: number; pos_count_notes: boolean; pos_void
   payroll_night_pct: number | null; payroll_holiday_pct: number | null; purchase_price_tolerance: number
   new_items_from_bills: 'anyone' | 'approval'
   /** a server not updated yet has none of these */
-  pos_payouts?: 'off' | 'manager' | 'anyone'; pos_receipt_max?: number | null; pos_void_notify?: boolean; pos_void_notify_over?: number; pos_void_whatsapp?: string[] }
+  pos_payouts?: 'off' | 'manager' | 'anyone'; pos_receipt_max?: number | null; scale_barcode?: ScaleSetup; pos_void_notify?: boolean; pos_void_notify_over?: number; pos_void_whatsapp?: string[] }
 
 export function usePayrollTillSettings() {
   const { companyId } = useCompany()
@@ -139,6 +140,7 @@ export function AutomationPage() {
               </div>
             </div>
           )}
+          {s.scale_barcode !== undefined && <ScaleRow value={s.scale_barcode} disabled={!can('pos.approve') || save.isPending} onSave={(v) => save.mutate({ scale_barcode: v })} />}
           {s.pos_payouts !== undefined && (
             <div className="flex flex-wrap items-start justify-between gap-3 rounded-md border p-3 text-[13px]">
               <span className="min-w-0 flex-1"><span className="font-medium">{t('Paying suppliers and expenses from the till')}</span>
@@ -235,5 +237,38 @@ function NewItemsCard({ mode }: { mode: 'anyone' | 'approval' }) {
         ? t('On: an item that is not in DrisPRO yet is not made from an invoice by whoever enters it. The line waits, and the people who approve items make it or refuse it under Products → New items to approve.')
         : t('Off: whoever enters a supplier invoice may make a new item from its line. Turn it on so that new items wait for someone who approves items.')}</p>
     </AutomationCard>
+  )
+}
+
+/** how the scales print their barcodes: the prefixes, the PLU's length, the weight or the price inside */
+function ScaleRow({ value, disabled, onSave }: { value: ScaleSetup; disabled: boolean; onSave: (v: ScaleSetup) => void }) {
+  const [v, setV] = React.useState<ScaleSetup>(value)
+  const [prefixes, setPrefixes] = React.useState((value.prefixes ?? []).join(', '))
+  React.useEffect(() => { setV(value); setPrefixes((value.prefixes ?? []).join(', ')) }, [value])
+  const next: ScaleSetup = { ...v, prefixes: prefixes.split(/[\s,;]+/).filter((x) => /^\d{1,2}$/.test(x)) }
+  const changed = JSON.stringify(next) !== JSON.stringify({ ...value, prefixes: value.prefixes ?? [] })
+  return (
+    <div className="grid gap-2 rounded-md border p-3 text-[13px]">
+      <div className="flex items-start justify-between gap-3">
+        <span className="min-w-0 flex-1"><span className="font-medium">{t('The scales\' barcodes')}</span>
+          <span className="block text-muted-foreground">{t('The till reads the label of the scale: the item by its PLU (on the item\'s card) and the weight or the price inside the barcode.')}</span></span>
+        <Switch checked={!!v.on} disabled={disabled} onCheckedChange={(on) => setV({ ...v, on })} aria-label={t('The scales\' barcodes')} />
+      </div>
+      {v.on && (
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="grid gap-1"><span className="text-xs text-muted-foreground">{t('Begin with')}</span>
+            <Input className="h-8 w-48" value={prefixes} disabled={disabled} onChange={(e) => setPrefixes(e.target.value)} placeholder="27, 28, 29" /></label>
+          <label className="grid gap-1"><span className="text-xs text-muted-foreground">{t('PLU digits')}</span>
+            <Select value={String(v.plu_digits ?? 5)} disabled={disabled} onValueChange={(x) => setV({ ...v, plu_digits: Number(x) })}>
+              <SelectTrigger className="h-8 w-20"><SelectValue /></SelectTrigger>
+              <SelectContent>{[4, 5, 6].map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent></Select></label>
+          <label className="grid gap-1"><span className="text-xs text-muted-foreground">{t('Inside the barcode')}</span>
+            <Select value={v.value ?? 'weight'} disabled={disabled} onValueChange={(x) => setV({ ...v, value: x as 'weight' | 'price' })}>
+              <SelectTrigger className="h-8 w-40"><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="weight">{t('The weight (grams)')}</SelectItem><SelectItem value="price">{t('The price (cents)')}</SelectItem></SelectContent></Select></label>
+        </div>
+      )}
+      {changed && !disabled && <div className="flex justify-end"><Button size="sm" variant="outline" onClick={() => onSave(next)}>{t('Save')}</Button></div>}
+    </div>
   )
 }

@@ -80,4 +80,16 @@ export default {
   // the deep check, phase 1
   "A manager confirms the refund": "Menaxheri konfirmon kthimin",
   "Money given back needs a manager's PIN.": "Paratë që kthehen kërkojnë PIN-in e menaxherit.",
+  // the scales' barcodes
+  "The scales' barcodes": "Barkodet e peshoreve",
+  "The till reads the label of the scale: the item by its PLU (on the item's card) and the weight or the price inside the barcode.": "Arka e lexon etiketën e peshores: artikullin sipas PLU-së (te kartela e artikullit) dhe peshën ose çmimin brenda barkodit.",
+  "Begin with": "Fillojnë me",
+  "PLU digits": "Shifrat e PLU-së",
+  "Inside the barcode": "Brenda barkodit",
+  "The weight (grams)": "Pesha (gramë)",
+  "The price (cents)": "Çmimi (centë)",
+  "The PLU is a number of up to 6 digits": "PLU-ja është numër me deri në 6 shifra",
+  "No item has the scale PLU {plu}": "Asnjë artikull nuk ka PLU-në {plu} të peshores",
+  "PLU on the scale": "PLU në peshore",
+  "e.g. 1234": "p.sh. 1234",
 } satisfies Dict
