@@ -2523,6 +2523,7 @@ export type Database = {
           created_at: string
           updated_at: string
           deleted_at: string | null
+          doc_kinds: string[]
         }
         Insert: {
           id?: string
@@ -2536,6 +2537,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
+          doc_kinds?: string[]
         }
         Update: {
           id?: string
@@ -2549,6 +2551,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
+          doc_kinds?: string[]
         }
         Relationships: [
           { foreignKeyName: "company_signatures_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -4557,6 +4560,7 @@ export type Database = {
           clearance_status: string
           cleared_at: string | null
           driver_name: string | null
+          fiscal_status: string | null
         }
         Insert: {
           id?: string
@@ -4589,6 +4593,7 @@ export type Database = {
           clearance_status?: string
           cleared_at?: string | null
           driver_name?: string | null
+          fiscal_status?: string | null
         }
         Update: {
           id?: string
@@ -4621,6 +4626,7 @@ export type Database = {
           clearance_status?: string
           cleared_at?: string | null
           driver_name?: string | null
+          fiscal_status?: string | null
         }
         Relationships: [
           { foreignKeyName: "goods_receipts_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -6554,6 +6560,60 @@ export type Database = {
         }
         Relationships: [
           { foreignKeyName: "loyalty_programs_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
+      management_costs: {
+        Row: {
+          id: string
+          company_id: string
+          warehouse_id: string | null
+          month: string
+          kind: string
+          description: string
+          amount: number
+          notes: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          warehouse_id?: string | null
+          month: string
+          kind?: string
+          description: string
+          amount: number
+          notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          warehouse_id?: string | null
+          month?: string
+          kind?: string
+          description?: string
+          amount?: number
+          notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "management_costs_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "management_costs_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
         ]
       }
       member_roles: {
@@ -13861,6 +13921,7 @@ export type Database = {
           expiry_date: string | null
           pack_id: string | null
           pack_qty: number | null
+          cit_deductible: boolean | null
         }
         Insert: {
           id?: string
@@ -13899,6 +13960,7 @@ export type Database = {
           expiry_date?: string | null
           pack_id?: string | null
           pack_qty?: number | null
+          cit_deductible?: boolean | null
         }
         Update: {
           id?: string
@@ -13937,6 +13999,7 @@ export type Database = {
           expiry_date?: string | null
           pack_id?: string | null
           pack_qty?: number | null
+          cit_deductible?: boolean | null
         }
         Relationships: [
           { foreignKeyName: "vendor_bill_lines_company_id_account_id_fkey"; columns: ["company_id", "account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["company_id", "id"] },
@@ -13997,6 +14060,7 @@ export type Database = {
           price_ok_reason: string | null
           price_ok_prices: Json | null
           is_debit_note: boolean
+          in_vat_book: boolean
         }
         Insert: {
           id?: string
@@ -14044,6 +14108,7 @@ export type Database = {
           price_ok_reason?: string | null
           price_ok_prices?: Json | null
           is_debit_note?: boolean
+          in_vat_book?: boolean
         }
         Update: {
           id?: string
@@ -14091,6 +14156,7 @@ export type Database = {
           price_ok_reason?: string | null
           price_ok_prices?: Json | null
           is_debit_note?: boolean
+          in_vat_book?: boolean
         }
         Relationships: [
           { foreignKeyName: "vendor_bills_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -16752,6 +16818,13 @@ export type Database = {
         }
         Returns: Json
       }
+      doc_item_groups: {
+        Args: {
+          p_company: string
+          p_doc: string
+        }
+        Returns: Json
+      }
       doc_read_get: {
         Args: {
           p_id: string
@@ -17402,6 +17475,13 @@ export type Database = {
           p_to: string
         }
         Returns: string
+      }
+      management_costs_repeat: {
+        Args: {
+          p_id: string
+          p_until: string
+        }
+        Returns: number
       }
       manufacturing_overview: {
         Args: {
@@ -18592,6 +18672,13 @@ export type Database = {
         }
         Returns: Json
       }
+      receipts_pending_invoice: {
+        Args: {
+          p_company: string
+          p?: Json
+        }
+        Returns: Json
+      }
       receive_stock_transfer: {
         Args: {
           p_id: string
@@ -19302,6 +19389,13 @@ export type Database = {
           p_default?: boolean
         }
         Returns: string
+      }
+      signature_set_kinds: {
+        Args: {
+          p_id: string
+          p_kinds: string[]
+        }
+        Returns: undefined
       }
       small_asset_count: {
         Args: {

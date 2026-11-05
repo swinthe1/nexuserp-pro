@@ -99,6 +99,8 @@ const WastePage = lazy(() => import('@/features/wms/pages/waste-page'), 'WastePa
 const OutputsPage = lazy(() => import('@/features/inventory/pages/outputs-page'), 'OutputsPage')
 const BalancingPage = lazy(() => import('@/features/inventory/pages/balancing-page'), 'BalancingPage')
 const SmallAssetsPage = lazy(() => import('@/features/finance/pages/small-assets-page'), 'SmallAssetsPage')
+const ManagementCostsPage = lazy(() => import('@/features/finance/pages/management-costs-page'), 'ManagementCostsPage')
+const PendingInvoicesPage = lazy(() => import('@/features/procurement/pages/pending-invoices-page'), 'PendingInvoicesPage')
 const CountsPage = lazy(() => import('@/features/wms/pages/counts-page'), 'CountsPage')
 const CountPage = lazy(() => import('@/features/wms/pages/counts-page'), 'CountPage')
 const LotsPage = lazy(() => import('@/features/wms/pages/lots-page'), 'LotsPage')
@@ -315,6 +317,7 @@ const router = createBrowserRouter([
         { path: 'new', element: <PartnerPage key="new" /> },
         { path: ':id', element: <PartnerPage key="partner" /> },
       ] },
+      { path: 'procurement/pending-invoices', element: <RequirePerm perm="procurement.read|finance.read|inventory.read" />, children: [{ index: true, element: <PendingInvoicesPage /> }] },
       { path: 'procurement', element: <RequirePerm perm="procurement.read" />, children: [
         { index: true, element: <ProcurementOverviewPage /> },
         { path: 'orders', element: <ProcurementListPage key="orders" kind="orders" /> },
@@ -370,6 +373,7 @@ const router = createBrowserRouter([
         { path: 'bank/statements/:id', element: <StatementPage /> },
         { path: 'assets', element: <AssetsPage /> },
         { path: 'small-assets', element: <SmallAssetsPage /> },
+        { path: 'internal-costs', element: <ManagementCostsPage /> },
         { path: 'assets/new', element: <AssetPage key="asset-new" /> },
         { path: 'assets/:id', element: <AssetPage key="asset" /> },
         { path: 'cost-centers', element: <CostCentersPage /> },

@@ -581,4 +581,6 @@ export default {
   "Small inventory|menu": "Sitan inventar",
   "One receipt can be at most {max}; this one is {total}. Split the sale into two receipts.": "Jedan račun može biti najviše {max}; ovaj je {total}. Podelite prodaju na dva računa.",
   "Supplier contracts|menu": "Ugovori sa dobavljačima",
+  "Goods waiting for the invoice|menu": "Roba koja čeka fakturu",
+  "Internal costs|menu": "Interni troškovi",
 } satisfies Dict

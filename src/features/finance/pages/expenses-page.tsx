@@ -96,7 +96,8 @@ function Review({ id, kind, onDone }: { id: string | null; kind: Kind; onDone: (
   const pay = useExpensePayAccounts()
   const r = q.data?.result ?? null
   const [f, setF] = React.useState<{ vendor: string | null; vendorName: string; taxNo: string; number: string; date: string; category: string; account: string | null
-    description: string; lines: VatLine[]; payFrom: string | null; assetName: string; assetCat: string | null; life: string; serial: string } | null>(null)
+    description: string; lines: VatLine[]; payFrom: string | null; assetName: string; assetCat: string | null; life: string; serial: string
+    vatBook: boolean; cit: 'account' | 'yes' | 'no' } | null>(null)
   React.useEffect(() => {
     if (f || (id && !r) || !pay.data) return
     const cash = pay.data.find((a) => a.kind === 'cash')?.id ?? null
@@ -107,6 +108,7 @@ function Review({ id, kind, onDone }: { id: string | null; kind: Kind; onDone: (
       lines: r?.lines?.length ? r.lines : [{ rate: 0, net: 0, vat: 0, tax_code_id: null }],
       payFrom: kind === 'asset' ? null : !r ? cash : r.paid === 'unpaid' ? null : r.paid === 'card' || r.paid === 'bank' ? (bank ?? cash) : cash,
       assetName: r?.asset_name ?? '', assetCat: r?.category_id ?? null, life: '', serial: r?.serial_number ?? '',
+      vatBook: true, cit: 'account',
     })
   }, [f, id, r, pay.data])
   const purchaseTaxes = (taxes.data ?? []).filter((x) => x.is_active && (x.scope === 'both' || x.scope === 'purchase') && !x.is_reverse_charge && x.tax_type === 'vat')
@@ -117,6 +119,8 @@ function Review({ id, kind, onDone }: { id: string | null; kind: Kind; onDone: (
       company_id: companyId, vendor_id: f!.vendor, vendor_name: f!.vendor ? null : f!.vendorName, vendor_tax_number: f!.taxNo || null, read_vendor_name: r?.vendor_name ?? null,
       number: f!.number || null, date: f!.date, due_date: r?.due_date ?? null, category: f!.category, account_id: f!.account, description: f!.description || null,
       lines: f!.lines.map((l) => ({ net: l.net, tax_code_id: l.tax_code_id })),
+      // the tax view (from the meeting with the staff): in the VAT book or not; recognised for the profit tax or not
+      in_vat_book: kind === 'asset' ? true : f!.vatBook, cit_deductible: kind === 'asset' || f!.cit === 'account' ? null : f!.cit === 'yes',
       pay: f!.payFrom ? { bank_account_id: f!.payFrom, method: pay.data?.find((a) => a.id === f!.payFrom)?.kind === 'bank' ? 'bank_transfer' : 'cash' } : null,
     } as never })) as unknown as { bill_id: string; number: string; total: number; paid: boolean; asset_number?: string },
     onSuccess: (x) => {
@@ -150,7 +154,8 @@ function Review({ id, kind, onDone }: { id: string | null; kind: Kind; onDone: (
     ? (r?.account_how === 'learned' && f.account === r.account_id ? t('as you booked this seller last time') : r?.account_how === 'history' && f.account === r.account_id ? t('as in your books for this vendor') : '')
     : t('the account for {category}', { category: catLabel(f.category).toLowerCase() })
   const booked = !!q.data?.bill_id
-  const ready = (f.vendor || f.vendorName.trim()) && net > 0 && f.lines.every((l) => l.tax_code_id) && (kind !== 'asset' || (f.assetName.trim() && f.assetCat))
+  const outside = kind !== 'asset' && !f.vatBook
+  const ready = (f.vendor || f.vendorName.trim()) && net > 0 && (outside || f.lines.every((l) => l.tax_code_id)) && (kind !== 'asset' || (f.assetName.trim() && f.assetCat))
   const cat = (cats.data ?? []).find((c) => c.id === f.assetCat)
   return (
     <div className={cn('grid gap-4', q.data?.image && 'lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]')}>
@@ -195,7 +200,30 @@ function Review({ id, kind, onDone }: { id: string | null; kind: Kind; onDone: (
           <div className="grid gap-1.5 sm:col-span-2"><Label htmlFor="edesc">{t('Description')}</Label><Input id="edesc" value={f.description} onChange={(e) => set({ description: e.target.value })} placeholder={kind === 'asset' ? '' : t('e.g. Diesel 40 L')} /></div>
         </CardContent></Card>
 
+        {kind !== 'asset' && <Card><CardContent className="grid gap-3 p-4 sm:grid-cols-2">
+          <div className="grid gap-1.5"><Label>{t('The document')}</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {([[true, t('Tax invoice (in the purchase book)')], [false, t('Till receipt or no tax invoice')]] as const).map(([v, label]) => (
+                <button key={String(v)} type="button" onClick={() => set({ vatBook: v, lines: v === f.vatBook ? f.lines : [{ rate: 0, net: Math.round((net + vat) * 100) / 100, vat: 0, tax_code_id: null }] })}
+                  className={cn('rounded-full border px-3 py-1 text-[13px]', f.vatBook === v ? 'border-primary bg-primary text-primary-foreground' : 'hover:bg-muted')}>{label}</button>
+              ))}
+            </div>
+            <span className="text-xs text-muted-foreground">{f.vatBook ? t('Its VAT is deducted and it enters the VAT purchase book.') : t('No VAT is deducted: the whole amount is the cost, and it stays out of the VAT purchase book.')}</span>
+          </div>
+          <div className="grid gap-1.5"><Label>{t('For the profit tax')}</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {([['account', t('As its account says')], ['yes', t('Recognised')], ['no', t('Not recognised')]] as const).map(([v, label]) => (
+                <button key={v} type="button" onClick={() => set({ cit: v })}
+                  className={cn('rounded-full border px-3 py-1 text-[13px]', f.cit === v ? 'border-primary bg-primary text-primary-foreground' : 'hover:bg-muted')}>{label}</button>
+              ))}
+            </div>
+            <span className="text-xs text-muted-foreground">{f.cit === 'no' ? t('It stays in the books and in the profit report; the profit tax adds it back.') : t('e.g. a meal over the limit, a fine, a cost without a proper document: not recognised.')}</span>
+          </div>
+        </CardContent></Card>}
+
         <Card><CardContent className="grid gap-2 p-4">
+          {outside ? <div className="grid gap-1.5 sm:max-w-xs"><Label htmlFor="egross">{t('The amount paid')}</Label>
+            <Input id="egross" type="number" step="0.01" className="text-right tabular" value={f.lines[0]?.net ?? 0} onChange={(e) => set({ lines: [{ rate: 0, net: num(e.target.value), vat: 0, tax_code_id: null }] })} /></div> : <>
           <div className="grid grid-cols-[minmax(0,1fr)_110px_90px_36px] gap-2 text-xs text-muted-foreground"><span>{t('VAT')}</span><span className="text-right">{t('Without VAT')}</span><span className="text-right">{t('VAT')}</span><span /></div>
           {f.lines.map((l, i) => (
             <div key={i} className="grid grid-cols-[minmax(0,1fr)_110px_90px_36px] items-center gap-2">
@@ -204,9 +232,9 @@ function Review({ id, kind, onDone }: { id: string | null; kind: Kind; onDone: (
               <span className="text-right text-sm tabular">{formatMoney(l.vat)}</span>
               <Button variant="ghost" size="icon" aria-label={t('Remove')} disabled={f.lines.length === 1} onClick={() => set({ lines: f.lines.filter((_, j) => j !== i) })}><Trash2 /></Button>
             </div>
-          ))}
+          ))}</>}
           <div className="flex items-center justify-between">
-            <Button variant="ghost" size="sm" onClick={() => set({ lines: [...f.lines, { rate: 0, net: 0, vat: 0, tax_code_id: null }] })}><Plus /> {t('Another VAT rate')}</Button>
+            {outside ? <span /> : <Button variant="ghost" size="sm" onClick={() => set({ lines: [...f.lines, { rate: 0, net: 0, vat: 0, tax_code_id: null }] })}><Plus /> {t('Another VAT rate')}</Button>}
             <div className="text-right text-[13px] text-muted-foreground">{t('Total with VAT')} <span className="block text-xl font-semibold text-foreground tabular">{formatMoney(net + vat)}</span>
               {r?.total != null && Math.abs(num(r.total) - (net + vat)) > 0.05 && <span className="text-warning">{t('The receipt says {amount} with VAT', { amount: formatMoney(r.total) })}</span>}</div>
           </div>

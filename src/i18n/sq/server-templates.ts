@@ -520,4 +520,5 @@ export const serverTemplates: [string, string][] = [
   ['ATK answered %', 'ATK-ja u përgjigj {0}'],
   ['ATK refused a receipt: %', 'ATK-ja refuzoi një kupon: {0}'],
   ['ATK registers each till number once, and number % of this store is taken: give this till number %', 'ATK-ja e regjistron çdo numër arke vetëm një herë, dhe numri {0} i kësaj njësie është zënë: jepini kësaj arke numrin {1}'],
+  ['Goods receipt % from % has waited % days for its invoice', 'Pranimi {0} nga {1} pret {2} ditë për faturën'],
 ]

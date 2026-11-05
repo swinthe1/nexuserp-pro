@@ -14,9 +14,10 @@ import { t } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { formatDate, formatMoney, formatQty, num } from '@/lib/utils'
+import { FiscalBadge } from '@/features/procurement/fiscal-status'
 
 type Line = { id: string; variant_id: string; quantity: number; unit_cost: number | null }
-type Receipt = { id: string; status: string; receipt_type: string; purchase_order_id: string | null; vendor_id: string | null; lines: Line[] }
+type Receipt = { id: string; status: string; receipt_type: string; purchase_order_id: string | null; vendor_id: string | null; lines: Line[]; fiscal_status?: string | null }
 type VendorReturn = { id: string; number: string; return_date: string; reason: string; total_cost: number; vendor_credit_id: string | null
   lines: { receipt_line_id: string; quantity: number }[] }
 
@@ -58,6 +59,9 @@ export function ReceiptAfterActions({ doc, nameOf }: { doc: Receipt; nameOf: (va
         {purchase && can('inventory.write') && (
           <Button size="sm" variant="outline" onClick={() => setReturning(true)}><Undo2 /> {t('Return to the vendor')}</Button>
         )}
+        {/* the supplier's tax invoice: waiting, received or outside the VAT book (from the meeting with the staff, #4) */}
+        {purchase && doc.fiscal_status && <span className="ml-auto inline-flex items-center gap-2 text-[13px] text-muted-foreground">{t('Invoice')}: <FiscalBadge status={doc.fiscal_status} />
+          {doc.fiscal_status === 'pending_invoice' && <Link to="/procurement/pending-invoices" className="text-primary hover:underline">{t('All waiting')}</Link>}</span>}
       </div>
       {(returns.data?.length ?? 0) > 0 && (
         <ul className="divide-y rounded-lg border text-[13px]">

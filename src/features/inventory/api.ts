@@ -457,7 +457,7 @@ export const DOC_TABLE: Record<DocKind, 'goods_receipts' | 'stock_adjustments' |
 }
 
 const LIST_SELECT: Record<DocKind, string> = {
-  receipts: 'id, number, status, receipt_date, receipt_type, is_import, clearance_status, currency_code, total_value, vendor:business_partners(name), warehouse:warehouses(name), purchase_order:purchase_orders(number), lines:goods_receipt_lines(count)',
+  receipts: 'id, number, status, receipt_date, receipt_type, is_import, clearance_status, fiscal_status, currency_code, total_value, vendor:business_partners(name), warehouse:warehouses(name), purchase_order:purchase_orders(number), lines:goods_receipt_lines(count)',
   adjustments: 'id, number, status, adjustment_date, reason, total_value, notes, warehouse:warehouses(name), lines:stock_adjustment_lines(count)',
   transfers: 'id, number, status, transfer_date, is_request, has_difference, shipped_at, from:warehouses!stock_transfers_company_id_from_warehouse_id_fkey(name), to:warehouses!stock_transfers_company_id_to_warehouse_id_fkey(name), lines:stock_transfer_lines(count)',
   'landed-costs': 'id, number, status, landed_cost_date, allocation_method, total_amount, notes, receipts:landed_cost_receipts(receipt:goods_receipts(number))',

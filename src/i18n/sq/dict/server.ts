@@ -847,4 +847,5 @@ export default {
   "Choose why the goods go out": "Zgjidh pse del malli",
   "Scan what is thrown away": "Skano çfarë hidhet",
   "Choose customers or suppliers": "Zgjidh klientët ose furnitorët",
+  "A document outside the VAT book has no VAT to deduct: enter the whole amount with 0 % VAT": "Një dokument jashtë librit të TVSH-së nuk ka TVSH për të zbritur: shkruani shumën e plotë me TVSH 0 %",
 } satisfies Dict

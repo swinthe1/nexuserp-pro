@@ -151,8 +151,14 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
     bill_date: doc?.bill_date ?? todayISO(), receive_date: doc?.receive_date ?? '', due_date: doc?.due_date ?? '',
     payment_term_id: doc?.payment_term_id ?? '', currency_code: doc?.currency_code ?? base, exchange_rate: doc?.exchange_rate ? String(doc.exchange_rate) : '',
     warehouse_id: doc?.warehouse_id ?? '', pay_bank_account_id: doc?.pay_bank_account_id ?? '', notes: doc?.notes ?? '',
+    in_vat_book: doc?.in_vat_book ?? true,
   }))
   const set = <K extends keyof typeof h>(k: K, v: (typeof h)[K]) => setH((x) => ({ ...x, [k]: v }))
+  // the purchase code of 0 %: what a document outside the VAT book carries
+  const zeroTax = (taxes.data ?? []).filter((x) => x.is_active && (x.scope === 'both' || x.scope === 'purchase') && !x.is_reverse_charge && x.tax_type === 'vat' && num(x.rate) === 0)
+    .sort((a, b) => Number(a.is_exempt) - Number(b.is_exempt))[0]?.id ?? null
+  const inBookRef = React.useRef(h.in_vat_book); inBookRef.current = h.in_vat_book
+  const zeroTaxRef = React.useRef(zeroTax); zeroTaxRef.current = zeroTax
   const [rows, setRows] = React.useState<Row[]>(() => [...(doc?.lines ?? [])].sort((a, b) => a.line_no - b.line_no).filter((l) => l.variant_id).map((l) => {
     const it = companyId ? itemOffline(companyId, l.variant_id!) : null
     return {
@@ -211,7 +217,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
     setRows((rs) => rs.some((r) => r.gross.startsWith('net:')) ? rs.map((r) => r.gross.startsWith('net:') && items[r.variant_id]
       ? { ...r, gross: String(r2(num(r.gross.slice(4)) * (1 + items[r.variant_id].sales_tax / 100))) } : r) : rs)
     // the purchase VAT of items added before their info arrived
-    setRows((rs) => rs.some((r) => !r.tax && items[r.variant_id]?.purchase_tax_code_id) ? rs.map((r) => !r.tax ? { ...r, tax: items[r.variant_id]?.purchase_tax_code_id ?? null } : r) : rs)
+    setRows((rs) => rs.some((r) => !r.tax && items[r.variant_id]?.purchase_tax_code_id) ? rs.map((r) => !r.tax ? { ...r, tax: (inBookRef.current ? null : zeroTaxRef.current) ?? items[r.variant_id]?.purchase_tax_code_id ?? null } : r) : rs)
   }, [items])
 
   const taxRate = (id: string | null) => num(taxes.data?.find((x) => x.id === id)?.rate)
@@ -327,11 +333,11 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
       ...(doc ? { id: doc.id } : {}), document_type: 'vendor_bill', vendor_id: h.vendor_id, vendor_invoice_number: h.vendor_invoice_number.trim(),
       vendor_fiscal_number: h.vendor_fiscal_number.trim() || null, bill_date: h.bill_date, receive_date: h.receive_date || null, due_date: h.due_date || dueFrom(h.bill_date, terms.data?.find((x) => x.id === h.payment_term_id)?.due_days),
       payment_term_id: h.payment_term_id || null, currency_code: h.currency_code, ...(h.currency_code !== base && h.exchange_rate ? { exchange_rate: num(h.exchange_rate) } : {}),
-      warehouse_id: h.warehouse_id, pay_bank_account_id: h.pay_bank_account_id || null, notes: h.notes || null,
+      warehouse_id: h.warehouse_id, pay_bank_account_id: h.pay_bank_account_id || null, notes: h.notes || null, in_vat_book: h.in_vat_book,
     },
     lines: calc.map((c, n) => ({
       line_no: n + 1, variant_id: c.r.variant_id, description: c.r.name, quantity: c.qty, unit_price: c.price,
-      discount1_pct: num(c.r.d1), discount2_pct: num(c.r.d2), tax_code_id: c.r.tax,
+      discount1_pct: num(c.r.d1), discount2_pct: num(c.r.d2), tax_code_id: h.in_vat_book ? c.r.tax : zeroTax ?? c.r.tax,
       sales_price_new: c.newGross != null && c.i ? Math.round(c.newGross / (1 + c.i.sales_tax / 100) * 10000) / 10000 : null,
       lot_number: c.r.lot.trim() || null, expiry_date: c.r.expiry || null,
       pack_id: c.r.pack ?? null, pack_qty: c.r.pack ? c.r.pq ?? null : null,
@@ -436,6 +442,15 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
             {dup.data && <p className="text-[12px] text-destructive">{t('Already entered as {number} on {date}, {total} ({vendor}).', { number: dup.data.number ?? dup.data.vendor_invoice_number, date: formatDate(dup.data.date), total: fmt(num(dup.data.total)), vendor: dup.data.vendor })}{' '}
               <Link className="underline" to={`/procurement/bills/${dup.data.id}`}>{t('Open it')}</Link></p>}</div>
           <div className="grid gap-1.5"><Label htmlFor="pi-fiscal">{t('Fiscal number')}</Label><Input id="pi-fiscal" value={h.vendor_fiscal_number} onChange={(e) => set('vendor_fiscal_number', e.target.value)} placeholder={t('From the supplier’s fiscal invoice')} /></div>
+          {/* a tax invoice enters the VAT purchase book; a till receipt does not, and deducts no VAT (from the meeting with the staff) */}
+          <div className="grid gap-1.5"><Label>{t('The document')}</Label>
+            <Select value={h.in_vat_book ? 'tax' : 'outside'} disabled={!!doc && doc.status !== 'draft'} onValueChange={(v) => {
+              const inBook = v === 'tax'
+              set('in_vat_book', inBook)
+              if (!inBook && zeroTax) setRows((rs) => rs.map((r) => ({ ...r, tax: zeroTax })))
+            }}><SelectTrigger aria-label={t('The document')}><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="tax">{t('Tax invoice (in the purchase book)')}</SelectItem><SelectItem value="outside">{t('Till receipt or no tax invoice')}</SelectItem></SelectContent></Select>
+            {!h.in_vat_book && <p className="text-[12px] text-muted-foreground">{t('No VAT is deducted: enter the prices as paid, VAT included.')}</p>}</div>
           <div className="grid gap-1.5"><Label htmlFor="pi-date">{t('Invoice date')}</Label><Input id="pi-date" type="date" value={h.bill_date} onChange={(e) => set('bill_date', e.target.value)} /></div>
           <div className="grid gap-1.5"><Label htmlFor="pi-recv">{t('Received on')}</Label><Input id="pi-recv" type="date" value={h.receive_date} placeholder={h.bill_date} onChange={(e) => set('receive_date', e.target.value)} /></div>
           <div className="grid gap-1.5"><Label>{t('Into the warehouse')}</Label>

@@ -70,7 +70,7 @@ export const PROC_LINES = { requisitions: 'purchase_requisition_lines', orders: 
 const LIST_SELECT: Record<ProcKind, string> = {
   requisitions: 'id, number, status, created_at, required_date, estimated_total, justification, warehouse:warehouses(name), requester:profiles!purchase_requisitions_requester_profile_fkey(full_name), lines:purchase_requisition_lines(count)',
   orders: 'id, number, vendor_id, status, billing_status, order_date, expected_date, promised_date, confirmed_at, currency_code, total, total_base, vendor_reference, vendor:business_partners(name), warehouse:warehouses(name), buyer:profiles!purchase_orders_buyer_profile_fkey(full_name), lines:purchase_order_lines(quantity, qty_received, qty_billed)',
-  bills: 'id, number, vendor_id, document_type, is_debit_note, status, payment_status, match_status, vendor_invoice_number, bill_date, due_date, currency_code, total, total_base, amount_due, vendor:business_partners(name), order:purchase_orders(number)',
+  bills: 'id, number, vendor_id, document_type, is_debit_note, status, payment_status, match_status, in_vat_book, vendor_invoice_number, bill_date, due_date, currency_code, total, total_base, amount_due, vendor:business_partners(name), order:purchase_orders(number)',
 }
 const DATE_COL: Record<ProcKind, string> = { requisitions: 'created_at', orders: 'order_date', bills: 'bill_date' }
 
