@@ -841,4 +841,7 @@ export default {
   "Check the dates": "Kontrollo datat",
   "At most three years at once": "Më së shumti tre vjet njëherësh",
   "Show it by month or by unit": "Shfaqe sipas muajit ose sipas njësisë",
+  "Choose a supplier or an expense": "Zgjidh një furnitor ose një shpenzim",
+  "Choose what the expense is for": "Zgjidh për çfarë është shpenzimi",
+  "Write what was paid": "Shkruaj çfarë u pagua",
 } satisfies Dict

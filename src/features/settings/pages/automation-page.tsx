@@ -19,7 +19,9 @@ import { AutomationCard } from '../components/automation-card'
 type Settings = { pos_cash_tolerance: number; pos_count_notes: boolean; pos_void_approval: boolean; pos_close_witness: 'never' | 'difference' | 'always'
   payroll_auto_day: number | null; payroll_auto_for: 'previous' | 'current'; payroll_deduct_absence: boolean
   payroll_night_pct: number | null; payroll_holiday_pct: number | null; purchase_price_tolerance: number
-  new_items_from_bills: 'anyone' | 'approval' }
+  new_items_from_bills: 'anyone' | 'approval'
+  /** a server not updated yet has none of these */
+  pos_payouts?: 'off' | 'manager' | 'anyone'; pos_void_notify?: boolean; pos_void_notify_over?: number; pos_void_whatsapp?: string[] }
 
 export function usePayrollTillSettings() {
   const { companyId } = useCompany()
@@ -27,7 +29,7 @@ export function usePayrollTillSettings() {
     queryKey: ['automation-settings', companyId],
     enabled: !!companyId,
     queryFn: async () => unwrap(await supabase.from('company_settings')
-      .select('pos_cash_tolerance, pos_count_notes, pos_void_approval, pos_close_witness, payroll_auto_day, payroll_auto_for, payroll_deduct_absence, payroll_night_pct, payroll_holiday_pct, purchase_price_tolerance, new_items_from_bills').eq('company_id', companyId!).single()) as unknown as Settings,
+      .select('*').eq('company_id', companyId!).single()) as unknown as Settings,
   })
 }
 export function useSavePayrollTillSettings() {
@@ -47,6 +49,9 @@ export function AutomationPage() {
   const s = q.data
   const [tol, setTol] = React.useState('')
   React.useEffect(() => { if (s) setTol(String(s.pos_cash_tolerance)) }, [s])
+  const [over, setOver] = React.useState('')
+  const [phones, setPhones] = React.useState('')
+  React.useEffect(() => { if (s) { setOver(String(s.pos_void_notify_over ?? 0)); setPhones((s.pos_void_whatsapp ?? []).join(', ')) } }, [s])
   const [rise, setRise] = React.useState('')
   React.useEffect(() => { if (s) setRise(String(s.purchase_price_tolerance ?? 1)) }, [s])
 
@@ -99,6 +104,41 @@ export function AutomationPage() {
             <Switch checked={s.pos_void_approval} disabled={!can('pos.approve') || save.isPending} aria-label={t('Voids need a manager')}
               onCheckedChange={(on) => save.mutate({ pos_void_approval: on })} />
           </label>
+          {s.pos_void_notify !== undefined && (
+            <div className="grid gap-3 rounded-md border p-3 text-[13px]">
+              <label className="flex items-start justify-between gap-3">
+                <span><span className="font-medium">{t('Tell the managers of every item taken off')}</span>
+                  <span className="block text-muted-foreground">{t('At once, in DrisPRO and on the phone: the item, quantity, amount, date and time, the till and the cashier. With this on, the PIN above can be switched off so the cashier does not wait.')}</span></span>
+                <Switch checked={!!s.pos_void_notify} disabled={!can('pos.approve') || save.isPending} aria-label={t('Tell the managers of every item taken off')}
+                  onCheckedChange={(on) => save.mutate({ pos_void_notify: on })} />
+              </label>
+              {s.pos_void_notify && (
+                <div className="grid gap-3 sm:grid-cols-[180px_1fr]">
+                  <div className="grid gap-1.5"><Label htmlFor="void-over">{t('Only from this amount')}</Label>
+                    <Input id="void-over" type="number" min="0" step="any" className="text-right tabular" value={over} disabled={!can('pos.approve')}
+                      onChange={(e) => setOver(e.target.value)} onBlur={() => { if (over !== '' && Number(over) !== Number(s.pos_void_notify_over ?? 0)) save.mutate({ pos_void_notify_over: Number(over) }) }} /></div>
+                  <div className="grid gap-1.5"><Label htmlFor="void-wa">{t('Also on WhatsApp, to these numbers')}</Label>
+                    <Input id="void-wa" value={phones} disabled={!can('pos.approve')} placeholder="044 123 456, 049 765 432" onChange={(e) => setPhones(e.target.value)}
+                      onBlur={() => { const list = phones.split(/[,;\n]/).map((x) => x.trim()).filter(Boolean); if (list.join(',') !== (s.pos_void_whatsapp ?? []).join(',')) save.mutate({ pos_void_whatsapp: list }) }} />
+                    <span className="text-[12px] text-muted-foreground">{t('Needs WhatsApp set up under Messages, with the template drispro_fshirje_arke approved.')}</span></div>
+                </div>
+              )}
+            </div>
+          )}
+          {s.pos_payouts !== undefined && (
+            <div className="flex flex-wrap items-start justify-between gap-3 rounded-md border p-3 text-[13px]">
+              <span className="min-w-0 flex-1"><span className="font-medium">{t('Paying suppliers and expenses from the till')}</span>
+                <span className="block text-muted-foreground">{t('Cash from the drawer to a supplier goes onto their card at once; an expense goes into the books with the shop. Both come off the cash expected at closing.')}</span></span>
+              <Select value={s.pos_payouts} disabled={!can('pos.approve') || save.isPending} onValueChange={(v) => save.mutate({ pos_payouts: v })}>
+                <SelectTrigger className="w-64" aria-label={t('Paying suppliers and expenses from the till')}><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="manager">{t('A manager, or with their PIN')}</SelectItem>
+                  <SelectItem value="anyone">{t('Every cashier')}</SelectItem>
+                  <SelectItem value="off">{t('Nobody (only in Finance)')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </AutomationCard>
       )}
 

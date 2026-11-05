@@ -89,6 +89,42 @@ export const useOpenSession = () => useAction(async (a: { register: string; cash
   unwrap(await supabase.rpc('open_pos_session', { p_register: a.register, p_opening_cash: a.cash })) as string)
 export const useCashMove = () => useAction(async (a: { session: string; type: 'cash_in' | 'cash_out'; amount: number; reason: string }) =>
   unwrap(await supabase.rpc('pos_cash_move', { p_session: a.session, p_type: a.type, p_amount: a.amount, p_reason: a.reason })))
+/* ------------------------------------------------------------------ paying from the drawer */
+export type Payees = { payouts: 'off' | 'manager' | 'anyone'; vendors: { id: string; code: string | null; name: string; tax_number: string | null; open: number }[]
+  accounts: { id: string; code: string; name: string }[] }
+export type OpenBill = { id: string; number: string; vendor_invoice_number: string | null; bill_date: string; due_date: string | null; total: number; open: number }
+export function usePayees(register: string | undefined, enabled = true) {
+  return useQuery({ queryKey: ['pos', 'payees', register], enabled: !!register && enabled, staleTime: 30_000,
+    queryFn: async () => unwrap(await supabase.rpc('pos_payees', { p_register: register! })) as unknown as Payees })
+}
+export function useVendorBills(register: string | undefined, vendor: string | null) {
+  return useQuery({ queryKey: ['pos', 'vendor-bills', register, vendor], enabled: !!register && !!vendor,
+    queryFn: async () => unwrap(await supabase.rpc('pos_vendor_bills', { p_register: register!, p_vendor: vendor! })) as unknown as OpenBill[] })
+}
+export type PayOut = { kind: 'supplier' | 'expense'; amount: number; partner_id?: string | null; bills?: { id: string; amount: number }[]
+  account_id?: string | null; note?: string | null; document_no?: string | null; approval?: string | null }
+export function usePayOut() {
+  const qc = useQueryClient()
+  const { companyId } = useCompany()
+  return useMutation({
+    mutationFn: async (a: { session: string; p: PayOut }) =>
+      unwrap(await supabase.rpc('pos_pay_out', { p_session: a.session, p: a.p as never })) as unknown as { id: string; number?: string; allocated?: number; advance?: number },
+    // the till's lists, the supplier's card and the books
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: ['pos'] }), qc.invalidateQueries({ queryKey: ['fin', companyId] })]),
+    onError: (e) => toast.error(describeError(e)),
+  })
+}
+export type SessionPayout = { id: string; kind: 'cash' | 'supplier' | 'expense'; movement_type: 'cash_in' | 'cash_out'; amount: number; reason: string
+  partner: string | null; payment: string | null; account: string | null; document_no: string | null; at: string; by: string | null; approved_by: string | null }
+export function useSessionPayouts(id: string | undefined) {
+  return useQuery({ queryKey: ['pos', 'payouts', id], enabled: !!id,
+    queryFn: async () => {
+      const r = await supabase.rpc('pos_session_payouts', { p_session: id! })
+      if (r.error?.code === 'PGRST202') return [] as SessionPayout[]   // a server not updated yet
+      return unwrap(r) as unknown as SessionPayout[]
+    } })
+}
+
 /** closing: the count (by note and coin when it was counted that way) and the manager's confirmation, if one was asked */
 export const useCloseSession = () => useAction(async (a: { session: string; counted: number; notes?: string; notesCoins?: Record<string, number> | null; approval?: string | null }) => {
   await flushTillLog().catch(() => undefined)
@@ -99,7 +135,7 @@ export const useCloseSession = () => useAction(async (a: { session: string; coun
 })
 
 /** the manager types their PIN on the cashier's screen */
-export async function posApprove(register: string, member: string, pin: string, purpose: 'void' | 'close') {
+export async function posApprove(register: string, member: string, pin: string, purpose: 'void' | 'close' | 'payout') {
   return unwrap(await supabase.rpc('pos_approve', { p_register: register, p_member: member, p_pin: pin, p_purpose: purpose })) as unknown as { approval?: string; name?: string; error?: string }
 }
 
@@ -127,6 +163,10 @@ export type TillOptions = {
   tolerance?: number
   /** the store managers who can confirm with their PIN */
   managers?: { member_id: string; name: string }[]
+  /** who may pay a supplier or an expense from the drawer */
+  payouts?: 'off' | 'manager' | 'anyone'
+  /** the managers are told of every item taken off */
+  void_notify?: boolean
 }
 export type CatalogItem = { variant_id: string; sku: string; name: string; category: string | null; barcodes: { code: string; qty: number }[]
   price: number; tax_code_id: string | null; tax_rate: number; tracking: string; on_hand: number; product_type: string }

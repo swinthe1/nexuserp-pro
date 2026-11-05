@@ -32,7 +32,7 @@ import { useBankAccounts, useJournals } from '@/features/finance/api'
 import { AccountingTab } from '@/features/finance/components/t-accounts'
 import { useLocations, useWarehouses } from '@/features/inventory/api'
 import { usePartners, usePriceLists } from '@/features/sales/api'
-import { posKeys, useRegisters, useSaveRegister, useSessionControls, useSessionDetail, useSessions, type Register, type SessionRow } from '../api'
+import { posKeys, useRegisters, useSaveRegister, useSessionControls, useSessionDetail, useSessionPayouts, useSessions, type Register, type SessionRow } from '../api'
 import { discard, retry, syncNow, useSyncState } from '../offline'
 import { printReceipt, printZReport } from '../receipt'
 import type { FiscalHeader } from '../fiscal-receipt'
@@ -266,6 +266,7 @@ export function PosSessionPage() {
   const { company } = useCompany()
   const q = useSessionDetail(id)
   const ctl = useSessionControls(id)
+  const payouts = useSessionPayouts(id)
   const regId = q.data?.session.register_id
   const paper = useQuery({ queryKey: ['pos-paper', regId], enabled: !!regId, staleTime: 300_000,
     queryFn: async () => (unwrap(await supabase.from('pos_registers').select('*').eq('id', regId!).single()) as { paper_mm?: number }).paper_mm ?? 80 })
@@ -380,6 +381,26 @@ export function PosSessionPage() {
                       <TableCell className="text-right tabular">{formatMoney(l.amount)}</TableCell>
                       <TableCell>{l.cashier ?? '—'}</TableCell>
                       <TableCell>{l.approved_by ?? <span className="text-warning">{l.offline ? t('Nobody (offline)') : t('Nobody')}</span>}</TableCell>
+                    </TableRow>
+                  ))}</TableBody>
+                </Table>
+              )}
+            </CardContent></Card>
+            <Card><CardHeader className="pb-2"><CardTitle>{t('Cash in and out of the drawer')}</CardTitle></CardHeader><CardContent className="overflow-x-auto p-0">
+              {!payouts.data?.length ? <EmptyState compact title={t('No cash in or out in this shift')} description={t('Change added, cash taken out, suppliers and expenses paid from the till show up here.')} /> : (
+                <Table>
+                  <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Time')}</TableHead><TableHead>{t('What')}</TableHead><TableHead>{t('For')}</TableHead>
+                    <TableHead>{t('Document no.')}</TableHead><TableHead className="text-right">{t('Amount')}</TableHead><TableHead>{t('Recorded by')}</TableHead><TableHead>{t('Confirmed by')}</TableHead></TableRow></TableHeader>
+                  <TableBody>{payouts.data.map((m) => (
+                    <TableRow key={m.id}>
+                      <TableCell className="whitespace-nowrap tabular">{formatDate(m.at, true)}</TableCell>
+                      <TableCell className="whitespace-nowrap">{m.kind === 'supplier' ? t('Supplier paid') : m.kind === 'expense' ? t('Expense') : m.movement_type === 'cash_in' ? t('Cash in') : t('Cash out')}</TableCell>
+                      <TableCell>{m.kind === 'supplier' ? <>{m.partner}{m.payment && <span className="ml-1.5 text-muted-foreground">{m.payment}</span>}</>
+                        : m.kind === 'expense' ? <>{td(m.account ?? '')}<span className="block text-[12px] text-muted-foreground">{m.reason}</span></> : m.reason}</TableCell>
+                      <TableCell>{m.document_no ?? '—'}</TableCell>
+                      <TableCell className={cn('whitespace-nowrap text-right tabular', m.movement_type === 'cash_out' && 'text-destructive')}>{m.movement_type === 'cash_out' ? '−' : ''}{formatMoney(m.amount)}</TableCell>
+                      <TableCell>{m.by ?? '—'}</TableCell>
+                      <TableCell>{m.approved_by ?? '—'}</TableCell>
                     </TableRow>
                   ))}</TableBody>
                 </Table>

@@ -47,7 +47,7 @@ Për mesazhe që dërgohen vetë, Meta kërkon "WhatsApp Business Platform" (jo 
   d) Business Settings → Users → System users → Add (Admin) → Generate token me lejet
      whatsapp_business_messaging dhe whatsapp_business_management, pa skadim. Kopjojeni.
   e) WhatsApp Manager → Message templates → Create, gjuha "Albanian", kategoria "Utility".
-     Dy shabllone me këta emra dhe këto tekste (Meta i miraton zakonisht brenda një dite):
+     Shabllonet me këta emra dhe këto tekste (Meta i miraton zakonisht brenda një dite):
 
      Emri: drispro_permbledhja
        Përmbledhja e {{1}} për {{2}}:
@@ -59,6 +59,15 @@ Për mesazhe që dërgohen vetë, Meta kërkon "WhatsApp Business Platform" (jo 
 
      Emri: drispro_kujtese
        Përshëndetje {{1}}, ju shkruan {{2}}. Ju kujtojmë që këto fatura janë ende të papaguara: {{3}}. Gjithsej: {{4}}. Nëse i keni paguar, ju lutemi mos e merrni parasysh këtë mesazh. Faleminderit!
+
+     Emri: drispro_fshirje_arke   (vetëm nëse kompania do njoftim në WhatsApp për artikujt e fshirë në arkë)
+       {{1}}: u fshi një artikull në {{2}}.
+       Artikulli: {{3}}
+       Sasia: {{4}}
+       Vlera: {{5}}
+       Koha: {{6}}
+       Kasieri: {{7}}
+       Konfirmoi: {{8}}
 
   f) Në server:
        bash /root/drispro/deploy/coolify/update.sh --whatsapp

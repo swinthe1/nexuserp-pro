@@ -2326,6 +2326,10 @@ export type Database = {
           atk_sef_enabled: boolean
           atk_default_type: string
           new_items_from_bills: string
+          pos_payouts: string
+          pos_void_notify: boolean
+          pos_void_notify_over: number
+          pos_void_whatsapp: string[]
         }
         Insert: {
           id?: string
@@ -2405,6 +2409,10 @@ export type Database = {
           atk_sef_enabled?: boolean
           atk_default_type?: string
           new_items_from_bills?: string
+          pos_payouts?: string
+          pos_void_notify?: boolean
+          pos_void_notify_over?: number
+          pos_void_whatsapp?: string[]
         }
         Update: {
           id?: string
@@ -2484,6 +2492,10 @@ export type Database = {
           atk_sef_enabled?: boolean
           atk_default_type?: string
           new_items_from_bills?: string
+          pos_payouts?: string
+          pos_void_notify?: boolean
+          pos_void_notify_over?: number
+          pos_void_whatsapp?: string[]
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -7856,6 +7868,13 @@ export type Database = {
           created_by: string | null
           updated_at: string
           updated_by: string | null
+          kind: string
+          partner_id: string | null
+          payment_id: string | null
+          account_id: string | null
+          document_no: string | null
+          approved_by: string | null
+          journal_entry_id: string | null
         }
         Insert: {
           id?: string
@@ -7868,6 +7887,13 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          kind?: string
+          partner_id?: string | null
+          payment_id?: string | null
+          account_id?: string | null
+          document_no?: string | null
+          approved_by?: string | null
+          journal_entry_id?: string | null
         }
         Update: {
           id?: string
@@ -7880,6 +7906,13 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          kind?: string
+          partner_id?: string | null
+          payment_id?: string | null
+          account_id?: string | null
+          document_no?: string | null
+          approved_by?: string | null
+          journal_entry_id?: string | null
         }
         Relationships: [
           { foreignKeyName: "pos_cash_movements_company_id_session_id_fkey"; columns: ["company_id", "session_id"]; isOneToOne: false; referencedRelation: "pos_sessions"; referencedColumns: ["company_id", "id"] },
@@ -17932,6 +17965,19 @@ export type Database = {
         }
         Returns: Json
       }
+      pos_pay_out: {
+        Args: {
+          p_session: string
+          p: Json
+        }
+        Returns: Json
+      }
+      pos_payees: {
+        Args: {
+          p_register: string
+        }
+        Returns: Json
+      }
       pos_promotions: {
         Args: {
           p_register: string
@@ -17946,6 +17992,12 @@ export type Database = {
         Returns: undefined
       }
       pos_session_controls: {
+        Args: {
+          p_session: string
+        }
+        Returns: Json
+      }
+      pos_session_payouts: {
         Args: {
           p_session: string
         }
@@ -17966,6 +18018,13 @@ export type Database = {
       pos_till_options: {
         Args: {
           p_register: string
+        }
+        Returns: Json
+      }
+      pos_vendor_bills: {
+        Args: {
+          p_register: string
+          p_vendor: string
         }
         Returns: Json
       }

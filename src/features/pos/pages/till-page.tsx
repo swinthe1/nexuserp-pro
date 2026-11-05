@@ -19,13 +19,14 @@ import { usePhone } from '@/hooks/use-phone'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { formatDateWith, msg, t, td, tEnum, tn, tServer } from '@/i18n'
-import { cn, formatMoney, num, todayISO } from '@/lib/utils'
-import { lookupReceipt, posApprove, sessionControls, useCashMove, useCloseSession, useOpenSession, useSessionSummary, useTill, type CatalogItem, type ReceiptLookup, type TillData } from '../api'
+import { cn, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
+import { lookupReceipt, posApprove, sessionControls, useCashMove, useCloseSession, useOpenSession, usePayees, usePayOut, useSessionSummary, useTill, useVendorBills, type CatalogItem, type ReceiptLookup, type TillData } from '../api'
 import { enqueue, logTill, nextDeviceRef, syncNow, useOnSynced, useSyncState, type QueuedSale, type TillLogEntry } from '../offline'
 import { ManagerDialog, ManagerPinFields, pinReady } from '../manager-pin'
 import { printReceipt, printZReport, type ReceiptData } from '../receipt'
@@ -515,7 +516,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
             <DropdownMenuContent align="end" className="w-60">
               <DropdownMenuItem onSelect={openRefund}><RotateCcw /> {t('Refund')}</DropdownMenuItem>
               {data.atk?.required && <DropdownMenuItem onSelect={() => setBlockOpen(true)}><NotebookPen /> {t('From the receipt book')}</DropdownMenuItem>}
-              <DropdownMenuItem onSelect={() => setDialog('cash')}><Wallet /> {t('Cash in/out')}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setDialog('cash')}><Wallet /> {t('Cash and payments')}</DropdownMenuItem>
               <DropdownMenuCheckboxItem checked={autoPrint} onCheckedChange={() => setAutoPrint((a) => { prefSet('pos.autoprint', a ? '0' : '1'); return !a })}>
                 <Printer className="mr-2 size-4" /> {t('Print a receipt automatically after each sale')}</DropdownMenuCheckboxItem>
               <DropdownMenuItem onSelect={() => setDialog('close')}><LogOut /> {t('Close till')}</DropdownMenuItem>
@@ -525,7 +526,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
         <div className="ml-auto flex items-center gap-1.5">
           {data.atk?.required && <Button variant="ghost" size="sm" onClick={() => setBlockOpen(true)} title={t('Register a coupon written in the fiscal receipt book while the till was down')}><NotebookPen /> {t('From the receipt book')}</Button>}
           <Button variant="ghost" size="sm" onClick={openRefund}><RotateCcw /> {t('Refund')} <Kbd>F9</Kbd></Button>
-          <Button variant="ghost" size="sm" onClick={() => setDialog('cash')}><Wallet /> {t('Cash in/out')}</Button>
+          <Button variant="ghost" size="sm" onClick={() => setDialog('cash')}><Wallet /> {t('Cash and payments')}</Button>
           <Button variant="ghost" size="sm" onClick={() => { setAutoPrint((a) => { prefSet('pos.autoprint', a ? '0' : '1'); return !a }) }} aria-pressed={autoPrint}
             title={t('Print a receipt automatically after each sale')}><Printer /> {autoPrint ? t('Auto-print on') : t('Auto-print off')}</Button>
           <Button variant="outline" size="sm" onClick={() => setDialog('close')}><LogOut /> {t('Close till')}</Button>
@@ -707,7 +708,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
         onClose={(p) => { if (p) updateLine(selectedLine.key, p); setDialog(null); focusSearch() }} onRemove={() => { removeLine(selectedLine.key); setDialog(null); focusSearch() }} />}
       {dialog === 'refund' && <RefundDialog data={data} currency={cur} onClose={() => { setDialog(null); focusSearch() }}
         onRefund={(of, ls, method, cancelReason) => finish([{ method, amount: -r2(ls.reduce((s, l) => s + Math.abs(lineTotal(l)), 0)) }], { refund: { of, lines: ls, cancelReason } })} />}
-      {dialog === 'cash' && <CashDialog sessionId={session.id} currency={cur} onClose={() => { setDialog(null); focusSearch() }} />}
+      {dialog === 'cash' && <CashDialog data={data} sessionId={session.id} currency={cur} onClose={() => { setDialog(null); focusSearch() }} />}
       {dialog === 'close' && <CloseDialog data={data} pending={pending.length} onClose={() => { setDialog(null); focusSearch() }}
         onClosed={async (sessionId) => { await reload(); navigate(`/pos/sessions/${sessionId}`) }} />}
       {dialog === 'queue' && (
@@ -1048,23 +1049,159 @@ function RefundDialog({ data, currency, onClose, onRefund }: { data: TillData; c
   )
 }
 
-function CashDialog({ sessionId, currency, onClose }: { sessionId: string; currency: string; onClose: () => void }) {
+/**
+ * Money in or out of the drawer: change added, cash taken to the bank, and (from the meeting with the
+ * staff) paying a supplier or an expense. A supplier's payment goes onto their card at once: on the
+ * invoices ticked, else the oldest first; an expense goes into its account. Both need internet.
+ */
+function CashDialog({ data, sessionId, currency, onClose }: { data: TillData; sessionId: string; currency: string; onClose: () => void }) {
+  const { can } = useCompany()
   const move = useCashMove()
+  const payOut = usePayOut()
+  const mode = data.options?.payouts ?? 'manager'
+  const [tab, setTab] = React.useState<'cash' | 'supplier' | 'expense'>('cash')
+  const payees = usePayees(data.register.id, tab !== 'cash' && mode !== 'off')
   const [type, setType] = React.useState<'cash_in' | 'cash_out'>('cash_out')
   const [amount, setAmount] = React.useState('')
   const [reason, setReason] = React.useState('')
+  const [vendor, setVendor] = React.useState<string | null>(null)
+  const [q, setQ] = React.useState('')
+  const [picked, setPicked] = React.useState<string[]>([])
+  const [account, setAccount] = React.useState('')
+  const [docNo, setDocNo] = React.useState('')
+  const bills = useVendorBills(data.register.id, tab === 'supplier' ? vendor : null)
+  const drawer = useSessionSummary(tab !== 'cash' ? sessionId : undefined)
+  const inDrawer = drawer.data ? num((drawer.data as { expected_cash?: number }).expected_cash) : null
+  const managers = data.options?.managers ?? []
+  const needPin = tab !== 'cash' && mode === 'manager' && !can('pos.approve')
+  const [member, setMember] = React.useState(managers.length === 1 ? managers[0]!.member_id : '')
+  const [pin, setPin] = React.useState('')
+  const [error, setError] = React.useState<string | null>(null)
+  const amt = num(amount)
+  const v = payees.data?.vendors.find((x) => x.id === vendor)
+  const list = (payees.data?.vendors ?? []).filter((x) => !q || `${x.name} ${x.code ?? ''} ${x.tax_number ?? ''}`.toLowerCase().includes(q.toLowerCase())).slice(0, 60)
+  const pickedOpen = (bills.data ?? []).filter((b) => picked.includes(b.id)).reduce((a, b) => a + num(b.open), 0)
+  const toggleBill = (id: string) => setPicked((p) => {
+    const n = p.includes(id) ? p.filter((x) => x !== id) : [...p, id]
+    const sum = (bills.data ?? []).filter((b) => n.includes(b.id)).reduce((a, b) => a + num(b.open), 0)
+    if (n.length) setAmount(String(Math.round(sum * 100) / 100))
+    return n
+  })
+  const ready = amt > 0 && (tab === 'cash' || inDrawer == null || amt <= inDrawer + 0.004) && (tab === 'cash' ? !!reason.trim() : tab === 'supplier' ? !!vendor : !!account && !!reason.trim()) && (!needPin || pinReady(member, pin))
+  const busy = move.isPending || payOut.isPending
+
+  const submit = async () => {
+    if (!ready || busy) return
+    setError(null)
+    if (tab === 'cash') {
+      await move.mutateAsync({ session: sessionId, type, amount: amt, reason })
+      toast.success(type === 'cash_in' ? t('Cash in recorded') : t('Cash out recorded'))
+      onClose(); return
+    }
+    let approval: string | null = null
+    if (needPin) {
+      try {
+        const a = await posApprove(data.register.id, member, pin, 'payout')
+        if (a.error || !a.approval) { setError(t(a.error ?? 'Wrong PIN')); setPin(''); return }
+        approval = a.approval
+      } catch (e) { setError(describeError(e)); return }
+    }
+    try {
+      const r = await payOut.mutateAsync({ session: sessionId, p: tab === 'supplier'
+        ? { kind: 'supplier', amount: amt, partner_id: vendor, bills: picked.map((id) => ({ id, amount: num(bills.data?.find((b) => b.id === id)?.open) })), note: reason.trim() || null, document_no: docNo.trim() || null, approval }
+        : { kind: 'expense', amount: amt, account_id: account, note: reason.trim(), document_no: docNo.trim() || null, approval } })
+      if (tab === 'supplier') {
+        toast.success(t('Paid {amount} to {name}', { amount: formatMoney(amt), name: v?.name ?? '' }), {
+          description: num(r.advance) > 0 ? t('{amount} stays on the card as paid in advance.', { amount: formatMoney(num(r.advance)) }) : r.number ?? undefined })
+      } else toast.success(t('Expense recorded'))
+      onClose()
+    } catch { /* the toast says why */ }
+  }
+
   return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader><DialogTitle>{t('Cash in or out')}</DialogTitle><DialogDescription>{t('Adding small change, paying a courier from the drawer, taking cash to the bank during the day. Needs internet.')}</DialogDescription></DialogHeader>
-        <form className="grid gap-3" onSubmit={async (e) => { e.preventDefault(); await move.mutateAsync({ session: sessionId, type, amount: num(amount), reason }); toast.success(type === 'cash_in' ? t('Cash in recorded') : t('Cash out recorded')); onClose() }}>
-          <div className="grid grid-cols-2 gap-2">
-            <Button type="button" variant={type === 'cash_in' ? 'default' : 'outline'} onClick={() => setType('cash_in')}>{t('Cash in')}</Button>
-            <Button type="button" variant={type === 'cash_out' ? 'default' : 'outline'} onClick={() => setType('cash_out')}>{t('Cash out')}</Button>
-          </div>
-          <Input autoFocus inputMode="decimal" aria-label={t('Amount in {currency}', { currency })} className="h-12 text-right text-xl tabular" value={amount} onChange={(e) => setAmount(e.target.value.replace(',', '.'))} placeholder={`0.00 ${currency}`} />
-          <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('Reason, e.g. Paid the courier')} aria-label={t('Reason')} />
-          <DialogFooter><Button type="button" variant="ghost" onClick={onClose}>{t('Cancel')}</Button><Button type="submit" loading={move.isPending} disabled={!(num(amount) > 0) || !reason.trim()}>{t('Record')}</Button></DialogFooter>
+    <Dialog open onOpenChange={(o) => !o && !busy && onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader><DialogTitle>{t('Cash and payments')}</DialogTitle>
+          <DialogDescription>{tab === 'cash' ? t('Adding small change, paying a courier from the drawer, taking cash to the bank during the day. Needs internet.')
+            : tab === 'supplier' ? t('Cash from the drawer to a supplier. It goes onto the supplier\'s card at once: on the invoices you tick, otherwise the oldest first.')
+            : t('Cash from the drawer for an expense of the shop. It goes into the books with the shop. Keep the receipt.')}</DialogDescription></DialogHeader>
+        <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
+          {([['cash', t('Cash in/out')], ['supplier', t('Supplier')], ['expense', t('Expense')]] as const).map(([k, label]) => (
+            <button key={k} type="button" onClick={() => { setTab(k); setError(null) }}
+              className={cn('h-9 rounded-md text-[13px] font-medium', tab === k ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground')}>{label}</button>
+          ))}
+        </div>
+        <form className="grid gap-3" onSubmit={(e) => { e.preventDefault(); void submit() }}>
+          {tab === 'cash' && (
+            <div className="grid grid-cols-2 gap-2">
+              <Button type="button" variant={type === 'cash_in' ? 'default' : 'outline'} onClick={() => setType('cash_in')}>{t('Cash in')}</Button>
+              <Button type="button" variant={type === 'cash_out' ? 'default' : 'outline'} onClick={() => setType('cash_out')}>{t('Cash out')}</Button>
+            </div>
+          )}
+          {tab !== 'cash' && mode === 'off' && (
+            <p className="rounded-md border border-dashed p-3 text-[13px] text-muted-foreground">{t('Payments from the till are switched off. They are made in Finance.')}</p>
+          )}
+          {tab === 'supplier' && mode !== 'off' && (vendor && v ? (
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/40 px-3 py-2 text-[13px]">
+                <span className="min-w-0"><span className="block truncate font-medium">{v.name}</span>
+                  <span className="text-muted-foreground">{num(v.open) > 0 ? t('Owed: {amount}', { amount: formatMoney(num(v.open)) }) : t('Nothing owed')}</span></span>
+                <Button type="button" size="sm" variant="ghost" onClick={() => { setVendor(null); setPicked([]) }}>{t('Change|edit')}</Button>
+              </div>
+              {bills.data && bills.data.length > 0 && (
+                <div className="max-h-44 overflow-y-auto rounded-md border text-[13px]">
+                  {bills.data.map((b) => (
+                    <label key={b.id} className="flex cursor-pointer items-center gap-2 border-b px-3 py-2 last:border-0 hover:bg-muted">
+                      <input type="checkbox" className="size-4 accent-primary" checked={picked.includes(b.id)} onChange={() => toggleBill(b.id)} />
+                      <span className="min-w-0 flex-1 truncate">{b.vendor_invoice_number || b.number}<span className="ml-1.5 text-muted-foreground">{formatDate(b.bill_date)}</span></span>
+                      <span className="tabular">{formatMoney(num(b.open))}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+              {picked.length > 0 && amt > pickedOpen + 0.004 && <p className="text-[12px] text-muted-foreground">{t('{amount} more than the invoices ticked stays on the card as paid in advance.', { amount: formatMoney(amt - pickedOpen) })}</p>}
+            </div>
+          ) : (
+            <div className="grid gap-2">
+              <div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input autoFocus className="h-10 pl-9" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Name, code or NIPT')}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (list[0]) setVendor(list[0].id) } }} /></div>
+              <div className="max-h-56 overflow-y-auto rounded-md border">
+                {payees.isLoading ? <Skeleton className="m-2 h-16" /> : !list.length ? <p className="p-3 text-[13px] text-muted-foreground">{t('Nothing found')}</p> : list.map((x) => (
+                  <button key={x.id} type="button" className="flex w-full justify-between gap-2 border-b px-3 py-2.5 text-left text-[13px] last:border-0 hover:bg-muted" onClick={() => setVendor(x.id)}>
+                    <span className="truncate">{x.name}</span><span className={cn('shrink-0 tabular', num(x.open) > 0 ? 'font-medium' : 'text-muted-foreground')}>{num(x.open) > 0 ? formatMoney(num(x.open)) : (x.tax_number ?? x.code)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+          {tab === 'expense' && mode !== 'off' && (
+            <div className="grid gap-1.5"><Label>{t('What for')}</Label>
+              <Select value={account} onValueChange={setAccount}>
+                <SelectTrigger aria-label={t('What for')}><SelectValue placeholder={t('Choose the kind of expense')} /></SelectTrigger>
+                <SelectContent>{(payees.data?.accounts ?? []).map((a) => <SelectItem key={a.id} value={a.id}>{a.code} · {td(a.name)}</SelectItem>)}</SelectContent>
+              </Select></div>
+          )}
+          {(tab === 'cash' || (mode !== 'off' && (tab === 'expense' || !!vendor))) && (<>
+            <Input autoFocus={tab === 'cash'} inputMode="decimal" aria-label={t('Amount in {currency}', { currency })} className="h-12 text-right text-xl tabular" value={amount}
+              onChange={(e) => setAmount(e.target.value.replace(',', '.'))} placeholder={`0.00 ${currency}`} />
+            {tab !== 'cash' && inDrawer != null && (
+              <p className={cn('-mt-1 text-right text-[12px]', amt > inDrawer + 0.004 ? 'font-medium text-destructive' : 'text-muted-foreground')}>
+                {t('In the drawer: {amount}', { amount: formatMoney(inDrawer) })}</p>
+            )}
+            <div className={cn('grid gap-2', tab !== 'cash' && 'grid-cols-[1fr_140px]')}>
+              <Input value={reason} onChange={(e) => setReason(e.target.value)} aria-label={t('Reason')}
+                placeholder={tab === 'cash' ? t('Reason, e.g. Paid the courier') : tab === 'supplier' ? t('Note (not required)') : t('What was paid, e.g. Cleaning products')} />
+              {tab !== 'cash' && <Input value={docNo} onChange={(e) => setDocNo(e.target.value)} aria-label={t('Document number')} placeholder={t('Document no.')} />}
+            </div>
+          </>)}
+          {needPin && (managers.length
+            ? <div className="grid gap-1.5 rounded-md border p-3"><p className="text-[12.5px] text-muted-foreground">{t('A manager confirms a payment from the till with their PIN')}</p>
+                <ManagerPinFields managers={managers} member={member} onMember={setMember} pin={pin} onPin={setPin} /></div>
+            : <p className="text-[13px] text-destructive">{t('No manager has a PIN yet. The administrator gives one in Settings → Users.')}</p>)}
+          {error && <p className="text-[13px] text-destructive">{error}</p>}
+          <DialogFooter><Button type="button" variant="ghost" onClick={onClose} disabled={busy}>{t('Cancel')}</Button>
+            <Button type="submit" loading={busy} disabled={!ready || (tab !== 'cash' && mode === 'off')}>{tab === 'cash' ? t('Record') : t('Pay {amount}', { amount: amt > 0 ? formatMoney(amt) : '' })}</Button></DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
