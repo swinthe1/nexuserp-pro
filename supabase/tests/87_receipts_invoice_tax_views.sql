@@ -63,6 +63,18 @@ select t.ok(not exists (select 1 from app.vat_entries(:'co', current_date, curre
 set role authenticated;
 select t.throws(format($q$update public.vendor_bills set in_vat_book = true where id = %L$q$, :'bill2'), 'cannot be changed', 'once posted, it is not moved in or out of the book');
 
+-- #6: a supplier's credit on goods already received does not change the margin of the sales; it has its own line
+select public.profit_report(:'co', jsonb_build_object('from', date_trunc('month', current_date)::date, 'to', current_date)) -> 'cells' -> to_char(current_date, 'YYYY-MM') as p0 \gset
+insert into public.vendor_bills (company_id, vendor_id, vendor_invoice_number, bill_date, document_type, original_bill_id)
+values (:'co', :'ven', 'RABAT-1', current_date, 'vendor_credit', :'bill') returning id as cr \gset
+insert into public.vendor_bill_lines (company_id, bill_id, line_no, variant_id, description, quantity, unit_price, tax_code_id) values (:'co', :'cr', 1, :'beer', 'Rabat', 1, 0.5, :'vat18');
+select public.post_vendor_bill(:'cr');
+select public.profit_report(:'co', jsonb_build_object('from', date_trunc('month', current_date)::date, 'to', current_date)) -> 'cells' -> to_char(current_date, 'YYYY-MM') as p1 \gset
+select t.ok((:'p1'::jsonb ->> 'gross_profit')::numeric = (:'p0'::jsonb ->> 'gross_profit')::numeric
+            and (:'p1'::jsonb ->> 'supplier')::numeric = (:'p0'::jsonb ->> 'supplier')::numeric + 0.5
+            and (:'p1'::jsonb ->> 'net_profit')::numeric = (:'p0'::jsonb ->> 'net_profit')::numeric + 0.5,
+  'a supplier''s rebate: the margin stays, the profit shows it on its own line');
+
 -- ---------------------------------------------------------------- 2. the profit tax: as the document says
 select (public.cit_worksheet(:'co', extract(year from current_date)::int) ->> 'nondeductible_total')::numeric as nd0 \gset
 select public.expense_book(null, jsonb_build_object('company_id', :'co', 'vendor_name', 'Restorant Ura', 'number', 'R-12', 'date', current_date, 'category', 'meals',

@@ -50,6 +50,7 @@ export default {
   "Expenses not recognised for the profit tax": "Shpenzime që nuk njihen për tatimin në fitim",
   "Profit for the profit tax": "Fitimi për tatimin në fitim",
   "Management view": "Pamja e menaxhimit",
+  "Supplier rebates and price differences": "Rabatet dhe diferencat e çmimit nga furnitorët",
   "Tax view": "Pamja tatimore",
   "Management view: every real cost in the books, then the internal costs that no one is paid (the rent of a shop the company owns, a share of the office).":
     "Pamja e menaxhimit: të gjitha shpenzimet reale nga kontabiliteti, pastaj kostot e brendshme që nuk i paguhen askujt (qiraja e një lokali në pronë të kompanisë, pjesa e zyrës).",

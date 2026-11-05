@@ -19,7 +19,7 @@ import { cn, formatMoney, formatMonth, formatQty, todayISO } from '@/lib/utils'
 import { useWarehouses } from '@/features/inventory/api'
 
 type Cell = { gross_sales: number; discounts: number; returns: number; net_sales: number; cogs: number; gross_profit: number; gross_margin_pct: number | null
-  opex: number; other_expense: number; other_income: number; interest: number; net_profit: number; net_margin_pct: number | null
+  supplier: number; opex: number; other_expense: number; other_income: number; interest: number; net_profit: number; net_margin_pct: number | null
   internal: number; managerial_profit: number; nondeductible: number; tax_base: number }
 type Data = { columns: { key: string; label: string }[]; cells: Record<string, Cell>; currency: string; by: 'month' | 'unit' }
 type K = keyof Cell
@@ -33,6 +33,8 @@ const LINES: { k: K; label: () => string; sign?: '−' | '+' | '='; strong?: boo
   { k: 'cogs', label: () => t('Cost of goods sold'), sign: '−' },
   { k: 'gross_profit', label: () => t('Gross profit'), sign: '=', strong: true },
   { k: 'gross_margin_pct', label: () => t('Gross margin %'), pct: true },
+  // what the suppliers give back afterwards (credit notes, rebates): apart, so the margin of the sales stays as sold
+  { k: 'supplier', label: () => t('Supplier rebates and price differences'), sign: '+' },
   { k: 'opex', label: () => t('Operating expenses'), sign: '−' },
   { k: 'other_expense', label: () => t('Other expenses'), sign: '−' },
   { k: 'other_income', label: () => t('Other income'), sign: '+' },
@@ -58,7 +60,7 @@ function total(cells: Cell[]): Cell {
   const s = (k: K) => cells.reduce((a, c) => a + Number(c[k] ?? 0), 0)
   const net = s('net_sales'), gp = s('gross_profit'), np = s('net_profit')
   return { gross_sales: s('gross_sales'), discounts: s('discounts'), returns: s('returns'), net_sales: net, cogs: s('cogs'), gross_profit: gp,
-    gross_margin_pct: net ? Math.round((gp / net) * 1000) / 10 : null, opex: s('opex'), other_expense: s('other_expense'), other_income: s('other_income'),
+    gross_margin_pct: net ? Math.round((gp / net) * 1000) / 10 : null, supplier: s('supplier'), opex: s('opex'), other_expense: s('other_expense'), other_income: s('other_income'),
     interest: s('interest'), net_profit: np, net_margin_pct: net ? Math.round((np / net) * 1000) / 10 : null,
     internal: s('internal'), managerial_profit: s('managerial_profit'), nondeductible: s('nondeductible'), tax_base: s('tax_base') }
 }

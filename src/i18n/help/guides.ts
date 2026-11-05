@@ -173,7 +173,7 @@ const BASE: Record<string, Guide> = {
       { sq: 'Totali duhet të dalë si në letër: kontrollo TVSH-në dhe zbritjet para se ta kompletosh.', en: 'The total must match the paper: check the VAT and discounts before completing.' },
       { sq: 'Mos e regjistro dy herë të njëjtën faturë: programi paralajmëron kur numri përsëritet.', en: 'Do not record the same bill twice: the program warns when the number repeats.' },
     ],
-    after: { sq: 'Malli hyn në stok, fatura shkon te "Kujt i kam borxh" dhe në librin e blerjeve.', en: 'The goods enter stock; the bill goes to payables and the purchase book.' },
+    after: { sq: 'Malli hyn në stok, fatura shkon te "Të pagueshmet" dhe në librin e blerjeve.', en: 'The goods enter stock; the bill goes to payables and the purchase book.' },
     tour: [
       { target: 'Vendor', say: { sq: 'Fillo me furnitorin.', en: 'Start with the vendor.' } },
       { target: 'Invoice date', say: { sq: 'Data e faturës, si në letër.', en: 'The invoice date, as on the paper.' } },
@@ -276,7 +276,7 @@ const BASE: Record<string, Guide> = {
       { sq: 'Zilja 🔔 i dërgon klientit kujtesë menjëherë.', en: 'The bell 🔔 sends the customer a reminder now.' },
       { sq: '"Arkëto" hap pagesën për atë klient.', en: '"Collect" opens a payment for that customer.' },
     ],
-    after: { sq: 'Te skeda "Kujt i kam borxh" sheh anën tjetër: çfarë u detyrohesh furnitorëve.', en: 'The "Payables" tab shows the other side: what you owe vendors.' },
+    after: { sq: 'Te skeda "Të pagueshmet" sheh anën tjetër: çfarë u detyrohesh furnitorëve.', en: 'The "Payables" tab shows the other side: what you owe vendors.' },
   },
   '/finance/payables': {
     what: { sq: 'Kujt i ke borxh: faturat e furnitorëve të papaguara, sipas vonesës.', en: 'What you owe: unpaid vendor bills by how overdue they are.' },
