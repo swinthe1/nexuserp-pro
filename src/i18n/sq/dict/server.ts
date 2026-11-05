@@ -837,4 +837,8 @@ export default {
   "Kosovo invoices are not sent to ATK through the fiscal software; only till coupons are": "Faturat në Kosovë nuk i dërgohen ATK-së përmes softuerit fiskal; vetëm kuponët e arkës",
   "A cancellation coupon needs its reason": "Kuponi i anulimit duhet ta ketë arsyen",
   "A training company never sends anything to ATK": "Kompania e trajnimit nuk i dërgon kurrë asgjë ATK-së",
+  "Choose sales or purchases": "Zgjidh shitjet ose blerjet",
+  "Check the dates": "Kontrollo datat",
+  "At most three years at once": "Më së shumti tre vjet njëherësh",
+  "Show it by month or by unit": "Shfaqe sipas muajit ose sipas njësisë",
 } satisfies Dict

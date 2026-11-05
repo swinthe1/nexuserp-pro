@@ -500,6 +500,7 @@ export const serverTemplates: [string, string][] = [
   ['Discount approved: %', 'Zbritja u miratua: {0}'],
   ['Expired stock to take off: %', 'Mall i skaduar për t\'u hequr: {0}'],
   ['Not ready for ATK yet: %', 'Ende jo gati për ATK: {0}'],
+  ['Cannot group by %', 'Nuk mund të grupohet sipas {0}'],
   ['ATK answered %', 'ATK-ja u përgjigj {0}'],
   ['ATK refused a receipt: %', 'ATK-ja refuzoi një kupon: {0}'],
   ['ATK registers each till number once, and number % of this store is taken: give this till number %', 'ATK-ja e regjistron çdo numër arke vetëm një herë, dhe numri {0} i kësaj njësie është zënë: jepini kësaj arke numrin {1}'],

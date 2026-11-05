@@ -2,7 +2,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import * as React from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
-import { ColumnHeader, DataTable, inFilter, selectColumn } from '@/components/data-table/data-table'
+import { ColumnHeader, DataTable, inFilter, LeadCell, selectColumn } from '@/components/data-table/data-table'
 import { Button } from '@/components/ui/button'
 import { Warehouse } from 'lucide-react'
 import { StockByUnitDialog } from '../components/stock-by-unit'
@@ -91,6 +91,7 @@ export function StockPage() {
           return (
             <TableFooter>
               <TableRow className="hover:bg-transparent">
+                <LeadCell />
                 <TableCell colSpan={table.getVisibleLeafColumns().length - 1} className="text-[13px]">{tn(rows.length, '{n} line', '{n} lines')}</TableCell>
                 <TableCell className="text-right tabular">{formatMoney(rows.reduce((s, r) => s + num(r.stock_value), 0))}</TableCell>
               </TableRow>

@@ -18225,6 +18225,13 @@ export type Database = {
         }
         Returns: { variant_id: string | null; sku: string | null; name: string | null; bom_id: string | null; bom_code: string | null; bom_quantity: number | null; on_hand: number | null; reserved: number | null; sales_demand: number | null; component_demand: number | null; min_qty: number | null; max_qty: number | null; in_production: number | null; projected: number | null; suggested: number | null; unit_cost: number | null; lead_minutes: number | null }[]
       }
+      profit_report: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: Json
+      }
       promotion_results: {
         Args: {
           p_company: string
@@ -19279,6 +19286,13 @@ export type Database = {
           p_company: string
         }
         Returns: { obligation: string | null; period_start: string | null; period_end: string | null; due_date: string | null; status: string | null; document_id: string | null; document_number: string | null; amount: number | null }[]
+      }
+      trade_analysis: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: Json
       }
       training_mark: {
         Args: {

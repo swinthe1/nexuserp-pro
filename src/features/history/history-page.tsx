@@ -3,7 +3,7 @@ import { Archive } from 'lucide-react'
 import * as React from 'react'
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useCompany } from '@/app/company-provider'
-import { ColumnHeader, DataTable } from '@/components/data-table/data-table'
+import { ColumnHeader, DataTable, LeadCell } from '@/components/data-table/data-table'
 import { EmptyState } from '@/components/empty-state'
 import { ErrorState } from '@/components/error-state'
 import { PageHeader } from '@/components/page-header'
@@ -174,7 +174,7 @@ function Documents() {
         facets={[{ columnId: 'kind', title: t('Kind|history'), options: Object.entries(KIND).map(([value, k]) => ({ value, label: t(k.label) })) }]}
         server={st.server(q.data?.total_count ?? 0)}
         empty={{ title: t('No documents match'), description: t('Change the dates or the search.') }}
-        footer={() => q.data ? <TableFooter><TableRow className="hover:bg-transparent"><TableCell colSpan={6} className="text-[13px]">{tn(q.data.total_count, '{n} document', '{n} documents')}</TableCell>
+        footer={() => q.data ? <TableFooter><TableRow className="hover:bg-transparent"><LeadCell /><TableCell colSpan={6} className="text-[13px]">{tn(q.data.total_count, '{n} document', '{n} documents')}</TableCell>
           <TableCell className="text-right tabular">{formatMoney(q.data.total_amount)}</TableCell></TableRow></TableFooter> : null} />
       <DocumentSheet id={open} onClose={() => setOpen(null)} />
     </div>

@@ -18,13 +18,17 @@ export function ReportsPage() {
   const { can } = useCompany()
   const runnable = REPORTS.filter((r) => canRunReport(can, r))
   const statements = [
+    (can('finance.read') || can('reports.read')) && { href: '/reports/profit', title: t('Profit report'), question: t('Net sales, cost of goods, expenses and loan interest down to the net profit, by month or by unit.'), icon: Scale },
     can('finance.read') && { href: '/finance/reports', title: t('Financial statements'), question: t('Profit and loss, balance sheet, cash flow and trial balance, with comparisons.'), icon: Scale },
     can('invoicing.read') && { href: '/finance/receivables', title: t('Receivables aging'), question: t('Every customer balance in 30-day buckets.'), icon: Wallet },
     can('invoicing.read') && { href: '/finance/payables', title: t('Payables aging'), question: t('What we owe each vendor, and when it is due.'), icon: Wallet },
     can('tax.read') && { href: '/tax/books', title: t('Sales and purchase books'), question: t('The official VAT books, laid out as the tax authority asks.'), icon: FileBarChart },
   ].filter(Boolean) as { href: string; title: string; question: string; icon: typeof Scale }[]
-  const panel = can('sales.read') && can('reports.read')
-    ? [{ href: '/reports/kpi', title: t('Manager\'s panel'), question: t('Are we on plan? Customers, average receipt, margin, losses, stock turnover and the tills, against the period before.'), icon: Gauge }] : []
+  const panel = [
+    ...(can('sales.read') || can('procurement.read') ? [{ href: '/reports/analysis', title: t('Sales and purchase analysis'), question: t('By unit, group, supplier, item or day, against another period: quantity, value with and without VAT, margin.'), icon: BarChart3 }] : []),
+    ...(can('sales.read') && can('reports.read')
+      ? [{ href: '/reports/kpi', title: t('Manager\'s panel'), question: t('Are we on plan? Customers, average receipt, margin, losses, stock turnover and the tills, against the period before.'), icon: Gauge }] : []),
+  ]
 
   return (
     <>

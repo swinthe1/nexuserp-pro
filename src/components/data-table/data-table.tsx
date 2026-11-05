@@ -127,6 +127,12 @@ function rowSearchText(row: object): { text: string; codes: string[] } {
   return { text: parts.join(' '), codes: parts }
 }
 
+// the quick-look eye is the first cell of every row; a footer row puts LeadCell first to stay in line
+const LeadCtx = React.createContext(false)
+export function LeadCell() {
+  return React.useContext(LeadCtx) ? <TableCell className="w-9 px-1" /> : null
+}
+
 export function DataTable<T>({
   columns, data, isLoading, error, getRowId, tableKey, searchPlaceholder, facets = [], initialSorting = [],
   initialHidden = [], initialFilters, bulkActions, toolbar, onRowClick, exportName, empty, server, footer, dense, preview,
@@ -151,6 +157,36 @@ export function DataTable<T>({
   const [columnOrder, setColumnOrder] = React.useState<ColumnOrderState>([])
   const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>({})
   const [styles, setStyles] = React.useState<Record<string, ColumnStyle>>({})
+  // widening or narrowing a column: from the width it has on the screen now, by how far the mouse moves.
+  // The header can also be dragged to move the column, so while the edge is held that is switched off.
+  const resizing = React.useRef(false)
+  const [resizingCol, setResizingCol] = React.useState<string | null>(null)
+  const startResize = (e: React.PointerEvent<HTMLElement>, id: string) => {
+    if (e.button !== 0) return
+    e.preventDefault(); e.stopPropagation()
+    const th = e.currentTarget.closest('th')
+    if (!th) return
+    resizing.current = true
+    setResizingCol(id)
+    const handle = e.currentTarget
+    try { handle.setPointerCapture(e.pointerId) } catch { /* old browser */ }
+    // the screen size (zoom) makes a mouse step bigger or smaller than a point of the page
+    const scale = th.getBoundingClientRect().width / (th.offsetWidth || 1) || 1
+    const start = th.offsetWidth, x0 = e.clientX
+    const body = document.body.style, cursor = body.cursor, select = body.userSelect
+    body.cursor = 'col-resize'; body.userSelect = 'none'
+    const move = (ev: PointerEvent) => {
+      const w = Math.max(48, Math.min(900, Math.round(start + (ev.clientX - x0) / scale)))
+      setColumnSizing((all) => (all[id] === w ? all : { ...all, [id]: w }))
+    }
+    const up = () => {
+      handle.removeEventListener('pointermove', move); handle.removeEventListener('pointerup', up); handle.removeEventListener('pointercancel', up)
+      body.cursor = cursor; body.userSelect = select
+      setResizingCol(null)
+      window.setTimeout(() => { resizing.current = false }, 0)
+    }
+    handle.addEventListener('pointermove', move); handle.addEventListener('pointerup', up); handle.addEventListener('pointercancel', up)
+  }
   // the layout is the person's own, on their profile: read once, written a moment after each change
   const layout = useProfilePref<TableLayout>(tableKey ? tableLayoutKey(tableKey) : null)
   const layoutRead = React.useRef(false)
@@ -406,6 +442,7 @@ export function DataTable<T>({
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
               <TableRow key={hg.id} className="hover:bg-transparent">
+                {canPreview && <TableHead className="w-9 px-1"><span className="sr-only">{t('Preview')}</span></TableHead>}
                 {hg.headers.map((h) => {
                   const g = labelled.get(h.column.id)
                   const right = h.column.columnDef.meta?.align === 'right'
@@ -413,7 +450,7 @@ export function DataTable<T>({
                   return (
                     <TableHead key={h.id} style={sized ? { width: sized, minWidth: sized, maxWidth: sized } : undefined}
                       className={cn('group/th relative', right && 'text-right', h.column.columnDef.meta?.className, dragCol && dragCol !== h.column.id && 'data-[over=true]:bg-accent')}
-                      draggable={h.column.id !== '_select'} onDragStart={(e) => { if ((e.target as HTMLElement).closest('[data-resize]')) { e.preventDefault(); return } setDragCol(h.column.id); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', h.column.id) }}
+                      draggable={h.column.id !== '_select'} onDragStart={(e) => { if (resizing.current) { e.preventDefault(); return } setDragCol(h.column.id); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', h.column.id) }}
                       onDragOver={(e) => { if (dragCol) { e.preventDefault(); (e.currentTarget as HTMLElement).dataset.over = 'true' } }}
                       onDragLeave={(e) => { delete (e.currentTarget as HTMLElement).dataset.over }}
                       onDrop={(e) => { e.preventDefault(); delete (e.currentTarget as HTMLElement).dataset.over; dropCol(h.column.id) }} onDragEnd={() => setDragCol(null)}>
@@ -425,14 +462,17 @@ export function DataTable<T>({
                           values={() => distinctTexts(data ?? [], g)} />}
                       </div>
                       {h.column.getCanResize() && h.column.id !== '_select' && (
-                        <div data-resize role="separator" aria-orientation="vertical" aria-label={t('Drag to change the width')} onDoubleClick={() => h.column.resetSize()}
-                          onMouseDown={h.getResizeHandler()} onTouchStart={h.getResizeHandler()} onClick={(e) => e.stopPropagation()}
-                          className={cn('absolute inset-y-1 right-0 w-1.5 cursor-col-resize touch-none select-none rounded opacity-0 hover:bg-primary/40 group-hover/th:opacity-100', h.column.getIsResizing() && 'bg-primary opacity-100')} />
+                        <div data-resize role="separator" aria-orientation="vertical" aria-label={t('Drag to change the width')}
+                          onDoubleClick={(e) => { e.stopPropagation(); setColumnSizing((all) => { const n = { ...all }; delete n[h.column.id]; return n }) }}
+                          onMouseDown={(e) => { resizing.current = true; e.stopPropagation() }} onPointerDown={(e) => startResize(e, h.column.id)}
+                          onClick={(e) => e.stopPropagation()} draggable={false}
+                          className="group/rs absolute -right-1.5 top-0 z-10 flex h-full w-3 cursor-col-resize touch-none select-none justify-center">
+                          <span className={cn('my-1 w-[3px] rounded-full bg-border opacity-0 transition-opacity group-hover/th:opacity-100 group-hover/rs:bg-primary/60', resizingCol === h.column.id && 'bg-primary opacity-100')} />
+                        </div>
                       )}
                     </TableHead>
                   )
                 })}
-                {canPreview && <TableHead className="sticky right-0 w-9 bg-card px-1"><span className="sr-only">{t('Preview')}</span></TableHead>}
               </TableRow>
             ))}
           </TableHeader>
@@ -459,6 +499,13 @@ export function DataTable<T>({
                 onClick={onRowClick ? () => onRowClick(row.original) : undefined}
                 onKeyDown={onRowClick ? (e) => { if (e.key === 'Enter') onRowClick(row.original); else if (e.key === ' ' && canPreview) { e.preventDefault(); setPeek(table.getPrePaginationRowModel().rows.findIndex((r) => r.id === row.id)) } } : undefined}
               >
+                {canPreview && (
+                  <TableCell className={cn('w-9 px-1', dense && 'h-8 py-1')}>
+                    <button type="button" aria-label={t('Quick look')} title={t('Quick look (without opening)')}
+                      className="grid size-7 place-items-center rounded-md text-muted-foreground opacity-40 hover:bg-secondary hover:text-foreground hover:opacity-100 focus-visible:opacity-100 group-hover/row:opacity-100"
+                      onClick={(e) => { e.stopPropagation(); setPeek(table.getPrePaginationRowModel().rows.findIndex((r) => r.id === row.id)) }}><Eye className="size-4" /></button>
+                  </TableCell>
+                )}
                 {row.getVisibleCells().map((cell) => {
                   const c = pt.cells[cell.column.id]
                   const sized = columnSizing[cell.column.id]
@@ -474,13 +521,6 @@ export function DataTable<T>({
                     </TableCell>
                   )
                 })}
-                {canPreview && (
-                  <TableCell className={cn('sticky right-0 w-9 bg-card px-1 group-hover/row:bg-muted/50', dense && 'h-8 py-1')}>
-                    <button type="button" aria-label={t('Quick look')} title={t('Quick look (without opening)')}
-                      className="grid size-7 place-items-center rounded-md text-muted-foreground opacity-40 hover:bg-secondary hover:text-foreground hover:opacity-100 focus-visible:opacity-100 group-hover/row:opacity-100"
-                      onClick={(e) => { e.stopPropagation(); setPeek(table.getPrePaginationRowModel().rows.findIndex((r) => r.id === row.id)) }}><Eye className="size-4" /></button>
-                  </TableCell>
-                )}
               </TableRow>
             ) })}
             {!isLoading && !error && table.getRowModel().rows.length === 0 && (
@@ -496,7 +536,7 @@ export function DataTable<T>({
               </TableRow>
             )}
           </TableBody>
-          {footer && !isLoading && footer(table)}
+          {footer && !isLoading && <LeadCtx.Provider value={canPreview}>{footer(table)}</LeadCtx.Provider>}
         </Table>
       </div>
       )}
