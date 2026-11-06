@@ -670,4 +670,5 @@ export default {
   "Voucher blocked": "Vaučer blokiran",
   "Pay with it at the till, all at once or in parts. Keep the code safe: whoever has it can spend it.": "Platite njime na kasi, odjednom ili u delovima. Čuvajte kod: ko ga ima, može ga potrošiti.",
   "Payment method": "Način plaćanja",
+  "Fruit and vegetables thrown away|menu": "Bačeno voće i povrće",
 } satisfies Dict

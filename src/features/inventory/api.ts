@@ -65,7 +65,7 @@ export const useLocations = () =>
     .eq('company_id', c).is('deleted_at', null).order('code'))
 
 export const useCategories = () =>
-  useLookup('categories', (c) => supabase.from('product_categories').select('id, name, code, parent_id').eq('company_id', c).is('deleted_at', null).order('name'))
+  useLookup('categories', (c) => supabase.from('product_categories').select('*').eq('company_id', c).is('deleted_at', null).order('name'))
 
 export const useUnits = () =>
   useLookup('units', (c) => supabase.from('units_of_measure').select('id, code, name, category, ratio, is_reference, is_active').eq('company_id', c).is('deleted_at', null).order('category').order('ratio'))

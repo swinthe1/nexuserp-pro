@@ -2056,6 +2056,57 @@ export type Database = {
           { foreignKeyName: "client_cards_company_id_partner_id_fkey"; columns: ["company_id", "partner_id"]; isOneToOne: false; referencedRelation: "business_partners"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      client_errors: {
+        Row: {
+          id: number
+          fingerprint: string
+          day: string
+          kind: string
+          message: string
+          stack: string | null
+          url: string | null
+          version: string | null
+          user_agent: string | null
+          seen_in: string | null
+          users: string[]
+          count: number
+          first_at: string
+          last_at: string
+        }
+        Insert: {
+          id?: number
+          fingerprint: string
+          day?: string
+          kind?: string
+          message: string
+          stack?: string | null
+          url?: string | null
+          version?: string | null
+          user_agent?: string | null
+          seen_in?: string | null
+          users?: string[]
+          count?: number
+          first_at?: string
+          last_at?: string
+        }
+        Update: {
+          id?: number
+          fingerprint?: string
+          day?: string
+          kind?: string
+          message?: string
+          stack?: string | null
+          url?: string | null
+          version?: string | null
+          user_agent?: string | null
+          seen_in?: string | null
+          users?: string[]
+          count?: number
+          first_at?: string
+          last_at?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           id: string
@@ -9115,6 +9166,7 @@ export type Database = {
           deleted_by: string | null
           target_margin_pct: number | null
           atk_type: string | null
+          perishable: boolean
         }
         Insert: {
           id?: string
@@ -9135,6 +9187,7 @@ export type Database = {
           deleted_by?: string | null
           target_margin_pct?: number | null
           atk_type?: string | null
+          perishable?: boolean
         }
         Update: {
           id?: string
@@ -9155,6 +9208,7 @@ export type Database = {
           deleted_by?: string | null
           target_margin_pct?: number | null
           atk_type?: string | null
+          perishable?: boolean
         }
         Relationships: [
           { foreignKeyName: "product_categories_company_id_cogs_account_id_fkey"; columns: ["company_id", "cogs_account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["company_id", "id"] },
@@ -18014,6 +18068,12 @@ export type Database = {
         }
         Returns: Json
       }
+      platform_client_errors: {
+        Args: {
+          p_days?: number
+        }
+        Returns: Json
+      }
       platform_clients: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -18954,6 +19014,12 @@ export type Database = {
           p?: Json
         }
         Returns: Json
+      }
+      report_client_error: {
+        Args: {
+          p: Json
+        }
+        Returns: undefined
       }
       reserve_sales_order: {
         Args: {
@@ -19910,6 +19976,20 @@ export type Database = {
       warehouse_figures: {
         Args: {
           p_company: string
+        }
+        Returns: Json
+      }
+      waste_items: {
+        Args: {
+          p_company: string
+          p_warehouse: string
+        }
+        Returns: Json
+      }
+      waste_report: {
+        Args: {
+          p_company: string
+          p: Json
         }
         Returns: Json
       }

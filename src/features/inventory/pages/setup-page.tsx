@@ -47,6 +47,7 @@ const categorySchema = z.object({
   name: z.string().trim().min(2, msg('Enter a name')),
   code: z.string().trim().max(20).optional(),
   parent_id: z.string().uuid().nullable().optional(),
+  perishable: z.boolean().optional(),
 })
 
 function Categories() {
@@ -57,6 +58,8 @@ function Categories() {
     { name: 'name' as const, label: t('Name'), placeholder: t('Beverages') },
     { name: 'code' as const, label: t('Code'), optional: true, half: true, uppercase: true },
     { name: 'parent_id' as const, label: t('Parent'), type: 'select' as const, optional: true, half: true, options: [{ value: '__none', label: t('None') }, ...(cats.data ?? []).map((c) => ({ value: c.id, label: td(c.name) }))] },
+    // fruit and vegetables: thrown away when they go off; the waste report and the Zebra start from these groups
+    { name: 'perishable' as const, label: t('Goes off quickly (fruit, vegetables)'), type: 'switch' as const },
   ]
   const path = (id: string | null): string => {
     const c = id ? byId.get(id) : undefined
@@ -68,23 +71,25 @@ function Categories() {
         <div><CardTitle>{t('Product categories')}</CardTitle><CardDescription>{t('Group products for reports, price lists and searching.')}</CardDescription></div>
         <Can perm="inventory.write">
           <SimpleFormDialog trigger={<Button size="sm"><Plus /> {t('New category')}</Button>} title={t('New category')} schema={categorySchema}
-            defaultValues={{ name: '', code: '', parent_id: null }} fields={fields} submitLabel={t('Create category')}
-            onSubmit={(v) => m.create.mutateAsync({ ...v, code: v.code || null, parent_id: v.parent_id ?? null })} />
+            defaultValues={{ name: '', code: '', parent_id: null, perishable: false }} fields={fields} submitLabel={t('Create category')}
+            onSubmit={({ perishable, ...v }) => m.create.mutateAsync({ ...v, code: v.code || null, parent_id: v.parent_id ?? null, ...(perishable ? { perishable } : {}) })} />
         </Can>
       </CardHeader>
       <CardContent className="p-0">
         {loadState(cats) ?? (!cats.data?.length ? <EmptyState compact title={t('No categories')} description={t('Examples: Apparel, Beverages, Raw materials.')} /> : (
           <Table>
-            <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Category')}</TableHead><TableHead>{t('Code')}</TableHead><TableHead className="w-24" /></TableRow></TableHeader>
+            <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Category')}</TableHead><TableHead>{t('Code')}</TableHead><TableHead>{t('Goes off')}</TableHead><TableHead className="w-24" /></TableRow></TableHeader>
             <TableBody>
               {[...cats.data].sort((a, b) => path(a.id).localeCompare(path(b.id))).map((c) => (
                 <TableRow key={c.id}>
                   <TableCell>{path(c.id)}</TableCell>
                   <TableCell className="text-muted-foreground">{c.code ?? '—'}</TableCell>
+                  <TableCell>{(c as { perishable?: boolean }).perishable ? <Badge variant="secondary">{t('Goes off quickly')}</Badge> : null}</TableCell>
                   <TableCell className="whitespace-nowrap text-right"><Can perm="inventory.write">
                     <SimpleFormDialog trigger={<Button variant="ghost" size="icon-sm" aria-label={t('Edit {name}', { name: td(c.name) })}><Pencil /></Button>} title={t('Edit {name}', { name: td(c.name) })} schema={categorySchema}
-                      defaultValues={{ name: c.name, code: c.code ?? '', parent_id: c.parent_id }} fields={fields} submitLabel={t('Save')}
-                      onSubmit={(v) => m.update.mutateAsync({ id: c.id, ...v, code: v.code || null, parent_id: v.parent_id === c.id ? null : v.parent_id ?? null })} />
+                      defaultValues={{ name: c.name, code: c.code ?? '', parent_id: c.parent_id, perishable: !!(c as { perishable?: boolean }).perishable }} fields={fields} submitLabel={t('Save')}
+                      onSubmit={({ perishable, ...v }) => m.update.mutateAsync({ id: c.id, ...v, code: v.code || null, parent_id: v.parent_id === c.id ? null : v.parent_id ?? null,
+                        ...(!!perishable !== !!(c as { perishable?: boolean }).perishable ? { perishable: !!perishable } : {}) })} />
                     <ConfirmDialog trigger={<Button variant="ghost" size="icon-sm" aria-label={t('Delete {name}', { name: td(c.name) })}><Trash2 /></Button>} title={t('Delete {name}?', { name: td(c.name) })}
                       description={t('Products in this category become uncategorised.')} confirmLabel={t('Delete category')} destructive onConfirm={() => m.remove.mutateAsync(c.id)} />
                   </Can></TableCell>
