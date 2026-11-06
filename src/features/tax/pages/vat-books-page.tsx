@@ -14,7 +14,7 @@ import { printTable } from '@/lib/print-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { XlsxColumn } from '@/lib/export'
 import { ErrorState } from '@/components/error-state'
-import { getLocale, t, tn, tServer } from '@/i18n'
+import { formatDateWith, getLocale, t, tn, tServer } from '@/i18n'
 import { cn, formatDate, formatMoney, num } from '@/lib/utils'
 import { type BookRow, type LayoutCol, layoutLabel, monthLabel, monthRange, previousMonth, useCompanyTaxProfile, useVatBook, useVatLayout } from '../api'
 import { MonthPicker } from '../components/tax-ui'
@@ -68,17 +68,22 @@ export function VatBooksPage() {
   const colLabel = (c: LayoutCol) => (xk ? `[${c.key}] ` : '') + layoutLabel(c)
   const periodText = params.get('from') ? `${formatDate(range.from)} – ${formatDate(range.to)}` : monthLabel(ym)
 
-  const exportCols: XlsxColumn<BookRow>[] = [
+  // Excel keeps every column of the official layout; the paper and the PDF only the columns with something
+  // in them this period (as on the screen), so the book fits an A4 page
+  const bookCols = (which: LayoutCol[], paper: boolean): XlsxColumn<BookRow>[] => [
     { header: t('No.|register'), value: (r) => r.line_no, format: 'int', width: 5 },
-    { header: t('Date'), value: (r) => formatDate(r.doc_date), width: 11 },
+    { header: t('Date'), value: (r) => (paper ? formatDateWith(new Date(`${r.doc_date}T12:00:00`), { day: '2-digit', month: '2-digit', year: 'numeric' }) : formatDate(r.doc_date)), width: 11 },
     { header: t('Number'), value: (r) => tServer(r.number) },
     { header: book === 'sales' ? t('Note') : t('Vendor invoice / DUD'), value: (r) => (r.ref ? tServer(r.ref) : r.ref) },
     ...(showFiscal ? [{ header: xk ? t('Fiscal code') : t('NIVF'), value: (r: BookRow) => r.fiscal_code, format: 'text' as const }] : []),
     { header: book === 'sales' ? t('Buyer') : t('Seller'), value: (r) => tServer(r.partner) },
     { header: taxLabel, value: (r) => r.tax_number, format: 'text' },
-    ...cols.map((c): XlsxColumn<BookRow> => ({ header: colLabel(c), value: (r) => r.cols?.[c.key] ?? null, format: 'money' })),
+    ...which.map((c): XlsxColumn<BookRow> => ({ header: colLabel(c), value: (r) => r.cols?.[c.key] ?? null, format: 'money' })),
     { header: t('Total with VAT'), value: (r) => num(r.total), format: 'money' },
   ]
+  const exportCols = bookCols(cols, false)
+  const paperCols = bookCols(shown, true)
+  const nowrapCols = new Set([t('No.|register'), t('Date'), t('Number'), taxLabel, book === 'sales' ? t('Note') : t('Vendor invoice / DUD')])
   const exportTotals: Record<string, number | string> = { [t('No.|register')]: t('Total'), [t('Total with VAT')]: totals.total ?? 0 }
   for (const c of cols) exportTotals[colLabel(c)] = totals[c.key] ?? 0
 
@@ -90,9 +95,9 @@ export function VatBooksPage() {
         actions={<>
           <MonthPicker value={ym} onChange={(v) => set('month', v)} />
           <Button variant="outline" size="sm" disabled={!rows.length} onClick={() => printTable({ title, subtitle: `${profile.data?.legal_name ?? profile.data?.name ?? company?.name ?? ''} · ${taxLabel} ${profile.data?.tax_number ?? '—'} · ${periodText}`,
-            columns: exportCols.map((c) => ({ header: c.header, format: c.format === 'money' ? 'money' : c.format === 'int' ? 'int' : 'text' })),
-            rows: rows.map((r) => exportCols.map((c) => c.value(r))), totals: exportCols.map((c) => exportTotals[c.header] ?? null) })}><Printer /> {t('Print')}</Button>
-          <ExportMenu rows={rows} columns={exportCols} filename={`${book === 'sales' ? t('sales-book|file') : t('purchase-book|file')}-${ym}`} title={title}
+            columns: paperCols.map((c) => ({ header: c.header, format: c.format === 'money' ? 'money' : c.format === 'int' ? 'int' : 'text', nowrap: nowrapCols.has(c.header) })),
+            rows: rows.map((r) => paperCols.map((c) => c.value(r))), totals: paperCols.map((c) => exportTotals[c.header] ?? null) })}><Printer /> {t('Print')}</Button>
+          <ExportMenu rows={rows} columns={exportCols} pdfColumns={paperCols} filename={`${book === 'sales' ? t('sales-book|file') : t('purchase-book|file')}-${ym}`} title={title}
             subtitle={`${profile.data?.legal_name ?? profile.data?.name ?? company?.name ?? ''} · ${taxLabel} ${profile.data?.tax_number ?? '—'} · ${periodText}`}
             xlsx={{ title: [profile.data?.legal_name ?? profile.data?.name ?? '', `${taxLabel} ${profile.data?.tax_number ?? '—'}`, `${title} · ${periodText}`], totals: exportTotals }} />
         </>} />

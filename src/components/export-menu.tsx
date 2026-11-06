@@ -6,9 +6,11 @@ import { exportCsv, exportPdf, exportXlsx, type XlsxColumn, type XlsxOptions } f
 import { printTable } from '@/lib/print-table'
 
 /** Excel / PDF / CSV for tables that are not a DataTable (official books, reports) */
-export function ExportMenu<T>({ rows, columns, filename, title, subtitle, xlsx, disabled }: {
+export function ExportMenu<T>({ rows, columns, pdfColumns, filename, title, subtitle, xlsx, disabled }: {
   rows: T[]
   columns: XlsxColumn<T>[]
+  /** the columns for the PDF and the print when they differ from Excel's (a wide official book: only the filled ones) */
+  pdfColumns?: XlsxColumn<T>[]
   filename: string
   /** PDF heading */
   title: string
@@ -25,11 +27,11 @@ export function ExportMenu<T>({ rows, columns, filename, title, subtitle, xlsx, 
         <DropdownMenuItem onSelect={() => void exportXlsx(rows, columns, filename, { sheet: title, title: [title, ...(subtitle ? [subtitle] : [])], ...xlsx })}>
           <FileSpreadsheet /> Excel
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => void exportPdf(rows, columns, filename, title, subtitle)}><FileText /> PDF</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => void exportPdf(rows, pdfColumns ?? columns, filename, title, subtitle, xlsx?.totals)}><FileText /> PDF</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => exportCsv(rows, columns, filename)}><FileSpreadsheet /> CSV</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => printTable({ title, subtitle, columns: columns.map((c) => ({ header: c.header, format: c.format === 'int' || c.format === 'text' || c.format === 'money' ? c.format : undefined })),
-          rows: rows.map((r) => columns.map((c) => c.value(r))), totals: xlsx?.totals ? columns.map((c) => xlsx.totals![c.header] ?? null) : null })}><Printer /> {t('Print')}</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => { const pc = pdfColumns ?? columns; printTable({ title, subtitle, columns: pc.map((c) => ({ header: c.header, format: c.format === 'int' || c.format === 'text' || c.format === 'money' ? c.format : undefined, nowrap: c.format === 'date' || c.format === 'int' })),
+          rows: rows.map((r) => pc.map((c) => c.value(r))), totals: xlsx?.totals ? pc.map((c) => xlsx.totals![c.header] ?? null) : null }) }}><Printer /> {t('Print')}</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

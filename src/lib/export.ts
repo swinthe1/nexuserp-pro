@@ -1,4 +1,5 @@
 import { formatDateWith, t } from '@/i18n'
+import { formatMoney, formatQty } from '@/lib/utils'
 export interface ExportColumn<T> {
   header: string
   value: (row: T) => string | number | null | undefined
@@ -40,24 +41,47 @@ export function exportCsv<T>(rows: T[], columns: ExportColumn<T>[], filename: st
   downloadCsv(filename, [columns.map((c) => c.header), ...rows.map((r) => columns.map((c) => c.value(r)))])
 }
 
-export async function exportPdf<T>(rows: T[], columns: ExportColumn<T>[], filename: string, title: string, subtitle?: string) {
+export async function exportPdf<T>(rows: T[], columns: ExportColumn<T>[], filename: string, title: string, subtitle?: string,
+  totals?: Record<string, number | string | null | undefined>) {
   const [{ jsPDF }, { default: autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])
-  const doc = new jsPDF({ orientation: columns.length > 6 ? 'landscape' : 'portrait', unit: 'pt', format: 'a4' })
-  doc.setFontSize(14)
-  doc.text(title, 40, 40)
-  doc.setFontSize(9)
+  const n = columns.length
+  const doc = new jsPDF({ orientation: n > 6 ? 'landscape' : 'portrait', unit: 'pt', format: 'a4' })
+  const margin = 24
+  doc.setFontSize(13)
+  doc.text(title, margin, 34)
+  doc.setFontSize(8.5)
   doc.setTextColor(110)
-  doc.text(subtitle ?? t('Exported {date} · {n} rows', { date: formatDateWith(new Date(), { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }), n: rows.length }), 40, 56)
+  doc.text(subtitle ?? t('Exported {date} · {n} rows', { date: formatDateWith(new Date(), { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }), n: rows.length }), margin, 48)
+  // numbers as people read them, lined up on the right; the font gets smaller as the columns grow, so a book fits the page
+  const fmtOf = (c: ExportColumn<T>) => (c as { format?: string }).format
+  const cell = (c: ExportColumn<T>, v: unknown) => {
+    if (v === null || v === undefined || v === '') return ''
+    const f = fmtOf(c)
+    if (typeof v === 'number' && (f === 'money' || f === 'qty')) return formatMoney(v)
+    if (typeof v === 'number' && f === 'int') return formatQty(Math.round(v))
+    if (typeof v === 'number' && !Number.isInteger(v)) return formatMoney(v)
+    return String(v)
+  }
+  const numeric = columns.map((c, i) => ['money', 'qty', 'int'].includes(fmtOf(c) ?? '') || (fmtOf(c) !== 'text' && rows.length > 0 && rows.every((r) => { const v = columns[i]!.value(r); return v == null || v === '' || typeof v === 'number' })))
+  const fontSize = n > 14 ? 6 : n > 10 ? 6.8 : n > 7 ? 7.5 : 8.5
   autoTable(doc, {
-    startY: 70,
+    startY: 58,
+    margin: { left: margin, right: margin, top: 30, bottom: 26 },
     head: [columns.map((c) => c.header)],
-    body: rows.map((r) => columns.map((c) => {
-      const v = c.value(r)
-      return v === null || v === undefined ? '' : String(v)
-    })),
-    styles: { fontSize: 8, cellPadding: 4 },
-    headStyles: { fillColor: [43, 89, 195] },
+    body: rows.map((r) => columns.map((c) => cell(c, c.value(r)))),
+    foot: totals ? [columns.map((c) => cell(c, totals[c.header]))] : undefined,
+    showFoot: 'lastPage',
+    tableWidth: 'auto',
+    styles: { fontSize, cellPadding: n > 10 ? 2 : 3, overflow: 'linebreak', valign: 'top' },
+    headStyles: { fillColor: [43, 89, 195], fontSize: fontSize - 0.3, valign: 'bottom' },
+    footStyles: { fillColor: [235, 238, 245], textColor: 20, fontStyle: 'bold' },
     alternateRowStyles: { fillColor: [246, 247, 250] },
+    columnStyles: Object.fromEntries(numeric.flatMap((isNum, i) => (isNum ? [[i, { halign: 'right' as const }]] : []))),
+    didParseCell: (d) => { if (numeric[d.column.index]) d.cell.styles.halign = 'right' },
+    didDrawPage: () => {
+      doc.setFontSize(7); doc.setTextColor(140)
+      doc.text(`${doc.getCurrentPageInfo().pageNumber}`, doc.internal.pageSize.getWidth() - margin, doc.internal.pageSize.getHeight() - 12, { align: 'right' })
+    },
   })
   pendingRows = rows.length
   download(doc.output('blob') as Blob, `${filename}.pdf`)
