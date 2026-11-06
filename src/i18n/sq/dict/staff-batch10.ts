@@ -427,4 +427,5 @@ export default {
   "{n} item": "{n} artikull",
   "{n} items": "{n} artikuj",
   "Code or product": "Kodi ose produkti",
+  "New|ribbon": "I ri",
 } satisfies Dict

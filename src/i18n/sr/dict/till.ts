@@ -868,4 +868,5 @@ export default {
   "{n} receipts today": "{n} računa danas",
   "{n} item": "{n} artikal",
   "Code or product": "Šifra ili proizvod",
+  "New|ribbon": "Novo",
 } satisfies Dict

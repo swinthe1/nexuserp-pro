@@ -183,7 +183,7 @@ export function ClassicShell({ children, onOpenMobileNav }: { children: React.Re
         {/* the ribbon: the commands in groups, then the pages one opens most */}
         <div className="classic-ribbon flex h-[80px] items-stretch overflow-x-auto border-b px-1 pt-1">
           <RibbonGroup label={t('Document|ribbon')}>
-            <NewMenu trigger={<ToolButton big icon={Plus} label={t('New|create')} tone="152 68%" />} />
+            <NewMenu trigger={<ToolButton big icon={Plus} label={t('New|ribbon')} tone="152 68%" />} />
             <ToolButton icon={Search} label={t('Search')} onClick={() => palette.open()} />
             <ToolButton icon={Printer} label={t('Print')} onClick={() => window.print()} />
           </RibbonGroup>
