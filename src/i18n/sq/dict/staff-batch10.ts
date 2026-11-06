@@ -199,4 +199,9 @@ export default {
   "Companies": "Kompanitë",
   "Error": "Gabimi",
   "Only the platform owner sees this": "Këtë e sheh vetëm pronari i platformës",
+  "Document type|purchase": "Lloji i dokumentit",
+  "Purchase tax invoice": "Faturë tatimore blerjeje",
+  "Internal goods receipt (no VAT deducted)": "Pranim i brendshëm malli (pa zbritje TVSH)",
+  "Internal goods receipt": "Pranim i brendshëm",
+  "The goods enter the stock at the price paid, VAT included, and are sold with VAT at the till. It stays out of the VAT purchase book and the VAT return.": "Malli hyn në stok me çmimin e paguar, me TVSH brenda, dhe shitet me TVSH në arkë. Nuk hyn në librin e blerjeve të TVSH-së dhe as në deklaratën e TVSH-së.",
 } satisfies Dict
