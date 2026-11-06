@@ -200,9 +200,6 @@ export default {
   "Error": "Gabimi",
   "Only the platform owner sees this": "Këtë e sheh vetëm pronari i platformës",
   "Document type|purchase": "Lloji i dokumentit",
-  "Purchase tax invoice": "Faturë tatimore blerjeje",
-  "Internal goods receipt (no VAT deducted)": "Pranim i brendshëm malli (pa zbritje TVSH)",
-  "Internal goods receipt": "Pranim i brendshëm",
   "The goods enter the stock at the price paid, VAT included, and are sold with VAT at the till. It stays out of the VAT purchase book and the VAT return.": "Malli hyn në stok me çmimin e paguar, me TVSH brenda, dhe shitet me TVSH në arkë. Nuk hyn në librin e blerjeve të TVSH-së dhe as në deklaratën e TVSH-së.",
   "% in quantity": "% në sasi",
   "% in value": "% në vlerë",
@@ -332,4 +329,6 @@ export default {
   "Download the installer": "Shkarko instaluesin",
   "Unknown scale key": "Çelës i panjohur i peshores",
   "The Rongta scales take the items with a PLU and their prices from DrisPRO. With the automatic link it happens by itself; without it, load here the PLU file of RTPLU and DrisPRO gives it back with its prices, the hotkeys and the other settings as they were.": "Peshoret Rongta marrin nga DrisPRO artikujt me PLU dhe çmimet e tyre. Me lidhjen automatike kjo ndodh vetë; pa të, ngarkoni këtu skedarin PLU të RTPLU-së dhe DrisPRO jua kthen me çmimet e veta, me butonat e shpejtë dhe cilësimet e tjera siç ishin.",
+  "Purchase invoice (VAT)": "Faturë blerje (TVSH)",
+  "Purchase invoice (no VAT)": "Faturë blerje (pa TVSH)",
 } satisfies Dict

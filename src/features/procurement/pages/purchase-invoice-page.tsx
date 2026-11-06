@@ -449,7 +449,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
               set('in_vat_book', inBook)
               if (!inBook && zeroTax) setRows((rs) => rs.map((r) => ({ ...r, tax: zeroTax })))
             }}><SelectTrigger aria-label={t('Document type|purchase')}><SelectValue /></SelectTrigger>
-              <SelectContent><SelectItem value="tax">{t('Purchase tax invoice')}</SelectItem><SelectItem value="outside">{t('Internal goods receipt (no VAT deducted)')}</SelectItem></SelectContent></Select>
+              <SelectContent><SelectItem value="tax">{t('Purchase invoice (VAT)')}</SelectItem><SelectItem value="outside">{t('Purchase invoice (no VAT)')}</SelectItem></SelectContent></Select>
             {!h.in_vat_book && <p className="text-[12px] text-muted-foreground">{t('The goods enter the stock at the price paid, VAT included, and are sold with VAT at the till. It stays out of the VAT purchase book and the VAT return.')}</p>}</div>
           <div className="grid gap-1.5"><Label htmlFor="pi-date">{t('Invoice date')}</Label><Input id="pi-date" type="date" value={h.bill_date} onChange={(e) => set('bill_date', e.target.value)} /></div>
           <div className="grid gap-1.5"><Label htmlFor="pi-recv">{t('Received on')}</Label><Input id="pi-recv" type="date" value={h.receive_date} placeholder={h.bill_date} onChange={(e) => set('receive_date', e.target.value)} /></div>

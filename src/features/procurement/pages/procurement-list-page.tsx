@@ -105,7 +105,7 @@ const buildCfg = (): Record<ProcKind, Cfg> => ({
     extraFacets: () => [
       { columnId: 'match_status', title: t('Match'), options: ['matched', 'exception', 'overridden', 'not_applicable', 'not_matched'].map((v) => ({ value: v, label: humanize(v) })) },
       { columnId: 'payment_status', title: t('Payment'), options: ['unpaid', 'partially_paid', 'paid', 'overdue'].map((v) => ({ value: v, label: humanize(v) })) },
-      { columnId: 'vat_book', title: t('VAT book'), options: [{ value: 'in', label: t('In the purchase book') }, { value: 'out', label: t('Internal goods receipt') }] },
+      { columnId: 'vat_book', title: t('VAT book'), options: [{ value: 'in', label: t('In the purchase book') }, { value: 'out', label: t('Purchase invoice (no VAT)') }] },
     ],
     columns: (base) => [
       dateCol('bill_date', t('Date')),
@@ -114,8 +114,8 @@ const buildCfg = (): Record<ProcKind, Cfg> => ({
       vendorCol(),
       { accessorKey: 'vendor_invoice_number', header: t("Vendor's no."), meta: { label: t('Vendor invoice no.') } },
       // a till receipt or a paper without the buyer's VAT: outside the VAT purchase book (from the meeting with the staff)
-      { id: 'vat_book', accessorFn: (r) => r.in_vat_book === false ? 'out' : 'in', filterFn: inFilter, header: t('VAT book'), meta: { label: t('VAT book'), exportValue: (r) => r.in_vat_book === false ? t('Internal goods receipt') : t('In the purchase book') },
-        cell: ({ getValue }) => getValue() === 'out' ? <Badge variant="secondary">{t('Internal goods receipt')}</Badge> : <span className="text-muted-foreground">✓</span> },
+      { id: 'vat_book', accessorFn: (r) => r.in_vat_book === false ? 'out' : 'in', filterFn: inFilter, header: t('VAT book'), meta: { label: t('VAT book'), exportValue: (r) => r.in_vat_book === false ? t('Purchase invoice (no VAT)') : t('In the purchase book') },
+        cell: ({ getValue }) => getValue() === 'out' ? <Badge variant="secondary">{t('Purchase invoice (no VAT)')}</Badge> : <span className="text-muted-foreground">✓</span> },
       { id: 'order', accessorFn: (r) => nm(r.order, 'number'), header: t('Order'), meta: { label: t('Purchase order') }, cell: ({ getValue }) => (getValue() as string) || '—' },
       { accessorKey: 'match_status', filterFn: inFilter, header: t('Match'), meta: { label: t('Match') }, cell: ({ row: { original: r } }) => r.document_type === 'vendor_credit' ? <span className="text-muted-foreground">—</span> : <MatchBadge status={r.match_status as string} /> },
       {
