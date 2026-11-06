@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Download, FileUp, Save, Weight } from 'lucide-react'
+import { CircleAlert, CircleCheck, Clock, Download, FileUp, Pencil, Plus, Save, Weight } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -10,17 +10,21 @@ import { PageHeader } from '@/components/page-header'
 import { SearchSelect } from '@/components/search-select'
 import { StatCard } from '@/components/stat-card'
 import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { t, tn } from '@/i18n'
+import { t, td, tn } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
 import { looksLikeTxp, nameKey, newLine, parseTxp, type TxpLine, withPrice, writeTxp } from '@/lib/rongta-plu'
 import { supabase } from '@/lib/supabase'
 import { cn, formatDate, formatMoney, num } from '@/lib/utils'
-import { useVariantOptions } from '../api'
+import { useVariantOptions, useWarehouses } from '../api'
 
 type ScaleItem = { product_id: string; variant_id: string; sku: string; name: string; plu: string; uom: string | null; price: number; sent_price: number | null; sent_at: string | null }
 /** a line of the file and the item of DrisPRO it is: by its PLU, by the same name, or picked by hand */
@@ -145,6 +149,8 @@ export function ScalePricesPage() {
           <Button onClick={() => input.current?.click()}><FileUp /> {t('Load the PLU file (.TXP)')}</Button>
         </>} />
 
+      <ScalesCard />
+
       {items.isError ? <ErrorState error={items.error} onRetry={() => void items.refetch()} /> : !items.data ? <Skeleton className="h-64" /> : <>
         <div className="grid gap-3 sm:grid-cols-3">
           <StatCard label={t('Items with a PLU')} value={String(items.data.length)} hint={t('the PLU is on the item card')} />
@@ -235,5 +241,104 @@ export function ScalePricesPage() {
         </>}
       </>}
     </div>
+  )
+}
+
+type Scale = { id: string; name: string; warehouse_id: string | null; warehouse: string | null; ip: string; port: number; is_active: boolean; agent: string | null
+  last_seen_at: string | null; last_sync_at: string | null; last_error: string | null; items: number; pending: number }
+type Scales = { auto_plu: boolean; next_plu: string; scales: Scale[] }
+
+/**
+ * The scales of the company: each one with the computer of the store that keeps it in sync (the DrisPRO program
+ * for Windows sends every new item and price within seconds) and how it stands now.
+ */
+function ScalesCard() {
+  const { companyId, can } = useCompany()
+  const qc = useQueryClient()
+  const q = useQuery({ queryKey: ['inv', companyId, 'scales'], enabled: !!companyId, refetchInterval: 15_000,
+    // a server not updated yet has no scales: the card is simply not shown
+    queryFn: async () => { const r = await supabase.rpc('scales_list', { p_company: companyId! }); return r.error ? null : (r.data as unknown as Scales) } })
+  const [edit, setEdit] = React.useState<Partial<Scale> | null>(null)
+  const auto = useMutation({
+    mutationFn: async (v: boolean) => unwrap(await supabase.rpc('scale_settings_save', { p_company: companyId!, p_auto_plu: v })),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['inv', companyId, 'scales'] }),
+    onError: (e) => toast.error(describeError(e)),
+  })
+  const d = q.data
+  if (!d) return null
+  const state = (s: Scale) => {
+    if (!s.is_active) return { icon: Clock, tone: 'text-muted-foreground', text: t('Turned off') }
+    if (!s.last_seen_at) return { icon: Clock, tone: 'text-warning', text: t('Waits for the DrisPRO program for Windows on a computer of the store') }
+    if (s.last_error) return { icon: CircleAlert, tone: 'text-destructive', text: s.last_error }
+    if (s.pending > 0) return { icon: Clock, tone: 'text-warning', text: tn(s.pending, '{n} change on its way', '{n} changes on their way') }
+    return { icon: CircleCheck, tone: 'text-primary', text: t('In sync · {time}', { time: s.last_sync_at ? formatDate(s.last_sync_at, true) : '—' }) }
+  }
+  return (
+    <Card><CardContent className="grid gap-3 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1"><div className="font-medium">{t('Scales')}</div>
+          <p className="text-[13px] text-muted-foreground">{t('Every new item by the kilogram and every new price goes to the scales by itself, within seconds: the DrisPRO program for Windows on a computer of the store sends it.')}</p></div>
+        {can('inventory.write') && <Button variant="outline" onClick={() => setEdit({ port: 5001, is_active: true })}><Plus /> {t('Add a scale')}</Button>}
+      </div>
+      {d.scales.length > 0 && (
+        <div className="grid gap-2">{d.scales.map((s) => {
+          const st = state(s)
+          return (
+            <div key={s.id} className="flex flex-wrap items-center gap-3 rounded-md border px-3 py-2 text-[13px]">
+              <Weight className="size-4 text-muted-foreground" />
+              <div className="min-w-0 flex-1"><span className="font-medium">{s.name}</span>
+                <span className="ml-1.5 text-muted-foreground">{s.warehouse ? `${td(s.warehouse)} · ` : ''}{s.ip}{s.agent ? ` · ${s.agent}` : ''}</span>
+                <div className={cn('flex items-center gap-1.5 text-xs', st.tone)}><st.icon className="size-3.5" />{st.text}</div></div>
+              <span className="text-xs text-muted-foreground">{tn(s.items, '{n} item on it', '{n} items on it')}</span>
+              {can('inventory.write') && <Button size="sm" variant="ghost" onClick={() => setEdit(s)} aria-label={t('Edit')}><Pencil /></Button>}
+            </div>
+          )
+        })}</div>
+      )}
+      <label className="flex items-center justify-between gap-3 rounded-md border p-3 text-[13px]">
+        <span><span className="font-medium">{t('Items by the kilogram get a PLU by themselves')}</span>
+          <span className="block text-muted-foreground">{t('A new item sold by the kilogram gets the next free PLU (now {n}) and goes to the scales. Needs at least one scale.', { n: d.next_plu })}</span></span>
+        <Switch checked={d.auto_plu} disabled={!can('inventory.write') || auto.isPending} onCheckedChange={(v) => auto.mutate(v)} />
+      </label>
+      {edit && <ScaleDialog scale={edit} onClose={() => setEdit(null)} />}
+    </CardContent></Card>
+  )
+}
+
+function ScaleDialog({ scale, onClose }: { scale: Partial<Scale>; onClose: () => void }) {
+  const { companyId } = useCompany()
+  const qc = useQueryClient()
+  const warehouses = useWarehouses()
+  const [name, setName] = React.useState(scale.name ?? '')
+  const [wh, setWh] = React.useState(scale.warehouse_id ?? '')
+  const [ip, setIp] = React.useState(scale.ip ?? '')
+  const [port, setPort] = React.useState(String(scale.port ?? 5001))
+  const [active, setActive] = React.useState(scale.is_active ?? true)
+  const ipOk = /^\d{1,3}(\.\d{1,3}){3}$/.test(ip.trim())
+  const save = useMutation({
+    mutationFn: async () => unwrap(await supabase.rpc('scale_save', { p: { company_id: companyId, id: scale.id ?? null, name, warehouse_id: wh || null, ip: ip.trim(), port: Number(port) || 5001, is_active: active } as never })),
+    onSuccess: () => { toast.success(t('Saved')); void qc.invalidateQueries({ queryKey: ['inv', companyId, 'scales'] }); onClose() },
+    onError: (e) => toast.error(describeError(e)),
+  })
+  return (
+    <Dialog open onOpenChange={(o) => !o && !save.isPending && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader><DialogTitle>{scale.id ? scale.name : t('Add a scale')}</DialogTitle>
+          <DialogDescription>{t('The address of the scale in the network of the store: on the scale, or in RLS1000 under "Scale No./IP".')}</DialogDescription></DialogHeader>
+        <form className="grid gap-3" onSubmit={(e) => { e.preventDefault(); if (name.trim() && ipOk) save.mutate() }}>
+          <div className="grid gap-1.5"><Label htmlFor="sc-name">{t('Name')}</Label><Input id="sc-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('e.g. Fruit and vegetables scale')} /></div>
+          <div className="grid gap-1.5"><Label>{t('Unit|store')}</Label>
+            <Select value={wh} onValueChange={setWh}><SelectTrigger><SelectValue placeholder={t('Choose')} /></SelectTrigger>
+              <SelectContent>{(warehouses.data ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{td(w.name)}</SelectItem>)}</SelectContent></Select></div>
+          <div className="grid grid-cols-[1fr_110px] gap-3">
+            <div className="grid gap-1.5"><Label htmlFor="sc-ip">{t('IP address')}</Label><Input id="sc-ip" inputMode="decimal" value={ip} onChange={(e) => setIp(e.target.value)} placeholder="192.168.1.150" /></div>
+            <div className="grid gap-1.5"><Label htmlFor="sc-port">{t('Port')}</Label><Input id="sc-port" inputMode="numeric" value={port} onChange={(e) => setPort(e.target.value)} /></div>
+          </div>
+          <label className="flex items-center justify-between gap-3 rounded-md border p-3 text-[13px]"><span>{t('Active')}</span><Switch checked={active} onCheckedChange={setActive} /></label>
+          <DialogFooter><Button type="button" variant="ghost" onClick={onClose}>{t('Cancel')}</Button>
+            <Button type="submit" loading={save.isPending} disabled={!name.trim() || !ipOk}>{t('Save')}</Button></DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }

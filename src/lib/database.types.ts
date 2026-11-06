@@ -2387,6 +2387,7 @@ export type Database = {
           pos_receipt_max: number | null
           scale_barcode: Json
           min_shelf_days: number | null
+          scale_auto_plu: boolean
         }
         Insert: {
           id?: string
@@ -2473,6 +2474,7 @@ export type Database = {
           pos_receipt_max?: number | null
           scale_barcode?: Json
           min_shelf_days?: number | null
+          scale_auto_plu?: boolean
         }
         Update: {
           id?: string
@@ -2559,6 +2561,7 @@ export type Database = {
           pos_receipt_max?: number | null
           scale_barcode?: Json
           min_shelf_days?: number | null
+          scale_auto_plu?: boolean
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -11968,6 +11971,121 @@ export type Database = {
           { foreignKeyName: "saved_reports_owner_id_fkey"; columns: ["owner_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
         ]
       }
+      scale_sync: {
+        Row: {
+          company_id: string
+          scale_id: string
+          product_id: string
+          plu: string
+          name: string
+          price: number
+          synced_at: string
+          id: string
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          company_id: string
+          scale_id: string
+          product_id: string
+          plu: string
+          name: string
+          price: number
+          synced_at?: string
+          id?: string
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          company_id?: string
+          scale_id?: string
+          product_id?: string
+          plu?: string
+          name?: string
+          price?: number
+          synced_at?: string
+          id?: string
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "scale_sync_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "scale_sync_product_id_fkey"; columns: ["product_id"]; isOneToOne: false; referencedRelation: "products"; referencedColumns: ["id"] },
+          { foreignKeyName: "scale_sync_scale_id_fkey"; columns: ["scale_id"]; isOneToOne: false; referencedRelation: "scales"; referencedColumns: ["id"] },
+        ]
+      }
+      scales: {
+        Row: {
+          id: string
+          company_id: string
+          warehouse_id: string | null
+          name: string
+          ip: string
+          port: number
+          model: string
+          is_active: boolean
+          agent: string | null
+          last_seen_at: string | null
+          last_sync_at: string | null
+          last_error: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          warehouse_id?: string | null
+          name: string
+          ip: string
+          port?: number
+          model?: string
+          is_active?: boolean
+          agent?: string | null
+          last_seen_at?: string | null
+          last_sync_at?: string | null
+          last_error?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          warehouse_id?: string | null
+          name?: string
+          ip?: string
+          port?: number
+          model?: string
+          is_active?: boolean
+          agent?: string | null
+          last_seen_at?: string | null
+          last_sync_at?: string | null
+          last_error?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "scales_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "scales_warehouse_id_fkey"; columns: ["warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["id"] },
+        ]
+      }
       shipment_events: {
         Row: {
           id: string
@@ -19487,12 +19605,45 @@ export type Database = {
         }
         Returns: undefined
       }
+      scale_pending: {
+        Args: {
+          p_scale: string
+          p_agent?: string
+        }
+        Returns: Json
+      }
       scale_plu_set: {
         Args: {
           p_company: string
           p: Json
         }
         Returns: number
+      }
+      scale_save: {
+        Args: {
+          p: Json
+        }
+        Returns: string
+      }
+      scale_settings_save: {
+        Args: {
+          p_company: string
+          p_auto_plu: boolean
+        }
+        Returns: undefined
+      }
+      scale_synced: {
+        Args: {
+          p_scale: string
+          p: Json
+        }
+        Returns: undefined
+      }
+      scales_list: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
       }
       scan_catalog: {
         Args: {
