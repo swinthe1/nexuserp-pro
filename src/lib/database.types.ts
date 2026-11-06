@@ -3973,6 +3973,8 @@ export type Database = {
           created_by: string | null
           updated_at: string
           updated_by: string | null
+          level_id: string | null
+          end_level_id: string | null
         }
         Insert: {
           id?: string
@@ -3994,6 +3996,8 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          level_id?: string | null
+          end_level_id?: string | null
         }
         Update: {
           id?: string
@@ -4015,12 +4019,16 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          level_id?: string | null
+          end_level_id?: string | null
         }
         Relationships: [
           { foreignKeyName: "expiry_markdowns_adjustment_id_fkey"; columns: ["adjustment_id"]; isOneToOne: false; referencedRelation: "stock_adjustments"; referencedColumns: ["id"] },
           { foreignKeyName: "expiry_markdowns_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
           { foreignKeyName: "expiry_markdowns_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "expiry_markdowns_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "expiry_markdowns_end_level_id_fkey"; columns: ["end_level_id"]; isOneToOne: false; referencedRelation: "price_levels"; referencedColumns: ["id"] },
+          { foreignKeyName: "expiry_markdowns_level_id_fkey"; columns: ["level_id"]; isOneToOne: false; referencedRelation: "price_levels"; referencedColumns: ["id"] },
           { foreignKeyName: "expiry_markdowns_lot_id_fkey"; columns: ["lot_id"]; isOneToOne: false; referencedRelation: "lots"; referencedColumns: ["id"] },
           { foreignKeyName: "expiry_markdowns_promotion_id_fkey"; columns: ["promotion_id"]; isOneToOne: false; referencedRelation: "promotions"; referencedColumns: ["id"] },
         ]
@@ -8768,6 +8776,9 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          source: string
+          valid_until: string | null
+          markdown_id: string | null
         }
         Insert: {
           id?: string
@@ -8786,6 +8797,9 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          source?: string
+          valid_until?: string | null
+          markdown_id?: string | null
         }
         Update: {
           id?: string
@@ -8804,10 +8818,14 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          source?: string
+          valid_until?: string | null
+          markdown_id?: string | null
         }
         Relationships: [
           { foreignKeyName: "price_levels_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
           { foreignKeyName: "price_levels_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "price_levels_markdown_id_fkey"; columns: ["markdown_id"]; isOneToOne: false; referencedRelation: "expiry_markdowns"; referencedColumns: ["id"] },
           { foreignKeyName: "price_levels_posted_by_fkey"; columns: ["posted_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
         ]
       }
@@ -17119,6 +17137,12 @@ export type Database = {
           p_note?: string
         }
         Returns: undefined
+      }
+      expiry_markdowns_waiting: {
+        Args: {
+          p_company: string
+        }
+        Returns: number
       }
       expiry_overview: {
         Args: {

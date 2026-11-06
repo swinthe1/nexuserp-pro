@@ -21,11 +21,11 @@ import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import { msg, t, td, tn } from '@/i18n'
+import { getLocale, msg, t, td, tn } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { cn, formatDate, formatMoney, formatQty, num } from '@/lib/utils'
-import { useCategories, useVariantOptions, useWarehouses } from '../api'
+import { useCategories, usePriceRules, useVariantOptions, useWarehouses } from '../api'
 import { MultiPick } from '@/components/multi-pick'
 
 type Lot = { lot_id: string | null; lot_number: string; from_invoice?: boolean; variant_id: string; sku: string; name: string; warehouse_id: string; warehouse: string; expiry_date: string
@@ -34,6 +34,7 @@ type Lot = { lot_id: string | null; lot_number: string; from_invoice?: boolean; 
 type Markdown = { id: string; status: 'proposed' | 'approved' | 'rejected' | 'written_off'; variant_id: string; sku: string; name: string; warehouse_id: string; warehouse: string
   lot_number: string | null; expiry_date: string; days_left: number; quantity: number; discount_pct: number; note: string | null; price: number | null
   proposed_by: string | null; decided_by: string | null; created_at: string; decided_at: string | null; mine: boolean; adjustment_number: string | null; adjustment_status: string | null
+  level_id?: string | null; level_number?: string | null; end_level_id?: string | null; end_level_number?: string | null
   supplier_id?: string | null; supplier?: string | null; category_id?: string | null; group_id?: string | null }
 type Overview = { today: string; can: { propose: boolean; decide: boolean; write_off: boolean }; lots: Lot[]; markdowns: Markdown[] }
 
@@ -166,7 +167,9 @@ export function ExpiryPage() {
                       {m.price != null && <div className="text-xs text-muted-foreground">{t('{a} → {b} without VAT', { a: formatMoney(m.price), b: formatMoney(num(m.price) * (1 - num(m.discount_pct) / 100)) })}</div>}</TableCell>
                     <TableCell className="text-[13px]"><div>{t(STATUS[m.status])}</div>
                       <div className="text-xs text-muted-foreground">{m.status === 'proposed' ? t('by {name}', { name: m.proposed_by ?? '—' }) : m.decided_by ? t('by {name}', { name: m.decided_by }) : ''}
-                        {m.adjustment_number ? <> · <Link className="text-primary hover:underline" to="/inventory/adjustments">{m.adjustment_number}</Link>{m.adjustment_status === 'draft' ? ` (${t('waits for the stock manager')})` : ''}</> : null}</div></TableCell>
+                        {m.adjustment_number ? <> · <Link className="text-primary hover:underline" to="/inventory/adjustments">{m.adjustment_number}</Link>{m.adjustment_status === 'draft' ? ` (${t('waits for the stock manager')})` : ''}</> : null}</div>
+                      {m.level_id && <div className="text-xs text-muted-foreground">{t('Price levelling')}: <Link className="text-primary hover:underline" to={`/inventory/levelling/${m.level_id}`}>{m.level_number}</Link>
+                        {m.end_level_id ? <> · {t('price back')}: <Link className="text-primary hover:underline" to={`/inventory/levelling/${m.end_level_id}`}>{m.end_level_number}</Link></> : null}</div>}</TableCell>
                     <TableCell className="whitespace-nowrap text-right">
                       {m.status === 'proposed' && o.can.decide && <Button size="sm" onClick={() => setDecide(m)}>{t('Decide')}</Button>}
                       {m.status === 'approved' && m.days_left < 0 && o.can.propose && <Button size="sm" variant="outline" onClick={() => setWriteOff({ markdown: m })}><PackageX /> {t('Take off the shelf')}</Button>}
@@ -247,13 +250,13 @@ function ProposeDialog({ lot, canDecide, defaultWarehouse, onClose }: { lot?: Lo
   const [approve, setApprove] = React.useState(canDecide)
   const save = useExpiryAction(async () => unwrap(await supabase.rpc('expiry_propose', { p: {
     company_id: companyId, warehouse_id: wh, lot_id: lot?.lot_id ?? null, variant_id: variant, expiry_date: date || null, quantity: num(qty), discount_pct: num(pct), note, approve,
-  } as never })), approve ? t('Discount approved: the till sells it at that price') : t('Sent to the store manager'))
+  } as never })), approve ? t('Discount approved: written as a price levelling, the till sells it at that price') : t('Sent to the store manager'))
   const ok = !!variant && !!wh && !!date && num(qty) > 0 && num(pct) > 0 && num(pct) <= 90
   return (
     <Dialog open onOpenChange={(o) => !o && !save.isPending && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-h-[92vh] max-w-xl overflow-y-auto">
         <DialogHeader><DialogTitle>{lot ? t('Discount for {name}', { name: lot.name }) : t('Note a short date')}</DialogTitle>
-          <DialogDescription>{t('The discount runs at the till of this store from today until the expiry date. The store manager approves it.')}</DialogDescription></DialogHeader>
+          <DialogDescription>{t('The discount runs at the till of this store from today until the expiry date. The store manager approves it, and it is written as a price levelling of this store; the day after the date the price goes back by itself.')}</DialogDescription></DialogHeader>
         <form className="grid gap-3" onSubmit={(e) => { e.preventDefault(); if (ok) void save.mutateAsync(undefined).then(onClose) }}>
           {!lot && (
             <div className="grid gap-1.5"><Label>{t('Item')}</Label>
@@ -274,6 +277,7 @@ function ProposeDialog({ lot, canDecide, defaultWarehouse, onClose }: { lot?: Lo
               <Input id="ex-pct" inputMode="decimal" className="text-right tabular" value={pct} onChange={(e) => setPct(e.target.value.replace(',', '.'))} /></div>
           </div>
           <div className="flex flex-wrap gap-1.5">{[20, 30, 40, 50].map((p) => <Button key={p} type="button" size="sm" variant={pct === String(p) ? 'default' : 'outline'} onClick={() => setPct(String(p))}>{p}%</Button>)}</div>
+          {variant && wh && <DiscountCalc variant={variant} warehouse={wh} qty={num(qty)} pct={pct} onPct={setPct} />}
           <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('Note, e.g. where it is on the shelf (optional)')} aria-label={t('Note')} />
           {canDecide && <label className="flex items-center justify-between gap-3 rounded-md border p-3 text-[13px]"><span>{t('Approve it now (you are a store manager)')}</span><Switch checked={approve} onCheckedChange={setApprove} /></label>}
           <p className="text-xs text-muted-foreground">{t('The discount applies to this item in this store. Put the short-dated pieces together, with a sticker, so customers see them.')}</p>
@@ -291,20 +295,19 @@ function DecideDialog({ m, onClose }: { m: Markdown; onClose: () => void }) {
   const decide = useExpiryAction(async (approve: boolean) => unwrap(await supabase.rpc('expiry_decide', { p_id: m.id, p_approve: approve, p_pct: approve ? num(pct) : undefined, p_note: note || undefined })))
   return (
     <Dialog open onOpenChange={(o) => !o && !decide.isPending && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-h-[92vh] max-w-xl overflow-y-auto">
         <DialogHeader><DialogTitle>{m.name}</DialogTitle>
           <DialogDescription>{t('{unit} · {qty} pieces expire on {date} · proposed by {name}', { unit: td(m.warehouse), qty: formatQty(m.quantity), date: formatDate(m.expiry_date), name: m.proposed_by ?? '—' })}</DialogDescription></DialogHeader>
         {m.note && <p className="rounded-md bg-muted/60 px-3 py-2 text-[13px]">{m.note}</p>}
         <div className="grid grid-cols-2 items-end gap-3">
           <div className="grid gap-1.5"><Label htmlFor="dc-pct">{t('Discount %')}</Label><Input id="dc-pct" inputMode="decimal" className="text-right tabular" value={pct} onChange={(e) => setPct(e.target.value.replace(',', '.'))} /></div>
-          {m.price != null && <div className="pb-2 text-right text-[13px]"><span className="text-muted-foreground">{t('Price without VAT')}</span><br />
-            <span className="tabular">{formatMoney(m.price)} → <b>{formatMoney(num(m.price) * (1 - num(pct) / 100))}</b></span></div>}
         </div>
+        <DiscountCalc variant={m.variant_id} warehouse={m.warehouse_id} qty={num(m.quantity)} pct={pct} onPct={setPct} />
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('Note (optional)')} aria-label={t('Note')} />
         <DialogFooter>
           <Button variant="outline" loading={decide.isPending && decide.variables === false} onClick={() => void decide.mutateAsync(false).then(() => { toast.success(t('Rejected')); onClose() })}><X /> {t('Reject')}</Button>
           <Button loading={decide.isPending && decide.variables === true} disabled={!(num(pct) > 0 && num(pct) <= 90)}
-            onClick={() => void decide.mutateAsync(true).then(() => { toast.success(t('Discount approved: the till sells it at that price')); onClose() })}><Check /> {t('Approve')}</Button>
+            onClick={() => void decide.mutateAsync(true).then(() => { toast.success(t('Discount approved: written as a price levelling, the till sells it at that price')); onClose() })}><Check /> {t('Approve')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -333,5 +336,72 @@ function WriteOffDialog({ lot, markdown, canPost, onClose }: { lot?: Lot; markdo
         </form>
       </DialogContent>
     </Dialog>
+  )
+}
+
+type PriceItem = { variant_id: string; price: number; vat_rate: number; cost: number; stock: number }
+const r2 = (n: number) => Math.round(n * 100) / 100
+
+/**
+ * #14: the discount goes through the price calculation. The cost, the price and the margin now and with the
+ * discount; below cost it says so; and what the short-dated pieces bring if they sell, against what they
+ * cost if they expire and are thrown away. The new price with VAT can be typed instead of the %.
+ */
+function DiscountCalc({ variant, warehouse, qty, pct, onPct }: { variant: string; warehouse: string; qty: number; pct: string; onPct: (v: string) => void }) {
+  const { companyId } = useCompany()
+  const q = useQuery({
+    queryKey: ['inv', companyId, 'markdown-calc', variant, warehouse], enabled: !!companyId,
+    queryFn: async () => ((unwrap(await supabase.rpc('price_level_items', { p_company: companyId!, p_variants: [variant], p_warehouse: warehouse })) as unknown as PriceItem[]) ?? [])[0] ?? null,
+  })
+  const it = q.data
+  // the margin the same way as the price levelling: on the cost or on the price, as the company set it
+  const basis = usePriceRules().data?.basis ?? 'markup'
+  const [grossText, setGrossText] = React.useState<string | null>(null)
+  if (q.isLoading) return <Skeleton className="h-40" />
+  if (!it) return null
+  const vat = num(it.vat_rate), price = num(it.price), cost = num(it.cost), p = Math.min(Math.max(num(pct), 0), 100)
+  const gross = r2(price * (1 + vat / 100))
+  const newPrice = price * (1 - p / 100), newGross = r2(newPrice * (1 + vat / 100))
+  const margin = price - cost, newMargin = newPrice - cost
+  const dec = (n: number, d: number) => (getLocale() === 'en' ? n.toFixed(d) : n.toFixed(d).replace('.', ','))
+  const mPct = (m: number, net: number) => { const base = basis === 'markup' ? cost : net; return base > 0 ? `${dec(m / base * 100, 1)}%` : '—' }
+  const below = cost > 0 && r2(cost - newPrice) >= 0.01
+  const typeGross = (v: string) => {
+    setGrossText(v)
+    const g = num(v.replace(',', '.'))
+    if (gross > 0 && g > 0 && g <= gross) onPct(String(r2((1 - g / gross) * 100)))
+  }
+  const row = (label: string, now: React.ReactNode, after: React.ReactNode, strong?: boolean) => (
+    <tr className={cn('border-t', strong && 'font-medium')}><td className="py-1.5 pr-3 text-muted-foreground">{label}</td><td className="py-1.5 pr-3 text-right tabular">{now}</td><td className="py-1.5 text-right tabular">{after}</td></tr>)
+  return (
+    <div className="grid gap-2 rounded-md border bg-muted/30 p-3 text-[13px]">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="font-medium">{t('Price calculation')}</span>
+        <label className="flex items-center gap-2"><span className="text-muted-foreground">{t('New price with VAT')}</span>
+          <Input inputMode="decimal" className="h-8 w-28 text-right tabular" value={grossText ?? dec(newGross, 2)}
+            onFocus={() => setGrossText(dec(newGross, 2))} onBlur={() => setGrossText(null)} onChange={(e) => typeGross(e.target.value)} aria-label={t('New price with VAT')} /></label>
+      </div>
+      <table className="w-full">
+        <thead><tr className="text-xs text-muted-foreground"><th className="pb-1 text-left font-normal" /><th className="pb-1 pr-3 text-right font-normal">{t('Now')}</th><th className="pb-1 text-right font-normal">{t('With the discount')}</th></tr></thead>
+        <tbody>
+          {row(t('Cost without VAT'), formatMoney(cost), formatMoney(cost))}
+          {row(t('Selling price without VAT'), formatMoney(price), formatMoney(newPrice))}
+          {row(t('Selling price with VAT ({rate}%)', { rate: vat }), formatMoney(gross), formatMoney(newGross), true)}
+          {row(t('Margin for each piece'), formatMoney(margin), <span className={cn(newMargin < 0 && 'text-destructive')}>{formatMoney(newMargin)}</span>)}
+          {row(`${t('Margin %')} (${basis === 'markup' ? t('on the cost') : t('on the price')})`, mPct(margin, price), <span className={cn(newMargin < 0 && 'text-destructive')}>{mPct(newMargin, newPrice)}</span>, true)}
+        </tbody>
+      </table>
+      {cost <= 0 && <p className="text-xs text-muted-foreground">{t('This item has no cost yet: the margin cannot be worked out.')}</p>}
+      {below && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-destructive">
+        {t('The new price is under the cost: {amount} lost on each piece.', { amount: formatMoney(cost - newPrice) })}</p>}
+      {qty > 0 && cost > 0 && (
+        <div className="grid gap-0.5 border-t pt-2">
+          <div className="flex justify-between gap-3"><span className="text-muted-foreground">{t('If the {qty} sell at this price', { qty: formatQty(qty) })}</span>
+            <span className="tabular">{t('{income} in, {result} {kind}', { income: formatMoney(newPrice * qty), result: formatMoney(Math.abs(newMargin * qty)), kind: newMargin < 0 ? t('lost|money') : t('earned') })}</span></div>
+          <div className="flex justify-between gap-3"><span className="text-muted-foreground">{t('If they expire and are thrown away')}</span>
+            <span className="tabular text-destructive">{t('{amount} lost at cost', { amount: formatMoney(cost * qty) })}</span></div>
+        </div>
+      )}
+    </div>
   )
 }

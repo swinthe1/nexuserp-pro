@@ -13,6 +13,7 @@ import { PageHeader } from '@/components/page-header'
 import { SearchSelect } from '@/components/search-select'
 import { StatementActions } from '@/components/statement-actions'
 import { StatusBadge } from '@/components/status-badge'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,7 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import { t, td } from '@/i18n'
+import { t, td, tn } from '@/i18n'
 import type { PrintDoc } from '@/lib/documents/model'
 import { nf, qf, type Statement } from '@/lib/documents/render-statement'
 import { describeError, unwrap } from '@/lib/errors'
@@ -31,6 +32,7 @@ import { useCategories, usePriceRules, usePriceSuggestions, useWarehouses } from
 import { PriceSuggestions } from './prices-page'
 
 type Level = { id: string; number: string | null; status: string; level_date: string; warehouse_id: string | null; notes: string | null; value_change: number; posted_at: string | null
+  source?: 'manual' | 'expiry' | 'expiry_end'; valid_until?: string | null
   warehouse: { name: string } | null; lines: { id: string; variant_id: string; line_no: number; old_price: number | null; new_price: number; quantity: number | null; value_change: number | null }[] }
 type Item = { variant_id: string; sku: string; name: string; price: number; vat_rate: number; cost: number; category: string | null; stock: number }
 /** mtext: the margin as it is being typed; manual: the margin of this row was set by hand (a fixed margin leaves it alone) */
@@ -46,12 +48,16 @@ export function PriceLevelsPage() {
   const [params, setParams] = useSearchParams()
   const tab = params.get('tab') === 'suggestions' ? 'suggestions' : 'documents'
   const waiting = usePriceSuggestions('pending').data?.length ?? 0
+  // discounts for short dates go through the price calculation: the ones waiting for the manager
+  const markdownsWaiting = useQuery({ queryKey: ['expiry', companyId, 'waiting'], enabled: !!companyId,
+    queryFn: async () => { const r = await supabase.rpc('expiry_markdowns_waiting', { p_company: companyId! }); return r.error ? 0 : num(r.data) } }).data ?? 0
   const q = useQuery({ queryKey: ['inv', companyId, 'levels'], enabled: !!companyId,
-    queryFn: async () => unwrap(await supabase.from('price_levels').select('id, number, status, level_date, value_change, notes, warehouse:warehouses(name), lines:price_level_lines(count)')
+    queryFn: async () => unwrap(await supabase.from('price_levels').select('*, warehouse:warehouses(name), lines:price_level_lines(count)')
       .eq('company_id', companyId!).is('deleted_at', null).order('level_date', { ascending: false }).order('created_at', { ascending: false }).limit(500)) })
   type R = NonNullable<typeof q.data>[number]
   const cols = React.useMemo<ColumnDef<R>[]>(() => [
-    { accessorKey: 'number', header: ({ column }) => <ColumnHeader column={column} title={t('Number')} />, meta: { label: t('Number') }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as string) ?? t('Draft')}</span> },
+    { accessorKey: 'number', header: ({ column }) => <ColumnHeader column={column} title={t('Number')} />, meta: { label: t('Number') }, cell: ({ getValue, row: { original: r } }) => <span className="whitespace-nowrap"><span className="font-medium">{(getValue() as string) ?? t('Draft')}</span>
+      {r.source && r.source !== 'manual' && <Badge variant="secondary" className="ml-1.5">{r.source === 'expiry' ? t('Short date until {date}', { date: formatDate(r.valid_until ?? '') }) : t('Short date: price back')}</Badge>}</span> },
     { accessorKey: 'level_date', header: ({ column }) => <ColumnHeader column={column} title={t('Date')} />, meta: { label: t('Date') }, cell: ({ getValue }) => formatDate(getValue() as string) },
     { id: 'wh', accessorFn: (r) => (r.warehouse as { name: string } | null)?.name ?? '', header: t('Stock of'), meta: { label: t('Stock of') }, cell: ({ getValue }) => td(getValue() as string) || t('All warehouses') },
     { id: 'n', accessorFn: (r) => (r.lines as unknown as { count: number }[])[0]?.count ?? 0, header: t('Items'), meta: { label: t('Items') } },
@@ -62,7 +68,9 @@ export function PriceLevelsPage() {
   return (
     <>
       <PageHeader title={t('Price levelling')} description={t('Change the selling prices of many items at once, as one document: the stock on hand and the value of the change are recorded, and new labels can be printed.')}
-        actions={can('inventory.write') && <Button asChild><Link to="/inventory/levelling/new"><Plus /> {t('New levelling')}</Link></Button>} />
+        actions={<>
+          {markdownsWaiting > 0 && <Button variant="outline" asChild><Link to="/inventory/expiry?tab=proposals"><Percent /> {tn(markdownsWaiting, '{n} short-date discount waits', '{n} short-date discounts wait')}</Link></Button>}
+          {can('inventory.write') && <Button asChild><Link to="/inventory/levelling/new"><Plus /> {t('New levelling')}</Link></Button>}</>} />
       <Tabs value={tab} onValueChange={(v) => setParams(v === 'suggestions' ? { tab: v } : {}, { replace: true })}>
         <TabsList className="mb-3">
           <TabsTrigger value="documents">{t('Documents')}</TabsTrigger>
@@ -235,6 +243,14 @@ function Editor({ doc }: { doc?: Level }) {
           {editable && <ConfirmDialog title={t('Post the levelling?')} description={t('{n} prices change now. Value of the change on the stock, with VAT: {amount}.', { n: changed, amount: formatMoney(total, company?.base_currency) })}
             confirmLabel={t('Post')} onConfirm={() => post.mutateAsync()} trigger={<Button disabled={!changed} loading={post.isPending}><Check /> {t('Post')}</Button>} />}
         </>} />
+
+      {doc?.source && doc.source !== 'manual' && (
+        <p className="mb-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-[13px]">
+          {doc.source === 'expiry'
+            ? t('A discount for a short date, approved by the manager: it holds only in this unit until {date}, then the price goes back by itself with a second levelling.', { date: formatDate(doc.valid_until ?? '') })
+            : t('The short-date discount ended: the regular price is back in this unit.')}{' '}
+          <Link className="text-primary hover:underline" to="/inventory/expiry?tab=proposals">{t('Short dates|menu')}</Link></p>
+      )}
 
       <div className="mb-4 grid gap-3 rounded-lg border bg-card p-4 sm:grid-cols-[160px_220px_1fr]">
         <div className="grid gap-1.5"><Label htmlFor="lv-date">{t('Date')}</Label><Input id="lv-date" type="date" disabled={!editable} value={date} onChange={(e) => e.target.value && setDate(e.target.value)} /></div>
