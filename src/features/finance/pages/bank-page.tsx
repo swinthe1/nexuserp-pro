@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { Ban, BookCheck, BookOpenText, Check, CheckCheck, Landmark, Link2, Plus, Undo2, Upload, Wallet, Wand2 } from 'lucide-react'
+import { Ban, BookCheck, BookOpenText, Check, CheckCheck, HandCoins, Landmark, Link2, Plus, Undo2, Upload, Wallet, Wand2 } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -103,20 +103,24 @@ export function BankPage() {
               <CardContent className="grid gap-2 p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    {b.account_kind === 'cash' ? <Wallet className="size-4 text-muted-foreground" /> : <Landmark className="size-4 text-muted-foreground" />}
+                    {b.account_kind === 'cash' ? <Wallet className="size-4 text-muted-foreground" /> : b.account_kind === 'owner' ? <HandCoins className="size-4 text-muted-foreground" /> : <Landmark className="size-4 text-muted-foreground" />}
                     <div><div className="font-medium">{td(b.name)}</div><div className="text-xs text-muted-foreground">{[b.bank_name, b.iban].filter(Boolean).join(' · ') || t('Account {code}', { code: b.account?.code ?? '' })}</div></div>
                   </div>
                   <Can perm="finance.write"><Button size="sm" variant="ghost" onClick={() => setEdit(b)}>{t('Edit')}</Button></Can>
                 </div>
-                <div className="tabular text-2xl font-semibold tracking-[-0.02em]">{formatMoney(glBal.get(b.account_id))} <span className="text-sm font-normal text-muted-foreground">{company?.base_currency}</span></div>
+                {b.account_kind === 'owner' ? <>
+                  {/* the owner's money: what the company owes him for what he paid (the account is a debt, so its balance is a credit) */}
+                  <div className="tabular text-2xl font-semibold tracking-[-0.02em]">{formatMoney(-(glBal.get(b.account_id) ?? 0))} <span className="text-sm font-normal text-muted-foreground">{company?.base_currency}</span></div>
+                  <div className="-mt-1 text-xs text-muted-foreground">{t('What the company owes the owner for what he paid from his own money')}</div>
+                </> : <div className="tabular text-2xl font-semibold tracking-[-0.02em]">{formatMoney(glBal.get(b.account_id))} <span className="text-sm font-normal text-muted-foreground">{company?.base_currency}</span></div>}
                 {b.currency_code !== company?.base_currency && <div className="-mt-1 text-xs text-muted-foreground">{t('Value of the {cur} balance in the accounts, at the rates it was recorded', { cur: b.currency_code })}</div>}
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                   <Link className="hover:underline" to={`/finance/accounts/${b.account_id}`}>{t('Account {code}', { code: b.account?.code ?? '' })}</Link>
                   <span>{last ? t('Last statement {date} · closing {amount}', { date: formatDate(last.statement_date), amount: formatMoney(last.closing_balance) }) : t('No statements yet')}</span>
                 </div>
-                <BankPositionLine a={posOf(b.id)} onOpen={() => setWhy(b.id)} />
+                {b.account_kind !== 'owner' && <BankPositionLine a={posOf(b.id)} onOpen={() => setWhy(b.id)} />}
                 {b.account_kind === 'cash' && <Button size="sm" variant="outline" className="justify-self-start" asChild><Link to={`/finance/cash-book?account=${b.id}`}><BookOpenText /> {t('Cash book|ledger')}</Link></Button>}
-                {b.account_kind !== 'cash' && <Can perm="finance.write"><Button size="sm" variant="outline" className="justify-self-start" onClick={() => setImportFor(b.id)}><Upload /> {t('Import statement')}</Button></Can>}
+                {!['cash', 'owner'].includes(b.account_kind) && <Can perm="finance.write"><Button size="sm" variant="outline" className="justify-self-start" onClick={() => setImportFor(b.id)}><Upload /> {t('Import statement')}</Button></Can>}
               </CardContent>
             </Card>
           )
@@ -145,7 +149,16 @@ function BankAccountDialog({ account, onClose }: { account: BankAccount | 'new' 
     if (account) setV(a ? { ...a } : { name: '', account_kind: 'bank', currency_code: company?.base_currency ?? 'ALL', bank_name: '', iban: '', swift: '', account_id: null, journal_id: null, is_active: true })
   }, [account]) // eslint-disable-line react-hooks/exhaustive-deps
   const set = (k: string) => (x: unknown) => setV((s) => ({ ...s, [k]: x }))
-  const glOptions = (accounts.data ?? []).filter((x) => x.is_postable && x.account_type === 'asset' && ['cash', 'bank'].includes(x.account_subtype)).map((x) => ({ value: x.id, label: `${x.code} ${td(x.name)}` }))
+  const owner = v.account_kind === 'owner'
+  // the owner's money is a debt of the company to him (455) or his equity; the others are cash and bank accounts
+  const glOptions = (accounts.data ?? []).filter((x) => x.is_postable && (owner ? ['liability', 'equity'].includes(x.account_type) : x.account_type === 'asset' && ['cash', 'bank'].includes(x.account_subtype))).map((x) => ({ value: x.id, label: `${x.code} ${td(x.name)}` }))
+  const setKind = (k: string) => setV((s) => {
+    const toOwner = k === 'owner', wasOwner = s.account_kind === 'owner'
+    if (toOwner === wasOwner) return { ...s, account_kind: k }
+    const acc455 = (accounts.data ?? []).find((x) => x.code === '455')?.id ?? null
+    const gen = (journals.data ?? []).find((j) => j.code === 'GEN')?.id ?? null
+    return { ...s, account_kind: k, account_id: toOwner ? acc455 : null, journal_id: toOwner ? gen : null, ...(toOwner ? { bank_name: '', iban: '', swift: '' } : {}) }
+  })
   const submit = async () => {
     const { id, account: _acc, company_id: _c, created_at: _ca, updated_at: _u, created_by: _cb, updated_by: _ub, deleted_at: _d, ...rest } = v as Record<string, unknown>
     try { await save.mutateAsync({ id: id as string | undefined, ...rest, iban: rest.iban || null, bank_name: rest.bank_name || null, swift: rest.swift || null }); toast.success(t('Account saved')); onClose() }
@@ -158,16 +171,20 @@ function BankAccountDialog({ account, onClose }: { account: BankAccount | 'new' 
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2 grid gap-1.5"><Label htmlFor="ba-name">{t('Name')}</Label><Input id="ba-name" value={String(v.name ?? '')} onChange={(e) => set('name')(e.target.value)} placeholder={t('e.g. Raiffeisen EUR')} /></div>
           <div className="grid gap-1.5"><Label>{t('Kind')}</Label>
-            <Select value={String(v.account_kind ?? 'bank')} onValueChange={set('account_kind')}><SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{['bank', 'cash', 'card', 'ewallet'].map((k) => <SelectItem key={k} value={k}>{humanize(k)}</SelectItem>)}</SelectContent></Select></div>
+            <Select value={String(v.account_kind ?? 'bank')} onValueChange={setKind}><SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{['bank', 'cash', 'card', 'ewallet'].map((k) => <SelectItem key={k} value={k}>{humanize(k)}</SelectItem>)}
+                <SelectItem value="owner">{t('The owner’s own money')}</SelectItem></SelectContent></Select></div>
           <div className="grid gap-1.5"><Label htmlFor="ba-cur">{t('Currency')}</Label><Input id="ba-cur" maxLength={3} disabled={!!a} value={String(v.currency_code ?? '')} onChange={(e) => set('currency_code')(e.target.value.toUpperCase())} /></div>
+          {owner && <p className="col-span-2 rounded-md bg-muted px-3 py-2 text-[12px] text-muted-foreground">{t('For what the owner pays from his own pocket: it is not booked to the cash box or the bank, but as a debt of the company to the owner (455), which the company pays back to him later.')}</p>}
+          {!owner && <>
           <div className="grid gap-1.5"><Label htmlFor="ba-bank">{t('Bank')}</Label><Input id="ba-bank" value={String(v.bank_name ?? '')} onChange={(e) => set('bank_name')(e.target.value)} /></div>
           <div className="grid gap-1.5"><Label htmlFor="ba-swift">SWIFT</Label><Input id="ba-swift" value={String(v.swift ?? '')} onChange={(e) => set('swift')(e.target.value.toUpperCase())} /></div>
           <div className="col-span-2 grid gap-1.5"><Label htmlFor="ba-iban">IBAN</Label><Input id="ba-iban" value={String(v.iban ?? '')} onChange={(e) => set('iban')(e.target.value.toUpperCase().replace(/\s/g, ''))} /></div>
-          <div className="col-span-2 grid gap-1.5"><Label>{t('Account in the chart of accounts')}</Label><SearchSelect value={v.account_id as string | null} onChange={set('account_id')} options={glOptions} placeholder={t('Cash or bank account')} /></div>
+          </>}
+          <div className="col-span-2 grid gap-1.5"><Label>{t('Account in the chart of accounts')}</Label><SearchSelect value={v.account_id as string | null} onChange={set('account_id')} options={glOptions} placeholder={owner ? t('The owner’s account') : t('Cash or bank account')} /></div>
           <div className="grid gap-1.5"><Label>{t('Journal')}</Label>
             <Select value={String(v.journal_id ?? '')} onValueChange={set('journal_id')}><SelectTrigger><SelectValue placeholder={t('Bank (BNK)')} /></SelectTrigger>
-              <SelectContent>{(journals.data ?? []).filter((j) => ['bank', 'cash'].includes(j.journal_type)).map((j) => <SelectItem key={j.id} value={j.id}>{j.code} · {td(j.name)}</SelectItem>)}</SelectContent></Select></div>
+              <SelectContent>{(journals.data ?? []).filter((j) => (owner ? ['general'] : ['bank', 'cash']).includes(j.journal_type)).map((j) => <SelectItem key={j.id} value={j.id}>{j.code} · {td(j.name)}</SelectItem>)}</SelectContent></Select></div>
           <div className="flex items-end justify-between gap-2 pb-2"><Label htmlFor="ba-active">{t('Active')}</Label><Switch id="ba-active" checked={!!v.is_active} onCheckedChange={set('is_active')} /></div>
         </div>
         <DialogFooter><Button variant="ghost" onClick={onClose}>{t('Cancel')}</Button><Button loading={save.isPending} disabled={!v.name || !v.account_id || String(v.currency_code ?? '').length !== 3} onClick={submit}>{t('Save')}</Button></DialogFooter>

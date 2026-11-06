@@ -772,4 +772,12 @@ export default {
   "Purchase invoice (VAT)": "Ulazna faktura (PDV)",
   "Purchase invoice (no VAT)": "Ulazna faktura (bez PDV)",
   "Left empty, the document keeps its own number": "Ako ostane prazno, uzima broj dokumenta",
+  "Owner current account": "Vlasnik — tekući račun",
+  "The owner’s own money": "Lični novac vlasnika",
+  "The owner’s account": "Račun vlasnika",
+  "What the company owes the owner for what he paid from his own money": "Koliko firma duguje vlasniku za ono što je platio svojim novcem",
+  "For what the owner pays from his own pocket: it is not booked to the cash box or the bank, but as a debt of the company to the owner (455), which the company pays back to him later.": "Za ono što vlasnik plaća svojim novcem: ne knjiži se u blagajnu ni u banku, već kao dug firme prema vlasniku (455), koji mu firma kasnije vraća.",
+  "The owner's money goes to the owner's account (a debt of the company to the owner), not to a cash or bank account": "Novac vlasnika knjiži se na račun vlasnika (dug firme prema njemu), ne na blagajnu ili banku",
+  "A bank or cash account is booked to an asset account": "Račun banke ili blagajne knjiži se na konto imovine",
+  "cash-journal": "dnevnik-blagajne",
 } satisfies Dict

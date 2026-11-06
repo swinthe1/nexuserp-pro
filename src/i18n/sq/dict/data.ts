@@ -270,4 +270,5 @@ export default {
   "data:dz": "duzinë",
   "data:h": "orë",
   "data:l": "l",
+  "Owner current account": "Pronari — llogari rrjedhëse",
 } satisfies Dict

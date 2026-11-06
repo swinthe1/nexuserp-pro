@@ -332,4 +332,11 @@ export default {
   "Purchase invoice (VAT)": "Faturë blerje (TVSH)",
   "Purchase invoice (no VAT)": "Faturë blerje (pa TVSH)",
   "Left empty, the document keeps its own number": "Nëse e lini bosh, merr numrin e dokumentit",
+  "The owner’s own money": "Paratë e pronarit (personale)",
+  "The owner’s account": "Llogaria e pronarit",
+  "What the company owes the owner for what he paid from his own money": "Sa i detyrohet kompania pronarit për ato që pagoi me paratë e veta",
+  "For what the owner pays from his own pocket: it is not booked to the cash box or the bank, but as a debt of the company to the owner (455), which the company pays back to him later.": "Për ato që pronari i paguan me paratë e veta: nuk regjistrohen në arkë as në bankë, por si borxh i kompanisë ndaj pronarit (455), që kompania ia kthen më vonë.",
+  "The owner's money goes to the owner's account (a debt of the company to the owner), not to a cash or bank account": "Paratë e pronarit regjistrohen te llogaria e pronarit (borxh i kompanisë ndaj tij), jo te një llogari arke ose banke",
+  "A bank or cash account is booked to an asset account": "Një llogari banke ose arke regjistrohet te një konto aktivi",
+  "cash-journal": "ditari-i-arkes",
 } satisfies Dict

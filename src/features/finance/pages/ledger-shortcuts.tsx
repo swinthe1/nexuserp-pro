@@ -3,6 +3,7 @@ import * as React from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
 import { EmptyState } from '@/components/empty-state'
+import { GridExportMenu } from '@/components/export-menu'
 import { ErrorState } from '@/components/error-state'
 import { PageHeader } from '@/components/page-header'
 import { SearchSelect } from '@/components/search-select'
@@ -67,7 +68,26 @@ export function CashBookPage() {
     <div className="mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)] gap-4">
       <PageHeader title={t('Cash book|ledger')}
         description={<>{company?.name} · <span className="font-mono">{cash.code}</span> {td(cash.name)} · {formatDate(from)} – {formatDate(to)}. {t('Amounts in {cur}.', { cur: company?.base_currency ?? '' })}</>}
-        actions={<Button variant="outline" onClick={() => window.print()} className="print:hidden"><Printer /> {t('Print')}</Button>} />
+        actions={<div className="flex gap-2 print:hidden">
+          <GridExportMenu name={`${t('cash-journal')}-${cash.code}-${from}-${to}`} title={t('Cash book|ledger')} disabled={!days.length}
+            subtitle={`${company?.name ?? ''} · ${cash.code} ${td(cash.name)} · ${formatDate(from)} – ${formatDate(to)} · ${company?.base_currency ?? ''}`}
+            grid={() => {
+              let run = num(ledger.data?.opening ?? 0)
+              const r2 = (x: number) => Math.round(x * 100) / 100
+              return [[t('Date'), t('Document'), t('Description'), t('In'), t('Out'), t('Cash')],
+                [formatDate(from), null, t('Opening balance on {date}', { date: formatDate(from) }), null, null, r2(run)],
+                ...days.flatMap((d) => [
+                  ...d.rows.map((l) => {
+                    run += num(l.debit) - num(l.credit)
+                    return [formatDate(d.date), l.entry.reference ? `${sourceLabel(l.entry.source_doc_type)} ${l.entry.reference}` : l.entry.number, label(l),
+                      num(l.debit) || null, num(l.credit) || null, r2(run)]
+                  }),
+                  [null, null, t('Total of {date}', { date: formatDate(d.date) }), r2(d.inflow), r2(d.outflow), r2(d.close)],
+                ]),
+                [formatDate(to), null, t('Closing balance on {date}', { date: formatDate(to) }), r2(inflow), r2(outflow), r2(num(ledger.data?.closing ?? 0))]]
+            }} />
+          <Button variant="outline" onClick={() => window.print()}><Printer /> {t('Print')}</Button>
+        </div>} />
 
       <div className="flex flex-wrap items-end gap-2 print:hidden">
         {cashes.length > 1 && (

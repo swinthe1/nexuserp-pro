@@ -18,5 +18,5 @@ export default {
   'Add a cash account in the chart of accounts.': 'Shtoni një konto arke te plani kontabël.',
   'Every entry on one account, with its running balance. Choose the account.': 'Çdo regjistrim në një konto, me saldon pas secilit. Zgjidhni kontin.',
   'Choose an account': 'Zgjidhni kontin',
-  'Cash book|ledger': 'Libri i arkës',
+  'Cash book|ledger': 'Ditari i arkës',
 } satisfies Dict
