@@ -1,0 +1,68 @@
+# The watch from outside: every 10 minutes GitHub (not the VPS) opens the website and the API. When the
+# server is down, its own monitor cannot say so; this one opens an issue here, and GitHub e-mails it.
+# When the server answers again the issue is closed with the time it was down. The SSL certificates are
+# checked too: fewer than 14 days left opens an issue.
+name: Uptime
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+permissions:
+  issues: write
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      WEB: https://erp.dris-ks.com
+      API: https://api.erp.dris-ks.com/rest/v1/
+    steps:
+      - name: Look at the website and the API
+        id: look
+        run: |
+          check() { # url, the codes that mean "up"
+            for i in 1 2 3; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$1" || echo 000)
+              if [[ "$code" =~ $2 ]]; then echo "$code"; return 0; fi
+              sleep 20
+            done
+            echo "$code"; return 1
+          }
+          down=""
+          web=$(check "$WEB" '^(200|30[1-8])$') || down="$down website ($WEB answered $web);"
+          # the API answers 401 without a key: that still means it is up
+          api=$(check "$API" '^(200|401|403|404)$') || down="$down API ($API answered $api);"
+          echo "down=$down" >> "$GITHUB_OUTPUT"
+          # certificates
+          short=""
+          for host in erp.dris-ks.com api.erp.dris-ks.com; do
+            end=$(echo | timeout 15 openssl s_client -servername "$host" -connect "$host:443" 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2)
+            [ -z "$end" ] && continue
+            left=$(( ($(date -d "$end" +%s) - $(date +%s)) / 86400 ))
+            [ "$left" -lt 14 ] && short="$short $host: $left days;"
+          done
+          echo "short=$short" >> "$GITHUB_OUTPUT"
+          echo "web=$web api=$api down=[$down] certificates=[$short]"
+      - name: Open or close the issue
+        run: |
+          gh label create uptime --color B60205 --description "The server watched from outside" --force -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || true
+          open=$(gh issue list -R "$GITHUB_REPOSITORY" --label uptime --state open --search "in:title DrisPRO nuk përgjigjet" --json number -q '.[0].number')
+          now=$(TZ=Europe/Tirane date '+%d.%m.%Y %H:%M')
+          if [ -n "${{ steps.look.outputs.down }}" ]; then
+            if [ -z "$open" ]; then
+              gh issue create -R "$GITHUB_REPOSITORY" --label uptime --title "DrisPRO nuk përgjigjet ($now)" \
+                --body "Kontrolli nga jashtë (GitHub) nuk mori përgjigje: ${{ steps.look.outputs.down }}
+          Kontrolloni VPS-në në Coolify. Kjo çështje mbyllet vetë kur serveri përgjigjet përsëri."
+            fi
+          elif [ -n "$open" ]; then
+            gh issue close "$open" -R "$GITHUB_REPOSITORY" --comment "Serveri përgjigjet përsëri ($now)."
+          fi
+          if [ -n "${{ steps.look.outputs.short }}" ]; then
+            cert=$(gh issue list -R "$GITHUB_REPOSITORY" --label uptime --state open --search "in:title certifikata SSL" --json number -q '.[0].number')
+            [ -z "$cert" ] && gh issue create -R "$GITHUB_REPOSITORY" --label uptime --title "Certifikata SSL skadon së shpejti" \
+              --body "Ditë të mbetura: ${{ steps.look.outputs.short }} Coolify i rinovon vetë; nëse jo, rinovojeni te Coolify." || true
+          fi

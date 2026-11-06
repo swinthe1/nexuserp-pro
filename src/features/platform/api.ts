@@ -296,3 +296,15 @@ export const useMemberStatus = () => usePeopleAction(async (a: { member: string;
   unwrap(await supabase.rpc('platform_member_status', { p_member: a.member, p_status: a.status })))
 export const useUpdateCompany = () => usePeopleAction(async (a: { company: string; values: Record<string, string> }) =>
   unwrap(await supabase.rpc('platform_update_company', { p_company: a.company, p: a.values as never })))
+
+/** the errors people met in the app, the same one counted once a day */
+export type ClientError = { fingerprint: string; kind: 'error' | 'promise' | 'page' | 'chunk'; message: string; stack: string | null; url: string | null; version: string | null
+  count: number; people: number; companies: string | null; first_at: string; last_at: string }
+export function useClientErrors(days = 7) {
+  return useQuery({ queryKey: ['platform', 'client-errors', days], refetchInterval: 120_000,
+    queryFn: async () => {
+      const r = await supabase.rpc('platform_client_errors' as never, { p_days: days } as never)
+      if (r.error?.code === 'PGRST202') return [] as ClientError[]   // a server not updated yet
+      return unwrap(r) as unknown as ClientError[]
+    } })
+}

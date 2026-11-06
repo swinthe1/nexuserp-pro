@@ -7,9 +7,11 @@ import './index.css'
 import '@/app/zoom'
 import { applyScannerManifest } from '@/features/scanner/mode'
 import '@/i18n/zod'
+import { installErrorReporting } from '@/lib/error-report'
 
 // on a handheld in scanner mode, installing gives the "DrisPRO Skaner" app
 applyScannerManifest()
+installErrorReporting()
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

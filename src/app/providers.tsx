@@ -3,6 +3,7 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import { AuthProvider } from '@/app/auth-provider'
 import { CompanyProvider } from '@/app/company-provider'
+import { MfaGate } from '@/components/mfa-gate'
 import { ThemeProvider } from '@/app/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -38,6 +39,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <ThemeProvider>
       <QueryClientProvider client={client}>
         <AuthProvider>
+          <MfaGate>
           <CompanyProvider>
             <TooltipProvider delayDuration={300}>
               <LanguageSync />
@@ -47,6 +49,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               <PwaPrompts />
             </TooltipProvider>
           </CompanyProvider>
+          </MfaGate>
         </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>

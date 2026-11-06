@@ -2,6 +2,7 @@ import { House, RotateCw, TriangleAlert } from 'lucide-react'
 import * as React from 'react'
 import { Button } from '@/components/ui/button'
 import { t } from '@/i18n'
+import { reportError } from '@/lib/error-report'
 
 const isChunkError = (e: Error) => /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|ChunkLoadError/i.test(e.message)
 
@@ -13,7 +14,7 @@ const isChunkError = (e: Error) => /Failed to fetch dynamically imported module|
 export class PageErrorBoundary extends React.Component<{ children: React.ReactNode; fullScreen?: boolean }, { error: Error | null }> {
   state = { error: null as Error | null }
   static getDerivedStateFromError(error: Error) { return { error } }
-  componentDidCatch(error: Error) { console.error('[page]', error) }
+  componentDidCatch(error: Error) { console.error('[page]', error); reportError(error, isChunkError(error) ? 'chunk' : 'page') }
   render() {
     const e = this.state.error
     if (!e) return this.props.children

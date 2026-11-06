@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, Cpu, Database, Globe, HardDrive, MemoryStick, Network, RefreshCw, ScrollText, Server, Timer } from 'lucide-react'
+import { AlertTriangle, Bug, CheckCircle2, Cpu, Database, Globe, HardDrive, MemoryStick, Network, RefreshCw, ScrollText, Server, Timer } from 'lucide-react'
 import * as React from 'react'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { ErrorState } from '@/components/error-state'
@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatDateWith, msg, t, tn } from '@/i18n'
 import { cn, formatDate } from '@/lib/utils'
-import { type ServerAlert, type ServerStatus, useServerLog, useServerStatus } from '../api'
+import { type ClientError, type ServerAlert, type ServerStatus, useClientErrors, useServerLog, useServerStatus } from '../api'
 
 export const bytes = (b: number | null | undefined) => {
   if (b == null) return '—'
@@ -116,6 +116,7 @@ export function ServerPage() {
         </div>
         <Errors d={d} hours={hours} onLog={setLog} />
       </>}
+      <ClientErrorsCard />
       <LogDialog container={log} onClose={() => setLog(null)} />
     </>
   )
@@ -361,5 +362,52 @@ function LogDialog({ container, onClose }: { container: string | null; onClose: 
         )}
       </DialogContent>
     </Dialog>
+  )
+}
+
+/** what broke for the people using the app: a page that crashed, a script error, a promise nobody caught */
+function ClientErrorsCard() {
+  const [days, setDays] = React.useState(7)
+  const q = useClientErrors(days)
+  const [open, setOpen] = React.useState<ClientError | null>(null)
+  const rows = q.data ?? []
+  return (
+    <Card className="mt-4">
+      <CardHeader className="flex-row flex-wrap items-start justify-between gap-2 space-y-0">
+        <div><CardTitle className="flex items-center gap-2"><Bug className="size-4" /> {t('Errors in the app')}</CardTitle>
+          <CardDescription>{t('What broke for the people using DrisPRO, on their screen. The same error counts once a day; tokens are taken out.')}</CardDescription></div>
+        <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
+          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="1">{t('Today')}</SelectItem><SelectItem value="7">{t('Last 7 days')}</SelectItem><SelectItem value="30">{t('Last 30 days')}</SelectItem></SelectContent>
+        </Select>
+      </CardHeader>
+      <CardContent>
+        {q.isLoading ? <Skeleton className="h-24" /> : q.isError ? <ErrorState compact error={q.error} onRetry={() => void q.refetch()} /> : !rows.length ? (
+          <p className="flex items-center gap-2 text-[13px] text-muted-foreground"><CheckCircle2 className="size-4 text-success" /> {t('Nobody met an error in these days.')}</p>
+        ) : (
+          <Table>
+            <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Error')}</TableHead><TableHead className="text-right">{t('Times')}</TableHead>
+              <TableHead className="text-right">{t('People')}</TableHead><TableHead>{t('Companies')}</TableHead><TableHead>{t('Last')}</TableHead></TableRow></TableHeader>
+            <TableBody>{rows.map((e) => (
+              <TableRow key={e.fingerprint} className="cursor-pointer" onClick={() => setOpen(e)}>
+                <TableCell className="max-w-[460px]"><div className="truncate font-mono text-xs" title={e.message}>{e.message}</div>
+                  <div className="truncate text-xs text-muted-foreground">{[e.kind === 'page' ? t('a page crashed') : e.kind === 'chunk' ? t('an old version open') : e.kind === 'promise' ? t('not caught') : t('script'),
+                    e.url && new URL(e.url, location.origin).pathname, e.version].filter(Boolean).join(' · ')}</div></TableCell>
+                <TableCell className="text-right tabular">{e.count}</TableCell>
+                <TableCell className="text-right tabular">{e.people}</TableCell>
+                <TableCell className="max-w-[200px] truncate text-[13px]">{e.companies ?? '—'}</TableCell>
+                <TableCell className="whitespace-nowrap text-[13px] text-muted-foreground">{formatDate(e.last_at, true)}</TableCell>
+              </TableRow>))}</TableBody>
+          </Table>
+        )}
+      </CardContent>
+      <Dialog open={!!open} onOpenChange={(o) => !o && setOpen(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader><DialogTitle className="font-mono text-sm">{open?.message}</DialogTitle>
+            <DialogDescription>{open && [open.url, open.version && t('version {v}', { v: open.version }), t('first {date}', { date: formatDate(open.first_at, true) })].filter(Boolean).join(' · ')}</DialogDescription></DialogHeader>
+          <pre className="max-h-[60vh] overflow-auto rounded-lg bg-muted p-3 font-mono text-[11.5px] leading-relaxed">{open?.stack ?? t('No trace was sent.')}</pre>
+        </DialogContent>
+      </Dialog>
+    </Card>
   )
 }

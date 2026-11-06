@@ -4,6 +4,8 @@ import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  // which build a person runs, sent with the errors they meet
+  define: { __BUILD__: JSON.stringify((process.env.GITHUB_SHA ?? '').slice(0, 7) || new Date().toISOString().slice(0, 16)) },
   plugins: [
     react(),
     VitePWA({
