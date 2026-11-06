@@ -468,7 +468,8 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
           </div>
           <div className="grid gap-1.5"><Label>{t('Payment terms')}<Hint id="payment_terms" /></Label>
             <Select value={h.payment_term_id || 'none'} onValueChange={(v) => set('payment_term_id', v === 'none' ? '' : v)}><SelectTrigger aria-label={t('Payment terms')}><SelectValue /></SelectTrigger>
-              <SelectContent><SelectItem value="none">{t('Immediately')}</SelectItem>{(terms.data ?? []).map((x) => <SelectItem key={x.id} value={x.id}>{td(x.name)}</SelectItem>)}</SelectContent></Select></div>
+              <SelectContent><SelectItem value="none">{t('Immediately')}</SelectItem>{/* a term of 0 days is "Immediately" again: shown only if this document already has it */}
+                {(terms.data ?? []).filter((x) => x.due_days > 0 || x.id === h.payment_term_id).map((x) => <SelectItem key={x.id} value={x.id}>{td(x.name)}</SelectItem>)}</SelectContent></Select></div>
           <div className="grid gap-1.5"><Label htmlFor="pi-due">{t('Due date')}<Hint id="due_date" /></Label><Input id="pi-due" type="date" value={h.due_date} onChange={(e) => set('due_date', e.target.value)} /></div>
           <div className="grid gap-1.5"><Label>{t('Payment')}</Label>
             <Select value={h.pay_bank_account_id || 'later'} onValueChange={(v) => set('pay_bank_account_id', v === 'later' ? '' : v)}><SelectTrigger aria-label={t('Payment')}><SelectValue /></SelectTrigger>
