@@ -134,6 +134,7 @@ const ExpiryPage = lazy(() => import('@/features/inventory/pages/expiry-page'), 
 const ItemCardPage = lazy(() => import('@/features/inventory/pages/item-card-page'), 'ItemCardPage')
 const LabelsPage = lazy(() => import('@/features/inventory/pages/labels-page'), 'LabelsPage')
 const PriceLevelsPage = lazy(() => import('@/features/inventory/pages/price-levels-page'), 'PriceLevelsPage')
+const ScalePricesPage = lazy(() => import('@/features/inventory/pages/scale-prices-page'), 'ScalePricesPage')
 const PriceLevelPage = lazy(() => import('@/features/inventory/pages/price-levels-page'), 'PriceLevelPage')
 const AgentPage = lazy(() => import('@/features/agent/agent-page'), 'AgentPage')
 const AgentsPage = lazy(() => import('@/features/agent/agents-page'), 'AgentsPage')
@@ -269,6 +270,7 @@ const router = createBrowserRouter([
         { path: 'levelling', element: <PriceLevelsPage /> },
         { path: 'levelling/new', element: <PriceLevelPage key="lv-new" /> },
         { path: 'levelling/:id', element: <PriceLevelPage key="lv" /> },
+        { path: 'scale-prices', element: <ScalePricesPage /> },
         { path: 'alerts', element: <AlertsPage /> },
         { path: 'prices', element: <Navigate to="/inventory/levelling?tab=suggestions" replace /> },
         { path: 'read-invoice', element: <ReadInvoicePage /> },

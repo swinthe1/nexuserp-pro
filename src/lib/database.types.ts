@@ -9493,6 +9493,8 @@ export type Database = {
           max_temperature: number | null
           scale_plu: string | null
           min_shelf_days: number | null
+          scale_sent_price: number | null
+          scale_sent_at: string | null
         }
         Insert: {
           id?: string
@@ -9529,6 +9531,8 @@ export type Database = {
           max_temperature?: number | null
           scale_plu?: string | null
           min_shelf_days?: number | null
+          scale_sent_price?: number | null
+          scale_sent_at?: string | null
         }
         Update: {
           id?: string
@@ -9565,6 +9569,8 @@ export type Database = {
           max_temperature?: number | null
           scale_plu?: string | null
           min_shelf_days?: number | null
+          scale_sent_price?: number | null
+          scale_sent_at?: string | null
         }
         Relationships: [
           { foreignKeyName: "products_company_id_category_id_fkey"; columns: ["company_id", "category_id"]; isOneToOne: false; referencedRelation: "product_categories"; referencedColumns: ["company_id", "id"] },
@@ -19467,6 +19473,26 @@ export type Database = {
           p_next_value?: number
         }
         Returns: undefined
+      }
+      scale_items: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
+      scale_mark_sent: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: undefined
+      }
+      scale_plu_set: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: number
       }
       scan_catalog: {
         Args: {

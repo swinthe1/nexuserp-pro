@@ -289,6 +289,7 @@ export const serverTemplates: [string, string][] = [
   ['Salary after % has already been posted', 'Paga pas {0} është kontabilizuar tashmë'],
   ['Lot % (%) expires % %', 'Loti {0} ({1}) skadon më {2} {3}'],
   ['% receipts', '{0} kuponë'],
+  ['PLU % is already on %', 'PLU {0} është tashmë te {1}'],
   ['% things to check in the books', '{0} gjëra për t’u kontrolluar në libra'],
   ['% on hand', '{0} gjendje'],
 

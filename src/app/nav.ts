@@ -5,7 +5,7 @@ import {
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, Building, HandCoins, ListTree, Network, Settings2, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, 
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
   BedDouble, BookUser, CalendarRange, ConciergeBell, Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, Ticket, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, ReceiptText, IdCard, Settings, CreditCard, type LucideIcon, Activity, ArrowUpDown, BadgeEuro, BookOpen, CalendarPlus, CheckCheck, CircleDollarSign, Clock, Coins, Combine, FileScan, FolderTree, Gift, Handshake, LineChart, Map, Move, NotebookTabs, PieChart, ScanBarcode, Send, ListChecks, ChartSpline, PackageMinus, GraduationCap,
-  FileSignature, ListTodo, ScanSearch, Grid3x3, Gauge, Award, Gavel, Brain, FolderDown, MessageSquare, Trash2, Shuffle } from 'lucide-react'
+  FileSignature, ListTodo, ScanSearch, Grid3x3, Gauge, Award, Gavel, Brain, FolderDown, MessageSquare, Trash2, Shuffle, Weight } from 'lucide-react'
 import { msg } from '@/i18n'
 
 export interface NavItem {
@@ -66,6 +66,7 @@ export const NAV: NavSection[] = [
       { label: msg('Gift vouchers'), href: '/pos/vouchers', icon: Ticket, perm: 'pos.read', keywords: ['kupon dhurate', 'kuponë', 'voucher', 'gift card', 'dhuratë', 'vlerë'], hub: msg('Prices and promotions|menu') },
       { label: msg('Loyalty cards'), href: '/pos/loyalty', icon: BadgePercent, perm: 'pos.read', keywords: ['kartela', 'zbritje', 'loyalty', 'points', 'pikë', 'besnikëri', 'discount card'], hub: msg('Prices and promotions|menu') },
       { label: msg('Price levelling'), href: '/inventory/levelling', icon: ArrowUpDown, perm: 'inventory.read', keywords: ['nivelim', 'nivelimi', 'nivelimi i cmimeve', 'ndryshim cmimi', 'price change', 'repricing', 'çmimet e reja', 'new selling prices', 'margin', 'markup', 'cost', 'marzh', 'cmim'], hub: msg('Prices and promotions|menu') },
+      { label: msg('Prices for the scale'), href: '/inventory/scale-prices', icon: Weight, perm: 'inventory.read', keywords: ['peshore', 'peshorja', 'plu', 'rongta', 'rls1000', 'rtplu', 'scale', 'cmimet te peshorja', 'etiketa e peshores'], hub: msg('Prices and promotions|menu') },
       { label: msg('Agent app'), href: '/agent', icon: Smartphone, perm: 'sales.write', keywords: ['agjent', 'terren', 'field', 'route', 'rruga', 'arkëtim', 'van', 'shitës', 'porosi'], hub: msg('Field sales|menu') },
       { label: msg('Field agents'), href: '/sales/agents', icon: MapPinned, perm: 'sales.approve', keywords: ['agjentët', 'terren', 'field sales', 'routes', 'visits', 'vizita', 'gps'], hub: msg('Field sales|menu') },
       { label: msg('Order desk|menu'), href: '/oms/fulfillment', icon: ListOrdered, perm: 'sales.read', keywords: ['oms', 'backorders', 'fulfilment', 'allocation', 'open orders', 'short'], hub: msg('Online|menu') },
