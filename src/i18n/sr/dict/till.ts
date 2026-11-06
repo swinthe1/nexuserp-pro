@@ -780,4 +780,7 @@ export default {
   "The owner's money goes to the owner's account (a debt of the company to the owner), not to a cash or bank account": "Novac vlasnika knjiži se na račun vlasnika (dug firme prema njemu), ne na blagajnu ili banku",
   "A bank or cash account is booked to an asset account": "Račun banke ili blagajne knjiži se na konto imovine",
   "cash-journal": "dnevnik-blagajne",
+  "Document|ribbon": "Dokument",
+  "View|ribbon": "Kretanje",
+  "Shortcuts|ribbon": "Prečice",
 } satisfies Dict

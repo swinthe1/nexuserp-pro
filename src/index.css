@@ -153,7 +153,7 @@
 @layer base {
   html.classic { --radius: 0.1875rem; }
   html.classic:not(.dark) {
-    --background: 220 13% 93%;
+    --background: 216 24% 94.5%;
     --foreground: 216 32% 13%;
     --card: 0 0% 100%;
     --card-foreground: 216 32% 13%;
@@ -172,23 +172,48 @@
     --ring: 211 75% 45%;
     --shadow-card: none;
   }
-  html.classic body { font-family: 'Segoe UI', Tahoma, Manrope, ui-sans-serif, system-ui, sans-serif; }
-  html.classic .classic-titlebar { background: hsl(213 50% 22%); }
-  html.classic.dark .classic-titlebar { background: hsl(213 45% 16%); }
-  /* the tree on the left: light, dark text, the open page in pale blue */
+  html.classic body { font-family: 'Segoe UI Variable Text', 'Segoe UI', Tahoma, Manrope, ui-sans-serif, system-ui, sans-serif; }
+  /* the title bar and the status bar: deep navy, lit a little from the top */
+  html.classic .classic-titlebar { background: linear-gradient(180deg, hsl(213 52% 27%), hsl(214 56% 20%)); }
+  html.classic.dark .classic-titlebar { background: linear-gradient(180deg, hsl(213 40% 19%), hsl(214 45% 13%)); }
+  /* the menu bar: white; the part you are in carries its colour underneath */
+  html.classic .classic-menubar { background: hsl(var(--card)); }
+  html.classic .classic-menu-item[data-here] { font-weight: 600; color: hsl(var(--mod) 30%); }
+  html.classic.dark .classic-menu-item[data-here] { color: hsl(var(--mod) 72%); }
+  html.classic .classic-menu-item[data-here]::after { content: ''; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px; border-radius: 2px; background: hsl(var(--mod) 40%); }
+  /* the ribbon: a light face, groups with thin dividers, commands lit on hover */
+  html.classic .classic-ribbon { background: linear-gradient(180deg, hsl(0 0% 100%), hsl(216 33% 96%)); }
+  html.classic.dark .classic-ribbon { background: linear-gradient(180deg, hsl(var(--card)), hsl(var(--muted))); }
+  html.classic .classic-group { border-color: hsl(var(--border) / 0.7); }
+  html.classic .classic-cmd:hover:not(:disabled), html.classic .classic-cmd[data-state='open'] { background: hsl(212 80% 95%); border-color: hsl(212 60% 84%); }
+  html.classic.dark .classic-cmd:hover:not(:disabled), html.classic.dark .classic-cmd[data-state='open'] { background: hsl(var(--accent)); border-color: hsl(var(--border)); }
+  html.classic .classic-cmd:active:not(:disabled) { background: hsl(212 75% 90%); }
+  html.classic .classic-cmd[aria-current='page'] { background: hsl(212 80% 93%); border-color: hsl(212 60% 78%); font-weight: 600; }
+  /* the tree on the left: a quiet blue-grey pane, the open page marked by a bar in its part's colour */
   html.classic:not(.dark) .classic-tree {
+    background: hsl(216 33% 97.5%);
     --sidebar-foreground: 216 32% 16%;
-    --sidebar-border: 216 13% 82%;
+    --sidebar-border: 216 16% 86%;
     --muted-foreground: 215 12% 40%;
   }
+  html.classic.dark .classic-tree { background: hsl(var(--card)); }
   html.classic .classic-tree .text-white { color: hsl(var(--primary)); }
-  html.classic .classic-tree [aria-current='page'] { background: hsl(var(--accent)); color: hsl(var(--accent-foreground)); font-weight: 600; }
-  html.classic .classic-tree a, html.classic .classic-tree button { border-radius: 2px; }
+  html.classic .classic-tree [aria-current='page'] { position: relative; background: hsl(0 0% 100%); color: hsl(var(--accent-foreground)); font-weight: 600; box-shadow: 0 1px 2px hsl(216 30% 40% / 0.12), inset 0 0 0 1px hsl(216 20% 88%); }
+  html.classic.dark .classic-tree [aria-current='page'] { background: hsl(var(--accent)); box-shadow: none; }
+  html.classic .classic-tree [aria-current='page']::before { content: ''; position: absolute; left: 0; top: 5px; bottom: 5px; width: 3px; border-radius: 3px; background: hsl(var(--mod, 213 56%) 42%); }
+  html.classic .classic-tree a, html.classic .classic-tree button { border-radius: 4px; }
+  /* the status bar: its facts in segments */
+  html.classic .classic-status > span { display: flex; align-items: center; gap: 6px; height: 100%; padding: 0 10px; border-right: 1px solid hsl(0 0% 100% / 0.14); }
+  html.classic .classic-status > span:last-child { border-right: 0; }
+  html.classic .classic-status > span.ml-auto { border-left: 1px solid hsl(0 0% 100% / 0.14); }
+  html.classic .classic-status svg { opacity: 0.8; }
 }
 @layer components {
-  /* square corners everywhere but on dots and avatars */
-  html.classic :is(.rounded-sm, .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl) { border-radius: 3px; }
-  html.classic .shadow-sm, html.classic .shadow, html.classic .shadow-md { box-shadow: none; }
+  /* small corners everywhere but on dots and avatars; panels lifted a hair from the page, as in Windows 11 */
+  html.classic :is(.rounded-sm, .rounded, .rounded-md) { border-radius: 4px; }
+  html.classic :is(.rounded-lg, .rounded-xl, .rounded-2xl) { border-radius: 6px; }
+  html.classic .shadow-sm, html.classic .shadow { box-shadow: 0 1px 2px hsl(216 30% 30% / 0.07); }
+  html.classic:not(.dark) .classic-page .rounded-xl.border.bg-card { box-shadow: 0 1px 2px hsl(216 30% 30% / 0.06), 0 2px 6px -2px hsl(216 30% 30% / 0.08); }
   /* tables as in a desktop program: a grey header, lines between the columns, every second row tinted */
   html.classic table { font-size: 13px; }
   html.classic thead tr { background: linear-gradient(hsl(220 16% 97%), hsl(220 14% 91%)); }

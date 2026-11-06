@@ -339,4 +339,7 @@ export default {
   "The owner's money goes to the owner's account (a debt of the company to the owner), not to a cash or bank account": "Paratë e pronarit regjistrohen te llogaria e pronarit (borxh i kompanisë ndaj tij), jo te një llogari arke ose banke",
   "A bank or cash account is booked to an asset account": "Një llogari banke ose arke regjistrohet te një konto aktivi",
   "cash-journal": "ditari-i-arkes",
+  "Document|ribbon": "Dokumenti",
+  "View|ribbon": "Lëvizja",
+  "Shortcuts|ribbon": "Shkurtoret",
 } satisfies Dict
