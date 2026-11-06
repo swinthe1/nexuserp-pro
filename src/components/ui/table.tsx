@@ -4,7 +4,8 @@ import { cn } from '@/lib/utils'
 /**
  * A table fits the width it has, without a sideways scrollbar, and without hiding anything: when it
  * is too wide, first the text in its cells and headings goes onto two lines (numbers stay on one),
- * then the cells get tighter, then the letters a little smaller, and last the codes may break at their dashes. Only a table that still does not
+ * then the cells get tighter, then the letters a little smaller, then the codes may break at their dashes, and last
+ * the letters smaller still with the tightest cells. Only a table that still does not
  * fit (a very wide official book) scrolls, with a soft edge showing that more columns are there.
  * `noFit` keeps a table as it is (a grid that scrolls on purpose).
  */
@@ -25,7 +26,7 @@ const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableE
       // a code or number without spaces (FB-2026-00022, 1 662,62) stays on one line
       if (fitRef.current) el.querySelectorAll('td').forEach((td) => { const x = td.textContent?.trim() ?? ''; td.toggleAttribute('data-one', x.length > 0 && x.length <= 24 && !/\s/.test(x)) })
       const over = el.scrollWidth > w + 1
-      if (!noFit && over && fitRef.current < 4) { fitRef.current += 1; setFit(fitRef.current); requestAnimationFrame(measure); return }
+      if (!noFit && over && fitRef.current < 6) { fitRef.current += 1; setFit(fitRef.current); requestAnimationFrame(measure); return }
       const left = el.scrollLeft > 2, right = el.scrollLeft + w < el.scrollWidth - 2
       setEdge((e) => (e.left === left && e.right === right ? e : { left, right }))
     }

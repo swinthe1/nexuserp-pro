@@ -469,7 +469,7 @@ export function DataTable<T>({
                           onDoubleClick={(e) => { e.stopPropagation(); setColumnSizing((all) => { const n = { ...all }; delete n[h.column.id]; return n }) }}
                           onMouseDown={(e) => { resizing.current = true; e.stopPropagation() }} onPointerDown={(e) => startResize(e, h.column.id)}
                           onClick={(e) => e.stopPropagation()} draggable={false}
-                          className="group/rs absolute -right-1.5 top-0 z-10 flex h-full w-3 cursor-col-resize touch-none select-none justify-center">
+                          className="group/rs absolute -right-1.5 group-last/th:right-0 top-0 z-10 flex h-full w-3 cursor-col-resize touch-none select-none justify-center">
                           <span className={cn('my-1 w-[3px] rounded-full bg-border opacity-0 transition-opacity group-hover/th:opacity-100 group-hover/rs:bg-primary/60', resizingCol === h.column.id && 'bg-primary opacity-100')} />
                         </div>
                       )}

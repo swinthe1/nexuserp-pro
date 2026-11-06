@@ -206,14 +206,22 @@
 /* ---- tables that fit the screen (components/ui/table.tsx): steps 1–4 when a table is too wide ---- */
 .fit-table[data-fit] th, .fit-table[data-fit] th :is(button, span, div) { white-space: normal !important; }
 .fit-table[data-fit] td:not(.text-right):not(.tabular):not([data-one]) { white-space: normal !important; overflow-wrap: break-word; }
-.fit-table:is([data-fit='3'], [data-fit='4']) td:not([data-one]) .whitespace-nowrap { white-space: normal !important; }
-.fit-table:is([data-fit='3'], [data-fit='4']) td .rounded-full.whitespace-nowrap { border-radius: .45rem; line-height: 1.2; }
+.fit-table:is([data-fit='3'], [data-fit='4'], [data-fit='5'], [data-fit='6']) td:not([data-one]) .whitespace-nowrap { white-space: normal !important; }
+.fit-table:is([data-fit='3'], [data-fit='4'], [data-fit='5'], [data-fit='6']) td .rounded-full.whitespace-nowrap { border-radius: .45rem; line-height: 1.2; }
 .fit-table[data-fit] th { height: auto; padding-top: .45rem; padding-bottom: .45rem; vertical-align: bottom; line-height: 1.25; }
-.fit-table:is([data-fit='2'], [data-fit='3'], [data-fit='4']) :is(th, td) { padding-left: .5rem; padding-right: .5rem; }
-.fit-table:is([data-fit='3'], [data-fit='4']) { font-size: 12.5px; }
-.fit-table:is([data-fit='3'], [data-fit='4']) :is(th, td) { padding-left: .35rem; padding-right: .35rem; }
+.fit-table:is([data-fit='2'], [data-fit='3'], [data-fit='4'], [data-fit='5'], [data-fit='6']) :is(th, td) { padding-left: .5rem; padding-right: .5rem; }
+.fit-table:is([data-fit='3'], [data-fit='4'], [data-fit='5'], [data-fit='6']) { font-size: 12.5px; }
+.fit-table:is([data-fit='3'], [data-fit='4'], [data-fit='5'], [data-fit='6']) :is(th, td) { padding-left: .35rem; padding-right: .35rem; }
 .fit-table[data-fit='4'] td[data-one]:not(.text-right):not(.tabular) { white-space: normal !important; }
 .fit-table[data-fit] td[data-one] { white-space: nowrap !important; }
+/* a table with very many columns on a small screen: tighter and smaller still, rather than a sideways scrollbar */
+.fit-table:is([data-fit='5'], [data-fit='6']) td[data-one]:not(.text-right):not(.tabular) { white-space: normal !important; }
+.fit-table:is([data-fit='5'], [data-fit='6']) :is(th, td) { padding-left: .25rem; padding-right: .25rem; }
+.fit-table[data-fit='5'] { font-size: 12px; }
+.fit-table[data-fit='6'] { font-size: 11.5px; }
+/* the headings give up the room of their tools: the filter sits on the corner, the idle sort arrows go */
+.fit-table:is([data-fit='5'], [data-fit='6']) th [data-coltools] { position: absolute; top: 1px; right: 1px; }
+.fit-table:is([data-fit='5'], [data-fit='6']) th [data-sort-idle] { display: none; }
 .fit-table[data-fit] td:not([data-one]) .truncate { white-space: normal; overflow: visible; text-overflow: clip; }
 .fit-table[data-fit='4'] { font-size: 12px; }
 .fit-table[data-fit='4'] :is(th, td) { padding-left: .25rem; padding-right: .25rem; }

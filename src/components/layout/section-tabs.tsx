@@ -20,8 +20,9 @@ export function SectionTabs() {
   const tabs = section.items.filter((i) => i.hub === item.hub)
   if (tabs.length < 2) return null
   return (
-    <nav aria-label={t(item.hub)} className="-mt-1 mb-4 overflow-x-auto border-b print:hidden">
-      <div className="flex min-w-max items-end gap-1">
+    <nav aria-label={t(item.hub)} className="-mt-1 mb-4 border-b print:hidden">
+      {/* many tabs go onto a second row: never a sideways scrollbar */}
+      <div className="flex flex-wrap items-end gap-x-1">
         {tabs.map((i) => {
           const on = i.href === activeHref
           return (

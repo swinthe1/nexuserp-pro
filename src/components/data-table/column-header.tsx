@@ -20,7 +20,7 @@ export function ColumnHeader<TData, TValue>({ column, title, className }: { colu
         aria-label={t('Sort by {title}', { title: typeof title === 'string' ? title : '' })}
         aria-sort={sorted === 'asc' ? 'ascending' : sorted === 'desc' ? 'descending' : undefined}>
         {title}
-        {sorted === 'desc' ? <ArrowDown className="size-3.5 shrink-0" /> : sorted === 'asc' ? <ArrowUp className="size-3.5 shrink-0" /> : <ChevronsUpDown className="size-3.5 shrink-0 opacity-40" />}
+        {sorted === 'desc' ? <ArrowDown className="size-3.5 shrink-0" /> : sorted === 'asc' ? <ArrowUp className="size-3.5 shrink-0" /> : <ChevronsUpDown data-sort-idle className="size-3.5 shrink-0 opacity-40" />}
       </button>
     </div>
   )

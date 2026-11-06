@@ -98,7 +98,7 @@ export function ColumnTools({ getter, kind, rule, onRule, style, onStyle, values
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button type="button" aria-label={t('Filter or colour {column}', { column: getter.label })} title={t('Filter or colour')}
+        <button type="button" data-coltools aria-label={t('Filter or colour {column}', { column: getter.label })} title={t('Filter or colour')}
           onClick={(e) => e.stopPropagation()}
           className={cn('relative grid size-5 shrink-0 place-items-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-secondary hover:text-foreground focus-visible:opacity-100 group-hover/th:opacity-100 data-[state=open]:opacity-100',
             (active || coloured) && 'opacity-100', active && 'text-primary')}>
