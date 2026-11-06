@@ -425,7 +425,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
       {doc && <PriceRiseCard billId={doc.id} version={doc.updated_at} currency={base} />}
 
       <Card className="mb-4">
-        <CardContent className="grid gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-4">
+        <CardContent className="grid items-start gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-4">
           <div className="grid gap-1.5 sm:col-span-2"><Label>{t('Supplier')}</Label>
             <SearchSelect value={h.vendor_id || null} onChange={(v) => set('vendor_id', v ?? '')} placeholder={t('Choose the supplier')} remote={registry}
               options={(vendors.data ?? []).filter((v) => v.is_active || v.id === h.vendor_id).map((v) => ({ value: v.id, label: v.name, hint: [v.code, v.tax_number].filter(Boolean).join(' · ') }))} />
@@ -456,11 +456,11 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
           <div className="grid gap-1.5"><Label>{t('Into the warehouse')}</Label>
             <Select value={h.warehouse_id} onValueChange={(v) => set('warehouse_id', v)}><SelectTrigger aria-label={t('Into the warehouse')}><SelectValue placeholder={t('Choose the warehouse')} /></SelectTrigger>
               <SelectContent>{(warehouses.data ?? []).filter((w) => w.is_active).map((w) => <SelectItem key={w.id} value={w.id}>{td(w.name)}</SelectItem>)}</SelectContent></Select></div>
-          <div className="grid grid-cols-[1fr_90px] gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <div className="grid gap-1.5"><Label>{t('Currency')}</Label>
               <Select value={h.currency_code} onValueChange={(v) => set('currency_code', v)}><SelectTrigger aria-label={t('Currency')}><SelectValue /></SelectTrigger>
                 <SelectContent>{(currencies.data ?? []).map((c) => <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>)}</SelectContent></Select></div>
-            <div className="grid gap-1.5"><Label htmlFor="pi-rate">{t('Exchange rate')}<Hint id="exchange_rate" /></Label><Input id="pi-rate" inputMode="decimal" disabled={h.currency_code === base} value={h.currency_code === base ? '1' : h.exchange_rate}
+            <div className="grid gap-1.5"><Label htmlFor="pi-rate" className="whitespace-nowrap">{t('Exchange rate')}<Hint id="exchange_rate" /></Label><Input id="pi-rate" inputMode="decimal" disabled={h.currency_code === base} value={h.currency_code === base ? '1' : h.exchange_rate}
               placeholder={t('of the day')} onChange={(e) => set('exchange_rate', e.target.value)} /></div>
           </div>
           <div className="grid gap-1.5"><Label>{t('Payment terms')}<Hint id="payment_terms" /></Label>

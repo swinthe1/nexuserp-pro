@@ -62,7 +62,7 @@ const DateField = React.forwardRef<HTMLInputElement, Omit<Props, 'type'>>(({ cla
   return (
     <div className={cn('relative', /(^|\s)(w-|max-w-|min-w-|col-span|basis-|flex-)/.test(className ?? '') ? '' : 'w-full', className)}>
       <input
-        ref={ref} id={id} name={name} required={required} disabled={disabled} inputMode="numeric" autoComplete="off" placeholder="dd.mm.vvvv"
+        ref={ref} id={id} name={name} required={required} disabled={disabled} inputMode="numeric" autoComplete="off"
         className={cn(BASE, phoneField(className), 'pr-9 tabular-nums', /(^|\s)h-8/.test(className ?? '') && 'h-8', /(^|\s)text-xs/.test(className ?? '') && 'text-xs')}
         value={text}
         onFocus={() => { editing.current = true }}
@@ -76,6 +76,8 @@ const DateField = React.forwardRef<HTMLInputElement, Omit<Props, 'type'>>(({ cla
         }}
         onKeyDown={(e) => { if (e.key === 'ArrowDown' && e.altKey) { e.preventDefault(); openCalendar() } }}
         {...rest}
+        // a date given as the hint (the date it takes when left empty) reads like the dates around it
+        placeholder={rest.placeholder && show(String(rest.placeholder)) ? show(String(rest.placeholder)) : (rest.placeholder ?? 'dd.mm.vvvv')}
       />
       <button type="button" tabIndex={-1} disabled={disabled} onClick={openCalendar} aria-hidden
         className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-50">
