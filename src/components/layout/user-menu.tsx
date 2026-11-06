@@ -1,4 +1,4 @@
-import { Download, IdCard, KeyRound, Languages, LaptopMinimal, LayoutGrid, LogOut, Monitor, Moon, PanelLeft, BriefcaseBusiness, ServerCog, ShieldCheck, Smartphone, Sparkles, Sun, UserRound, GraduationCap, FolderDown, Minus, Plus, ZoomIn } from 'lucide-react'
+import { Download, IdCard, KeyRound, Languages, LaptopMinimal, LayoutGrid, LogOut, Monitor, Moon, PanelLeft, BriefcaseBusiness, ServerCog, Smartphone, Sparkles, Sun, UserRound, GraduationCap, FolderDown, Minus, Plus, ZoomIn } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/app/auth-provider'
@@ -14,7 +14,6 @@ import {
 import { LOCALES, type Locale, t, td, useLocale } from '@/i18n'
 import { chooseLocale } from '@/i18n/language'
 import { ChangePasswordDialog } from '@/components/change-password-dialog'
-import { TwoStepDialog } from '@/components/mfa-gate'
 import { useInstallApp } from '@/components/pwa-prompts'
 import { initials } from '@/lib/utils'
 import { DesktopSettingsDialog } from '@/components/desktop-settings'
@@ -27,7 +26,6 @@ export function UserMenu() {
   const { company, companies, isSuperAdmin, simple, setSimple } = useCompany()
   const keepsBooks = companies.length > 1 || companies.some((c) => c.roles.includes('accountant'))
   const [pwOpen, setPwOpen] = React.useState(false)
-  const [mfaOpen, setMfaOpen] = React.useState(false)
   const [pcOpen, setPcOpen] = React.useState(false)
   const [aiOpen, setAiOpen] = React.useState(false)
   const [meOpen, setMeOpen] = React.useState(false)
@@ -53,7 +51,6 @@ export function UserMenu() {
         <DropdownMenuItem asChild><Link to="/training"><GraduationCap /> {t('Training|menu')}</Link></DropdownMenuItem>
         <DropdownMenuItem asChild><Link to="/exports"><FolderDown /> {t('My exports')}</Link></DropdownMenuItem>
         <DropdownMenuItem onSelect={() => setPwOpen(true)}><KeyRound /> {t('Change password')}</DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => setMfaOpen(true)}><ShieldCheck /> {t('Two-step verification')}</DropdownMenuItem>
         {company && (simple
           ? <DropdownMenuItem onSelect={() => setSimple(false)}><PanelLeft /> {t('Show all menus')}</DropdownMenuItem>
           : <DropdownMenuItem onSelect={() => setSimple(true)}><LayoutGrid /> {t('Simple view: large buttons')}</DropdownMenuItem>)}
@@ -93,7 +90,6 @@ export function UserMenu() {
       </DropdownMenuContent>
     </DropdownMenu>
     <ChangePasswordDialog open={pwOpen} onOpenChange={setPwOpen} />
-    <TwoStepDialog open={mfaOpen} onOpenChange={setMfaOpen} />
     <DesktopSettingsDialog open={pcOpen} onOpenChange={setPcOpen} />
     <AiConnectorDialog open={aiOpen} onOpenChange={setAiOpen} />
     {meOpen && user && <ProfileDialog userId={user.id} self onClose={() => setMeOpen(false)} />}

@@ -22,18 +22,6 @@ create table auth.users (
   created_at timestamptz default now()
 );
 
--- Supabase Auth's second factors (two-step verification)
-create type auth.factor_status as enum ('unverified', 'verified');
-create table auth.mfa_factors (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  friendly_name text,
-  factor_type text not null default 'totp',
-  status auth.factor_status not null default 'unverified',
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
 -- Mirrors Supabase: reads the JWT subject PostgREST puts in request.jwt.claims
 create function auth.uid() returns uuid language sql stable as $$
   -- as Supabase defines it: an empty claim.sub (left behind by an earlier set_config on the connection) falls through to the claims

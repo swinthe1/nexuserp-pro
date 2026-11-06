@@ -1,4 +1,4 @@
-import { Copy, IdCard, KeyRound, MoreHorizontal, Play, Shield, ShieldOff, UserMinus, UserPlus, UserX, Wand2 } from 'lucide-react'
+import { Copy, IdCard, KeyRound, MoreHorizontal, Play, Shield, UserMinus, UserPlus, UserX, Wand2 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -12,7 +12,6 @@ import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { t, td } from '@/i18n'
 import { describeError } from '@/lib/errors'
-import { supabase } from '@/lib/supabase'
 import { formatDate } from '@/lib/utils'
 import { ProfileDialog } from '@/features/settings/components/profile-dialog'
 import { type ClientDetail, type ClientMember, type CompanyRole, generatePassword, useAddMember, useCompanyRoles, useMemberRoles, useMemberStatus } from '../api'
@@ -144,12 +143,6 @@ export function PeopleTab({ d }: { d: ClientDetail }) {
                       {m.user_id && <DropdownMenuItem onSelect={() => setDetails(m.user_id)}><IdCard /> {t('Change details')}</DropdownMenuItem>}
                       <DropdownMenuItem onSelect={() => setRoles(m)}><Shield /> {t('Change roles')}</DropdownMenuItem>
                       {m.user_id && <DropdownMenuItem onSelect={() => setPw(m.email)}><KeyRound /> {t('Set a new password')}</DropdownMenuItem>}
-                      {m.user_id && <DropdownMenuItem onSelect={async () => {
-                        // a phone lost: the person signs in with the password and sets it up again
-                        const r = await supabase.rpc('mfa_reset_user' as never, { p_email: m.email } as never)
-                        if (r.error) toast.error(describeError(r.error))
-                        else toast.success(Number(r.data) ? t('Two-step verification removed for {email}; they set it up again at the next sign-in', { email: m.email }) : t('{email} had no two-step verification', { email: m.email }))
-                      }}><ShieldOff /> {t('Remove two-step verification')}</DropdownMenuItem>}
                       <DropdownMenuSeparator />
                       {m.status === 'active' && <DropdownMenuItem onSelect={() => setStatus(m, 'suspended', t('{name} can no longer sign in to this company', { name: m.name ?? m.email }))}><UserX /> {t('Suspend access')}</DropdownMenuItem>}
                       {m.status === 'suspended' && <DropdownMenuItem onSelect={() => setStatus(m, 'active', t('Access restored'))}><Play /> {t('Restore access')}</DropdownMenuItem>}
