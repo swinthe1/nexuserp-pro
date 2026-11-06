@@ -72,7 +72,7 @@ export function VatBooksPage() {
     { header: t('No.|register'), value: (r) => r.line_no, format: 'int', width: 5 },
     { header: t('Date'), value: (r) => formatDate(r.doc_date), width: 11 },
     { header: t('Number'), value: (r) => tServer(r.number) },
-    { header: book === 'sales' ? t('Note') : t('Vendor invoice / DUD'), value: (r) => r.ref },
+    { header: book === 'sales' ? t('Note') : t('Vendor invoice / DUD'), value: (r) => (r.ref ? tServer(r.ref) : r.ref) },
     ...(showFiscal ? [{ header: xk ? t('Fiscal code') : t('NIVF'), value: (r: BookRow) => r.fiscal_code, format: 'text' as const }] : []),
     { header: book === 'sales' ? t('Buyer') : t('Seller'), value: (r) => tServer(r.partner) },
     { header: taxLabel, value: (r) => r.tax_number, format: 'text' },
@@ -166,7 +166,7 @@ export function VatBooksPage() {
                     <Td className="text-right tabular text-muted-foreground">{r.line_no}</Td>
                     <Td className="whitespace-nowrap tabular">{formatDate(r.doc_date)}</Td>
                     <Td className="whitespace-nowrap">{r.href ? <Link to={r.href} className="font-medium text-primary hover:underline">{tServer(r.number)}</Link> : tServer(r.number)}</Td>
-                    <Td className="whitespace-nowrap text-muted-foreground">{r.ref ?? ''}</Td>
+                    <Td className="whitespace-nowrap text-muted-foreground">{r.ref ? tServer(r.ref) : ''}</Td>
                     {showFiscal && <Td className="max-w-[140px] truncate font-mono text-xs text-muted-foreground" title={r.fiscal_code ?? ''}>{r.fiscal_code ? `${r.fiscal_code.slice(0, 8)}…` : ''}</Td>}
                     <Td className="min-w-[110px] leading-tight">{tServer(r.partner)}</Td>
                     <Td className="whitespace-nowrap tabular text-muted-foreground">{r.tax_number ?? ''}</Td>

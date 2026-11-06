@@ -1,5 +1,6 @@
 /** [English template with %, Serbian with {0}…]: database messages with values, at the till and on the ATK pages. */
 export const serverTemplatesSr: [string, string][] = [
+  ['% receipts', '{0} fiskalnih računa'],
   ['Tills still open since yesterday: %', 'Kase još otvorene od juče: {0}'],
   ['Cash above the legal limit at the till: %', 'Gotovina iznad zakonske granice na kasi: {0}'],
   ['Line %: the price % is far under the till price %; a manager must sell it', 'Stavka {0}: cena {1} je mnogo ispod cene kase {2}; mora je prodati menadžer'],
