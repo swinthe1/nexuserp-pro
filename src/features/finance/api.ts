@@ -58,8 +58,10 @@ export function useAccountBalances(from: string, to: string, costCenter?: string
     queryFn: async () => unwrap(await supabase.rpc('account_balances', { p_company: companyId, p_from: from, p_to: to, p_cost_center: costCenter ?? undefined })) as BalanceRow[],
   })
 }
-export async function fetchBalances(companyId: string, from: string, to: string, costCenter?: string | null) {
-  return unwrap(await supabase.rpc('account_balances', { p_company: companyId, p_from: from, p_to: to, p_cost_center: costCenter ?? undefined })) as BalanceRow[]
+/** the statutory ledger (what the law and ATK see), or the management one: statutory plus internal adjustments */
+export type Ledger = 'statutory' | 'management'
+export async function fetchBalances(companyId: string, from: string, to: string, costCenter?: string | null, ledger: Ledger = 'statutory') {
+  return unwrap(await supabase.rpc('account_balances', { p_company: companyId, p_from: from, p_to: to, p_cost_center: costCenter ?? undefined, p_ledger: ledger.toUpperCase() })) as BalanceRow[]
 }
 
 export function useAccountDefaults() {
@@ -129,7 +131,7 @@ export function useJournalEntries(from: string, to: string) {
     queryKey: [...finKeys.list(companyId, 'entries'), from, to],
     enabled: !!companyId,
     queryFn: async () => unwrap(await supabase.from('journal_entries')
-      .select('id, number, status, entry_date, reference, memo, source_doc_type, source_doc_id, is_automatic, total_debit, journal:journals(code, name)')
+      .select('*, journal:journals(code, name)')
       .eq('company_id', companyId).is('deleted_at', null).gte('entry_date', from).lte('entry_date', to)
       .order('entry_date', { ascending: false }).order('number', { ascending: false }).order('id').limit(2000)),
   })
@@ -172,20 +174,21 @@ export const useReverseJournalEntry = () => useAction(async (a: { id: string; da
 export const useDeleteJournalEntry = () => useAction(async (id: string) => unwrap(await supabase.from('journal_entries').delete().eq('id', id)))
 
 export type LedgerLine = { id: string; debit: number; credit: number; description: string | null; entry_id: string
-  entry: { number: string; entry_date: string; memo: string | null; reference: string | null; source_doc_type: string | null; source_doc_id: string | null; status: string }
+  entry: { number: string; entry_date: string; memo: string | null; reference: string | null; source_doc_type: string | null; source_doc_id: string | null; status: string; reporting_ledger?: string }
   partner: { name: string } | null }
-export function useAccountLedger(accountId: string | undefined, from: string, to: string) {
+export function useAccountLedger(accountId: string | undefined, from: string, to: string, ledger: Ledger = 'statutory') {
   const { companyId } = useCompany()
   return useQuery({
-    queryKey: [...finKeys.doc(companyId, 'ledger', accountId ?? ''), from, to],
+    queryKey: [...finKeys.doc(companyId, 'ledger', accountId ?? ''), from, to, ledger],
     enabled: !!companyId && !!accountId,
     queryFn: async () => {
+      let q = supabase.from('journal_lines')
+        .select('id, debit, credit, description, entry_id, entry:journal_entries!inner(number, entry_date, memo, reference, source_doc_type, source_doc_id, status, reporting_ledger), partner:business_partners(name)')
+        .eq('account_id', accountId!).in('entry.status', ['posted', 'reversed']).gte('entry.entry_date', from).lte('entry.entry_date', to)
+      if (ledger === 'statutory') q = q.eq('entry.reporting_ledger', 'STATUTORY')
       const [lines, opening] = await Promise.all([
-        supabase.from('journal_lines')
-          .select('id, debit, credit, description, entry_id, entry:journal_entries!inner(number, entry_date, memo, reference, source_doc_type, source_doc_id, status), partner:business_partners(name)')
-          .eq('account_id', accountId!).in('entry.status', ['posted', 'reversed']).gte('entry.entry_date', from).lte('entry.entry_date', to)
-          .limit(5000).returns<LedgerLine[]>(),
-        supabase.rpc('account_balances', { p_company: companyId, p_from: from, p_to: to }),
+        q.limit(5000).returns<LedgerLine[]>(),
+        supabase.rpc('account_balances', { p_company: companyId, p_from: from, p_to: to, p_ledger: ledger.toUpperCase() }),
       ])
       const rows = unwrap(lines).sort((a, b) => a.entry.entry_date.localeCompare(b.entry.entry_date) || a.entry.number.localeCompare(b.entry.number))
       const bal = (unwrap(opening) as BalanceRow[]).find((r) => r.account_id === accountId)

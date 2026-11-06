@@ -15,7 +15,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ErrorState } from '@/components/error-state'
 import { formatDateWith, msg, t, td } from '@/i18n'
 import { cn, formatCompact, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
-import { fetchBalances, finKeys, useCostCenters, useFiscalStartMonth, type BalanceRow } from '../api'
+import { fetchBalances, finKeys, useCostCenters, useFiscalStartMonth, type BalanceRow, type Ledger } from '../api'
 import { GridExportMenu } from '@/components/export-menu'
 import { axisTick, iso, tooltipStyle } from './finance-overview-page'
 
@@ -231,14 +231,18 @@ export function ReportsPage() {
   const [custom, setCustom] = React.useState<[string, string]>([params.get('from') ?? `${thisYear}-01-01`, params.get('to') ?? todayISO()])
   const [compare, setCompare] = React.useState<Compare>(params.get('from') ? 'none' : 'prev1')
   const [cc, setCc] = React.useState<string | null>(params.get('cc'))
+  // the statutory books (the law, ATK) or the management view (plus internal adjustments)
+  const ledger: Ledger = params.get('ledger') === 'management' ? 'management' : 'statutory'
+  const setLedger = (l: Ledger) => setParams((p) => { if (l === 'management') p.set('ledger', l); else p.delete('ledger'); return p }, { replace: true })
+  const ledgerLabel = ledger === 'management' ? t('Management ledger') : t('Statutory ledger')
   const ccs = useCostCenters()
   const cols = React.useMemo(() => buildColumns(kind, compare, year, fyMonth, custom), [kind, compare, year, fyMonth, custom])
   const useCc = tab === 'pl' || tab === 'tb' ? cc : null
   const ranges = cols.map((c) => (tab === 'bs' ? { from: fyStartOf(c.to, fyMonth), to: c.to } : { from: c.from, to: c.to }))
   const results = useQueries({
     queries: ranges.map((r) => ({
-      queryKey: [...finKeys.all(companyId), 'balances', r.from, r.to, useCc ?? 'all'],
-      queryFn: () => fetchBalances(companyId, r.from, r.to, useCc),
+      queryKey: [...finKeys.all(companyId), 'balances', r.from, r.to, useCc ?? 'all', ledger],
+      queryFn: () => fetchBalances(companyId, r.from, r.to, useCc, ledger),
       enabled: !!companyId,
       staleTime: 30_000,
     })),
@@ -277,15 +281,29 @@ export function ReportsPage() {
   return (
     <>
       <PageHeader title={t('Financial statements')}
-        description={<>{company?.name} · {cur}{ccName && (tab === 'pl' || tab === 'tb') ? ` · ${t('cost center {name}', { name: `${ccName.code} ${ccName.name}` })}` : ''}. {t('Figures come from posted accounting entries; click an account to see what is behind it.')}</>}
+        description={<>{company?.name} · <span className={cn(ledger === 'management' && 'font-semibold text-warning')}>{ledgerLabel}</span> · {cur}{ccName && (tab === 'pl' || tab === 'tb') ? ` · ${t('cost center {name}', { name: `${ccName.code} ${ccName.name}` })}` : ''}. {t('Figures come from posted accounting entries; click an account to see what is behind it.')}</>}
         actions={<>
-          <GridExportMenu name={`${tab === 'tb' ? t('trial-balance') : t(TABS[tab]).toLowerCase().replace(/\s+/g, '-')}-${cols[0]!.to}`} title={t(TABS[tab])} subtitle={`${company?.name ?? ''} · ${cols[0]!.from} – ${cols[0]!.to}`} grid={exportGrid} disabled={loading} />
+          <GridExportMenu name={`${tab === 'tb' ? t('trial-balance') : t(TABS[tab]).toLowerCase().replace(/\s+/g, '-')}-${cols[0]!.to}`} title={t(TABS[tab])} subtitle={`${company?.name ?? ''} · ${ledgerLabel} · ${cols[0]!.from} – ${cols[0]!.to}`} grid={exportGrid} disabled={loading} />
           <Button variant="outline" onClick={() => window.print()}><Printer /> {t('Print')}</Button>
         </>} />
+      {ledger === 'management' && (
+        <p className="mb-3 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-[13px]">
+          {t('Management view: the statutory figures plus the internal adjustments. For running the business, not for ATK or the official financial statements.')}
+        </p>
+      )}
       <Tabs value={tab} onValueChange={setTab} className="print:hidden">
         <TabsList>{Object.entries(TABS).map(([k, l]) => <TabsTrigger key={k} value={k}>{t(l)}</TabsTrigger>)}</TabsList>
       </Tabs>
       <div className="mt-3 flex flex-wrap items-end gap-3 print:hidden">
+        <div className="grid gap-1.5"><Label className="text-xs text-muted-foreground">{t('Ledger')}</Label>
+          <div role="radiogroup" aria-label={t('Ledger')} className="flex h-9 rounded-md border bg-muted/40 p-0.5 text-[13px]">
+            {(['statutory', 'management'] as const).map((l) => (
+              <button key={l} type="button" role="radio" aria-checked={ledger === l} onClick={() => setLedger(l)}
+                className={cn('rounded-[5px] px-3', ledger === l ? 'bg-card font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground')}>
+                {l === 'statutory' ? t('Statutory') : t('Management')}
+              </button>
+            ))}
+          </div></div>
         <div className="grid gap-1.5"><Label className="text-xs text-muted-foreground">{tab === 'bs' ? t('As of the end of') : t('Period')}</Label>
           <Select value={kind} onValueChange={(v) => setKind(v as PeriodKind)}><SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -351,6 +369,7 @@ export function ReportsPage() {
 }
 
 function StatementTable({ rows, cols, variance, trimLast }: { rows: Row[]; cols: Col[]; variance: boolean; trimLast: boolean }) {
+  const ledger = useSearchParams()[0].get('ledger') === 'management' ? 'management' : 'statutory'
   const n = cols.length
   return (
     <table className="w-full min-w-[560px] text-[13px]">
@@ -374,7 +393,7 @@ function StatementTable({ rows, cols, variance, trimLast }: { rows: Row[]; cols:
             )}>
               <td className={cn('sticky left-0 bg-card px-4 py-1.5', r.kind === 'total' && 'bg-muted', r.depth && 'pl-8')}>
                 {r.kind === 'check' && <AlertTriangle className="mr-1.5 inline size-3.5" />}
-                {r.accountId ? <Link to={`/finance/accounts/${r.accountId}`} className="hover:underline"><span className="mr-2 font-mono text-xs text-muted-foreground">{r.code}</span>{rowLabel(r)}</Link> : rowLabel(r)}
+                {r.accountId ? <Link to={`/finance/accounts/${r.accountId}${ledger === 'management' ? '?ledger=management' : ''}`} className="hover:underline"><span className="mr-2 font-mono text-xs text-muted-foreground">{r.code}</span>{rowLabel(r)}</Link> : rowLabel(r)}
               </td>
               {vals.map((v, j) => <td key={j} className={cn('whitespace-nowrap px-4 py-1.5 text-right tabular', v < -0.004 && 'text-destructive', Math.abs(v) < 0.005 && 'text-muted-foreground/50')}>{Math.abs(v) < 0.005 ? '—' : formatMoney(v)}</td>)}
               {variance && n > 1 && <td className={cn('px-4 py-1.5 text-right tabular text-xs', ch == null ? 'text-muted-foreground/50' : ch >= 0 ? 'text-success' : 'text-destructive')}>{ch == null ? '—' : `${ch >= 0 ? '+' : ''}${formatMoney(ch, undefined, 1)}%`}</td>}
@@ -390,6 +409,7 @@ const rowLabel = (r: Row) => (r.accountId ? td(r.label) : t(r.label))
 const pctChange = (a?: number, b?: number) => (b == null || a == null || Math.abs(b) < 0.005 ? null : ((a - b) / Math.abs(b)) * 100)
 
 function TrialBalance({ rows }: { rows: BalanceRow[] }) {
+  const ledger = useSearchParams()[0].get('ledger') === 'management' ? 'management' : 'statutory'
   const list = rows.filter((a) => a.is_postable && (Math.abs(num(a.opening)) + num(a.debit) + num(a.credit) > 0.004)).sort((a, b) => a.code.localeCompare(b.code))
   const tot = list.reduce((s, a) => ({ od: s.od + Math.max(num(a.opening), 0), oc: s.oc + Math.max(-num(a.opening), 0), d: s.d + num(a.debit), c: s.c + num(a.credit), cd: s.cd + Math.max(num(a.closing), 0), cc: s.cc + Math.max(-num(a.closing), 0) }),
     { od: 0, oc: 0, d: 0, c: 0, cd: 0, cc: 0 })
@@ -407,7 +427,7 @@ function TrialBalance({ rows }: { rows: BalanceRow[] }) {
         {list.map((a) => (
           <tr key={a.account_id} className="border-b border-border/50">
             <td className="px-4 py-1.5 font-mono text-xs">{a.code}</td>
-            <td className="px-4 py-1.5"><Link to={`/finance/accounts/${a.account_id}`} className="hover:underline">{td(a.name)}</Link></td>
+            <td className="px-4 py-1.5"><Link to={`/finance/accounts/${a.account_id}${ledger === 'management' ? '?ledger=management' : ''}`} className="hover:underline">{td(a.name)}</Link></td>
             <td className="px-4 py-1.5 text-right tabular">{m(Math.max(num(a.opening), 0))}</td><td className="px-4 py-1.5 text-right tabular">{m(Math.max(-num(a.opening), 0))}</td>
             <td className="px-4 py-1.5 text-right tabular">{m(num(a.debit))}</td><td className="px-4 py-1.5 text-right tabular">{m(num(a.credit))}</td>
             <td className="px-4 py-1.5 text-right tabular font-medium">{m(Math.max(num(a.closing), 0))}</td><td className="px-4 py-1.5 text-right tabular font-medium">{m(Math.max(-num(a.closing), 0))}</td>

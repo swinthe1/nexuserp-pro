@@ -27,6 +27,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           tax_nondeductible: boolean
+          is_management: boolean
         }
         Insert: {
           id?: string
@@ -50,6 +51,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           tax_nondeductible?: boolean
+          is_management?: boolean
         }
         Update: {
           id?: string
@@ -73,6 +75,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           tax_nondeductible?: boolean
+          is_management?: boolean
         }
         Relationships: [
           { foreignKeyName: "accounts_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -5670,6 +5673,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           posting_key: string
+          reporting_ledger: string
         }
         Insert: {
           id?: string
@@ -5698,6 +5702,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           posting_key?: string
+          reporting_ledger?: string
         }
         Update: {
           id?: string
@@ -5726,6 +5731,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           posting_key?: string
+          reporting_ledger?: string
         }
         Relationships: [
           { foreignKeyName: "journal_entries_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -15743,6 +15749,52 @@ export type Database = {
         }
         Relationships: []
       }
+      view_management_ledger: {
+        Row: {
+          company_id: string | null
+          entry_id: string | null
+          number: string | null
+          entry_date: string | null
+          journal_id: string | null
+          reference: string | null
+          memo: string | null
+          source_doc_type: string | null
+          source_doc_id: string | null
+          reporting_ledger: string | null
+          line_id: string | null
+          line_no: number | null
+          account_id: string | null
+          debit: number | null
+          credit: number | null
+          partner_id: string | null
+          cost_center_id: string | null
+          description: string | null
+        }
+        Relationships: []
+      }
+      view_statutory_ledger: {
+        Row: {
+          company_id: string | null
+          entry_id: string | null
+          number: string | null
+          entry_date: string | null
+          journal_id: string | null
+          reference: string | null
+          memo: string | null
+          source_doc_type: string | null
+          source_doc_id: string | null
+          reporting_ledger: string | null
+          line_id: string | null
+          line_no: number | null
+          account_id: string | null
+          debit: number | null
+          credit: number | null
+          partner_id: string | null
+          cost_center_id: string | null
+          description: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       abc_run: {
@@ -15783,6 +15835,7 @@ export type Database = {
           p_from: string
           p_to: string
           p_cost_center?: string
+          p_ledger?: string
         }
         Returns: { account_id: string | null; code: string | null; name: string | null; account_type: string | null; account_subtype: string | null; parent_id: string | null; is_postable: boolean | null; cash_flow_category: string | null; opening: number | null; debit: number | null; credit: number | null; closing: number | null }[]
       }

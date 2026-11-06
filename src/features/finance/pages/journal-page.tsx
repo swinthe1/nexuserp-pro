@@ -30,7 +30,7 @@ import { JournalLinesTable, TAccounts } from '../components/t-accounts'
 import { usePartners } from '@/features/sales/api'
 
 type Row = { id: string; number: string; status: string; entry_date: string; reference: string | null; memo: string | null
-  source_doc_type: string | null; source_doc_id: string | null; is_automatic: boolean; total_debit: number; journal: { code: string; name: string } | null }
+  source_doc_type: string | null; source_doc_id: string | null; is_automatic: boolean; total_debit: number; journal: { code: string; name: string } | null; reporting_ledger?: string }
 
 export function JournalEntriesPage() {
   const navigate = useNavigate()
@@ -50,6 +50,8 @@ export function JournalEntriesPage() {
         : <Badge variant="outline">{t('Manual')}</Badge>,
     },
     { accessorKey: 'status', filterFn: inFilter, header: t('Status'), meta: { label: t('Status') }, cell: ({ getValue }) => <StatusBadge status={getValue() as string} /> },
+    { id: 'ledger', accessorFn: (r) => (r.reporting_ledger === 'MANAGEMENT' ? 'management' : 'statutory'), filterFn: inFilter, header: t('Ledger'), meta: { label: t('Ledger') },
+      cell: ({ getValue }) => (getValue() === 'management' ? <Badge variant="warning">{t('Management')}</Badge> : <span className="text-muted-foreground">{t('Statutory')}</span>) },
     { accessorKey: 'total_debit', header: ({ column }) => <ColumnHeader column={column} title={t('Amount')} />, meta: { label: t('Amount'), align: 'right' }, cell: ({ getValue }) => <span className="tabular">{formatMoney(getValue() as number)}</span> },
   ], [])
   const sources = [...new Set((entries.data ?? []).map((r) => (r.is_automatic ? r.source_doc_type ?? 'automatic' : 'manual')))]
@@ -67,6 +69,7 @@ export function JournalEntriesPage() {
           { columnId: 'journal', title: t('Journal'), options: (journals.data ?? []).map((j) => ({ value: j.code, label: `${j.code} · ${td(j.name)}` })) },
           { columnId: 'source', title: t('Source'), options: sources.map((s) => ({ value: s, label: s === 'manual' ? t('Manual') : s === 'automatic' ? t('Automatic') : sourceLabel(s) })) },
           { columnId: 'status', title: t('Status'), options: ['draft', 'posted', 'reversed'].map((s) => ({ value: s, label: humanize(s) })) },
+          { columnId: 'ledger', title: t('Ledger'), options: [{ value: 'statutory', label: t('Statutory') }, { value: 'management', label: t('Management') }] },
         ]}
         empty={{ title: t('No accounting entries in this period') }} />
     </>
@@ -94,7 +97,7 @@ function JournalEntryView({ id }: { id: string }) {
   return (
     <div className="w-full">
       <PageHeader back={{ href: '/finance/journal', label: t('Accounting entries') }} title={e.number}
-        meta={<><StatusBadge status={e.status} />{e.is_automatic ? <Badge variant="secondary"><Bot className="size-3" /> {t('Automatic')}</Badge> : <Badge variant="outline">{t('Manual')}</Badge>}</>}
+        meta={<><StatusBadge status={e.status} />{e.reporting_ledger === 'MANAGEMENT' && <Badge variant="warning">{t('Management ledger')}</Badge>}{e.is_automatic ? <Badge variant="secondary"><Bot className="size-3" /> {t('Automatic')}</Badge> : <Badge variant="outline">{t('Manual')}</Badge>}</>}
         description={[td(e.journal?.name), formatDate(e.entry_date), tServer(e.memo)].filter(Boolean).join(' · ')}
         actions={<Can perm="finance.write">
           {e.status === 'posted' && !e.is_automatic && (
@@ -142,6 +145,8 @@ function ManualEntryForm({ entry }: { entry?: NonNullable<ReturnType<typeof useJ
   const [date, setDate] = React.useState(entry?.entry_date ?? todayISO())
   const [memo, setMemo] = React.useState(entry?.memo ?? '')
   const [reference, setReference] = React.useState(entry?.reference ?? '')
+  // the statutory books, or an internal adjustment seen only in the management view
+  const [ledger, setLedger] = React.useState<'STATUTORY' | 'MANAGEMENT'>(entry?.reporting_ledger === 'MANAGEMENT' ? 'MANAGEMENT' : 'STATUTORY')
   const [lines, setLines] = React.useState<Line[]>(() => entry
     ? [...entry.lines].sort((a, b) => a.line_no - b.line_no).map((l) => ({ key: l.id, account_id: l.account_id, description: l.description ?? '', debit: num(l.debit) ? String(l.debit) : '', credit: num(l.credit) ? String(l.credit) : '', partner_id: l.partner_id, cost_center_id: l.cost_center_id }))
     : [blank(), blank()])
@@ -151,10 +156,11 @@ function ManualEntryForm({ entry }: { entry?: NonNullable<ReturnType<typeof useJ
   const diff = Math.round((dr - cr) * 100) / 100
   const valid = !!journalId && dr > 0 && diff === 0 && lines.every((l) => (!num(l.debit) && !num(l.credit)) || l.account_id)
   const set = (i: number, patch: Partial<Line>) => setLines((ls) => ls.map((l, j) => (j === i ? { ...l, ...patch } : l)))
-  const postable = (accounts.data ?? []).filter((a) => a.is_postable && a.is_active)
+  // a management adjustment touches only income, expense and the management adjustments account; the statutory books never that one
+  const postable = (accounts.data ?? []).filter((a) => a.is_postable && a.is_active && (ledger === 'MANAGEMENT' ? ['revenue', 'expense'].includes(a.account_type) || a.is_management : !a.is_management))
 
   const persist = async () => save.mutateAsync({
-    header: { id: entry?.id, journal_id: journalId, entry_date: date, memo: memo || null, reference: reference || null },
+    header: { id: entry?.id, journal_id: journalId, entry_date: date, memo: memo || null, reference: reference || null, reporting_ledger: ledger },
     lines: lines.filter((l) => l.account_id && (num(l.debit) || num(l.credit))).map((l, i) => ({
       line_no: i + 1, account_id: l.account_id, debit: num(l.debit), credit: num(l.credit), description: l.description || null,
       partner_id: l.partner_id, cost_center_id: l.cost_center_id,
@@ -176,6 +182,10 @@ function ManualEntryForm({ entry }: { entry?: NonNullable<ReturnType<typeof useJ
               <SelectContent>{(journals.data ?? []).map((j) => <SelectItem key={j.id} value={j.id}>{j.code} · {td(j.name)}</SelectItem>)}</SelectContent></Select></div>
           <div className="grid gap-1.5"><Label htmlFor="je-date">{t('Date')}</Label><Input id="je-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
           <div className="grid gap-1.5"><Label htmlFor="je-ref">{t('Reference')}</Label><Input id="je-ref" value={reference} onChange={(e) => setReference(e.target.value)} /></div>
+          <div className="grid gap-1.5"><Label>{t('Ledger')}</Label>
+            <Select value={ledger} onValueChange={(v) => setLedger(v as 'STATUTORY' | 'MANAGEMENT')}><SelectTrigger aria-label={t('Ledger')}><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="STATUTORY">{t('Statutory')}</SelectItem><SelectItem value="MANAGEMENT">{t('Management (internal adjustment)')}</SelectItem></SelectContent></Select></div>
+          {ledger === 'MANAGEMENT' && <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-[13px] sm:col-span-4">{t('Seen only in the management view: cost allocations, imputed rent, internal accruals. It uses income and expense accounts and the management adjustments account; the statutory books and ATK do not see it.')}</p>}
           <div className="grid gap-1.5 sm:col-span-4"><Label htmlFor="je-memo">{t('Description')}</Label><Input id="je-memo" value={memo} onChange={(e) => setMemo(e.target.value)} placeholder={t('e.g. October rent not yet invoiced')} /></div>
         </CardContent>
       </Card>

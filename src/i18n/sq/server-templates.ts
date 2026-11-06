@@ -404,6 +404,8 @@ export const serverTemplates: [string, string][] = [
   ['Line %: the card gives % %%, not %', 'Rreshti {0}: kartela jep {1}%, jo {2}'],
   ['Pay between 0 and % of %', 'Paguani nga 0 deri në {0} të {1}'],
   ['Could not delete everything (%)', 'Nuk u fshi dot gjithçka ({0})'],
+  ['A management entry uses only income and expense accounts and the management adjustments account, not %', 'Një regjistrim menaxherial përdor vetëm kontot e të ardhurave dhe shpenzimeve dhe kontot e rregullimeve menaxheriale, jo {0}'],
+  ['The management adjustments account % is not used in the statutory books', 'Kontoja e rregullimeve menaxheriale {0} nuk përdoret në librat statutorë'],
   ['Unit % has no name', 'Njësia {0} nuk ka emër'],
   ['The code % is used twice', 'Kodi {0} është përdorur dy herë'],
   ['Unknown kind of history: %', 'Lloj i panjohur historiku: {0}'],

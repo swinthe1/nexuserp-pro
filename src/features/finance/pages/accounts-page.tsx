@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { ChevronRight, Plus } from 'lucide-react'
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Can, useCompany } from '@/app/company-provider'
@@ -22,7 +22,7 @@ import { describeError } from '@/lib/errors'
 import { ErrorState } from '@/components/error-state'
 import { msg, t, td, tServer } from '@/i18n'
 import { cn, formatDate, formatMoney, humanize, num, todayISO } from '@/lib/utils'
-import { SOURCE_HREF, sourceLabel, useAccountBalances, useAccountLedger, useAccounts, useSaveAccount, type Account } from '../api'
+import { SOURCE_HREF, sourceLabel, useAccountBalances, useAccountLedger, useAccounts, useSaveAccount, type Account, type Ledger } from '../api'
 
 const yearStart = () => `${new Date().getFullYear()}-01-01`
 const TYPES = ['asset', 'liability', 'equity', 'revenue', 'expense'] as const
@@ -186,7 +186,9 @@ export function AccountLedgerPage() {
   const accounts = useAccounts()
   const [from, setFrom] = React.useState(yearStart())
   const [to, setTo] = React.useState(todayISO())
-  const ledger = useAccountLedger(id, from, to)
+  const [params] = useSearchParams()
+  const book: Ledger = params.get('ledger') === 'management' ? 'management' : 'statutory'
+  const ledger = useAccountLedger(id, from, to, book)
   const a = accounts.data?.find((x) => x.id === id)
   if (accounts.isLoading) return <Skeleton className="h-64" />
   if (accounts.isError) return <ErrorState error={accounts.error} onRetry={() => void accounts.refetch()} />
@@ -195,7 +197,7 @@ export function AccountLedgerPage() {
   return (
     <div className="w-full">
       <PageHeader back={{ href: '/finance/accounts', label: t('Chart of accounts') }} title={<><span className="font-mono">{a.code}</span> {td(a.name)}</>}
-        meta={<Badge variant="outline">{subtypeLabel(a.account_subtype)}</Badge>}
+        meta={<><Badge variant="outline">{subtypeLabel(a.account_subtype)}</Badge>{book === 'management' && <Badge variant="warning">{t('Management ledger')}</Badge>}</>}
         description={a.account_type === 'asset' || a.account_type === 'expense' ? t('Amounts in {cur}. Debits increase this account.', { cur: company?.base_currency ?? '' }) : t('Amounts in {cur}. Credits increase this account.', { cur: company?.base_currency ?? '' })}
         actions={<>
           <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-[150px]" aria-label={t('From')} />
