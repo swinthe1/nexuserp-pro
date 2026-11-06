@@ -1,6 +1,7 @@
 -- =============================================================================
 -- "Faturë blerje (pa TVSH)": the supplier's number is optional; left empty, the document carries its own
 -- number in its place. A purchase invoice in the VAT book still needs the supplier's number.  (on "Kontrolle Test")
+-- And every company has the accounts of the safe set.
 -- =============================================================================
 \set QUIET on
 \set ON_ERROR_STOP on
@@ -25,6 +26,12 @@ select t.throws(format($q$insert into public.vendor_bills (company_id, document_
                           values (%L, 'vendor_bill', %L, %L, current_date, '', true)$q$, :'co', :'ven', :'shop'),
                 'invoice number', 'in the VAT book the supplier''s number is still needed');
 delete from public.vendor_bills where id in (:'b1', :'b2');
+
+-- every company with a chart has the accounts of the safe set (cash on its way to the bank, owner drawings)
+reset role;
+select t.ok(not exists (select 1 from public.companies c where exists (select 1 from public.accounts a where a.company_id = c.id and a.deleted_at is null)
+                          and (select count(*) from public.company_account_defaults d where d.company_id = c.id and d.key in ('cash_in_transit', 'owner_drawings') and d.account_id is not null) < 2),
+            'every company with a chart has the accounts for money on its way to the bank and the owner''s drawings');
 
 \set QUIET off
 select count(*) as assertions_passed from t.results;
