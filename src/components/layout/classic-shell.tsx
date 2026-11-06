@@ -14,7 +14,8 @@ import { useFavourites } from '@/components/layout/nav-prefs'
 import { moduleLook } from '@/app/modules'
 import { TillLockButton } from '@/components/layout/till-lock'
 import { UserMenu } from '@/components/layout/user-menu'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { menuEntries } from '@/components/layout/hubs'
 import { AssistantButton } from '@/features/assistant/assistant'
 import { t } from '@/i18n'
 import { LanguageToggle } from '@/i18n/language'
@@ -98,15 +99,29 @@ function MenuBar() {
               {t(s.title ?? s.label)}
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" sideOffset={2} className="max-h-[70vh] min-w-60 overflow-y-auto rounded-[4px] p-1 shadow-lg">
-              {s.items.map((i, k) => {
-                const heading = i.group && i.group !== s.items[k - 1]?.group ? i.group : null
+              {/* the same groups as the menu of the modern look: a group opens its pages beside it, a lone page opens at once */}
+              {menuEntries(s.items).map((e) => {
+                const on = e.items.some((i) => i.href === activeHref)
+                const Icon = e.icon
+                if (e.items.length === 1) return (
+                  <DropdownMenuItem key={e.key} className={cn('h-8 gap-2 rounded-[3px] py-0 text-[13px]', on && 'bg-[hsl(var(--accent))] font-semibold')} onSelect={() => navigate(e.href)}>
+                    <Icon className="size-4" style={{ color: `hsl(${look.hue} 38%)` }} />{t(e.label)}
+                  </DropdownMenuItem>
+                )
                 return (
-                  <React.Fragment key={i.href}>
-                    {heading && <>{k > 0 && <DropdownMenuSeparator />}<DropdownMenuLabel className="py-1 text-2xs font-semibold text-muted-foreground">{t(heading)}</DropdownMenuLabel></>}
-                    <DropdownMenuItem className={cn('h-7 gap-2 rounded-[3px] py-0 text-[13px]', i.href === activeHref && 'bg-[hsl(var(--accent))] font-semibold')} onSelect={() => navigate(i.href)}>
-                      <i.icon className="size-4" style={{ color: `hsl(${look.hue} 38%)` }} />{t(i.label)}
-                    </DropdownMenuItem>
-                  </React.Fragment>
+                  <DropdownMenuSub key={e.key}>
+                    <DropdownMenuSubTrigger className={cn('h-8 gap-2 rounded-[3px] py-0 text-[13px]', on && 'bg-[hsl(var(--accent))] font-semibold')}
+                      onClick={() => navigate(e.href)}>
+                      <Icon className="size-4" style={{ color: `hsl(${look.hue} 38%)` }} />{t(e.label)}
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent sideOffset={2} className="max-h-[70vh] min-w-56 overflow-y-auto rounded-[4px] p-1 shadow-lg">
+                      {e.items.map((i) => (
+                        <DropdownMenuItem key={i.href} className={cn('h-7 gap-2 rounded-[3px] py-0 text-[13px]', i.href === activeHref && 'bg-[hsl(var(--accent))] font-semibold')} onSelect={() => navigate(i.href)}>
+                          <i.icon className="size-4" style={{ color: `hsl(${look.hue} 38%)` }} />{t(i.label)}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
                 )
               })}
             </DropdownMenuContent>
