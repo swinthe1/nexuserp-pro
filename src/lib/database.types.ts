@@ -14895,6 +14895,7 @@ export type Database = {
           deleted_by: string | null
           atk_branch_id: number | null
           pos_receipt_max: number | null
+          supplied_from_id: string | null
         }
         Insert: {
           id?: string
@@ -14915,6 +14916,7 @@ export type Database = {
           deleted_by?: string | null
           atk_branch_id?: number | null
           pos_receipt_max?: number | null
+          supplied_from_id?: string | null
         }
         Update: {
           id?: string
@@ -14935,9 +14937,11 @@ export type Database = {
           deleted_by?: string | null
           atk_branch_id?: number | null
           pos_receipt_max?: number | null
+          supplied_from_id?: string | null
         }
         Relationships: [
           { foreignKeyName: "warehouses_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "warehouses_supplied_from_id_fkey"; columns: ["supplied_from_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["id"] },
         ]
       }
       withholding_codes: {
@@ -20215,6 +20219,12 @@ export type Database = {
       transfers_on_the_road: {
         Args: {
           p_company: string
+        }
+        Returns: Json
+      }
+      unit_create: {
+        Args: {
+          p: Json
         }
         Returns: Json
       }

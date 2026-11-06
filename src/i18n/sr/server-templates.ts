@@ -3,6 +3,7 @@ export const serverTemplatesSr: [string, string][] = [
   ['% receipts', '{0} fiskalnih računa'],
   ['A management entry uses only income and expense accounts and the management adjustments account, not %', 'Upravljačko knjiženje koristi samo konta prihoda i rashoda i konto upravljačkih korekcija, ne {0}'],
   ['The management adjustments account % is not used in the statutory books', 'Konto upravljačkih korekcija {0} se ne koristi u zakonskim knjigama'],
+  ['Unknown kind of unit: %', 'Nepoznata vrsta jedinice: {0}'],
   ['Unit % has no name', 'Jedinica {0} nema ime'],
   ['The code % is used twice', 'Šifra {0} je upotrebljena dva puta'],
   ['Tills still open since yesterday: %', 'Kase još otvorene od juče: {0}'],

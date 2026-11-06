@@ -1,7 +1,6 @@
 import { MapPin, Pencil, Plus, Trash2, Warehouse as WarehouseIcon } from 'lucide-react'
 import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { toast } from 'sonner'
 import { z } from 'zod'
 import { Can, useCompany } from '@/app/company-provider'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -19,6 +18,8 @@ import { supabase } from '@/lib/supabase'
 import { useLocations, useMasterData, useStockLevels, useWarehouses, type LocationRow } from '../api'
 import { msg, t, td, tEnum, tn } from '@/i18n'
 import { ErrorState } from '@/components/error-state'
+import { useActiveUnit } from '@/app/active-unit'
+import { NewUnitDialog } from '../components/new-unit-dialog'
 
 const warehouseSchema = z.object({
   code: z.string().trim().min(1, msg('Enter a code')).max(12),
@@ -73,6 +74,8 @@ export function WarehousesPage() {
   const wh = useMasterData('warehouses')
   const loc = useMasterData('warehouse_locations')
   const [selected, setSelected] = React.useState<string | null>(null)
+  const [newUnit, setNewUnit] = React.useState(false)
+  const { oneOnly } = useActiveUnit()
   const current = warehouses.data?.find((w) => w.id === selected) ?? warehouses.data?.[0]
 
   const valueBy = (key: 'warehouse_id' | 'location_id', id: string) => (levels.data ?? []).filter((l) => l[key] === id).reduce((s, l) => s + num(l.stock_value), 0)
@@ -107,14 +110,8 @@ export function WarehousesPage() {
         title={t('Warehouses|menu')}
         description={t('The units of the company: its shops, restaurants, warehouses and kitchens. Each has its own address, number at ATK, stock and tills; inside a unit there can be places (shelves, fridges), for those who need them.')}
         actions={<Can perm="inventory.write">
-          <SimpleFormDialog trigger={<Button><Plus /> {t('New warehouse')}</Button>} title={t('New warehouse')} schema={warehouseSchema}
-            defaultValues={{ code: '', name: '', warehouse_type: 'warehouse', city: '', is_active: true }} fields={whFields} submitLabel={t('Create warehouse')}
-            onSubmit={async (v) => {
-              const row = await wh.create.mutateAsync(v)
-              await loc.create.mutateAsync({ warehouse_id: row.id, code: `${v.code}/STOCK`, name: 'Stock', location_type: 'internal', is_pickable: true })
-              toast.success(t('{name} created with a default stock shelf', { name: v.name }))
-              setSelected(row.id)
-            }} />
+          <Button disabled={oneOnly} title={oneOnly ? t('This client works with one unit. The Super Admin can switch it to several units') : undefined} onClick={() => setNewUnit(true)}><Plus /> {t('New warehouse')}</Button>
+          <NewUnitDialog open={newUnit} onOpenChange={setNewUnit} onCreated={setSelected} />
         </Can>}
       />
       <div className="grid gap-4 grid-cols-[minmax(0,1fr)] lg:grid-cols-[360px_minmax(0,1fr)]">

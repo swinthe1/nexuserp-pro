@@ -47,6 +47,8 @@ export function useActiveUnit() {
       fixed: !!fixed,
       /** the company works with several units: the unit shows where it matters */
       multi,
+      /** the client was set up with one unit: a second one is for the Super Admin to allow */
+      oneOnly: said === false,
       set: (id: string | null) => { if (companyId) setActiveUnit(companyId, id) },
     }
   }, [all, access, chosen, companyId, said])

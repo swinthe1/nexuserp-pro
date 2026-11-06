@@ -3,7 +3,9 @@ import { useFillUnit } from '@/app/active-unit'
 import { ArrowRight, Plus, Trash2 } from 'lucide-react'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
+import * as React from 'react'
 import { toast } from 'sonner'
+import { supabase } from '@/lib/supabase'
 import { EmptyState } from '@/components/empty-state'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -56,6 +58,16 @@ function TransferForm({ doc }: { doc?: TransferDoc }) {
   const lines = useFieldArray({ control: form.control, name: 'lines' })
   const [fromWh, toWh, watched] = useWatch({ control: form.control, name: ['from_warehouse_id', 'to_warehouse_id', 'lines'] })
   const levels = useWarehouseLevels(editable ? fromWh || undefined : undefined)
+  // a unit supplied by another (a market by the central warehouse): its goods come from there
+  React.useEffect(() => {
+    if (doc || !toWh || (fromWh && fromWh !== toWh)) return
+    let gone = false
+    void supabase.from('warehouses').select('*').eq('id', toWh).maybeSingle().then(({ data }) => {
+      const from = (data as { supplied_from_id?: string | null } | null)?.supplied_from_id
+      if (!gone && from && from !== toWh) form.setValue('from_warehouse_id', from)
+    })
+    return () => { gone = true }
+  }, [toWh]) // eslint-disable-line react-hooks/exhaustive-deps
   // between two stores the goods travel (ship, then the other store receives); inside one store they move at once
   const betweenStores = !!fromWh && !!toWh && fromWh !== toWh
   const stockLoc = (wh: string) => locations.data?.find((l) => l.warehouse_id === wh && l.location_type === 'internal')?.id ?? ''
