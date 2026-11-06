@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CircleAlert, CircleCheck, Clock, Download, FileUp, Pencil, Plus, Save, Weight } from 'lucide-react'
+import { CircleAlert, CircleCheck, Clock, Download, FileUp, Link2, Pencil, Plus, Save, Weight } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -19,10 +19,11 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { t, td, tn } from '@/i18n'
+import { t, td, tn, tServer } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
 import { looksLikeTxp, nameKey, newLine, parseTxp, type TxpLine, withPrice, writeTxp } from '@/lib/rongta-plu'
-import { supabase } from '@/lib/supabase'
+import { supabase, supabaseAnonKey, supabaseUrl } from '@/lib/supabase'
+import { scaleInstaller } from '@/lib/rongta-agent'
 import { cn, formatDate, formatMoney, num } from '@/lib/utils'
 import { useVariantOptions, useWarehouses } from '../api'
 
@@ -30,6 +31,7 @@ type ScaleItem = { product_id: string; variant_id: string; sku: string; name: st
 /** a line of the file and the item of DrisPRO it is: by its PLU, by the same name, or picked by hand */
 type Match = { line: TxpLine; index: number; item: { product_id: string; variant_id: string; name: string; price: number | null } | null; how: 'plu' | 'name' | 'picked' | null }
 
+const PATH_EXAMPLE = String.raw`C:\RLS1000\rtplu_EN.txp`
 const PIECE = /^(cop|pcs|pc|cope|copë|ad|adet)$/i
 
 function useScaleItems() {
@@ -142,7 +144,7 @@ export function ScalePricesPage() {
   return (
     <div className="grid gap-4">
       <PageHeader title={t('Prices for the scale')}
-        description={t('For the Rongta scales (RTPLU program). Load the PLU file you use today: DrisPRO puts in the prices of DrisPRO and gives you back the same file, with the hotkeys and the other settings as they were. In RTPLU open it and send it to the scale with "Download PLU".')}
+        description={t('The Rongta scales take the items with a PLU and their prices from DrisPRO. With the automatic link it happens by itself; without it, load here the PLU file of RTPLU and DrisPRO gives it back with its prices, the hotkeys and the other settings as they were.')}
         actions={<>
           <input ref={input} type="file" accept=".txp,.TXP,.txt" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void load(f); e.target.value = '' }} />
           {!!items.data?.length && <Button variant="outline" onClick={() => void fresh()}><Download /> {t('New file from DrisPRO')}</Button>}
@@ -245,6 +247,7 @@ export function ScalePricesPage() {
 }
 
 type Scale = { id: string; name: string; warehouse_id: string | null; warehouse: string | null; ip: string; port: number; is_active: boolean; agent: string | null
+  has_key?: boolean; file_path?: string | null
   last_seen_at: string | null; last_sync_at: string | null; last_error: string | null; items: number; pending: number }
 type Scales = { auto_plu: boolean; next_plu: string; scales: Scale[] }
 
@@ -259,6 +262,7 @@ function ScalesCard() {
     // a server not updated yet has no scales: the card is simply not shown
     queryFn: async () => { const r = await supabase.rpc('scales_list', { p_company: companyId! }); return r.error ? null : (r.data as unknown as Scales) } })
   const [edit, setEdit] = React.useState<Partial<Scale> | null>(null)
+  const [link, setLink] = React.useState<Scale | null>(null)
   const auto = useMutation({
     mutationFn: async (v: boolean) => unwrap(await supabase.rpc('scale_settings_save', { p_company: companyId!, p_auto_plu: v })),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['inv', companyId, 'scales'] }),
@@ -268,16 +272,19 @@ function ScalesCard() {
   if (!d) return null
   const state = (s: Scale) => {
     if (!s.is_active) return { icon: Clock, tone: 'text-muted-foreground', text: t('Turned off') }
-    if (!s.last_seen_at) return { icon: Clock, tone: 'text-warning', text: t('Waits for the DrisPRO program for Windows on a computer of the store') }
-    if (s.last_error) return { icon: CircleAlert, tone: 'text-destructive', text: s.last_error }
-    if (s.pending > 0) return { icon: Clock, tone: 'text-warning', text: tn(s.pending, '{n} change on its way', '{n} changes on their way') }
+    if (!s.has_key) return { icon: Clock, tone: 'text-warning', text: t('Not linked yet: install the automatic link on the computer where RLS1000 runs') }
+    if (!s.last_seen_at) return { icon: Clock, tone: 'text-warning', text: t('Waiting for the computer of the store: run the installer there') }
+    if (s.last_error) return { icon: CircleAlert, tone: 'text-destructive', text: tServer(s.last_error) }
+    if (Date.now() - new Date(s.last_seen_at).getTime() > 10 * 60_000)
+      return { icon: CircleAlert, tone: 'text-destructive', text: t('The computer of the store has not answered since {time}: is it on, with internet?', { time: formatDate(s.last_seen_at, true) }) }
+    if (s.pending > 0) return { icon: Clock, tone: 'text-warning', text: tn(s.pending, '{n} change on its way (within a minute)', '{n} changes on their way (within a minute)') }
     return { icon: CircleCheck, tone: 'text-primary', text: t('In sync · {time}', { time: s.last_sync_at ? formatDate(s.last_sync_at, true) : '—' }) }
   }
   return (
     <Card><CardContent className="grid gap-3 p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1"><div className="font-medium">{t('Scales')}</div>
-          <p className="text-[13px] text-muted-foreground">{t('Every new item by the kilogram and every new price goes to the scales by itself, within seconds: the DrisPRO program for Windows on a computer of the store sends it.')}</p></div>
+          <p className="text-[13px] text-muted-foreground">{t('Every item with a PLU and every new price goes to the scale by itself, within a minute or two: a small DrisPRO service on the computer where RLS1000 runs writes it into the PLU file, and RLS1000 sends it to the scale.')}</p></div>
         {can('inventory.write') && <Button variant="outline" onClick={() => setEdit({ port: 5001, is_active: true })}><Plus /> {t('Add a scale')}</Button>}
       </div>
       {d.scales.length > 0 && (
@@ -290,6 +297,7 @@ function ScalesCard() {
                 <span className="ml-1.5 text-muted-foreground">{s.warehouse ? `${td(s.warehouse)} · ` : ''}{s.ip}{s.agent ? ` · ${s.agent}` : ''}</span>
                 <div className={cn('flex items-center gap-1.5 text-xs', st.tone)}><st.icon className="size-3.5" />{st.text}</div></div>
               <span className="text-xs text-muted-foreground">{tn(s.items, '{n} item on it', '{n} items on it')}</span>
+              {can('inventory.write') && <Button size="sm" variant={s.has_key ? 'ghost' : 'default'} onClick={() => setLink(s)}><Link2 /> {s.has_key ? t('Link again') : t('Automatic link')}</Button>}
               {can('inventory.write') && <Button size="sm" variant="ghost" onClick={() => setEdit(s)} aria-label={t('Edit')}><Pencil /></Button>}
             </div>
           )
@@ -301,6 +309,7 @@ function ScalesCard() {
         <Switch checked={d.auto_plu} disabled={!can('inventory.write') || auto.isPending} onCheckedChange={(v) => auto.mutate(v)} />
       </label>
       {edit && <ScaleDialog scale={edit} onClose={() => setEdit(null)} />}
+      {link && <LinkDialog scale={link} onClose={() => setLink(null)} />}
     </CardContent></Card>
   )
 }
@@ -338,6 +347,44 @@ function ScaleDialog({ scale, onClose }: { scale: Partial<Scale>; onClose: () =>
           <DialogFooter><Button type="button" variant="ghost" onClick={onClose}>{t('Cancel')}</Button>
             <Button type="submit" loading={save.isPending} disabled={!name.trim() || !ipOk}>{t('Save')}</Button></DialogFooter>
         </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/** the installer of the automatic link for one scale: a new key, the path of the PLU file of RLS1000, the steps */
+function LinkDialog({ scale, onClose }: { scale: Scale; onClose: () => void }) {
+  const qc = useQueryClient()
+  const { companyId } = useCompany()
+  const [path, setPath] = React.useState(scale.file_path ?? '')
+  const ok = /^[a-z]:\\.+\.txp$/i.test(path.trim())
+  const make = useMutation({
+    mutationFn: async () => {
+      const key = unwrap(await supabase.rpc('scale_agent_key', { p_scale: scale.id, p_file_path: path.trim() })) as unknown as string
+      const text = scaleInstaller({ api: supabaseUrl, anon: supabaseAnonKey, key, file: path.trim(), scaleId: scale.id, scaleName: scale.name })
+      saveFile(text, `DrisPRO-peshorja-${scale.name.normalize('NFD').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'rongta'}.bat`)
+    },
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['inv', companyId, 'scales'] }); toast.success(t('The installer is downloaded: run it on the computer where RLS1000 runs.')) },
+    onError: (e) => toast.error(describeError(e)),
+  })
+  return (
+    <Dialog open onOpenChange={(o) => !o && !make.isPending && onClose()}>
+      <DialogContent className="max-h-[92vh] max-w-xl overflow-y-auto">
+        <DialogHeader><DialogTitle>{t('Automatic link: {name}', { name: scale.name })}</DialogTitle>
+          <DialogDescription>{t('Once, on the computer of the store where RLS1000 runs. Then every item with a PLU and every new price reaches the scale by itself.')}</DialogDescription></DialogHeader>
+        <div className="grid gap-1.5">
+          <Label htmlFor="lk-path">{t('The PLU file of RLS1000 on that computer')}</Label>
+          <Input id="lk-path" value={path} onChange={(e) => setPath(e.target.value)} placeholder={PATH_EXAMPLE} className="font-mono text-[13px]" />
+          <span className="text-xs text-muted-foreground">{t('In RLS1000 it is the file that opens with the program (File → Save as shows where it is), usually rtplu_EN.txp in the RLS1000 folder.')}</span>
+        </div>
+        <ol className="grid list-decimal gap-1.5 pl-5 text-[13px]">
+          <li>{t('Download the installer and run it on that computer (if Windows warns: More info → Run anyway). It installs a small service that runs every minute.')}</li>
+          <li>{t('In RLS1000: Set auto upload & download time → Update PLU → Cycle, every 30 seconds. Leave RLS1000 open (put it in Startup so it opens with Windows).')}</li>
+          <li>{t('Here the scale shows “In sync” within a minute. From then on nobody needs RTPLU for the prices.')}</li>
+        </ol>
+        {scale.has_key && <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-[13px] text-warning">{t('A new installer makes a new key: the one installed before stops working, so run the new one on that computer.')}</p>}
+        <DialogFooter><Button variant="ghost" onClick={onClose}>{t('Close')}</Button>
+          <Button loading={make.isPending} disabled={!ok} onClick={() => make.mutate()}><Download /> {t('Download the installer')}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   )

@@ -12040,6 +12040,9 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          key_hash: string | null
+          key_prefix: string | null
+          file_path: string | null
         }
         Insert: {
           id?: string
@@ -12060,6 +12063,9 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          key_hash?: string | null
+          key_prefix?: string | null
+          file_path?: string | null
         }
         Update: {
           id?: string
@@ -12080,6 +12086,9 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          key_hash?: string | null
+          key_prefix?: string | null
+          file_path?: string | null
         }
         Relationships: [
           { foreignKeyName: "scales_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -19589,6 +19598,27 @@ export type Database = {
           p_padding: number
           p_reset_policy: string
           p_next_value?: number
+        }
+        Returns: undefined
+      }
+      scale_agent_key: {
+        Args: {
+          p_scale: string
+          p_file_path?: string
+        }
+        Returns: string
+      }
+      scale_feed: {
+        Args: {
+          p_key?: string
+          p_agent?: string
+        }
+        Returns: Json
+      }
+      scale_feed_error: {
+        Args: {
+          p_key?: string
+          p_error?: string
         }
         Returns: undefined
       }

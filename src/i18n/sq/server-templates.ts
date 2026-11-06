@@ -290,6 +290,7 @@ export const serverTemplates: [string, string][] = [
   ['Lot % (%) expires % %', 'Loti {0} ({1}) skadon më {2} {3}'],
   ['% receipts', '{0} kuponë'],
   ['PLU % is already on %', 'PLU {0} është tashmë te {1}'],
+  ['The PLU file of RLS1000 is not at %', 'Skedari PLU i RLS1000 nuk është te {0}'],
   ['% things to check in the books', '{0} gjëra për t’u kontrolluar në libra'],
   ['% on hand', '{0} gjendje'],
 
