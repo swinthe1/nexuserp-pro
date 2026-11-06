@@ -406,6 +406,7 @@ export const serverTemplates: [string, string][] = [
   ['Could not delete everything (%)', 'Nuk u fshi dot gjithçka ({0})'],
   ['A management entry uses only income and expense accounts and the management adjustments account, not %', 'Një regjistrim menaxherial përdor vetëm kontot e të ardhurave dhe shpenzimeve dhe kontot e rregullimeve menaxheriale, jo {0}'],
   ['The management adjustments account % is not used in the statutory books', 'Kontoja e rregullimeve menaxheriale {0} nuk përdoret në librat statutorë'],
+  ['Unknown stock filter: %', 'Filtër i panjohur i stokut: {0}'],
   ['Unknown report: %', 'Raport i panjohur: {0}'],
   ['Unknown way to spread the import costs: %', 'Mënyrë e panjohur e ndarjes së kostove të importit: {0}'],
   ['Unknown kind of unit: %', 'Lloj i panjohur njësie: {0}'],

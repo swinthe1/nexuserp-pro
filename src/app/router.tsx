@@ -132,6 +132,7 @@ const YearEndPage = lazy(() => import('@/features/finance/pages/year-end-page'),
 const ShrinkagePage = lazy(() => import('@/features/inventory/pages/shrinkage-page'), 'ShrinkagePage')
 const ExpiryPage = lazy(() => import('@/features/inventory/pages/expiry-page'), 'ExpiryPage')
 const ItemCardPage = lazy(() => import('@/features/inventory/pages/item-card-page'), 'ItemCardPage')
+const StockReportPage = lazy(() => import('@/features/inventory/pages/stock-report-page'), 'StockReportPage')
 const LabelsPage = lazy(() => import('@/features/inventory/pages/labels-page'), 'LabelsPage')
 const PriceLevelsPage = lazy(() => import('@/features/inventory/pages/price-levels-page'), 'PriceLevelsPage')
 const ScalePricesPage = lazy(() => import('@/features/inventory/pages/scale-prices-page'), 'ScalePricesPage')
@@ -256,6 +257,7 @@ const router = createBrowserRouter([
         { path: 'products/new', element: <ProductNewPage /> },
         { path: 'products/:id', element: <ProductDetailPage /> },
         { path: 'stock', element: <StockPage /> },
+        { path: 'stock-report', element: <StockReportPage /> },
         { path: 'check', element: <ItemCheckPage /> },
         { path: 'item-requests', element: <ItemRequestsPage /> },
         { path: 'abc', element: <AbcPage /> },

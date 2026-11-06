@@ -286,6 +286,7 @@ const editSchema = z.object({
   is_purchasable: z.boolean(),
   is_active: z.boolean(),
   brand: z.string().trim().optional(),
+  manufacturer: z.string().trim().optional(),
   hs_code: z.string().trim().optional(),
   weight_kg: z.preprocess((v) => (v === '' || v == null ? null : Number(v)), z.number().nonnegative().nullable()),
   volume_m3: z.preprocess((v) => (v === '' || v == null ? null : Number(v)), z.number().nonnegative().nullable()),
@@ -318,7 +319,7 @@ function EditProductSheet({ product }: { product: ProductDetail }) {
     values: {
       name: product.name, description: product.description ?? '', category_id: product.category_id, sales_price: product.sales_price,
       sales_tax_code_id: product.sales_tax_code_id, purchase_tax_code_id: product.purchase_tax_code_id, is_sellable: product.is_sellable,
-      is_purchasable: product.is_purchasable, is_active: product.is_active, brand: product.brand ?? '', hs_code: product.hs_code ?? '',
+      is_purchasable: product.is_purchasable, is_active: product.is_active, brand: product.brand ?? '', manufacturer: (product as { manufacturer?: string | null }).manufacturer ?? '', hs_code: product.hs_code ?? '',
       weight_kg: product.weight_kg, volume_m3: product.volume_m3, max_temperature: product.max_temperature,
       scale_plu: (product as { scale_plu?: string | null }).scale_plu ?? '',
       min_shelf_days: (product as { min_shelf_days?: number | null }).min_shelf_days ?? null,
@@ -330,7 +331,7 @@ function EditProductSheet({ product }: { product: ProductDetail }) {
     const plu = scale_plu || null
     const pluChanged = plu !== ((product as { scale_plu?: string | null }).scale_plu ?? null)
     const shelfChanged = (min_shelf_days ?? null) !== ((product as { min_shelf_days?: number | null }).min_shelf_days ?? null)
-    await update.mutateAsync({ ...rest, description: v.description || null, brand: v.brand || null, hs_code: v.hs_code || null, ...(pluChanged ? { scale_plu: plu } : {}),
+    await update.mutateAsync({ ...rest, description: v.description || null, brand: v.brand || null, manufacturer: v.manufacturer || null, hs_code: v.hs_code || null, ...(pluChanged ? { scale_plu: plu } : {}),
       ...(shelfChanged ? { min_shelf_days: min_shelf_days ?? null } : {}) })
     setOpen(false)
   })
@@ -362,6 +363,7 @@ function EditProductSheet({ product }: { product: ProductDetail }) {
                 <FormField control={form.control} name="weight_kg" render={({ field }) => (<FormItem><FormLabel optional>{t('Weight (kg)')}</FormLabel><FormControl><Input type="number" step="any" value={field.value ?? ''} onChange={field.onChange} /></FormControl></FormItem>)} />
                 <FormField control={form.control} name="volume_m3" render={({ field }) => (<FormItem><FormLabel optional>{t('Volume (m³)')}</FormLabel><FormControl><Input type="number" step="any" value={field.value ?? ''} onChange={field.onChange} /></FormControl></FormItem>)} />
                 <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel optional>{t('Brand')}</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                <FormField control={form.control} name="manufacturer" render={({ field }) => (<FormItem><FormLabel optional>{t('Producer')}</FormLabel><FormControl><Input placeholder={t('e.g. Zott')} {...field} /></FormControl></FormItem>)} />
                 <FormField control={form.control} name="hs_code" render={({ field }) => (<FormItem><FormLabel optional>{t('HS code')}</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                 <FormField control={form.control} name="scale_plu" render={({ field }) => (<FormItem><FormLabel optional>{t('PLU on the scale')}</FormLabel><FormControl><Input inputMode="numeric" {...field} placeholder={t('e.g. 1234')} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="min_shelf_days" render={({ field }) => (<FormItem className="col-span-2"><FormLabel optional>{t('Days it must still have at receiving')}</FormLabel>

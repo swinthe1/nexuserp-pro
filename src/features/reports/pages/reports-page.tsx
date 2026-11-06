@@ -26,6 +26,7 @@ export function ReportsPage() {
   ].filter(Boolean) as { href: string; title: string; question: string; icon: typeof Scale }[]
   const detail = {
     Sales: can('sales.read') ? [{ href: '/reports/sales-detail', title: t('Detailed sales'), question: t('Invoices and tills by item, document, customer, unit, person, group, day or hour, with margin and advanced filters.'), icon: ListTree }] : [],
+    Stock: can('inventory.read') ? [{ href: '/inventory/stock-report', title: t('Stock report'), question: t('The stock on any day: at average or last cost, at sale prices, as a price list, a sheet to sign or by producer.'), icon: ListTree }] : [],
     Purchasing: can('procurement.read') || can('invoicing.read') ? [{ href: '/reports/purchases-detail', title: t('Detailed purchases'), question: t('By item, document, supplier or line, with both discounts, import costs and advanced filters.'), icon: ListTree }] : [],
   } as Record<string, { href: string; title: string; question: string; icon: typeof Scale }[]>
   const panel = [

@@ -9507,6 +9507,7 @@ export type Database = {
           min_shelf_days: number | null
           scale_sent_price: number | null
           scale_sent_at: string | null
+          manufacturer: string | null
         }
         Insert: {
           id?: string
@@ -9545,6 +9546,7 @@ export type Database = {
           min_shelf_days?: number | null
           scale_sent_price?: number | null
           scale_sent_at?: string | null
+          manufacturer?: string | null
         }
         Update: {
           id?: string
@@ -9583,6 +9585,7 @@ export type Database = {
           min_shelf_days?: number | null
           scale_sent_price?: number | null
           scale_sent_at?: string | null
+          manufacturer?: string | null
         }
         Relationships: [
           { foreignKeyName: "products_company_id_category_id_fkey"; columns: ["company_id", "category_id"]; isOneToOne: false; referencedRelation: "product_categories"; referencedColumns: ["company_id", "id"] },
@@ -19984,6 +19987,13 @@ export type Database = {
         Returns: Json
       }
       stock_outputs: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: Json
+      }
+      stock_report: {
         Args: {
           p_company: string
           p: Json

@@ -41,6 +41,7 @@ export const productSchema = z.object({
   sales_tax_code_id: z.string().uuid().nullable().optional(),
   purchase_tax_code_id: z.string().uuid().nullable().optional(),
   brand: z.string().trim().max(80).optional(),
+  manufacturer: z.string().trim().max(120).optional(),
   weight_kg: optionalNumber,
   volume_m3: optionalNumber,
   hs_code: z.string().trim().max(20).optional(),

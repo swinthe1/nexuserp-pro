@@ -872,4 +872,5 @@ export default {
   "Nothing to export on this page yet": "Još nema ništa za izvoz na ovoj stranici",
   "Detailed sales|menu": "Detaljna prodaja",
   "Detailed purchases|menu": "Detaljne nabavke",
+  "Stock report|menu": "Izveštaj o zalihama",
 } satisfies Dict

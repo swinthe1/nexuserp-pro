@@ -53,7 +53,7 @@ export function ProductNewPage() {
     defaultValues: {
       code: '', name: '', description: '', product_type: 'stockable', category_id: null, uom_id: '', tracking: 'none',
       track_expiry: false, is_sellable: true, is_purchasable: true, sales_price: 0, sales_tax_code_id: null,
-      purchase_tax_code_id: null, brand: '', weight_kg: null, volume_m3: null, hs_code: '',
+      purchase_tax_code_id: null, brand: '', manufacturer: '', weight_kg: null, volume_m3: null, hs_code: '',
       attribute_ids: [], selected_values: {},
       variants: [{ key: 'default', attribute_value_ids: [], label: t('Default'), sku: '', barcode: '', symbology: 'ean13', generate_barcode: false, sales_price_override: null }],
       reorder_rules: [],
@@ -119,7 +119,7 @@ export function ProductNewPage() {
         code: v.code, name: v.name, description: v.description, product_type: v.product_type, category_id: v.category_id,
         uom_id: v.uom_id, tracking: v.tracking, track_expiry: v.track_expiry, is_sellable: v.is_sellable, is_purchasable: v.is_purchasable,
         sales_price: v.sales_price, sales_tax_code_id: v.sales_tax_code_id, purchase_tax_code_id: v.purchase_tax_code_id,
-        brand: v.brand, weight_kg: v.weight_kg, volume_m3: v.volume_m3, hs_code: v.hs_code,
+        brand: v.brand, manufacturer: v.manufacturer, weight_kg: v.weight_kg, volume_m3: v.volume_m3, hs_code: v.hs_code,
         variants: v.variants.map((x) => ({
           sku: x.sku, attribute_value_ids: x.attribute_value_ids, sales_price_override: x.sales_price_override,
           generate_barcode: x.generate_barcode && !x.barcode,
@@ -413,6 +413,9 @@ export function ProductNewPage() {
               )} />
               <FormField control={form.control} name="brand" render={({ field }) => (
                 <FormItem><FormLabel optional>{t('Brand')}</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              )} />
+              <FormField control={form.control} name="manufacturer" render={({ field }) => (
+                <FormItem><FormLabel optional>{t('Producer')}</FormLabel><FormControl><Input placeholder={t('e.g. Zott')} {...field} /></FormControl></FormItem>
               )} />
             </div>
           </FormSection>

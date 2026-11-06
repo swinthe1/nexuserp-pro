@@ -234,6 +234,7 @@ export interface CreateProductPayload {
   sales_tax_code_id?: string | null
   purchase_tax_code_id?: string | null
   brand?: string
+  manufacturer?: string
   weight_kg?: number | null
   volume_m3?: number | null
   hs_code?: string

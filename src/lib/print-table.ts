@@ -3,7 +3,8 @@ import { formatMoney, formatQty } from '@/lib/utils'
 import { printHtml } from '@/lib/print'
 
 type Cell = string | number | null | undefined
-export type PrintColumn = { header: string; format?: 'money' | 'qty' | 'int' | 'text'; /** short values that must not break (dates, numbers of documents) */ nowrap?: boolean }
+export type PrintColumn = { header: string; format?: 'money' | 'qty' | 'int' | 'text'; /** short values that must not break (dates, numbers of documents) */ nowrap?: boolean
+  /** room to write by hand (a count sheet), as a share of the page width in % */ write?: number }
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 const fmt = (v: Cell, f?: PrintColumn['format']) => {
@@ -18,24 +19,29 @@ const fmt = (v: Cell, f?: PrintColumn['format']) => {
  * rows and an optional total line. Wide tables print on a landscape page; the heading repeats on
  * every page.
  */
-export function printTable({ title, subtitle, columns, rows, totals }: {
+export function printTable({ title, subtitle, columns, rows, totals, marks, signatures }: {
   title: string; subtitle?: string; columns: PrintColumn[]; rows: Cell[][]; totals?: Cell[] | null
+  /** a row that heads a group or closes it with its subtotal, printed bold */
+  marks?: ('group' | 'sub' | undefined)[]
+  /** lines to sign under the table (handed over, received…) */
+  signatures?: string[]
 }) {
   // a column whose every value is a number lines up on the right
   const right = columns.map((c, i) => c.format === 'money' || c.format === 'qty' || c.format === 'int'
     || (c.format !== 'text' && rows.length > 0 && rows.every((r) => r[i] === null || r[i] === undefined || r[i] === '' || typeof r[i] === 'number')))
   // a number with no format: whole numbers as they are, others with two decimals
   const auto = (v: Cell): PrintColumn['format'] => (typeof v === 'number' ? (Number.isInteger(v) ? 'int' : 'money') : undefined)
-  const td = (v: Cell, i: number) => `<td class="${[right[i] ? 'r' : '', columns[i]!.nowrap ? 'nw' : ''].join(' ').trim()}">${esc(fmt(v, columns[i]!.format ?? auto(v)))}</td>`
+  const td = (v: Cell, i: number) => `<td class="${[right[i] ? 'r' : '', columns[i]!.nowrap ? 'nw' : '', columns[i]!.write ? 'w' : ''].join(' ').trim()}">${esc(fmt(v, columns[i]!.format ?? auto(v)))}</td>`
   const landscape = columns.length > 7
   const n = columns.length
   // the printable area of the A4 page at 96 dpi, margins of 10 mm
   const [pageW, pageH] = landscape ? [1047, 718] : [718, 1047]
   const printed = t('Printed {date}', { date: formatDateWith(new Date(), { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) })
   const body = `<h1>${esc(title)}</h1><p class="sub">${subtitle ? `${esc(subtitle)} · ` : ''}${esc(printed)}</p>
-<table><thead><tr>${columns.map((c, i) => `<th class="${right[i] || c.nowrap ? 'fit' : ''} ${right[i] ? 'r' : ''}">${esc(c.header)}</th>`).join('')}</tr></thead>
-<tbody>${rows.map((r) => `<tr>${columns.map((_, i) => td(r[i], i)).join('')}</tr>`).join('')}</tbody>
-${totals ? `<tfoot><tr>${columns.map((_, i) => td(totals[i], i)).join('')}</tr></tfoot>` : ''}</table>`
+<table><thead><tr>${columns.map((c, i) => `<th class="${right[i] || c.nowrap ? 'fit' : ''} ${right[i] ? 'r' : ''}"${c.write ? ` style="width:${c.write}%"` : ''}>${esc(c.header)}</th>`).join('')}</tr></thead>
+<tbody>${rows.map((r, k) => `<tr${marks?.[k] ? ` class="${marks[k]}"` : ''}>${columns.map((_, i) => td(r[i], i)).join('')}</tr>`).join('')}</tbody>
+${totals ? `<tfoot><tr>${columns.map((_, i) => td(totals[i], i)).join('')}</tr></tfoot>` : ''}</table>
+${signatures?.length ? `<div class="sign">${signatures.map((s) => `<div><span></span>${esc(s)}</div>`).join('')}</div>` : ''}`
   const css = `@page { size: A4 ${landscape ? 'landscape' : 'portrait'}; margin: 10mm }
 html, body { margin: 0 } body { width: ${pageW}px; font: ${n > 14 ? 7 : n > 10 ? 7.8 : 9}pt/1.25 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #111 }
 .nw { white-space: nowrap } th.fit { width: 1% } th { white-space: normal }
@@ -43,9 +49,13 @@ h1 { font-size: 13pt; margin: 0 0 2pt } .sub { margin: 0 0 8pt; color: #555; fon
 table { width: 100%; border-collapse: collapse } thead { display: table-header-group } tr { page-break-inside: avoid }
 th { text-align: left; font-weight: 600; border-bottom: 1pt solid #333; padding: 3pt 4pt; vertical-align: bottom; font-size: 8pt }
 td { border-bottom: .5pt solid #ccc; padding: 2.5pt 4pt; vertical-align: top }
-tfoot td { border-top: 1pt solid #333; border-bottom: 0; font-weight: 600 }
+tfoot { display: table-row-group } tfoot td { border-top: 1pt solid #333; border-bottom: 0; font-weight: 600 }
+td.w { border-bottom: .6pt dashed #777 }
 .r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap }
-th.r, th.fit { white-space: normal }`
+th.r, th.fit { white-space: normal }
+tr.group td { font-weight: 600; background: #f1f1f1; border-bottom: .8pt solid #999 } tr.sub td { font-weight: 600; border-bottom: .8pt solid #555 }
+.sign { display: flex; gap: 24pt; margin-top: 28pt; page-break-inside: avoid } .sign div { flex: 1; text-align: center; font-size: 8.5pt; color: #333 }
+.sign span { display: block; border-bottom: .8pt solid #333; height: 22pt; margin-bottom: 3pt }`
   // one A4 page when the table nearly fits: the whole of it a little smaller, never below two thirds
   // one A4 page when the table nearly fits: the letters a little smaller (never below 6 pt), never squeezed
   // one A4 page when the table nearly fits: the letters a little smaller (never below 6 pt), never squeezed;

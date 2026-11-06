@@ -48,6 +48,7 @@ export const KINDS: Kind[] = [
       { key: 'barcode', label: msg('Barcode'), example: ['5901234123457', ''], aliases: ['barkodi', 'ean', 'barkod', 'bar kodi'] },
       { key: 'weight_kg', label: msg('Weight (kg)'), example: ['1.55', '1.05'], aliases: ['pesha'], num: true },
       { key: 'brand', label: msg('Brand'), example: ['Glina', ''], aliases: ['marka'] },
+      { key: 'manufacturer', label: msg('Producer'), example: ['Ujë Glina sh.p.k.', ''], aliases: ['prodhuesi', 'prodhues', 'manufacturer', 'producer', 'fabrika'] },
     ] },
   { key: 'partners', title: msg('Customers and vendors'), description: msg('Matched by NIPT/NUI or code; existing partners are updated.'), perm: 'partners.write', icon: Users,
     done: { label: msg('Open partners'), href: '/partners' },
