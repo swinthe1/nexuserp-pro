@@ -21,7 +21,6 @@ const qrSrc = (q: string) => {
 /**
  * Two-step verification. After the password:
  *  - whoever turned it on types the code from their phone (until then the server shows them no company's data);
- *  - the platform owners and the companies' administrators who have not turned it on are asked to, before anything else.
  * A server whose sign-in service cannot do it lets everyone through as before.
  */
 export function MfaGate({ children }: { children: React.ReactNode }) {
@@ -48,7 +47,8 @@ export function MfaGate({ children }: { children: React.ReactNode }) {
         const v = (st.data ?? {}) as { required?: boolean; enabled?: boolean; verified?: boolean }
         required.current = { user: user.id, must: !!v.required, enabled: !!v.enabled && !v.verified }
       }
-      setGate(required.current.enabled ? 'challenge' : required.current.must ? 'enroll' : 'ok')
+      // turning it on is each person's choice (menu: Two-step verification); nobody is made to
+      setGate(required.current.enabled ? 'challenge' : 'ok')
     } catch { setGate('ok') }
   }, [user, loading])
 
