@@ -20,7 +20,7 @@ export default {
   "{items}. Suspended, they are neither bought nor sold, but stay in stock, reports and history. Sell or move the stock first, or suspend anyway.": "{items}. Të pezulluar, nuk blihen dhe nuk shiten, por mbeten në stok, në raporte dhe në historik. Shiteni ose lëvizeni stokun më parë, ose pezullojini sidoqoftë.",
   "Suspend anyway": "Pezullo sidoqoftë",
   "Only items that never moved in stock can be deleted. An item with stock history is suspended instead: it stays in reports and history.": "Fshihen vetëm artikujt që nuk kanë lëvizur kurrë në stok. Artikulli me histori stoku pezullohet: mbetet në raporte dhe në historik.",
-  "Small inventory|menu": "Inventari i imët",
+  "Small inventory|menu": "Pajisjet dhe inventari",
   "In storage": "Në depo",
   "Broken": "I prishur",
   "Written off": "I çregjistruar",

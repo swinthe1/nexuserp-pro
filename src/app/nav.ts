@@ -151,7 +151,7 @@ export const NAV: NavSection[] = [
       { label: msg('Expenses'), href: '/finance/expenses', icon: ReceiptText, perm: 'invoicing.read', keywords: ['shpenzime', 'shpenzim', 'karburant', 'naftë', 'rryma', 'kupon', 'faturë', 'foto', 'receipt', 'fuel', 'expense'], hub: msg('Expenses|hub') },
       { label: msg('Internal costs|menu'), href: '/finance/internal-costs', icon: Calculator, perm: 'finance.read', keywords: ['kosto e brendshme', 'kostot e brendshme', 'qira e brendshme', 'menaxhim', 'ndarja e shpenzimeve', 'internal rent', 'management costs', 'allocation'], hub: msg('Expenses|hub') },
       { label: msg('Fixed assets|menu'), href: '/finance/assets', icon: Building, perm: 'finance.read', keywords: ['depreciation', 'amortization', 'aktive'], hub: msg('Assets|menu') },
-      { label: msg('Small inventory|menu'), href: '/finance/small-assets', icon: Archive, perm: 'finance.read', keywords: ['inventari', 'inventar i imët', 'pajisje', 'mjete', 'karrige', 'rafte', 'peshore', 'small assets', 'equipment'], hub: msg('Assets|menu') },
+      { label: msg('Small inventory|menu'), href: '/finance/small-assets', icon: Archive, perm: 'finance.read', keywords: ['pajisjet', 'pajisjet dhe inventari', 'inventari', 'inventar i imët', 'pajisje', 'mjete', 'karrige', 'rafte', 'peshore', 'small assets', 'equipment'], hub: msg('Assets|menu') },
       { label: msg('Assets from invoices'), href: '/finance/asset-invoices', icon: FileScan, perm: 'finance.read', keywords: ['mjete themelore', 'faturë', 'foto', 'investim', 'veturë', 'kompjuter', 'asset invoice'], hub: msg('Assets|menu') },
     ],
   },
