@@ -18,7 +18,7 @@ declare module '@tanstack/react-table' {
 }
 
 export interface FacetOption { label: string; value: string; icon?: React.ComponentType<{ className?: string }> }
-export interface FacetedFilterDef { columnId: string; title: string; options: FacetOption[] }
+export interface FacetedFilterDef { columnId: string; title: string; options: FacetOption[]; /** the unit (shop, warehouse): follows the unit chosen under the company */ unit?: boolean }
 
 export interface TableViewConfig {
   columnVisibility?: Record<string, boolean>

@@ -105,7 +105,7 @@ export function WarehousesPage() {
     <>
       <PageHeader
         title={t('Warehouses|menu')}
-        description={t('Warehouses, stores and their bins. Every stock movement goes from one location to another.')}
+        description={t('The units of the company: its shops, restaurants, warehouses and kitchens. Each has its own address, number at ATK, stock and tills; inside a unit there can be places (shelves, fridges), for those who need them.')}
         actions={<Can perm="inventory.write">
           <SimpleFormDialog trigger={<Button><Plus /> {t('New warehouse')}</Button>} title={t('New warehouse')} schema={warehouseSchema}
             defaultValues={{ code: '', name: '', warehouse_type: 'warehouse', city: '', is_active: true }} fields={whFields} submitLabel={t('Create warehouse')}

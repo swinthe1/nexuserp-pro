@@ -22,6 +22,7 @@ import { usePhone } from '@/hooks/use-phone'
 import { FacetedFilter } from './faceted-filter'
 import { Pagination } from './pagination'
 import { SavedViews, useSavedViews } from './saved-views'
+import { useActiveUnit } from '@/app/active-unit'
 import type { BulkActionsRender, FacetedFilterDef, RowPreview, TableLayout, TableViewConfig } from './types'
 import { PreviewSheet } from './preview-sheet'
 import { ColumnTools, RuleChips } from './column-tools'
@@ -142,6 +143,29 @@ export function DataTable<T>({
   const [sorting, setSorting] = React.useState<SortingState>(initialSorting)
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(initialFilters ?? [])
   const [globalFilter, setGlobalFilter] = React.useState('')
+  // the unit chosen under the company narrows the table by its unit column; "all units" lifts it again
+  const { unit: activeUnit, multi: multiUnit } = useActiveUnit()
+  const unitFacet = facets.find((f) => f.unit)
+  // one unit: its column and filter stay out of the way
+  const shownFacets = multiUnit || !unitFacet ? facets : facets.filter((f) => f !== unitFacet)
+  const unitValue = React.useMemo(() => {
+    if (!unitFacet || !activeUnit) return null
+    const names = [activeUnit.id, activeUnit.name, td(activeUnit.name)]
+    return unitFacet.options.find((o) => names.includes(o.value) || names.includes(o.label))?.value ?? null
+  }, [unitFacet, activeUnit])
+  const unitSet = React.useRef<string | null>(null)
+  React.useEffect(() => {
+    if (!unitFacet || server) return
+    const col = unitFacet.columnId
+    if (unitValue && unitSet.current !== unitValue) {
+      setColumnFilters((fs) => [...fs.filter((f) => f.id !== col), { id: col, value: [unitValue] }])
+      unitSet.current = unitValue
+    } else if (!activeUnit && unitSet.current) {
+      const was = unitSet.current
+      setColumnFilters((fs) => fs.filter((f) => !(f.id === col && Array.isArray(f.value) && f.value.length === 1 && f.value[0] === was)))
+      unitSet.current = null
+    }
+  }, [unitValue, activeUnit, unitFacet, server])
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 25 })
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(() => {
@@ -233,7 +257,7 @@ export function DataTable<T>({
       globalFilter: server ? server.globalFilter : globalFilter,
       pagination: server ? server.pagination : pagination,
       rowSelection,
-      columnVisibility,
+      columnVisibility: !multiUnit && unitFacet ? { ...columnVisibility, [unitFacet.columnId]: false } : columnVisibility,
       columnOrder,
       columnSizing,
     },
@@ -375,7 +399,7 @@ export function DataTable<T>({
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-        {facets.map((f) => {
+        {shownFacets.map((f) => {
           const col = table.getColumn(f.columnId)
           return col ? <FacetedFilter key={f.columnId} column={col} title={f.title} options={f.options} /> : null
         })}
@@ -667,4 +691,4 @@ function PhoneCards<T>({ table, isLoading, error, onRowClick, selectable, emptyN
 
 export { ColumnHeader } from './column-header'
 
-import { t, tn } from '@/i18n'
+import { t, td, tn } from '@/i18n'

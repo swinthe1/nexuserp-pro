@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useFillUnit } from '@/app/active-unit'
 import { Plus, Trash2 } from 'lucide-react'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -64,6 +65,7 @@ function AdjustmentForm({ doc }: { doc?: AdjustmentDoc }) {
           lines: doc.lines.map((l) => ({ variant_id: l.variant_id, location_id: l.location_id, lot_id: l.lot_id, quantity_change: l.quantity_change, unit_cost: l.unit_cost })) }
       : { warehouse_id: '', adjustment_date: todayISO(), reason: 'correction', notes: '', lines: [] },
   })
+  useFillUnit((v) => form.setValue('warehouse_id', v), form.getValues('warehouse_id'), !doc)
   const lines = useFieldArray({ control: form.control, name: 'lines' })
   const [warehouseId, reason, watched] = useWatch({ control: form.control, name: ['warehouse_id', 'reason', 'lines'] })
   const variantOf = (id?: string) => variants.data?.find((v) => v.id === id)

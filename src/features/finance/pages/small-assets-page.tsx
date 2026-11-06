@@ -110,7 +110,7 @@ export function SmallAssetsPage() {
         searchPlaceholder={t('Code, name, serial number…')} exportName={t('small-inventory')} onRowClick={(r) => setEdit(r)}
         facets={[
           { columnId: 'status', title: t('Status'), options: (Object.keys(STATUS) as Asset['status'][]).map((s) => ({ value: s, label: t(STATUS[s]) })) },
-          { columnId: 'unit', title: t('Unit|store'), options: [...new Set(rows.map((r) => whName(r.warehouse_id)).filter(Boolean))].map((v) => ({ value: v, label: v })) },
+          { columnId: 'unit', unit: true, title: t('Unit|store'), options: [...new Set(rows.map((r) => whName(r.warehouse_id)).filter(Boolean))].map((v) => ({ value: v, label: v })) },
           { columnId: 'category', title: t('Category'), options: [...new Set(rows.map((r) => r.category ?? '').filter(Boolean))].map((v) => ({ value: v, label: v })) },
         ]}
         bulkActions={(sel) => <Button size="xs" variant="outline" onClick={() => printLabels(sel.map((r) => r.original))}><Printer /> {t('Print labels')}</Button>}

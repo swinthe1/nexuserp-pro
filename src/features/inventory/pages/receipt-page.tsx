@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useFillUnit } from '@/app/active-unit'
 import { useQuery } from '@tanstack/react-query'
 import { Globe2, Plus, Ship, Thermometer, Trash2 } from 'lucide-react'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
@@ -77,6 +78,7 @@ function ReceiptForm({ doc }: { doc?: ReceiptDoc }) {
       customs_declaration_number: '', customs_declaration_date: '', notes: '', driver_name: '', lines: [],
     },
   })
+  useFillUnit((v) => form.setValue('warehouse_id', v), form.getValues('warehouse_id'), !doc)
   const lines = useFieldArray({ control: form.control, name: 'lines' })
   const isReturn = form.watch('receipt_type') === 'customer_return'
   const [warehouseId, poId, currency, rate, isImport, watchedLines] = useWatch({

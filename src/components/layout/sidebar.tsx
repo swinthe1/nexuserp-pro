@@ -1,4 +1,5 @@
 import { ChevronRight, PanelLeftClose, PanelLeftOpen, Search, Star } from 'lucide-react'
+import { UnitPicker } from '@/components/layout/unit-picker'
 import * as React from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
@@ -313,6 +314,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
       <div className={cn('flex h-[52px] items-center px-2.5', collapsed && 'justify-center')}>
         <CompanySwitcher collapsed={collapsed} />
       </div>
+      {!collapsed && <UnitPicker className="mx-2.5 w-auto" />}
       <div className="flex-1 overflow-y-auto px-2.5 pb-4 pt-2">
         <SidebarNav collapsed={collapsed} />
       </div>

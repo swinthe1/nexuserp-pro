@@ -91,7 +91,7 @@ export function PendingInvoicesPage() {
         toolbar={<label className="flex items-center gap-2 text-[13px]"><Switch checked={all} onCheckedChange={setAll} /> {t('Also the invoiced ones (last 90 days)')}</label>}
         facets={[
           { columnId: 'vendor', title: t('Vendor'), options: [...new Set(rows.map((r) => r.vendor))].map((v) => ({ value: v, label: td(v) })) },
-          { columnId: 'unit', title: t('Unit|store'), options: [...new Set(rows.map((r) => td(r.warehouse)))].map((v) => ({ value: v, label: v })) },
+          { columnId: 'unit', unit: true, title: t('Unit|store'), options: [...new Set(rows.map((r) => td(r.warehouse)))].map((v) => ({ value: v, label: v })) },
           ...(all ? [{ columnId: 'status', title: t('Invoice'), options: (Object.keys(FISCAL_STATUS) as FiscalStatus[]).filter((k) => k !== 'internal_movement').map((k) => ({ value: k, label: t(FISCAL_STATUS[k]) })) }] : []),
         ]}
         empty={{ title: t('Every receipt has its invoice'), description: t('Goods received without the supplier\'s tax invoice show here until the invoice is entered.') }} />

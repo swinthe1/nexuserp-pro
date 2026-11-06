@@ -2388,6 +2388,7 @@ export type Database = {
           scale_barcode: Json
           min_shelf_days: number | null
           scale_auto_plu: boolean
+          multi_unit: boolean | null
         }
         Insert: {
           id?: string
@@ -2475,6 +2476,7 @@ export type Database = {
           scale_barcode?: Json
           min_shelf_days?: number | null
           scale_auto_plu?: boolean
+          multi_unit?: boolean | null
         }
         Update: {
           id?: string
@@ -2562,6 +2564,7 @@ export type Database = {
           scale_barcode?: Json
           min_shelf_days?: number | null
           scale_auto_plu?: boolean
+          multi_unit?: boolean | null
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -18399,6 +18402,13 @@ export type Database = {
           p_company: string
           p_type: string
           p_apply_menu?: boolean
+        }
+        Returns: undefined
+      }
+      platform_set_multi_unit: {
+        Args: {
+          p_company: string
+          p_multi: boolean
         }
         Returns: undefined
       }

@@ -38,7 +38,7 @@ const totalCol = (base: string): ColumnDef<Row> => ({
 interface Cfg {
   title: string; emptyTitle: string; description: string; newLabel: string; perm: string; href: string; statuses: string[]; empty: string
   columns: (base: string) => ColumnDef<Row>[]
-  extraFacets?: (rows: Row[]) => { columnId: string; title: string; options: { label: string; value: string }[] }[]
+  extraFacets?: (rows: Row[]) => { columnId: string; title: string; unit?: boolean; options: { label: string; value: string }[] }[]
 }
 
 /** Built when rendering, so every text is in the current language */
@@ -66,8 +66,10 @@ const buildCfg = (): Record<ProcKind, Cfg> => ({
     extraFacets: (rows) => [
       { columnId: 'billing_status', title: t('Billing'), options: ['not_billed', 'partially_billed', 'billed'].map((v) => ({ value: v, label: humanize(v) })) },
       { columnId: 'vendor', title: t('Vendor'), options: [...new Set(rows.map((r) => nm(r.vendor)).filter(Boolean))].map((v) => ({ value: v, label: v })) },
+      { columnId: 'warehouse', unit: true, title: t('Unit|store'), options: [...new Set(rows.map((r) => td(nm(r.warehouse))).filter(Boolean))].map((v) => ({ value: v, label: v })) },
     ],
     columns: (base) => [
+      { id: 'warehouse', accessorFn: (r) => td(nm(r.warehouse)), filterFn: inFilter, header: t('Unit|store'), meta: { label: t('Unit|store') }, cell: ({ getValue }) => (getValue() as string) || '—' },
       dateCol('order_date', t('Date')),
       vendorCol(),
       {
@@ -102,12 +104,14 @@ const buildCfg = (): Record<ProcKind, Cfg> => ({
     statuses: ['draft', 'posted', 'cancelled'],
     description: t('Invoices from vendors, checked against the purchase order and the goods received before they are posted.'),
     empty: t('Open a purchase order and choose “Enter bill”, or enter a bill without an order here.'),
-    extraFacets: () => [
+    extraFacets: (rows) => [
+      { columnId: 'warehouse', unit: true, title: t('Unit|store'), options: [...new Set(rows.map((r) => td(nm(r.warehouse))).filter(Boolean))].map((v) => ({ value: v, label: v })) },
       { columnId: 'match_status', title: t('Match'), options: ['matched', 'exception', 'overridden', 'not_applicable', 'not_matched'].map((v) => ({ value: v, label: humanize(v) })) },
       { columnId: 'payment_status', title: t('Payment'), options: ['unpaid', 'partially_paid', 'paid', 'overdue'].map((v) => ({ value: v, label: humanize(v) })) },
       { columnId: 'vat_book', title: t('VAT book'), options: [{ value: 'in', label: t('In the purchase book') }, { value: 'out', label: t('Purchase invoice (no VAT)') }] },
     ],
     columns: (base) => [
+      { id: 'warehouse', accessorFn: (r) => td(nm(r.warehouse)), filterFn: inFilter, header: t('Unit|store'), meta: { label: t('Unit|store') }, cell: ({ getValue }) => (getValue() as string) || '—' },
       dateCol('bill_date', t('Date')),
       { id: 'document_type', accessorFn: (r) => r.is_debit_note ? 'vendor_debit' : r.document_type, header: t('Type'), meta: { label: t('Type'), exportValue: (r) => r.document_type === 'vendor_credit' ? t('Credit note') : r.is_debit_note ? t('Debit note') : t('Bill') },
         cell: ({ getValue }) => getValue() === 'vendor_credit' ? <Badge variant="outline">{t('Credit note')}</Badge> : getValue() === 'vendor_debit' ? <Badge variant="outline" className="border-amber-500/50">{t('Debit note')}</Badge> : t('Bill') },

@@ -28,6 +28,12 @@ export function StockPage() {
   const overview = useInventoryOverview()
   const warehouses = useWarehouses()
   const today = new Date().toISOString().slice(0, 10)
+  // a place inside the unit (shelf, fridge) only matters where a unit has more than one: otherwise the column stays out of the way
+  const placesMatter = React.useMemo(() => {
+    const seen = new Map<string, Set<string>>()
+    for (const l of levels.data ?? []) { const k = l.warehouse_id ?? ''; if (!seen.has(k)) seen.set(k, new Set()); seen.get(k)!.add(l.location_code ?? '') }
+    return [...seen.values()].some((x) => x.size > 1)
+  }, [levels.data])
   useRealtimeInvalidate('stock_levels', companyId, [invKeys.stockLevels(companyId), invKeys.overview(companyId), invKeys.productStock(companyId)])
 
   const columns = React.useMemo<ColumnDef<Level>[]>(() => [
@@ -39,7 +45,7 @@ export function StockPage() {
     },
     { accessorKey: 'category_name', id: 'category', filterFn: inFilter, header: t('Category'), meta: { label: t('Category') }, cell: ({ getValue }) => td(getValue() as string) || '—' },
     { accessorKey: 'warehouse_name', id: 'warehouse', filterFn: inFilter, header: ({ column }) => <ColumnHeader column={column} title={t('Warehouse')} />, meta: { label: t('Warehouse') }, cell: ({ getValue }) => td(getValue() as string) },
-    { accessorKey: 'location_code', header: ({ column }) => <ColumnHeader column={column} title={t('Location')} />, meta: { label: t('Location') } },
+    ...(placesMatter ? [{ accessorKey: 'location_code', id: 'location_code', header: ({ column }) => <ColumnHeader column={column} title={t('Location')} />, meta: { label: t('Location') } } as ColumnDef<Level>] : []),
     {
       accessorKey: 'lot_number', header: t('Lot'), meta: { label: t('Lot') },
       cell: ({ row: { original: r } }) => r.lot_number
@@ -55,7 +61,7 @@ export function StockPage() {
     { accessorKey: 'avg_cost', header: t('Avg. cost'), meta: { label: t('Average cost, without VAT'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
     { accessorKey: 'stock_value', header: ({ column }) => <ColumnHeader column={column} title={t('Value at cost')} />, meta: { label: t('Value at cost'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
     { accessorKey: 'last_movement_at', header: ({ column }) => <ColumnHeader column={column} title={t('Last moved')} />, meta: { label: t('Last moved') }, cell: ({ getValue }) => <span className="text-[13px]">{formatDate(getValue() as string)}</span> },
-  ], [today])
+  ], [today, placesMatter])
 
   return (
     <>
@@ -82,7 +88,7 @@ export function StockPage() {
         onRowClick={(r) => navigate(`/inventory/products/${r.product_id}`)}
         bulkActions={(rows) => <Button size="xs" variant="outline" onClick={() => setByUnit([...new Set(rows.map((r) => r.original.variant_id!).filter(Boolean))])}><Warehouse /> {t('Stock in every unit')}</Button>}
         facets={[
-          { columnId: 'warehouse', title: t('Warehouse'), options: (warehouses.data ?? []).map((w) => ({ label: td(w.name), value: w.name })) },
+          { columnId: 'warehouse', unit: true, title: t('Warehouse'), options: (warehouses.data ?? []).map((w) => ({ label: td(w.name), value: w.name })) },
           { columnId: 'category', title: t('Category'), options: Array.from(new Set((levels.data ?? []).map((l) => l.category_name).filter(Boolean))).map((c) => ({ label: td(c!), value: c! })) },
         ]}
         empty={{ title: t('No stock on hand'), description: t('Receive goods or enter your opening stock to start.') }}

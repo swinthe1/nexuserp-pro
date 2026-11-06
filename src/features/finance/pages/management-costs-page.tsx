@@ -95,7 +95,7 @@ export function ManagementCostsPage() {
         searchPlaceholder={t('Description, unit…')} exportName={t('internal-costs')} onRowClick={(r) => setEdit(r)}
         facets={[
           { columnId: 'kind', title: t('Kind|cost'), options: (Object.keys(KINDS) as Cost['kind'][]).map((k) => ({ value: k, label: t(KINDS[k]) })) },
-          { columnId: 'unit', title: t('Unit|store'), options: [...new Set(rows.map((r) => whName(r.warehouse_id)))].map((v) => ({ value: v, label: v })) },
+          { columnId: 'unit', unit: true, title: t('Unit|store'), options: [...new Set(rows.map((r) => whName(r.warehouse_id)))].map((v) => ({ value: v, label: v })) },
         ]}
         empty={{ title: t('No internal costs yet'), description: t('Add the monthly rent of a shop the company owns, then repeat it for the months of the year.') }} />
       <SimpleFormDialog<Values> open={!!edit} onOpenChange={(o) => !o && setEdit(null)} schema={schema}

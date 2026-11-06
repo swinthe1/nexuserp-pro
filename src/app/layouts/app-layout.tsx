@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { UnitPicker } from '@/components/layout/unit-picker'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '@/app/auth-provider'
 import { useCompany } from '@/app/company-provider'
@@ -108,6 +109,7 @@ export function AppLayout() {
       <SheetContent side="left" className="sidebar-navy w-[280px] gap-3 border-sidebar-border bg-sidebar p-3 text-sidebar-foreground">
         <SheetTitle className="sr-only">{t('Main menu')}</SheetTitle>
         <div className="pr-8"><CompanySwitcher /></div>
+        <UnitPicker />
         <div className="overflow-y-auto"><SidebarNav onNavigate={() => setMobileOpen(false)} /></div>
       </SheetContent>
     </Sheet>

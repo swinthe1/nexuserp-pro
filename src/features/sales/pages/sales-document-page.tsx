@@ -1,4 +1,5 @@
 import { Hint } from '@/components/help'
+import { useDefaultUnit } from '@/app/active-unit'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRegistryRemote } from '@/lib/registry'
 import { DocumentActions } from '@/components/document-actions'
@@ -83,6 +84,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
   const terms = usePaymentTerms()
   const members = useMembers()
   const warehouses = useWarehouses()
+  const defUnit = useDefaultUnit(warehouses.data)
   const currencies = useCurrencies()
   const save = useSaveSalesDocument(kind)
   const setStatus = useSetStatus(kind)
@@ -128,7 +130,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
   const partner = customers.data?.find((c) => c.id === partnerId)
 
   React.useEffect(() => {
-    if (!doc && kind === 'orders' && !form.getValues('warehouse_id') && warehouses.data?.length) form.setValue('warehouse_id', warehouses.data[0]!.id)
+    if (!doc && kind === 'orders' && !form.getValues('warehouse_id') && warehouses.data?.length) form.setValue('warehouse_id', defUnit ?? warehouses.data[0]!.id)
   }, [doc, kind, warehouses.data, form])
 
   const onCustomer = (id: string | null) => {

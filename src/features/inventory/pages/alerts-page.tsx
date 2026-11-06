@@ -82,7 +82,7 @@ export function AlertsPage() {
         exportName="low-stock"
         onRowClick={(r) => navigate(`/inventory/products/${r.product_id}`)}
         facets={[
-          { columnId: 'warehouse', title: t('Warehouse'), options: Array.from(new Set((low.data ?? []).map((r) => r.warehouse_name!))).map((w) => ({ label: td(w), value: w })) },
+          { columnId: 'warehouse', unit: true, title: t('Warehouse'), options: Array.from(new Set((low.data ?? []).map((r) => r.warehouse_name!))).map((w) => ({ label: td(w), value: w })) },
           { columnId: 'status', title: t('Alert'), options: [{ label: t('Open|status'), value: 'open' }, { label: tEnum('acknowledged'), value: 'acknowledged' }] },
         ]}
         empty={{ title: t('Nothing is running low'), description: t('Every item with a reorder point is above it. Set a reorder point on a product to be warned here.') }}

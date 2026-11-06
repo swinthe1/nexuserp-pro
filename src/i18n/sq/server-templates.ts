@@ -404,6 +404,8 @@ export const serverTemplates: [string, string][] = [
   ['Line %: the card gives % %%, not %', 'Rreshti {0}: kartela jep {1}%, jo {2}'],
   ['Pay between 0 and % of %', 'Paguani nga 0 deri në {0} të {1}'],
   ['Could not delete everything (%)', 'Nuk u fshi dot gjithçka ({0})'],
+  ['Unit % has no name', 'Njësia {0} nuk ka emër'],
+  ['The code % is used twice', 'Kodi {0} është përdorur dy herë'],
   ['Unknown kind of history: %', 'Lloj i panjohur historiku: {0}'],
   ["The safe has only % — it cannot give %", "Sefi ka vetëm {0} — nuk mund të japë {1}"],
   ["There is no note or coin of %", "Nuk ka kartëmonedhë ose monedhë prej {0}"],

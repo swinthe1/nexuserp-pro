@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Cable, Copy, Download, GraduationCap, Trash2, UserPlus } from 'lucide-react'
+import { Cable, Copy, Download, GraduationCap, Network, Plus, Store, Trash2, UserPlus, X } from 'lucide-react'
 import * as React from 'react'
 import { supabase, supabaseAnonKey, supabaseUrl } from '@/lib/supabase'
-import { useForm } from 'react-hook-form'
+import { useFieldArray, useForm } from 'react-hook-form'
 import { AgentLogSheet } from '@/features/settings/components/agent-log'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -14,11 +14,11 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { msg, t, td, tn } from '@/i18n'
+import { msg, t, td, tEnum, tn } from '@/i18n'
 import { describeError } from '@/lib/errors'
 import { daysUntil, LICENSE_WARNING_DAYS } from '@/lib/license'
 import { cn, formatDate, formatQty as formatInt, todayISO } from '@/lib/utils'
-import { generatePassword, type PlatformClient, type SyncConnection, useCreateClient, useCreateSyncKey, useSaveLicense, useSetPassword, useSetSyncActive, useSetTraining, useSetBusinessType, useDeleteClient, useCreateAccount } from './api'
+import { generatePassword, type PlatformClient, type SyncConnection, useCreateClient, useCreateSyncKey, useSaveLicense, useSetPassword, useSetSyncActive, useSetTraining, useSetBusinessType, useSetMultiUnit, useDeleteClient, useCreateAccount } from './api'
 import { Checkbox } from '@/components/ui/checkbox'
 import { BUSINESS_TYPES, businessTypeLabel } from './business-types'
 import { Label } from '@/components/ui/label'
@@ -80,6 +80,8 @@ export async function copy(text: string) {
 
 /* ------------------------------------------------------------------ new client */
 
+const UNIT_KINDS = ['store', 'warehouse', 'production'] as const
+
 const clientSchema = z.object({
   name: z.string().trim().min(2, 'Enter the company name'),
   legal_name: z.string().trim().optional(),
@@ -94,7 +96,11 @@ const clientSchema = z.object({
   valid_from: z.string().min(1, 'Choose a date'),
   valid_until: z.string().min(1, 'Choose a date'),
   notes: z.string().optional(),
+  multi_unit: z.boolean(),
+  unit_kind: z.string(),
+  units: z.array(z.object({ code: z.string().trim(), name: z.string().trim(), kind: z.string(), city: z.string().trim() })),
 }).refine((v) => v.valid_until >= v.valid_from, { path: ['valid_until'], message: msg('The end date is before the start date') })
+  .refine((v) => !v.multi_unit || v.units.filter((u) => u.name).length >= 2, { path: ['units'], message: msg('Write at least two units, or choose one unit') })
 type ClientValues = z.infer<typeof clientSchema>
 
 export function NewClientDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
@@ -103,14 +109,18 @@ export function NewClientDialog({ open, onOpenChange }: { open: boolean; onOpenC
   const defaults = React.useCallback((): ClientValues => ({
     name: '', legal_name: '', country: 'XK', tax_number: '', business_type: 'retail', owner_name: '', owner_email: '', owner_password: generatePassword(),
     plan: 'standard', max_users: 5, valid_from: todayISO(), valid_until: addMonths(todayISO(), 12), notes: '',
+    multi_unit: false, unit_kind: 'store', units: [{ code: 'N1', name: '', kind: 'store', city: '' }, { code: 'N2', name: '', kind: 'store', city: '' }],
   }), [])
   const form = useForm<ClientValues>({ resolver: zodResolver(clientSchema), defaultValues: defaults() })
   React.useEffect(() => { if (open) { form.reset(defaults()); setDone(null) } }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
   const country = form.watch('country')
+  const multi = form.watch('multi_unit')
+  const unitRows = useFieldArray({ control: form.control, name: 'units' })
 
   const submit = form.handleSubmit(async (v) => {
     try {
-      await create.mutateAsync({ ...v, owner_email: v.owner_email.toLowerCase() })
+      const units = v.multi_unit ? v.units.filter((u) => u.name).map((u, i) => ({ ...u, code: u.code || `N${i + 1}`, city: u.city || undefined })) : undefined
+      await create.mutateAsync({ ...v, owner_email: v.owner_email.toLowerCase(), units })
       setDone(v)
     } catch (e) {
       const m = describeError(e)
@@ -145,7 +155,7 @@ export function NewClientDialog({ open, onOpenChange }: { open: boolean; onOpenC
           <>
             <DialogHeader>
               <DialogTitle>{t('New client')}</DialogTitle>
-              <DialogDescription>{t('Creates the company with its warehouse, VAT codes and financial year, the administrator account and the licence.')}</DialogDescription>
+              <DialogDescription>{t('Creates the company with its units, VAT codes and financial year, the administrator account and the licence.')}</DialogDescription>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={submit} className="grid grid-cols-2 gap-3" noValidate>
@@ -181,6 +191,53 @@ export function NewClientDialog({ open, onOpenChange }: { open: boolean; onOpenC
                     <FormDescription>{t(BUSINESS_TYPES.find((b) => b.value === field.value)?.hint ?? '')}</FormDescription>
                   </FormItem>
                 )} />
+
+                {/* one unit or several: decides how the program treats the client */}
+                <p className="col-span-2 mt-2 text-xs font-medium text-muted-foreground">{t('Units of the business')}</p>
+                <div className="col-span-2 grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label={t('Units of the business')}>
+                  {[{ v: false, icon: Store, title: t('One unit'), text: t('One shop, restaurant or office. The program does not talk about units at all.') },
+                    { v: true, icon: Network, title: t('Several units'), text: t('Several shops, restaurants or warehouses under the same NUI. Each has its stock, tills and results.') }].map((o) => (
+                    <button key={String(o.v)} type="button" role="radio" aria-checked={multi === o.v} onClick={() => form.setValue('multi_unit', o.v, { shouldValidate: true })}
+                      className={cn('flex items-start gap-2.5 rounded-md border p-3 text-left transition-colors', multi === o.v ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted/50')}>
+                      <o.icon className={cn('mt-0.5 size-4 shrink-0', multi === o.v ? 'text-primary' : 'text-muted-foreground')} />
+                      <span><span className="block text-sm font-medium">{o.title}</span><span className="block text-[12px] leading-snug text-muted-foreground">{o.text}</span></span>
+                    </button>
+                  ))}
+                </div>
+                {!multi ? (
+                  <FormField control={form.control} name="unit_kind" render={({ field }) => (
+                    <FormItem className="col-span-2 sm:col-span-1"><FormLabel>{t('Kind of the unit')}</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                        <SelectContent>{UNIT_KINDS.map((k) => <SelectItem key={k} value={k}>{tEnum(`wh_${k}`)}</SelectItem>)}</SelectContent>
+                      </Select>
+                      <FormDescription>{t('It carries the trading name.')}</FormDescription>
+                    </FormItem>
+                  )} />
+                ) : (
+                  <div className="col-span-2 grid gap-1.5">
+                    <div className="grid grid-cols-[72px_minmax(0,1fr)_118px_minmax(0,0.7fr)_32px] gap-1.5 text-[12px] text-muted-foreground">
+                      <span>{t('Code')}</span><span>{t('Name')}</span><span>{t('Kind|unit')}</span><span>{t('Town')}</span><span />
+                    </div>
+                    {unitRows.fields.map((f, i) => (
+                      <div key={f.id} className="grid grid-cols-[72px_minmax(0,1fr)_118px_minmax(0,0.7fr)_32px] gap-1.5">
+                        <Input aria-label={t('Code')} {...form.register(`units.${i}.code`)} onChange={(e) => form.setValue(`units.${i}.code`, e.target.value.toUpperCase())} className="font-mono uppercase" />
+                        <Input aria-label={t('Name')} placeholder={i === 0 ? t('e.g. Market 1 – Drenas') : undefined} {...form.register(`units.${i}.name`)} />
+                        <Select value={form.watch(`units.${i}.kind`)} onValueChange={(v) => form.setValue(`units.${i}.kind`, v)}>
+                          <SelectTrigger aria-label={t('Kind|unit')}><SelectValue /></SelectTrigger>
+                          <SelectContent>{UNIT_KINDS.map((k) => <SelectItem key={k} value={k}>{tEnum(`wh_${k}`)}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Input aria-label={t('Town')} {...form.register(`units.${i}.city`)} />
+                        <Button type="button" variant="ghost" size="icon" className="size-9" disabled={unitRows.fields.length <= 2} onClick={() => unitRows.remove(i)} aria-label={t('Remove')}><X /></Button>
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between gap-2">
+                      <Button type="button" variant="outline" size="sm" onClick={() => unitRows.append({ code: `N${unitRows.fields.length + 1}`, name: '', kind: 'store', city: '' })}><Plus /> {t('Add a unit')}</Button>
+                      <span className="text-[12px] text-muted-foreground">{t('The licence allows as many units as written here. The number at ATK and the address are added on each unit later.')}</span>
+                    </div>
+                    {form.formState.errors.units?.message && <p className="text-[13px] text-destructive">{t(form.formState.errors.units.message)}</p>}
+                  </div>
+                )}
 
                 <p className="col-span-2 mt-2 text-xs font-medium text-muted-foreground">{t('Administrator of the client')}</p>
                 <FormField control={form.control} name="owner_name" render={({ field }) => (
@@ -735,14 +792,21 @@ export function LiveLinkDialog({ client, onClose }: { client: PlatformClient | n
 
 export function BusinessTypeDialog({ client, onClose }: { client: PlatformClient | null; onClose: () => void }) {
   const save = useSetBusinessType()
+  const setUnits = useSetMultiUnit()
   const [type, setType] = React.useState('general')
   const [applyMenu, setApplyMenu] = React.useState(true)
-  React.useEffect(() => { if (client) { setType(client.business_type ?? 'general'); setApplyMenu(true) } }, [client])
+  const isMulti = (c: PlatformClient) => c.multi_unit ?? (c.units ?? 1) > 1
+  const [multi, setMulti] = React.useState(false)
+  React.useEffect(() => { if (client) { setType(client.business_type ?? 'general'); setApplyMenu(true); setMulti(isMulti(client)) } }, [client])
   const hint = BUSINESS_TYPES.find((b) => b.value === type)?.hint
   const submit = () => {
     if (!client) return
     save.mutate({ company: client.id, type, applyMenu }, {
-      onSuccess: () => { toast.success(t('{name} is now: {type}', { name: client.name, type: t(businessTypeLabel(type)) })); onClose() },
+      onSuccess: async () => {
+        if (multi !== isMulti(client) || client.multi_unit == null) {
+          try { await setUnits.mutateAsync({ company: client.id, multi }) } catch (e) { toast.error(describeError(e)); return }
+        }
+        toast.success(t('{name} is now: {type}', { name: client.name, type: t(businessTypeLabel(type)) })); onClose() },
       onError: (e) => toast.error(describeError(e)),
     })
   }
@@ -767,6 +831,15 @@ export function BusinessTypeDialog({ client, onClose }: { client: PlatformClient
               <span className="block text-[13px] text-muted-foreground">{t('Replaces the parts of the menu the client switched on or off themselves.')}</span>
             </span>
             <Switch checked={applyMenu} onCheckedChange={setApplyMenu} aria-label={t('Set the menu for this type')} />
+          </label>
+          <label className="flex items-start justify-between gap-4 rounded-md border p-3">
+            <span>
+              <span className="block text-sm font-medium">{t('Several units')}</span>
+              <span className="block text-[13px] text-muted-foreground">{multi
+                ? t('Several shops, restaurants or warehouses: the unit shows everywhere it matters. It has {n} now.', { n: client?.units ?? 0 })
+                : t('One unit: the program does not talk about units, and a second one cannot be added by mistake.')}</span>
+            </span>
+            <Switch checked={multi} onCheckedChange={setMulti} aria-label={t('Several units')} />
           </label>
         </div>
         <DialogFooter>

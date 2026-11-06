@@ -86,7 +86,7 @@ export function PaymentsPage() {
           { columnId: 'status', title: t('Status'), options: ['draft', 'pending_approval', 'approved', 'posted', 'reversed'].map((s) => ({ value: s, label: humanize(s) })) },
           { columnId: 'bank', title: t('Bank or cash'), options: banks.map((b) => ({ value: b, label: b })) },
           { columnId: 'method', title: t('Method'), options: METHODS.map((m) => ({ value: m, label: tEnum(m) })) },
-          ...(unitNames.length ? [{ columnId: 'unit', title: t('Unit|store'), options: unitNames.map((u) => ({ value: u, label: u })) }] : []),
+          ...(unitNames.length ? [{ columnId: 'unit', unit: true, title: t('Unit|store'), options: unitNames.map((u) => ({ value: u, label: u })) }] : []),
         ]}
         empty={{ title: t('No payments yet'), description: t('Record what customers paid and what you paid vendors, or create payments from bank statement lines.') }} />
       )}

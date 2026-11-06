@@ -6,6 +6,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useWarehouses } from '@/features/inventory/api'
+import { useActiveUnit } from '@/app/active-unit'
 import { t, td, tn } from '@/i18n'
 import { cn, initials, currencyLabel } from '@/lib/utils'
 
@@ -22,6 +23,7 @@ export function CompanySwitcher({ collapsed }: { collapsed?: boolean }) {
   const navigate = useNavigate()
   // the units of the company (its shops, warehouses, kitchens): what is inside the company, not other companies
   const units = (useWarehouses({ all: true }).data ?? []).filter((w) => w.is_active)
+  const { multi } = useActiveUnit()
   if (!company) return null
   return (
     <DropdownMenu>
@@ -37,7 +39,7 @@ export function CompanySwitcher({ collapsed }: { collapsed?: boolean }) {
           <>
             <span className="min-w-0 flex-1">
               <span className="block truncate font-semibold leading-tight">{company.name}</span>
-              <span className="block truncate text-xs text-muted-foreground">{company.country_code === 'XK' ? t('Kosovo') : company.country_code === 'AL' ? t('Albania') : company.country_code} · {currencyLabel(company.base_currency)}{units.length > 0 && <> · {tn(units.length, '{n} unit', '{n} units')}</>}</span>
+              <span className="block truncate text-xs text-muted-foreground">{company.country_code === 'XK' ? t('Kosovo') : company.country_code === 'AL' ? t('Albania') : company.country_code} · {currencyLabel(company.base_currency)}{multi && <> · {tn(units.length, '{n} unit', '{n} units')}</>}</span>
             </span>
             <ChevronsUpDown className="size-4 text-muted-foreground" />
           </>
@@ -54,6 +56,7 @@ export function CompanySwitcher({ collapsed }: { collapsed?: boolean }) {
           </DropdownMenuItem>
         ))}
         {/* the units of the company open now: shown under it, so the two are not taken for one another */}
+        {multi && <>
         <DropdownMenuSeparator />
         <DropdownMenuLabel className="flex items-center gap-1.5"><Store className="size-3.5" />{t('Units of {name}', { name: company.name })}</DropdownMenuLabel>
         <div className="max-h-56 overflow-y-auto">
@@ -72,6 +75,7 @@ export function CompanySwitcher({ collapsed }: { collapsed?: boolean }) {
         {can('inventory.read') && (
           <DropdownMenuItem onSelect={() => navigate('/inventory/warehouses')}><Settings2 /> {t('Add or change the units')}</DropdownMenuItem>
         )}
+        </>}
         {(isSuperAdmin || selfService) && <DropdownMenuSeparator />}
         {isSuperAdmin && (
           <DropdownMenuItem onSelect={() => navigate('/platform')}>

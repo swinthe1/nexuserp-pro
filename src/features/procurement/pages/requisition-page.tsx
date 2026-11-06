@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useDefaultUnit } from '@/app/active-unit'
 import { Check, Plus, Send, ShoppingCart, Trash2, Undo2, X } from 'lucide-react'
 import * as React from 'react'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
@@ -56,6 +57,7 @@ function RequisitionForm({ doc }: { doc?: ReqDoc }) {
   const { can, company } = useCompany()
   const { user } = useAuth()
   const warehouses = useWarehouses()
+  const defUnit = useDefaultUnit(warehouses.data)
   const variants = usePurchasableVariants()
   const vendors = useActiveVendors()
   const save = useSaveProcDocument('requisitions')
@@ -82,7 +84,7 @@ function RequisitionForm({ doc }: { doc?: ReqDoc }) {
   const vmap = React.useMemo(() => new Map((variants.data ?? []).map((v) => [v.id, v])), [variants.data])
   const total = (watched ?? []).reduce((s, l) => s + num(l.quantity) * num(l.estimated_unit_cost), 0)
   React.useEffect(() => {
-    if (!doc && !form.getValues('warehouse_id') && warehouses.data?.length) form.setValue('warehouse_id', warehouses.data[0]!.id)
+    if (!doc && !form.getValues('warehouse_id') && warehouses.data?.length) form.setValue('warehouse_id', defUnit ?? warehouses.data[0]!.id)
   }, [doc, warehouses.data, form])
 
   const persist = (v: RequisitionValues) => save.mutateAsync({

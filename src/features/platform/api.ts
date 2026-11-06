@@ -4,6 +4,10 @@ import { supabase } from '@/lib/supabase'
 
 export interface PlatformClient {
   id: string
+  /** one unit (false), several (true), not said (null: as many as it has) */
+  multi_unit?: boolean | null
+  /** active units (shops, warehouses…) */
+  units?: number
   name: string
   legal_name: string | null
   country_code: string
@@ -58,6 +62,10 @@ export interface NewClient {
   valid_until: string
   notes?: string
   business_type: string
+  /** one unit or several; with several, their names, kinds and towns */
+  multi_unit: boolean
+  unit_kind?: string
+  units?: { name: string; kind: string; city?: string; code?: string }[]
 }
 
 export interface LicenseInput {
@@ -177,6 +185,14 @@ export function useSetBusinessType() {
   return useMutation({
     mutationFn: async (v: { company: string; type: string; applyMenu: boolean }) =>
       unwrap(await supabase.rpc('platform_set_business_type', { p_company: v.company, p_type: v.type, p_apply_menu: v.applyMenu })),
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: KEY }), qc.invalidateQueries({ queryKey: ['platform'] })]),
+  })
+}
+
+export function useSetMultiUnit() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (v: { company: string; multi: boolean }) => unwrap(await supabase.rpc('platform_set_multi_unit', { p_company: v.company, p_multi: v.multi })),
     onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: KEY }), qc.invalidateQueries({ queryKey: ['platform'] })]),
   })
 }

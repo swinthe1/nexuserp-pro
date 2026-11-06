@@ -1,4 +1,5 @@
 import { Hint } from '@/components/help'
+import { useActiveUnit, useDefaultUnit } from '@/app/active-unit'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CheckCheck, ChevronDown, ChevronUp, Columns3, FileSpreadsheet, PackagePlus, Percent, Save, ScanBarcode, Sparkles, Trash2 } from 'lucide-react'
 import * as React from 'react'
@@ -137,6 +138,8 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
   const base = company?.base_currency ?? 'EUR'
   const vendors = useActiveVendors()
   const warehouses = useWarehouses()
+  const defUnit = useDefaultUnit(warehouses.data)
+  const { multi: multiUnit } = useActiveUnit()
   const currencies = useCurrencies()
   const terms = usePaymentTerms()
   const taxes = useTaxCodes()
@@ -192,7 +195,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
   const qtyRefs = React.useRef(new Map<string, HTMLInputElement>())
 
   // defaults from the first warehouse and the vendor
-  React.useEffect(() => { if (!h.warehouse_id && warehouses.data?.length) set('warehouse_id', warehouses.data.find((w) => w.is_active)?.id ?? '') }, [warehouses.data]) // eslint-disable-line react-hooks/exhaustive-deps
+  React.useEffect(() => { if (!h.warehouse_id && warehouses.data?.length) set('warehouse_id', defUnit ?? warehouses.data.find((w) => w.is_active)?.id ?? '') }, [warehouses.data, defUnit]) // eslint-disable-line react-hooks/exhaustive-deps
   const registry = useRegistryRemote('vendor', (id) => set('vendor_id', id))
   const vendor = vendors.data?.find((v) => v.id === h.vendor_id)
   React.useEffect(() => {
@@ -456,7 +459,8 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
             {!h.in_vat_book && <p className="text-[12px] text-muted-foreground">{t('The goods enter the stock at the price paid, VAT included, and are sold with VAT at the till. It stays out of the VAT purchase book and the VAT return.')}</p>}</div>
           <div className="grid gap-1.5"><Label htmlFor="pi-date">{t('Invoice date')}</Label><Input id="pi-date" type="date" value={h.bill_date} onChange={(e) => set('bill_date', e.target.value)} /></div>
           <div className="grid gap-1.5"><Label htmlFor="pi-recv">{t('Received on')}</Label><Input id="pi-recv" type="date" value={h.receive_date} placeholder={h.bill_date} onChange={(e) => set('receive_date', e.target.value)} /></div>
-          <div className="grid gap-1.5"><Label>{t('Into the warehouse')}</Label>
+          {/* a business with one unit: the goods go there, nothing to choose */}
+          <div className={cn('grid gap-1.5', !multiUnit && 'hidden')}><Label>{t('Into the warehouse')}</Label>
             <Select value={h.warehouse_id} onValueChange={(v) => set('warehouse_id', v)}><SelectTrigger aria-label={t('Into the warehouse')}><SelectValue placeholder={t('Choose the warehouse')} /></SelectTrigger>
               <SelectContent>{(warehouses.data ?? []).filter((w) => w.is_active).map((w) => <SelectItem key={w.id} value={w.id}>{td(w.name)}</SelectItem>)}</SelectContent></Select></div>
           <div className="grid grid-cols-2 gap-2">

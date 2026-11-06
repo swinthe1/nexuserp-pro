@@ -249,6 +249,8 @@ export const NAV: NavSection[] = [
     items: [
       { label: msg('Company settings|menu'), href: '/settings', icon: Building2, perm: 'admin.read', keywords: ['profile', 'nipt', 'fiscal codes', 'preferences'], hub: msg('Settings|menu') },
       { label: msg('Users and roles'), href: '/settings/users', icon: KeyRound, perm: 'admin.read', keywords: ['invite', 'members', 'permissions', 'roles', 'access', 'security', 'siguria', 'permission matrix', 'custom role'], hub: msg('Settings|menu') },
+      // the units are how the company is built: found here too, not only under the stock
+      { label: msg('Warehouses|menu'), href: '/inventory/warehouses', icon: Store, perm: 'inventory.read', also: true, keywords: ['njësitë', 'njësitë e biznesit', 'dyqanet', 'marketet', 'lokalet', 'depot', 'pikat', 'units', 'branches'], hub: msg('Settings|menu') },
       { label: msg('Numbering'), href: '/settings/numbering', icon: ListOrdered, perm: 'admin.read', keywords: ['sequences', 'prefix', 'document numbers'], hub: msg('Settings|menu') },
       { label: msg('Automations'), href: '/settings/automation', icon: Zap, perm: 'core.read', keywords: ['automatic', 'schedule', 'automatizim', 'email', 'whatsapp', 'reminders'], hub: msg('Settings|menu') },
       { label: msg('AI agent|menu'), href: '/settings/assistant', icon: Brain, perm: 'core.read', keywords: ['agjenti', 'asistenti', 'ai', 'inteligjenca artificiale', 'trajno', 'mëso', 'rregulla', 'çka di agjenti', 'teach', 'knowledge', 'memory'], hub: msg('Settings|menu') },

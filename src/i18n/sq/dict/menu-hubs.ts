@@ -15,7 +15,7 @@ export default {
   "Stock|menu": "Gjendja",
   "Stock movements|menu": "Lëvizjet e stokut",
   "Scanner|menu": "Skaneri",
-  "Warehouses and setup|menu": "Magazinat dhe cilësimet",
+  "Warehouses and setup|menu": "Njësitë dhe cilësimet",
   "Payments|hub": "Pagesat",
   "Cash and bank|menu": "Paratë",
   "Expenses|hub": "Shpenzimet",

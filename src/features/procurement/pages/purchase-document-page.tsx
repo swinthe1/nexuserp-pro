@@ -1,4 +1,5 @@
 import { DocumentActions } from '@/components/document-actions'
+import { useDefaultUnit } from '@/app/active-unit'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Ban, CheckCheck, ClipboardCheck, FileText, PackageCheck, PhoneCall, Receipt, Repeat, Send, ShieldAlert, Tag, Trash2, Undo2, Redo2 } from 'lucide-react'
@@ -88,6 +89,7 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
   const base = company?.base_currency ?? 'ALL'
   const vendors = useActiveVendors()
   const warehouses = useWarehouses()
+  const defUnit = useDefaultUnit(warehouses.data)
   const currencies = useCurrencies()
   const terms = usePaymentTerms()
   const members = useMembers()
@@ -123,7 +125,7 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
   const vendor = vendors.data?.find((v) => v.id === vendorId)
 
   React.useEffect(() => {
-    if (!doc && !form.getValues('warehouse_id') && warehouses.data?.length) form.setValue('warehouse_id', warehouses.data[0]!.id)
+    if (!doc && !form.getValues('warehouse_id') && warehouses.data?.length) form.setValue('warehouse_id', defUnit ?? warehouses.data[0]!.id)
   }, [doc, warehouses.data, form])
   const onVendor = (id: string | null) => {
     form.setValue('vendor_id', id as string, { shouldValidate: true })

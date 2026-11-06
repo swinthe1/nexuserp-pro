@@ -292,7 +292,7 @@ export default {
   "Vendors": "Dobavljači",
   "Waiters": "Konobari",
   "Warehouse floor": "Panel skenera",
-  "Warehouses|menu": "Jedinice",
+  "Warehouses|menu": "Poslovne jedinice",
   "Warehouse|menu": "Skener",
   "Web order": "Onlajn porudžbina",
   "Web shop": "Onlajn prodavnica",

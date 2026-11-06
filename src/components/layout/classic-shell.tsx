@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
+import { UnitPicker } from '@/components/layout/unit-picker'
 import { ArrowLeft, ArrowRight, Bot, Building2, CalendarDays, ChevronRight, Clock, GraduationCap, Keyboard, Menu, Plus, Printer, RefreshCw, Search, Server, UserRound } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -219,7 +220,7 @@ export function ClassicShell({ children, onOpenMobileNav }: { children: React.Re
         {/* the menu as a tree */}
         <aside className="classic-tree sticky top-[145px] hidden h-[calc(100dvh-145px-28px)] w-[256px] shrink-0 flex-col border-r lg:flex print:!hidden"
           style={{ '--mod': look.hue } as React.CSSProperties}>
-          <div className="border-b p-2"><CompanySwitcher /></div>
+          <div className="grid gap-1.5 border-b p-2"><CompanySwitcher /><UnitPicker /></div>
           <div className="flex-1 overflow-y-auto p-2"><SidebarNav /></div>
         </aside>
         <div className="classic-page flex min-w-0 flex-1 flex-col">{children}</div>

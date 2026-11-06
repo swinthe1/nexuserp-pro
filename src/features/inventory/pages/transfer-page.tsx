@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useFillUnit } from '@/app/active-unit'
 import { ArrowRight, Plus, Trash2 } from 'lucide-react'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -50,6 +51,8 @@ function TransferForm({ doc }: { doc?: TransferDoc }) {
           lines: doc.lines.map((l) => ({ variant_id: l.variant_id, from_location_id: l.from_location_id, to_location_id: l.to_location_id, lot_id: l.lot_id, quantity: l.quantity })) }
       : { from_warehouse_id: '', to_warehouse_id: '', transfer_date: todayISO(), notes: '', is_request: false, lines: [] },
   })
+  // a transfer goes out of the unit one works in
+  useFillUnit((v) => form.setValue('from_warehouse_id', v), form.getValues('from_warehouse_id'), !doc)
   const lines = useFieldArray({ control: form.control, name: 'lines' })
   const [fromWh, toWh, watched] = useWatch({ control: form.control, name: ['from_warehouse_id', 'to_warehouse_id', 'lines'] })
   const levels = useWarehouseLevels(editable ? fromWh || undefined : undefined)
