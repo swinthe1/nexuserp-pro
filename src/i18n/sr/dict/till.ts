@@ -783,4 +783,10 @@ export default {
   "Document|ribbon": "Dokument",
   "View|ribbon": "Kretanje",
   "Shortcuts|ribbon": "Prečice",
+  "{n} unit": "{n} jedinica",
+  "{n} units": "{n} jedinica",
+  "A company is the business with its own NUI and its own books. Each one has its units inside: the shops, the warehouses, the restaurants.": "Firma je posao sa svojim NUI i svojim knjigama. Unutar nje su jedinice: prodavnice, magacini, lokali.",
+  "Units of {name}": "Jedinice firme {name}",
+  "No units yet": "Još nema jedinica",
+  "Add or change the units": "Dodaj ili izmeni jedinice",
 } satisfies Dict

@@ -342,4 +342,10 @@ export default {
   "Document|ribbon": "Dokumenti",
   "View|ribbon": "Lëvizja",
   "Shortcuts|ribbon": "Shkurtoret",
+  "{n} unit": "{n} njësi",
+  "{n} units": "{n} njësi",
+  "A company is the business with its own NUI and its own books. Each one has its units inside: the shops, the warehouses, the restaurants.": "Kompania është biznesi me NUI-në dhe librat e vet. Brenda saj janë njësitë: dyqanet, depot, lokalet.",
+  "Units of {name}": "Njësitë e {name}",
+  "No units yet": "Ende pa njësi",
+  "Add or change the units": "Shto ose ndrysho njësitë",
 } satisfies Dict
