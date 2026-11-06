@@ -331,4 +331,5 @@ export default {
   "The Rongta scales take the items with a PLU and their prices from DrisPRO. With the automatic link it happens by itself; without it, load here the PLU file of RTPLU and DrisPRO gives it back with its prices, the hotkeys and the other settings as they were.": "Peshoret Rongta marrin nga DrisPRO artikujt me PLU dhe çmimet e tyre. Me lidhjen automatike kjo ndodh vetë; pa të, ngarkoni këtu skedarin PLU të RTPLU-së dhe DrisPRO jua kthen me çmimet e veta, me butonat e shpejtë dhe cilësimet e tjera siç ishin.",
   "Purchase invoice (VAT)": "Faturë blerje (TVSH)",
   "Purchase invoice (no VAT)": "Faturë blerje (pa TVSH)",
+  "Left empty, the document keeps its own number": "Nëse e lini bosh, merr numrin e dokumentit",
 } satisfies Dict

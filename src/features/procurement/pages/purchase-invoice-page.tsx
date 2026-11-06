@@ -147,7 +147,9 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
   const qc = useQueryClient()
 
   const [h, setH] = React.useState(() => ({
-    vendor_id: doc?.vendor_id ?? '', vendor_invoice_number: doc?.vendor_invoice_number ?? '', vendor_fiscal_number: doc?.vendor_fiscal_number ?? '',
+    vendor_id: doc?.vendor_id ?? '',
+    // a document outside the VAT book without the supplier's number carries its own number there: the field shows it empty
+    vendor_invoice_number: doc && doc.in_vat_book === false && doc.vendor_invoice_number === doc.number ? '' : doc?.vendor_invoice_number ?? '', vendor_fiscal_number: doc?.vendor_fiscal_number ?? '',
     bill_date: doc?.bill_date ?? todayISO(), receive_date: doc?.receive_date ?? '', due_date: doc?.due_date ?? '',
     payment_term_id: doc?.payment_term_id ?? '', currency_code: doc?.currency_code ?? base, exchange_rate: doc?.exchange_rate ? String(doc.exchange_rate) : '',
     warehouse_id: doc?.warehouse_id ?? '', pay_bank_account_id: doc?.pay_bank_account_id ?? '', notes: doc?.notes ?? '',
@@ -360,7 +362,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
     queryFn: async () => unwrap(await supabase.rpc('vendor_bill_duplicate', { p_company: companyId!, p_vendor: dupKey.split('|')[0]!, p_number: dupKey.split('|')[1]!, p_exclude: (doc?.id ?? null) as string })) as unknown as
       { id: string; number: string | null; vendor_invoice_number: string; date: string; total: number; status: string; vendor: string } | null,
   })
-  const problem = !h.vendor_id ? t('Choose the supplier') : !h.vendor_invoice_number.trim() ? t('Write the supplier’s invoice number')
+  const problem = !h.vendor_id ? t('Choose the supplier') : h.in_vat_book && !h.vendor_invoice_number.trim() ? t('Write the supplier’s invoice number')
     : dup.data ? t('This invoice is already in: {number}', { number: dup.data.number ?? dup.data.vendor_invoice_number })
     : !h.warehouse_id ? t('Choose the warehouse') : !rows.length ? t('Add at least one item')
     : calc.some((c) => c.qty <= 0) ? t('Every line needs a quantity') : null
@@ -417,7 +419,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
           {doc && <ConfirmDialog trigger={<Button variant="ghost"><Trash2 /> {t('Delete')}</Button>} title={t('Delete this draft?')} description={t('Nothing was received or posted yet.')}
             destructive confirmLabel={t('Delete')} onConfirm={async () => { await del.mutateAsync(doc.id); navigate('/procurement/bills') }} />}
           {doc && <DuplicateButton table="vendor_bills" id={doc.id} />}
-          <Button variant="outline" loading={save.isPending && !complete.isPending} disabled={!h.vendor_id || !h.vendor_invoice_number.trim()} onClick={() => void saveDraft()}><Save /> {t('Save draft')}</Button>
+          <Button variant="outline" loading={save.isPending && !complete.isPending} disabled={!h.vendor_id || (h.in_vat_book && !h.vendor_invoice_number.trim())} onClick={() => void saveDraft()}><Save /> {t('Save draft')}</Button>
           <Button disabled={!!problem} title={problem ?? undefined} onClick={() => setConfirm(true)}><CheckCheck /> {t('Complete')}</Button>
         </>} />
       {/* why the main button is not active yet, in words, not only on hover */}
@@ -438,7 +440,8 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
                 )}
               </p>
             )}</div>
-          <div className="grid gap-1.5"><Label htmlFor="pi-no">{t('Supplier’s invoice no.')}</Label><Input id="pi-no" value={h.vendor_invoice_number} onChange={(e) => set('vendor_invoice_number', e.target.value)} className={cn(dup.data && 'border-destructive')} aria-invalid={!!dup.data} />
+          <div className="grid gap-1.5"><Label htmlFor="pi-no" optional={!h.in_vat_book}>{t('Supplier’s invoice no.')}</Label><Input id="pi-no" value={h.vendor_invoice_number}
+            placeholder={h.in_vat_book ? undefined : t('Left empty, the document keeps its own number')} onChange={(e) => set('vendor_invoice_number', e.target.value)} className={cn(dup.data && 'border-destructive')} aria-invalid={!!dup.data} />
             {dup.data && <p className="text-[12px] text-destructive">{t('Already entered as {number} on {date}, {total} ({vendor}).', { number: dup.data.number ?? dup.data.vendor_invoice_number, date: formatDate(dup.data.date), total: fmt(num(dup.data.total)), vendor: dup.data.vendor })}{' '}
               <Link className="underline" to={`/procurement/bills/${dup.data.id}`}>{t('Open it')}</Link></p>}</div>
           <div className="grid gap-1.5"><Label htmlFor="pi-fiscal">{t('Fiscal number')}</Label><Input id="pi-fiscal" value={h.vendor_fiscal_number} onChange={(e) => set('vendor_fiscal_number', e.target.value)} placeholder={t('From the supplier’s fiscal invoice')} /></div>
