@@ -14734,6 +14734,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           atk_branch_id: number | null
+          pos_receipt_max: number | null
         }
         Insert: {
           id?: string
@@ -14753,6 +14754,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           atk_branch_id?: number | null
+          pos_receipt_max?: number | null
         }
         Update: {
           id?: string
@@ -14772,6 +14774,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           atk_branch_id?: number | null
+          pos_receipt_max?: number | null
         }
         Relationships: [
           { foreignKeyName: "warehouses_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -18437,6 +18440,20 @@ export type Database = {
       pos_promotions: {
         Args: {
           p_register: string
+        }
+        Returns: Json
+      }
+      pos_receipt_max_unit_save: {
+        Args: {
+          p_company: string
+          p_warehouse: string
+          p_value: number
+        }
+        Returns: undefined
+      }
+      pos_receipt_max_units: {
+        Args: {
+          p_company: string
         }
         Returns: Json
       }

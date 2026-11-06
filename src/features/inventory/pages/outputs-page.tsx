@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
 import * as React from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
-import { Trash2 } from 'lucide-react'
+import { Printer, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCompany } from '@/app/company-provider'
 import { ColumnHeader, DataTable, LeadCell } from '@/components/data-table/data-table'
@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label'
 import { TableCell, TableFooter, TableRow } from '@/components/ui/table'
 import { msg, t, td, tEnum } from '@/i18n'
 import { unwrap } from '@/lib/errors'
+import { printTable } from '@/lib/print-table'
 import { supabase } from '@/lib/supabase'
 import { cn, formatDate, formatMoney, formatQty, num, todayISO } from '@/lib/utils'
 import { useCategories, useWarehouses } from '../api'
@@ -74,13 +75,34 @@ function Outputs() {
     { accessorKey: 'by', header: t('Recorded by'), meta: { label: t('Recorded by') } },
   ], [])
   const sum = (k: 'cost_net' | 'cost_gross' | 'sale_net' | 'sale_gross') => outRows.reduce((s, r) => s + num(r[k]), 0)
+  // the outputs of the chosen days and filters, on paper: with the period, the filters and the totals
+  const print = () => {
+    const names = (ids: string[], all: { value: string; label: string }[]) => ids.map((id) => all.find((o) => o.value === id)?.label ?? '').filter(Boolean).join(', ')
+    const filters = [
+      `${formatDate(from)} – ${formatDate(to)}`,
+      units.length ? `${t('Units|stores')}: ${names(units, (whs.data ?? []).map((w) => ({ value: w.id, label: td(w.name) })))}` : '',
+      groups.length ? `${t('Groups')}: ${names(groups, catOptions)}` : '',
+      reasons.length ? `${t('Reason')}: ${reasons.map(reasonLabel).join(', ')}` : '',
+    ].filter(Boolean).join(' · ')
+    printTable({
+      title: t('Stock outputs|menu'), subtitle: filters,
+      columns: [{ header: t('Date') }, { header: t('Number') }, { header: t('Reason') }, { header: t('Description') }, { header: t('Unit|store') }, { header: t('Item') },
+        { header: t('Quantity'), format: 'qty' }, { header: t('Cost without VAT'), format: 'money' }, { header: t('Cost with VAT'), format: 'money' },
+        { header: t('Selling price without VAT'), format: 'money' }, { header: t('Selling price with VAT'), format: 'money' }, { header: t('Recorded by') }],
+      rows: outRows.map((r) => [formatDate(r.date), r.number, reasonLabel(r.reason), r.description ?? '', td(r.warehouse), `${r.name} · ${r.sku}`,
+        `${formatQty(num(r.quantity))}${r.uom ? ` ${td(r.uom)}` : ''}`, num(r.cost_net), num(r.cost_gross), num(r.sale_net), num(r.sale_gross), r.by ?? '']),
+      totals: [t('Total'), '', '', '', '', '', '', sum('cost_net'), sum('cost_gross'), sum('sale_net'), sum('sale_gross'), ''],
+    })
+  }
 
 
   return (
     <>
       <PageHeader title={t('Stock outputs|menu')}
         description={t('Goods thrown away, damaged, expired, used in the company, lost or stolen: each with its description and its value at cost and at the selling price. They lower the stock, never the sales margin.')}
-        actions={<Button variant="outline" asChild><Link to="/inventory/waste"><Trash2 /> {t('Fruit and vegetables thrown away')}</Link></Button>} />
+        actions={<>
+          <Button variant="outline" disabled={!outRows.length} onClick={print}><Printer /> {t('Print')}</Button>
+          <Button variant="outline" asChild><Link to="/inventory/waste"><Trash2 /> {t('Fruit and vegetables thrown away')}</Link></Button></>} />
       <div className="mb-3 flex flex-wrap items-end gap-2">
         <div className="grid gap-1"><Label className="text-xs">{t('From|date')}</Label><Input type="date" className="h-9 w-40" value={from} max={to} onChange={(e) => setFrom(e.target.value)} /></div>
         <div className="grid gap-1"><Label className="text-xs">{t('To|date')}</Label><Input type="date" className="h-9 w-40" value={to} min={from} onChange={(e) => setTo(e.target.value)} /></div>

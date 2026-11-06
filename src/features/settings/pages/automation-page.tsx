@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
+import { formatMoney } from '@/lib/utils'
 import { t } from '@/i18n'
 import { MessagingSettings } from '../components/messaging'
 import { AutomationCard } from '../components/automation-card'
@@ -133,13 +134,14 @@ export function AutomationPage() {
           {s.pos_receipt_max !== undefined && (
             <div className="flex flex-wrap items-start justify-between gap-3 rounded-md border p-3 text-[13px]">
               <span className="min-w-0 flex-1"><span className="font-medium">{t('The highest value of one receipt')}</span>
-                <span className="block text-muted-foreground">{t('A sale above it is not made at the till: the cashier splits it or asks. Empty: no limit.')}</span></span>
+                <span className="block text-muted-foreground">{t('For every unit without a limit of its own. A sale above it is not made at the till: the cashier splits it or asks. Empty: no limit.')}</span></span>
               <div className="flex items-center gap-2">
                 <Input type="number" min="0" step="any" className="w-32 text-right tabular" value={rmax} placeholder={t('No limit')} disabled={!can('pos.approve')}
                   onChange={(e) => setRmax(e.target.value)} aria-label={t('The highest value of one receipt')} />
                 {can('pos.approve') && <Button variant="outline" size="sm" disabled={rmax === (s.pos_receipt_max == null ? '' : String(s.pos_receipt_max)) || save.isPending}
                   onClick={() => save.mutate({ pos_receipt_max: rmax.trim() === '' ? '' : Number(rmax) })}>{t('Save')}</Button>}
               </div>
+              <ReceiptMaxUnits companyMax={s.pos_receipt_max ?? null} disabled={!can('pos.approve')} />
             </div>
           )}
           {s.scale_barcode !== undefined && <ScaleRow value={s.scale_barcode} disabled={!can('pos.approve') || save.isPending} onSave={(v) => save.mutate({ scale_barcode: v })} />}
@@ -283,6 +285,50 @@ function ScaleRow({ value, disabled, onSave }: { value: ScaleSetup; disabled: bo
         </div>
       )}
       {changed && !disabled && <div className="flex justify-end"><Button size="sm" variant="outline" onClick={() => onSave(next)}>{t('Save')}</Button></div>}
+    </div>
+  )
+}
+
+type UnitMax = { warehouse_id: string; code: string; name: string; receipt_max: number | null; registers: number }
+
+/** #17: each unit can have its own limit; empty follows the company's */
+function ReceiptMaxUnits({ companyMax, disabled }: { companyMax: number | null; disabled: boolean }) {
+  const { companyId } = useCompany()
+  const qc = useQueryClient()
+  const q = useQuery({
+    queryKey: ['receipt-max-units', companyId],
+    enabled: !!companyId,
+    // a server not updated yet has no such function: the list is simply not shown
+    queryFn: async () => { const r = await supabase.rpc('pos_receipt_max_units', { p_company: companyId! }); return r.error ? null : (r.data as unknown as UnitMax[]) },
+  })
+  const [vals, setVals] = React.useState<Record<string, string>>({})
+  React.useEffect(() => { if (q.data) setVals(Object.fromEntries(q.data.map((u) => [u.warehouse_id, u.receipt_max == null ? '' : String(u.receipt_max)]))) }, [q.data])
+  const save = useMutation({
+    mutationFn: async (u: { id: string; value: string }) => unwrap(await supabase.rpc('pos_receipt_max_unit_save',
+      { p_company: companyId!, p_warehouse: u.id, p_value: (u.value.trim() === '' ? null : Number(u.value)) as never })),
+    onSuccess: () => { toast.success(t('Saved')); void qc.invalidateQueries({ queryKey: ['receipt-max-units', companyId] }) },
+    onError: (e) => toast.error(describeError(e)),
+  })
+  if (!q.data?.length) return null
+  return (
+    <div className="grid w-full basis-full gap-2 border-t pt-3">
+      <span className="font-medium">{t('By unit')}</span>
+      {q.data.map((u) => {
+        const v = vals[u.warehouse_id] ?? ''
+        const saved = u.receipt_max == null ? '' : String(u.receipt_max)
+        return (
+          <div key={u.warehouse_id} className="flex flex-wrap items-center justify-between gap-2">
+            <span className="min-w-0 flex-1">{u.name} <span className="text-muted-foreground">({u.code})</span>
+              {v.trim() === '' && <span className="block text-[12px] text-muted-foreground">{companyMax == null ? t('No limit, as the company') : t('As the company: {n}', { n: formatMoney(companyMax) })}</span>}</span>
+            <div className="flex items-center gap-2">
+              <Input type="number" min="0" step="any" className="w-32 text-right tabular" value={v} placeholder={t('As the company')} disabled={disabled}
+                onChange={(e) => setVals((x) => ({ ...x, [u.warehouse_id]: e.target.value }))} aria-label={`${t('The highest value of one receipt')} · ${u.name}`} />
+              {!disabled && <Button variant="outline" size="sm" disabled={v === saved || save.isPending}
+                onClick={() => save.mutate({ id: u.warehouse_id, value: v })}>{t('Save')}</Button>}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }

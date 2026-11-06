@@ -671,4 +671,10 @@ export default {
   "Pay with it at the till, all at once or in parts. Keep the code safe: whoever has it can spend it.": "Platite njime na kasi, odjednom ili u delovima. Čuvajte kod: ko ga ima, može ga potrošiti.",
   "Payment method": "Način plaćanja",
   "Fruit and vegetables thrown away|menu": "Bačeno voće i povrće",
+  "For every unit without a limit of its own. A sale above it is not made at the till: the cashier splits it or asks. Empty: no limit.": "Za svaku jedinicu bez sopstvenog limita. Prodaja iznad ovog iznosa se ne pravi na kasi: kasir je deli ili pita. Prazno: bez limita.",
+  "No limit, as the company": "Bez limita, kao kompanija",
+  "As the company: {n}": "Kao kompanija: {n}",
+  "As the company": "Kao kompanija",
+  "By unit": "Po jedinici",
+  "The limit must be more than zero": "Limit mora biti veći od nule",
 } satisfies Dict

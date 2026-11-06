@@ -234,4 +234,10 @@ export default {
   "of {kg} kg sold": "nga {kg} kg të shitura",
   "of {kg} kg that came in": "nga {kg} kg të hyra",
   "Day": "Dita",
+  "For every unit without a limit of its own. A sale above it is not made at the till: the cashier splits it or asks. Empty: no limit.": "Për çdo njësi që nuk ka kufi të vetin. Shitja mbi këtë vlerë nuk bëhet në arkë: kasieri e ndan ose pyet. Bosh: pa kufi.",
+  "No limit, as the company": "Pa kufi, si kompania",
+  "As the company: {n}": "Si kompania: {n}",
+  "As the company": "Si kompania",
+  "By unit": "Sipas njësisë",
+  "The limit must be more than zero": "Kufiri duhet të jetë më i madh se zero",
 } satisfies Dict
