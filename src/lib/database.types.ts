@@ -20228,6 +20228,12 @@ export type Database = {
         }
         Returns: Json
       }
+      units_today: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       update_shipment: {
         Args: {
           p_shipment: string

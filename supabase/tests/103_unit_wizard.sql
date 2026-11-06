@@ -1,5 +1,5 @@
 -- =============================================================================
--- "Njësi e re" in one step: the unit, its places, its tills and where its goods come from  (after 101)
+-- "Njësi e re" in one step: the unit, its places, its tills and where its goods come from; each unit on the dashboard  (after 101)
 -- =============================================================================
 \set QUIET on
 \set ON_ERROR_STOP on
@@ -35,6 +35,16 @@ select t.login(:'boss');
 select t.throws(format($q$select public.unit_create(jsonb_build_object('company_id', %L, 'kind', 'store', 'name', '', 'code', 'X'))$q$, :'co'), 'Write the name', 'a unit needs a name');
 select t.throws(format($q$select public.unit_create(jsonb_build_object('company_id', %L, 'kind', 'casino', 'name', 'X', 'code', 'X'))$q$, :'co'), 'Unknown kind', 'and a kind we know');
 reset role;
+
+-- each unit at a glance on the dashboard
+set role authenticated;
+select t.login(:'boss');
+select public.units_today(:'co') as today \gset
+reset role;
+select t.ok((select (x ->> 'tills')::int = 2 and (x ->> 'tills_open')::int = 0 and (x ->> 'sales_today')::numeric = 0
+               from jsonb_array_elements(:'today'::jsonb) x where x ->> 'code' = 'EXG'), 'the dashboard shows each unit with its tills and sales');
+select t.ok(jsonb_array_length(:'today'::jsonb) = (select count(*) from public.warehouses where company_id = :'co' and is_active and deleted_at is null and warehouse_type <> 'transit'),
+            'every active unit, no transit');
 
 \set QUIET off
 select count(*) as assertions_passed from t.results;

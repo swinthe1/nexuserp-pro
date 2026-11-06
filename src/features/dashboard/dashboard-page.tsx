@@ -1,4 +1,5 @@
 import { MyTasksCard } from '@/features/tasks/components/linked-tasks'
+import { UnitsToday } from './units-today'
 import { useQuery } from '@tanstack/react-query'
 import { AlarmClock, ArrowDownLeft, ArrowLeftRight, ArrowRight, ArrowUpRight, Coins, FileQuestion, FileText, PackageMinus, Percent, ReceiptText, Scale, ShoppingCart, Truck, Boxes, ClipboardCheck, Landmark, PackageCheck, ShieldAlert, Ship, TrendingUp, TriangleAlert, Users, Wallet } from 'lucide-react'
 import * as React from 'react'
@@ -183,6 +184,7 @@ export function DashboardPage() {
       </div>
 
       {legacy && <LegacySales data={legacy} />}
+      <UnitsToday />
       {can('inventory.read') && <StockByWarehouse />}
 
       <div className="mt-4 grid gap-4 grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_380px]">

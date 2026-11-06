@@ -15,8 +15,10 @@ import { cn, formatDate, formatMoney, formatQty, num } from '@/lib/utils'
 import { invKeys, useInventoryOverview, useStockLevels, useWarehouses } from '../api'
 import { t, td, tn } from '@/i18n'
 import { useRealtimeInvalidate } from '@/hooks/use-realtime'
+import { useActiveUnit } from '@/app/active-unit'
 
 type Level = Views<'v_stock_levels'>
+type Pivot = { id: string; product_id: string | null; sku: string | null; name: string | null; category: string | null; uom: string | null; qty: Record<string, number>; total: number; value: number }
 
 export function StockPage() {
   const navigate = useNavigate()
@@ -27,6 +29,42 @@ export function StockPage() {
   const [byUnit, setByUnit] = React.useState<string[] | null>(null)
   const overview = useInventoryOverview()
   const warehouses = useWarehouses()
+  const { multi, unit } = useActiveUnit()
+  // several units: one row per item with a column for each unit (unless one unit is chosen, or the person asks for the lines)
+  const [view, setView] = React.useState<'units' | 'lines' | null>(null)
+  const pivot = multi && !onlyWarehouse && (view ?? (unit ? 'lines' : 'units')) === 'units'
+  const unitCols = React.useMemo(() => (warehouses.data ?? []).filter((w) => w.is_active && w.warehouse_type !== 'transit'), [warehouses.data])
+  const byItem = React.useMemo(() => {
+    if (!pivot) return []
+    const m = new Map<string, Pivot>()
+    for (const l of levels.data ?? []) {
+      const k = l.variant_id ?? l.id!
+      let r = m.get(k)
+      if (!r) { r = { id: k, product_id: l.product_id, sku: l.sku, name: l.variant_name, category: l.category_name, uom: l.uom_code, qty: {}, total: 0, value: 0 }; m.set(k, r) }
+      if (l.warehouse_id) r.qty[l.warehouse_id] = (r.qty[l.warehouse_id] ?? 0) + num(l.on_hand)
+      r.total += num(l.on_hand); r.value += num(l.stock_value)
+    }
+    return [...m.values()].sort((a, b) => String(a.sku).localeCompare(String(b.sku)))
+  }, [pivot, levels.data])
+  const pivotColumns = React.useMemo<ColumnDef<Pivot>[]>(() => [
+    {
+      id: 'product', accessorFn: (r) => `${r.sku} ${r.name}`, enableHiding: false,
+      header: ({ column }) => <ColumnHeader column={column} title={t('Product')} />, meta: { label: t('Product'), exportValue: (r) => r.sku },
+      cell: ({ row: { original: r } }) => <div><div className="font-medium">{r.sku}</div><div className="text-xs text-muted-foreground">{r.name}</div></div>,
+    },
+    { id: 'category', accessorFn: (r) => r.category ?? '', filterFn: inFilter, header: t('Category'), meta: { label: t('Category') }, cell: ({ getValue }) => td(getValue() as string) || '—' },
+    ...unitCols.map((w): ColumnDef<Pivot> => ({
+      id: `u_${w.id}`, accessorFn: (r) => r.qty[w.id] ?? 0,
+      header: ({ column }) => <ColumnHeader column={column} title={td(w.name)} />, meta: { label: td(w.name), align: 'right', exportValue: (r) => r.qty[w.id] ?? 0 },
+      cell: ({ row: { original: r } }) => {
+        const q = r.qty[w.id]
+        return q == null ? <span className="text-muted-foreground">—</span> : <span className={cn('tabular', q < 0 && 'text-destructive')}>{formatQty(q)}</span>
+      },
+    })),
+    { id: 'total', accessorFn: (r) => r.total, header: ({ column }) => <ColumnHeader column={column} title={t('All units')} />, meta: { label: t('All units'), align: 'right' },
+      cell: ({ row: { original: r } }) => <span className="font-medium tabular">{formatQty(r.total)} <span className="font-normal text-muted-foreground">{td(r.uom)}</span></span> },
+    { id: 'value', accessorFn: (r) => r.value, header: ({ column }) => <ColumnHeader column={column} title={t('Value at cost')} />, meta: { label: t('Value at cost'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
+  ], [unitCols])
   const today = new Date().toISOString().slice(0, 10)
   // a place inside the unit (shelf, fridge) only matters where a unit has more than one: otherwise the column stays out of the way
   const placesMatter = React.useMemo(() => {
@@ -73,6 +111,44 @@ export function StockPage() {
         <StatCard label={t('Low stock')} value={overview.data?.low_stock ?? 0} tone={overview.data?.low_stock ? 'warning' : 'default'} loading={overview.isLoading} href="/inventory/alerts" hint={t('At or below the reorder point')} />
         <StatCard label={t('Lines below zero')} value={overview.data?.negative_lines ?? 0} tone={overview.data?.negative_lines ? 'destructive' : 'default'} loading={overview.isLoading} hint={t('Only possible when selling without stock is allowed')} />
       </div>
+      {multi && !onlyWarehouse && (
+        <div role="radiogroup" aria-label={t('How to show the stock')} className="mb-3 inline-flex h-9 rounded-md border bg-muted/40 p-0.5 text-[13px]">
+          {(['units', 'lines'] as const).map((x) => (
+            <button key={x} type="button" role="radio" aria-checked={(pivot ? 'units' : 'lines') === x} onClick={() => setView(x)}
+              className={cn('rounded-[5px] px-3', (pivot ? 'units' : 'lines') === x ? 'bg-card font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground')}>
+              {x === 'units' ? t('An item per row, a column per unit') : t('A row per unit and place')}
+            </button>
+          ))}
+        </div>
+      )}
+      {pivot ? (
+        <DataTable
+          tableKey="inventory.stock-by-unit"
+          columns={pivotColumns}
+          data={levels.data ? byItem : undefined}
+          isLoading={levels.isLoading}
+          error={levels.error}
+          getRowId={(r) => r.id}
+          searchPlaceholder={t('Code or product')}
+          initialHidden={['category']}
+          exportName="stock-by-unit"
+          onRowClick={(r) => r.product_id && navigate(`/inventory/products/${r.product_id}`)}
+          facets={[{ columnId: 'category', title: t('Category'), options: Array.from(new Set(byItem.map((l) => l.category).filter(Boolean))).map((c) => ({ label: td(c!), value: c! })) }]}
+          empty={{ title: t('No stock on hand'), description: t('Receive goods or enter your opening stock to start.') }}
+          footer={(table) => {
+            const rows = table.getFilteredRowModel().rows.map((r) => r.original)
+            return (
+              <TableFooter>
+                <TableRow className="hover:bg-transparent">
+                  <LeadCell />
+                  <TableCell colSpan={table.getVisibleLeafColumns().length - 1} className="text-[13px]">{tn(rows.length, '{n} item', '{n} items')}</TableCell>
+                  <TableCell className="text-right tabular">{formatMoney(rows.reduce((s, r) => s + r.value, 0))}</TableCell>
+                </TableRow>
+              </TableFooter>
+            )
+          }}
+        />
+      ) : (
       <DataTable
         key={onlyWarehouse ?? 'all'}
         tableKey="inventory.stock-levels"
@@ -105,6 +181,7 @@ export function StockPage() {
           )
         }}
       />
+      )}
       {byUnit && <StockByUnitDialog variantIds={byUnit} onClose={() => setByUnit(null)} />}
     </>
   )
