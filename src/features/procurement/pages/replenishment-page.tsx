@@ -1,4 +1,5 @@
 import { ArrowLeftRight, Bot, Factory, Gauge, Play, RefreshCw, ShoppingCart, X } from 'lucide-react'
+import { PageTableExport } from '@/components/page-table-export'
 import { useQueryClient } from '@tanstack/react-query'
 import * as React from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
@@ -73,7 +74,7 @@ export function ReplenishmentPage() {
       <PageHeader
         title={t('Replenishment|menu')}
         description={t('Items at or below their reorder point. Expected stock = on hand − reserved − ordered by customers but not yet reserved + already on order. Suggested quantities fill up to the maximum, respecting vendor minimums.')}
-        actions={<>
+        actions={<><PageTableExport />{<>
           <Select value={warehouse} onValueChange={setWarehouse}>
             <SelectTrigger className="w-[180px]" aria-label={t('Warehouse')}><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="all">{t('All warehouses')}</SelectItem>{(warehouses.data ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{td(w.name)}</SelectItem>)}</SelectContent>
@@ -85,7 +86,7 @@ export function ReplenishmentPage() {
           }}><RefreshCw /> {t('Check stock now')}</Button>}
           <Can perm="procurement.read"><Button variant="outline" onClick={() => setFromSales(true)}><Gauge /> {t('Min and max from sales')}</Button></Can>
           <Can perm="procurement.write"><Button onClick={() => setRunOpen(true)}><Play /> {t('Run replenishment')}</Button></Can>
-        </>}
+        </>}</>}
       />
       {result && <RunResultCard result={result} onClose={() => setResult(null)} />}
       {fromSales && <FromSalesDialog warehouses={(warehouses.data ?? []).map((w) => ({ id: w.id, name: td(w.name) }))} initial={warehouse === 'all' ? null : warehouse} onClose={() => setFromSales(false)} />}

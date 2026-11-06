@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { PageTableExport } from '@/components/page-table-export'
 import { useQuery } from '@tanstack/react-query'
 import { useCompany } from '@/app/company-provider'
 import { EmptyState } from '@/components/empty-state'
@@ -43,7 +44,7 @@ export function WaitersPage() {
 
   return (
     <>
-      <PageHeader title={t('Waiters')} description={t('Bills, tables, guests and takings per waiter, with the discounts they gave and the items cancelled after they reached the kitchen.')} />
+      <PageHeader actions={<PageTableExport />} title={t('Waiters')} description={t('Bills, tables, guests and takings per waiter, with the discounts they gave and the items cancelled after they reached the kitchen.')} />
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <div className="flex gap-1" role="group" aria-label={t('Period')}>
           {RANGES.map((r) => {

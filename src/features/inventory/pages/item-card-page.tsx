@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { PageTableExport } from '@/components/page-table-export'
 import * as React from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
@@ -32,7 +33,7 @@ export function ItemCardPage() {
     .map((i) => ({ value: i.variant_id, label: i.name, hint: i.sku, keywords: i.barcodes.map(([b]) => b) })), [companyId, catalog.ready, catalog.count]) // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <>
-      <PageHeader title={t('Item card')} description={t('Every item that came in, went out or moved, with the document behind it. Choose an item to see its card with the quantity and the value after each movement.')} />
+      <PageHeader actions={<PageTableExport />} title={t('Item card')} description={t('Every item that came in, went out or moved, with the document behind it. Choose an item to see its card with the quantity and the value after each movement.')} />
       <div className="mb-4 max-w-md">
         <SearchSelect value={id} onChange={(v) => { const n = new URLSearchParams(params); if (v) n.set('v', v); else n.delete('v'); setParams(n, { replace: true }) }}
           placeholder={t('Choose an item (name, code or barcode)')} options={options} />

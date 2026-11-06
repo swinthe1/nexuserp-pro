@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { PageTableExport } from '@/components/page-table-export'
 import { Ban, Check, ClipboardCopy, Crown, FileText, Gavel, PenLine, Plus, Save, Send, Trash2, X } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -69,7 +70,7 @@ export function RfqListPage() {
     <>
       <PageHeader title={t('Offers from vendors')}
         description={t('Ask two or three vendors for the same goods, write their offers side by side, and order from the best one. No order on the word of one vendor only.')}
-        actions={can('procurement.write') && <Button asChild><Link to="/procurement/rfqs/new"><Plus /> {t('New request for offers')}</Link></Button>} />
+        actions={<><PageTableExport />{can('procurement.write') && <Button asChild><Link to="/procurement/rfqs/new"><Plus /> {t('New request for offers')}</Link></Button>}</>} />
       <Card>
         <CardContent className="overflow-x-auto p-0">
           {q.isError ? <ErrorState error={q.error} onRetry={() => void q.refetch()} /> : !q.data ? <Skeleton className="h-48" /> : !q.data.length ? (
@@ -250,13 +251,13 @@ function RfqOffers({ rfq }: { rfq: Rfq }) {
       <PageHeader back={{ href: '/procurement/rfqs', label: t('Offers from vendors') }} title={`${rfq.number} · ${rfq.title}`}
         meta={<StatusBadge status={rfq.status} />}
         description={[rfq.needed_by && t('Needed by {date}', { date: formatDate(rfq.needed_by) }), rfq.reply_by && t('Offers by {date}', { date: formatDate(rfq.reply_by) }), td(wh?.name ?? '')].filter(Boolean).join(' · ')}
-        actions={<>
+        actions={<><PageTableExport />{<>
           {open && <Button variant="outline" onClick={() => void navigator.clipboard.writeText(requestText()).then(() => toast.success(t('The request is copied: paste it into an email or a message to the vendors')))}>
             <ClipboardCopy /> {t('Copy the request')}</Button>}
           {editable && <ConfirmDialog trigger={<Button variant="ghost" className="text-destructive"><Ban /> {t('Cancel')}</Button>} title={t('Cancel {number}?', { number: rfq.number })}
             description={t('The request stays on record as cancelled; no order is made.')} confirmLabel={t('Cancel request')} destructive onConfirm={() => cancel.mutateAsync(undefined)} />}
           {editable && <Button disabled={!answered.length} title={!answered.length ? t('Write at least one offer first') : undefined} onClick={() => setDecide(true)}><Gavel /> {t('Choose and order')}</Button>}
-        </>} />
+        </>}</>} />
 
       {rfq.status === 'decided' && (
         <div className="mb-4 rounded-lg border border-success/40 bg-success/5 px-4 py-3 text-[13px]">

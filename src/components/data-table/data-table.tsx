@@ -396,6 +396,7 @@ export function DataTable<T>({
               <DropdownMenuItem disabled={!rowCount} onSelect={() => void doExport('xlsx')}><FileSpreadsheet /> {t('Export')} Excel</DropdownMenuItem>
               <DropdownMenuItem disabled={!rowCount} onSelect={() => void doExport('pdf')}><FileText /> {t('Export')} PDF</DropdownMenuItem>
               <DropdownMenuItem disabled={!rowCount} onSelect={() => void doExport('csv')}><FileSpreadsheet /> {t('Export')} CSV</DropdownMenuItem>
+              <DropdownMenuItem disabled={!rowCount} onSelect={() => void doExport('print')}><Printer /> {t('Print')}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}

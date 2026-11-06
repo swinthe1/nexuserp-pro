@@ -1,4 +1,5 @@
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Columns3, List as ListIcon, ListChecks, Search, Settings2, Users } from 'lucide-react'
+import { PageTableExport } from '@/components/page-table-export'
 import * as React from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/app/auth-provider'
@@ -55,10 +56,10 @@ export function TasksPage() {
   return (
     <>
       <PageHeader title={t('Tasks|menu')} description={t('What needs doing, by whom and by when. Tasks also come from the program itself: late invoices, till differences, contracts ending.')}
-        actions={<>
+        actions={<><PageTableExport />{<>
           <Button variant="outline" onClick={() => setListsOpen(true)}><ListChecks /> {t('Lists')}</Button>
           {(can('tasks.write') || can('admin.write')) && <Button variant="outline" asChild><Link to="/tasks/setup"><Settings2 /> {t('Repeating and automatic')}</Link></Button>}
-        </>} />
+        </>}</>} />
 
       <QuickAdd className="mb-4" defaults={defaults} onCreated={(x) => { if (view === 'list' && x.assignee_id !== me && scope === 'mine') set('id', x.id) }} />
 

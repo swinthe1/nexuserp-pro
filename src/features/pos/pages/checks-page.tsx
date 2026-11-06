@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { PageTableExport } from '@/components/page-table-export'
 import { AlertTriangle, ArrowDown, ArrowUp, Check, ClipboardCheck, Clock, ListPlus, Pencil, PenLine, Plus, Signature, Thermometer, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { useSearchParams } from 'react-router-dom'
@@ -66,7 +67,7 @@ export function StoreChecksPage() {
   const d = day.data
   return (
     <>
-      <PageHeader title={t('Daily checks')}
+      <PageHeader actions={<PageTableExport />} title={t('Daily checks')}
         description={t('The shop is checked at fixed times: opening, dates and prices, hygiene, fridge temperatures and closing. A reading out of its range is reported to the managers at once, and the shift leader signs each list.')} />
       <Card className="mb-4"><CardContent className="flex flex-wrap items-end gap-3 p-3">
         <div className="grid gap-1"><Label className="text-xs">{t('Store')}</Label>

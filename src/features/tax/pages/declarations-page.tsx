@@ -1,4 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
+import { PageTableExport } from '@/components/page-table-export'
 import { Check, FileSpreadsheet, Plus, Printer, RefreshCw, RotateCcw, Send, X } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -94,7 +95,7 @@ export function DeclarationPage() {
       <PageHeader title={`${t('VAT declaration')} · ${period}`} meta={<><StatusBadge status={decl.status} /><span className="text-[13px] text-muted-foreground">{decl.number}</span></>}
         back={{ href: '/tax/declarations', label: t('Declarations') }}
         description={`${formTitle} · ${profile.data?.legal_name ?? profile.data?.name ?? company?.name ?? ''} · ${taxLabel} ${profile.data?.tax_number ?? '—'} · ${formatDate(decl.period_start)} – ${formatDate(decl.period_end)}`}
-        actions={<>
+        actions={<><PageTableExport />{<>
           <Button variant="outline" asChild><Link to={`/tax/books?month=${ym}`}><FileSpreadsheet /> {t('Books')}</Link></Button>
           <Button variant="outline" onClick={() => window.print()}><Printer /> {t('Print')}</Button>
           <Can perm="tax.write">
@@ -110,7 +111,7 @@ export function DeclarationPage() {
             </>}
             {decl.status === 'rejected' && <Button loading={reopen.isPending} onClick={() => reopen.mutate(decl.id)}><RotateCcw /> {t('Reopen as draft')}</Button>}
           </Can>
-        </>} />
+        </>}</>} />
 
       {decl.status === 'draft' && (
         <div className="mb-4 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-[13px] print:hidden">

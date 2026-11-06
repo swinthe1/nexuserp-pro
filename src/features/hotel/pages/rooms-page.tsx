@@ -1,4 +1,5 @@
 import { BedDouble, Plus } from 'lucide-react'
+import { PageTableExport } from '@/components/page-table-export'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
@@ -38,7 +39,7 @@ export function HotelRoomsPage() {
   if (!types.data || !rooms.data) return <Skeleton className="h-96" />
   return (
     <>
-      <PageHeader title={t('Rooms')} description={t('The kinds of room with their price a night, and every room with its cleaning state.')} />
+      <PageHeader actions={<PageTableExport />} title={t('Rooms')} description={t('The kinds of room with their price a night, and every room with its cleaning state.')} />
       <div className="grid gap-4 grid-cols-[minmax(0,1fr)] lg:grid-cols-[360px_minmax(0,1fr)]">
         <Card className="self-start">
           <CardHeader className="flex-row items-start justify-between gap-2 space-y-0">

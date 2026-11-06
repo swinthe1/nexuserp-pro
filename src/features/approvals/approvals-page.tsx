@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { PageTableExport } from '@/components/page-table-export'
 import { Check, X } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
@@ -98,7 +99,7 @@ export function ApprovalsPage() {
 
   return (
     <>
-      <PageHeader title={t('Approvals|menu')} description={t("Documents waiting for your decision. You can't approve your own requests.")} />
+      <PageHeader actions={<PageTableExport />} title={t('Approvals|menu')} description={t("Documents waiting for your decision. You can't approve your own requests.")} />
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="mb-4">
         <TabsList><TabsTrigger value="pending">{t('Waiting')}</TabsTrigger><TabsTrigger value="decided">{t('Decided')}</TabsTrigger></TabsList>
       </Tabs>

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { PageTableExport } from '@/components/page-table-export'
 import { ArrowLeftRight, Ban, Plus, Wand2 } from 'lucide-react'
 import * as React from 'react'
 import { useSearchParams } from 'react-router-dom'
@@ -43,7 +44,7 @@ export function CompensationsPage() {
   return (
     <>
       <PageHeader title={t('Compensations')} description={t('When a partner is both customer and supplier, what they owe us and what we owe them are set against each other. Both invoices are settled by that amount and the books record it.')}
-        actions={<Can perm="invoicing.write"><Button onClick={() => setAdding(true)}><Plus /> {t('New compensation')}</Button></Can>} />
+        actions={<><PageTableExport />{<Can perm="invoicing.write"><Button onClick={() => setAdding(true)}><Plus /> {t('New compensation')}</Button></Can>}</>} />
       {list.isError ? <ErrorState error={list.error} onRetry={() => void list.refetch()} /> : !list.data ? <Skeleton className="h-40" /> : list.data.length === 0
         ? <EmptyState icon={ArrowLeftRight} title={t('No compensation yet')} description={t('Start one from a partner who has open invoices on both sides.')} />
         : (

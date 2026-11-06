@@ -1,4 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
+import { PageTableExport } from '@/components/page-table-export'
 import { Bot, Plus, Trash2, Undo2 } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -99,7 +100,7 @@ function JournalEntryView({ id }: { id: string }) {
       <PageHeader back={{ href: '/finance/journal', label: t('Accounting entries') }} title={e.number}
         meta={<><StatusBadge status={e.status} />{e.reporting_ledger === 'MANAGEMENT' && <Badge variant="warning">{t('Management ledger')}</Badge>}{e.is_automatic ? <Badge variant="secondary"><Bot className="size-3" /> {t('Automatic')}</Badge> : <Badge variant="outline">{t('Manual')}</Badge>}</>}
         description={[td(e.journal?.name), formatDate(e.entry_date), tServer(e.memo)].filter(Boolean).join(' · ')}
-        actions={<Can perm="finance.write">
+        actions={<><PageTableExport />{<Can perm="finance.write">
           {e.status === 'posted' && !e.is_automatic && (
             <ConfirmDialog trigger={<Button variant="outline"><Undo2 /> {t('Reverse')}</Button>} title={t('Reverse {doc}?', { doc: e.number })}
               description={t('A new entry with debits and credits swapped is posted today, and this one is marked as reversed.')} confirmLabel={t('Reverse')}
@@ -107,7 +108,7 @@ function JournalEntryView({ id }: { id: string }) {
           )}
           {e.status === 'draft' && <><Button variant="ghost" className="text-destructive" onClick={async () => { await del.mutateAsync(e.id); navigate('/finance/journal') }}><Trash2 /> {t('Delete')}</Button>
             <Button onClick={() => post.mutate(e.id, { onSuccess: () => toast.success(t('Posted|toast')) })}>{t('Post')}</Button></>}
-        </Can>} />
+        </Can>}</>} />
       <div className="mb-4 grid gap-3 text-[13px] sm:grid-cols-4">
         <Fact k={t('Source')}>{href ? <Link className="text-primary hover:underline" to={href + e.source_doc_id}>{sourceLabel(e.source_doc_type)} {e.reference}</Link> : e.is_automatic ? e.reference ?? '—' : t('Manual entry')}</Fact>
         <Fact k={t('Amount')}>{formatMoney(e.total_debit)}</Fact>

@@ -1,4 +1,5 @@
 import type { ColumnDef, ColumnFiltersState, PaginationState, SortingState } from '@tanstack/react-table'
+import { PageTableExport } from '@/components/page-table-export'
 import { Archive } from 'lucide-react'
 import * as React from 'react'
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
@@ -43,7 +44,7 @@ export function HistoryPage() {
   const s = summary.data
   return (
     <>
-      <PageHeader title={t('History from the old program')}
+      <PageHeader actions={<PageTableExport />} title={t('History from the old program')}
         description={s?.documents
           ? t('{n} documents from {from} to {to}. Kept as an archive: it does not change stock, the books or anything sent to the tax authority.', { n: num(s.documents).toLocaleString('sq'), from: formatDate(s.first_date), to: formatDate(s.last_date) })
           : t('Sales, receipts, purchases, payments and accounting from the program used before, kept as an archive.')} />

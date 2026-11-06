@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { PageTableExport } from '@/components/page-table-export'
 import type { ColumnDef } from '@tanstack/react-table'
 import { AlertTriangle, ArrowDownToLine, Boxes, CalendarClock, Check, Clock, Columns3, Factory, Layers, List, PackageCheck, Play, Plus, Undo2, X } from 'lucide-react'
 import * as React from 'react'
@@ -247,7 +248,7 @@ function WorkOrderView({ w }: { w: WorkOrderDetail }) {
       <PageHeader back={{ href: '/manufacturing/orders', label: t('Work orders') }} title={w.number}
         meta={<><StatusBadge status={w.status} />{isLate(w) && <Badge variant="destructive">{t('Late')}</Badge>}</>}
         description={<>{w.variant?.name} · {t('{qty} planned', { qty: formatQty(w.quantity_planned) })} · {w.warehouse?.code} ({w.component_location?.code} → {w.output_location?.code}) · {t('Recipe')} <Link className="text-primary hover:underline" to={`/manufacturing/boms/${w.bom_id}`}>{w.bom?.code}</Link></>}
-        actions={actions} />
+        actions={<><PageTableExport />{actions}</>} />
 
       {(w.parent || w.children.length > 0 || w.sales_order) && (
         <div className="mb-4 flex flex-wrap gap-2 text-[13px]">

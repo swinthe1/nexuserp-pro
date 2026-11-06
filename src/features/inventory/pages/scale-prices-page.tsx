@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { PageTableExport } from '@/components/page-table-export'
 import { CircleAlert, CircleCheck, Clock, Download, FileUp, Link2, Pencil, Plus, Save, Weight } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
@@ -145,11 +146,11 @@ export function ScalePricesPage() {
     <div className="grid gap-4">
       <PageHeader title={t('Prices for the scale')}
         description={t('The Rongta scales take the items with a PLU and their prices from DrisPRO. With the automatic link it happens by itself; without it, load here the PLU file of RTPLU and DrisPRO gives it back with its prices, the hotkeys and the other settings as they were.')}
-        actions={<>
+        actions={<><PageTableExport />{<>
           <input ref={input} type="file" accept=".txp,.TXP,.txt" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void load(f); e.target.value = '' }} />
           {!!items.data?.length && <Button variant="outline" onClick={() => void fresh()}><Download /> {t('New file from DrisPRO')}</Button>}
           <Button onClick={() => input.current?.click()}><FileUp /> {t('Load the PLU file (.TXP)')}</Button>
-        </>} />
+        </>}</>} />
 
       <ScalesCard />
 

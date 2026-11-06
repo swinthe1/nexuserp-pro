@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { PageTableExport } from '@/components/page-table-export'
 import { BadgePercent, Plus, X } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
@@ -46,7 +47,7 @@ export function PromotionsPage() {
   return (
     <>
       <PageHeader title={t('Promotions')} description={t('Discounts for a time: a percentage, a special price, or "3 for 2". The till applies them by itself, and sales documents take them as the discount.')}
-        actions={can('sales.write') && <Button onClick={() => setEdit({ kind: 'percent', value: 10, min_qty: 1, channels: ['pos', 'sales'], variant_ids: [], category_ids: [], is_active: true, starts_on: today })}><Plus /> {t('New promotion')}</Button>} />
+        actions={<><PageTableExport />{can('sales.write') && <Button onClick={() => setEdit({ kind: 'percent', value: 10, min_qty: 1, channels: ['pos', 'sales'], variant_ids: [], category_ids: [], is_active: true, starts_on: today })}><Plus /> {t('New promotion')}</Button>}</>} />
       <Tabs defaultValue="list">
         <TabsList><TabsTrigger value="list">{t('Promotions')}</TabsTrigger><TabsTrigger value="results">{t('Results')}</TabsTrigger></TabsList>
         <TabsContent value="list">

@@ -1,4 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
+import { PageTableExport } from '@/components/page-table-export'
 import { Plus, Settings2, Upload } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -153,7 +154,7 @@ function EmployeeForm({ emp }: { emp?: EmployeeRow }) {
       <PageHeader back={{ href: '/hr/employees', label: t('Employees') }} title={emp ? emp.full_name : t('New employee')}
         meta={emp && <><span className="text-[13px] text-muted-foreground">{emp.number}</span><StatusBadge status={emp.employment_status} /></>}
         description={emp ? [td(emp.position?.title), td(emp.department?.name), t('since {date}', { date: formatDate(emp.hire_date) })].filter(Boolean).join(' · ') : t('Add the contract and pay after saving.')}
-        actions={editable && <Button loading={save.isPending} disabled={!valid} onClick={() => void submit()}>{emp ? t('Save changes') : t('Add employee')}</Button>} />
+        actions={<><PageTableExport />{editable && <Button loading={save.isPending} disabled={!valid} onClick={() => void submit()}>{emp ? t('Save changes') : t('Add employee')}</Button>}</>} />
       {!emp ? profileForm : (
         <Tabs defaultValue="profile">
           <TabsList><TabsTrigger value="profile">{t('Profile')}</TabsTrigger><TabsTrigger value="contract">{t('Contract')}</TabsTrigger>

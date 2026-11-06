@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { PageTableExport } from '@/components/page-table-export'
 import { ChevronRight, Plus } from 'lucide-react'
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
@@ -72,7 +73,7 @@ export function AccountsPage() {
   return (
     <>
       <PageHeader title={t('Chart of accounts')} description={t('Accounts numbered by class, as in the national accounting standards. Balances are from the start of the year; open an account to see its movements.')}
-        actions={<Can perm="finance.write"><Button onClick={() => setEdit('new')}><Plus /> {t('New account')}</Button></Can>} />
+        actions={<><PageTableExport />{<Can perm="finance.write"><Button onClick={() => setEdit('new')}><Plus /> {t('New account')}</Button></Can>}</>} />
       <div className="mb-3 flex flex-wrap items-center gap-3">
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Code or name…')} className="max-w-xs" aria-label={t('Search accounts')} />
         <label className="flex items-center gap-2 text-[13px]"><Switch checked={hideEmpty} onCheckedChange={setHideEmpty} /> {t('Only accounts with movements')}</label>
@@ -199,10 +200,10 @@ export function AccountLedgerPage() {
       <PageHeader back={{ href: '/finance/accounts', label: t('Chart of accounts') }} title={<><span className="font-mono">{a.code}</span> {td(a.name)}</>}
         meta={<><Badge variant="outline">{subtypeLabel(a.account_subtype)}</Badge>{book === 'management' && <Badge variant="warning">{t('Management ledger')}</Badge>}</>}
         description={a.account_type === 'asset' || a.account_type === 'expense' ? t('Amounts in {cur}. Debits increase this account.', { cur: company?.base_currency ?? '' }) : t('Amounts in {cur}. Credits increase this account.', { cur: company?.base_currency ?? '' })}
-        actions={<>
+        actions={<><PageTableExport />{<>
           <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-[150px]" aria-label={t('From')} />
           <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-[150px]" aria-label={t('To')} />
-        </>} />
+        </>}</>} />
       <Card>
         <CardContent className="overflow-x-auto p-0">
           {ledger.isLoading ? <Skeleton className="m-4 h-64" /> : ledger.isError ? <ErrorState error={ledger.error} onRetry={() => void ledger.refetch()} /> : (

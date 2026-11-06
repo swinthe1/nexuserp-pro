@@ -1,4 +1,5 @@
 import { Factory, Layers, Plus } from 'lucide-react'
+import { PageTableExport } from '@/components/page-table-export'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
@@ -45,12 +46,12 @@ export function MfgOverviewPage() {
   return (
     <>
       <PageHeader title={t('Production overview')} description={t('What is being made now, what to make next and what it costs, in {currency} without VAT.', { currency: company?.base_currency ?? 'ALL' })}
-        actions={<>
+        actions={<><PageTableExport />{<>
           <Select value={range} onValueChange={(v) => setRange(v as keyof typeof RANGES)}><SelectTrigger className="w-[150px]" aria-label={t('Period')}><SelectValue /></SelectTrigger>
             <SelectContent>{Object.entries(RANGES).map(([k, r]) => <SelectItem key={k} value={k}>{t(r.label)}</SelectItem>)}</SelectContent></Select>
           <Can perm="manufacturing.write"><Button variant="outline" asChild><Link to="/manufacturing/boms/new"><Layers /> {t('New recipe')}</Link></Button>
             <Button onClick={() => setNewOpen(true)}><Plus /> {t('New work order')}</Button></Can>
-        </>} />
+        </>}</>} />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label={t('In production')} value={(d?.released ?? 0) + (d?.in_progress ?? 0)} loading={ov.isLoading} href="/manufacturing/orders?view=board"
           hint={t('{a} in progress · {b} released · {c} planned', { a: d?.in_progress ?? 0, b: d?.released ?? 0, c: d?.draft ?? 0 })} />
@@ -184,7 +185,7 @@ export function WorkCentersPage() {
   return (
     <>
       <PageHeader title={t('Work centers|menu')} description={t('Machines, lines and teams where the work is done. Their hourly rates turn the time worked into labour and overhead cost.')}
-        actions={<Can perm="manufacturing.write"><Button onClick={() => setEdit('new')}><Plus /> {t('New work center')}</Button></Can>} />
+        actions={<><PageTableExport />{<Can perm="manufacturing.write"><Button onClick={() => setEdit('new')}><Plus /> {t('New work center')}</Button></Can>}</>} />
       <Card><CardContent className="overflow-x-auto p-0">
         {centers.isLoading ? <Skeleton className="m-4 h-32" /> : centers.isError ? <ErrorState compact error={centers.error} onRetry={() => void centers.refetch()} /> : !centers.data?.length ? <EmptyState icon={Factory} title={t('No work centers yet')} description={t('Add the roaster, the packing line, the assembly bench…')}
             action={<Can perm="manufacturing.write"><Button variant="outline" onClick={() => setEdit('new')}><Plus /> {t('New work center')}</Button></Can>} /> : (

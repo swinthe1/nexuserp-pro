@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { PageTableExport } from '@/components/page-table-export'
 import { TriangleAlert } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -45,12 +46,12 @@ export function SmallBusinessPage() {
     <>
       <PageHeader title={t('Small business tax')}
         description={t('A business not registered for VAT pays a tax on its gross income every quarter: 3% for trade, transport and farming, 9% for services and professions. The income comes from the same documents as the sales book.')}
-        actions={<>
+        actions={<><PageTableExport />{<>
           <Select value={String(year)} onValueChange={(v) => setParams({ year: v })}>
             <SelectTrigger className="w-28" aria-label={t('Year')}><SelectValue /></SelectTrigger>
             <SelectContent>{[now, now - 1, now - 2].map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
           </Select>
-        </>} />
+        </>}</>} />
       {vat.data && (
         <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-info/40 bg-info/5 px-4 py-3 text-sm">
           <span className="flex-1">{t('This business is registered for VAT (number {n}), so it does not pay the small business tax: it declares VAT every month.', { n: vat.data })}</span>

@@ -428,4 +428,5 @@ export default {
   "{n} items": "{n} artikuj",
   "Code or product": "Kodi ose produkti",
   "New|ribbon": "I ri",
+  "Nothing to export on this page yet": "Në këtë faqe ende nuk ka asgjë për të eksportuar",
 } satisfies Dict

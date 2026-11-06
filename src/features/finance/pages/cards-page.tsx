@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { PageTableExport } from '@/components/page-table-export'
 import { BookOpenText, ListChecks } from 'lucide-react'
 import * as React from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -34,7 +35,7 @@ export function CardsPage() {
   const setView = (v: 'one' | 'balances') => { const n = new URLSearchParams(params); if (v === 'balances') { n.set('view', 'balances'); n.delete('p') } else n.delete('view'); setParams(n, { replace: true }) }
   return (
     <>
-      <PageHeader title={t('Partner cards|menu')} description={t('The account card of a customer or supplier with the running balance, and the statement of open items to confirm balances (IOS).')} />
+      <PageHeader actions={<PageTableExport />} title={t('Partner cards|menu')} description={t('The account card of a customer or supplier with the running balance, and the statement of open items to confirm balances (IOS).')} />
       <div className="mb-3 inline-flex w-fit rounded-lg bg-muted p-1 text-sm">
         {(['one', 'balances'] as const).map((v) => (
           <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)}

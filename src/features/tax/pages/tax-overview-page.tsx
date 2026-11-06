@@ -1,4 +1,5 @@
 import { CalendarClock, ClipboardPen, FileSpreadsheet, Fingerprint, Plus } from 'lucide-react'
+import { PageTableExport } from '@/components/page-table-export'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { Can, useCompany } from '@/app/company-provider'
@@ -37,10 +38,10 @@ export function TaxOverviewPage() {
   return (
     <>
       <PageHeader title={t('Tax overview|menu')} description={t('VAT for {month} so far, what is due to the {authority} and when, and how fiscalization is going.', { month: monthLabel(ym), authority })}
-        actions={<>
+        actions={<><PageTableExport />{<>
           <Button variant="outline" asChild><Link to={`/tax/books?month=${ym}`}><FileSpreadsheet /> {t('Open the books')}</Link></Button>
           <Can perm="tax.write"><Button onClick={() => setNewOpen(true)}><Plus /> {t('New declaration')}</Button></Can>
-        </>} />
+        </>}</>} />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label={`${t('Output VAT')} · ${monthLabel(ym)}`} value={formatMoney(p?.output_vat, cur)} loading={pv.isLoading}

@@ -1,4 +1,5 @@
 import { ArrowDown, ArrowUp, Banknote, MapPin, Pencil, Plus, Route, ShoppingBag, Smartphone, Trash2, UserRoundPlus } from 'lucide-react'
+import { PageTableExport } from '@/components/page-table-export'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -35,7 +36,7 @@ export function AgentsPage() {
     <>
       <PageHeader title={t('Field agents')}
         description={t('Agents take orders and collect cash at the customer with their phone, also without internet. Here you see their day and plan their routes.')}
-        actions={<Button variant="outline" asChild><Link to="/agent"><Smartphone /> {t('Open the agent app')}</Link></Button>} />
+        actions={<><PageTableExport />{<Button variant="outline" asChild><Link to="/agent"><Smartphone /> {t('Open the agent app')}</Link></Button>}</>} />
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList><TabsTrigger value="day">{t('The day')}</TabsTrigger><TabsTrigger value="setup">{t('Agents and routes')}</TabsTrigger></TabsList>
         <TabsContent value="day"><DayTab onSetup={() => setTab('setup')} /></TabsContent>

@@ -1,4 +1,5 @@
 import { MapPinned, Route as RouteIcon, Truck } from 'lucide-react'
+import { PageTableExport } from '@/components/page-table-export'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
@@ -55,11 +56,11 @@ export function LogisticsOverviewPage() {
   return (
     <>
       <PageHeader title={t('Logistics overview')} description={t('What is waiting to go out, what is on the road and how deliveries are going.')}
-        actions={<>
+        actions={<><PageTableExport />{<>
           <Select value={range} onValueChange={(v) => setRange(v as keyof typeof RANGES)}><SelectTrigger className="w-[150px]" aria-label={t('Period')}><SelectValue /></SelectTrigger>
             <SelectContent>{Object.entries(RANGES).map(([k, r]) => <SelectItem key={k} value={k}>{t(r.label)}</SelectItem>)}</SelectContent></Select>
           <Can perm="logistics.write"><Button asChild><Link to="/logistics/planning"><MapPinned /> {t('Plan deliveries')}</Link></Button></Can>
-        </>} />
+        </>}</>} />
       {ov.isError && <Card className="mb-3"><ErrorState compact error={ov.error} onRetry={() => void ov.refetch()} /></Card>}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label={t('To dispatch')} value={d?.to_dispatch ?? 0} loading={ov.isLoading} href="/logistics/planning" tone={d?.to_dispatch ? 'warning' : 'default'}

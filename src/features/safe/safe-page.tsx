@@ -1,4 +1,5 @@
 import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, BookOpenText, Calculator, Check, ChevronDown, Landmark, Plus, Receipt, Settings2, TriangleAlert, UserRoundCheck, Vault, X } from 'lucide-react'
+import { PageTableExport } from '@/components/page-table-export'
 import * as React from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { EmptyState } from '@/components/empty-state'
@@ -53,7 +54,7 @@ export function SafePage() {
     <>
       <PageHeader title={t('Safe|nav')}
         description={t('The cash of the shop: what comes from the tills, what goes to the bank and what is taken out. The safe is an account in the books, so the two always agree.')}
-        actions={d?.can.setup && d.safes.length > 0 ? <Button variant="outline" onClick={() => setOpen({ kind: 'settings', safe: null })}><Plus /> {t('New safe')}</Button> : undefined} />
+        actions={<><PageTableExport />{d?.can.setup && d.safes.length > 0 ? <Button variant="outline" onClick={() => setOpen({ kind: 'settings', safe: null })}><Plus /> {t('New safe')}</Button> : undefined}</>} />
 
       {q.isLoading ? <div className="grid gap-4 md:grid-cols-2"><Skeleton className="h-64" /><Skeleton className="h-64" /></div>
         : q.isError ? <ErrorState error={q.error} onRetry={() => void q.refetch()} />

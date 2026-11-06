@@ -1,4 +1,5 @@
 import { ArrowDown, ArrowUp, Check, CircleSlash, Flag, MapPin, Navigation, Play, Printer, X } from 'lucide-react'
+import { PageTableExport } from '@/components/page-table-export'
 import * as React from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -69,14 +70,14 @@ export function RoutePage() {
     <>
       <PageHeader back={{ href: '/logistics/planning', label: t('Delivery planning') }} title={r.number} meta={<StatusBadge status={r.status} />}
         description={<>{formatDate(r.route_date)} · {r.vehicle ? `${r.vehicle.name} · ${r.vehicle.plate_number}` : t('No vehicle')} · {r.driver?.full_name ?? t('No driver')} · {t('from {place}', { place: td(r.warehouse?.name) })}</>}
-        actions={<>
+        actions={<><PageTableExport />{<>
           <Button variant="outline" onClick={() => printSheet(r, company?.name ?? '')}><Printer /> {t('Driver sheet')}</Button>
           <Can perm="logistics.write">
             {r.status === 'planned' && <Button disabled={!r.stops.length} loading={start.isPending}
               onClick={async () => { const n = await start.mutateAsync(r.id); toast.success(tn(n, 'Route started: {n} shipment out for delivery', 'Route started: {n} shipments out for delivery')) }}><Play /> {t('Start route')}</Button>}
             {r.status === 'in_progress' && <Button disabled={!allDone} onClick={() => setComplete(true)}><Flag /> {t('Complete route')}</Button>}
           </Can>
-        </>} />
+        </>}</>} />
 
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Card><CardContent className="p-4"><div className="text-[13px] text-muted-foreground">{t('Stops')}</div><div className="text-xl font-semibold tabular">{l.done} / {l.total}</div></CardContent></Card>

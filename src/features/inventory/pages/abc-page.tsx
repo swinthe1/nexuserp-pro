@@ -1,4 +1,5 @@
 import { Calculator, ClipboardCheck, PackageX, RefreshCw, Search, SlidersHorizontal } from 'lucide-react'
+import { PageTableExport } from '@/components/page-table-export'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { Can } from '@/app/company-provider'
@@ -71,14 +72,14 @@ export function AbcPage() {
         description={xyz
           ? t('Which items carry the business (A, B, C by the value that leaves the stock) and how regularly they sell (X, Y, Z). It decides how often each item is counted and how it is reordered.')
           : t('Which items carry the business: A, B and C by the value that leaves the stock. It decides how often each item is counted and how closely it is followed.')}
-        actions={<>
+        actions={<><PageTableExport />{<>
           <Select value={wh ?? 'all'} onValueChange={(v) => { setWh(v === 'all' ? null : v); setSel(null) }}>
             <SelectTrigger className="w-[220px]" aria-label={t('Unit')}><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="all">{t('The whole company')}</SelectItem>{units.map((w) => <SelectItem key={w.id} value={w.id}>{td(w.name)}</SelectItem>)}</SelectContent>
           </Select>
           <Button variant="outline" onClick={() => setRules(true)}><SlidersHorizontal /> {t('Rules')}</Button>
           <Can perm="inventory.write"><Button variant="outline" loading={run.isPending} onClick={() => run.mutate()}><RefreshCw /> {t('Classify again')}</Button></Can>
-        </>} />
+        </>}</>} />
 
       {sum.isError ? <ErrorState error={sum.error} onRetry={() => void sum.refetch()} /> : !s ? <Skeleton className="h-72" /> : !s.items ? (
         <EmptyState icon={Calculator} title={t('Nothing classified yet')} description={t('Items are classified from what leaves the stock: sales, the till and production. It happens every week by itself, or press "Classify again".')} />

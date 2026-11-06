@@ -1,4 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
+import { PageTableExport } from '@/components/page-table-export'
 import { CalendarClock, Camera, Plus, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -176,13 +177,13 @@ function AssetForm({ asset }: { asset?: AssetDetail }) {
       <PageHeader back={{ href: '/finance/assets', label: t('Fixed assets') }} title={asset ? `${asset.number} · ${asset.name}` : t('New fixed asset')}
         meta={asset && <StatusBadge status={asset.status} />}
         description={asset && asset.status !== 'draft' ? t('Book value {value} of {cost}', { value: formatMoney(asset.book_value), cost: formatMoney(asset.acquisition_cost) }) : undefined}
-        actions={<Can perm="finance.write">
+        actions={<><PageTableExport />{<Can perm="finance.write">
           {asset && editable && <ConfirmDialog trigger={<Button variant="ghost" className="text-destructive"><Trash2 /> {t('Delete')}</Button>} title={t('Delete {doc}?', { doc: asset.number })} description={t('The draft asset is removed.')} confirmLabel={t('Delete')} destructive
             onConfirm={async () => { const { error } = await supabase.from('fixed_assets').delete().eq('id', asset.id); if (error) throw error; navigate('/finance/assets') }} />}
           {editable && <Button variant={asset ? 'outline' : 'default'} loading={save.isPending} disabled={!valid} onClick={async () => { const id = await persist(); toast.success(t('Asset saved')); if (!asset) navigate(`/finance/assets/${id}`, { replace: true }) }}>{t('Save')}</Button>}
           {asset && editable && <Button disabled={!valid} onClick={async () => { await persist(); setActivateOpen(true) }}>{t('Put in service')}</Button>}
           {asset && (asset.status === 'active' || asset.status === 'fully_depreciated') && <Button variant="outline" onClick={() => setDisposeOpen(true)}>{t('Sell or scrap')}</Button>}
-        </Can>} />
+        </Can>}</>} />
       {asset && asset.status !== 'draft' ? (
         <Tabs defaultValue="schedule">
           <TabsList><TabsTrigger value="schedule">{t('Depreciation')}</TabsTrigger><TabsTrigger value="details">{t('Details')}</TabsTrigger><TabsTrigger value="accounting">{t('Accounting')}</TabsTrigger></TabsList>

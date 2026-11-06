@@ -1,4 +1,5 @@
 import { MapPin, Pencil, Plus, Trash2, Warehouse as WarehouseIcon } from 'lucide-react'
+import { PageTableExport } from '@/components/page-table-export'
 import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
@@ -109,10 +110,10 @@ export function WarehousesPage() {
       <PageHeader
         title={t('Warehouses|menu')}
         description={t('The units of the company: its shops, restaurants, warehouses and kitchens. Each has its own address, number at ATK, stock and tills; inside a unit there can be places (shelves, fridges), for those who need them.')}
-        actions={<Can perm="inventory.write">
+        actions={<><PageTableExport />{<Can perm="inventory.write">
           <Button disabled={oneOnly} title={oneOnly ? t('This client works with one unit. The Super Admin can switch it to several units') : undefined} onClick={() => setNewUnit(true)}><Plus /> {t('New warehouse')}</Button>
           <NewUnitDialog open={newUnit} onOpenChange={setNewUnit} onCreated={setSelected} />
-        </Can>}
+        </Can>}</>}
       />
       <div className="grid gap-4 grid-cols-[minmax(0,1fr)] lg:grid-cols-[360px_minmax(0,1fr)]">
         <div className="grid content-start gap-2">

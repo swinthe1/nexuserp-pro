@@ -1,4 +1,5 @@
 import { Download, FileSpreadsheet, FileText, Printer } from 'lucide-react'
+import { toast } from 'sonner'
 import { t } from '@/i18n'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -54,7 +55,7 @@ export function GridExportMenu({ name, title, subtitle, grid, disabled, label }:
 }) {
   const run = (kind: 'xlsx' | 'pdf' | 'csv' | 'print') => {
     const g = grid()
-    if (!g?.length) return
+    if (!g || g.length < 2) { toast.info(t('Nothing to export on this page yet')); return }
     const [head, ...body] = g
     const columns: XlsxColumn<Cell[]>[] = head!.map((h, i) => {
       const vals = body.map((r) => r[i]).filter((v) => v !== null && v !== undefined && v !== '')

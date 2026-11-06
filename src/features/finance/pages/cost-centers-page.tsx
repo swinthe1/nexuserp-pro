@@ -1,4 +1,5 @@
 import { useQueries } from '@tanstack/react-query'
+import { PageTableExport } from '@/components/page-table-export'
 import { Plus } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
@@ -67,13 +68,13 @@ export function CostCentersPage() {
   return (
     <>
       <PageHeader title={t('Cost centers|menu')} description={t('Tag entries with a department, branch or project to see its own profit. Revenue and costs without a cost center are shown separately.')}
-        actions={<>
+        actions={<><PageTableExport />{<>
           <div className="flex items-center gap-2 text-[13px]">
             <Label htmlFor="cc-from" className="text-muted-foreground">{t('From')}</Label><Input id="cc-from" type="date" className="w-[150px]" value={from} onChange={(e) => setFrom(e.target.value)} />
             <Label htmlFor="cc-to" className="text-muted-foreground">{t('To')}</Label><Input id="cc-to" type="date" className="w-[150px]" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
           <Can perm="finance.write"><Button onClick={() => setEdit('new')}><Plus /> {t('New cost center')}</Button></Can>
-        </>} />
+        </>}</>} />
       <Card>
         <CardContent className="overflow-x-auto p-0">
           {ccs.isLoading ? <Skeleton className="m-4 h-40" /> : ccs.isError ? <ErrorState error={ccs.error} onRetry={() => void ccs.refetch()} /> : !list.length ? (

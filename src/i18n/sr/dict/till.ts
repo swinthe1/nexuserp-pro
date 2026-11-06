@@ -869,4 +869,5 @@ export default {
   "{n} item": "{n} artikal",
   "Code or product": "Šifra ili proizvod",
   "New|ribbon": "Novo",
+  "Nothing to export on this page yet": "Još nema ništa za izvoz na ovoj stranici",
 } satisfies Dict

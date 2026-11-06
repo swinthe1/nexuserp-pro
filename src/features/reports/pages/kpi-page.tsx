@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { PageTableExport } from '@/components/page-table-export'
 import {
   ArrowDownRight, ArrowUpRight, Boxes, Clock3, Coins, Gauge, PackageX, Percent, Receipt, ShieldCheck, Target, UsersRound,
 } from 'lucide-react'
@@ -111,7 +112,7 @@ export function KpiPage() {
     <>
       <PageHeader title={t('Manager\'s panel')}
         description={t('The shop\'s numbers against its plan and the period before: customers, average receipt, margin, losses, stock and the tills. Amounts without VAT.')}
-        actions={k?.can_set_targets && <Button variant="outline" onClick={() => setTargets(true)}><Target /> {t('Sales targets')}</Button>} />
+        actions={<><PageTableExport />{k?.can_set_targets && <Button variant="outline" onClick={() => setTargets(true)}><Target /> {t('Sales targets')}</Button>}</>} />
 
       <Card className="mb-4">
         <CardContent className="flex flex-wrap items-end gap-3 p-3">

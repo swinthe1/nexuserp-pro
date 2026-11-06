@@ -1,4 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
+import { PageTableExport } from '@/components/page-table-export'
 import { Ban, BookCheck, BookOpenText, Check, CheckCheck, HandCoins, Landmark, Link2, Plus, Undo2, Upload, Wallet, Wand2 } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -307,14 +308,14 @@ export function StatementPage() {
     <>
       <PageHeader back={{ href: '/finance/bank', label: t('Bank and cash') }} title={`${td(s.bank?.name)} · ${formatDate(s.statement_date)}`} meta={<StatusBadge status={s.status} />}
         description={s.reference ?? undefined}
-        actions={open && <Can perm="finance.write">
+        actions={<><PageTableExport />{open && <Can perm="finance.write">
           <Button variant="outline" loading={autoMatch.isPending} disabled={!unmatched} onClick={async () => { const r = await autoMatch.mutateAsync(s.id); toast.success(r.matched + r.settled + r.suggested ? matchMessage(r) : t('No new matches found')) }}><Wand2 /> {t('Match automatically')}</Button>
           {suggested > 0 && <Button variant="outline" loading={acceptAll.isPending} onClick={async () => {
             const r = await acceptAll.mutateAsync(s.id)
             toast.success(tn(r.accepted, '{n} suggestion accepted', '{n} suggestions accepted') + (r.failed ? ` · ${tn(r.failed, '{n} could not be settled', '{n} could not be settled')}` : ''))
           }}><CheckCheck /> {t('Accept all ({n})', { n: suggested })}</Button>}
           <Button loading={reconcile.isPending} disabled={!!unmatched || !balanced} onClick={async () => { await reconcile.mutateAsync(s.id); toast.success(t('Statement reconciled')) }}><BookCheck /> {t('Reconcile')}</Button>
-        </Can>} />
+        </Can>}</>} />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Fact label={t('Opening + lines')} value={formatMoney(num(s.opening_balance) + sum)} hint={balanced ? t('Equals the closing balance {amount}', { amount: formatMoney(s.closing_balance) }) : t('The closing balance says {amount}', { amount: formatMoney(s.closing_balance) })} bad={!balanced} />
         <Fact label={t('Matched|payment')} value={t('{done} of {total}', { done: matched, total: s.lines.length })} hint={unmatched ? tn(unmatched, '{n} line still to match, record or ignore', '{n} lines still to match, record or ignore') : t('Every line is accounted for')} bad={false} />

@@ -1,4 +1,5 @@
 import { PackageCheck, RefreshCw, Search, Truck } from 'lucide-react'
+import { PageTableExport } from '@/components/page-table-export'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -58,13 +59,13 @@ export function FulfillmentPage() {
   return (
     <>
       <PageHeader title={t('Order desk|menu')} description={t('Every open order line with what is reserved, free and on the way. Reserve what stock allows, ship what is ready, and send the rest to replenishment.')}
-        actions={<>
+        actions={<><PageTableExport />{<>
           <Select value={warehouse} onValueChange={setWarehouse}>
             <SelectTrigger className="w-[190px]" aria-label={t('Warehouse')}><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="all">{t('All warehouses')}</SelectItem>{(warehouses.data ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{td(w.name)}</SelectItem>)}</SelectContent>
           </Select>
           {can('procurement.read') && <Button variant="outline" asChild><Link to="/procurement/replenishment"><RefreshCw /> {t('Plan replenishment')}</Link></Button>}
-        </>} />
+        </>}</>} />
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         {STATES.map((s) => (
           <button key={s.value} type="button" onClick={() => setState(state === s.value ? 'all' : s.value)} className="text-left" aria-pressed={state === s.value}>

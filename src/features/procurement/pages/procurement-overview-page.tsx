@@ -1,4 +1,5 @@
 import { ArrowRight, ClipboardList, Plus } from 'lucide-react'
+import { PageTableExport } from '@/components/page-table-export'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
@@ -41,14 +42,14 @@ export function ProcurementOverviewPage() {
       <PageHeader
         title={t('Purchasing overview|menu')}
         description={t('Spend counts recorded vendor bills, less credit notes, in {currency} without VAT.', { currency: cur })}
-        actions={<>
+        actions={<><PageTableExport />{<>
           <Select value={rangeKey} onValueChange={(v) => setRangeKey(v as RangeKey)}>
             <SelectTrigger className="w-[150px]" aria-label={t('Period')}><SelectValue /></SelectTrigger>
             <SelectContent>{Object.entries(RANGES).map(([k, r]) => <SelectItem key={k} value={k}>{t(r.label)}</SelectItem>)}</SelectContent>
           </Select>
           <Can perm="requisitions.write"><Button variant="outline" asChild><Link to="/procurement/requisitions/new"><ClipboardList /> {t('New requisition')}</Link></Button></Can>
           <Can perm="procurement.write"><Button asChild><Link to="/procurement/orders/new"><Plus /> {t('New purchase order')}</Link></Button></Can>
-        </>}
+        </>}</>}
       />
       {ov.isError && <Card className="mb-3"><ErrorState compact error={ov.error} onRetry={() => void ov.refetch()} /></Card>}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

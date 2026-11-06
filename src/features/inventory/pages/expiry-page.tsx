@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { PageTableExport } from '@/components/page-table-export'
 import { CalendarClock, Check, PackageX, Percent, Plus, X } from 'lucide-react'
 import * as React from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -105,7 +106,7 @@ export function ExpiryPage() {
     <div className="grid gap-4">
       <PageHeader title={t('Short dates|menu')}
         description={t('Items about to expire in each store: the shelf worker proposes a discount, the manager approves it and the till sells it at that price until the date. What expired comes off the shelf as a loss.')}
-        actions={<>
+        actions={<><PageTableExport />{<>
           <Select value={warehouse ?? '__all'} onValueChange={(v) => setWarehouse(v === '__all' ? null : v)}>
             <SelectTrigger className="w-48" aria-label={t('Warehouse')}><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="__all">{t('All units')}</SelectItem>{(warehouses.data ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{td(w.name)}</SelectItem>)}</SelectContent>
@@ -115,7 +116,7 @@ export function ExpiryPage() {
             <SelectContent>{[3, 7, 14, 30].map((d) => <SelectItem key={d} value={String(d)}>{tn(d, 'Next {n} day', 'Next {n} days')}</SelectItem>)}</SelectContent>
           </Select>
           {o?.can.propose && <Button onClick={() => setPropose({})}><Plus /> {t('Note a short date')}</Button>}
-        </>} />
+        </>}</>} />
 
       <div className="-mt-2 flex flex-wrap items-center gap-2">
         <MultiPick label={t('Suppliers')} value={sups} onChange={setSups} options={supOptions} />

@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
+import { PageTableExport } from '@/components/page-table-export'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -49,7 +50,7 @@ export function AttendancePage() {
   return (
     <>
       <PageHeader title={t('Attendance')} description={t('Each person\'s month at a glance: days at work with hours, leave, holidays and missing days.')}
-        actions={<>
+        actions={<><PageTableExport />{<>
           <Select value={dep ?? 'all'} onValueChange={(v) => setDep(v === 'all' ? null : v)}><SelectTrigger className="w-[180px]" aria-label={t('Department')}><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="all">{t('All departments')}</SelectItem>{(deps.data ?? []).map((d) => <SelectItem key={d.id} value={d.id}>{td(d.name)}</SelectItem>)}</SelectContent></Select>
           <div className="flex items-center rounded-md border">
@@ -57,7 +58,7 @@ export function AttendancePage() {
             <span className="min-w-[120px] text-center text-[13px] font-medium">{label}</span>
             <Button variant="ghost" size="icon-sm" aria-label={t('Next month')} onClick={() => shift(1)}><ChevronRight /></Button>
           </div>
-        </>} />
+        </>}</>} />
       <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
         {Object.entries(CODES).map(([k, c]) => <span key={k} className="flex items-center gap-1.5"><span className={cn('flex h-4 min-w-4 items-center justify-center rounded px-0.5 text-[10px] font-semibold', c.cls)}>{k === 'W' ? '' : t(c.letter)}</span>{t(c.label)}</span>)}
         {can('hr.write') && <span>· {t('Click a day to add or correct it.')}</span>}

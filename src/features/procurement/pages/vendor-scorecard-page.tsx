@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { PageTableExport } from '@/components/page-table-export'
 import { AlertTriangle, ArrowRight } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
@@ -41,7 +42,7 @@ export function VendorScorecardPage() {
   const cur = company?.base_currency
   return (
     <>
-      <PageHeader title={t('Vendor scorecard')}
+      <PageHeader actions={<PageTableExport />} title={t('Vendor scorecard')}
         description={t('How each vendor serves us: orders on time and complete, goods refused at the door and price rises. Judged on the orders placed in the period.')} />
       <Card className="mb-4"><CardContent className="flex flex-wrap items-end gap-3 p-3">
         <div className="grid gap-1"><Label htmlFor="vs-from" className="text-xs">{t('From')}</Label><Input id="vs-from" type="date" className="h-8 w-[150px]" value={from} max={to} onChange={(e) => e.target.value && set('from', e.target.value)} /></div>
