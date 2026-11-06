@@ -860,4 +860,5 @@ export default {
   "Voucher not found": "Kuponi dhuratë nuk u gjet",
   "Only a manager blocks a voucher": "Vetëm menaxheri e bllokon një kupon dhurate",
   "Say why the voucher is blocked": "Shkruani pse bllokohet kuponi",
+  "You do not have permission to see the purchases": "Nuk keni leje për të parë blerjet",
 } satisfies Dict

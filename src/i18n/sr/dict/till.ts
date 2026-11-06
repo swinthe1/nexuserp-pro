@@ -870,4 +870,6 @@ export default {
   "Code or product": "Šifra ili proizvod",
   "New|ribbon": "Novo",
   "Nothing to export on this page yet": "Još nema ništa za izvoz na ovoj stranici",
+  "Detailed sales|menu": "Detaljna prodaja",
+  "Detailed purchases|menu": "Detaljne nabavke",
 } satisfies Dict

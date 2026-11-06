@@ -92,6 +92,8 @@ export interface DataTableProps<T> {
   toolbar?: React.ReactNode
   onRowClick?: (row: T) => void
   exportName?: string
+  /** a line under the title of the export and the print (the filters of a report, say) */
+  exportSubtitle?: string
   empty?: { title: string; description?: string; action?: React.ReactNode }
   server?: ServerSideOptions
   footer?: (table: TanTable<T>) => React.ReactNode
@@ -137,7 +139,7 @@ export function LeadCell() {
 
 export function DataTable<T>({
   columns, data, isLoading, error, getRowId, tableKey, searchPlaceholder, facets = [], initialSorting = [],
-  initialHidden = [], initialFilters, bulkActions, toolbar, onRowClick, exportName, empty, server, footer, dense, preview,
+  initialHidden = [], initialFilters, bulkActions, toolbar, onRowClick, exportName, exportSubtitle, empty, server, footer, dense, preview,
 }: DataTableProps<T>) {
   const storageKey = tableKey ? `drispro.table.${tableKey}.columns` : null
   const [sorting, setSorting] = React.useState<SortingState>(initialSorting)
@@ -367,10 +369,10 @@ export function DataTable<T>({
     const heading = typeof document !== 'undefined' ? document.querySelector('main h1')?.textContent?.trim() : undefined
     const title = heading || (exportName ?? tableKey ?? t('Export'))
     const name = exportName ?? (heading ? heading.replace(/[\\/:*?"<>|]+/g, ' ').trim() : tableKey ?? 'export')
-    if (kind === 'print') printTable({ title, columns: cols.map((c) => ({ header: c.header })), rows: rows.map((r) => cols.map((c) => c.value(r))) })
+    if (kind === 'print') printTable({ title, subtitle: exportSubtitle, columns: cols.map((c) => ({ header: c.header })), rows: rows.map((r) => cols.map((c) => c.value(r))) })
     else if (kind === 'csv') exportCsv(rows, cols, name)
-    else if (kind === 'xlsx') await exportXlsx(rows, cols.map((c) => ({ ...c, format: 'qty' as const })), name, { sheet: title, title: [title] })
-    else await exportPdf(rows, cols, name, title)
+    else if (kind === 'xlsx') await exportXlsx(rows, cols.map((c) => ({ ...c, format: 'qty' as const })), name, { sheet: title, title: exportSubtitle ? [title, exportSubtitle] : [title] })
+    else await exportPdf(rows, cols, name, title, exportSubtitle)
   }
 
   return (

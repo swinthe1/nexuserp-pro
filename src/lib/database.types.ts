@@ -19014,6 +19014,13 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      purchase_detail: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: Json
+      }
       purchase_invoice_complete: {
         Args: {
           p_bill: string
@@ -19597,6 +19604,13 @@ export type Database = {
       safes_overview: {
         Args: {
           p_company: string
+        }
+        Returns: Json
+      }
+      sales_detail: {
+        Args: {
+          p_company: string
+          p: Json
         }
         Returns: Json
       }

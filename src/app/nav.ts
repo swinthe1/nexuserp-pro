@@ -235,6 +235,8 @@ export const NAV: NavSection[] = [
     items: [
       { label: msg('Reports'), href: '/reports', icon: FileBarChart, perm: 'reports.read', keywords: ['analytics', 'sales analysis', 'margin', 'valuation', 'aging', 'raporte'], hub: msg('Reports|menu') },
       { label: msg('Manager\'s panel|menu'), href: '/reports/kpi', icon: Gauge, perm: 'reports.read', keywords: ['kpi', 'plan', 'target', 'objektiv', 'realizimi', 'kupon mesatar', 'average receipt', 'marzh', 'humbje', 'qarkullimi', 'menaxher', 'performance'], hub: msg('Reports|menu') },
+      { label: msg('Detailed sales|menu'), href: '/reports/sales-detail', icon: ListTree, perm: 'sales.read', keywords: ['shitjet e detajuara', 'sales by item', 'margin', 'marzha', 'kuponat', 'receipts', 'by customer', 'by hour', 'filters'], hub: msg('Reports|menu') },
+      { label: msg('Detailed purchases|menu'), href: '/reports/purchases-detail', icon: ListTree, perm: 'procurement.read|invoicing.read', keywords: ['blerjet e detajuara', 'purchases by item', 'import costs', 'kosto e importit', 'rabat', 'discount', 'by supplier', 'filters'], hub: msg('Reports|menu') },
       { label: msg('Sales overview|menu'), href: '/sales', icon: BadgeDollarSign, perm: 'sales.read', keywords: ['revenue', 'kpi', 'performance', 'metrics'], hub: msg('Reports|menu') },
       { label: msg('Purchasing overview|menu'), href: '/procurement', icon: LineChart, perm: 'procurement.read', keywords: ['spend', 'procurement', 'kpi', 'blerje'], hub: msg('Reports|menu') },
       { label: msg('Finance overview|menu'), href: '/finance', icon: Landmark, perm: 'finance.read', keywords: ['accounting', 'kpi', 'kontabilitet'], hub: msg('Reports|menu') },
