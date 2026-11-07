@@ -1,9 +1,9 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
 import { FilePlus2 } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { toast } from 'sonner'
+
 import { Can, useCompany } from '@/app/company-provider'
 import { ColumnHeader, DataTable, inFilter } from '@/components/data-table/data-table'
 import { PageHeader } from '@/components/page-header'
@@ -12,10 +12,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { t, td } from '@/i18n'
-import { describeError, unwrap } from '@/lib/errors'
+import { unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { formatDate, formatMoney, num } from '@/lib/utils'
 import { FISCAL_STATUS, FiscalBadge, type FiscalStatus } from '../fiscal-status'
+import { BillFromReceiptDialog } from '@/features/procurement/components/bill-from-receipt-dialog'
 
 type Row = {
   id: string; number: string; receipt_date: string; days: number; fiscal_status: FiscalStatus; vendor_id: string; vendor: string; tax_number: string | null
@@ -37,11 +38,7 @@ export function PendingInvoicesPage() {
     queryKey: ['pending-invoices', companyId, all], enabled: !!companyId,
     queryFn: async () => unwrap(await supabase.rpc('receipts_pending_invoice', { p_company: companyId!, p: { all } as never })) as unknown as Data,
   })
-  const bill = useMutation({
-    mutationFn: async (id: string) => unwrap(await supabase.rpc('create_bill_from_receipt', { p_receipt: id })) as string,
-    onSuccess: (id) => { toast.success(t('Draft bill created')); navigate(`/procurement/bills/${id}`) },
-    onError: (e) => toast.error(describeError(e)),
-  })
+  const [billing, setBilling] = React.useState<{ id: string; number: string } | null>(null)
   const rows = q.data?.rows ?? []
   const pending = rows.filter((r) => r.fiscal_status === 'pending_invoice')
   const pendingValue = pending.reduce((s, r) => s + num(r.pending_value), 0)
@@ -70,13 +67,14 @@ export function PendingInvoicesPage() {
       <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
         {r.purchase_order_id
           ? <Button size="xs" variant="outline" className="whitespace-nowrap" asChild><Link to={`/procurement/orders/${r.purchase_order_id}`}>{t('Bill the order')}</Link></Button>
-          : <Can perm="invoicing.write"><Button size="xs" variant="outline" className="whitespace-nowrap" loading={bill.isPending && bill.variables === r.id} onClick={() => bill.mutate(r.id)}><FilePlus2 /> {t('Enter the invoice')}</Button></Can>}
+          : <Can perm="invoicing.write"><Button size="xs" variant="outline" className="whitespace-nowrap" onClick={() => setBilling({ id: r.id, number: r.number })}><FilePlus2 /> {t('Enter the invoice')}</Button></Can>}
       </div>
     ) },
-  ], [cur, bill.isPending, bill.variables]) // eslint-disable-line react-hooks/exhaustive-deps
+  ], [cur]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>
+      {billing && <BillFromReceiptDialog receipt={billing.id} number={billing.number} onClose={() => setBilling(null)} />}
       <PageHeader title={t('Goods waiting for the invoice|menu')}
         description={t('Goods received and in stock, sold at the till with their VAT, whose supplier\'s tax invoice has not been entered yet. The purchase enters the VAT book with the invoice, on the invoice\'s date; until then it is owed in the books as goods received, not invoiced.')} />
       <div className="mb-3 grid grid-cols-2 gap-3 lg:grid-cols-4">

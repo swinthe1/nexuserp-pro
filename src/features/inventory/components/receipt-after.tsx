@@ -15,9 +15,10 @@ import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { formatDate, formatMoney, formatQty, num } from '@/lib/utils'
 import { FiscalBadge } from '@/features/procurement/fiscal-status'
+import { BillFromReceiptDialog } from '@/features/procurement/components/bill-from-receipt-dialog'
 
 type Line = { id: string; variant_id: string; quantity: number; unit_cost: number | null }
-type Receipt = { id: string; status: string; receipt_type: string; purchase_order_id: string | null; vendor_id: string | null; lines: Line[]; fiscal_status?: string | null }
+type Receipt = { id: string; number?: string; status: string; receipt_type: string; purchase_order_id: string | null; vendor_id: string | null; lines: Line[]; fiscal_status?: string | null }
 type VendorReturn = { id: string; number: string; return_date: string; reason: string; total_cost: number; vendor_credit_id: string | null
   lines: { receipt_line_id: string; quantity: number }[] }
 
@@ -33,11 +34,7 @@ export function ReceiptAfterActions({ doc, nameOf }: { doc: Receipt; nameOf: (va
       .select('id, number, return_date, reason, total_cost, vendor_credit_id, lines:vendor_return_lines(receipt_line_id, quantity)')
       .eq('receipt_id', doc.id).order('created_at')) as unknown as VendorReturn[],
   })
-  const bill = useMutation({
-    mutationFn: async () => unwrap(await supabase.rpc('create_bill_from_receipt', { p_receipt: doc.id })) as string,
-    onSuccess: (id) => { toast.success(t('Draft bill created')); navigate(`/procurement/bills/${id}`) },
-    onError: (e) => toast.error(describeError(e)),
-  })
+  const [billing, setBilling] = React.useState(false)
   const credit = useMutation({
     mutationFn: async (ret: string) => unwrap(await supabase.rpc('vendor_credit_from_return', { p_return: ret })) as string,
     onSuccess: (id) => { void qc.invalidateQueries({ queryKey: ['vendor-returns', doc.id] }); toast.success(t('Draft credit note created')); navigate(`/procurement/bills/${id}`) },
@@ -50,11 +47,12 @@ export function ReceiptAfterActions({ doc, nameOf }: { doc: Receipt; nameOf: (va
 
   return (
     <div className="mb-4 grid gap-3">
+      {billing && <BillFromReceiptDialog receipt={doc.id} number={doc.number} onClose={() => setBilling(false)} />}
       <div className="flex flex-wrap gap-2">
         <DocumentActions id={doc.id} kind="goods_receipt" size="sm" />
         {doc.lines.length > 0 && <Button size="sm" variant="outline" asChild><Link to={`/inventory/labels?receipt=${doc.id}`}><Tag /> {t('Labels')}</Link></Button>}
         {purchase && !doc.purchase_order_id && doc.vendor_id && can('invoicing.write') && (
-          <Button size="sm" variant="outline" loading={bill.isPending} onClick={() => bill.mutate()}><FileText /> {t('Create the vendor bill')}</Button>
+          <Button size="sm" variant="outline" onClick={() => setBilling(true)}><FileText /> {t('Create the vendor bill')}</Button>
         )}
         {purchase && can('inventory.write') && (
           <Button size="sm" variant="outline" onClick={() => setReturning(true)}><Undo2 /> {t('Return to the vendor')}</Button>

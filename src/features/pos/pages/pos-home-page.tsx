@@ -27,7 +27,7 @@ import { supabase } from '@/lib/supabase'
 import { ErrorState } from '@/components/error-state'
 import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { t, td, tEnum, tn } from '@/i18n'
-import { cn, formatDate, formatMoney, humanize, num } from '@/lib/utils'
+import { cn, formatDate, formatMoney, humanize, num, todayISO } from '@/lib/utils'
 import { useBankAccounts, useJournals } from '@/features/finance/api'
 import { AccountingTab } from '@/features/finance/components/t-accounts'
 import { useLocations, useWarehouses } from '@/features/inventory/api'
@@ -57,7 +57,7 @@ export function PosHomePage() {
   useRealtimeInvalidate('pos_orders', companyId, [posKeys.all(companyId)])
   const sync = useSyncState()
   const [edit, setEdit] = React.useState<Register | 'new' | null>(null)
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayISO()
   const todays = (sessions.data ?? []).filter((s) => s.opened_at.slice(0, 10) === today || s.status !== 'closed')
   const zToday = (sessions.data ?? []).flatMap((s) => (s.closed_at?.slice(0, 10) === today ? s.z : []))
   const closedSales = zToday.reduce((t, z) => t + num(z.gross_sales) - num(z.refunds_total), 0)

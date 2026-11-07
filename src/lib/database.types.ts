@@ -17094,6 +17094,8 @@ export type Database = {
       create_bill_from_receipt: {
         Args: {
           p_receipt: string
+          p_number?: string
+          p_date?: string
         }
         Returns: string
       }
@@ -18673,6 +18675,12 @@ export type Database = {
         Returns: Json
       }
       platform_pricing_save: {
+        Args: {
+          p: Json
+        }
+        Returns: undefined
+      }
+      platform_save_licence: {
         Args: {
           p: Json
         }

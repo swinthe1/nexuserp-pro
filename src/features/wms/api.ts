@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
 import type { Json } from '@/lib/database.types'
 import { describeError, unwrap } from '@/lib/errors'
-import { supabase } from '@/lib/supabase'
+import { after, fetchAll, supabase } from '@/lib/supabase'
 import { useLocations, type LocationRow } from '@/features/inventory/api'
 import { t } from '@/i18n'
 import { ensureScanCatalog, findOffline, itemOffline, useScanCatalog } from '@/lib/offline/catalog'
@@ -254,8 +254,9 @@ export const useConfirmShipment = () => useAction(async (a: { id: string; carrie
   unwrap(await supabase.rpc('confirm_shipment', { p_delivery: a.id, p_carrier: a.carrier ?? undefined, p_tracking: a.tracking ?? undefined,
     p_packages: a.packages ?? undefined, p_weight: a.weight ?? undefined })) as unknown as { number: string; cost: number })
 export function useDeliveryLines(id: string | undefined) {
+  const { companyId } = useCompany()
   return useQuery({
-    queryKey: ['wms', 'delivery-lines', id],
+    queryKey: [...wmsKeys.all(companyId), 'delivery-lines', id],
     enabled: !!id,
     queryFn: async () => unwrap(await supabase.from('delivery_lines')
       .select('id, quantity, variant:product_variants(sku, name), lot:lots(lot_number, expiry_date), location:warehouse_locations(code)')
@@ -268,8 +269,9 @@ export function useDeliveryLines(id: string | undefined) {
 export type BinStock = { id: string; variant_id: string; lot_id: string | null; on_hand: number; reserved: number
   variant: { sku: string; name: string } | null; lot: { lot_number: string; expiry_date: string | null } | null }
 export function useBinStock(locationId: string | null | undefined) {
+  const { companyId } = useCompany()
   return useQuery({
-    queryKey: ['wms', 'bin', locationId],
+    queryKey: [...wmsKeys.all(companyId), 'bin', locationId],
     enabled: !!locationId,
     queryFn: async () => unwrap(await supabase.from('stock_levels')
       .select('id, variant_id, lot_id, on_hand, reserved, variant:product_variants(sku, name), lot:lots(lot_number, expiry_date)')
@@ -362,9 +364,11 @@ export function useLotsList() {
   return useQuery({
     queryKey: [...wmsKeys.all(companyId), 'lots'],
     enabled: !!companyId,
-    queryFn: async () => unwrap(await supabase.from('lots')
+    // every lot, page by page (a big shop has more than the 1,000 one call returns), soonest expiry first
+    queryFn: async () => (await fetchAll<LotRow>('id', (x) => after(supabase.from('lots')
       .select('id, lot_number, lot_type, expiry_date, manufacture_date, created_at, variant:product_variants(id, sku, name, product:products(category_id)), vendor:business_partners(name), levels:stock_levels(on_hand)')
-      .eq('company_id', companyId!).is('deleted_at', null).order('expiry_date', { nullsFirst: false }).order('id').range(0, 999).returns<LotRow[]>()),
+      .eq('company_id', companyId!).is('deleted_at', null), 'id', x).order('id').limit(1000).returns<LotRow[]>()))
+      .sort((a, b) => (a.expiry_date ?? '9999').localeCompare(b.expiry_date ?? '9999')),
   })
 }
 export type LotTrace = {
@@ -378,8 +382,9 @@ export type LotTrace = {
   customers: { partner_id: string | null; name: string; quantity: number; last_date: string }[]
 }
 export function useLotTrace(id: string | undefined) {
+  const { companyId } = useCompany()
   return useQuery({
-    queryKey: ['wms', 'lot-trace', id],
+    queryKey: [...wmsKeys.all(companyId), 'lot-trace', id],
     enabled: !!id,
     queryFn: async () => unwrap(await supabase.rpc('lot_trace', { p_lot: id! })) as unknown as LotTrace,
   })

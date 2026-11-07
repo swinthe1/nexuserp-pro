@@ -11,7 +11,7 @@ import { StatCard } from '@/components/stat-card'
 import { StockBar } from '@/components/stock-bar'
 import { TableCell, TableFooter, TableRow } from '@/components/ui/table'
 import type { Views } from '@/lib/database.types'
-import { cn, formatDate, formatMoney, formatQty, num } from '@/lib/utils'
+import { cn, formatDate, formatMoney, formatQty, num, todayISO } from '@/lib/utils'
 import { invKeys, useInventoryOverview, useStockLevels, useWarehouses } from '../api'
 import { t, td, tn } from '@/i18n'
 import { useRealtimeInvalidate } from '@/hooks/use-realtime'
@@ -65,7 +65,7 @@ export function StockPage() {
       cell: ({ row: { original: r } }) => <span className="font-medium tabular">{formatQty(r.total)} <span className="font-normal text-muted-foreground">{td(r.uom)}</span></span> },
     { id: 'value', accessorFn: (r) => r.value, header: ({ column }) => <ColumnHeader column={column} title={t('Value at cost')} />, meta: { label: t('Value at cost'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
   ], [unitCols])
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayISO()
   // a place inside the unit (shelf, fridge) only matters where a unit has more than one: otherwise the column stays out of the way
   const placesMatter = React.useMemo(() => {
     const seen = new Map<string, Set<string>>()

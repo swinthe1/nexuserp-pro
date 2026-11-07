@@ -1053,4 +1053,7 @@ export default {
   "The price of each package and of the older plans, without VAT. Only you see them; the overview counts the income from them.": "Çmimi i çdo pakete dhe i planeve të vjetra, pa TVSH. I shihni vetëm ju; pasqyra numëron të ardhurat prej tyre.",
   "The price of each package and of the older plans, without VAT. Only you see them; a package without a price counts as on offer.": "Çmimi i çdo pakete dhe i planeve të vjetra, pa TVSH. I shihni vetëm ju; një paketë pa çmim llogaritet me ofertë.",
   "The amounts differ: the line is {line}, the payment {payment}. Match them anyway?": "Shumat ndryshojnë: rreshti është {line}, pagesa {payment}. T’i përputh gjithsesi?",
+  "The supplier’s invoice": "Fatura e furnitorit",
+  "For the goods of {number}. Write the number and date as they are on the invoice: they go to the purchase book.": "Për mallin e {number}. Shkruani numrin dhe datën si janë në faturë: ato shkojnë në librin e blerjes.",
+  "Write the number and date as they are on the invoice: they go to the purchase book.": "Shkruani numrin dhe datën si janë në faturë: ato shkojnë në librin e blerjes.",
 } satisfies Dict

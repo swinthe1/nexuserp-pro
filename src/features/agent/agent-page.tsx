@@ -19,7 +19,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { msg, t, tn, tServer } from '@/i18n'
 import { describeError } from '@/lib/errors'
 import { discard, retry, useOutbox } from '@/lib/offline/outbox'
-import { cn, formatDate, formatMoney, formatQty, num } from '@/lib/utils'
+import { cn, formatDate, formatMoney, formatQty, num, todayISO } from '@/lib/utils'
 import {
   type AgentBoot, type AgentCustomer, type AgentItem, estimatePrice, locate, type Outcome, useAgentBoot, useAgentSend, useItems,
   useRefreshOnSent, useWaiting, waitingArgs,
@@ -143,7 +143,7 @@ const overdueTotal = (c: AgentCustomer, today: string) => c.open.filter((i) => i
 
 function CustomerRow({ c, n, visited, onOpen }: { c: AgentCustomer; n?: number; visited: boolean; onOpen: () => void }) {
   const { company } = useCompany()
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayISO()
   const due = openTotal(c)
   const late = overdueTotal(c, today)
   return (

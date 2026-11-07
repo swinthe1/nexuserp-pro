@@ -56,7 +56,8 @@ function SideNav({ onNavigate }: { onNavigate?: () => void }) {
     if (b === 'devices') return devices.data?.pending ?? 0
     const d = ov.data
     if (!d || !b) return 0
-    if (b === 'attention') return d.attention.filter((a) => a.kind !== 'pending_account' && a.kind !== 'seats_full').length
+    // an invited person waiting for an account counts too: only the Super Admin can make it
+    if (b === 'attention') return d.attention.filter((a) => a.kind !== 'seats_full').length
     if (b === 'ending') return d.ending + d.expired
     return d.links.errors
   }

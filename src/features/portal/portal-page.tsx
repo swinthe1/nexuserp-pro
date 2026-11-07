@@ -12,7 +12,7 @@ import { msg, t, tn, tServer } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
 import { newId } from '@/lib/offline/outbox'
 import { supabase } from '@/lib/supabase'
-import { cn, formatDate, formatMoney, formatQty, num } from '@/lib/utils'
+import { cn, formatDate, formatMoney, formatQty, num, todayISO } from '@/lib/utils'
 
 type Home = {
   error?: string
@@ -356,7 +356,7 @@ function OrdersTab({ home, onOpen }: { home: Home; onOpen: (id: string) => void 
 
 function InvoicesTab({ home, onOpen }: { home: Home; onOpen: (id: string) => void }) {
   if (!home.invoices.length) return <p className="py-10 text-center text-sm text-muted-foreground">{t('No invoices yet.')}</p>
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayISO()
   return (
     <ul className="divide-y rounded-xl border bg-card">
       {home.invoices.map((i) => {

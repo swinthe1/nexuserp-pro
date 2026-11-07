@@ -160,7 +160,8 @@ export function useCreateLeave() {
       start_date: v.start_date, end_date: v.end_date, reason: v.reason || null } as never).select('id, days').single()) as { id: string; days: number }
     if (v.submit) {
       const { error } = await supabase.rpc('submit_leave_request', { p_id: row.id })
-      if (error) { await supabase.from('leave_requests').update({ status: 'cancelled' } as never).eq('id', row.id); throw error }
+      // refused (no days left, dates overlap): the draft goes away, so no cancelled request is left in the list
+      if (error) { await supabase.from('leave_requests').update({ deleted_at: new Date().toISOString() } as never).eq('id', row.id); throw error }
     }
     return row
   })

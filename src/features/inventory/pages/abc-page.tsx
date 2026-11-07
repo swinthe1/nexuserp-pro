@@ -17,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { msg, t, td } from '@/i18n'
-import { cn, formatDate, formatMoney, formatQty } from '@/lib/utils'
+import { cn, formatDate, formatMoney, formatQty, todayISO } from '@/lib/utils'
 import { useWarehouses } from '../api'
 import { useAbcItems, useAbcRun, useAbcSettingsSave, useAbcSummary, useStockNotSold, type Abc, type AbcRow, type AbcSettings, type AbcSummary, type Xyz } from '../abc'
 
@@ -110,7 +110,7 @@ export function AbcPage() {
                       <SelectItem value="date">{t('Since a date…')}</SelectItem>
                     </SelectContent>
                   </Select>
-                  {since && <Input type="date" className="h-9 bg-background" value={since} max={new Date().toISOString().slice(0, 10)} onChange={(e) => e.target.value && setSince(e.target.value)} aria-label={t('Since')} />}
+                  {since && <Input type="date" className="h-9 bg-background" value={since} max={todayISO()} onChange={(e) => e.target.value && setSince(e.target.value)} aria-label={t('Since')} />}
                 </div>
                 {notSold.isLoading ? <Skeleton className="h-7 w-32" /> : (
                   <button type="button" className="text-left text-xl font-semibold tabular hover:underline" onClick={() => { setDead(!dead); setSel(null); setMore(false) }}>

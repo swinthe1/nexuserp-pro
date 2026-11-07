@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { msg, t } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
-import { cn, formatDate, formatMoney } from '@/lib/utils'
+import { cn, formatDate, formatMoney, todayISO } from '@/lib/utils'
 import { useFiscalYears } from '../api'
 
 type Check = { key: string; count: number; block?: boolean; href: string }
@@ -48,7 +48,7 @@ export function YearEndPage() {
   const [sel, setSel] = React.useState<string | null>(null)
   const list = years.data ?? []
   // the first year that has ended and is still open; otherwise the latest
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayISO()
   const id = sel ?? [...list].reverse().find((y) => y.status !== 'closed' && y.end_date < today)?.id ?? list[0]?.id ?? null
   return (
     <>

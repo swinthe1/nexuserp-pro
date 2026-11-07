@@ -4,6 +4,7 @@ import { useCompany } from '@/app/company-provider'
 import { msg } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
+import { todayISO } from '@/lib/utils'
 
 export type ApptStatus = 'booked' | 'confirmed' | 'arrived' | 'done' | 'no_show' | 'cancelled'
 export type Resource = { id: string; name: string; kind: string; color: string; hours: Record<string, [string, string][]> }
@@ -120,7 +121,7 @@ export function useMemberships(filter: string, search: string) {
     queryFn: async () => {
       let q = supabase.from('memberships').select('id, number, status, partner_id, plan_id, code, starts_on, ends_on, visits, visits_used, price, invoice_id, renewed_by, notes, partner:business_partners(name, phone), plan:membership_plans(name)')
         .eq('company_id', companyId!).is('deleted_at', null).order('ends_on', { ascending: filter === 'ending' }).limit(500)
-      const today = new Date().toISOString().slice(0, 10)
+      const today = todayISO()
       if (filter === 'active') q = q.eq('status', 'active')
       if (filter === 'ending') { const d = new Date(); d.setDate(d.getDate() + 7); q = q.eq('status', 'active').gte('ends_on', today).lte('ends_on', d.toISOString().slice(0, 10)).is('renewed_by', null) }
       if (filter === 'expired') q = q.eq('status', 'expired').is('renewed_by', null)

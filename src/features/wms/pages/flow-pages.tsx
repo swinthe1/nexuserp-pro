@@ -18,7 +18,7 @@ import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { t, td, tn } from '@/i18n'
 import { printHtml } from '@/lib/print'
 import { supabase } from '@/lib/supabase'
-import { cn, formatDate, formatQty } from '@/lib/utils'
+import { cn, formatDate, formatQty, todayISO } from '@/lib/utils'
 import { useLocations } from '@/features/inventory/api'
 import { useConfirmShipment, useCreatePickList, useCreatePutaway, useCreateTransferPickList, useOutboundDeliveries, useShippedToday, useTasks, useTransfersToPick, wmsKeys, type DeliveryRow, type TaskRow } from '../api'
 import { ScanShell, useScanStatus } from '../components/scan-shell'
@@ -97,7 +97,7 @@ export function PickingPage() {
                 <div className="min-w-0 flex-1"><div className="font-semibold">{d.partner?.name}</div>
                   <div className="text-[13px] text-muted-foreground">{[d.number, d.order?.number, d.warehouse?.code].filter(Boolean).join(' · ')}</div></div>
                 <div className="text-right text-[13px]"><div className="font-medium tabular">{t('{n} units', { n: formatQty(d.lines.reduce((s, l) => s + Number(l.quantity), 0)) })}</div>
-                  <div className={cn('text-muted-foreground', d.scheduled_date < new Date().toISOString().slice(0, 10) && 'text-warning')}>{formatDate(d.scheduled_date)}</div></div>
+                  <div className={cn('text-muted-foreground', d.scheduled_date < todayISO() && 'text-warning')}>{formatDate(d.scheduled_date)}</div></div>
               </label>
             ))}
             <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/95 p-3 backdrop-blur lg:left-[244px]">
@@ -121,7 +121,7 @@ export function PickingPage() {
               <div className="min-w-0 flex-1"><div className="font-semibold">{x.to?.name}</div>
                 <div className="text-[13px] text-muted-foreground">{[x.number, x.from?.code && t('from {code}', { code: x.from.code }), x.picked_at && t('picked {date}', { date: formatDate(x.picked_at, true) })].filter(Boolean).join(' · ')}</div></div>
               <div className="text-right text-[13px]"><div className="font-medium tabular">{t('{n} units', { n: formatQty(x.lines.reduce((s, l) => s + Number(l.quantity), 0)) })}</div>
-                {x.expected_date && <div className={cn('text-muted-foreground', x.expected_date < new Date().toISOString().slice(0, 10) && 'text-warning')}>{formatDate(x.expected_date)}</div>}</div>
+                {x.expected_date && <div className={cn('text-muted-foreground', x.expected_date < todayISO() && 'text-warning')}>{formatDate(x.expected_date)}</div>}</div>
             </label>
           ))}
           <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/95 p-3 backdrop-blur lg:left-[244px]">

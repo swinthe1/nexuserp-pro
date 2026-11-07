@@ -39,7 +39,7 @@ import { Textarea } from '@/components/ui/textarea'
 import type { Tables } from '@/lib/database.types'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
-import { cn, formatDate, formatMoney, humanize, num } from '@/lib/utils'
+import { cn, formatDate, formatMoney, humanize, num, todayISO } from '@/lib/utils'
 import { useCurrencies } from '@/features/inventory/api'
 import { VariantPicker } from '@/features/inventory/components/pickers'
 import { useDeleteRecord, useMembers, usePartner, usePartnerActivity, usePartners, usePaymentTerms, usePriceLists, useSaveRecord, type PartnerDetail } from '../api'
@@ -174,7 +174,7 @@ function PartnerOverview({ partner }: { partner: PartnerDetail }) {
   const show = (m: Map<string, number>) => [...m].filter(([, v]) => Math.abs(v) >= 0.005).map(([c, v]) => `${formatMoney(v)} ${c}`).join(' + ') || `${formatMoney(0)} ${base}`
   const openBy = perCurrency(posted, (i) => sign(i) * num(i.amount_due))
   const open = openBy.get(base) ?? 0
-  const overdueBy = perCurrency(posted.filter((i) => i.document_type !== 'credit_note' && i.payment_status !== 'paid' && i.due_date < new Date().toISOString().slice(0, 10)), (i) => num(i.amount_due))
+  const overdueBy = perCurrency(posted.filter((i) => i.document_type !== 'credit_note' && i.payment_status !== 'paid' && i.due_date < todayISO()), (i) => num(i.amount_due))
   const overdue = [...overdueBy.values()].reduce((s, v) => s + v, 0)
   const openOrders = (act.data?.orders ?? []).filter((o) => ['pending_approval', 'confirmed', 'partially_delivered'].includes(o.status))
   const limit = partner.credit_limit

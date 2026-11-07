@@ -39,5 +39,16 @@ select t.throws(format($q$select public.sales_pulse(%L)$q$, :'mini'), '.', 'nobo
 select t.ok(public.public_contact() ?& array['email', 'phone', 'whatsapp'] and not public.public_contact()::text ~ 'price', 'the packages page gets the contact, no prices');
 reset role;
 
+-- 5. a licence is saved whole or not at all
+reset role;
+set role authenticated;
+select t.login('zoe@platform.io');
+select l.plan as plan0, coalesce(l.package, '-') as pkg0 from public.licenses l where l.company_id = :'mini' \gset
+select t.throws(format($q$select public.platform_save_licence(%L::jsonb)$q$, jsonb_build_object('company', :'mini', 'plan', 'standard', 'max_users', 5,
+  'valid_from', '2026-01-01', 'valid_until', '2027-12-31', 'status', 'active', 'package', jsonb_build_object('key', 'retail_mini', 'max_stores', 0))),
+  'units', 'a package limit below the units the client has refuses the whole save');
+select t.ok((select plan = :'plan0' and coalesce(package, '-') = :'pkg0' from public.licenses where company_id = :'mini'), 'and the licence stays as it was');
+reset role;
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;

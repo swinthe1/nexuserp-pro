@@ -190,7 +190,9 @@ export function useAccountLedger(accountId: string | undefined, from: string, to
         q.limit(5000).returns<LedgerLine[]>(),
         supabase.rpc('account_balances', { p_company: companyId, p_from: from, p_to: to, p_ledger: ledger.toUpperCase() }),
       ])
-      const rows = unwrap(lines).sort((a, b) => a.entry.entry_date.localeCompare(b.entry.entry_date) || a.entry.number.localeCompare(b.entry.number))
+      // the year-end close is left out, as in the balances: the running balance then ends on the closing figure
+      const rows = unwrap(lines).filter((l) => l.entry.source_doc_type !== 'year_close')
+        .sort((a, b) => a.entry.entry_date.localeCompare(b.entry.entry_date) || a.entry.number.localeCompare(b.entry.number))
       const bal = (unwrap(opening) as BalanceRow[]).find((r) => r.account_id === accountId)
       return { rows, opening: Number(bal?.opening ?? 0), closing: Number(bal?.closing ?? 0) }
     },

@@ -19,7 +19,7 @@ import { useCustomers } from '@/features/sales/api'
 import { t, tn } from '@/i18n'
 import { unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
-import { cn, formatDate, formatMoney, num } from '@/lib/utils'
+import { cn, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
 import { MEMBERSHIP_STATUS, type Plan, useApptAction, useMemberships, usePlans } from './api'
 import { ErrorState } from '@/components/error-state'
 
@@ -40,7 +40,7 @@ export function MembershipsPage() {
   const [plan, setPlan] = React.useState<Plan | 'new' | null>(null)
   const freeze = useApptAction(async (a: { id: string; on: boolean }) => unwrap(await supabase.rpc('membership_freeze', { p_id: a.id, p_freeze: a.on })))
   const rows = (list.data ?? []).filter((m) => !search.trim() || `${m.partner?.name} ${m.partner?.phone} ${m.code} ${m.number}`.toLowerCase().includes(search.trim().toLowerCase()))
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayISO()
   return (
     <>
       <PageHeader title={t('Memberships')} description={t('Sell a monthly, yearly or 10-visit membership to an invoice, check members in at the door, and see whose ends soon.')}

@@ -121,18 +121,12 @@ export function useCreateClient() {
 export function useSaveLicense() {
   const refresh = useRefresh()
   return useMutation({
-    mutationFn: async (v: LicenseInput) => {
-      unwrap(await supabase.rpc('platform_save_license', {
-        p_company: v.company, p_plan: v.plan, p_max_users: v.max_users, p_valid_from: v.valid_from,
-        p_valid_until: v.valid_until, p_status: v.status, p_notes: v.notes ?? undefined,
-      }))
-      if (v.package) {
-        unwrap(await supabase.rpc('platform_set_package', { p_company: v.company, p: { package: v.package.key, modules: v.package.modules, max_users: v.max_users,
-          max_stores: v.package.max_stores, max_tills: v.package.max_tills, apply_type: v.package.apply_type } as never }))
-      } else if (v.extra_features) {
-        unwrap(await supabase.rpc('platform_set_plan_extras', { p_company: v.company, p_extra: v.extra_features, p_max_warehouses: (v.max_warehouses ?? null) as unknown as number }))
-      }
-    },
+    // one server call: the dates and status with the package (or the extra modules), together or not at all
+    mutationFn: async (v: LicenseInput) => unwrap(await supabase.rpc('platform_save_licence', { p: {
+      company: v.company, plan: v.plan, max_users: v.max_users, valid_from: v.valid_from, valid_until: v.valid_until, status: v.status, notes: v.notes ?? null,
+      package: v.package ? { key: v.package.key, modules: v.package.modules, max_stores: v.package.max_stores, max_tills: v.package.max_tills, apply_type: v.package.apply_type } : null,
+      extra_features: !v.package && v.extra_features ? v.extra_features : null, max_warehouses: v.max_warehouses ?? null,
+    } as never })),
     onSuccess: refresh,
   })
 }

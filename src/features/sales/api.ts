@@ -6,6 +6,7 @@ import type { Json, Tables } from '@/lib/database.types'
 import { describeError, unwrap } from '@/lib/errors'
 import { after, byName, fetchAll, fetchPages, supabase } from '@/lib/supabase'
 import { t } from '@/i18n'
+import { todayISO } from '@/lib/utils'
 
 export const salesKeys = {
   all: (c: string) => ['sales', c] as const,
@@ -98,7 +99,7 @@ export function useSellableVariants() {
 export async function fetchPrice(args: { companyId: string; partnerId?: string | null; variantId: string; quantity: number; date?: string; priceListId?: string | null; currency?: string | null }) {
   const { data, error } = await supabase.rpc('get_price', {
     p_company: args.companyId, p_partner: (args.partnerId ?? null) as string, p_variant: args.variantId, p_quantity: args.quantity,
-    p_date: args.date ?? new Date().toISOString().slice(0, 10), p_price_list: args.priceListId ?? undefined, p_currency: args.currency ?? undefined,
+    p_date: args.date ?? todayISO(), p_price_list: args.priceListId ?? undefined, p_currency: args.currency ?? undefined,
   })
   if (error) throw error
   return data?.[0] ?? null

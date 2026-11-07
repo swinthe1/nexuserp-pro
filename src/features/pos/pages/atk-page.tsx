@@ -24,7 +24,7 @@ import { ATK_TYPES, ATK_UNITS } from '@/lib/atk/codes'
 import { describeError, unwrap } from '@/lib/errors'
 import { downloadCsv } from '@/lib/export'
 import { supabase } from '@/lib/supabase'
-import { cn, formatDate } from '@/lib/utils'
+import { cn, formatDate, todayISO } from '@/lib/utils'
 
 type Till = { id: string; code: string; name: string; warehouse_id: string; atk_pos_id: number | null; certified: boolean; cert_env: AtkEnv | null
   cert_at: string | null; cert_by: string | null; device: string | null; public_key: string | null; missing: string[]
@@ -376,7 +376,7 @@ function QueueCard({ s }: { s: Setup }) {
     mutationFn: async () => {
       const rows = unwrap(await supabase.from('fiscalization_records').select('created_at, iic, verification_code, status, attempt_count, error_message, request_payload')
         .eq('company_id', companyId!).eq('country_code', 'XK').eq('source_doc_type', 'pos_order').in('status', ['pending', 'sent', 'failed']).order('created_at').limit(50000))
-      downloadCsv(`atk-not-sent-${new Date().toISOString().slice(0, 10)}`, [
+      downloadCsv(`atk-not-sent-${todayISO()}`, [
         [t('Made'), t('Coupon no.'), t('Verification code'), t('Status'), t('Attempts'), t('Error'), t('Number'), t('Total'), 'details', 'signature'],
         ...rows.map((r) => {
           const p = (r.request_payload ?? {}) as { number?: string; total?: number; atk?: { details?: string; signature?: string } }
