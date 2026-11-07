@@ -46,8 +46,8 @@ export function PricingPage() {
         <p className="mt-4 max-w-xl text-lg text-white/75">{t('The till, stock, purchases, invoices, VAT, the books and payroll, made for Kosovo and Albania. Choose the plan that fits; change it whenever you grow.')}</p>
         {anyYear && (
           <div className="mt-8 inline-flex rounded-full bg-white/10 p-1 text-sm" role="radiogroup" aria-label={t('Billing')}>
-            <button type="button" role="radio" aria-checked={!yearly} onClick={() => setYearly(false)} className={cn('rounded-full px-4 py-1.5', !yearly && 'bg-white font-semibold text-[#0B0B0C]')}>{t('Monthly')}</button>
-            <button type="button" role="radio" aria-checked={yearly} onClick={() => setYearly(true)} className={cn('rounded-full px-4 py-1.5', yearly && 'bg-white font-semibold text-[#0B0B0C]')}>{t('Yearly')}</button>
+            <button type="button" role="radio" aria-checked={!yearly} onClick={() => setYearly(false)} className={cn('rounded-full px-4 py-1.5', !yearly && 'bg-white font-semibold text-[hsl(196_48%_11%)]')}>{t('Monthly')}</button>
+            <button type="button" role="radio" aria-checked={yearly} onClick={() => setYearly(true)} className={cn('rounded-full px-4 py-1.5', yearly && 'bg-white font-semibold text-[hsl(196_48%_11%)]')}>{t('Yearly')}</button>
           </div>
         )}
       </PublicHeader>
@@ -104,14 +104,14 @@ export function PricingPage() {
           </div>
         </section>
 
-        <section id="kontakt" className="mt-16 rounded-2xl bg-[#0B0B0C] p-8 text-white sm:p-10">
+        <section id="kontakt" className="mt-16 rounded-2xl bg-[hsl(196_48%_11%)] p-8 text-white sm:p-10">
           <h2 className="text-2xl font-bold">{t('See it with your own data')}</h2>
           <p className="mt-2 max-w-xl text-white/75">{t('We show you DrisPRO with a demo of a business like yours, and bring over what you have in your old program.')}</p>
           <div className="mt-6 flex flex-wrap gap-3">
             {c?.whatsapp && <a className="inline-flex items-center gap-2 rounded-lg bg-[#25D366] px-4 py-2.5 font-semibold text-[#06301a]" href={`https://wa.me/${c.whatsapp.replace(/\D/g, '')}`}><MessageCircle className="size-4" /> WhatsApp{/* i18n-ignore */}</a>}
             {c?.phone && <a className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2.5 font-semibold hover:bg-white/15" href={`tel:${c.phone.replace(/\s/g, '')}`}><Phone className="size-4" /> {c.phone}</a>}
             {c?.email && <a className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2.5 font-semibold hover:bg-white/15" href={`mailto:${c.email}`}><Mail className="size-4" /> {c.email}</a>}
-            <Link className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 font-semibold text-[#0B0B0C]" to="/login">{t('I already have DrisPRO: sign in')}</Link>
+            <Link className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 font-semibold text-[hsl(196_48%_11%)]" to="/login">{t('I already have DrisPRO: sign in')}</Link>
           </div>
         </section>
       </main>

@@ -13,7 +13,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { t } from '@/i18n'
 import { cn } from '@/lib/utils'
-import { LogoMark } from '@/components/logo-mark'
 
 /**
  * The single most specific nav entry for the current URL: '/sales/orders/123' lights up
@@ -362,7 +361,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
         {/* folded, the company is chosen here; open, the panel has it and the rail starts with DrisPRO */}
         <div className="mb-2 grid h-10 place-items-center">
           {collapsed ? <CompanySwitcher collapsed />
-            : <NavLink to="/" aria-label="DrisPRO" className="grid size-10 place-items-center rounded-xl hover:bg-[hsl(var(--sidebar-active)/0.6)]"><LogoMark className="size-8 text-foreground" /></NavLink>}{/* i18n-ignore */}
+            : <NavLink to="/" aria-label="DrisPRO" className="grid size-10 place-items-center rounded-xl hover:bg-[hsl(var(--sidebar-active)/0.6)]"><img src="/favicon.svg" alt="" className="size-7" /></NavLink>}{/* i18n-ignore */}
         </div>
         <nav aria-label={t('Main menu')} className="flex min-h-0 flex-1 flex-col items-center gap-1 overflow-y-auto px-2.5">
           {sections.filter((s) => !bottom(s.label)).map(railButton)}

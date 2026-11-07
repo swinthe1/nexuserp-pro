@@ -7,7 +7,6 @@ import { UserMenu } from '@/components/layout/user-menu'
 import { Button } from '@/components/ui/button'
 import { AssistantButton } from '@/features/assistant/assistant'
 import { t } from '@/i18n'
-import { LogoMark } from '@/components/logo-mark'
 
 /** The top bar of the simple view: the way back to the start is always one large button. */
 export function SimpleTopbar() {
@@ -18,7 +17,7 @@ export function SimpleTopbar() {
     <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b bg-background/90 px-3 backdrop-blur print:hidden sm:px-5">
       {home ? (
         <div className="flex min-w-0 items-center gap-2">
-          <LogoMark className="size-8 text-foreground" />
+          <img src="/favicon.svg" alt="" className="size-8" />
           <span className="truncate text-base font-semibold">{company?.name ?? 'DrisPRO'}</span>
         </div>
       ) : (

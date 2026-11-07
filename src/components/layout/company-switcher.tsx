@@ -12,7 +12,7 @@ import { cn, initials, currencyLabel } from '@/lib/utils'
 
 export function CompanyMark({ name, className }: { name: string; className?: string }) {
   return (
-    <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-lg bg-foreground text-[11px] font-bold text-background', className)}>
+    <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#11A06E] to-[#1583C8] text-[11px] font-bold text-white shadow-[inset_0_1px_0_hsl(0_0%_100%/0.2)]', className)}>
       {initials(name)}
     </span>
   )

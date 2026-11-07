@@ -65,7 +65,7 @@ export function PackagesPage() {
           {FAMILIES.map((f) => (
             <button key={f.key} type="button" role="tab" aria-selected={f.key === family.key} onClick={() => setParams({ lloji: f.key }, { replace: true })}
               className={cn('rounded-full px-4 py-2 text-sm font-medium transition-colors',
-                f.key === family.key ? 'bg-white text-[#0B0B0C]' : 'bg-white/10 text-white/80 hover:bg-white/15 hover:text-white')}>{t(f.label)}</button>
+                f.key === family.key ? 'bg-white text-[hsl(196_48%_11%)]' : 'bg-white/10 text-white/80 hover:bg-white/15 hover:text-white')}>{t(f.label)}</button>
           ))}
         </div>
       </PublicHeader>
@@ -159,14 +159,14 @@ export function PackagesPage() {
           </div>
         </section>
 
-        <section id="kontakt" className="mt-16 rounded-2xl bg-[#0B0B0C] p-8 text-white sm:p-10">
+        <section id="kontakt" className="mt-16 rounded-2xl bg-[hsl(196_48%_11%)] p-8 text-white sm:p-10">
           <h2 className="text-2xl font-bold">{t('Ask for an offer')}</h2>
           <p className="mt-2 max-w-xl text-white/75">{t('Tell us your kind of business, how many units and tills you have. We send you the offer and show you DrisPRO with a demo like your business.')}</p>
           <div className="mt-6 flex flex-wrap gap-3">
             {c?.whatsapp && <a className="inline-flex items-center gap-2 rounded-lg bg-[#25D366] px-4 py-2.5 font-semibold text-[#06301a]" href={`https://wa.me/${c.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(t('Hello, I would like an offer for DrisPRO ({kind})', { kind: t(family.label) }))}`}><MessageCircle className="size-4" /> WhatsApp{/* i18n-ignore */}</a>}
             {c?.phone && <a className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2.5 font-semibold hover:bg-white/15" href={`tel:${c.phone.replace(/\s/g, '')}`}><Phone className="size-4" /> {c.phone}</a>}
             {c?.email && <a className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2.5 font-semibold hover:bg-white/15" href={`mailto:${c.email}?subject=${encodeURIComponent(`DrisPRO · ${t(family.label)}`)}`}><Mail className="size-4" /> {c.email}</a>}
-            <Link className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 font-semibold text-[#0B0B0C]" to="/login">{t('I already have DrisPRO: sign in')}</Link>
+            <Link className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 font-semibold text-[hsl(196_48%_11%)]" to="/login">{t('I already have DrisPRO: sign in')}</Link>
           </div>
         </section>
       </main>

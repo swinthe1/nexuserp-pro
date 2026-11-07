@@ -18,7 +18,6 @@ import { DemoClientDialog } from '../demo-client-dialog'
 import { NewClientDialog } from '../dialogs'
 import { usePlatformDevices } from '../api'
 import { ClientSearch } from './client-search'
-import { LogoMark } from '@/components/logo-mark'
 
 type Item = { label: string; href: string; icon: LucideIcon; end?: boolean; badge?: 'attention' | 'ending' | 'links' | 'server' | 'devices' }
 const NAV: { title?: string; items: Item[] }[] = [
@@ -89,7 +88,7 @@ function SideNav({ onNavigate }: { onNavigate?: () => void }) {
 function Brand() {
   return (
     <div className="flex h-[52px] items-center gap-2.5 px-3">
-      <LogoMark className="text-foreground" />
+      <img src="/favicon.svg" alt="" className="size-7" />
       <div className="leading-tight">
         <Wordmark className="block text-[15px]" />
         <div className="text-2xs text-muted-foreground">{t('Platform')}</div>

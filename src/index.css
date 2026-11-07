@@ -13,23 +13,23 @@
 
 @layer base {
   :root {
-    /* DrisPRO in black and white: ink on white, grey for what is quiet. Colour only where it means
-       something: green paid, amber waiting, red late or wrong, blue for information. */
+    /* DrisPRO: clean neutral surfaces (white, greys, ink) like the menu, the oak green to act,
+       each part of the program in its own colour, and green, amber, red and blue for what they mean. */
     --background: 0 0% 100%;
     --foreground: 240 6% 10%;
     --card: 0 0% 100%;
     --card-foreground: 240 6% 10%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 6% 10%;
-    --primary: 240 6% 10%;
+    --primary: 158 82% 30%;           /* oak green #0E8A5F */
     --primary-foreground: 0 0% 100%;
     --secondary: 240 5% 94%;
     --secondary-foreground: 240 6% 10%;
     --muted: 240 5% 96%;
     --muted-foreground: 240 4% 40%;
-    --accent: 240 5% 94%;
-    --accent-foreground: 240 6% 10%;
-    --info: 211 80% 45%;
+    --accent: 158 48% 94%;
+    --accent-foreground: 158 80% 24%;
+    --info: 204 82% 48%;
     --info-foreground: 0 0% 100%;
     --destructive: 354 70% 46%;
     --destructive-foreground: 0 0% 100%;
@@ -39,7 +39,7 @@
     --warning-foreground: 0 0% 100%;
     --border: 240 6% 90%;
     --input: 240 6% 85%;
-    --ring: 240 6% 10%;
+    --ring: 158 82% 34%;
     --radius: 0.625rem;
     --sidebar: 0 0% 100%;
     --sidebar-foreground: 240 6% 22%;
@@ -55,15 +55,15 @@
     --card-foreground: 0 0% 96%;
     --popover: 0 0% 8%;
     --popover-foreground: 0 0% 96%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 8%;
+    --primary: 155 62% 46%;
+    --primary-foreground: 0 0% 6%;
     --secondary: 0 0% 14%;
     --secondary-foreground: 0 0% 96%;
     --muted: 0 0% 11%;
     --muted-foreground: 0 0% 62%;
-    --accent: 0 0% 14%;
-    --accent-foreground: 0 0% 96%;
-    --info: 211 85% 64%;
+    --accent: 158 30% 15%;
+    --accent-foreground: 152 60% 70%;
+    --info: 204 85% 62%;
     --info-foreground: 0 0% 8%;
     --destructive: 354 70% 58%;
     --destructive-foreground: 0 0% 100%;
@@ -73,7 +73,7 @@
     --warning-foreground: 0 0% 8%;
     --border: 0 0% 15%;
     --input: 0 0% 20%;
-    --ring: 0 0% 85%;
+    --ring: 155 62% 46%;
     --sidebar: 0 0% 3%;
     --sidebar-foreground: 0 0% 86%;
     --sidebar-border: 0 0% 14%;
@@ -180,18 +180,12 @@
   .dark, .sidebar-navy { --mod-l: 68%; }
 }
 @layer components {
-  /* the icon tiles of the pages and cards: grey and ink, like the menu (the classic look keeps their colours) */
   .mod-chip {
-    color: hsl(var(--foreground));
-    background: hsl(var(--secondary));
-    box-shadow: inset 0 0 0 1px hsl(var(--border));
-  }
-  html.classic .mod-chip {
     color: hsl(var(--mod) var(--mod-l));
     background: hsl(var(--mod) var(--mod-l) / 0.12);
     box-shadow: inset 0 0 0 1px hsl(var(--mod) var(--mod-l) / 0.2);
   }
-  html.classic.dark .mod-chip { background: hsl(var(--mod) var(--mod-l) / 0.16); }
+  .dark .mod-chip, .sidebar-navy .mod-chip { background: hsl(var(--mod) var(--mod-l) / 0.16); }
 }
 
 @layer base {
