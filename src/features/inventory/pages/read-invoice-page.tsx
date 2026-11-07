@@ -16,6 +16,7 @@ import { cn, formatMoney, num, todayISO } from '@/lib/utils'
 import { t, tn } from '@/i18n'
 import { VariantPicker, VendorPicker, WarehousePicker } from '../components/pickers'
 import { useWarehouses } from '../api'
+import { ErrorState } from '@/components/error-state'
 
 type ReadLine = { code?: string; barcode?: string; name: string; quantity: number; unit?: string; unit_price?: number; discount_pct?: number; vat_rate?: number; line_total?: number
   variant_id: string | null; matched_by: 'learned' | 'vendor_code' | 'barcode' | 'code' | 'name' | null; variant_name: string | null; variant_sku: string | null }
@@ -23,6 +24,8 @@ type ReadResult = { vendor_name?: string; vendor_tax_number?: string; number?: s
   notes?: string; lines: ReadLine[]; vendor_id: string | null; vendor_match_name: string | null }
 type Read = { id: string; status: 'queued' | 'reading' | 'done' | 'failed'; error: string | null; file_name: string | null; receipt_id: string | null; created_at: string; result: ReadResult | null }
 type ReadRow = { id: string; file_name: string | null; status: string; error: string | null; vendor: string | null; number: string | null; total: number | null; receipt_id: string | null; created_at: string }
+/** the price the goods cost, after the line's discount on the invoice */
+const netPrice = (l: { unit_price?: number; discount_pct?: number }) => num(l.unit_price) * (1 - num(l.discount_pct) / 100)
 
 export function ReadInvoicePage() {
   const { companyId } = useCompany()
@@ -73,12 +76,13 @@ function ReadReview({ id, onDone }: { id: string; onDone: () => void }) {
   const make = useMutation({
     mutationFn: async () => unwrap(await supabase.rpc('doc_read_to_receipt', { p_id: id, p: {
       vendor_id: vendor, warehouse_id: wh, date, number,
-      lines: lines.filter((l) => l.use && l.variant_id).map((l) => ({ variant_id: l.variant_id, quantity: l.quantity, unit_cost: l.unit_price ?? 0, code: l.code ?? null, name: l.name })),
+      lines: lines.filter((l) => l.use && l.variant_id).map((l) => ({ variant_id: l.variant_id, quantity: l.quantity, unit_cost: netPrice(l), code: l.code ?? null, name: l.name })),
     } as never })) as string,
     onSuccess: (rec) => { toast.success(t('Draft receipt made; check it and post it')); void qc.invalidateQueries({ queryKey: ['doc-reads', companyId] }); navigate(`/inventory/receipts/${rec}`) },
     onError: (e) => toast.error(describeError(e)),
   })
 
+  if (q.isError) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />
   if (!q.data || q.data.status === 'queued' || q.data.status === 'reading') {
     return <Card><CardContent className="flex items-center justify-center gap-3 p-10 text-sm text-muted-foreground"><Loader2 className="size-5 animate-spin" /> {t('Reading the invoice… it takes about half a minute.')}</CardContent></Card>
   }
@@ -88,7 +92,7 @@ function ReadReview({ id, onDone }: { id: string; onDone: () => void }) {
       <Button variant="outline" onClick={onDone}>{t('Back')}</Button></CardContent></Card>
   }
   const missing = lines.filter((l) => l.use && !l.variant_id).length
-  const sum = lines.filter((l) => l.use).reduce((s, l) => s + num(l.quantity) * num(l.unit_price), 0)
+  const sum = lines.filter((l) => l.use).reduce((s, l) => s + num(l.quantity) * netPrice(l), 0)
   const how: Record<string, string> = { learned: t('as last time'), vendor_code: t('vendor’s code'), barcode: t('barcode'), code: t('our code'), name: t('by name') }
   return (
     <div className="grid gap-4">

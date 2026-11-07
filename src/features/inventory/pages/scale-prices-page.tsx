@@ -114,7 +114,7 @@ export function ScalePricesPage() {
   })
 
   const markSent = async (list: { product_id: string; price: number }[]) => {
-    await supabase.rpc('scale_mark_sent', { p_company: companyId!, p: list as never })
+    unwrap(await supabase.rpc('scale_mark_sent', { p_company: companyId!, p: list as never }))
     void qc.invalidateQueries({ queryKey: ['inv', companyId, 'scale-items'] })
   }
 

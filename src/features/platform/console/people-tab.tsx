@@ -39,7 +39,7 @@ function AddPersonDialog({ company, companyName, open, onClose }: { company: str
   const [done, setDone] = React.useState<{ email: string; password: string; new_account: boolean } | null>(null)
   const [err, setErr] = React.useState<string | null>(null)
   React.useEffect(() => { if (open) { setF({ email: '', name: '', password: generatePassword(), roles: [] }); setDone(null); setErr(null) } }, [open])
-  const copyAll = () => { void navigator.clipboard?.writeText(`${t('Address')}: https://erp.dris-ks.com\n${t('Email')}: ${done!.email}\n${t('Password')}: ${done!.password}`); toast.success(t('Copied')) }
+  const copyAll = () => { void navigator.clipboard?.writeText(`${t('Address')}: ${window.location.origin}\n${t('Email')}: ${done!.email}${done!.new_account ? `\n${t('Password')}: ${done!.password}` : ''}`); toast.success(t('Copied')) }
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">

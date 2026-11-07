@@ -5,15 +5,16 @@
 \set ON_ERROR_STOP on
 
 set role anon;
-select t.ok(jsonb_array_length(public.public_pricing() -> 'plans') = 3, 'anyone sees the plans');
+select t.throws($q$select public.public_pricing()$q$, 'permission denied', 'nobody signed out sees the prices');
 set role authenticated;
 select t.login('alice@alba.al');
+select t.throws($q$select public.public_pricing()$q$, 'platform administrator', 'a client does not see the prices');
 select t.throws($q$select public.platform_pricing_save('{"plans":[{"plan":"basic","price_month":1}]}')$q$, 'platform administrator', 'only the platform owner sets prices');
 select t.login('zoe@platform.io');
 select public.platform_pricing_save('{"plans":[{"plan":"standard","price_month":"39","price_year":"390","users":"5","highlight":true}],"contact":{"email":"info@dris-ks.com"}}');
-set role anon;
+select t.ok(jsonb_array_length(public.public_pricing() -> 'plans') = 3, 'the platform owner sees the plans');
 select t.ok((select (x ->> 'price_month')::numeric = 39 from jsonb_array_elements(public.public_pricing() -> 'plans') x where x ->> 'plan' = 'standard')
-        and public.public_pricing() #>> '{contact,email}' = 'info@dris-ks.com', 'the public page shows the prices set');
+        and public.public_pricing() #>> '{contact,email}' = 'info@dris-ks.com', 'the prices set are kept');
 
 -- webhooks
 set role authenticated;

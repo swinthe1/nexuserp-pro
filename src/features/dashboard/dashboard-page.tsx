@@ -189,6 +189,7 @@ export function DashboardPage() {
       <UnitsToday />
       {can('inventory.read') && <StockByWarehouse />}
 
+      {can('inventory.read') && <>
       <div className="mt-4 grid gap-4 grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_380px]">
         <Card>
           <CardHeader><CardTitle>{t('Stock in and out')}</CardTitle><CardDescription>{t('Last 30 days, at purchase price without VAT ({currency})', { currency: cur ?? '' })}</CardDescription></CardHeader>
@@ -269,6 +270,7 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+      </>}
     </>
   )
 }

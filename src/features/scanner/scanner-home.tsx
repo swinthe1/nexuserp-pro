@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowLeftRight, ClipboardCheck, Download, Hourglass, Monitor, PackageCheck, PackageOpen, ScanSearch, ShoppingBasket, Tag, Truck, type LucideIcon } from 'lucide-react'
+import { ArrowLeft, ArrowLeftRight, ClipboardCheck, Download, Hourglass, Monitor, PackageCheck, PackageOpen, ScanSearch, ShoppingBasket, Tag, Trash2, Truck, type LucideIcon } from 'lucide-react'
 import * as React from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
@@ -57,6 +57,7 @@ const TILES: Tile[] = [
   { href: '/wms/move', title: msg('Move'), hint: msg('Shelf to shelf'), icon: ArrowLeftRight, perm: 'wms.read', tone: 'hsl(210 18% 44%)' },
   { href: '/wms/counts', title: msg('Stock count|tile'), hint: msg('By shelf or by class'), icon: ClipboardCheck, perm: 'wms.read', count: (o) => o.counts_open ?? 0, tone: 'hsl(172 72% 30%)' },
   { href: '/wms/lots', title: msg('Lots and expiry'), hint: msg('What expires soon'), icon: Hourglass, perm: 'inventory.read', count: (o) => (o.expired ?? 0) + (o.expiring_30 ?? 0), tone: 'hsl(350 70% 48%)' },
+  { href: '/wms/waste', title: msg('Thrown away|scanner'), hint: msg('Fruit, vegetables, bread: scan, weigh, send'), icon: Trash2, perm: 'wms.read', tone: 'hsl(24 80% 44%)' },
 ]
 
 /** DrisPRO Skaner: the start screen of the handheld app */

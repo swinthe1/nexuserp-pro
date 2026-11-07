@@ -49,7 +49,7 @@ export function WmsHomePage() {
 
   return (
     <>
-      <PageHeader title={t('Warehouse floor')} description={t('Scanning screens for the warehouse. Keys 1–8 open a screen; each works with a scanner, a phone camera or the keyboard.')}
+      <PageHeader title={t('Warehouse floor')} description={t('Scanning screens for the warehouse. Keys 1–9 open a screen; each works with a scanner, a phone camera or the keyboard.')}
         actions={<Select value={wh ?? 'all'} onValueChange={(v) => { const x = v === 'all' ? null : v; setWh(x); try { if (x) localStorage.setItem(WH_KEY, x); else localStorage.removeItem(WH_KEY) } catch { /* ignore */ } }}>
           <SelectTrigger className="w-[220px]" aria-label={t('Warehouse')}><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="all">{t('All warehouses')}</SelectItem>{(warehouses.data ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{td(w.name)}</SelectItem>)}</SelectContent>

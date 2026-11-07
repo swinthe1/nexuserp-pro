@@ -1046,4 +1046,5 @@ export default {
   "VAT amount": "Shuma e TVSH-së",
   "How to pay": "Si të paguani",
   "Payment reference": "Referenca e pagesës",
+  "Scanning screens for the warehouse. Keys 1–9 open a screen; each works with a scanner, a phone camera or the keyboard.": "Ekranet e skanimit për njësinë. Tastet 1–9 hapin një ekran; secili punon me skaner, kamerën e telefonit ose tastierën.",
 } satisfies Dict

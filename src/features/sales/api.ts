@@ -148,6 +148,7 @@ export function useDeleteRecord(table: 'leads' | 'opportunities' | 'business_par
   return useMutation({
     mutationFn: async (id: string) => unwrap(await supabase.from(table).delete().eq('id', id)),
     onSuccess: () => void invalidate(),
+    onError: (e) => toast.error(describeError(e)),
   })
 }
 
@@ -279,6 +280,7 @@ export function useDeleteSalesDocument(kind: SalesKind) {
   return useMutation({
     mutationFn: async (id: string) => unwrap(await supabase.from(SALES_TABLE[kind]).delete().eq('id', id)),
     onSuccess: () => { toast.success(t('Draft deleted')); void invalidate() },
+    onError: (e) => toast.error(describeError(e)),
   })
 }
 

@@ -121,21 +121,20 @@ export function PayrollRunPage() {
     <>
       <PageHeader back={{ href: '/hr/payroll', label: t('Payroll') }} title={`${r.number} · ${monthName(r.period_start)}`} meta={<StatusBadge status={r.status} />}
         description={[r.country_rules === 'XK' ? t('Kosovo rules: pension 5% + 5%, income tax 0 / 8 / 10%') : t('Albanian rules: social 9.5% + 15%, health 1.7% + 1.7%, TAP'), t('pay date {date}', { date: formatDate(r.pay_date) })].join(' · ')}
-        actions={<Can perm="payroll.write">
+        actions={<><Can perm="payroll.write">
           {editable && <ConfirmDialog trigger={<Button variant="ghost" className="text-destructive"><X /> {t('Cancel payroll')}</Button>} title={t('Cancel {number}?', { number: r.number })}
             description={t('The payroll and its payslips are set aside; nothing was booked.')} confirmLabel={t('Cancel payroll')} destructive onConfirm={async () => { await cancel.mutateAsync(r.id); toast.success(t('Payroll cancelled')) }} />}
           {['calculated', 'approved'].includes(r.status) && <Button variant="outline" loading={reopen.isPending} onClick={async () => { await reopen.mutateAsync(r.id); toast.success(t('Back to draft')) }}><Undo2 /> {t('Back to draft')}</Button>}
           {editable && <Button variant={r.status === 'calculated' ? 'outline' : 'default'} loading={calc.isPending}
             onClick={async () => { const x = await calc.mutateAsync(r.id) as { employees: number }; toast.success(tn(x.employees, 'Payroll calculated for {n} person', 'Payroll calculated for {n} people')) }}>
             <Calculator /> {r.status === 'calculated' ? t('Recalculate') : t('Calculate payroll')}</Button>}
-          {r.status === 'calculated' && <Can perm="payroll.approve"><Button loading={approve.isPending} disabled={selfCalculated}
-            title={selfCalculated ? t('Someone other than the person who calculated it must approve') : undefined}
-            onClick={async () => { await approve.mutateAsync(r.id); toast.success(t('Payroll approved')) }}><Stamp /> {t('Approve payroll')}</Button></Can>}
           {r.status === 'approved' && <ConfirmDialog trigger={<Button><Check /> {t('Make final and book')}</Button>} title={t('Make {number} final?', { number: r.number })}
             description={t('Salaries and employer contributions are booked as expenses; net pay, contributions and income tax become amounts to pay. Employees can then see their payslips.')}
             confirmLabel={t('Make final and book')} onConfirm={async () => { await post.mutateAsync(r.id); toast.success(t('Payroll booked')) }} />}
           {r.status === 'posted' && <Button onClick={() => setPayOpen(true)}><Banknote /> {t('Pay salaries')}</Button>}
-        </Can>} />
+        </Can>{r.status === 'calculated' && <Can perm="payroll.approve"><Button className="ml-2" loading={approve.isPending} disabled={selfCalculated}
+            title={selfCalculated ? t('Someone other than the person who calculated it must approve') : undefined}
+            onClick={async () => { await approve.mutateAsync(r.id); toast.success(t('Payroll approved')) }}><Stamp /> {t('Approve payroll')}</Button></Can>}</>} />
       {r.status === 'calculated' && selfCalculated && <p className="-mt-2 mb-4 text-[13px] text-muted-foreground">{t('You calculated this payroll, so someone else has to approve it.')}</p>}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">

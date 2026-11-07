@@ -92,7 +92,7 @@ function ReturnDialog({ doc, nameOf, returned, onClose }: { doc: Receipt; nameOf
       p_lines: Object.entries(qty).filter(([, v]) => num(v) > 0).map(([id, v]) => ({ receipt_line_id: id, quantity: num(v) })) as never,
     })),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['vendor-returns', doc.id] }); void qc.invalidateQueries({ queryKey: ['stock'] })
+      void qc.invalidateQueries({ queryKey: ['vendor-returns', doc.id] }); void qc.invalidateQueries({ queryKey: ['inv'] })
       toast.success(t('The goods left the stock. Create the credit note when the vendor confirms it.')); onClose()
     },
     onError: (e) => setError(describeError(e)),

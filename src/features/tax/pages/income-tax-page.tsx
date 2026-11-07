@@ -73,7 +73,7 @@ function Worksheet({ year }: { year: number }) {
   })
   const book = useMutation({
     mutationFn: async () => {
-      await supabase.rpc('cit_save', { p_company: companyId!, p_year: year, p: payload() })
+      unwrap(await supabase.rpc('cit_save', { p_company: companyId!, p_year: year, p: payload() }))
       return unwrap(await supabase.rpc('cit_book', { p_company: companyId!, p_year: year })) as unknown as Sheet
     },
     onSuccess: (d) => { qc.setQueryData(['cit', companyId, year], d); void qc.invalidateQueries({ queryKey: ['year-end'] }); toast.success(t('The tax of {year} is in the books: {amount}', { year, amount: formatMoney(d.tax, d.currency) })) },

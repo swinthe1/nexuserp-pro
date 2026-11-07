@@ -225,7 +225,7 @@ export function useTransfersToPick() {
       const r = await supabase.from('stock_transfers')
         .select('id, number, from_warehouse_id, transfer_date, expected_date, picked_at, from:warehouses!stock_transfers_company_id_from_warehouse_id_fkey(code, name), to:warehouses!stock_transfers_company_id_to_warehouse_id_fkey(code, name), lines:stock_transfer_lines(quantity)')
         .eq('company_id', companyId).eq('status', 'draft').eq('is_request', false).is('deleted_at', null).order('transfer_date')
-      if (r.error) return [] as TransferToPick[]   // a server not updated yet
+      if (r.error) throw r.error
       const rows = (r.data ?? []) as unknown as Omit<TransferToPick, 'pick_list'>[]
       const open = unwrap(await supabase.from('warehouse_task_lines').select('source_doc_id, task:warehouse_tasks!inner(number, status, task_type)')
         .eq('company_id', companyId).eq('task.task_type', 'pick').in('task.status', ['open', 'in_progress'])

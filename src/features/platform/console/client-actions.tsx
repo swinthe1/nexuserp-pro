@@ -28,7 +28,7 @@ export function useRenew() {
       if (!c.plan || !c.valid_until) return
       const from = c.valid_until < todayISO() ? todayISO() : c.valid_until
       const until = addMonths(from, months)
-      save.mutate({ company: c.id, plan: c.plan, max_users: c.max_users ?? 1, valid_from: c.valid_from ?? todayISO(), valid_until: until, status: 'active', notes: c.notes },
+      save.mutate({ company: c.id, plan: c.plan, max_users: c.max_users ?? 1, valid_from: c.valid_from ?? todayISO(), valid_until: until, status: c.status === 'suspended' ? 'suspended' : 'active', notes: c.notes },
         { onSuccess: () => toast.success(t('{name}: valid until {date}', { name: c.name, date: formatDate(until) })), onError: (e) => toast.error(describeError(e)) })
     },
     pause: (c: PlatformClient, on: boolean) => {

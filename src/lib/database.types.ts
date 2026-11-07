@@ -18868,8 +18868,8 @@ export type Database = {
       portal_settings_save: {
         Args: {
           p_company: string
-          p_auto_confirm: boolean
-          p_stock: string
+          p_auto_confirm?: boolean
+          p_stock?: string
         }
         Returns: undefined
       }

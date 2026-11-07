@@ -54,7 +54,7 @@ function useRfqAction<A, R = unknown>(fn: (a: A) => Promise<R>, done?: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: fn,
-    onSuccess: () => { if (done) toast.success(done); void qc.invalidateQueries({ queryKey: [KEY] }) },
+    onSuccess: () => { if (done) toast.success(done); void qc.invalidateQueries({ queryKey: [KEY] }); void qc.invalidateQueries({ queryKey: ['proc'] }) },
     onError: (e) => toast.error(describeError(e)),
   })
 }

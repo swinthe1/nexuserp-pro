@@ -171,12 +171,12 @@ function Thread({ conv, people, online, onBack, onLeft }: { conv: ChatConversati
     try {
       const att: ChatAttachment[] = []
       for (const f of files) {
-        try { att.push(await uploadChatFile(companyId!, conv.id, f)) } catch (e) { toast.error((e as Error).message === 'too-big' ? t('{name} is bigger than 25 MB', { name: f.name }) : tServer(describeError(e))); throw e }
+        try { att.push(await uploadChatFile(companyId!, conv.id, f)) } catch (e) { toast.error((e as Error).message === 'too-big' ? t('{name} is bigger than 25 MB', { name: f.name }) : tServer(describeError(e))); throw new Error('shown') }
       }
       await send.mutateAsync({ body, replyTo: reply?.id ?? null, attachments: att })
       setText(''); setFiles([]); setReply(null)
       requestAnimationFrame(() => { const el = scroller.current; if (el) el.scrollTop = el.scrollHeight })
-    } catch (e) { if ((e as Error).message !== 'too-big') toast.error(tServer(describeError(e))) } finally { setBusy(false); boxRef.current?.focus() }
+    } catch (e) { if (!['too-big', 'shown'].includes((e as Error).message)) toast.error(tServer(describeError(e))) } finally { setBusy(false); boxRef.current?.focus() }
   }
   const me = members.data?.find((m) => m.user_id === user?.id)
   const muted = !!me?.muted_until && me.muted_until > new Date().toISOString()

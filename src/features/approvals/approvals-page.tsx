@@ -84,7 +84,7 @@ export function ApprovalsPage() {
     },
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: ['approvals', companyId] })
-      void qc.invalidateQueries({ queryKey: ['inv', companyId] })
+      for (const k of ['inv', 'proc', 'sales', 'fin']) void qc.invalidateQueries({ queryKey: [k, companyId] })
     },
   })
 

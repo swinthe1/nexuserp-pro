@@ -60,6 +60,7 @@ export function ItemRequestsPage() {
       toast.success(v.make ? t('The item is made; the one who asked is told') : t('Refused; the one who asked is told'))
       setRefusing(null); setReason('')
       void qc.invalidateQueries({ queryKey: ['item-requests', companyId] })
+      if (v.make) void qc.invalidateQueries({ queryKey: ['inv', companyId] })
     },
     onError: (e) => toast.error(tServer(describeError(e))),
   })

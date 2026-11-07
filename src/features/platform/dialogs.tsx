@@ -921,7 +921,7 @@ export function DeleteClientDialog({ client, onClose }: { client: PlatformClient
           <Button variant="destructive" disabled={!ok} loading={del.isPending} onClick={() => {
             if (!client) return
             setErr(null)
-            del.mutate({ company: client.id, name: name.trim(), deleteUsers: users }, {
+            del.mutate({ company: client.id, name: client.name, deleteUsers: users }, {
               onSuccess: (r) => { toast.success(t('{name} was deleted ({n} records)', { name: client.name, n: r.rows })); onClose() },
               onError: (e) => setErr(describeError(e)),
             })

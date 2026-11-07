@@ -71,7 +71,7 @@ export function PickingPage() {
   const transfers = useTransfersToPick()
   const createT = useCreateTransferPickList()
   const [selT, setSelT] = React.useState<Set<string>>(new Set())
-  const freeT = (transfers.data ?? []).filter((x) => !x.pick_list && x.lines.length)
+  const freeT = (transfers.data ?? []).filter((x) => !x.pick_list && !x.picked_at && x.lines.length)
   const selectedT = freeT.filter((x) => selT.has(x.id))
   const mixedT = new Set(selectedT.map((x) => x.from_warehouse_id)).size > 1
   const [sel, setSel] = React.useState<Set<string>>(new Set())

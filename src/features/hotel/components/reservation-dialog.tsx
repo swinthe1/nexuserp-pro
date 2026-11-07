@@ -189,7 +189,7 @@ function Charges({ reservation, editable }: { reservation: Reservation & { charg
           <span className="flex-1">{c.description}</span>
           <span className="tabular text-muted-foreground">{num(c.quantity)} × {formatMoney(c.unit_price)}</span>
           <span className="w-24 text-right tabular">{formatMoney(num(c.quantity) * num(c.unit_price))}</span>
-          {editable && <Button variant="ghost" size="icon" className="size-7" aria-label={t('Remove')} onClick={() => void del.mutateAsync(c.id)}><Trash2 className="size-3.5" /></Button>}
+          {editable && <Button variant="ghost" size="icon" className="size-7" aria-label={t('Remove')} onClick={() => void del.mutateAsync(c.id).catch((e) => toast.error(describeError(e)))}><Trash2 className="size-3.5" /></Button>}
         </div>
       ))}
       {editable && (
