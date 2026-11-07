@@ -553,4 +553,7 @@ export const serverTemplates: [string, string][] = [
   ["Transfer % is already on an open pick list", "Transferi {0} është tashmë në një listë mbledhjeje të hapur"],
   ["Transfer % is on a pick list still open: finish the picking first", "Transferi {0} është në një listë mbledhjeje ende të hapur: përfundoni mbledhjen së pari"],
   ["WAITERS_OWE: the waiters have not handed over their takings yet: %", "Kamarierët ende nuk e kanë dorëzuar xhiron: {0}"],
+  ["The client already has % units; keep the limit at least that high", "Klienti ka tashmë {0} njësi; mbajeni kufirin të paktën aq"],
+  ["The client already has % tills; keep the limit at least that high", "Klienti ka tashmë {0} arka; mbajeni kufirin të paktën aq"],
+  ["Your licence allows % till(s); ask your provider for more", "Licenca juaj lejon {0} arka; kërkojini ofruesit më shumë"],
 ]

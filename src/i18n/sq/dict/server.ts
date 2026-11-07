@@ -874,4 +874,5 @@ export default {
   "Count the cash the waiter hands over": "Numëroni paratë që dorëzon kamarieri",
   "This waiter took no payments in this shift": "Ky kamarier nuk ka marrë pagesa në këtë ndërrim",
   "Say why the handover differs from what the waiter owes": "Shkruani pse dorëzimi ndryshon nga ajo që ka për të dorëzuar kamarieri",
+  "Unknown package": "Paketë e panjohur",
 } satisfies Dict

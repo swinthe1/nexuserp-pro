@@ -128,7 +128,7 @@ reset role;
 update public.licenses set plan = 'basic', extra_features = '{}', max_warehouses = null where company_id = :'drita';
 set role authenticated;
 select t.login('olga@drita.xk');
-select t.ok((select jsonb_array_length(c -> 'license' -> 'features') = 0 and (c -> 'license' ->> 'max_warehouses')::int = 1
+select t.ok((select jsonb_array_length(c -> 'license' -> 'features') = cardinality(app.fine_modules()) and not (c -> 'license' -> 'features') ? 'transfers' and (c -> 'license' ->> 'max_warehouses')::int = 1
                from jsonb_array_elements(public.get_my_context() -> 'companies') c where (c ->> 'id')::uuid = :'drita'), 'the app learns what the Basic plan includes');
 select t.ok(not app.has_permission(:'drita', 'hr.read') and app.has_permission(:'drita', 'sales.write'), 'Basic: no people module, selling as usual');
 select t.throws(format($q$select app.require_feature(%L, 'transfers')$q$, :'drita'), 'not in your plan', 'Basic: no transfers between stores');

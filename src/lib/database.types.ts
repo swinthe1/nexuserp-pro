@@ -6372,6 +6372,8 @@ export type Database = {
           backup_key: string | null
           ai_reads_limit: number | null
           ai_chat_limit: number | null
+          package: string | null
+          max_registers: number | null
         }
         Insert: {
           company_id: string
@@ -6395,6 +6397,8 @@ export type Database = {
           backup_key?: string | null
           ai_reads_limit?: number | null
           ai_chat_limit?: number | null
+          package?: string | null
+          max_registers?: number | null
         }
         Update: {
           company_id?: string
@@ -6418,6 +6422,8 @@ export type Database = {
           backup_key?: string | null
           ai_reads_limit?: number | null
           ai_chat_limit?: number | null
+          package?: string | null
+          max_registers?: number | null
         }
         Relationships: [
           { foreignKeyName: "licenses_company_id_fkey"; columns: ["company_id"]; isOneToOne: true; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -18632,6 +18638,13 @@ export type Database = {
         Args: {
           p_company: string
           p_multi: boolean
+        }
+        Returns: undefined
+      }
+      platform_set_package: {
+        Args: {
+          p_company: string
+          p: Json
         }
         Returns: undefined
       }

@@ -71,7 +71,7 @@ export function ClientPage() {
       <PageHeader icon={false} back={{ href: '/platform/clients', label: t('Clients') }} title={d.company.name}
         meta={<div className="flex flex-wrap items-center gap-1.5">
           <Badge variant={s.variant}>{s.label}</Badge>
-          <Badge variant="outline">{planLabel(c.plan)}</Badge>
+          <Badge variant="outline">{planLabel(c.plan, c.package)}</Badge>
           {d.company.is_training && <Badge variant="warning">{t('Training')}</Badge>}
         </div>}
         description={[d.company.country_code === 'XK' ? t('Kosovo') : t('Albania'), d.company.tax_number && `NUI ${d.company.tax_number}`, t(businessTypeLabel(d.company.business_type)),
@@ -203,7 +203,8 @@ function LicenceTab({ d, c }: { d: ClientDetail; c: NonNullable<ReturnType<typeo
   const history = d.events.filter((e) => e.kind.startsWith('licence_'))
   if (!l) return <EmptyState title={t('No licence')} action={<Button onClick={() => setEditing(true)}><ShieldCheck /> {t('Give a licence')}</Button>} />
   const days = daysUntil(l.valid_until)
-  const modules = (l.extra_features ?? []).map((f) => FEATURES.find((x) => x.key === f)?.label ?? f)
+  const packaged = l.plan === 'package'
+  const modules = ((packaged ? c.modules : l.extra_features) ?? []).map((f) => FEATURES.find((x) => x.key === f)?.label ?? f)
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
       <Card>
@@ -214,10 +215,11 @@ function LicenceTab({ d, c }: { d: ClientDetail; c: NonNullable<ReturnType<typeo
         </CardHeader>
         <CardContent className="pt-0">
           <dl className="divide-y">
-            <Field label={t('Plan')} value={planLabel(l.plan)} />
-            <Field label={t('Added modules')} value={modules.length ? modules.map((m) => t(m)).join(', ') : null} />
+            <Field label={packaged ? t('Package') : t('Plan')} value={planLabel(l.plan, c.package)} />
+            <Field label={packaged ? t('Modules') : t('Added modules')} value={modules.length ? modules.map((m) => t(m)).join(', ') : null} />
             <Field label={t('Users')} value={<UsersBarInline used={d.users} max={l.max_users} />} />
-            <Field label={t('Units|places')} value={l.max_warehouses ? t('up to {n}', { n: l.max_warehouses }) : t('as the plan')} />
+            <Field label={t('Units|places')} value={l.max_warehouses ? t('up to {n}', { n: l.max_warehouses }) : packaged ? t('No limit') : t('as the plan')} />
+            {packaged && <Field label={t('Tills')} value={c.max_registers ? t('{a} of {b}', { a: c.tills ?? 0, b: c.max_registers }) : t('No limit')} />}
             <Field label={t('Valid')} value={`${formatDate(l.valid_from)} – ${formatDate(l.valid_until)}`} />
             <Field label={t('Where it runs')} value={l.deployment === 'local' ? t('Local server only') : l.deployment === 'cloud' ? t('Cloud only') : t('Cloud or local')} />
             <Field label={t('Licence code')} value={l.code && <button type="button" className="inline-flex items-center gap-1.5 font-mono text-xs hover:text-primary"

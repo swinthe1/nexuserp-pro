@@ -13,9 +13,11 @@ export function PlanLocked({ path }: { path: string }) {
   return (
     <div className="mx-auto mt-16 flex max-w-md flex-col items-center gap-3 text-center">
       <span className="grid size-11 place-items-center rounded-full bg-muted"><Lock className="size-5 text-muted-foreground" /></span>
-      <h1 className="text-lg font-semibold">{t('This module is not in your plan')}</h1>
+      <h1 className="text-lg font-semibold">{company?.license?.plan === 'package' ? t('This module is not in your package') : t('This module is not in your plan')}</h1>
       <p className="text-sm text-muted-foreground">
-        {need.length && need.every((f) => f.plan === 'paid')
+        {company?.license?.plan === 'package'
+          ? t('{module} is not among the modules of {company}. Ask your provider to add it to your licence.', { module: need.map((f) => t(f.label)).join(' / '), company: company?.name ?? '' })
+          : need.length && need.every((f) => f.plan === 'paid')
           ? t('{module} is a separate module, each use has a cost. Ask your provider to add it to your licence.', { module: need.map((f) => t(f.label)).join(' / ') })
           : t('{module} comes with the {plan} plan. {company} is on {current}. Ask your provider to add it.', {
           module: need.map((f) => t(f.label)).join(' / '), plan, company: company?.name ?? '',

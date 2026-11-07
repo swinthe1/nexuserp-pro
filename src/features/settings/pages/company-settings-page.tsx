@@ -300,7 +300,7 @@ function FiscalForm() {
 function MenuForm() {
   const settings = useCompanySettings()
   const save = useSaveCompanySettings()
-  const { can } = useCompany()
+  const { can, pageAllowed } = useCompany()
   const writable = can('admin.write')
   if (settings.isLoading) return <Skeleton className="h-64" />
   if (settings.error) return <ErrorState error={settings.error} onRetry={() => void settings.refetch()} />
@@ -310,7 +310,8 @@ function MenuForm() {
   const sections = NAV.filter((s) => s.label !== 'Overview' && s.label !== 'Company').flatMap((s) => {
     const parts = [...new Set(s.items.map((i) => i.part).filter((x): x is string => !!x))]
     return [{ ...s, items: s.items.filter((i) => !i.part) }, ...parts.map((p) => ({ label: p, title: undefined, items: s.items.filter((i) => i.part === p) }))]
-  })
+  // the modules outside the company's package are not here: only DrisPRO switches a module on
+  }).map((s) => ({ ...s, items: s.items.filter((i) => pageAllowed(i.href)) })).filter((s) => s.items.length > 0)
   const toggle = (key: string, shown: boolean, name: string) => {
     const next = shown ? hidden.filter((h) => h !== key) : [...hidden, key]
     void save.mutateAsync({ hidden_menu_sections: next }).then(() =>

@@ -3,6 +3,7 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import { useAuth } from '@/app/auth-provider'
 import { useCompany } from '@/app/company-provider'
+import { roleInPackage } from '@/lib/plans'
 import type { Json, Tables, TablesUpdate } from '@/lib/database.types'
 import { msg } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
@@ -84,7 +85,7 @@ export function useCompanyUsers() {
 }
 export type RoleRow = Tables<'roles'> & { permissions: string[] }
 export function useRoles() {
-  const { companyId } = useCompany()
+  const { companyId, hasFeature } = useCompany()
   return useQuery({
     queryKey: [...adminKeys.all(companyId), 'roles'],
     enabled: !!companyId,
@@ -92,7 +93,9 @@ export function useRoles() {
       const rows = unwrap(await supabase.from('roles').select('*, role_permissions(permission)').order('sort_order').order('name'))
       return (rows as unknown as (Tables<'roles'> & { role_permissions: { permission: string }[] })[])
         .filter((r) => r.company_id === null || r.company_id === companyId)
-        .map(({ role_permissions, ...r }) => ({ ...r, permissions: role_permissions.map((p) => p.permission).sort() }))
+        // a built-in role of a module the client does not have is not offered (it stays for the people who have it)
+        .map(({ role_permissions, ...r }) => ({ ...r, is_assignable: r.is_assignable && (r.company_id !== null || roleInPackage(r.key, (f) => hasFeature(f))),
+          permissions: role_permissions.map((p) => p.permission).sort() }))
     },
   })
 }

@@ -73,7 +73,7 @@ export function LicencesPage() {
                   return (
                     <TableRow key={c.id}>
                       <TableCell><ClientLink c={c} />{c.admins[0] && <div className="text-xs text-muted-foreground">{c.admins[0]}</div>}</TableCell>
-                      <TableCell>{planLabel(c.plan)}</TableCell>
+                      <TableCell>{planLabel(c.plan, c.package)}</TableCell>
                       <TableCell className="text-right"><UsersBar used={c.users} max={c.max_users} /></TableCell>
                       <TableCell><div className="tabular">{formatDate(c.valid_until!)}</div>
                         <div className={cn('text-xs', d < 0 ? 'text-destructive' : d <= 14 ? 'text-warning' : 'text-muted-foreground')}>

@@ -23,6 +23,11 @@ export interface PlatformClient {
   max_users: number | null
   extra_features?: string[] | null
   max_warehouses?: number | null
+  /** the business package (null: an older plan), its till limit, the tills it has, the modules it really has */
+  package?: string | null
+  max_registers?: number | null
+  tills?: number
+  modules?: string[] | null
   valid_from: string | null
   valid_until: string | null
   status: 'active' | 'suspended' | null
@@ -66,6 +71,11 @@ export interface NewClient {
   multi_unit: boolean
   unit_kind?: string
   units?: { name: string; kind: string; city?: string; code?: string }[]
+  /** the package: its modules and limits (null limit = none) */
+  package?: string
+  modules?: string[]
+  max_stores?: number | null
+  max_tills?: number | null
 }
 
 export interface LicenseInput {
@@ -79,6 +89,8 @@ export interface LicenseInput {
   valid_until: string
   status: 'active' | 'suspended'
   notes?: string | null
+  /** a package: replaces the plan, its modules and limits */
+  package?: { key: string; modules: string[]; max_stores: number | null; max_tills: number | null; apply_type: boolean } | null
 }
 
 const KEY = ['platform-clients']
@@ -112,7 +124,10 @@ export function useSaveLicense() {
         p_company: v.company, p_plan: v.plan, p_max_users: v.max_users, p_valid_from: v.valid_from,
         p_valid_until: v.valid_until, p_status: v.status, p_notes: v.notes ?? undefined,
       }))
-      if (v.extra_features) {
+      if (v.package) {
+        unwrap(await supabase.rpc('platform_set_package', { p_company: v.company, p: { package: v.package.key, modules: v.package.modules, max_users: v.max_users,
+          max_stores: v.package.max_stores, max_tills: v.package.max_tills, apply_type: v.package.apply_type } as never }))
+      } else if (v.extra_features) {
         unwrap(await supabase.rpc('platform_set_plan_extras', { p_company: v.company, p_extra: v.extra_features, p_max_warehouses: (v.max_warehouses ?? null) as unknown as number }))
       }
     },

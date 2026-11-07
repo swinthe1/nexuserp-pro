@@ -22,7 +22,8 @@ import { generatePassword, type PlatformClient, type SyncConnection, useCreateCl
 import { Checkbox } from '@/components/ui/checkbox'
 import { BUSINESS_TYPES, businessTypeLabel } from './business-types'
 import { Label } from '@/components/ui/label'
-import { FEATURES, PAID_MODULES, PLAN_FEATURES, PLAN_STORES, type Feature } from '@/lib/plans'
+import { FEATURES, PAID_MODULES, PLAN_FEATURES, PLAN_STORES, packageOf, type Feature, type PackageKey } from '@/lib/plans'
+import { PackagePicker, packageDefaults, packageLimits, type PackageValue } from './package-fields'
 
 export const PLANS = [
   { value: 'basic', label: msg('Basic') },
@@ -48,8 +49,9 @@ export function PlanIncludes({ plan }: { plan: string }) {
   )
 }
 
-export function planLabel(plan: string | null) {
+export function planLabel(plan: string | null, pkg?: string | null) {
   if (!plan) return '—'
+  if (plan === 'package') { const p = packageOf(pkg); return p ? t(p.label) : t('Package') }
   if (plan === 'trial') return t('Trial')
   const p = PLANS.find((x) => x.value === plan)
   return p ? t(p.label) : plan
@@ -112,7 +114,9 @@ export function NewClientDialog({ open, onOpenChange }: { open: boolean; onOpenC
     multi_unit: false, unit_kind: 'store', units: [{ code: 'N1', name: '', kind: 'store', city: '' }, { code: 'N2', name: '', kind: 'store', city: '' }],
   }), [])
   const form = useForm<ClientValues>({ resolver: zodResolver(clientSchema), defaultValues: defaults() })
-  React.useEffect(() => { if (open) { form.reset(defaults()); setDone(null) } }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+  // the package decides the modules and the limits; the type of business follows it
+  const [pkg, setPkg] = React.useState<PackageValue>(() => packageDefaults('retail_mini'))
+  React.useEffect(() => { if (open) { form.reset(defaults()); setDone(null); setPkg(packageDefaults('retail_mini')) } }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
   const country = form.watch('country')
   const multi = form.watch('multi_unit')
   const unitRows = useFieldArray({ control: form.control, name: 'units' })
@@ -120,7 +124,12 @@ export function NewClientDialog({ open, onOpenChange }: { open: boolean; onOpenC
   const submit = form.handleSubmit(async (v) => {
     try {
       const units = v.multi_unit ? v.units.filter((u) => u.name).map((u, i) => ({ ...u, code: u.code || `N${i + 1}`, city: u.city || undefined })) : undefined
-      await create.mutateAsync({ ...v, owner_email: v.owner_email.toLowerCase(), units })
+      const p = packageOf(pkg.key)
+      if (!p) { form.setError('name', { message: t('Choose the package') }); return }
+      const lim = packageLimits(pkg)
+      if (lim.max_stores != null && (units?.length ?? 1) > lim.max_stores) { form.setError('units', { message: t('The package allows {n} units: raise the limit, or write fewer units', { n: lim.max_stores }) }); return }
+      await create.mutateAsync({ ...v, owner_email: v.owner_email.toLowerCase(), units, plan: 'package', business_type: p.businessType, package: p.key,
+        modules: pkg.modules, max_stores: lim.max_stores, max_tills: lim.max_tills, max_users: lim.max_users })
       setDone(v)
     } catch (e) {
       const m = describeError(e)
@@ -182,15 +191,8 @@ export function NewClientDialog({ open, onOpenChange }: { open: boolean; onOpenC
                     <FormControl><Input placeholder={country === 'AL' ? 'L91234567A' : '811234567'} {...field} onChange={(e) => field.onChange(e.target.value.toUpperCase())} /></FormControl><FormMessage /></FormItem>
                 )} />
 
-                <FormField control={form.control} name="business_type" render={({ field }) => (
-                  <FormItem className="col-span-2"><FormLabel>{t('Type of business')}</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                      <SelectContent>{BUSINESS_TYPES.map((b) => <SelectItem key={b.value} value={b.value}>{t(b.label)}</SelectItem>)}</SelectContent>
-                    </Select>
-                    <FormDescription>{t(BUSINESS_TYPES.find((b) => b.value === field.value)?.hint ?? '')}</FormDescription>
-                  </FormItem>
-                )} />
+                <p className="col-span-2 mt-2 text-xs font-medium text-muted-foreground">{t('Package: the kind of business, its modules and its limits')}</p>
+                <PackagePicker value={pkg} onChange={setPkg} />
 
                 {/* one unit or several: decides how the program treats the client */}
                 <p className="col-span-2 mt-2 text-xs font-medium text-muted-foreground">{t('Units of the business')}</p>
@@ -259,7 +261,7 @@ export function NewClientDialog({ open, onOpenChange }: { open: boolean; onOpenC
                 )} />
 
                 <p className="col-span-2 mt-2 text-xs font-medium text-muted-foreground">{t('Licence')}</p>
-                <LicenseFields form={form} />
+                <LicenseFields form={form} packaged />
                 <DialogFooter className="col-span-2 mt-1">
                   <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('Cancel')}</Button>
                   <Button type="submit" loading={form.formState.isSubmitting}>{t('Create client')}</Button>
@@ -278,7 +280,7 @@ export function NewClientDialog({ open, onOpenChange }: { open: boolean; onOpenC
 type LicenseShape = { plan: string; max_users: number; valid_from: string; valid_until: string; notes?: string | null }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function LicenseFields({ form }: { form: any }) {
+export function LicenseFields({ form, packaged }: { form: any; packaged?: boolean }) {
   const extend = (months: number) => {
     const until: string = form.getValues('valid_until')
     const base = until && until > todayISO() ? until : todayISO()
@@ -286,7 +288,7 @@ export function LicenseFields({ form }: { form: any }) {
   }
   return (
     <>
-      <FormField control={form.control} name="plan" render={({ field }: { field: { value: string; onChange: (v: string) => void } }) => (
+      {!packaged && <FormField control={form.control} name="plan" render={({ field }: { field: { value: string; onChange: (v: string) => void } }) => (
         <FormItem className="col-span-1"><FormLabel>{t('Plan')}</FormLabel>
           <Select value={field.value} onValueChange={field.onChange}>
             <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
@@ -296,10 +298,10 @@ export function LicenseFields({ form }: { form: any }) {
             </SelectContent>
           </Select>
         </FormItem>
-      )} />
-      <FormField control={form.control} name="max_users" render={({ field }: { field: object }) => (
+      )} />}
+      {!packaged && <FormField control={form.control} name="max_users" render={({ field }: { field: object }) => (
         <FormItem className="col-span-1"><FormLabel>{t('Maximum users')}</FormLabel><FormControl><Input type="number" min={1} step={1} className="tabular" {...field} /></FormControl><FormMessage /></FormItem>
-      )} />
+      )} />}
       <FormField control={form.control} name="valid_from" render={({ field }: { field: object }) => (
         <FormItem className="col-span-1"><FormLabel>{t('Valid from')}</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
       )} />
@@ -311,7 +313,7 @@ export function LicenseFields({ form }: { form: any }) {
         <Button type="button" size="sm" variant="outline" onClick={() => extend(6)}>{t('+6 months')}</Button>
         <Button type="button" size="sm" variant="outline" onClick={() => extend(12)}>{t('+1 year')}</Button>
       </div>
-      <PlanIncludesWatch form={form} />
+      {!packaged && <PlanIncludesWatch form={form} />}
       <FormField control={form.control} name="notes" render={({ field }: { field: { value?: string | null } }) => (
         <FormItem className="col-span-2"><FormLabel optional>{t('Internal notes')}</FormLabel>
           <FormControl><Textarea rows={2} placeholder={t('Contract number, price, contact person…')} {...field} value={field.value ?? ''} /></FormControl>
@@ -340,7 +342,27 @@ export function LicenseDialog({ client, onClose }: { client: PlatformClient | nu
   const plan = form.watch('plan') ?? 'pro'
   const [extras, setExtras] = React.useState<string[]>([])
   const [maxStores, setMaxStores] = React.useState('')
+  // the package: the client's own, or none yet (an older plan, kept until a package is chosen)
+  const blankPkg = (): PackageValue => ({ key: '', modules: [], stores: '', tills: '', users: '' })
+  const [pkg, setPkgRaw] = React.useState<PackageValue>(blankPkg)
+  const current = (client?.modules ?? []) as Feature[]
+  const setPkg = (v: PackageValue) => {
+    if (!client || !v.key) { setPkgRaw(v); return }
+    // from an older plan to a package: the client keeps every module he has (he can be trimmed after); the limits never below what he uses
+    if (!pkg.key && client.plan !== 'package') {
+      const d = packageDefaults(v.key as PackageKey)
+      const atLeast = (lim: string, used: number) => (lim === '' ? '' : String(Math.max(Number(lim), used)))
+      setPkgRaw({ ...d, modules: current.length ? [...current] : d.modules, stores: atLeast(d.stores, client.units ?? 1), tills: atLeast(d.tills, client.tills ?? 0),
+        users: String(Math.max(Number(d.users), client.users)) })
+      return
+    }
+    setPkgRaw(v)
+  }
   React.useEffect(() => {
+    if (client) {
+      setPkgRaw(client.plan === 'package' && client.package ? { key: client.package as PackageKey, modules: (client.modules ?? client.extra_features ?? []) as Feature[],
+        stores: client.max_warehouses ? String(client.max_warehouses) : '', tills: client.max_registers ? String(client.max_registers) : '', users: String(client.max_users ?? 5) } : blankPkg())
+    }
     if (client) { setExtras(client.extra_features ?? []); setMaxStores(client.max_warehouses ? String(client.max_warehouses) : '') }
     if (client) form.reset({
       plan: client.plan ?? 'standard', max_users: client.max_users ?? 5, valid_from: client.valid_from ?? todayISO(),
@@ -355,6 +377,16 @@ export function LicenseDialog({ client, onClose }: { client: PlatformClient | nu
       return
     }
     try {
+      if (pkg.key) {
+        const p = packageOf(pkg.key)!
+        const lim = packageLimits(pkg)
+        if (lim.max_users < client.users) { toast.error(tn(client.users, '{n} person already uses this company. Remove people first or keep the limit higher.', '{n} people already use this company. Remove people first or keep the limit higher.')); return }
+        await save.mutateAsync({ company: client.id, ...v, plan: 'package', max_users: lim.max_users,
+          package: { key: p.key, modules: pkg.modules, max_stores: lim.max_stores, max_tills: lim.max_tills, apply_type: p.businessType !== (client.business_type ?? 'general') } })
+        toast.success(t('Licence saved for {name}', { name: client.name }))
+        onClose()
+        return
+      }
       const inPlan = PLAN_FEATURES[v.plan] ?? PLAN_FEATURES.pro
       await save.mutateAsync({ company: client.id, ...v, extra_features: extras.filter((f) => !inPlan.includes(f as Feature)), max_warehouses: maxStores ? Number(maxStores) : null })
       toast.success(t('Licence saved for {name}', { name: client.name }))
@@ -364,15 +396,20 @@ export function LicenseDialog({ client, onClose }: { client: PlatformClient | nu
 
   return (
     <Dialog open={!!client} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[92dvh] max-w-lg overflow-y-auto">
+      <DialogContent className="max-h-[92dvh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t('Licence for {name}', { name: client?.name ?? '' })}</DialogTitle>
           <DialogDescription>{t('Outside the licence period, or while paused, the client\'s people cannot open the company. Their data is kept.')}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={submit} className="grid grid-cols-2 gap-3" noValidate>
-            <LicenseFields form={form} />
-            {(PLAN_FEATURES[plan] ?? PLAN_FEATURES.pro).length < FEATURES.length - PAID_MODULES.length && (
+            <PackagePicker value={pkg} onChange={setPkg} legacy={client && client.plan !== 'package' ? planLabel(client.plan) : null} />
+            {pkg.key && client?.plan !== 'package' && <p className="col-span-2 -mt-1 rounded-md bg-muted/60 px-3 py-2 text-[12.5px] text-muted-foreground">
+              {t('The client moves from the older plan to this package and keeps every module he has now. Take off what he does not use.')}</p>}
+            {pkg.key && client && packageOf(pkg.key)!.businessType !== (client.business_type ?? 'general') && <p className="col-span-2 -mt-1 text-[12.5px] text-warning">
+              {t('The kind of business changes too: the client\'s menu starts again from that kind.')}</p>}
+            <LicenseFields form={form} packaged={!!pkg.key} />
+            {!pkg.key && (PLAN_FEATURES[plan] ?? PLAN_FEATURES.pro).length < FEATURES.length - PAID_MODULES.length && (
               <fieldset className="col-span-2 grid gap-2 rounded-md border p-3">
                 <legend className="px-1 text-[13px] font-medium">{t('Extra modules for this client')}</legend>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
@@ -385,13 +422,13 @@ export function LicenseDialog({ client, onClose }: { client: PlatformClient | nu
                 </div>
               </fieldset>
             )}
-            <div className="col-span-2 grid gap-1.5">
+            {!pkg.key && <div className="col-span-2 grid gap-1.5">
               <Label htmlFor="max-stores" optional>{t('Store limit for this client')}</Label>
               <Input id="max-stores" type="number" min={1} step={1} className="tabular" value={maxStores} onChange={(e) => setMaxStores(e.target.value)}
                 placeholder={PLAN_STORES[plan] ? t('The plan\u2019s {n}', { n: PLAN_STORES[plan]! }) : t('No limit')} />
-            </div>
+            </div>}
             {client && <LicenceCodeCard companyId={client.id} />}
-            <fieldset className="col-span-2 grid gap-2 rounded-md border p-3">
+            {!pkg.key && <fieldset className="col-span-2 grid gap-2 rounded-md border p-3">
               <legend className="px-1 text-[13px] font-medium">{t('Modules with a cost per use')}</legend>
               <p className="text-xs text-muted-foreground">{t('In no plan. Turn one on only when the client asked for it and it is in their offer.')}</p>
               {PAID_MODULES.map((f) => (
@@ -400,9 +437,9 @@ export function LicenseDialog({ client, onClose }: { client: PlatformClient | nu
                   <span>{t(f.label)}<span className="block text-xs text-muted-foreground">{f.cost ? t(f.cost) : null}</span></span>
                 </label>
               ))}
-            </fieldset>
-            {client && extras.includes('ai_reads') && <AiReadsCard companyId={client.id} />}
-            {client && extras.includes('ai_assistant') && <AiReadsCard companyId={client.id} chat />}
+            </fieldset>}
+            {client && (pkg.key ? pkg.modules : extras).includes('ai_reads') && <AiReadsCard companyId={client.id} />}
+            {client && (pkg.key ? pkg.modules : extras).includes('ai_assistant') && <AiReadsCard companyId={client.id} chat />}
             <FormField control={form.control} name="status" render={({ field }) => (
               <FormItem className="col-span-2 flex items-center justify-between gap-3 space-y-0 rounded-md border p-3">
                 <div>
