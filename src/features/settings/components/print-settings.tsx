@@ -10,12 +10,38 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { msg, t } from '@/i18n'
-import { PRINT_DEFAULTS, type PrintDoc, type PrintSettings } from '@/lib/documents/model'
+import { PRINT_DEFAULTS, type PrintDoc, type PrintSettings, type PrintTemplate } from '@/lib/documents/model'
 import { renderDocHtml } from '@/lib/documents/render-html'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { cn, todayISO } from '@/lib/utils'
 import type { Json } from '@/lib/database.types'
+
+/** the three layouts, from the plainest to the one with every detail */
+const TEMPLATES: { key: PrintTemplate; label: string; hint: string }[] = [
+  { key: 'simple', label: msg('Simple|print'), hint: msg('Description, quantity, price and total. For shops and services.') },
+  { key: 'standard', label: msg('Standard|print'), hint: msg('Codes, VAT and discount on every line, in boxes.') },
+  { key: 'detailed', label: msg('Detailed|print'), hint: msg('Every figure: base and VAT per line, delivery address, the bank accounts in a table and the payment reference.') },
+]
+
+/** a small drawing of each layout, so the choice is seen, not read */
+function TemplateThumb({ k, accent }: { k: PrintTemplate; accent: string }) {
+  const line = (y: number, w = 60, o = 0.25) => <rect x={8} y={y} width={w} height={2.4} rx={1} fill="#1a1d24" opacity={o} />
+  return (
+    <svg viewBox="0 0 76 96" className="h-24 w-[76px] shrink-0 rounded-md border bg-white" aria-hidden>
+      {k === 'detailed' ? <rect x={4} y={4} width={68} height={14} rx={2} fill={accent} /> : <>{line(8, 26, 0.55)}<rect x={50} y={7} width={18} height={4} rx={1} fill={k === 'simple' ? '#1a1d24' : accent} /></>}
+      <rect x={4} y={k === 'detailed' ? 21 : 16} width={68} height={k === 'simple' ? 0.6 : 1} fill={k === 'simple' ? '#1a1d24' : accent} />
+      {k === 'simple' ? <>{line(22, 30, 0.45)}{line(26, 24)}</> : <><rect x={6} y={k === 'detailed' ? 25 : 21} width={k === 'detailed' ? 20 : 32} height={13} rx={1.5} fill="none" stroke="#d9dce3" />
+        <rect x={k === 'detailed' ? 28 : 40} y={k === 'detailed' ? 25 : 21} width={k === 'detailed' ? 20 : 30} height={13} rx={1.5} fill="none" stroke="#d9dce3" />
+        {k === 'detailed' && <rect x={50} y={25} width={20} height={13} rx={1.5} fill="none" stroke="#d9dce3" />}</>}
+      <rect x={6} y={42} width={64} height={k === 'simple' ? 0.6 : 4} fill={k === 'simple' ? '#1a1d24' : accent} />
+      {[48, 54, 60, 66].slice(0, k === 'simple' ? 3 : 4).map((y) => <g key={y}>{line(y, k === 'detailed' ? 64 : 62, 0.18)}</g>)}
+      <rect x={44} y={74} width={26} height={k === 'detailed' ? 12 : 8} rx={1.5} fill="none" stroke="#d9dce3" />
+      {k === 'detailed' && <rect x={44} y={88} width={26} height={4} rx={1} fill={accent} />}
+      {k !== 'simple' && <rect x={6} y={74} width={34} height={8} rx={1.5} fill="none" stroke="#d9dce3" />}
+    </svg>
+  )
+}
 
 const COLOURS = ['#1f3a8a', '#0f766e', '#7c2d12', '#6d28d9', '#be123c', '#111827']
 const TEXTS: { key: string; label: string; hint: string }[] = [
@@ -73,6 +99,18 @@ export function PrintSettingsCard() {
         <CardHeader><CardTitle>{t('Printed documents')}</CardTitle>
           <CardDescription>{t('Invoices, offers, pro formas, delivery notes, purchase orders, receipts and payment vouchers are printed, saved as PDF and emailed with this look.')}</CardDescription></CardHeader>
         <CardContent className="grid gap-5">
+          <div className="grid gap-2">
+            <Label>{t('Layout')}</Label>
+            <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label={t('Layout')}>
+              {TEMPLATES.map((x) => { const on = (s.template ?? 'standard') === x.key; return (
+                <button key={x.key} type="button" role="radio" aria-checked={on} disabled={ro} onClick={() => set({ template: x.key })}
+                  className={cn('flex gap-3 rounded-lg border p-2.5 text-left transition-colors hover:bg-muted/50', on && 'border-primary ring-2 ring-primary/25')}>
+                  <TemplateThumb k={x.key} accent={s.accent ?? PRINT_DEFAULTS.accent} />
+                  <span className="min-w-0"><span className="block text-sm font-semibold">{t(x.label)}</span><span className="mt-0.5 block text-[12px] leading-snug text-muted-foreground">{t(x.hint)}</span></span>
+                </button>
+              ) })}
+            </div>
+          </div>
           <div className="grid gap-2">
             <Label>{t('Logo')}</Label>
             <div className="flex flex-wrap items-center gap-3">
@@ -154,7 +192,7 @@ export function PrintSettingsCard() {
         </CardContent>
       </Card>
       <div className="xl:sticky xl:top-4 xl:self-start">
-        <p className="mb-2 text-[13px] text-muted-foreground">{t('Preview (an example invoice)')}</p>
+        <p className="mb-2 text-[13px] text-muted-foreground">{t('Preview (an example invoice)')} · {t(TEMPLATES.find((x) => x.key === (s.template ?? 'standard'))!.label)}</p>
         <div className="h-[764px] w-[540px] max-w-full overflow-hidden rounded-lg border bg-white shadow-sm">
           <iframe title={t('Preview')} className="h-[1123px] w-[794px] origin-top-left border-0" style={{ transform: 'scale(0.68)' }}
             srcDoc={`<!doctype html><html><head><meta charset="utf-8"><style>${css} body{padding:40px 46px}</style></head><body>${body}</body></html>`} />
@@ -185,7 +223,7 @@ function sampleDoc(company: Company): PrintDoc {
   ]
   return {
     kind: 'sales_invoice', number: 'INV-2026-00123', date: todayISO(), due_date: todayISO(), currency: company.base_currency, rate: 1,
-    payment_term: t('15 days'), salesperson: null, notes: null, subtotal: 106.8, discount_total: 4.2, tax_total: 17.72, total: 124.52, paid: 0, due: 124.52,
+    payment_term: t('15 days'), salesperson: 'Arben Krasniqi', order: 'POR-2026-00045', reference: 'PO-778', notes: null, subtotal: 106.8, discount_total: 4.2, tax_total: 17.72, total: 124.52, paid: 0, due: 124.52,
     partner: { name: t('Example customer'), tax_number: '810000011', address: 'Rr. Nëna Terezë 10, Prishtinë', phone: '044 123 456', email: 'blerje@shembull.com', code: 'K-001' },
     lines, vat: [{ rate: 18, base: 91.8, tax: 16.52 }, { rate: 8, base: 15, tax: 1.2 }],
     company, printed_by: null, printed_at: new Date().toISOString(),

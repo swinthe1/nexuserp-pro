@@ -8,7 +8,11 @@ import { supabase } from '@/lib/supabase'
 
 export type DocKind = 'sales_invoice' | 'sales_quote' | 'proforma_quote' | 'sales_order' | 'proforma' | 'delivery' | 'payment' | 'purchase_order' | 'goods_receipt'
 
+/** the layout of the printed documents, from the plainest to the one with every detail */
+export type PrintTemplate = 'simple' | 'standard' | 'detailed'
 export type PrintSettings = {
+  /** simple: description, quantity, price and total; standard: codes, VAT and discount per line; detailed: every figure */
+  template?: PrintTemplate
   /** main colour of titles and lines */
   accent?: string
   logo_position?: 'left' | 'right'
@@ -30,7 +34,7 @@ export type PrintSettings = {
   texts?: Partial<Record<string, string>>
 }
 export const PRINT_DEFAULTS: Required<Omit<PrintSettings, 'footer' | 'texts'>> = {
-  accent: '#1f3a8a', logo_position: 'left', show_codes: true, show_discount: true, show_banks: true, show_signatures: true, show_words: true, delivery_prices: false,
+  template: 'standard', accent: '#1f3a8a', logo_position: 'left', show_codes: true, show_discount: true, show_banks: true, show_signatures: true, show_words: true, delivery_prices: false,
   show_stamp: true, show_swift: true, banks_layout: 'list', logo_size: 'm',
 }
 
@@ -78,6 +82,10 @@ export const METHOD: Record<string, string> = {
   cash: msg('In cash'), card: msg('By card'), cheque: msg('By cheque'), bank_transfer: msg('By bank transfer'), offset: msg('By offset'), other: msg('Other way'),
 }
 export const isVoucher = (d: PrintDoc) => d.kind === 'receipt_voucher' || d.kind === 'payment_voucher'
+/** the documents that carry the company's bank accounts */
+export const BANK_KINDS = ['sales_invoice', 'advance_invoice', 'proforma', 'sales_quote', 'sales_order']
+/** a line's price per unit with VAT, after its discount (the simple layout shows only that) */
+export const unitWithVat = (l: PrintLine) => Number(l.qty) ? Number(l.total) / Number(l.qty) : Number(l.price ?? 0)
 /** documents without prices on paper: a delivery note (unless the company wants them) */
 export const showPrices = (d: PrintDoc) => d.kind !== 'delivery' || !!settingsOf(d).delivery_prices
 export const fileName = (d: PrintDoc) => `${docTitle(d)} ${d.number}`.replace(/[\\/:*?"<>|]+/g, '-') + '.pdf'
