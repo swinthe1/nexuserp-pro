@@ -19956,6 +19956,13 @@ export type Database = {
         }
         Returns: number
       }
+      stock_analysis: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: Json
+      }
       stock_balance: {
         Args: {
           p_company: string

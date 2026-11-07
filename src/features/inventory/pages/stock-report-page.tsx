@@ -33,13 +33,14 @@ import { Pick, SavedFilters } from '@/features/reports/components/saved-filters'
 
 type Row = Record<string, unknown>
 type Cell = string | number | null
-type ColType = 'text' | 'date' | 'money' | 'price' | 'qty' | 'pct' | 'rate' | 'blank'
+type ColType = 'text' | 'date' | 'money' | 'price' | 'qty' | 'pct' | 'rate' | 'blank' | 'count' | 'days' | 'enum'
 type Col = { id: string; label: string; type: ColType; hidden?: boolean; strong?: boolean; total?: boolean }
 
 type Filters = {
   report: string; as_of: string; units: string[]; split: boolean; group_by: string
   categories: string[]; producers: string[]; brands: string[]; vendors: string[]; items: string[]; vat_rates: string[]; types: string[]
   active: string; stock: string; sheet: string; blind: boolean
+  from: string; days: string; slow_days: string; dead_days: string; target_days: string; classes: string[]
 }
 
 const REPORTS = [
@@ -50,6 +51,10 @@ const REPORTS = [
   { value: 'sheet', label: msg('5. Stock sheet') },
   { value: 'by_producer', label: msg('6. Grouped by producer') },
   { value: 'sale', label: msg('7. At sale prices') },
+  { value: 'movement', label: msg('8. Stock movement over a period') },
+  { value: 'availability', label: msg('9. Stock free to sell') },
+  { value: 'slow', label: msg('10. Goods that do not move') },
+  { value: 'cover', label: msg('11. Days the stock lasts') },
 ]
 const SHEETS = [
   { value: 'charge', label: msg('What the storekeeper is charged with') },
@@ -69,6 +74,7 @@ const TYPES = [{ value: 'stockable', label: msg('Stocked item') }, { value: 'con
 const blank = (unit: string | null): Filters => ({
   report: 'avg', as_of: todayISO(), units: unit ? [unit] : [], split: false, group_by: 'none',
   categories: [], producers: [], brands: [], vendors: [], items: [], vat_rates: [], types: [], active: 'active', stock: 'nonzero', sheet: 'charge', blind: false,
+  from: `${todayISO().slice(0, 8)}01`, days: '90', slow_days: '60', dead_days: '180', target_days: '30', classes: [],
 })
 
 /** the columns of each report (English labels, translated when drawn) */
@@ -110,6 +116,29 @@ function columnsOf(f: Filters): Col[] {
     case 'sale': return [...lead, qty, { id: 'vat_rate', label: msg('VAT rate'), type: 'rate', hidden: true }, price('sale_net', msg('Price without VAT'), { hidden: true }),
       price('sale_gross', msg('Price with VAT')), money('value_sale_net', msg('Value without VAT')), money('vat_in_sale', msg('VAT')),
       money('value_sale_gross', msg('Value with VAT'), { strong: true }), ...extra]
+    case 'movement': {
+      const q = (id: string, label: string, o: Partial<Col> = {}): Col => ({ id, label, type: 'qty', total: true, ...o })
+      return [...lead, q('opening_qty', msg('Opening')), q('purchase_in', msg('Bought')), q('transfer_in', msg('Transfers in')), q('production_in', msg('Made')),
+        q('sale_return_in', msg('Returned by customers')), q('adjustment_in', msg('Other in'), { hidden: true }), q('in_qty', msg('In, total'), { hidden: true }),
+        q('sale_out', msg('Sold')), q('transfer_out', msg('Transfers out')), q('production_out', msg('Used in production')), q('purchase_return_out', msg('Returned to suppliers')),
+        q('loss_out', msg('Losses')), q('adjustment_out', msg('Other out'), { hidden: true }), q('out_qty', msg('Out, total'), { hidden: true }),
+        q('qty', msg('Closing'), { strong: true }), money('opening_value', msg('Opening value'), { hidden: true }), money('in_value', msg('Value in')),
+        money('out_value', msg('Value out')), money('revaluation', msg('Revaluation'), { hidden: true }), money('value', msg('Closing value'), { strong: true })]
+    }
+    case 'availability': {
+      const q = (id: string, label: string, o: Partial<Col> = {}): Col => ({ id, label, type: 'qty', total: true, ...o })
+      return [...lead, q('qty', msg('On hand')), q('reserved', msg('Reserved')), q('available', msg('Free to sell'), { strong: true }), q('on_order', msg('Ordered from suppliers')),
+        q('in_transit', msg('On the road')), q('projected', msg('Expected')), { id: 'next_expected', label: msg('Expected on'), type: 'date' },
+        { id: 'min_qty', label: msg('Minimum'), type: 'qty' }, { id: 'max_qty', label: msg('Maximum'), type: 'qty', hidden: true }, q('to_order', msg('To order'), { strong: true })]
+    }
+    case 'slow': return [...lead, qty, money('value', msg('Value at cost')), { id: 'class', label: msg('Movement'), type: 'enum', strong: true },
+      { id: 'last_sale', label: msg('Last sold'), type: 'date' }, { id: 'days_idle', label: msg('Days without a sale'), type: 'days' },
+      { id: 'sold', label: msg('Sold in the days looked at'), type: 'qty', total: true }, money('sold_value', msg('Cost of what was sold'), { hidden: true }),
+      { id: 'cover_days', label: msg('Days of stock'), type: 'days' }, { id: 'first_in', label: msg('First in'), type: 'date', hidden: true }]
+    case 'cover': return [...lead, qty, { id: 'per_day', label: msg('Sold a day'), type: 'qty' }, { id: 'cover_days', label: msg('Days of stock'), type: 'days', strong: true },
+      { id: 'runout', label: msg('Runs out on'), type: 'date' }, { id: 'cover', label: msg('State'), type: 'enum', strong: true },
+      { id: 'on_order', label: msg('Ordered from suppliers'), type: 'qty', total: true }, { id: 'to_order', label: msg('To order'), type: 'qty', total: true, strong: true },
+      { id: 'sold', label: msg('Sold in the days looked at'), type: 'qty', total: true, hidden: true }, { id: 'last_sale', label: msg('Last sold'), type: 'date', hidden: true }, money('value', msg('Value at cost'), { hidden: true })]
     default: return [...lead, qty, price('avg_cost', msg('Average cost')), money('value', msg('Value'), { strong: true }), ...extra]
   }
 }
@@ -120,7 +149,15 @@ const SIGNATURES: Record<string, string[]> = {
   count: [msg('Counted by'), msg('Checked by'), msg('Storekeeper')],
 }
 
-const right = (c: Col) => !['text', 'date', 'blank'].includes(c.type)
+const right = (c: Col) => !['text', 'date', 'blank', 'enum'].includes(c.type)
+/** the classes of movement and the states of cover */
+const ENUMS: Record<string, string> = {
+  fast: msg('Sells well'), slow: msg('Sells slowly'), dead: msg('Does not sell'), new: msg('New'),
+  out: msg('Out of stock'), urgent: msg('Under a week'), soon: msg('Under two weeks'), ok: msg('Enough'), over: msg('Too much (over 90 days)'),
+  no_sales: msg('No sales'), none: msg('Nothing'),
+}
+const ENUM_TONE: Record<string, string> = { dead: 'text-destructive', slow: 'text-warning', fast: 'text-success', new: 'text-info', out: 'text-destructive', urgent: 'text-destructive', soon: 'text-warning', ok: 'text-success', over: 'text-warning' }
+const ANALYSIS = ['movement', 'availability', 'slow', 'cover']
 function shown(c: Col, v: unknown): string {
   if (c.type === 'blank') return ''
   if (v === null || v === undefined || v === '') return ''
@@ -130,6 +167,9 @@ function shown(c: Col, v: unknown): string {
     case 'price': { const n = num(v); return Number.isInteger(n * 100) ? formatMoney(n) : formatMoney(n, undefined, 4) }
     case 'qty': return formatQty(num(v))
     case 'pct': case 'rate': return `${formatQty(num(v))}%`
+    case 'count': return formatQty(num(v))
+    case 'days': return formatQty(Math.round(num(v)))
+    case 'enum': return t(ENUMS[String(v)] ?? String(v))
     default: return td(String(v))
   }
 }
@@ -177,8 +217,8 @@ export function StockReportPage() {
   })
   const q = useQuery({
     queryKey: ['stock-report', companyId, applied], enabled: !!companyId,
-    queryFn: async () => unwrap(await supabase.rpc('stock_report', { p_company: companyId!, p: {
-      ...applied, vat_rates: applied.vat_rates.map(Number), sheet: undefined, blind: undefined,
+    queryFn: async () => unwrap(await supabase.rpc(ANALYSIS.includes(applied.report) ? 'stock_analysis' : 'stock_report', { p_company: companyId!, p: {
+      ...applied, to: applied.as_of, vat_rates: applied.vat_rates.map(Number), sheet: undefined, blind: undefined,
     } as unknown as Json })) as unknown as { rows: Row[]; count: number; truncated: boolean; as_of: string; currency: string; company: { name: string; tax_number: string | null }; units: string[] },
   })
 
@@ -193,7 +233,9 @@ export function StockReportPage() {
   // what was asked, in words: under the title and on every export
   const said = React.useMemo(() => {
     const pick = (ids: string[], opts: { value: string; label: string }[]) => ids.map((id) => opts.find((o) => o.value === id)?.label ?? '').filter(Boolean).join(', ')
-    const parts = [t('Stock on {date}', { date: formatDate(q.data?.as_of ?? applied.as_of) })]
+    const parts = [applied.report === 'movement' ? `${formatDate(applied.from)} – ${formatDate(q.data?.as_of ?? applied.as_of)}`
+      : applied.report === 'availability' ? t('Now') : t('Stock on {date}', { date: formatDate(q.data?.as_of ?? applied.as_of) })]
+    if (applied.report === 'slow' || applied.report === 'cover') parts.push(t('Sales of the last {n} days', { n: applied.days }))
     parts.push(applied.units.length ? `${t('Units|stores')}: ${pick(applied.units, unitOpts)}` : t('All units'))
     if (applied.split) parts.push(t('A row per unit'))
     if (applied.categories.length) parts.push(`${t('Groups')}: ${pick(applied.categories, catOpts)}`)
@@ -224,8 +266,12 @@ export function StockReportPage() {
               <SelectContent>{REPORTS.map((r) => <SelectItem key={r.value} value={r.value}>{t(r.label)}</SelectItem>)}</SelectContent>
             </Select></div>
           {draft.report === 'sheet' && <Pick label={t('Kind of sheet')} value={draft.sheet} onChange={(v) => put('sheet', v)} width="w-64" options={SHEETS.map((s) => ({ value: s.value, label: t(s.label) }))} />}
-          <div className="grid gap-1"><Label className="text-xs">{t('Stock on')}</Label>
-            <Input type="date" className="h-9 w-40" value={draft.as_of} max={todayISO()} onChange={(e) => put('as_of', e.target.value || todayISO())} /></div>
+          {draft.report === 'movement' && <div className="grid gap-1"><Label className="text-xs">{t('From|date')}</Label>
+            <Input type="date" className="h-9 w-40" value={draft.from} max={draft.as_of} onChange={(e) => put('from', e.target.value || draft.from)} /></div>}
+          {draft.report !== 'availability' && <div className="grid gap-1"><Label className="text-xs">{draft.report === 'movement' ? t('To|date') : t('Stock on')}</Label>
+            <Input type="date" className="h-9 w-40" value={draft.as_of} max={todayISO()} onChange={(e) => put('as_of', e.target.value || todayISO())} /></div>}
+          {(draft.report === 'slow' || draft.report === 'cover') && <Pick label={t('Sales of the last')} value={draft.days} onChange={(v) => put('days', v)} width="w-36"
+            options={['30', '60', '90', '180', '365'].map((d) => ({ value: d, label: t('{n} days', { n: d }) }))} />}
           {multi && <MultiPick label={t('Units|stores')} value={draft.units} onChange={(v) => put('units', v)} options={unitOpts} />}
           {multi && <label className="flex h-9 items-center gap-2 rounded-md border px-3 text-[13px]"><Switch checked={draft.split} onCheckedChange={(v) => put('split', v)} />{t('A row per unit')}</label>}
           <MultiPick label={t('Groups')} value={draft.categories} onChange={(v) => put('categories', v)} options={catOpts} />
@@ -252,6 +298,12 @@ export function StockReportPage() {
               <Pick label={t('Items|active')} value={draft.active} onChange={(v) => put('active', v)} width="w-48"
                 options={[{ value: 'active', label: t('Only active') }, { value: 'inactive', label: t('Only inactive') }, { value: 'all', label: t('Active and inactive') }]} />
               <Pick label={t('Group and subtotal by')} value={draft.group_by} onChange={(v) => put('group_by', v)} width="w-52" options={GROUPS.map((g) => ({ value: g.value, label: t(g.label) }))} />
+              {draft.report === 'slow' && <>
+                <MultiPick label={t('Movement')} value={draft.classes} onChange={(v) => put('classes', v)} options={['fast', 'slow', 'dead', 'new'].map((c) => ({ value: c, label: t(ENUMS[c]!) }))} />
+                <div className="grid gap-1"><Label className="text-xs">{t('Slow after (days without a sale)')}</Label><Input inputMode="numeric" className="h-9 w-28" value={draft.slow_days} onChange={(e) => put('slow_days', e.target.value)} /></div>
+                <div className="grid gap-1"><Label className="text-xs">{t('Does not sell after (days)')}</Label><Input inputMode="numeric" className="h-9 w-28" value={draft.dead_days} onChange={(e) => put('dead_days', e.target.value)} /></div>
+              </>}
+              {draft.report === 'cover' && <div className="grid gap-1"><Label className="text-xs">{t('Order for (days)')}</Label><Input inputMode="numeric" className="h-9 w-28" value={draft.target_days} onChange={(e) => put('target_days', e.target.value)} /></div>}
               {draft.report === 'sheet' && draft.sheet === 'count' && (
                 <label className="flex h-9 items-center gap-2 rounded-md border px-3 text-[13px]"><Switch checked={draft.blind} onCheckedChange={(v) => put('blind', v)} />{t('Without the quantity in the books (blind count)')}</label>
               )}
@@ -353,7 +405,7 @@ function ReportTable({ rows, filters, title, subtitle, fileName, onOpen }: {
     <TableRow key={`${String(r.variant_id)}-${String(r.unit_id ?? '')}-${i}`} className="cursor-pointer" onClick={() => onOpen(r)}>
       {visible.map((c) => {
         const v = r[c.id]
-        return <TableCell key={c.id} className={cn(right(c) && 'text-right tabular', c.strong && 'font-medium', right(c) && num(v) < 0 && 'text-destructive', c.type === 'blank' && 'border-b border-dashed')}>
+        return <TableCell key={c.id} className={cn(right(c) && 'text-right tabular', c.strong && 'font-medium', c.type === 'enum' && ENUM_TONE[String(v)], right(c) && num(v) < 0 && 'text-destructive', c.type === 'blank' && 'border-b border-dashed')}>
           {shown(c, v) || (c.type === 'blank' ? '' : <span className="text-muted-foreground">—</span>)}</TableCell>
       })}
     </TableRow>
