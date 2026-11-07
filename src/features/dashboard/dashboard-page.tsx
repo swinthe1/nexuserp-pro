@@ -2,7 +2,7 @@ import { MyTasksCard } from '@/features/tasks/components/linked-tasks'
 import { UnitsToday } from './units-today'
 import { SalesPulse } from './sales-pulse'
 import { useQuery } from '@tanstack/react-query'
-import { AlarmClock, ArrowDownLeft, ArrowLeftRight, ArrowRight, ArrowUpRight, Coins, FileQuestion, FileText, PackageMinus, Percent, ReceiptText, Scale, ShoppingCart, Truck, Boxes, ClipboardCheck, Landmark, PackageCheck, ShieldAlert, Ship, TrendingUp, TriangleAlert, Users, Wallet } from 'lucide-react'
+import { AlarmClock, Ban, CalendarClock, Coins as CoinsIcon, HandCoins, PackageX, Receipt, ShoppingBasket, Tags, Timer, ArrowDownLeft, ArrowLeftRight, ArrowRight, ArrowUpRight, Coins, FileQuestion, FileText, PackageMinus, Percent, ReceiptText, Scale, ShoppingCart, Truck, Boxes, ClipboardCheck, Landmark, PackageCheck, ShieldAlert, Ship, TrendingUp, TriangleAlert, Users, Wallet } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
@@ -31,6 +31,7 @@ import { StockByWarehouse } from './stock-by-warehouse'
 import { LegacySales } from './legacy-sales'
 import { useHistoryLive } from '@/features/history/api'
 import { useFinanceOverview } from '@/features/finance/api'
+import { type CardGroup, useDashboardMarket, usualCards } from './api'
 
 const tooltipStyle = { background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }
 const axisTick = { fontSize: 11, fill: 'hsl(var(--muted-foreground))' }
@@ -45,7 +46,7 @@ const shortDay = (d: string) => formatDateWith(new Date(`${d.slice(0, 10)}T00:00
 
 export function DashboardPage() {
   const { user } = useAuth()
-  const { company, companyId, can } = useCompany()
+  const { company, companyId, can, hasFeature } = useCompany()
   const cur = company?.base_currency
   const inv = useInventoryOverview()
   const low = useLowStock()
@@ -57,6 +58,8 @@ export function DashboardPage() {
   const canAp = can('invoicing.read')
   const proc = useProcurementOverview(monthStart, todayISO(), canAp)
   const fin = useFinanceOverview(monthStart, todayISO(), can('finance.read'))
+  const mk = useDashboardMarket()
+  const m = mk.data
   const pending = useQuery({
     queryKey: ['approvals', companyId, 'count'],
     enabled: !!companyId,
@@ -80,8 +83,60 @@ export function DashboardPage() {
 
   const choice = useDashboardCards()
   // every card a person may put on the dashboard; each one only when they may see what it shows
-  const cards: { key: string; label: string; node: React.ReactNode }[] = []
-  const add = (key: string, label: string, ok: boolean, node: React.ReactNode) => { if (ok) cards.push({ key, label, node }) }
+  const cards: { key: string; label: string; group: CardGroup; node: React.ReactNode }[] = []
+  let group: CardGroup = 'shop'
+  const add = (key: string, label: string, ok: boolean, node: React.ReactNode) => { if (ok) cards.push({ key, label, group, node }) }
+  const pct = (a: number | null | undefined, b: number | null | undefined) => (a == null || !b ? null : ((a - b) / Math.abs(b)) * 100)
+
+  /* ------------------------------------------------ the shop and the tills (what a market looks at first) */
+  add('today_sales', t('Sales today (with VAT)'), can('sales.read'),
+    <StatCard icon={ShoppingBasket} hue="152 68%" label={t('Sales today (with VAT)')} value={formatMoney(m?.today, cur)} loading={mk.isLoading} href="/pos/history"
+      trend={{ pct: pct(m?.today, m?.week_ago), label: t('vs the same hour a week ago'), upIsGood: true }}
+      hint={m ? t('{n} receipts · average basket {amount}', { n: m.receipts ?? 0, amount: m.basket != null ? formatMoney(m.basket) : '—' }) : undefined} />)
+  add('cash_in_tills', t('Cash in the tills now'), can('pos.read') || can('sales.read'),
+    <StatCard icon={CoinsIcon} hue="44 92%" label={t('Cash in the tills now')} value={formatMoney(m?.cash_in_tills, cur)} loading={mk.isLoading} href="/pos"
+      tone={m?.shifts_left_open ? 'warning' : 'default'}
+      hint={m ? (m.shifts_left_open ? tn(m.shifts_left_open, '{n} shift left open since an earlier day', '{n} shifts left open since an earlier day')
+        : tn(m.open_shifts ?? 0, '{n} till open', '{n} tills open')) : undefined} />)
+  add('margin_month', t('Gross margin this month'), can('sales.read'),
+    <StatCard icon={Percent} hue="262 60%" label={t('Gross margin this month')} value={m?.month_margin_pct != null ? formatNumberWith(m.month_margin_pct, { maximumFractionDigits: 1 }) : '—'} unit="%"
+      meter={m?.month_margin_pct ?? null} loading={mk.isLoading} href="/reports/margin"
+      hint={m ? t('{amount} earned on {sales} of sales, without VAT', { amount: formatMoney(m.month_margin), sales: formatMoney(m.month_net) }) : undefined} />)
+  add('sales_month_all', t('Sales this month, tills and invoices (with VAT)'), can('sales.read'),
+    <StatCard icon={TrendingUp} hue="204 82%" label={t('Sales this month, tills and invoices (with VAT)')} value={formatMoney(m?.month, cur)} loading={mk.isLoading} href="/reports/analysis" />)
+  add('basket', t('Average basket today (with VAT)'), can('sales.read'),
+    <StatCard icon={Receipt} hue="188 78%" label={t('Average basket today (with VAT)')} value={m?.basket != null ? formatMoney(m.basket, cur) : '—'} loading={mk.isLoading} href="/pos/history"
+      trend={{ pct: pct(m?.receipts, m?.receipts_week_ago), label: t('receipts vs a week ago') }}
+      hint={m ? tn(m.receipts ?? 0, '{n} receipt so far today', '{n} receipts so far today') : undefined} />)
+  add('till_diff', t('Till differences this month'), can('pos.read') || can('sales.read'),
+    <StatCard icon={Scale} hue="354 70%" label={t('Till differences this month')} value={formatMoney(m?.till_diff, cur)} loading={mk.isLoading} href="/pos/review"
+      tone={m && Math.abs(m.till_diff ?? 0) >= 0.01 ? (m.till_diff! < 0 ? 'destructive' : 'warning') : 'default'}
+      hint={m ? tn(m.till_diff_count ?? 0, '{n} shift with a difference', '{n} shifts with a difference') : undefined} />)
+  add('voids_today', t('Items taken off and refunds today'), can('pos.read') || can('sales.read'),
+    <StatCard icon={Ban} hue="350 70%" label={t('Items taken off and refunds today')} value={(m?.voids_today ?? 0) + (m?.refunds_today ?? 0)} loading={mk.isLoading} href="/pos/review"
+      tone={(m?.voids_today ?? 0) + (m?.refunds_today ?? 0) > 0 ? 'warning' : 'default'}
+      hint={m ? t('{voids} taken off ({amount}) · {refunds} refunds ({refunded})', { voids: m.voids_today ?? 0, amount: formatMoney(m.voided_today), refunds: m.refunds_today ?? 0, refunded: formatMoney(m.refunded_today) }) : undefined} />)
+
+  /* ------------------------------------------------ the goods on the shelves */
+  group = 'stock'
+  add('out_of_stock', t('Selling, but out of stock'), can('inventory.read'),
+    <StatCard icon={PackageX} hue="354 70%" label={t('Selling, but out of stock')} value={m?.out_of_stock_selling ?? 0} loading={mk.isLoading} href="/inventory/alerts"
+      tone={m?.out_of_stock_selling ? 'destructive' : 'default'} hint={t('Sold in the last 30 days, nothing left to sell')} />)
+  add('expiring', t('Expiring within 7 days'), can('inventory.read'),
+    <StatCard icon={CalendarClock} hue="24 90%" label={t('Expiring within 7 days')} value={m?.expiring_week ?? 0} unit={t('lots')} loading={mk.isLoading} href="/inventory/expiry"
+      tone={m?.expired_lots ? 'destructive' : m?.expiring_week ? 'warning' : 'default'}
+      hint={m ? (m.expired_lots ? tn(m.expired_lots, '{n} lot already expired and still in stock', '{n} lots already expired and still in stock')
+        : t('Worth {amount} at cost · {n} within 30 days', { amount: formatMoney(m.expiring_week_value), n: m.expiring_month ?? 0 })) : undefined} />)
+  add('dead_stock', t('Not sold in 60 days'), can('inventory.read'),
+    <StatCard icon={Timer} hue="220 14%" label={t('Not sold in 60 days')} value={formatMoney(m?.dead_value, cur)} loading={mk.isLoading} href="/reports/stock_aging"
+      hint={m ? tn(m.dead_items ?? 0, '{n} item standing on the shelf, at cost', '{n} items standing on the shelf, at cost') : undefined} />)
+  add('price_changes', t('New selling prices waiting'), can('inventory.read'),
+    <StatCard icon={Tags} hue="262 60%" label={t('New selling prices waiting')} value={m?.price_changes ?? 0} loading={mk.isLoading} href="/inventory/levelling?tab=suggestions"
+      tone={m?.price_changes ? 'warning' : 'default'} hint={t('The cost changed: accept the price that keeps your margin')} />)
+  add('waiting_invoice', t('Goods waiting for the supplier invoice'), can('invoicing.read') || can('procurement.read') || can('inventory.read'),
+    <StatCard icon={HandCoins} hue="32 90%" label={t('Goods waiting for the supplier invoice')} value={m?.receipts_waiting_invoice ?? 0} unit={t('receipts|goods')} loading={mk.isLoading} href="/procurement/pending-invoices"
+      tone={(m?.oldest_waiting_days ?? 0) > 7 ? 'warning' : 'default'}
+      hint={m?.oldest_waiting_days != null ? tn(m.oldest_waiting_days, 'The oldest waits {n} day', 'The oldest waits {n} days') : undefined} />)
   add('stock_value', t('Value at purchase price, without VAT'), can('inventory.read'),
     <StatCard icon={Boxes} hue="152 68%" label={t('Value at purchase price, without VAT')} value={formatMoney(inv.data?.stock_value, cur)} loading={inv.isLoading} href="/inventory/stock"
       hint={inv.data?.sales_value != null ? t('At selling price with VAT {amount}', { amount: formatMoney(inv.data.sales_value) }) : t('{n} products in stock', { n: inv.data?.active_skus ?? 0 })} />)
@@ -89,8 +144,10 @@ export function DashboardPage() {
     <StatCard icon={TriangleAlert} hue="32 90%" label={t('Running low')} value={inv.data?.low_stock ?? 0} tone={inv.data?.low_stock ? 'warning' : 'default'} loading={inv.isLoading} href="/inventory/alerts" hint={t('At or below the reorder point')} />)
   add('customs', t('Imports waiting for customs costs'), can('inventory.read'),
     <StatCard icon={Ship} hue="188 78%" label={t('Imports waiting for customs costs')} value={inv.data?.pending_clearance ?? 0} loading={inv.isLoading} href="/inventory/receipts" hint={t('Customs and transport costs not added yet')} />)
+  group = 'office'
   add('approvals', t('Waiting for approval'), true,
     <StatCard icon={ClipboardCheck} hue="262 60%" label={t('Waiting for approval')} value={pending.data ?? 0} loading={pending.isLoading} href="/approvals" />)
+  group = 'money'
   add('sales_month', legacy ? t('Sales this month (with VAT)') : t('Sales this month (without VAT)'), can('sales.read'),
     legacy ? <StatCard icon={TrendingUp} hue="204 82%" label={t('Sales this month (with VAT)')} value={formatMoney(legacy.month, cur)} href="/history"
       hint={t('{n} receipts · {pct}% gross margin without VAT · old program', { n: num(legacy.month_receipts), pct: legacy.month_cost != null && num(legacy.month_net) > 0 ? formatNumberWith(((num(legacy.month_net) - num(legacy.month_cost)) / num(legacy.month_net)) * 100, { maximumFractionDigits: 1 }) : '—' })} />
@@ -111,6 +168,7 @@ export function DashboardPage() {
   add('gross_margin', t('Gross margin this month (without VAT)'), can('sales.read'),
     <StatCard icon={Percent} hue="152 68%" label={t('Gross margin this month (without VAT)')} value={formatMoney((sales.data?.revenue ?? 0) - (sales.data?.cogs ?? 0), cur)} loading={sales.isLoading} href="/reports/margin"
       hint={sales.data && sales.data.revenue > 0 ? t('{pct}% of sales', { pct: formatNumberWith(((sales.data.revenue - sales.data.cogs) / sales.data.revenue) * 100, { maximumFractionDigits: 1 }) }) : undefined} />)
+  group = 'office'
   add('quotes', t('Quotes sent this month'), can('sales.read'),
     <StatCard icon={FileText} hue="204 82%" label={t('Quotes sent this month')} value={sales.data?.quotes_sent ?? 0} loading={sales.isLoading} href="/sales/quotes" hint={t('{n} became orders', { n: sales.data?.quotes_converted ?? 0 })} />)
   add('purchases_month', t('Purchases this month (without VAT)'), canAp,
@@ -120,6 +178,7 @@ export function DashboardPage() {
       tone={proc.data?.late_count ? 'warning' : 'default'} hint={t('{n} late', { n: proc.data?.late_count ?? 0 })} />)
   add('to_bill', t('Goods received, invoice not entered (without VAT)'), canAp,
     <StatCard icon={FileQuestion} hue="32 90%" label={t('Goods received, invoice not entered (without VAT)')} value={formatMoney(proc.data?.to_bill_value, cur)} loading={proc.isLoading} href="/inventory/receipts" />)
+  group = 'money'
   add('cash', t('Money in cash and bank'), can('finance.read'),
     <StatCard icon={Coins} hue="158 82%" label={t('Money in cash and bank')} value={formatMoney(fin.data?.cash, cur)} loading={fin.isLoading} href="/finance/bank" tone={(fin.data?.cash ?? 0) < 0 ? 'destructive' : 'default'} />)
   add('receivables', t('Customers owe me in total (with VAT)'), can('finance.read'),
@@ -132,19 +191,22 @@ export function DashboardPage() {
     <StatCard icon={Scale} hue="262 60%" label={t('VAT to pay')} value={formatMoney(fin.data?.vat_due, cur)} loading={fin.isLoading} href="/tax/declarations" hint={t('By the accounting, so far')} />)
   add('expenses_month', t('Expenses this month (without VAT)'), can('finance.read'),
     <StatCard icon={ReceiptText} hue="350 70%" label={t('Expenses this month (without VAT)')} value={formatMoney(fin.data?.expenses, cur)} loading={fin.isLoading} href="/finance/expenses" />)
+  group = 'stock'
   add('negative_stock', t('Items below zero'), can('inventory.read'),
     <StatCard icon={PackageMinus} hue="354 70%" label={t('Items below zero')} value={inv.data?.negative_lines ?? 0} loading={inv.isLoading} href="/check"
       tone={inv.data?.negative_lines ? 'destructive' : 'default'} hint={t('Sold before the goods were received')} />)
+  group = 'money'
   add('bank_unmatched', t('Bank lines not matched'), can('finance.read'),
     <StatCard icon={Landmark} hue="188 78%" label={t('Bank lines not matched')} value={fin.data?.unmatched_bank_lines ?? 0} loading={fin.isLoading} href="/finance/bank"
       tone={fin.data?.unmatched_bank_lines ? 'warning' : 'default'} />)
+  group = 'stock'
   add('movements_today', t('Stock movements today'), can('inventory.read'),
     <StatCard icon={ArrowLeftRight} hue="204 82%" label={t('Stock movements today')} value={inv.data?.movements_today ?? 0} loading={inv.isLoading} href="/inventory/item-card" />)
   add('active_skus', t('Items in stock'), can('inventory.read'),
     <StatCard icon={Boxes} hue="152 68%" label={t('Items in stock')} value={inv.data?.active_skus ?? 0} loading={inv.isLoading} href="/inventory/stock" />)
   const byKey = new Map(cards.map((c) => [c.key, c]))
-  // the usual eight, until the person chooses their own
-  const usual = ['stock_value', 'low_stock', 'customs', 'approvals', 'sales_month', can('sales.read') ? 'overdue' : 'customers_late', 'bills_due', can('sales.read') ? 'backlog' : 'net_profit']
+  // the usual eight for this kind of business, until the person chooses their own
+  const usual = usualCards(company?.business_type, can('sales.read'), hasFeature('pos'))
   // the order just dragged shows at once, before the profile has saved it
   const [dragged, setDragged] = React.useState<string[] | null>(null)
   React.useEffect(() => setDragged(null), [choice.cards])
@@ -167,7 +229,7 @@ export function DashboardPage() {
   return (
     <>
       <PageHeader title={greeting(firstName)} description={`${company?.name ?? ''} · ${formatDate(new Date())}`}
-        actions={<ChooseCards all={cards.map((c) => ({ key: c.key, label: c.label }))} shown={shown} onSave={choice.set} />} />
+        actions={<ChooseCards all={cards.map((c) => ({ key: c.key, label: c.label, group: c.group }))} shown={shown} usual={usual.filter((k) => byKey.has(k))} onSave={choice.set} />} />
       <BooksCheckBanner />
       <SalesPulse />
       <div className="mb-4 empty:hidden"><MyTasksCard /></div>

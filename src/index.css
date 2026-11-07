@@ -186,6 +186,9 @@
     box-shadow: inset 0 0 0 1px hsl(var(--mod) var(--mod-l) / 0.2);
   }
   .dark .mod-chip, .sidebar-navy .mod-chip { background: hsl(var(--mod) var(--mod-l) / 0.16); }
+  /* a figure card: a soft wash of its own colour from the corner of its icon */
+  .stat-card { background-image: radial-gradient(120% 85% at 100% 0%, hsl(var(--mod) var(--mod-l) / 0.075), transparent 62%); }
+  .dark .stat-card { background-image: radial-gradient(120% 85% at 100% 0%, hsl(var(--mod) var(--mod-l) / 0.1), transparent 62%); }
 }
 
 @layer base {

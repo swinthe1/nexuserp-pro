@@ -17273,6 +17273,12 @@ export type Database = {
         }
         Returns: Json
       }
+      dashboard_market: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       debts_by_due: {
         Args: {
           p_company: string
