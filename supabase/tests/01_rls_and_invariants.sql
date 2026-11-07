@@ -8,6 +8,9 @@
 \set ON_ERROR_STOP on
 set client_min_messages = notice;
 
+-- the till tests written before the manager reconciled every shift test a close that is final; 108 tests the three steps
+alter table public.company_settings alter column pos_review set default 'off';
+
 -- ---------- tiny test harness ------------------------------------------------
 create schema t;
 grant usage on schema t to authenticated;

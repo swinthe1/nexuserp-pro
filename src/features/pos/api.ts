@@ -203,9 +203,19 @@ export type CatalogItem = { variant_id: string; sku: string; name: string; categ
   uom?: string | null
   /** the item's number on the scale (its PLU), for the scale's barcodes */
   scale_plu?: string | null }
+export type TillShiftInfo = {
+  last: { number: string; closed_at: string; closed_by: string | null; counted: number | null; difference: number | null; review_status: string } | null
+  mine_open: { register: string; number: string } | null
+  returned: number
+  blind: boolean
+  review: boolean
+}
+
 export type TillData = {
   register: Pick<Register, 'id' | 'code' | 'name' | 'company_id' | 'receipt_header' | 'receipt_footer' | 'default_customer_id' | 'location_id' | 'warehouse_id' | 'paper_mm'>
-  session: { id: string; number: string; opened_at: string; opening_cash: number } | null
+  session: { id: string; number: string; opened_at: string; opening_cash: number; opened_by?: string | null; opener?: string | null } | null
+  /** before opening and at closing: the last shift, a blind count, whether a manager reconciles */
+  shift?: TillShiftInfo
   catalog: CatalogItem[]
   customers: { id: string; name: string; code: string | null; tax_number: string | null; kind?: 'company' | 'individual' }[]
   /** the law's daily cash limits (null = none) and whether cash above them is refused */
@@ -238,8 +248,8 @@ export function useTill(registerId: string | undefined) {
     if (cached) setState({ data: cached, offline: !navigator.onLine, loading: false, error: null })
     try {
       const reg = unwrap(await supabase.from('pos_registers').select('*').eq('id', registerId).single())
-      const [ses, cat, cus, co, loy, lim, promo, opt, atk, clock] = await Promise.all([
-        supabase.from('pos_sessions').select('id, number, opened_at, opening_cash').eq('register_id', registerId).eq('status', 'open').maybeSingle(),
+      const [ses, cat, cus, co, loy, lim, promo, opt, atk, clock, shift] = await Promise.all([
+        supabase.from('pos_sessions').select('id, number, opened_at, opening_cash, opened_by, opener:profiles!pos_sessions_opened_by_profile_fkey(full_name, email)').eq('register_id', registerId).eq('status', 'open').maybeSingle(),
         // a supermarket has thousands of items: read them all, 1 000 at a time (the server gives no more in one call)
         fetchAll('variant_id', (a) => after(supabase.rpc('pos_catalog', { p_register: registerId }), 'variant_id', a).order('variant_id').limit(1000)).then((data) => ({ data, error: null })),
         fetchAll('id', (a) => after(supabase.from('business_partners').select('id, name, code, tax_number, kind').eq('company_id', reg.company_id).eq('is_customer', true).is('deleted_at', null), 'id', a).order('id').limit(1000))
@@ -251,10 +261,14 @@ export function useTill(registerId: string | undefined) {
         supabase.rpc('pos_till_options', { p_register: registerId }),
         supabase.rpc('atk_till', { p_register: registerId }),
         supabase.rpc('pos_catalog_changes', { p_register: registerId, p_since: null as unknown as string }),
+        supabase.rpc('pos_before_open', { p_register: registerId }),
       ])
       if (cat.error) throw cat.error
       const data: TillData = {
-        register: reg as TillData['register'], session: ses.data ?? null,
+        register: reg as TillData['register'],
+        session: ses.data ? { id: ses.data.id, number: ses.data.number, opened_at: ses.data.opened_at, opening_cash: ses.data.opening_cash, opened_by: ses.data.opened_by,
+          opener: (ses.data.opener as { full_name: string | null; email: string | null } | null)?.full_name ?? (ses.data.opener as { email: string | null } | null)?.email ?? null } : null,
+        shift: shift.error ? cached?.shift : (shift.data as unknown as TillShiftInfo),
         catalog: (cat.data ?? []).map(toCatalogItem),
         customers: (cus.data ?? []) as TillData['customers'],
         company: { name: co.data?.name ?? '', legal_name: co.data?.legal_name ?? null, tax_number: co.data?.tax_number ?? null, base_currency: co.data?.base_currency ?? 'ALL', address: [co.data?.address_line1, co.data?.city].filter(Boolean).join(', ') || null },
@@ -345,4 +359,33 @@ export async function lookupReceipt(companyId: string, code: string): Promise<Re
   const refunds = unwrap(await supabase.from('pos_orders').select('lines:pos_order_lines(variant_id, quantity)')
     .eq('company_id', companyId).eq('refund_of_id', o.id).eq('status', 'paid'))
   return { ...(o as unknown as Omit<ReceiptLookup, 'refunds'>), refunds: refunds as unknown as ReceiptLookup['refunds'] }
+}
+
+
+/* ------------------------------------------------------------------ the manager reconciles the shifts */
+export type ReviewRow = { id: string; number: string; register: string; register_id: string; unit: string; unit_id: string
+  opened_at: string; closed_at: string; reviewed_at: string | null; opened_by: string | null; closed_by: string | null; reviewed_by: string | null
+  opened_by_id: string | null; closed_by_id: string | null
+  expected: number; cashier_counted: number | null; counted: number | null; cashier_difference: number | null; difference: number | null
+  review_status: 'pending' | 'returned' | 'reconciled'; sales: number | null; receipts: number | null; hours_waiting: number; last_note: string | null }
+export function useReviewList(status: 'open' | 'pending' | 'returned' | 'reconciled' | 'all') {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...posKeys.all(companyId), 'review', status], enabled: !!companyId, refetchInterval: 60_000,
+    queryFn: async () => unwrap(await supabase.rpc('pos_review_list', { p_company: companyId!, p: { status } as never })) as unknown as ReviewRow[],
+  })
+}
+export const useReconcile = () => useAction(async (a: { session: string; counted?: number | null; note?: string | null; notesCoins?: Record<string, number> | null }) =>
+  unwrap(await supabase.rpc('pos_reconcile', { p_session: a.session, p: { counted: a.counted ?? null, note: a.note ?? null, notes_coins: a.notesCoins ?? null } as never })))
+export const useReviewReturn = () => useAction(async (a: { session: string; note: string }) =>
+  unwrap(await supabase.rpc('pos_review_return', { p_session: a.session, p_note: a.note })))
+export const useRecount = () => useAction(async (a: { session: string; counted: number; note?: string | null; notesCoins?: Record<string, number> | null }) =>
+  unwrap(await supabase.rpc('pos_recount', { p_session: a.session, p: { counted: a.counted, note: a.note ?? null, notes_coins: a.notesCoins ?? null } as never })))
+export function useSessionReviews(id: string | undefined) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...posKeys.all(companyId), 'reviews', id], enabled: !!id,
+    queryFn: async () => unwrap(await supabase.from('pos_session_reviews').select('id, action, counted, expected, difference, note, at, by:profiles!pos_session_reviews_by_user_fkey(full_name, email)')
+      .eq('session_id', id!).order('at')) as unknown as { id: string; action: string; counted: number | null; expected: number | null; difference: number | null; note: string | null; at: string; by: { full_name: string | null; email: string | null } | null }[],
+  })
 }

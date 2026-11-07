@@ -46,7 +46,7 @@ select t.throws(format($q$insert into public.pos_cash_movements (company_id, ses
 
 -- ---------------------------------------------------------------- refunds
 select t.login(:'boss');
-select public.pos_submit_order(jsonb_build_object('client_uuid', gen_random_uuid(), 'session_id', :'ses',
+select public.pos_submit_order(jsonb_build_object('client_uuid', gen_random_uuid(), 'session_id', :'ses', 'cashier_id', (select id from public.profiles where email = 'cora@kt.al'),
   'lines', jsonb_build_array(jsonb_build_object('variant_id', :'beer', 'quantity', 1, 'unit_price', 1, 'discount_pct', 0, 'manual_pct', 0),
                              jsonb_build_object('variant_id', :'beer', 'quantity', 1, 'unit_price', 1, 'discount_pct', 50, 'manual_pct', 50)),
   'payments', jsonb_build_array(jsonb_build_object('method', 'cash', 'amount', 1.5)))) ->> 'id' as sale \gset

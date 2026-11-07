@@ -167,6 +167,8 @@ select t.ok(exists (select 1 from public.notifications n join public.profiles p 
 -- a sale from the till that is not registered: it cannot be sent, and says why
 set role authenticated;
 select t.login('kaltrina@atk.al');
+-- a cashier works one market shift at a time: the first one closes
+select public.pos_close(:'ses', jsonb_build_object('counted', public.pos_session_summary(:'ses') ->> 'expected_cash'));
 select public.open_pos_session(:'reg2', 0) as ses2 \gset
 select public.pos_submit_order(jsonb_build_object('client_uuid', gen_random_uuid(), 'session_id', :'ses2',
   'lines', jsonb_build_array(jsonb_build_object('variant_id', :'water', 'quantity', 1, 'unit_price', 0.5)),

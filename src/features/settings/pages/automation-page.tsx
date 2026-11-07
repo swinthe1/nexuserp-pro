@@ -23,6 +23,7 @@ type Settings = { pos_cash_tolerance: number; pos_count_notes: boolean; pos_void
   payroll_night_pct: number | null; payroll_holiday_pct: number | null; purchase_price_tolerance: number
   new_items_from_bills: 'anyone' | 'approval'
   /** a server not updated yet has none of these */
+  pos_review?: 'off' | 'manager'; pos_review_hours?: number; pos_blind_count?: boolean
   pos_payouts?: 'off' | 'manager' | 'anyone'; pos_receipt_max?: number | null; scale_barcode?: ScaleSetup; pos_void_notify?: boolean; pos_void_notify_over?: number; pos_void_whatsapp?: string[]; min_shelf_days?: number | null }
 
 export function usePayrollTillSettings() {
@@ -104,6 +105,26 @@ export function AutomationPage() {
               </SelectContent>
             </Select>
           </div>
+          {s.pos_review !== undefined && <>
+            <div className="flex flex-wrap items-start justify-between gap-3 rounded-md border p-3 text-[13px]">
+              <span className="min-w-0 flex-1"><span className="font-medium">{t('The manager reconciles every shift')}</span>
+                <span className="block text-muted-foreground">{t('The cashier closes with her count and the sales are booked; the cash goes to the safe, with its difference, when a manager checks and confirms it (Point of sale → Reconciling the tills). Off: the cashier\'s close is final.')}</span></span>
+              <div className="flex items-center gap-2">
+                {s.pos_review === 'manager' && <Select value={String(s.pos_review_hours ?? 24)} disabled={!can('pos.approve') || save.isPending} onValueChange={(v) => save.mutate({ pos_review_hours: Number(v) })}>
+                  <SelectTrigger className="w-40" aria-label={t('Remind after')}><SelectValue /></SelectTrigger>
+                  <SelectContent>{[4, 8, 12, 24, 48, 72].map((h) => <SelectItem key={h} value={String(h)}>{t('Remind after {n} h', { n: h })}</SelectItem>)}</SelectContent>
+                </Select>}
+                <Switch checked={s.pos_review === 'manager'} disabled={!can('pos.approve') || save.isPending} aria-label={t('The manager reconciles every shift')}
+                  onCheckedChange={(on) => save.mutate({ pos_review: on ? 'manager' : 'off' })} />
+              </div>
+            </div>
+            <label className="flex items-start justify-between gap-3 rounded-md border p-3 text-[13px]">
+              <span><span className="font-medium">{t('Blind count at closing')}</span>
+                <span className="block text-muted-foreground">{t('The cashier counts the drawer without seeing what is expected or the difference; a manager sees both.')}</span></span>
+              <Switch checked={s.pos_blind_count ?? true} disabled={!can('pos.approve') || save.isPending} aria-label={t('Blind count at closing')}
+                onCheckedChange={(on) => save.mutate({ pos_blind_count: on })} />
+            </label>
+          </>}
           <label className="flex items-start justify-between gap-3 rounded-md border p-3 text-[13px]">
             <span><span className="font-medium">{t('Voids need a manager')}</span>
               <span className="block text-muted-foreground">{t('Taking an item off a sale, lowering its quantity or clearing a sale asks for a manager\'s PIN (once per sale). Every void is kept with the shift either way.')}</span></span>

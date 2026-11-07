@@ -25,7 +25,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { formatDateWith, msg, t, td, tEnum, tn, tServer } from '@/i18n'
-import { cn, formatDate, formatMoney, formatQty, num, todayISO } from '@/lib/utils'
+import { cn, formatDate, formatMoney, formatQty, initials, num, todayISO } from '@/lib/utils'
 import { checkVoucher, lookupReceipt, posApprove, sellVoucher, sessionControls, useCustomerCredit, type VoucherInfo, useCashMove, useCloseSession, useOpenSession, usePayees, usePayOut, useSessionSummary, useTill, useVendorBills, type CatalogItem, type ReceiptLookup, type TillData } from '../api'
 import { enqueue, logTill, nextDeviceRef, syncNow, useOnSynced, useSyncState, type QueuedSale, type TillLogEntry } from '../offline'
 import { ManagerDialog, ManagerPinFields, pinReady } from '../manager-pin'
@@ -92,7 +92,30 @@ export function TillPage() {
     </Centered>
   )
   if (!till.data.session) return <OpenTill data={till.data} offline={till.offline} onOpened={() => void till.reload()} />
+  const owner = till.data.session.opened_by
+  if (owner && owner !== user.id && (till.data.register as { mode?: string | null }).mode !== 'restaurant') return <NotYourShift data={till.data} />
   return <Till data={till.data} offline={till.offline} patch={till.patch} reload={till.reload} />
+}
+
+/** someone else's shift is open on this till: she closes it (or a manager), then this person opens her own */
+function NotYourShift({ data }: { data: TillData }) {
+  const { can } = useCompany()
+  const [closing, setClosing] = React.useState(false)
+  const navigate = useNavigate()
+  if (closing) return <CloseDialog data={data} pending={0} onClose={() => setClosing(false)} onClosed={async (id) => navigate(`/pos/sessions/${id}`)} />
+  return (
+    <Centered>
+      <div className="rounded-xl border bg-card p-6 text-left shadow-sm">
+        <div className="text-[13px] text-muted-foreground">{data.register.name} · {data.session!.number}</div>
+        <h1 className="mt-0.5 text-xl font-semibold">{t('This shift is {name}\'s', { name: data.session!.opener ?? '—' })}</h1>
+        <p className="mt-1 text-[13px] text-muted-foreground">{t('Each cashier sells in her own shift. {name} closes this one with her count, then you open yours.', { name: data.session!.opener ?? '—' })}</p>
+        <div className="mt-5 flex gap-2">
+          <Button variant="outline" asChild><Link to="/pos">{t('Back')}</Link></Button>
+          {can('pos.approve') && <Button className="flex-1" onClick={() => setClosing(true)}>{t('Close her shift (manager)')}</Button>}
+        </div>
+      </div>
+    </Centered>
+  )
 }
 
 export function TillSkeleton() {
@@ -111,6 +134,13 @@ export function OpenTill({ data, offline, onOpened }: { data: TillData; offline:
         <div className="text-[13px] text-muted-foreground">{data.company.name}</div>
         <h1 className="mt-0.5 text-xl font-semibold">{t('Open {name}', { name: data.register.name })}</h1>
         <p className="mt-1 text-[13px] text-muted-foreground">{t('Count the cash you are putting in the drawer. It is the starting point for the cash count at closing.')}</p>
+        {data.shift?.last && <p className="mt-3 rounded-md bg-muted px-3 py-2 text-[12.5px] text-muted-foreground">
+          {t('Last shift {number}, closed {date} by {name}: counted {amount}.', { number: data.shift.last.number, date: formatDate(data.shift.last.closed_at, true), name: data.shift.last.closed_by ?? '—', amount: formatMoney(num(data.shift.last.counted)) })}
+          {data.shift.last.review_status !== 'reconciled' && ` ${t('Waiting for the manager.')}`}</p>}
+        {data.shift?.mine_open && <p className="mt-3 rounded-md border border-warning/50 bg-warning/5 px-3 py-2 text-[12.5px]">
+          {t('You still have shift {number} open at {register}. Close it first.', { number: data.shift.mine_open.number, register: data.shift.mine_open.register })}</p>}
+        {!!data.shift?.returned && <p className="mt-3 rounded-md border border-warning/50 bg-warning/5 px-3 py-2 text-[12.5px]">
+          {tn(data.shift.returned, 'The manager returned {n} of your shifts for a recount.', 'The manager returned {n} of your shifts for a recount.')} <Link className="font-medium text-primary hover:underline" to="/pos">{t('See them')}</Link></p>}
         <form className="mt-5 grid gap-3" onSubmit={async (e) => { e.preventDefault(); await open.mutateAsync({ register: data.register.id, cash: num(cash) }); toast.success(t('Till open')); onOpened() }}>
           <Label htmlFor="float">{t('Cash in the drawer ({currency})', { currency: data.company.base_currency })}</Label>
           <Input id="float" autoFocus inputMode="decimal" className="h-14 text-right text-2xl font-semibold tabular" value={cash} onChange={(e) => setCash(e.target.value.replace(/[^\d.,]/g, '').replace(',', '.'))} placeholder="0.00" />
@@ -412,7 +442,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       } catch (e) { toast.error(describeError(e)); return }
     }
     const payload = {
-      client_uuid, session_id: session.id, order_at: created_at, device_ref, offline: isOffline, partner_id: customer, is_refund: !!refund, refund_of_id: refund?.of?.id ?? null, refund_reason: refund?.reason ?? null,
+      client_uuid, session_id: session.id, cashier_id: user?.id ?? null, order_at: created_at, device_ref, offline: isOffline, partner_id: customer, is_refund: !!refund, refund_of_id: refund?.of?.id ?? null, refund_reason: refund?.reason ?? null,
       // a promotion's line counts as discounted already, so the card does not add to it (the server checks the promotion)
       lines: saleLines.map((l) => ({ variant_id: l.variant_id, quantity: l.qty, unit_price: l.price, discount_pct: l.discount, manual_pct: l.card ? 0 : l.discount,
         promotion_id: l.promo?.id ?? null, barcode: l.barcode, description: l.name })),
@@ -524,7 +554,12 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
         <Button variant="ghost" size="icon" asChild aria-label={t('Leave the till')}><Link to="/pos"><ArrowLeft /></Link></Button>
         <div className="min-w-0 max-sm:flex-1">
           <div className="flex items-center gap-1 truncate text-sm font-semibold">{data.register.name}<PageHelpButton /></div>
-          <div className="truncate text-xs text-muted-foreground">{session.number} · {cashier}</div>
+          <div className="truncate text-xs text-muted-foreground">{session.number} · {t('opened {time}', { time: formatDateWith(new Date(session.opened_at), { hour: '2-digit', minute: '2-digit' }) })}</div>
+        </div>
+        <div className="ml-1 flex min-w-0 items-center gap-2 rounded-full border bg-background py-1 pl-1 pr-3" title={t('Cashier')}>
+          <span className="grid size-7 shrink-0 place-items-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">{initials(session.opener ?? cashier)}</span>
+          <span className="min-w-0 leading-tight"><span className="block truncate text-[13px] font-medium">{session.opener ?? cashier}</span>
+            {session.opened_by && session.opened_by !== user?.id && <span className="block truncate text-[11px] text-warning">{t('{name} is stepping in', { name: cashier })}</span>}</span>
         </div>
         <button type="button" onClick={() => setDialog('queue')}
           className={cn('ml-2 inline-flex shrink-0 whitespace-nowrap max-sm:ml-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
@@ -1482,12 +1517,15 @@ function CloseDialog({ data, pending, onClose, onClosed }: { data: TillData; pen
   const counted = direct !== '' ? num(direct) : byNotes
   const s = summary.data
   const diff = s ? r2(counted - num(s.expected_cash)) : 0
+  // the cashier counts without seeing what is expected; a manager sees it
+  const blind = (data.shift?.blind ?? true) && !can('pos.approve')
+  const review = data.shift?.review ?? true
   // the manager confirms the count: when the company asks for it (always, or when the drawer is off)
   const opt = data.options
   const managers = opt?.managers ?? []
   const mode = opt?.close_witness ?? 'difference'
   const canWitness = managers.length > 0 && !can('pos.approve')
-  const mustWitness = canWitness && (mode === 'always' || (mode === 'difference' && Math.abs(diff) > num(opt?.tolerance ?? 0)))
+  const mustWitness = canWitness && (mode === 'always' || (mode === 'difference' && !review && Math.abs(diff) > num(opt?.tolerance ?? 0)))
   const witnessed = pinReady(member, pin)
   const [error, setError] = React.useState<string | null>(null)
   const doClose = async () => {
@@ -1512,19 +1550,24 @@ function CloseDialog({ data, pending, onClose, onClosed }: { data: TillData; pen
         items: (z.items ?? []) as { name: string; quantity: number; total: number }[], controls: ctl,
       })
     } catch { /* the Z-report can be reprinted from the session page */ }
-    toast.success(t('Till closed'))
+    toast.success(review ? t('Shift closed. The manager reconciles it.') : t('Till closed'))
     await onClosed(session.id)
   }
   return (
     <Dialog open onOpenChange={(o) => !o && !close.isPending && onClose()}>
       <DialogContent className="max-w-2xl">
         <DialogHeader><DialogTitle>{t('Close {name}', { name: data.register.name })}</DialogTitle>
-          <DialogDescription>{t('Count the drawer. Closing prints the Z-report and books the shift\'s sales and cash in accounting.')}</DialogDescription></DialogHeader>
+          <DialogDescription>{review ? t('Count the drawer. Closing prints the Z-report and books the sales; the manager then reconciles the cash.')
+            : t('Count the drawer. Closing prints the Z-report and books the shift\'s sales and cash in accounting.')}</DialogDescription></DialogHeader>
         {pending > 0 && <div className="rounded-md border border-warning/50 bg-warning/5 px-3 py-2 text-[13px]">
           {tn(pending, '{n} sale from this device is still waiting to be sent.', '{n} sales from this device are still waiting to be sent.')} <button type="button" className="font-medium text-primary hover:underline" onClick={() => void syncNow()}>{t('Send now')}</button> {t('before closing, or they move to the next shift.')}</div>}
         <div className="grid gap-5 sm:grid-cols-2">
           <div className="grid content-start gap-1.5 text-[13px]">
-            {!s ? <Skeleton className="h-40" /> : <>
+            {!s ? <Skeleton className="h-40" /> : blind ? <>
+              <Row k={t('Receipts')} v={t('{a} · {b} refunds', { a: s.orders, b: s.refunds })} />
+              <Row k={t('Counted')} v={formatMoney(counted)} strong />
+              <p className="mt-2 rounded-md bg-muted px-3 py-2 text-[12.5px] text-muted-foreground">{t('Count what is in the drawer, every note and coin. You do not see what is expected: the manager compares it when reconciling.')}</p>
+            </> : <>
               <Row k={t('Receipts')} v={t('{a} · {b} refunds', { a: s.orders, b: s.refunds })} />
               <Row k={t('Sales (with VAT)')} v={formatMoney(num(s.gross) - num(s.refunded))} />
               {Object.entries(s.payments).map(([m, v]) => <Row key={m} k={tEnum(m)} v={formatMoney(v)} />)}

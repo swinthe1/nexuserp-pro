@@ -2392,6 +2392,9 @@ export type Database = {
           min_shelf_days: number | null
           scale_auto_plu: boolean
           multi_unit: boolean | null
+          pos_review: string
+          pos_review_hours: number
+          pos_blind_count: boolean
         }
         Insert: {
           id?: string
@@ -2480,6 +2483,9 @@ export type Database = {
           min_shelf_days?: number | null
           scale_auto_plu?: boolean
           multi_unit?: boolean | null
+          pos_review?: string
+          pos_review_hours?: number
+          pos_blind_count?: boolean
         }
         Update: {
           id?: string
@@ -2568,6 +2574,9 @@ export type Database = {
           min_shelf_days?: number | null
           scale_auto_plu?: boolean
           multi_unit?: boolean | null
+          pos_review?: string
+          pos_review_hours?: number
+          pos_blind_count?: boolean
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -8508,6 +8517,64 @@ export type Database = {
           { foreignKeyName: "pos_registers_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      pos_session_reviews: {
+        Row: {
+          id: string
+          company_id: string
+          session_id: string
+          action: string
+          counted: number | null
+          expected: number | null
+          difference: number | null
+          notes_coins: Json | null
+          note: string | null
+          by_user: string | null
+          at: string
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          session_id: string
+          action: string
+          counted?: number | null
+          expected?: number | null
+          difference?: number | null
+          notes_coins?: Json | null
+          note?: string | null
+          by_user?: string | null
+          at?: string
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          session_id?: string
+          action?: string
+          counted?: number | null
+          expected?: number | null
+          difference?: number | null
+          notes_coins?: Json | null
+          note?: string | null
+          by_user?: string | null
+          at?: string
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "pos_session_reviews_by_user_fkey"; columns: ["by_user"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "pos_session_reviews_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "pos_session_reviews_session_id_fkey"; columns: ["session_id"]; isOneToOne: false; referencedRelation: "pos_sessions"; referencedColumns: ["id"] },
+        ]
+      }
       pos_sessions: {
         Row: {
           id: string
@@ -8531,6 +8598,11 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           cash_journal_entry_id: string | null
+          closed_by: string | null
+          review_status: string
+          reviewed_by: string | null
+          reviewed_at: string | null
+          cashier_counted: number | null
         }
         Insert: {
           id?: string
@@ -8554,6 +8626,11 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           cash_journal_entry_id?: string | null
+          closed_by?: string | null
+          review_status?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          cashier_counted?: number | null
         }
         Update: {
           id?: string
@@ -8577,13 +8654,20 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           cash_journal_entry_id?: string | null
+          closed_by?: string | null
+          review_status?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          cashier_counted?: number | null
         }
         Relationships: [
+          { foreignKeyName: "pos_sessions_closed_by_fkey"; columns: ["closed_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
           { foreignKeyName: "pos_sessions_company_id_cash_journal_entry_id_fkey"; columns: ["company_id", "cash_journal_entry_id"]; isOneToOne: false; referencedRelation: "journal_entries"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "pos_sessions_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
           { foreignKeyName: "pos_sessions_company_id_journal_entry_id_fkey"; columns: ["company_id", "journal_entry_id"]; isOneToOne: false; referencedRelation: "journal_entries"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "pos_sessions_company_id_register_id_fkey"; columns: ["company_id", "register_id"]; isOneToOne: false; referencedRelation: "pos_registers"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "pos_sessions_opened_by_profile_fkey"; columns: ["opened_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "pos_sessions_reviewed_by_fkey"; columns: ["reviewed_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
         ]
       }
       pos_till_log: {
@@ -18589,6 +18673,12 @@ export type Database = {
         }
         Returns: Json
       }
+      pos_before_open: {
+        Args: {
+          p_register: string
+        }
+        Returns: Json
+      }
       pos_cash_limits: {
         Args: {
           p_register: string
@@ -18684,10 +18774,38 @@ export type Database = {
         }
         Returns: Json
       }
+      pos_reconcile: {
+        Args: {
+          p_session: string
+          p?: Json
+        }
+        Returns: Json
+      }
+      pos_recount: {
+        Args: {
+          p_session: string
+          p: Json
+        }
+        Returns: undefined
+      }
       pos_register_set_safe: {
         Args: {
           p_register: string
           p_safe: string
+        }
+        Returns: undefined
+      }
+      pos_review_list: {
+        Args: {
+          p_company: string
+          p?: Json
+        }
+        Returns: Json
+      }
+      pos_review_return: {
+        Args: {
+          p_session: string
+          p_note: string
         }
         Returns: undefined
       }

@@ -1,6 +1,6 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import { useQuery } from '@tanstack/react-query'
-import { ChefHat, CloudOff, MonitorSmartphone, Plus, Printer, RefreshCw, Store, UtensilsCrossed } from 'lucide-react'
+import { CheckCheck, ChefHat, CloudOff, MonitorSmartphone, Plus, Printer, RefreshCw, Store, UtensilsCrossed } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -34,6 +34,7 @@ import { useLocations, useWarehouses } from '@/features/inventory/api'
 import { usePartners, usePriceLists } from '@/features/sales/api'
 import { posKeys, useRegisters, useSaveRegister, useSessionControls, useSessionDetail, useSessionPayouts, useSessions, type Register, type SessionRow } from '../api'
 import { discard, retry, syncNow, useSyncState } from '../offline'
+import { ShiftReviewCard } from './review-page'
 import { printReceipt, printZReport } from '../receipt'
 import type { FiscalHeader } from '../fiscal-receipt'
 import { decodePosCoupon, fromBase64 } from '@/lib/atk/proto'
@@ -78,7 +79,8 @@ export function PosHomePage() {
   return (
     <>
       <PageHeader title={t('Point of sale')} description={t('Tills, open shifts and closed shifts with their Z-reports. Sales leave stock at once and reach accounting when the shift is closed.')}
-        actions={<Can perm="pos.approve"><Button variant="outline" onClick={() => setEdit('new')}><Plus /> {t('Add till')}</Button></Can>} />
+        actions={<Can perm="pos.approve"><Button variant="outline" asChild><Link to="/pos/review"><CheckCheck /> {t('Reconciling the tills')}</Link></Button>
+          <Button variant="outline" onClick={() => setEdit('new')}><Plus /> {t('Add till')}</Button></Can>} />
 
       {(sync.items.length > 0 || !sync.online) && <SyncPanel />}
 
@@ -320,6 +322,7 @@ export function PosSessionPage() {
           {s.status === 'open' && <Can perm="pos.write"><Button asChild><Link to={`/pos/till/${s.register_id}`}><MonitorSmartphone /> {t('Go to till')}</Link></Button></Can>}
           {z && <Button variant="outline" onClick={print}><Printer /> {t('Print Z-report')}</Button>}
         </>} />
+      <ShiftReviewCard session={s as never} />
       <Tabs defaultValue={z ? 'z' : 'orders'}>
         <TabsList>{z && <TabsTrigger value="z">{t('Z-report {number}', { number: z.number })}</TabsTrigger>}<TabsTrigger value="orders">{t('Receipts')} ({orders.length})</TabsTrigger>
           <TabsTrigger value="controls">{t('Till controls')}{voids?.count ? ` (${voids.count})` : ''}</TabsTrigger><TabsTrigger value="accounting">{t('Accounting')}</TabsTrigger></TabsList>
