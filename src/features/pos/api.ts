@@ -7,7 +7,7 @@ import { useCompany } from '@/app/company-provider'
 import type { Tables } from '@/lib/database.types'
 import { describeError, unwrap } from '@/lib/errors'
 import { after, byName, fetchAll, fetchPages, supabase } from '@/lib/supabase'
-import { flushTillLog, kvGet, kvSet } from './offline'
+import { flushTillLog, itemsAll, itemsWrite, kvGet, kvSet } from './offline'
 import { t } from '@/i18n'
 import type { TillLoyalty } from '@/features/loyalty/api'
 
@@ -160,7 +160,7 @@ export const useCloseSession = () => useAction(async (a: { session: string; coun
 })
 
 /** the manager types their PIN on the cashier's screen */
-export async function posApprove(register: string, member: string, pin: string, purpose: 'void' | 'close' | 'payout' | 'refund') {
+export async function posApprove(register: string, member: string, pin: string, purpose: 'void' | 'close' | 'payout' | 'refund' | 'unlock') {
   return unwrap(await supabase.rpc('pos_approve', { p_register: register, p_member: member, p_pin: pin, p_purpose: purpose })) as unknown as { approval?: string; name?: string; error?: string }
 }
 
@@ -212,7 +212,7 @@ export type TillShiftInfo = {
 }
 
 export type TillData = {
-  register: Pick<Register, 'id' | 'code' | 'name' | 'company_id' | 'receipt_header' | 'receipt_footer' | 'default_customer_id' | 'location_id' | 'warehouse_id' | 'paper_mm'>
+  register: Pick<Register, 'id' | 'code' | 'name' | 'company_id' | 'receipt_header' | 'receipt_footer' | 'default_customer_id' | 'location_id' | 'warehouse_id' | 'paper_mm' | 'mode' | 'screen' | 'quick_items'>
   session: { id: string; number: string; opened_at: string; opening_cash: number; opened_by?: string | null; opener?: string | null } | null
   /** before opening and at closing: the last shift, a blind count, whether a manager reconciles */
   shift?: TillShiftInfo
@@ -222,7 +222,9 @@ export type TillData = {
   cashLimits?: { business: number | null; individual: number | null; block: boolean } | null
   /** the company's choices for the till */
   options?: TillOptions
-  company: { name: string; legal_name: string | null; tax_number: string | null; base_currency: string; address: string | null }
+  company: { name: string; legal_name: string | null; tax_number: string | null; base_currency: string; address: string | null; business_type?: string | null }
+  /** the manager's quick buttons, and what sells most here */
+  quick?: TillQuick
   /** loyalty cards and their rules, kept so discount cards work offline */
   loyalty?: TillLoyalty
   /** promotions running on this till (kept for offline) */
@@ -238,23 +240,71 @@ const toCatalogItem = (c: CatalogRow): CatalogItem =>
   ({ ...c, price: Number(c.price), tax_rate: Number(c.tax_rate), on_hand: Number(c.on_hand), barcodes: (c.barcodes ?? []) as CatalogItem['barcodes'] }) as unknown as CatalogItem
 /** a minute early: a change saved while the catalog was being read is taken again, not lost */
 const minuteBefore = (at: string) => new Date(Date.parse(at) - 60_000).toISOString()
-/** Loads the till from the server when online and keeps a copy on the device; falls back to the copy offline */
+/** the copy on the device keeps the items in rows of their own (offline.ts): the rest is one small record */
+type StoredTill = Omit<TillData, 'catalog'> & { catalog?: CatalogItem[] }
+const stripCatalog = ({ catalog: _c, ...rest }: TillData): StoredTill => rest
+const sortItems = (items: CatalogItem[]) => items.sort((a, b) => a.name.localeCompare(b.name))
+async function readCopy(registerId: string): Promise<TillData | undefined> {
+  const key = `till:${registerId}`
+  const blob = await kvGet<StoredTill>(key)
+  if (!blob) return undefined
+  let items = await itemsAll<CatalogItem>(registerId).catch(() => [] as CatalogItem[])
+  // a copy made before the items had their own rows: they move there once
+  if (blob.catalog?.length) {
+    if (!items.length) { items = blob.catalog; await itemsWrite(registerId, items, [], true).catch(() => undefined) }
+    await kvSet(key, { ...blob, catalog: undefined }).catch(() => undefined)
+  }
+  return { ...blob, catalog: sortItems(items) } as TillData
+}
+/** keeps the till on the device: the small record, and only the item rows that changed */
+function keepCopy(registerId: string, prev: TillData | null, next: TillData) {
+  void kvSet(`till:${registerId}`, stripCatalog(next)).catch(() => undefined)
+  if (!prev || prev.catalog === next.catalog) return
+  const before = new Map(prev.catalog.map((i) => [i.variant_id, i]))
+  const put = next.catalog.filter((i) => before.get(i.variant_id) !== i)
+  const still = new Set(next.catalog.map((i) => i.variant_id))
+  const del = prev.catalog.filter((i) => !still.has(i.variant_id)).map((i) => i.variant_id)
+  void itemsWrite(registerId, put, del).catch(() => undefined)
+}
+type CatalogChanges = { at: string; full: boolean; items?: CatalogRow[]; gone?: string[]; promotions?: boolean }
+/** the items with what changed: changed rows replaced (same objects for the others), new ones added, gone ones out */
+function withChanges(items: CatalogItem[], changed: CatalogItem[], gone: Set<string>) {
+  const byId = new Map(changed.map((i) => [i.variant_id, i]))
+  const seen = new Set<string>()
+  const out = items.filter((i) => !gone.has(i.variant_id)).map((i) => { const n = byId.get(i.variant_id); if (!n) return i; seen.add(i.variant_id); return n })
+  let added = false
+  for (const n of changed) if (!seen.has(n.variant_id) && !gone.has(n.variant_id)) { out.push(n); added = true }
+  return added ? sortItems(out) : out
+}
+/** Loads the till from the server when online and keeps a copy on the device; falls back to the copy offline.
+ *  A till opened again the same day reads only the items that changed since (a market has 20 000 and more). */
 export function useTill(registerId: string | undefined) {
   const [state, setState] = React.useState<{ data: TillData | null; offline: boolean; loading: boolean; error: string | null }>({ data: null, offline: false, loading: true, error: null })
-  const load = React.useCallback(async () => {
+  const load = React.useCallback(async (opts?: { full?: boolean }) => {
     if (!registerId) return
-    const key = `till:${registerId}`
-    const cached = await kvGet<TillData>(key).catch(() => undefined)
+    const cached = await readCopy(registerId).catch(() => undefined)
     if (cached) setState({ data: cached, offline: !navigator.onLine, loading: false, error: null })
     try {
       const reg = unwrap(await supabase.from('pos_registers').select('*').eq('id', registerId).single())
-      const [ses, cat, cus, co, loy, lim, promo, opt, atk, clock, shift] = await Promise.all([
-        supabase.from('pos_sessions').select('id, number, opened_at, opening_cash, opened_by, opener:profiles!pos_sessions_opened_by_profile_fkey(full_name, email)').eq('register_id', registerId).eq('status', 'open').maybeSingle(),
+      const catalogNow = async (): Promise<{ items: CatalogItem[]; at?: string; full: boolean }> => {
+        if (!opts?.full && cached?.pricesAt && cached.catalog.length) {
+          const { data: ch, error } = await supabase.rpc('pos_catalog_changes', { p_register: registerId, p_since: cached.pricesAt })
+          const c = ch as unknown as CatalogChanges | null
+          if (!error && c && !c.full) {
+            const changed = (c.items ?? []).map(toCatalogItem)
+            return { items: withChanges(cached.catalog, changed, new Set(c.gone ?? [])), at: c.at, full: false }
+          }
+        }
         // a supermarket has thousands of items: read them all, 1 000 at a time (the server gives no more in one call)
-        fetchAll('variant_id', (a) => after(supabase.rpc('pos_catalog', { p_register: registerId }), 'variant_id', a).order('variant_id').limit(1000)).then((data) => ({ data, error: null })),
+        const rows = await fetchAll('variant_id', (a) => after(supabase.rpc('pos_catalog', { p_register: registerId }), 'variant_id', a).order('variant_id').limit(1000))
+        return { items: sortItems(rows.map(toCatalogItem)), full: true }
+      }
+      const [ses, cat, cus, co, loy, lim, promo, opt, atk, clock, shift, quick] = await Promise.all([
+        supabase.from('pos_sessions').select('id, number, opened_at, opening_cash, opened_by, opener:profiles!pos_sessions_opened_by_profile_fkey(full_name, email)').eq('register_id', registerId).eq('status', 'open').maybeSingle(),
+        catalogNow(),
         fetchAll('id', (a) => after(supabase.from('business_partners').select('id, name, code, tax_number, kind').eq('company_id', reg.company_id).eq('is_customer', true).is('deleted_at', null), 'id', a).order('id').limit(1000))
           .then((data) => ({ data: byName(data) })),
-        supabase.from('companies').select('name, legal_name, tax_number, base_currency, address_line1, city').eq('id', reg.company_id).single(),
+        supabase.from('companies').select('name, legal_name, tax_number, base_currency, address_line1, city, business_type').eq('id', reg.company_id).single(),
         supabase.rpc('pos_loyalty_data', { p_register: registerId }),
         supabase.rpc('pos_cash_limits', { p_register: registerId }),
         supabase.rpc('pos_promotions', { p_register: registerId }),
@@ -262,32 +312,38 @@ export function useTill(registerId: string | undefined) {
         supabase.rpc('atk_till', { p_register: registerId }),
         supabase.rpc('pos_catalog_changes', { p_register: registerId, p_since: null as unknown as string }),
         supabase.rpc('pos_before_open', { p_register: registerId }),
+        supabase.rpc('pos_quick_items', { p_register: registerId }),
       ])
-      if (cat.error) throw cat.error
+      const clockAt = clock.error ? undefined : (clock.data as unknown as { at: string }).at
       const data: TillData = {
         register: reg as TillData['register'],
         session: ses.data ? { id: ses.data.id, number: ses.data.number, opened_at: ses.data.opened_at, opening_cash: ses.data.opening_cash, opened_by: ses.data.opened_by,
           opener: (ses.data.opener as { full_name: string | null; email: string | null } | null)?.full_name ?? (ses.data.opener as { email: string | null } | null)?.email ?? null } : null,
         shift: shift.error ? cached?.shift : (shift.data as unknown as TillShiftInfo),
-        catalog: (cat.data ?? []).map(toCatalogItem),
+        catalog: cat.items,
         customers: (cus.data ?? []) as TillData['customers'],
-        company: { name: co.data?.name ?? '', legal_name: co.data?.legal_name ?? null, tax_number: co.data?.tax_number ?? null, base_currency: co.data?.base_currency ?? 'ALL', address: [co.data?.address_line1, co.data?.city].filter(Boolean).join(', ') || null },
+        company: { name: co.data?.name ?? '', legal_name: co.data?.legal_name ?? null, tax_number: co.data?.tax_number ?? null, base_currency: co.data?.base_currency ?? 'ALL', address: [co.data?.address_line1, co.data?.city].filter(Boolean).join(', ') || null,
+          business_type: (co.data as { business_type?: string | null } | null)?.business_type ?? null },
         loyalty: loy.error ? cached?.loyalty : (loy.data as unknown as TillLoyalty),
         cashLimits: lim.error ? cached?.cashLimits ?? null : (lim.data as unknown as TillData['cashLimits']),
         promotions: promo.error ? cached?.promotions ?? [] : (promo.data as unknown as TillPromo[]),
         options: opt.error ? cached?.options ?? { count_notes: true } : (opt.data as unknown as TillData['options']),
         atk: atk.error ? cached?.atk : (atk.data as unknown as AtkTill),
+        quick: quick.error ? cached?.quick : (quick.data as unknown as TillQuick),
         loadedAt: new Date().toISOString(),
-        pricesAt: clock.error ? undefined : minuteBefore((clock.data as unknown as { at: string }).at),
+        // a full read: the clock taken with it; only the changes: the time the server answered them
+        pricesAt: cat.full ? (clockAt ? minuteBefore(clockAt) : undefined) : minuteBefore(cat.at!),
       }
-      await kvSet(key, data).catch(() => undefined)
+      await kvSet(`till:${registerId}`, stripCatalog(data)).catch(() => undefined)
+      if (cat.full) await itemsWrite(registerId, data.catalog, [], true).catch(() => undefined)
+      else keepCopy(registerId, cached ?? null, data)
       setState({ data, offline: false, loading: false, error: null })
     } catch (e) {
       setState((s) => ({ ...s, loading: false, offline: true, error: s.data ? null : describeError(e) }))
     }
   }, [registerId])
   React.useEffect(() => { void load() }, [load])
-  // a till open all day: every few minutes, the prices that changed (the receipt on the screen keeps its own)
+  // a till open all day: every few minutes, the prices and the stock that changed (the receipt on the screen keeps its own)
   const dataRef = React.useRef(state.data)
   dataRef.current = state.data
   React.useEffect(() => {
@@ -300,30 +356,21 @@ export function useTill(registerId: string | undefined) {
       try {
         const { data: ch, error } = await supabase.rpc('pos_catalog_changes', { p_register: registerId, p_since: d.pricesAt })
         if (error || !ch) return
-        const c = ch as unknown as { at: string; full: boolean; items?: CatalogRow[]; gone?: string[]; promotions?: boolean }
-        if (c.full) { await load(); return }
+        const c = ch as unknown as CatalogChanges
+        if (c.full) { await load({ full: true }); return }
         const promo = c.promotions ? await supabase.rpc('pos_promotions', { p_register: registerId }) : null
         const items = (c.items ?? []).map(toCatalogItem)
-        const changed = new Map(items.map((i) => [i.variant_id, i]))
-        const gone = new Set(c.gone ?? [])
         const now = dataRef.current
         if (!now) return
-        let prices = 0
-        const seen = new Set<string>()
-        const catalog = now.catalog.filter((i) => !gone.has(i.variant_id)).map((i) => {
-          const n = changed.get(i.variant_id)
-          if (!n) return i
-          seen.add(i.variant_id)
-          if (n.price !== i.price) prices += 1
-          return n
-        })
-        for (const n of items) if (!seen.has(n.variant_id)) catalog.push(n)
-        catalog.sort((a, b) => a.name.localeCompare(b.name))
+        const old = new Map(now.catalog.map((i) => [i.variant_id, i.price]))
+        const prices = items.filter((i) => old.has(i.variant_id) && old.get(i.variant_id) !== i.price).length
+        const catalog = withChanges(now.catalog, items, new Set(c.gone ?? []))
         const promotions = promo && !promo.error ? (promo.data as unknown as TillPromo[]) : undefined
         setState((s) => {
           if (!s.data) return s
-          const next: TillData = { ...s.data, catalog, pricesAt: minuteBefore(c.at), promotions: promotions ?? s.data.promotions }
-          void kvSet(`till:${registerId}`, next).catch(() => undefined)
+          const next: TillData = { ...s.data, catalog: s.data.catalog === now.catalog ? catalog : withChanges(s.data.catalog, items, new Set(c.gone ?? [])),
+            pricesAt: minuteBefore(c.at), promotions: promotions ?? s.data.promotions }
+          keepCopy(registerId, s.data, next)
           return { ...s, data: next }
         })
         if (prices > 0) toast.info(t('New prices on {n} items', { n: prices }))
@@ -336,11 +383,33 @@ export function useTill(registerId: string | undefined) {
     setState((s) => {
       if (!s.data) return s
       const next = fn(s.data)
-      void kvSet(`till:${registerId}`, next).catch(() => undefined)
+      if (registerId) keepCopy(registerId, s.data, next)
       return { ...s, data: next }
     })
   }, [registerId])
   return { ...state, reload: load, patch }
+}
+
+/* ------------------------------------------------------------------ the market's till: search, quick buttons, the lock */
+export type TillQuick = { pinned: string[]; top: string[] }
+/** the items of this till closest to what was typed or scanned, from the server (the same rules as on the device) */
+export async function searchTill(registerId: string, q: string, limit = 20): Promise<CatalogItem[]> {
+  const { data, error } = await supabase.rpc('pos_search', { p_register: registerId, p_q: q, p_limit: limit })
+  if (error) throw error
+  return ((data ?? []) as unknown as CatalogRow[]).map(({ score: _s, ...r }) => toCatalogItem(r as CatalogRow))
+}
+export async function setQuickItems(registerId: string, ids: string[]): Promise<string[]> {
+  return unwrap(await supabase.rpc('pos_quick_items_set', { p_register: registerId, p_items: ids })) as unknown as string[]
+}
+export type UnlockResult = { ok?: boolean; error?: string; no_pin?: boolean; member?: string }
+export async function posUnlock(registerId: string, pin: string): Promise<UnlockResult> {
+  return unwrap(await supabase.rpc('pos_unlock', { p_register: registerId, p_pin: pin })) as unknown as UnlockResult
+}
+export async function posMyPin(companyId: string): Promise<{ member: string; has_pin: boolean } | null> {
+  return unwrap(await supabase.rpc('pos_my_pin', { p_company: companyId })) as unknown as { member: string; has_pin: boolean } | null
+}
+export async function setMyPin(member: string, pin: string) {
+  unwrap(await supabase.rpc('member_set_pin', { p_member: member, p_pin: pin }))
 }
 
 export type ReceiptLookup = { id: string; number: string; device_ref: string | null; order_at: string; total: number; is_refund: boolean

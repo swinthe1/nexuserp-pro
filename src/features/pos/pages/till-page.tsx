@@ -3,7 +3,7 @@ import { TillTasks } from '@/features/tasks/components/till-tasks'
 import { whereElsewhere } from '@/features/inventory/where'
 import {
   ArrowLeft, BadgePercent, Banknote, Camera, Check, CloudOff, CreditCard, Ellipsis, Landmark, ListOrdered, LogOut, Minus, NotebookPen, Plus, Printer, ReceiptText, RotateCcw, ScanLine, Search,
-  NotebookTabs, ShieldCheck, Ticket, Trash2, UserRound, Wallet, X,
+  Lock, NotebookTabs, Pin, PinOff, ShieldCheck, Ticket, Trash2, UserRound, Users, Wallet, X,
 } from 'lucide-react'
 import * as React from 'react'
 import { bestPromo } from '../promotions'
@@ -26,9 +26,10 @@ import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { formatDateWith, msg, t, td, tEnum, tn, tServer } from '@/i18n'
 import { cn, formatDate, formatMoney, formatQty, initials, num, todayISO } from '@/lib/utils'
-import { checkVoucher, lookupReceipt, posApprove, sellVoucher, sessionControls, useCustomerCredit, type VoucherInfo, useCashMove, useCloseSession, useOpenSession, usePayees, usePayOut, useSessionSummary, useTill, useVendorBills, type CatalogItem, type ReceiptLookup, type TillData } from '../api'
+import { checkVoucher, lookupReceipt, posApprove, searchTill, sellVoucher, setQuickItems, sessionControls, useCustomerCredit, type VoucherInfo, useCashMove, useCloseSession, useOpenSession, usePayees, usePayOut, useSessionSummary, useTill, useVendorBills, type CatalogItem, type ReceiptLookup, type TillData } from '../api'
 import { enqueue, logTill, nextDeviceRef, syncNow, useOnSynced, useSyncState, type QueuedSale, type TillLogEntry } from '../offline'
 import { ManagerDialog, ManagerPinFields, pinReady } from '../manager-pin'
+import { ChoosePinDialog, LockScreen, SwitchCashierDialog, useTillLock } from '../till-lock'
 import { readScaleBarcode } from '@/lib/scale-barcode'
 import { printReceipt, printVoucher, printZReport, type ReceiptData } from '../receipt'
 import { qrSvg, signAtkSale, useAtkState, waitForAtk } from '../atk'
@@ -74,6 +75,14 @@ type VoidStep = { entries: Omit<TillLogEntry, 'id' | 'session_id' | 'at' | 'appr
 
 const prefGet = (k: string, d: string) => { try { return localStorage.getItem(k) ?? d } catch { return d } }
 const prefSet = (k: string, v: string) => { try { localStorage.setItem(k, v) } catch { /* ignore */ } }
+
+/** a market's till has no tiles (thousands of items): the cashier scans or searches; a café keeps its tiles */
+export function tillScreen(d: TillData): 'search' | 'tiles' {
+  const s = (d.register as { screen?: string | null }).screen
+  if (s === 'search' || s === 'tiles') return s
+  return d.company.business_type === 'cafe' || d.company.business_type === 'restaurant' ? 'tiles' : 'search'
+}
+const RESULTS = 20
 
 /* ================================================================== route */
 export function TillPage() {
@@ -295,14 +304,73 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     }
     return m
   }, [data.catalog])
-  const categories = React.useMemo(() => [...new Set(data.catalog.map((c) => c.category).filter(Boolean))].sort() as string[], [data.catalog])
+  const screen = tillScreen(data)
+  const tiles = screen === 'tiles'
+  const categories = React.useMemo(() => (tiles ? [...new Set(data.catalog.map((c) => c.category).filter(Boolean))].sort() as string[] : []), [data.catalog, tiles])
   const q = query.trim().toLowerCase().replace(/^\d+(?:[.,]\d+)?\*/, '')
   // forgiving search (lib/fuzzy): typos, ë/ç, words in any order; a code or barcode typed whole wins
   const dq = React.useDeferredValue(q)
-  const visible = React.useMemo(() => {
+  const searchKey = React.useCallback((c: CatalogItem) => ({ text: `${c.name} ${c.category ?? ''}`, codes: [c.sku, ...c.barcodes.map((b) => b.code)] }), [])
+  const local = React.useMemo(() => {
+    // the market's till lists nothing until something is typed or scanned
+    if (!dq && !tiles) return []
     const inCat = category === '__all' ? data.catalog : data.catalog.filter((c) => c.category === category)
-    return dq ? fuzzyFind(inCat, dq, (c) => ({ text: `${c.name} ${c.category ?? ''}`, codes: [c.sku, ...c.barcodes.map((b) => b.code)] })) : inCat
-  }, [data.catalog, dq, category])
+    return dq ? fuzzyFind(inCat, dq, searchKey, tiles ? Infinity : 40) : inCat
+  }, [data.catalog, dq, category, tiles, searchKey])
+  /* ---------- the server: items this device does not know yet (made after the till opened), and their price and stock now */
+  const [remote, setRemote] = React.useState<{ q: string; items: CatalogItem[] } | null>(null)
+  const fewHere = local.length < 5
+  React.useEffect(() => {
+    if (dq.length < 3 || !fewHere || !navigator.onLine || offline) return
+    let stop = false
+    const timer = window.setTimeout(() => {
+      void searchTill(data.register.id, dq, RESULTS).then((items) => {
+        if (stop) return
+        setRemote({ q: dq, items })
+        upsertItems(items)
+      }).catch(() => undefined)
+    }, 300)
+    return () => { stop = true; window.clearTimeout(timer) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dq, fewHere, offline, data.register.id])
+  /** items from the server join the copy on this device (only the ones new or changed) */
+  const upsertItems = React.useCallback((items: CatalogItem[]) => {
+    if (!items.length) return
+    patch((d) => {
+      const have = new Map(d.catalog.map((c) => [c.variant_id, c]))
+      const fresh = items.filter((i) => { const o = have.get(i.variant_id); return !o || o.price !== i.price || o.on_hand !== i.on_hand || o.name !== i.name || o.barcodes.length !== i.barcodes.length })
+      if (!fresh.length) return d
+      const byId = new Map(fresh.map((i) => [i.variant_id, i]))
+      const next = d.catalog.map((c) => byId.get(c.variant_id) ?? c)
+      for (const i of fresh) if (!have.has(i.variant_id)) next.push(i)
+      return { ...d, catalog: fresh.some((i) => !have.has(i.variant_id)) ? next.sort((a, b) => a.name.localeCompare(b.name)) : next }
+    })
+  }, [patch])
+  const visible = React.useMemo(() => {
+    if (!dq || !remote || remote.q !== dq || !remote.items.length) return local
+    const byId = new Map(local.map((c) => [c.variant_id, c]))
+    for (const r of remote.items) byId.set(r.variant_id, r)
+    return fuzzyFind([...byId.values()], dq, searchKey, tiles ? Infinity : 40)
+  }, [local, remote, dq, tiles, searchKey])
+  // the row Enter takes, moved with ↑ ↓ while searching
+  const [hi, setHi] = React.useState<{ q: string; i: number } | null>(null)
+  const hiIndex = hi && hi.q === dq ? Math.min(hi.i, Math.max(visible.length - 1, 0)) : 0
+  /* ---------- quick buttons: the manager's, or what sells most at this till */
+  const itemById = React.useMemo(() => new Map(data.catalog.map((c) => [c.variant_id, c])), [data.catalog])
+  const pinned = data.quick?.pinned ?? (data.register as { quick_items?: string[] | null }).quick_items ?? []
+  const quick = React.useMemo(() => {
+    const ids = pinned.length ? pinned : data.quick?.top ?? []
+    return ids.map((id) => itemById.get(id)).filter(Boolean).slice(0, 24) as CatalogItem[]
+  }, [pinned, data.quick?.top, itemById])
+  const [editQuick, setEditQuick] = React.useState(false)
+  const togglePin = async (id: string) => {
+    const next = pinned.includes(id) ? pinned.filter((x) => x !== id) : [...pinned, id]
+    if (next.length > 24) { toast.error(t('A till has at most 24 quick buttons')); return }
+    try {
+      const saved = await setQuickItems(data.register.id, next)
+      patch((d) => ({ ...d, quick: { pinned: saved, top: d.quick?.top ?? [] } }))
+    } catch (e) { toast.error(describeError(e)) }
+  }
 
   const lastAdd = React.useRef(0)
   const add = React.useCallback((item: CatalogItem, qty = 1, barcode: string | null = null, mult?: number) => {
@@ -353,10 +421,26 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     if (sc && !scItem) { scanFeedback('error'); setFlash({ tone: 'error', text: t('No item has the scale PLU {plu}', { plu: sc.plu }) }); setQuery(''); return }
     const scannedCard = !n ? findCard(v) : null
     if (scannedCard && scannedCard.number === v) { applyCard(scannedCard); setQuery(''); return }
+    // the row chosen with ↑ ↓, or the only one
+    if (hi && hi.q === dq && visible[hiIndex]) { add(visible[hiIndex]!, 1, null, n); setQuery(''); setHi(null); return }
     if (visible.length === 1) { add(visible[0]!, 1, null, n); setQuery(''); return }
+    // a code this device does not know: an item made after the till opened, asked of the server
+    if (!visible.length && navigator.onLine && !offline && !/\s/.test(v) && v.length >= 3) {
+      const asked = v
+      void searchTill(data.register.id, asked, 5).then((items) => {
+        const lc = asked.toLowerCase()
+        const it = items.find((i) => i.sku.toLowerCase() === lc || i.barcodes.some((b) => b.code.toLowerCase() === lc))
+        if (!it) { scanFeedback('error'); setFlash({ tone: 'error', text: t('Nothing matches “{q}”', { q: asked }) }); return }
+        upsertItems(items)
+        const b = it.barcodes.find((x) => x.code.toLowerCase() === lc)
+        add(it, b ? num(b.qty) || 1 : 1, b ? asked : null, n)
+      }).catch(() => { scanFeedback('error'); setFlash({ tone: 'error', text: t('Nothing matches “{q}”', { q: asked }) }) })
+      setQuery('')
+      return
+    }
     if (n) setMultiplier(n)
     scanFeedback('error')
-    setFlash({ tone: 'error', text: visible.length ? t('{n} products match “{q}” — tap one', { n: visible.length, q: v }) : t('Nothing matches “{q}”', { q: v }) })
+    setFlash({ tone: 'error', text: visible.length ? t('{n} products match “{q}”: pick one with ↑ ↓ and Enter, or tap it', { n: visible.length, q: v }) : t('Nothing matches “{q}”', { q: v }) })
     if (!visible.length) setQuery('')
   }
 
@@ -498,9 +582,25 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     setDone((d) => (d ? { ...d, printed: (d.printed ?? 0) + 1 } : d))
   }
 
+  /* ---------- the lock, and switching cashier */
+  const { signOut } = useAuth()
+  const lockMinutes = num((data.options as { lock_minutes?: number } | undefined)?.lock_minutes)
+  const tillLock = useTillLock({ register: data.register.id, company: data.register.company_id, user: user?.id ?? '', minutes: lockMinutes, busy: dialog === 'pay' })
+  const [switching, setSwitching] = React.useState(false)
+  const switchAfterClose = React.useRef(false)
+  const stepping = !!session.opened_by && session.opened_by !== user?.id
+  const leave = async () => {
+    // a shared till goes back to its list of names and PINs; another computer to the sign-in
+    try { localStorage.removeItem('drispro.till.session') } catch { /* ignore */ }
+    tillLock.unlock()
+    await signOut()
+    navigate('/login', { replace: true })
+  }
+
   /* ---------- keyboard */
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (tillLock.locked || switching) return
       if (done) {
         if (e.key === 'Enter' || e.key === 'Escape' || e.key === 'F2') { e.preventDefault(); setDone(null); focusSearch() }
         else if (e.key.toLowerCase() === 'p' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); printDone() }
@@ -513,6 +613,11 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       else if (e.key === 'F9') { e.preventDefault(); openRefund() }
       else if ((e.key === 'F12' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) && lines.length) { e.preventDefault(); openPay() }
       else if (e.key === 'Escape') { if (query) setQuery(''); else if (multiplier) setMultiplier(null) }
+      else if (query && document.activeElement === search.current && (e.key === 'ArrowDown' || e.key === 'ArrowUp') && visible.length) {
+        e.preventDefault()
+        const max = Math.min(visible.length, tiles ? 60 : RESULTS) - 1
+        setHi({ q: dq, i: hi && hi.q === dq ? Math.max(0, Math.min(max, hiIndex + (e.key === 'ArrowUp' ? -1 : 1))) : e.key === 'ArrowDown' ? 0 : max })
+      }
       else if (!query && selected && document.activeElement === search.current) {
         const l = lines.find((x) => x.key === selected)
         if (!l) return
@@ -578,6 +683,8 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
               <DropdownMenuItem onSelect={() => setDialog('cash')}><Wallet /> {t('Cash and payments')}</DropdownMenuItem>
               <DropdownMenuCheckboxItem checked={autoPrint} onCheckedChange={() => setAutoPrint((a) => { prefSet('pos.autoprint', a ? '0' : '1'); return !a })}>
                 <Printer className="mr-2 size-4" /> {t('Print a receipt automatically after each sale')}</DropdownMenuCheckboxItem>
+              <DropdownMenuItem onSelect={() => void tillLock.lock()}><Lock /> {t('Lock the till')}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setSwitching(true)}><Users /> {t('Switch cashier')}</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setDialog('close')}><LogOut /> {t('Close till')}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -588,7 +695,9 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
           <Button variant="ghost" size="sm" onClick={() => setDialog('voucher')}><Ticket /> {t('Gift voucher')}</Button>
           <Button variant="ghost" size="sm" onClick={() => setDialog('cash')}><Wallet /> {t('Cash and payments')}</Button>
           <Button variant="ghost" size="sm" onClick={() => { setAutoPrint((a) => { prefSet('pos.autoprint', a ? '0' : '1'); return !a }) }} aria-pressed={autoPrint}
-            title={t('Print a receipt automatically after each sale')}><Printer /> {autoPrint ? t('Auto-print on') : t('Auto-print off')}</Button>
+            title={t('Print a receipt automatically after each sale')} className={cn(autoPrint && 'text-primary')}><Printer /> <span className="max-2xl:sr-only">{autoPrint ? t('Auto-print on') : t('Auto-print off')}</span></Button>
+          <Button variant="ghost" size="sm" onClick={() => setSwitching(true)} title={t('Switch cashier')}><Users /> <span className="max-2xl:sr-only">{t('Switch cashier')}</span></Button>
+          <Button variant="ghost" size="sm" onClick={() => void tillLock.lock()} title={t('Lock the till: it opens again with your PIN')}><Lock /> {t('Lock|till')}</Button>
           <Button variant="outline" size="sm" onClick={() => setDialog('close')}><LogOut /> {t('Close till')}</Button>
         </div>
         )}
@@ -630,7 +739,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
               <input ref={search} autoFocus={!phone} value={query} onChange={(e) => { setQuery(e.target.value); setFlash(null) }}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submitQuery(query) } }}
                 aria-label={t('Scan or search products')} autoComplete="off" spellCheck={false}
-                placeholder={phone ? t('Search products') : t('Scan or search · 3* before a scan sells three · Enter on empty pays')}
+                placeholder={phone ? t('Search products') : tiles ? t('Scan or search · 3* before a scan sells three · Enter on empty pays') : t('Scan the barcode, or type a name or code · 3* before a scan sells three')}
                 className="h-14 w-full rounded-xl border-2 bg-card pl-11 pr-28 text-lg max-sm:h-12 max-sm:pr-12 max-sm:text-base outline-none transition-colors focus:border-primary focus:ring-4 focus:ring-primary/15" />
               <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
                 {multiplier && <span className="rounded-md bg-primary px-2 py-1 text-sm font-semibold text-primary-foreground">× {multiplier}</span>}
@@ -640,24 +749,25 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
             {hasCamera && <Button variant="outline" className="h-14 w-14 p-0" aria-label={t('Scan with the camera')} onClick={() => setCamera(true)}><Camera className="size-5" /></Button>}
           </div>
           <div aria-live="polite" className={cn('-mt-1 min-h-5 px-1 text-[13px]', flash?.tone === 'error' ? 'font-medium text-destructive' : 'text-muted-foreground')}>{flash?.text}</div>
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {tiles && <div className="flex gap-1.5 overflow-x-auto pb-1">
             {['__all', ...categories].map((c) => (
               <button key={c} type="button" onClick={() => setCategory(c)}
                 className={cn('h-9 shrink-0 rounded-full border px-3.5 text-[13px] font-medium transition-colors', category === c ? 'border-primary bg-primary text-primary-foreground' : 'bg-card hover:bg-muted')}>
                 {c === '__all' ? t('All products') : td(c)}
               </button>
             ))}
-          </div>
+          </div>}
           {dq && visible.length > 0 ? (
             // searching: each item in detail, so the cashier picks the right one
             <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border bg-card">
-              {visible.slice(0, 60).map((c, i) => {
+              {visible.slice(0, tiles ? 60 : RESULTS).map((c, i) => {
                 const promo = bestPromo(data.promotions, c.variant_id, c.price, 1, new Date(clock))
                 const packs = c.barcodes.filter((b) => num(b.qty) > 1)
                 const net = c.tax_rate ? c.price / (1 + num(c.tax_rate) / 100) : c.price
                 return (
-                  <button key={c.variant_id} type="button" onClick={() => add(c)}
-                    className={cn('grid w-full grid-cols-[1fr_auto] items-center gap-3 border-b px-3 py-2 text-left last:border-0 hover:bg-primary/5', i === 0 && 'bg-muted/50')}>
+                  <div key={c.variant_id} className={cn('flex items-stretch border-b last:border-0', hi && hi.q === dq && i === hiIndex && 'bg-primary/10 ring-2 ring-inset ring-primary/40')}>
+                  <button type="button" onClick={() => add(c)} aria-current={hi && hi.q === dq && i === hiIndex ? 'true' : undefined}
+                    className="grid min-w-0 flex-1 grid-cols-[1fr_auto] items-center gap-3 px-3 py-2 text-left hover:bg-primary/5">
                     <span className="min-w-0">
                       <span className="flex items-center gap-2"><span className="truncate text-[14px] font-medium">{c.name}</span>
                         {promo && <span className="shrink-0 rounded bg-success/15 px-1.5 py-0.5 text-[11px] font-medium text-success">−{formatQty(promo.pct)}% {promo.name}</span>}</span>
@@ -675,9 +785,19 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
                       {c.product_type === 'stockable' && <span className={cn('block text-[11px] tabular', c.on_hand <= 0 ? 'font-medium text-destructive' : 'text-muted-foreground')}>{t('Here: {qty}', { qty: formatQty(num(c.on_hand)) })}</span>}
                     </span>
                   </button>
+                  {!tiles && can('pos.approve') && (
+                    <button type="button" onClick={() => void togglePin(c.variant_id)} className="grid w-10 shrink-0 place-items-center border-l text-muted-foreground hover:bg-muted hover:text-foreground"
+                      title={pinned.includes(c.variant_id) ? t('Take it off the quick buttons') : t('Add it to the quick buttons')} aria-label={pinned.includes(c.variant_id) ? t('Take it off the quick buttons') : t('Add it to the quick buttons')}>
+                      {pinned.includes(c.variant_id) ? <PinOff className="size-4" /> : <Pin className="size-4" />}
+                    </button>
+                  )}
+                  </div>
                 )
               })}
             </div>
+          ) : !tiles ? (
+            <QuickPanel items={quick} pinnedMode={pinned.length > 0} edit={editQuick} canEdit={can('pos.approve')} searching={!!dq} hint={!lines.length}
+              onAdd={(c) => add(c)} onEdit={() => setEditQuick((v) => !v)} onUnpin={(id) => void togglePin(id)} />
           ) : (
           <div className="grid min-h-0 flex-1 auto-rows-[96px] grid-cols-[repeat(auto-fill,minmax(150px,1fr))] content-start gap-2 overflow-y-auto pr-1 max-sm:auto-rows-[84px] max-sm:grid-cols-3 max-sm:pr-0">
             {visible.slice(0, 120).map((c) => (
@@ -813,8 +933,20 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       )}
       {dialog === 'voucher' && <VoucherDialog data={data} sessionId={session.id} currency={cur} onClose={() => { setDialog(null); focusSearch() }} />}
       {dialog === 'cash' && <CashDialog data={data} sessionId={session.id} currency={cur} onClose={() => { setDialog(null); focusSearch() }} />}
-      {dialog === 'close' && <CloseDialog data={data} pending={pending.length} onClose={() => { setDialog(null); focusSearch() }}
-        onClosed={async (sessionId) => { await reload(); navigate(`/pos/sessions/${sessionId}`) }} />}
+      {dialog === 'close' && <CloseDialog data={data} pending={pending.length} onClose={() => { setDialog(null); switchAfterClose.current = false; focusSearch() }}
+        onClosed={async (sessionId) => {
+          // switching cashier: the shift is closed, the next cashier signs in and opens hers
+          if (switchAfterClose.current) { switchAfterClose.current = false; toast.success(t('Shift closed. The next cashier signs in and opens her shift.')); await leave(); return }
+          await reload(); navigate(`/pos/sessions/${sessionId}`)
+        }} />}
+      {switching && <SwitchCashierDialog cashier={session.opener ?? cashier} saleOnScreen={lines.length > 0} mode={tillLock.locked ? 'locked' : stepping ? 'stepping' : 'own'}
+        onClose={() => { setSwitching(false); focusSearch() }}
+        onSignOut={() => { setSwitching(false); void leave() }}
+        onCloseShift={() => { setSwitching(false); switchAfterClose.current = true; setDialog('close') }} />}
+      {tillLock.askPin && <ChoosePinDialog member={tillLock.member} user={user?.id ?? ''} onCancel={() => { tillLock.closeAskPin(); focusSearch() }}
+        onDone={() => { tillLock.pinSet(); toast.success(t('PIN saved')); void tillLock.lock(false, true) }} />}
+      {tillLock.locked && !switching && <LockScreen register={data.register.id} registerName={data.register.name} user={user?.id ?? ''} cashier={cashier}
+        managers={managers} onUnlocked={() => { tillLock.unlock(); focusSearch() }} onSwitch={() => setSwitching(true)} />}
       {dialog === 'queue' && (
         <Dialog open onOpenChange={(o) => { if (!o) { setDialog(null); focusSearch() } }}>
           <DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>{t('Sending sales')}</DialogTitle>
@@ -1615,3 +1747,49 @@ const Row = ({ k, v, strong }: { k: string; v: string; strong?: boolean }) => (
   <div className={cn('flex justify-between gap-3', strong && 'font-semibold')}><span className="text-muted-foreground">{k}</span><span className="tabular">{v}</span></div>
 )
 
+
+/* ================================================================== the market's till: quick buttons instead of tiles */
+function QuickPanel({ items, pinnedMode, edit, canEdit, searching, hint, onAdd, onEdit, onUnpin }: {
+  items: CatalogItem[]; pinnedMode: boolean; edit: boolean; canEdit: boolean; searching: boolean; hint: boolean
+  onAdd: (c: CatalogItem) => void; onEdit: () => void; onUnpin: (id: string) => void
+}) {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+      {searching && <div className="rounded-lg border bg-card py-10 text-center text-[13px] text-muted-foreground">{t('No product matches. Clear the search with Esc.')}</div>}
+      {!searching && hint && (
+        <div className="flex items-start gap-3 rounded-xl border border-dashed bg-card/60 px-4 py-3.5">
+          <ScanLine className="mt-0.5 size-5 shrink-0 text-primary" />
+          <div className="text-[13px] leading-relaxed text-muted-foreground">
+            <div className="font-medium text-foreground">{t('Scan the barcode, or type a name or code')}</div>
+            {t('The closest items come up as you type: ë and ç, typos and the order of the words do not matter. ↑ ↓ choose, Enter adds. 3* before a scan sells three. Enter on an empty field pays.')}
+          </div>
+        </div>
+      )}
+      {items.length > 0 && (
+        <section aria-label={t('Quick buttons')}>
+          <div className="mb-1.5 flex items-center justify-between px-0.5">
+            <h2 className="text-[13px] font-medium text-muted-foreground">{pinnedMode ? t('Quick buttons') : t('Most sold at this till')}</h2>
+            {canEdit && pinnedMode && <button type="button" className="text-[12.5px] font-medium text-primary hover:underline" onClick={onEdit}>{edit ? t('Done') : t('Change')}</button>}
+          </div>
+          <div className="grid auto-rows-[76px] grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2 max-sm:grid-cols-3">
+            {items.map((c) => (
+              <div key={c.variant_id} className="relative">
+                <button type="button" onClick={() => (edit ? onUnpin(c.variant_id) : onAdd(c))}
+                  className={cn('flex size-full flex-col justify-between rounded-lg border bg-card p-2.5 text-left transition-[border-color,transform] hover:border-primary/50 active:scale-[0.98]', edit && 'border-dashed')}>
+                  <span className="line-clamp-2 text-[13px] font-medium leading-tight">{c.name}</span>
+                  <span className="text-[15px] font-semibold tabular">{formatMoney(c.price)}</span>
+                </button>
+                {edit && <span className="pointer-events-none absolute right-1.5 top-1.5 grid size-5 place-items-center rounded-full bg-destructive text-destructive-foreground"><X className="size-3" /></span>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+      {canEdit && !searching && hint && (
+        <p className="px-0.5 text-[12px] text-muted-foreground">{pinnedMode
+          ? t('Search an item and press the pin beside it to add a quick button (at most 24).')
+          : t('To choose your own quick buttons, search an item and press the pin beside it.')}</p>
+      )}
+    </div>
+  )
+}

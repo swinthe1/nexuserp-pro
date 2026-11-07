@@ -862,4 +862,6 @@ export default {
   "Say why the voucher is blocked": "Shkruani pse bllokohet kuponi",
   "You do not have permission to see the purchases": "Nuk keni leje për të parë blerjet",
   "You may not see what the stock cost": "Nuk keni leje ta shihni koston e stokut",
+  "You have no PIN yet": "Ende nuk keni PIN",
+  "A till has at most 24 quick buttons": "Një arkë ka më së shumti 24 butona të shpejtë",
 } satisfies Dict

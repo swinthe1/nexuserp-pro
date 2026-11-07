@@ -13,13 +13,20 @@ const DB_NAME = 'drispro-pos'
 let dbp: Promise<IDBDatabase> | null = null
 function db() {
   dbp ??= new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1)
+    const req = indexedDB.open(DB_NAME, 2)
     req.onupgradeneeded = () => {
       const d = req.result
       if (!d.objectStoreNames.contains('kv')) d.createObjectStore('kv')
       if (!d.objectStoreNames.contains('queue')) d.createObjectStore('queue', { keyPath: 'client_uuid' })
+      // the till's items, one row each ("<till>|<variant>"): a sale or a new price writes only its rows
+      if (!d.objectStoreNames.contains('items')) d.createObjectStore('items')
     }
-    req.onsuccess = () => { void carryOver('nexus' + '-pos', req.result, ['kv', 'queue']).then(() => resolve(req.result)) }
+    // another tab still has the old version open: it closes, so this one can upgrade
+    req.onblocked = () => undefined
+    req.onsuccess = () => {
+      // a newer version of the program opens it in another tab: this one lets go and opens it again when needed
+      req.result.onversionchange = () => { req.result.close(); dbp = null }
+      void carryOver('nexus' + '-pos', req.result, ['kv', 'queue']).then(() => resolve(req.result)) }
     req.onerror = () => reject(req.error)
   })
   return dbp
@@ -35,6 +42,25 @@ function tx<T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectStore) 
 }
 export const kvGet = <T>(key: string) => tx<T | undefined>('kv', 'readonly', (s) => s.get(key) as IDBRequest<T | undefined>)
 export const kvSet = (key: string, value: unknown) => tx('kv', 'readwrite', (s) => s.put(value, key))
+
+/* ------------------------------------------------------------------ the till's items */
+const itemRange = (till: string) => IDBKeyRange.bound(`${till}|`, `${till}|￿`)
+/** every item kept for this till */
+export const itemsAll = <T>(till: string) => tx<T[]>('items', 'readonly', (s) => s.getAll(itemRange(till)) as IDBRequest<T[]>)
+/** writes these rows and takes those off; with replace, the till's other rows go too (a full read) */
+export function itemsWrite<T extends { variant_id: string }>(till: string, put: readonly T[], del: readonly string[] = [], replace = false): Promise<void> {
+  if (!put.length && !del.length && !replace) return Promise.resolve()
+  return db().then((d) => new Promise<void>((resolve, reject) => {
+    const t = d.transaction('items', 'readwrite')
+    const s = t.objectStore('items')
+    if (replace) s.delete(itemRange(till))
+    for (const id of del) s.delete(`${till}|${id}`)
+    for (const it of put) s.put(it, `${till}|${it.variant_id}`)
+    t.oncomplete = () => resolve()
+    t.onerror = () => reject(t.error)
+    t.onabort = () => reject(t.error)
+  }))
+}
 
 /* ------------------------------------------------------------------ queue */
 export interface QueuedSale {

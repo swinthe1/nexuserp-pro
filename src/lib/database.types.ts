@@ -2395,6 +2395,7 @@ export type Database = {
           pos_review: string
           pos_review_hours: number
           pos_blind_count: boolean
+          pos_lock_minutes: number
         }
         Insert: {
           id?: string
@@ -2486,6 +2487,7 @@ export type Database = {
           pos_review?: string
           pos_review_hours?: number
           pos_blind_count?: boolean
+          pos_lock_minutes?: number
         }
         Update: {
           id?: string
@@ -2577,6 +2579,7 @@ export type Database = {
           pos_review?: string
           pos_review_hours?: number
           pos_blind_count?: boolean
+          pos_lock_minutes?: number
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -8439,6 +8442,8 @@ export type Database = {
           atk_cert_by: string | null
           atk_device: string | null
           paper_mm: number
+          screen: string
+          quick_items: string[]
         }
         Insert: {
           id?: string
@@ -8472,6 +8477,8 @@ export type Database = {
           atk_cert_by?: string | null
           atk_device?: string | null
           paper_mm?: number
+          screen?: string
+          quick_items?: string[]
         }
         Update: {
           id?: string
@@ -8505,6 +8512,8 @@ export type Database = {
           atk_cert_by?: string | null
           atk_device?: string | null
           paper_mm?: number
+          screen?: string
+          quick_items?: string[]
         }
         Relationships: [
           { foreignKeyName: "pos_registers_company_id_cash_account_id_fkey"; columns: ["company_id", "cash_account_id"]; isOneToOne: false; referencedRelation: "bank_accounts"; referencedColumns: ["company_id", "id"] },
@@ -18741,6 +18750,12 @@ export type Database = {
         }
         Returns: Json
       }
+      pos_my_pin: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       pos_pay_out: {
         Args: {
           p_session: string
@@ -18759,6 +18774,19 @@ export type Database = {
           p_register: string
         }
         Returns: Json
+      }
+      pos_quick_items: {
+        Args: {
+          p_register: string
+        }
+        Returns: Json
+      }
+      pos_quick_items_set: {
+        Args: {
+          p_register: string
+          p_items: string[]
+        }
+        Returns: string[]
       }
       pos_receipt_max_unit_save: {
         Args: {
@@ -18809,6 +18837,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      pos_search: {
+        Args: {
+          p_register: string
+          p_q: string
+          p_limit?: number
+        }
+        Returns: { variant_id: string | null; sku: string | null; name: string | null; category: string | null; barcodes: Json | null; price: number | null; tax_code_id: string | null; tax_rate: number | null; tracking: string | null; on_hand: number | null; image_path: string | null; product_type: string | null; uom: string | null; scale_plu: string | null; score: number | null }[]
+      }
       pos_session_controls: {
         Args: {
           p_session: string
@@ -18836,6 +18872,13 @@ export type Database = {
       pos_till_options: {
         Args: {
           p_register: string
+        }
+        Returns: Json
+      }
+      pos_unlock: {
+        Args: {
+          p_register: string
+          p_pin: string
         }
         Returns: Json
       }

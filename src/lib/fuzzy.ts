@@ -94,13 +94,15 @@ interface Term { w: string; ws: string; num: boolean; seen: Map<string, number>;
 const termOf = (w: string, ws: string): Term => ({ w, ws, num: isNum(w), seen: new Map(), pairs: new Map() })
 
 function wordScore(q: Term, x: Indexed): number {
-  let best = 0
+  let best = 0, at = -1
   for (let i = 0; i < x.words.length && best < 10; i++) {
     const t = x.words[i]!
     let s = q.seen.get(t)
     if (s === undefined) { s = termScore(q.w, q.ws, q.num, t, x.sounds[i]!); q.seen.set(t, s) }
-    if (s > best) best = s
+    if (s > best) { best = s; at = i }
   }
+  // the name's first word is what it is ("Qumësht i freskët" before "Çokollatë qumështi"): a half point, only to order equals
+  if (best > 0 && at === 0) return best + 0.5
   // two words written as one: "cocacola", "kokakola"
   if (best < 4 && !q.num && q.w.length >= 6) {
     const max = q.w.length >= 8 ? 2 : 1

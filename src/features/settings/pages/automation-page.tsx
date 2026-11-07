@@ -23,7 +23,7 @@ type Settings = { pos_cash_tolerance: number; pos_count_notes: boolean; pos_void
   payroll_night_pct: number | null; payroll_holiday_pct: number | null; purchase_price_tolerance: number
   new_items_from_bills: 'anyone' | 'approval'
   /** a server not updated yet has none of these */
-  pos_review?: 'off' | 'manager'; pos_review_hours?: number; pos_blind_count?: boolean
+  pos_review?: 'off' | 'manager'; pos_review_hours?: number; pos_blind_count?: boolean; pos_lock_minutes?: number
   pos_payouts?: 'off' | 'manager' | 'anyone'; pos_receipt_max?: number | null; scale_barcode?: ScaleSetup; pos_void_notify?: boolean; pos_void_notify_over?: number; pos_void_whatsapp?: string[]; min_shelf_days?: number | null }
 
 export function usePayrollTillSettings() {
@@ -125,6 +125,19 @@ export function AutomationPage() {
                 onCheckedChange={(on) => save.mutate({ pos_blind_count: on })} />
             </label>
           </>}
+          {s.pos_lock_minutes !== undefined && (
+            <div className="flex flex-wrap items-start justify-between gap-3 rounded-md border p-3 text-[13px]">
+              <span className="min-w-0 flex-1"><span className="font-medium">{t('The till locks by itself')}</span>
+                <span className="block text-muted-foreground">{t('After these minutes without a touch or a key the till locks; the sale on the screen stays. The cashier opens it with her PIN, or a manager with theirs. The Lock button works either way.')}</span></span>
+              <Select value={String(s.pos_lock_minutes ?? 0)} disabled={!can('pos.approve') || save.isPending} onValueChange={(v) => save.mutate({ pos_lock_minutes: Number(v) })}>
+                <SelectTrigger className="w-44" aria-label={t('The till locks by itself')}><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">{t('Never by itself')}</SelectItem>
+                  {[2, 5, 10, 15, 30].map((m) => <SelectItem key={m} value={String(m)}>{t('After {n} min', { n: m })}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <label className="flex items-start justify-between gap-3 rounded-md border p-3 text-[13px]">
             <span><span className="font-medium">{t('Voids need a manager')}</span>
               <span className="block text-muted-foreground">{t('Taking an item off a sale, lowering its quantity or clearing a sale asks for a manager\'s PIN (once per sale). Every void is kept with the shift either way.')}</span></span>

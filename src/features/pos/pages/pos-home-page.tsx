@@ -202,6 +202,7 @@ function RegisterDialog({ register, onClose }: { register: Register | null; onCl
     cash_account_id: register?.cash_account_id ?? null as string | null, journal_id: register?.journal_id ?? null as string | null, price_list_id: register?.price_list_id ?? null as string | null,
     default_customer_id: register?.default_customer_id ?? null as string | null, paper_mm: register?.paper_mm ?? 80, receipt_header: register?.receipt_header ?? '', receipt_footer: register?.receipt_footer ?? 'Faleminderit! Thank you!',
     is_active: register?.is_active ?? true, mode: (register?.mode ?? (restaurantOk && (company?.business_type === 'cafe' || company?.business_type === 'restaurant') ? 'restaurant' : 'retail')) as string,
+    screen: ((register as { screen?: string } | null)?.screen ?? 'auto') as string,
   }))
   const set = <K extends keyof typeof v>(k: K) => (x: (typeof v)[K]) => setV((s) => ({ ...s, [k]: x }))
   React.useEffect(() => {
@@ -243,6 +244,13 @@ function RegisterDialog({ register, onClose }: { register: Register | null; onCl
                   <div className="text-sm font-medium">{o.l}</div><div className="mt-0.5 text-xs text-muted-foreground">{o.h}</div>
                 </button>))}
             </div></div>}
+          {v.mode !== 'restaurant' && <div className="col-span-2 grid gap-1.5"><Label>{t('The till\'s screen')}</Label>
+            <Select value={v.screen} onValueChange={set('screen')}><SelectTrigger aria-label={t('The till\'s screen')}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">{t('By the kind of business (tiles for a café, search for the others)')}</SelectItem>
+                <SelectItem value="search">{t('Search and scan, no tiles (a market, thousands of items)')}</SelectItem>
+                <SelectItem value="tiles">{t('Tiles by category (a café, a bakery, few items)')}</SelectItem>
+              </SelectContent></Select></div>}
           <div className="col-span-2 grid gap-1.5"><Label htmlFor="rg-head">{t('Receipt header')}</Label><Input id="rg-head" value={v.receipt_header} onChange={(e) => set('receipt_header')(e.target.value)} placeholder="Rruga Pjetër Bogdani 12, Tiranë" /></div> {/* i18n-ignore */}
           <div className="col-span-2 grid gap-1.5"><Label htmlFor="rg-foot">{t('Receipt footer')}</Label><Input id="rg-foot" value={v.receipt_footer} onChange={(e) => set('receipt_footer')(e.target.value)} /></div>
           <div className="col-span-2 grid gap-1.5"><Label>{t('Receipt paper')}</Label>
@@ -253,8 +261,9 @@ function RegisterDialog({ register, onClose }: { register: Register | null; onCl
         <DialogFooter><Button variant="ghost" onClick={onClose}>{t('Cancel')}</Button>
           <Button disabled={!valid} loading={save.isPending} onClick={async () => {
             // the paper is sent only once the server knows it (a server not yet updated would refuse the whole save)
-            const { paper_mm, ...rest } = v
-            await save.mutateAsync({ id: register?.id, ...rest, ...(register?.paper_mm !== undefined || paper_mm !== 80 ? { paper_mm } : {}), code: v.code.trim(), name: v.name.trim(), receipt_header: v.receipt_header || null, receipt_footer: v.receipt_footer || null })
+            const { paper_mm, screen, ...rest } = v
+            await save.mutateAsync({ id: register?.id, ...rest, ...(register?.paper_mm !== undefined || paper_mm !== 80 ? { paper_mm } : {}),
+              ...((register as { screen?: string } | null)?.screen !== undefined || screen !== 'auto' ? { screen } : {}), code: v.code.trim(), name: v.name.trim(), receipt_header: v.receipt_header || null, receipt_footer: v.receipt_footer || null })
             toast.success(t('Till saved')); onClose()
           }}>{t('Save')}</Button></DialogFooter>
       </DialogContent>
