@@ -19977,9 +19977,23 @@ export type Database = {
         }
         Returns: Json
       }
+      stock_books_check: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: Json
+      }
       stock_by_warehouse: {
         Args: {
           p_company: string
+        }
+        Returns: Json
+      }
+      stock_expiry: {
+        Args: {
+          p_company: string
+          p: Json
         }
         Returns: Json
       }

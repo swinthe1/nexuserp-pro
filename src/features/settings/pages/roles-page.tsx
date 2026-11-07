@@ -43,6 +43,8 @@ export function RolesPage() {
   const [draft, setDraft] = React.useState<Draft | null>(null)
   const write = can('admin.write')
 
+  // permissions beside see/change/delete/approve (what the goods cost)
+  const extras = React.useMemo(() => (catalog.data ?? []).filter((p) => !ACTIONS.some((a) => a.key === p.action)).map((p) => ({ key: p.key, module: p.module, description: p.description ?? p.key })), [catalog.data])
   const modules = React.useMemo(() => {
     const m = new Map<string, string>()
     for (const p of catalog.data ?? []) if (!m.has(p.module)) m.set(p.module, p.description ?? p.module)
@@ -62,6 +64,7 @@ export function RolesPage() {
   const startDraft = (from: RoleRow | null) => {
     const perms = new Set<string>()
     if (from) for (const m of modules) for (const a of ACTIONS) if (matchesPermission(from.permissions, `${m.key}.${a.key}`)) perms.add(`${m.key}.${a.key}`)
+    if (from) for (const x of extras) if (matchesPermission(from.permissions, x.key)) perms.add(x.key)
     setDraft({ id: from?.company_id ? from.id : null, name: from?.company_id ? from.name : from ? t('{name} (custom)', { name: td(from.name) }) : '', description: from?.description ? td(from.description) : '', perms })
   }
 
@@ -87,7 +90,7 @@ export function RolesPage() {
           </CardContent>
         </Card>
         {draft ? (
-          <RoleEditor draft={draft} setDraft={setDraft} modules={modules} onDone={(id) => { setDraft(null); if (id) setSelected(id) }} />
+          <RoleEditor draft={draft} setDraft={setDraft} modules={modules} extras={extras} onDone={(id) => { setDraft(null); if (id) setSelected(id) }} />
         ) : role && (
           <Card>
             <CardHeader className="flex-row items-start justify-between gap-4 space-y-0">
@@ -108,11 +111,31 @@ export function RolesPage() {
             </CardHeader>
             <CardContent className="p-0">
               <Matrix modules={modules} has={(p) => matchesPermission(role.permissions, p)} />
+              <Extras extras={extras} has={(p) => matchesPermission(role.permissions, p)} />
             </CardContent>
           </Card>
         )}
       </div>
     </>
+  )
+}
+
+type Extra = { key: string; module: string; description: string }
+
+/** the permissions beside see, change, delete and approve: what the goods cost */
+function Extras({ extras, has, toggle }: { extras: Extra[]; has: (perm: string) => boolean; toggle?: (perm: string) => void }) {
+  if (!extras.length) return null
+  return (
+    <div className="grid gap-2 border-t px-6 py-3">
+      <div className="text-sm font-medium">{t('Other permissions')}</div>
+      {extras.map((x) => (
+        <label key={x.key} className="flex items-center gap-2 text-[13px]">
+          {toggle ? <Checkbox checked={has(x.key)} onCheckedChange={() => toggle(x.key)} />
+            : has(x.key) ? <Check className="size-4 text-success" aria-label={t('Allowed')} /> : <span className="w-4 text-center text-muted-foreground/40" aria-label={t('Not allowed')}>·</span>}
+          <span><span className="font-medium">{t(MODULE_LABEL[x.module] ?? x.module)}</span> · {td(x.description)}</span>
+        </label>
+      ))}
+    </div>
   )
 }
 
@@ -161,8 +184,8 @@ function Matrix({ modules, has, toggle, toggleRow }: {
   )
 }
 
-function RoleEditor({ draft, setDraft, modules, onDone }: {
-  draft: Draft; setDraft: (d: Draft) => void; modules: { key: string; description: string }[]; onDone: (id?: string) => void
+function RoleEditor({ draft, setDraft, modules, extras, onDone }: {
+  draft: Draft; setDraft: (d: Draft) => void; modules: { key: string; description: string }[]; extras: Extra[]; onDone: (id?: string) => void
 }) {
   const save = useSaveCustomRole()
   const toggle = (p: string) => { const s = new Set(draft.perms); if (s.has(p)) s.delete(p); else s.add(p); setDraft({ ...draft, perms: s }) }
@@ -180,6 +203,7 @@ function RoleEditor({ draft, setDraft, modules, onDone }: {
       if (on.length === ACTIONS.length) out.push(`${m.key}.*`)
       else out.push(...on.map((a) => `${m.key}.${a}`))
     }
+    for (const x of extras) if (draft.perms.has(x.key) && !out.includes(`${x.module}.*`)) out.push(x.key)
     if (!out.length) return toast.error(t('Give the role at least one permission.'))
     const id = await save.mutateAsync({ id: draft.id, name: draft.name.trim(), description: draft.description.trim(), permissions: out })
     toast.success(draft.id ? t('Role saved') : t('Custom role created'))
@@ -194,6 +218,7 @@ function RoleEditor({ draft, setDraft, modules, onDone }: {
         <Field label={t('What it is for')} htmlFor="role-desc"><Input id="role-desc" value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} /></Field>
       </CardContent>
       <Matrix modules={modules} has={(p) => draft.perms.has(p)} toggle={toggle} toggleRow={toggleRow} />
+      <Extras extras={extras} has={(p) => draft.perms.has(p)} toggle={toggle} />
       <div className="flex justify-end gap-2 border-t px-6 py-3">
         <Button variant="outline" onClick={() => onDone()}>{t('Cancel')}</Button>
         <Button loading={save.isPending} onClick={() => void submit()}>{draft.id ? t('Save role') : t('Create role')}</Button>

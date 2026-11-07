@@ -33,14 +33,14 @@ import { Pick, SavedFilters } from '@/features/reports/components/saved-filters'
 
 type Row = Record<string, unknown>
 type Cell = string | number | null
-type ColType = 'text' | 'date' | 'money' | 'price' | 'qty' | 'pct' | 'rate' | 'blank' | 'count' | 'days' | 'enum'
+type ColType = 'text' | 'date' | 'money' | 'price' | 'qty' | 'pct' | 'rate' | 'blank' | 'count' | 'days' | 'enum' | 'problems'
 type Col = { id: string; label: string; type: ColType; hidden?: boolean; strong?: boolean; total?: boolean }
 
 type Filters = {
   report: string; as_of: string; units: string[]; split: boolean; group_by: string
   categories: string[]; producers: string[]; brands: string[]; vendors: string[]; items: string[]; vat_rates: string[]; types: string[]
   active: string; stock: string; sheet: string; blind: boolean
-  from: string; days: string; slow_days: string; dead_days: string; target_days: string; classes: string[]
+  from: string; days: string; slow_days: string; dead_days: string; target_days: string; classes: string[]; within: string; expired: boolean
 }
 
 const REPORTS = [
@@ -55,6 +55,9 @@ const REPORTS = [
   { value: 'availability', label: msg('9. Stock free to sell') },
   { value: 'slow', label: msg('10. Goods that do not move') },
   { value: 'cover', label: msg('11. Days the stock lasts') },
+  { value: 'expiry', label: msg('12. Lots and their expiry') },
+  { value: 'anomalies', label: msg('13. What looks wrong') },
+  { value: 'books', label: msg('14. The stock against the books') },
 ]
 const SHEETS = [
   { value: 'charge', label: msg('What the storekeeper is charged with') },
@@ -71,10 +74,10 @@ const STOCKS = [
 ]
 const TYPES = [{ value: 'stockable', label: msg('Stocked item') }, { value: 'consumable', label: msg('Consumable') }, { value: 'service', label: msg('Service') }]
 
-const blank = (unit: string | null): Filters => ({
-  report: 'avg', as_of: todayISO(), units: unit ? [unit] : [], split: false, group_by: 'none',
+const blank = (unit: string | null, costs = true): Filters => ({
+  report: costs ? 'avg' : 'sale', as_of: todayISO(), units: unit ? [unit] : [], split: false, group_by: 'none',
   categories: [], producers: [], brands: [], vendors: [], items: [], vat_rates: [], types: [], active: 'active', stock: 'nonzero', sheet: 'charge', blind: false,
-  from: `${todayISO().slice(0, 8)}01`, days: '90', slow_days: '60', dead_days: '180', target_days: '30', classes: [],
+  from: `${todayISO().slice(0, 8)}01`, days: '90', slow_days: '60', dead_days: '180', target_days: '30', classes: [], within: '', expired: true,
 })
 
 /** the columns of each report (English labels, translated when drawn) */
@@ -139,6 +142,14 @@ function columnsOf(f: Filters): Col[] {
       { id: 'runout', label: msg('Runs out on'), type: 'date' }, { id: 'cover', label: msg('State'), type: 'enum', strong: true },
       { id: 'on_order', label: msg('Ordered from suppliers'), type: 'qty', total: true }, { id: 'to_order', label: msg('To order'), type: 'qty', total: true, strong: true },
       { id: 'sold', label: msg('Sold in the days looked at'), type: 'qty', total: true, hidden: true }, { id: 'last_sale', label: msg('Last sold'), type: 'date', hidden: true }, money('value', msg('Value at cost'), { hidden: true })]
+    case 'expiry': return [...lead, { id: 'lot', label: msg('Lot'), type: 'text', strong: true }, { id: 'expiry_date', label: msg('Expires on'), type: 'date', strong: true },
+      { id: 'days_left', label: msg('Days left'), type: 'days' }, { id: 'bucket', label: msg('State'), type: 'enum' }, qty, money('value', msg('Value at cost')),
+      { id: 'made_on', label: msg('Made on'), type: 'date', hidden: true }, { id: 'vendor', label: msg('Supplier'), type: 'text', hidden: true }]
+    case 'anomalies': return [...lead, { id: 'problems', label: msg('What looks wrong'), type: 'problems', strong: true }, qty, price('avg_cost', msg('Average cost')),
+      money('value', msg('Value at cost')), price('last_cost', msg('Last purchase cost')), price('sale_net', msg('Sale price without VAT')), ...extra]
+    case 'books': return [{ id: 'code', label: msg('Account'), type: 'text' }, { id: 'account', label: msg('Name'), type: 'text', strong: true },
+      { id: 'items', label: msg('Items'), type: 'count' }, money('stock_value', msg('Value of the stock')), money('books', msg('Balance in the books')),
+      money('difference', msg('Difference'), { strong: true }), { id: 'manual_lines', label: msg('Entries by hand'), type: 'count' }]
     default: return [...lead, qty, price('avg_cost', msg('Average cost')), money('value', msg('Value'), { strong: true }), ...extra]
   }
 }
@@ -152,12 +163,20 @@ const SIGNATURES: Record<string, string[]> = {
 const right = (c: Col) => !['text', 'date', 'blank', 'enum'].includes(c.type)
 /** the classes of movement and the states of cover */
 const ENUMS: Record<string, string> = {
+  expired: msg('Expired'), d30: msg('Within 30 days'), d60: msg('Within 60 days'), d90: msg('Within 90 days'), later: msg('Later'),
   fast: msg('Sells well'), slow: msg('Sells slowly'), dead: msg('Does not sell'), new: msg('New'),
   out: msg('Out of stock'), urgent: msg('Under a week'), soon: msg('Under two weeks'), ok: msg('Enough'), over: msg('Too much (over 90 days)'),
   no_sales: msg('No sales'), none: msg('Nothing'),
 }
-const ENUM_TONE: Record<string, string> = { dead: 'text-destructive', slow: 'text-warning', fast: 'text-success', new: 'text-info', out: 'text-destructive', urgent: 'text-destructive', soon: 'text-warning', ok: 'text-success', over: 'text-warning' }
+const ENUM_TONE: Record<string, string> = { expired: 'text-destructive', d30: 'text-destructive', d60: 'text-warning', d90: 'text-warning', dead: 'text-destructive', slow: 'text-warning', fast: 'text-success', new: 'text-info', out: 'text-destructive', urgent: 'text-destructive', soon: 'text-warning', ok: 'text-success', over: 'text-warning' }
 const ANALYSIS = ['movement', 'availability', 'slow', 'cover']
+/** the reports that show what the goods cost, and those columns: for those who may see the costs */
+const COST_REPORTS = ['avg', 'avg_sale', 'last_cost', 'by_producer', 'anomalies', 'books']
+const COST_COLS = new Set(['value', 'avg_cost', 'last_cost', 'value_last', 'diff_last', 'margin', 'margin_pct', 'markup_pct', 'opening_value', 'in_value', 'out_value', 'revaluation', 'sold_value', 'last_vendor'])
+const PROBLEMS: Record<string, string> = {
+  negative: msg('Negative stock'), no_cost: msg('In stock without a cost'), value_no_qty: msg('Value without stock'),
+  below_cost: msg('Sale price under the cost'), no_price: msg('No sale price'), cost_jump: msg('Average far from the last purchase'),
+}
 function shown(c: Col, v: unknown): string {
   if (c.type === 'blank') return ''
   if (v === null || v === undefined || v === '') return ''
@@ -170,6 +189,7 @@ function shown(c: Col, v: unknown): string {
     case 'count': return formatQty(num(v))
     case 'days': return formatQty(Math.round(num(v)))
     case 'enum': return t(ENUMS[String(v)] ?? String(v))
+    case 'problems': return (Array.isArray(v) ? v : []).map((x) => t(PROBLEMS[String(x)] ?? String(x))).join(', ')
     default: return td(String(v))
   }
 }
@@ -182,11 +202,12 @@ const noGroupLabel = (by: string) => ({ group: t('No group'), category: t('No su
 
 /** "Raporti i stokut": the stock on any day, in the seven ways the old programs list it. */
 export function StockReportPage() {
-  const { companyId, company } = useCompany()
+  const { companyId, company, can } = useCompany()
+  const costs = can('inventory.costs')
   const { unit, multi } = useActiveUnit()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
-  const start = React.useMemo(() => blank(unit?.id ?? null), [unit?.id])
+  const start = React.useMemo(() => blank(unit?.id ?? null, costs), [unit?.id, costs])
   const applied: Filters = React.useMemo(() => {
     try { const f = params.get('f'); return f ? { ...start, ...JSON.parse(f) } as Filters : start } catch { return start }
   }, [params, start])
@@ -217,8 +238,9 @@ export function StockReportPage() {
   })
   const q = useQuery({
     queryKey: ['stock-report', companyId, applied], enabled: !!companyId,
-    queryFn: async () => unwrap(await supabase.rpc(ANALYSIS.includes(applied.report) ? 'stock_analysis' : 'stock_report', { p_company: companyId!, p: {
-      ...applied, to: applied.as_of, vat_rates: applied.vat_rates.map(Number), sheet: undefined, blind: undefined,
+    queryFn: async () => unwrap(await supabase.rpc(ANALYSIS.includes(applied.report) ? 'stock_analysis' : applied.report === 'expiry' ? 'stock_expiry'
+      : applied.report === 'books' ? 'stock_books_check' : 'stock_report', { p_company: companyId!, p: {
+      ...applied, to: applied.as_of, within: applied.within ? Number(applied.within) : null, vat_rates: applied.vat_rates.map(Number), sheet: undefined, blind: undefined,
     } as unknown as Json })) as unknown as { rows: Row[]; count: number; truncated: boolean; as_of: string; currency: string; company: { name: string; tax_number: string | null }; units: string[] },
   })
 
@@ -234,7 +256,7 @@ export function StockReportPage() {
   const said = React.useMemo(() => {
     const pick = (ids: string[], opts: { value: string; label: string }[]) => ids.map((id) => opts.find((o) => o.value === id)?.label ?? '').filter(Boolean).join(', ')
     const parts = [applied.report === 'movement' ? `${formatDate(applied.from)} – ${formatDate(q.data?.as_of ?? applied.as_of)}`
-      : applied.report === 'availability' ? t('Now') : t('Stock on {date}', { date: formatDate(q.data?.as_of ?? applied.as_of) })]
+      : applied.report === 'availability' || applied.report === 'expiry' ? t('Now') : t('Stock on {date}', { date: formatDate(q.data?.as_of ?? applied.as_of) })]
     if (applied.report === 'slow' || applied.report === 'cover') parts.push(t('Sales of the last {n} days', { n: applied.days }))
     parts.push(applied.units.length ? `${t('Units|stores')}: ${pick(applied.units, unitOpts)}` : t('All units'))
     if (applied.split) parts.push(t('A row per unit'))
@@ -263,12 +285,12 @@ export function StockReportPage() {
           <div className="grid gap-1"><Label className="text-xs">{t('Report')}</Label>
             <Select value={draft.report} onValueChange={pickReport}>
               <SelectTrigger className="h-9 w-72"><SelectValue /></SelectTrigger>
-              <SelectContent>{REPORTS.map((r) => <SelectItem key={r.value} value={r.value}>{t(r.label)}</SelectItem>)}</SelectContent>
+              <SelectContent>{REPORTS.filter((r) => costs || !COST_REPORTS.includes(r.value)).map((r) => <SelectItem key={r.value} value={r.value}>{t(r.label)}</SelectItem>)}</SelectContent>
             </Select></div>
           {draft.report === 'sheet' && <Pick label={t('Kind of sheet')} value={draft.sheet} onChange={(v) => put('sheet', v)} width="w-64" options={SHEETS.map((s) => ({ value: s.value, label: t(s.label) }))} />}
           {draft.report === 'movement' && <div className="grid gap-1"><Label className="text-xs">{t('From|date')}</Label>
             <Input type="date" className="h-9 w-40" value={draft.from} max={draft.as_of} onChange={(e) => put('from', e.target.value || draft.from)} /></div>}
-          {draft.report !== 'availability' && <div className="grid gap-1"><Label className="text-xs">{draft.report === 'movement' ? t('To|date') : t('Stock on')}</Label>
+          {draft.report !== 'availability' && draft.report !== 'expiry' && <div className="grid gap-1"><Label className="text-xs">{draft.report === 'movement' ? t('To|date') : t('Stock on')}</Label>
             <Input type="date" className="h-9 w-40" value={draft.as_of} max={todayISO()} onChange={(e) => put('as_of', e.target.value || todayISO())} /></div>}
           {(draft.report === 'slow' || draft.report === 'cover') && <Pick label={t('Sales of the last')} value={draft.days} onChange={(v) => put('days', v)} width="w-36"
             options={['30', '60', '90', '180', '365'].map((d) => ({ value: d, label: t('{n} days', { n: d }) }))} />}
@@ -303,6 +325,11 @@ export function StockReportPage() {
                 <div className="grid gap-1"><Label className="text-xs">{t('Slow after (days without a sale)')}</Label><Input inputMode="numeric" className="h-9 w-28" value={draft.slow_days} onChange={(e) => put('slow_days', e.target.value)} /></div>
                 <div className="grid gap-1"><Label className="text-xs">{t('Does not sell after (days)')}</Label><Input inputMode="numeric" className="h-9 w-28" value={draft.dead_days} onChange={(e) => put('dead_days', e.target.value)} /></div>
               </>}
+              {draft.report === 'expiry' && <>
+                <Pick label={t('Expires within')} value={draft.within || 'all'} onChange={(v) => put('within', v === 'all' ? '' : v)} width="w-40"
+                  options={[{ value: 'all', label: t('Every lot') }, ...['30', '60', '90', '180'].map((d) => ({ value: d, label: t('{n} days', { n: d }) }))]} />
+                <label className="flex h-9 items-center gap-2 rounded-md border px-3 text-[13px]"><Switch checked={draft.expired} onCheckedChange={(v) => put('expired', v)} />{t('Also what has expired')}</label>
+              </>}
               {draft.report === 'cover' && <div className="grid gap-1"><Label className="text-xs">{t('Order for (days)')}</Label><Input inputMode="numeric" className="h-9 w-28" value={draft.target_days} onChange={(e) => put('target_days', e.target.value)} /></div>}
               {draft.report === 'sheet' && draft.sheet === 'count' && (
                 <label className="flex h-9 items-center gap-2 rounded-md border px-3 text-[13px]"><Switch checked={draft.blind} onCheckedChange={(v) => put('blind', v)} />{t('Without the quantity in the books (blind count)')}</label>
@@ -318,18 +345,18 @@ export function StockReportPage() {
 
       {q.isLoading ? <Card className="p-4"><div className="grid gap-2">{Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="h-7" />)}</div></Card>
         : q.error ? <Card><EmptyState title={t('The report could not be made')} description={(q.error as Error).message} /></Card>
-        : <ReportTable rows={q.data?.rows ?? []} filters={applied} title={title} subtitle={[header, said].filter(Boolean).join(' · ')}
-            fileName={`${t('Stock report')} ${q.data?.as_of ?? applied.as_of}`} onOpen={(r) => navigate(`/inventory/item-card?v=${r.variant_id}`)} />}
+        : <ReportTable rows={q.data?.rows ?? []} filters={applied} costs={costs} title={title} subtitle={[header, said].filter(Boolean).join(' · ')}
+            fileName={`${t('Stock report')} ${q.data?.as_of ?? applied.as_of}`} onOpen={(r) => (r.variant_id ? navigate(`/inventory/item-card?v=${r.variant_id}`) : r.account_id ? navigate(`/finance/accounts?account=${r.account_id}`) : undefined)} />}
       {applied.report === 'sale' && !!q.data?.rows.length && <VatSummary rows={q.data.rows} />}
     </>
   )
 }
 
 /** the rows, with groups and their subtotals, sortable, searchable, the columns to choose; exports what is seen */
-function ReportTable({ rows, filters, title, subtitle, fileName, onOpen }: {
-  rows: Row[]; filters: Filters; title: string; subtitle: string; fileName: string; onOpen: (r: Row) => void
+function ReportTable({ rows, filters, costs, title, subtitle, fileName, onOpen }: {
+  rows: Row[]; filters: Filters; costs: boolean; title: string; subtitle: string; fileName: string; onOpen: (r: Row) => void
 }) {
-  const cols = React.useMemo(() => columnsOf(filters), [filters])
+  const cols = React.useMemo(() => columnsOf(filters).filter((c) => costs || !COST_COLS.has(c.id)), [filters, costs])
   const storeKey = `stock-report.cols.${filters.report}.${filters.sheet}`
   const [hidden, setHidden] = React.useState<Set<string>>(() => readHidden(storeKey, cols))
   React.useEffect(() => setHidden(readHidden(storeKey, cols)), [storeKey, cols])

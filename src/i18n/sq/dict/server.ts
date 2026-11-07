@@ -861,4 +861,5 @@ export default {
   "Only a manager blocks a voucher": "Vetëm menaxheri e bllokon një kupon dhurate",
   "Say why the voucher is blocked": "Shkruani pse bllokohet kuponi",
   "You do not have permission to see the purchases": "Nuk keni leje për të parë blerjet",
+  "You may not see what the stock cost": "Nuk keni leje ta shihni koston e stokut",
 } satisfies Dict
