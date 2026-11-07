@@ -1,6 +1,6 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import { useQuery } from '@tanstack/react-query'
-import { CheckCheck, ChefHat, CloudOff, MonitorSmartphone, Plus, Printer, RefreshCw, Store, UtensilsCrossed } from 'lucide-react'
+import { CheckCheck, ChefHat, History, CloudOff, MonitorSmartphone, Plus, Printer, RefreshCw, Store, UtensilsCrossed } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -32,7 +32,7 @@ import { useBankAccounts, useJournals } from '@/features/finance/api'
 import { AccountingTab } from '@/features/finance/components/t-accounts'
 import { useLocations, useWarehouses } from '@/features/inventory/api'
 import { usePartners, usePriceLists } from '@/features/sales/api'
-import { posKeys, useCashRules, useRegisters, useSaveRegister, useSessionControls, useSessionDetail, useSessionPayouts, useSessions, type Register, type SessionRow } from '../api'
+import { posKeys, xReport, useCashRules, useRegisters, useSaveRegister, useSessionControls, useSessionDetail, useSessionPayouts, useSessions, type Register, type SessionRow } from '../api'
 import { discard, retry, syncNow, useSyncState } from '../offline'
 import { ShiftReviewCard } from './review-page'
 import { printReceipt, printZReport } from '../receipt'
@@ -84,8 +84,9 @@ export function PosHomePage() {
   return (
     <>
       <PageHeader title={t('Point of sale')} description={t('Tills, open shifts and closed shifts with their Z-reports. Sales leave stock at once and reach accounting when the shift is closed.')}
-        actions={<Can perm="pos.approve"><Button variant="outline" asChild><Link to="/pos/review"><CheckCheck /> {t('Reconciling the tills')}</Link></Button>
-          <Button variant="outline" onClick={() => setEdit('new')}><Plus /> {t('Add till')}</Button></Can>} />
+        actions={<><Button variant="outline" asChild><Link to="/pos/history"><History /> {t('Till history')}</Link></Button>
+          <Can perm="pos.approve"><Button variant="outline" asChild><Link to="/pos/review"><CheckCheck /> {t('Reconciling the tills')}</Link></Button>
+          <Button variant="outline" onClick={() => setEdit('new')}><Plus /> {t('Add till')}</Button></Can></>} />
 
       {(sync.items.length > 0 || !sync.online) && <SyncPanel />}
 
@@ -306,6 +307,15 @@ export function PosSessionPage() {
     payments: pay, taxes: taxes.map((t) => ({ rate: num(t.rate), base: num(t.base), tax: num(t.tax) })), opening: num(z.opening_cash), cashIn: num(z.cash_in), cashOut: num(z.cash_out),
     expected: sees ? num(z.expected_cash) : null, counted: z.counted_cash, difference: sees ? z.cash_difference : null, items, controls: ctl.data ?? null, paper: paper.data,
   })
+  const printX = async () => {
+    try {
+      const x = await xReport(s.id)
+      printZReport({ x: true, company: company?.name ?? '', register: s.register?.name ?? '', number: x.session, session: s.number, opened: s.opened_at, closed: x.at, date: x.at.slice(0, 10), currency: cur,
+        orders: x.order_count, refunds: x.refund_count, gross: num(x.gross_sales), refundsTotal: num(x.refunds_total), discounts: num(x.discounts_total), net: num(x.net_sales), tax: num(x.tax_total),
+        payments: x.payments_by_method, taxes: x.tax_breakdown.map((r) => ({ rate: num(r.rate), base: num(r.base), tax: num(r.tax) })), opening: num(x.opening_cash), cashIn: num(x.cash_in), cashOut: num(x.cash_out),
+        expected: x.expected_cash == null ? null : num(x.expected_cash), counted: null, difference: null, items: x.items, controls: ctl.data ?? null, paper: paper.data })
+    } catch (e) { toast.error(describeError(e)) }
+  }
   const c = ctl.data
   const voids = c?.voids
   const reprint = async (orderId: string) => {
@@ -340,6 +350,7 @@ export function PosSessionPage() {
         actions={<>
           {s.status === 'open' && <Can perm="pos.write"><Button asChild><Link to={`/pos/till/${s.register_id}`}><MonitorSmartphone /> {t('Go to till')}</Link></Button></Can>}
           {z && <Button variant="outline" onClick={print}><Printer /> {t('Print Z-report')}</Button>}
+          {s.status === 'open' && <Button variant="outline" onClick={() => void printX()}><Printer /> {t('X-report')}</Button>}
         </>} />
       <ShiftReviewCard session={s as never} />
       <Tabs defaultValue={z ? 'z' : 'orders'}>

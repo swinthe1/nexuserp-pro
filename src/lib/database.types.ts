@@ -18737,6 +18737,13 @@ export type Database = {
         }
         Returns: Json
       }
+      pos_history: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: Json
+      }
       pos_log: {
         Args: {
           p_session: string
@@ -18912,6 +18919,12 @@ export type Database = {
         Args: {
           p_session: string
           p: Json
+        }
+        Returns: Json
+      }
+      pos_x_report: {
+        Args: {
+          p_session: string
         }
         Returns: Json
       }

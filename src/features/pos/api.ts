@@ -494,3 +494,11 @@ export function useCashRules() {
     },
   })
 }
+
+/** the shift so far, without closing it (the X-report); without the expected cash for a cashier who counts blind */
+export async function xReport(session: string) {
+  return unwrap(await supabase.rpc('pos_x_report', { p_session: session })) as unknown as {
+    number: string; session: string; opened_at: string; at: string; order_count: number; refund_count: number; gross_sales: number; refunds_total: number
+    discounts_total: number; net_sales: number; tax_total: number; payments_by_method: Record<string, number>; tax_breakdown: { rate: number; base: number; tax: number }[]
+    opening_cash: number; cash_in: number; cash_out: number; expected_cash: number | null; items: { name: string; quantity: number; total: number }[] }
+}

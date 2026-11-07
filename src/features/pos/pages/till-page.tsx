@@ -26,7 +26,7 @@ import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { formatDateWith, msg, t, td, tEnum, tn, tServer } from '@/i18n'
 import { cn, formatDate, formatMoney, formatQty, initials, num, todayISO } from '@/lib/utils'
-import { checkVoucher, lookupReceipt, posApprove, searchTill, sellVoucher, setQuickItems, sessionControls, useCustomerCredit, type VoucherInfo, useCashMove, useCloseSession, useOpenSession, usePayees, usePayOut, useSessionSummary, useTill, useVendorBills, type CatalogItem, type ReceiptLookup, type TillData } from '../api'
+import { checkVoucher, lookupReceipt, posApprove, searchTill, xReport, sellVoucher, setQuickItems, sessionControls, useCustomerCredit, type VoucherInfo, useCashMove, useCloseSession, useOpenSession, usePayees, usePayOut, useSessionSummary, useTill, useVendorBills, type CatalogItem, type ReceiptLookup, type TillData } from '../api'
 import { enqueue, logTill, nextDeviceRef, syncNow, useOnSynced, useSyncState, type QueuedSale, type TillLogEntry } from '../offline'
 import { ManagerDialog, ManagerPinFields, pinReady } from '../manager-pin'
 import { ChoosePinDialog, LockScreen, SwitchCashierDialog, useTillLock } from '../till-lock'
@@ -583,6 +583,19 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     setDone((d) => (d ? { ...d, printed: (d.printed ?? 0) + 1 } : d))
   }
 
+  /* ---------- the X-report: the shift so far, printed without closing it */
+  const printX = async () => {
+    try {
+      const x = await xReport(session.id)
+      const ctl = await sessionControls(session.id).catch(() => null)
+      printZReport({ x: true, company: data.company.name, register: data.register.name, number: x.session, session: session.number, opened: session.opened_at, closed: x.at,
+        date: x.at.slice(0, 10), currency: data.company.base_currency, orders: x.order_count, refunds: x.refund_count, gross: num(x.gross_sales), refundsTotal: num(x.refunds_total),
+        discounts: num(x.discounts_total), net: num(x.net_sales), tax: num(x.tax_total), payments: x.payments_by_method,
+        taxes: x.tax_breakdown.map((r) => ({ rate: num(r.rate), base: num(r.base), tax: num(r.tax) })), opening: num(x.opening_cash), cashIn: num(x.cash_in), cashOut: num(x.cash_out),
+        expected: x.expected_cash == null ? null : num(x.expected_cash), counted: null, difference: null, items: x.items, controls: ctl, paper: data.register.paper_mm })
+    } catch (e) { toast.error(navigator.onLine ? describeError(e) : t('The X-report needs internet')) }
+  }
+
   /* ---------- the lock, and switching cashier */
   const { signOut } = useAuth()
   const lockMinutes = num((data.options as { lock_minutes?: number } | undefined)?.lock_minutes)
@@ -684,6 +697,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
               <DropdownMenuItem onSelect={() => setDialog('cash')}><Wallet /> {t('Cash and payments')}</DropdownMenuItem>
               <DropdownMenuCheckboxItem checked={autoPrint} onCheckedChange={() => setAutoPrint((a) => { prefSet('pos.autoprint', a ? '0' : '1'); return !a })}>
                 <Printer className="mr-2 size-4" /> {t('Print a receipt automatically after each sale')}</DropdownMenuCheckboxItem>
+              <DropdownMenuItem onSelect={() => void printX()}><ReceiptText /> {t('X-report')}</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => void tillLock.lock()}><Lock /> {t('Lock the till')}</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setSwitching(true)}><Users /> {t('Switch cashier')}</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setDialog('close')}><LogOut /> {t('Close till')}</DropdownMenuItem>
@@ -697,6 +711,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
           <Button variant="ghost" size="sm" onClick={() => setDialog('cash')}><Wallet /> {t('Cash and payments')}</Button>
           <Button variant="ghost" size="sm" onClick={() => { setAutoPrint((a) => { prefSet('pos.autoprint', a ? '0' : '1'); return !a }) }} aria-pressed={autoPrint}
             title={t('Print a receipt automatically after each sale')} className={cn(autoPrint && 'text-primary')}><Printer /> <span className="max-2xl:sr-only">{autoPrint ? t('Auto-print on') : t('Auto-print off')}</span></Button>
+          <Button variant="ghost" size="sm" onClick={() => void printX()} title={t('X-report: the shift so far, without closing it')}><ReceiptText /> <span className="max-2xl:sr-only">{t('X-report')}</span></Button>
           <Button variant="ghost" size="sm" onClick={() => setSwitching(true)} title={t('Switch cashier')}><Users /> <span className="max-2xl:sr-only">{t('Switch cashier')}</span></Button>
           <Button variant="ghost" size="sm" onClick={() => void tillLock.lock()} title={t('Lock the till: it opens again with your PIN')}><Lock /> {t('Lock|till')}</Button>
           <Button variant="outline" size="sm" onClick={() => setDialog('close')}><LogOut /> {t('Close till')}</Button>

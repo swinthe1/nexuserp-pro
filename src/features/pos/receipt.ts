@@ -82,6 +82,8 @@ export interface ZData {
   opening: number; cashIn: number; cashOut: number
   /** null: the cashier counts blind, the slip she prints does not tell what was expected */
   expected: number | null; counted: number | null; difference: number | null
+  /** an X-report: the shift so far, not closed */
+  x?: boolean
   items: { name: string; quantity: number; total: number }[]
   /** the count by note and coin, who confirmed it, the till's voids */
   controls?: SessionControls | null
@@ -92,7 +94,7 @@ export function printZReport(z: ZData) {
   const c = z.controls
   const row = (k: string, v: string, cls = '') => `<tr class="${cls}"><td>${esc(k)}</td><td class="r">${esc(v)}</td></tr>`
   const pays = Object.entries(z.payments).filter(([k]) => k !== 'change_given').map(([k, v]) => row(method(k), money(Number(v)))).join('')
-  printHtml(`<div class="c b big">${esc(t('Z-REPORT {number}', { number: z.number }))}</div><div class="c muted">${esc(z.company)}<br>${esc(z.register)} · ${esc(t('shift {number}', { number: z.session }))}<br>
+  printHtml(`<div class="c b big">${esc(z.x ? t('X-REPORT · {number}', { number: z.number }) : t('Z-REPORT {number}', { number: z.number }))}</div><div class="c muted">${esc(z.company)}<br>${esc(z.register)} · ${esc(t('shift {number}', { number: z.session }))}<br>
     ${esc(stamp(new Date(z.opened)))} → ${esc(z.closed ? stamp(new Date(z.closed)) : '')}</div><hr>
     <table>${row(t('Receipts'), String(z.orders))}${row(t('Refunds|count'), String(z.refunds))}${row(t('Gross sales (with VAT)'), money(z.gross))}${row(t('Refunds (with VAT)'), `−${money(z.refundsTotal)}`)}
     ${row(t('Discounts given (with VAT)'), money(z.discounts))}${row(t('Sales (without VAT)'), money(z.net))}${row(t('VAT'), money(z.tax))}${row(t('Total with VAT {currency}', { currency: z.currency }), money(z.gross - z.refundsTotal), 'b')}</table><hr>

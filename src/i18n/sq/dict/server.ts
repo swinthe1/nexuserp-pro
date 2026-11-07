@@ -866,4 +866,7 @@ export default {
   "A till has at most 24 quick buttons": "Një arkë ka më së shumti 24 butona të shpejtë",
   "The drawer is off: reconcile it on its own": "Arka nuk përputhet: barazojeni veçmas",
   "At most 200 shifts at once": "Më së shumti 200 ndërrime njëherësh",
+  "Choose the dates": "Zgjidhni datat",
+  "At most 400 days at once": "Më së shumti 400 ditë njëherësh",
+  "Unknown report": "Raport i panjohur",
 } satisfies Dict

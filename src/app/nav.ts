@@ -79,6 +79,7 @@ export const NAV: NavSection[] = [
     title: msg('Shop till|menu'),
     items: [
       { label: msg('Point of sale|menu'), href: '/pos', icon: Store, perm: 'pos.read', keywords: ['pos', 'till', 'cashier', 'arka', 'z-report', 'register'], hub: msg('Till|menu') },
+      { label: msg('Till history|menu'), href: '/pos/history', icon: History, perm: 'pos.read', keywords: ['historiku', 'historik', 'raport arka', 'raporti i arkëtarit', 'arkëtarët', 'diferencat', 'hyrje dalje', 'anulimet', 'orët', 'raporti x', 'shift report', 'cashier report'], hub: msg('Till|menu') },
       { label: msg('Reconciling the tills|menu'), href: '/pos/review', icon: CheckCheck, perm: 'pos.approve', keywords: ['barazimi', 'barazim', 'barazo arkën', 'mbyllja e arkës', 'diferenca', 'numërimi', 'reconcile', 'cash count', 'shift close'], hub: msg('Till|menu') },
       { label: msg('Daily checks|menu'), href: '/pos/checks', icon: ClipboardCheck, perm: 'pos.read|wms.read', keywords: ['kontroll', 'kontrolli', 'checklist', 'listë kontrolli', 'higjiena', 'temperatura', 'frigorifer', 'hapja', 'mbyllja', 'hygiene', 'fridge'], hub: msg('Till|menu') },
       { label: msg('Safe|nav'), href: '/safe', icon: Vault, perm: 'pos.approve|finance.read', keywords: ['sefi', 'sef', 'kasaforta', 'cash', 'deposit', 'derdhje', 'para', 'count'], hub: msg('Till|menu') },
