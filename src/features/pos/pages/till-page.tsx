@@ -30,6 +30,7 @@ import { checkVoucher, lookupReceipt, posApprove, searchTill, sellVoucher, setQu
 import { enqueue, logTill, nextDeviceRef, syncNow, useOnSynced, useSyncState, type QueuedSale, type TillLogEntry } from '../offline'
 import { ManagerDialog, ManagerPinFields, pinReady } from '../manager-pin'
 import { ChoosePinDialog, LockScreen, SwitchCashierDialog, useTillLock } from '../till-lock'
+import { CashCount, countedOf, countsToNotes, denomsOf } from '../cash-count'
 import { readScaleBarcode } from '@/lib/scale-barcode'
 import { printReceipt, printVoucher, printZReport, type ReceiptData } from '../receipt'
 import { qrSvg, signAtkSale, useAtkState, waitForAtk } from '../atk'
@@ -1490,7 +1491,8 @@ function CashDialog({ data, sessionId, currency, onClose }: { data: TillData; se
   const [docNo, setDocNo] = React.useState('')
   const bills = useVendorBills(data.register.id, tab === 'supplier' ? vendor : null)
   const drawer = useSessionSummary(tab !== 'cash' ? sessionId : undefined)
-  const inDrawer = drawer.data ? num((drawer.data as { expected_cash?: number }).expected_cash) : null
+  // a cashier who counts blind is not told what is in the drawer (the server checks the amount)
+  const inDrawer = drawer.data && (drawer.data as { expected_cash?: number }).expected_cash != null ? num((drawer.data as { expected_cash?: number }).expected_cash) : null
   const managers = data.options?.managers ?? []
   const needPin = tab !== 'cash' && mode === 'manager' && !can('pos.approve')
   const [member, setMember] = React.useState(managers.length === 1 ? managers[0]!.member_id : '')
@@ -1627,12 +1629,6 @@ function CashDialog({ data, sessionId, currency, onClose }: { data: TillData; se
   )
 }
 
-/** the notes and coins of the company's currency, largest first */
-const DENOMS: Record<string, number[]> = {
-  EUR: [500, 200, 100, 50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05],
-  ALL: [10000, 5000, 2000, 1000, 500, 200, 100, 50, 20, 10, 5, 1],
-}
-const denomLabel = (d: number) => (d >= 1 ? String(d) : d.toFixed(2).replace('.', ','))
 function CloseDialog({ data, pending, onClose, onClosed }: { data: TillData; pending: number; onClose: () => void; onClosed: (sessionId: string) => Promise<void> }) {
   const session = data.session!
   const summary = useSessionSummary(session.id)
@@ -1643,10 +1639,11 @@ function CloseDialog({ data, pending, onClose, onClosed }: { data: TillData; pen
   const [member, setMember] = React.useState(data.options?.managers?.length === 1 ? data.options.managers[0]!.member_id : '')
   const [pin, setPin] = React.useState('')
   const { can } = useCompany()
-  const denoms = DENOMS[data.company.base_currency] ?? DENOMS.EUR!
+  const denoms = denomsOf(data.company.base_currency)
   const useNotes = data.options?.count_notes ?? true
-  const byNotes = r2(denoms.reduce((s, d) => s + d * num(counts[d]), 0))
-  const counted = direct !== '' ? num(direct) : byNotes
+  const counted = countedOf(data.company.base_currency, counts, direct)
+  // nothing counted: asked once more, so an empty field is not taken for an empty drawer
+  const [zeroOk, setZeroOk] = React.useState(false)
   const s = summary.data
   const diff = s ? r2(counted - num(s.expected_cash)) : 0
   // the cashier counts without seeing what is expected; a manager sees it
@@ -1662,13 +1659,14 @@ function CloseDialog({ data, pending, onClose, onClosed }: { data: TillData; pen
   const [error, setError] = React.useState<string | null>(null)
   const doClose = async () => {
     setError(null)
+    if (counted === 0 && !zeroOk) { setZeroOk(true); setError(t('You counted 0. If the drawer is really empty, press close again.')); return }
     let approval: string | null = null
     if (witnessed) {
       const a = await posApprove(data.register.id, member, pin, 'close')
       if (a.error || !a.approval) { setError(t(a.error ?? 'Wrong PIN')); setPin(''); return }
       approval = a.approval
     }
-    const notesCoins = useNotes && direct === '' ? Object.fromEntries(denoms.filter((d) => num(counts[d]) > 0).map((d) => [String(d), num(counts[d])])) : null
+    const notesCoins = useNotes && direct === '' ? countsToNotes(denoms, counts) : null
     const zId = await close.mutateAsync({ session: session.id, counted, notes, notesCoins, approval })
     try {
       const z = unwrap(await supabase.from('z_reports').select('*').eq('id', zId).single())
@@ -1678,7 +1676,7 @@ function CloseDialog({ data, pending, onClose, onClosed }: { data: TillData; pen
         currency: data.company.base_currency, orders: z.order_count, refunds: z.refund_count, gross: num(z.gross_sales), refundsTotal: num(z.refunds_total), discounts: num(z.discounts_total),
         net: num(z.net_sales), tax: num(z.tax_total), payments: z.payments_by_method as Record<string, number>,
         taxes: ((z.tax_breakdown ?? []) as { rate: number; base: number; tax: number }[]).map((x) => ({ rate: num(x.rate), base: num(x.base), tax: num(x.tax) })),
-        opening: num(z.opening_cash), cashIn: num(z.cash_in), cashOut: num(z.cash_out), expected: num(z.expected_cash), counted: z.counted_cash, difference: z.cash_difference, paper: data.register.paper_mm,
+        opening: num(z.opening_cash), cashIn: num(z.cash_in), cashOut: num(z.cash_out), expected: blind ? null : num(z.expected_cash), counted: z.counted_cash, difference: blind ? null : z.cash_difference, paper: data.register.paper_mm,
         items: (z.items ?? []) as { name: string; quantity: number; total: number }[], controls: ctl,
       })
     } catch { /* the Z-report can be reprinted from the session page */ }
@@ -1714,17 +1712,8 @@ function CloseDialog({ data, pending, onClose, onClosed }: { data: TillData; pen
             </>}
           </div>
           <div className="grid content-start gap-2">
-            {useNotes && <>
-              <Label>{t('Count by note and coin')}</Label>
-              <div className="grid grid-cols-2 gap-1.5">
-                {denoms.map((d) => (
-                  <label key={d} className="flex items-center gap-2 text-[13px]"><span className="w-12 text-right tabular text-muted-foreground">{denomLabel(d)}</span>
-                    <Input inputMode="numeric" className="h-8 tabular" value={counts[d] ?? ''} onChange={(e) => { setDirect(''); setCounts((c) => ({ ...c, [d]: e.target.value.replace(/\D/g, '') })) }} aria-label={t('Count of {value}', { value: denomLabel(d) })} /></label>
-                ))}
-              </div>
-            </>}
-            <Label htmlFor="cl-total" className={cn(useNotes && 'mt-1')}>{useNotes ? t('…or the total counted') : t('Cash counted in the drawer')}</Label>
-            <Input id="cl-total" inputMode="decimal" className="h-11 text-right text-lg tabular" value={direct} onChange={(e) => setDirect(e.target.value.replace(',', '.'))} placeholder={formatMoney(byNotes)} />
+            <CashCount currency={data.company.base_currency} counts={counts} onCounts={(c) => { setZeroOk(false); setCounts(c) }} direct={direct}
+              onDirect={(v) => { setZeroOk(false); setDirect(v) }} byNotes={useNotes} />
             <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('Note for the manager (optional)')} aria-label={t('Notes')} />
           </div>
         </div>

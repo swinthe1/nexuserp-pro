@@ -9,6 +9,7 @@ import { describeError, unwrap } from '@/lib/errors'
 import { after, byName, fetchAll, fetchPages, supabase } from '@/lib/supabase'
 import { flushTillLog, itemsAll, itemsWrite, kvGet, kvSet } from './offline'
 import { t } from '@/i18n'
+import { num } from '@/lib/utils'
 import type { TillLoyalty } from '@/features/loyalty/api'
 
 export const posKeys = { all: (c: string) => ['pos', c] as const }
@@ -456,5 +457,40 @@ export function useSessionReviews(id: string | undefined) {
     queryKey: [...posKeys.all(companyId), 'reviews', id], enabled: !!id,
     queryFn: async () => unwrap(await supabase.from('pos_session_reviews').select('id, action, counted, expected, difference, note, at, by:profiles!pos_session_reviews_by_user_fkey(full_name, email)')
       .eq('session_id', id!).order('at')) as unknown as { id: string; action: string; counted: number | null; expected: number | null; difference: number | null; note: string | null; at: string; by: { full_name: string | null; email: string | null } | null }[],
+  })
+}
+
+/* ------------------------------------------------------------------ one shift, as the manager checks it */
+export type ShiftCount = { kind: 'close' | 'recounted' | 'reconciled' | 'returned'; at: string; counted: number | null; notes_coins: Record<string, number> | null
+  by: string | null; witness?: string | null; note: string | null; difference: number | null }
+export type ReviewDetail = {
+  id: string; number: string; status: string; review_status: 'pending' | 'returned' | 'reconciled' | null; currency: string
+  register: string; register_id: string; unit: string | null; opened_at: string; closed_at: string | null; reviewed_at: string | null
+  opened_by: string | null; closed_by: string | null; reviewed_by: string | null; sees_expected: boolean
+  opening_cash: number; cashier_counted: number | null; counted: number | null; expected_cash: number | null; difference: number | null; cashier_difference: number | null; tolerance: number
+  cash: { opening: number; sales: number; refunds: number; change: number; cash_in: number; cash_out: number
+    movements: { type: 'cash_in' | 'cash_out'; kind: string | null; amount: number; reason: string | null; at: string }[] } | null
+  payments: Record<string, number> | null
+  sales: { orders: number; refunds: number; gross?: number; refunded?: number; discounts?: number; change?: number; offline?: number; average?: number | null; first_at?: string | null; last_at?: string | null }
+  voids: { n: number; amount: number; unconfirmed: number }; moved_in: number; z: { id: string; number: string } | null
+  counts: ShiftCount[]
+}
+export function useReviewDetail(id: string | undefined) {
+  return useQuery({
+    queryKey: ['pos', 'review-detail', id], enabled: !!id,
+    queryFn: async () => unwrap(await supabase.rpc('pos_review_detail', { p_session: id! })) as unknown as ReviewDetail,
+  })
+}
+export const useReconcileMany = () => useAction(async (ids: string[]) =>
+  unwrap(await supabase.rpc('pos_reconcile_many', { p_sessions: ids })) as unknown as { reconciled: number; left: { id: string; number: string; reason: string }[] })
+/** the company's tolerance for a drawer that is off, and whether it counts by note */
+export function useCashRules() {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...posKeys.all(companyId), 'cash-rules'], enabled: !!companyId, staleTime: 300_000,
+    queryFn: async () => {
+      const r = unwrap(await supabase.from('company_settings').select('pos_cash_tolerance, pos_count_notes, pos_blind_count').eq('company_id', companyId!).maybeSingle())
+      return { tolerance: num(r?.pos_cash_tolerance), byNotes: r?.pos_count_notes ?? true, blind: (r as { pos_blind_count?: boolean } | null)?.pos_blind_count ?? true }
+    },
   })
 }

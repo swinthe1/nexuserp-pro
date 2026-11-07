@@ -111,7 +111,7 @@ select t.throws(format($q$select public.pos_submit_order(jsonb_build_object('cli
 
 -- ---------------------------------------------------------------- the shift closes: the debt is on the customer's card
 select t.login(:'boss');
-select public.close_pos_session(:'ses', (public.pos_session_summary(:'ses') ->> 'expected_cash')::numeric);
+select public.close_pos_session(:'ses', (app.pos_summary_all(:'ses') ->> 'expected_cash')::numeric);
 reset role;
 select t.ok((select sum(jl.debit - jl.credit) from public.journal_lines jl join public.pos_sessions s on s.journal_entry_id = jl.entry_id
               where s.id = :'ses' and jl.partner_id = :'cus') = 2 * :beer_price, 'the shift''s entry puts the sale on account on the customer');

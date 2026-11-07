@@ -79,7 +79,9 @@ export interface ZData {
   company: string; register: string; number: string; session: string; opened: string; closed: string | null; date: string; currency: string
   orders: number; refunds: number; gross: number; refundsTotal: number; discounts: number; net: number; tax: number
   payments: Record<string, number>; taxes: { rate: number; base: number; tax: number }[]
-  opening: number; cashIn: number; cashOut: number; expected: number; counted: number | null; difference: number | null
+  opening: number; cashIn: number; cashOut: number
+  /** null: the cashier counts blind, the slip she prints does not tell what was expected */
+  expected: number | null; counted: number | null; difference: number | null
   items: { name: string; quantity: number; total: number }[]
   /** the count by note and coin, who confirmed it, the till's voids */
   controls?: SessionControls | null
@@ -97,7 +99,7 @@ export function printZReport(z: ZData) {
     <div class="b">${esc(t('VAT'))}</div><table>${z.taxes.map((x) => row(t('{rate}% on {base}', { rate: x.rate, base: money(x.base) }), money(x.tax))).join('')}</table><hr>
     <div class="b">${esc(t('Payments'))}</div><table>${pays}${row(t('Change given'), money(Number(z.payments.change_given ?? 0)))}</table><hr>
     <div class="b">${esc(t('Cash drawer'))}</div><table>${row(t('Opening cash'), money(z.opening))}${row(t('Cash in'), money(z.cashIn))}${row(t('Cash out'), `−${money(z.cashOut)}`)}
-    ${row(t('Expected'), money(z.expected), 'b')}${row(t('Counted'), z.counted == null ? '—' : money(z.counted))}${row(t('Difference'), z.difference == null ? '—' : money(z.difference), 'b')}</table>
+    ${z.expected == null ? '' : row(t('Expected'), money(z.expected), 'b')}${row(t('Counted'), z.counted == null ? '—' : money(z.counted))}${z.expected == null ? '' : row(t('Difference'), z.difference == null ? '—' : money(z.difference), 'b')}</table>
     ${c?.count?.notes_coins ? `<table>${Object.entries(c.count.notes_coins).sort((a, b) => Number(b[0]) - Number(a[0])).map(([d, n]) => row(`${n} × ${d}`, money(Number(d) * n))).join('')}</table>` : ''}
     ${c?.count?.counted_by ? `<div class="muted">${esc(t('Counted by {name}', { name: c.count.counted_by }))}${c.count.witnessed_by ? ` · ${esc(t('confirmed by {name}', { name: c.count.witnessed_by }))}` : ''}</div>` : ''}<hr>
     ${c && c.voids.count > 0 ? `<div class="b">${esc(t('Till controls'))}</div><table>${row(t('Voids'), `${c.voids.count} · ${money(c.voids.amount)}`)}${c.voids.unconfirmed ? row(t('Without a manager'), String(c.voids.unconfirmed)) : ''}</table><hr>` : ''}

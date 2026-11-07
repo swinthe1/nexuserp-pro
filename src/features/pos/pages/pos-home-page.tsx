@@ -32,7 +32,7 @@ import { useBankAccounts, useJournals } from '@/features/finance/api'
 import { AccountingTab } from '@/features/finance/components/t-accounts'
 import { useLocations, useWarehouses } from '@/features/inventory/api'
 import { usePartners, usePriceLists } from '@/features/sales/api'
-import { posKeys, useRegisters, useSaveRegister, useSessionControls, useSessionDetail, useSessionPayouts, useSessions, type Register, type SessionRow } from '../api'
+import { posKeys, useCashRules, useRegisters, useSaveRegister, useSessionControls, useSessionDetail, useSessionPayouts, useSessions, type Register, type SessionRow } from '../api'
 import { discard, retry, syncNow, useSyncState } from '../offline'
 import { ShiftReviewCard } from './review-page'
 import { printReceipt, printZReport } from '../receipt'
@@ -50,7 +50,7 @@ type AtkReceipt = { atk: { env: 'test' | 'production'; details: string; qr: stri
 
 export function PosHomePage() {
   const navigate = useNavigate()
-  const { company, companyId } = useCompany()
+  const { company, companyId, can } = useCompany()
   const registers = useRegisters()
   const sessions = useSessions()
   useRealtimeInvalidate('pos_sessions', companyId, [posKeys.all(companyId)])
@@ -62,6 +62,9 @@ export function PosHomePage() {
   const zToday = (sessions.data ?? []).flatMap((s) => (s.closed_at?.slice(0, 10) === today ? s.z : []))
   const closedSales = zToday.reduce((t, z) => t + num(z.gross_sales) - num(z.refunds_total), 0)
 
+  const rules = useCashRules()
+  const blindFor = React.useCallback((r: SessionRow) => !can('pos.approve') && (rules.data?.blind ?? true)
+    && ((r as { review_status?: string | null }).review_status === 'pending' || (r as { review_status?: string | null }).review_status === 'returned'), [can, rules.data?.blind])
   const cols = React.useMemo<ColumnDef<SessionRow>[]>(() => [
     { accessorKey: 'number', enableHiding: false, header: ({ column }) => <ColumnHeader column={column} title={t('Shift')} />, meta: { label: t('Shift') }, cell: ({ getValue }) => <span className="font-medium">{getValue() as string}</span> },
     { id: 'register', accessorFn: (r) => r.register?.name ?? '', filterFn: inFilter, header: t('Till'), meta: { label: t('Till') } },
@@ -72,9 +75,11 @@ export function PosHomePage() {
     { id: 'receipts', accessorFn: (r) => r.z[0]?.order_count ?? null, header: t('Receipts'), meta: { label: t('Receipts'), align: 'right' }, cell: ({ getValue }) => getValue() ?? '—' },
     { id: 'sales', accessorFn: (r) => (r.z[0] ? num(r.z[0].gross_sales) - num(r.z[0].refunds_total) : null), header: t('Sales (with VAT)'), meta: { label: t('Sales (with VAT)'), align: 'right' },
       cell: ({ getValue }) => (getValue() == null ? '—' : <span className="tabular">{formatMoney(getValue() as number)}</span>) },
-    { id: 'diff', accessorFn: (r) => r.z[0]?.cash_difference ?? null, header: t('Cash difference'), meta: { label: t('Cash difference'), align: 'right' },
-      cell: ({ getValue }) => { const v = getValue() as number | null; return v == null ? '—' : <span className={cn('tabular', v < 0 && 'text-destructive', v > 0 && 'text-warning')}>{formatMoney(v)}</span> } },
-  ], [])
+    // counting blind: the difference shows once the manager has reconciled the shift
+    { id: 'diff', accessorFn: (r) => (blindFor(r) ? null : r.z[0]?.cash_difference ?? null), header: t('Cash difference'), meta: { label: t('Cash difference'), align: 'right' },
+      cell: ({ row, getValue }) => { const v = getValue() as number | null; return blindFor(row.original) ? <span className="text-[12px] text-muted-foreground">{t('Waiting for the manager')}</span>
+        : v == null ? '—' : <span className={cn('tabular', v < 0 && 'text-destructive', v > 0 && 'text-warning')}>{formatMoney(v)}</span> } },
+  ], [blindFor])
 
   return (
     <>
@@ -276,8 +281,11 @@ export function PosSessionPage() {
   const { id } = useParams()
   const { company } = useCompany()
   const q = useSessionDetail(id)
+
   const ctl = useSessionControls(id)
   const payouts = useSessionPayouts(id)
+  const rules = useCashRules()
+  const { can } = useCompany()
   const regId = q.data?.session.register_id
   const paper = useQuery({ queryKey: ['pos-paper', regId], enabled: !!regId, staleTime: 300_000,
     queryFn: async () => (unwrap(await supabase.from('pos_registers').select('*').eq('id', regId!).single()) as { paper_mm?: number }).paper_mm ?? 80 })
@@ -286,6 +294,8 @@ export function PosSessionPage() {
   if (!q.data) return <EmptyState icon={Store} title={t('Shift not found')} description={t('It may have been deleted.')} action={<Button variant="outline" asChild><Link to="/pos">{t('Point of sale')}</Link></Button>} />
   const { session: s, z, orders } = q.data
   const cur = company?.base_currency ?? 'ALL'
+  // a cashier who counts blind learns how her shift came out once the manager has reconciled it
+  const sees = can('pos.approve') || !(rules.data?.blind ?? true) || (s as { review_status?: string | null }).review_status !== 'pending' && (s as { review_status?: string | null }).review_status !== 'returned'
   const pay = (z?.payments_by_method ?? {}) as Record<string, number>
   const taxes = (z?.tax_breakdown ?? []) as { rate: number; base: number; tax: number }[]
   const items = ((z?.items ?? []) as { name: string; quantity: number; total: number }[]).filter((i) => num(i.quantity) !== 0)
@@ -294,7 +304,7 @@ export function PosSessionPage() {
     company: company?.name ?? '', register: s.register?.name ?? '', number: z.number, session: s.number, opened: s.opened_at, closed: s.closed_at, date: z.report_date, currency: cur,
     orders: z.order_count, refunds: z.refund_count, gross: num(z.gross_sales), refundsTotal: num(z.refunds_total), discounts: num(z.discounts_total), net: num(z.net_sales), tax: num(z.tax_total),
     payments: pay, taxes: taxes.map((t) => ({ rate: num(t.rate), base: num(t.base), tax: num(t.tax) })), opening: num(z.opening_cash), cashIn: num(z.cash_in), cashOut: num(z.cash_out),
-    expected: num(z.expected_cash), counted: z.counted_cash, difference: z.cash_difference, items, controls: ctl.data ?? null, paper: paper.data,
+    expected: sees ? num(z.expected_cash) : null, counted: z.counted_cash, difference: sees ? z.cash_difference : null, items, controls: ctl.data ?? null, paper: paper.data,
   })
   const c = ctl.data
   const voids = c?.voids
@@ -341,8 +351,9 @@ export function PosSessionPage() {
               <StatCard label={t('Sales (with VAT)')} value={formatMoney(num(z.gross_sales) - num(z.refunds_total))} hint={t('{a} receipts · {b} refunds', { a: z.order_count, b: z.refund_count })} />
               <StatCard label={t('Sales (without VAT)')} value={formatMoney(z.net_sales)} hint={t('VAT {amount}', { amount: formatMoney(z.tax_total) })} />
               <StatCard label={t('Discounts given (with VAT)')} value={formatMoney(z.discounts_total)} />
-              <StatCard label={t('Cash difference')} value={formatMoney(z.cash_difference)} tone={num(z.cash_difference) < 0 ? 'destructive' : num(z.cash_difference) > 0 ? 'warning' : 'default'}
+              {sees ? <StatCard label={t('Cash difference')} value={formatMoney(z.cash_difference)} tone={num(z.cash_difference) < 0 ? 'destructive' : num(z.cash_difference) > 0 ? 'warning' : 'default'}
                 hint={t('Counted {a} of {b} expected', { a: formatMoney(z.counted_cash), b: formatMoney(z.expected_cash) })} />
+                : <StatCard label={t('Cash counted')} value={formatMoney(z.counted_cash)} hint={t('The manager compares it when reconciling')} />}
             </div>
             <div className="grid gap-4 lg:grid-cols-3">
               <Card><CardHeader className="pb-2"><CardTitle>{t('Payments')}</CardTitle></CardHeader><CardContent className="grid gap-1.5 text-[13px]">
@@ -351,7 +362,7 @@ export function PosSessionPage() {
               </CardContent></Card>
               <Card><CardHeader className="pb-2"><CardTitle>{t('Cash drawer')}</CardTitle></CardHeader><CardContent className="grid gap-1.5 text-[13px]">
                 <Row k={t('Opening cash')} v={formatMoney(z.opening_cash)} /><Row k={t('Cash in')} v={formatMoney(z.cash_in)} /><Row k={t('Cash out')} v={`${num(z.cash_out) ? '−' : ''}${formatMoney(z.cash_out)}`} />
-                <Row k={t('Expected')} v={formatMoney(z.expected_cash)} strong /><Row k={t('Counted')} v={formatMoney(z.counted_cash)} />
+                {sees && <Row k={t('Expected')} v={formatMoney(z.expected_cash)} strong />}<Row k={t('Counted')} v={formatMoney(z.counted_cash)} />
               </CardContent></Card>
               <Card><CardHeader className="pb-2"><CardTitle>{t('VAT')}</CardTitle></CardHeader><CardContent className="grid gap-1.5 text-[13px]">
                 {taxes.map((x) => <Row key={x.rate} k={t('{rate}% on {base}', { rate: num(x.rate), base: formatMoney(x.base) })} v={formatMoney(x.tax)} />)}

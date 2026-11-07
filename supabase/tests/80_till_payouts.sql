@@ -52,7 +52,7 @@ set role authenticated;
 select t.login('cora@kt.al');
 select t.ok(jsonb_path_exists(public.pos_payees(:'reg'), '$.vendors[*] ? (@.name == "Furra e Qytetit" && @.open == 10)'), 'the supplier''s card shows 10 still owed');
 select t.throws(format($q$select public.pos_pay_out(%L, jsonb_build_object('kind', 'supplier', 'amount', 5, 'partner_id', %L, 'approval', %L))$q$, :'ses', :'ven', :'pap'), 'manager confirms', 'a confirmation is good once');
-select t.ok((public.pos_session_summary(:'ses') ->> 'expected_cash')::numeric = 75, 'the cash expected at closing is 25 less');
+select t.ok((app.pos_summary_all(:'ses') ->> 'expected_cash')::numeric = 75, 'the cash expected at closing is 25 less');
 
 -- the manager herself: an expense, and a supplier paid more than owed
 select t.login('besa@kt.al');

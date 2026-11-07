@@ -186,7 +186,7 @@ select t.throws(format($q$select public.pos_submit_order('{"client_uuid":"%s","s
                 gen_random_uuid(), :'ses', :'o1', :'tea'), 'more than what is left', 'cannot refund more than was sold');
 select t.ok(pg_temp.qty(:'floor', :'tea') = 19, 'refunded item is back on the floor');
 select public.pos_cash_move(:'ses', 'cash_out', 500, 'To the safe');
-select t.ok(((public.pos_session_summary(:'ses'))->>'expected_cash')::numeric = 1620, 'X-report: expected cash 2000 + 240 − 120 − 500');
+select t.ok(((app.pos_summary_all(:'ses'))->>'expected_cash')::numeric = 1620, 'X-report: expected cash 2000 + 240 − 120 − 500');
 select public.close_pos_session(:'ses', 1610) as z \gset
 select t.ok((select (order_count, refund_count, gross_sales, refunds_total, expected_cash, cash_difference) = (2, 1, 420.00, 120.00, 1620.00, -10.00)
                from public.z_reports where id = :'z'), 'Z-report: counts, sales, refunds and the cash difference');

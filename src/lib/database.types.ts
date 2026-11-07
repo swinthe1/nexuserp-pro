@@ -18809,6 +18809,12 @@ export type Database = {
         }
         Returns: Json
       }
+      pos_reconcile_many: {
+        Args: {
+          p_sessions: string[]
+        }
+        Returns: Json
+      }
       pos_recount: {
         Args: {
           p_session: string
@@ -18822,6 +18828,12 @@ export type Database = {
           p_safe: string
         }
         Returns: undefined
+      }
+      pos_review_detail: {
+        Args: {
+          p_session: string
+        }
+        Returns: Json
       }
       pos_review_list: {
         Args: {

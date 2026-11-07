@@ -864,4 +864,6 @@ export default {
   "You may not see what the stock cost": "Nuk keni leje ta shihni koston e stokut",
   "You have no PIN yet": "Ende nuk keni PIN",
   "A till has at most 24 quick buttons": "Një arkë ka më së shumti 24 butona të shpejtë",
+  "The drawer is off: reconcile it on its own": "Arka nuk përputhet: barazojeni veçmas",
+  "At most 200 shifts at once": "Më së shumti 200 ndërrime njëherësh",
 } satisfies Dict

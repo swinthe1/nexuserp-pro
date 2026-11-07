@@ -70,3 +70,6 @@ select public.automation_settings_save(:'co', '{"pos_lock_minutes": 0}');
 reset role;
 select t.ok((select screen = 'auto' and cardinality(quick_items) = 1 from public.pos_registers where id = :'till'), 'a till''s screen follows the kind of business unless set');
 update public.company_settings set pos_review = 'manager' where company_id = :'co';
+
+\set QUIET off
+select count(*) as assertions_passed from t.results;
