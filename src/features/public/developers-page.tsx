@@ -15,7 +15,7 @@ const SECTIONS = [
 function Code({ children, label }: { children: string; label?: string }) {
   const [done, setDone] = React.useState(false)
   return (
-    <div className="relative overflow-hidden rounded-lg border bg-[hsl(196_48%_11%)] text-[13px] text-white/90">
+    <div className="relative overflow-hidden rounded-lg border bg-[#0B0B0C] text-[13px] text-white/90">
       {label && <div className="border-b border-white/10 px-4 py-1.5 text-xs text-white/60">{label}</div>}
       <button type="button" aria-label={t('Copy')} className="absolute right-2 top-2 rounded-md p-1.5 text-white/60 hover:bg-white/10 hover:text-white"
         onClick={() => void navigator.clipboard?.writeText(children).then(() => { setDone(true); toast.success(t('Copied')); setTimeout(() => setDone(false), 1500) })}>

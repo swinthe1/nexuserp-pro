@@ -7,6 +7,7 @@ import { msg, t } from '@/i18n'
 import { LanguageToggle } from '@/i18n/language'
 import { getTill } from '@/lib/shared-till'
 import { cn } from '@/lib/utils'
+import { LogoMark } from '@/components/logo-mark'
 
 /** What the program does, printed as the lines of a till receipt: the thing every shop knows. */
 const LINES = [
@@ -30,7 +31,7 @@ function Receipt({ className }: { className?: string }) {
     <div className={cn('auth-receipt relative w-[280px] rotate-[-2deg] text-[#1d232f] drop-shadow-[0_24px_40px_rgba(0,0,0,0.35)]', className)}>
       <div className="rounded-t-sm bg-[#fdfdfb] px-6 pb-6 pt-7">
         <div className="flex items-center justify-center gap-2 text-[15px] font-semibold">
-          <img src="/favicon.svg" alt="" className="size-5" /> <Wordmark className="text-[17px]" />
+          <LogoMark className="size-5 text-[#111113] [&_g]:text-white" /> <Wordmark className="text-[17px]" />
         </div>
         <p className="mt-1 text-center text-xs text-[#5b6372]">{t('Your shop · today')}</p>
         <div className="my-4 border-t border-dashed border-[#c9ccd3]" />
@@ -39,7 +40,7 @@ function Receipt({ className }: { className?: string }) {
             <li key={l} className="flex items-baseline gap-2">
               <span>{t(l)}</span>
               <span className="mb-[3px] flex-1 border-b border-dotted border-[#b7bbc4]" />
-              <Check className="size-3.5 translate-y-[2px] text-[#0E8A5F]" strokeWidth={3} />
+              <Check className="size-3.5 translate-y-[2px] text-[#111113]" strokeWidth={3} />
             </li>
           ))}
         </ul>
@@ -58,14 +59,14 @@ function Receipt({ className }: { className?: string }) {
 /** The deep green of the brand with its two glows, shared by the desktop side and the phone header. */
 function Backdrop() {
   return <>
-    <div aria-hidden className="pointer-events-none absolute -left-40 -top-40 size-[520px] rounded-full bg-[#11A06E]/25 blur-[120px]" />
-    <div aria-hidden className="pointer-events-none absolute -bottom-48 right-0 size-[560px] rounded-full bg-[#1583C8]/25 blur-[130px]" />
+    <div aria-hidden className="pointer-events-none absolute -left-40 -top-40 size-[520px] rounded-full bg-white/[0.07] blur-[120px]" />
+    <div aria-hidden className="pointer-events-none absolute -bottom-48 right-0 size-[560px] rounded-full bg-white/[0.05] blur-[130px]" />
     <div aria-hidden className="pointer-events-none absolute inset-0 opacity-[0.06] [background-image:radial-gradient(white_1px,transparent_1px)] [background-size:22px_22px]" />
   </>
 }
 
 function Brand({ className }: { className?: string }) {
-  return <a href="/" className={cn('flex items-center gap-2', className)}><img src="/favicon.svg" alt="" className="size-7" /> <Wordmark dark className="text-[19px]" /></a>
+  return <a href="/" className={cn('flex items-center gap-2', className)}><LogoMark className="text-white [&_g]:text-[#0B0B0C]" /> <Wordmark dark className="text-[19px]" /></a>
 }
 
 function FooterLinks({ className }: { className?: string }) {
@@ -90,7 +91,7 @@ export function AuthLayout() {
       `}</style>
 
       {/* ---------------- desktop: the story on the left ---------------- */}
-      <aside className="relative hidden overflow-hidden bg-[hsl(196_48%_11%)] text-white lg:flex">
+      <aside className="relative hidden overflow-hidden bg-[#0B0B0C] text-white lg:flex">
         <Backdrop />
         <div className="relative flex w-full flex-col p-12 xl:p-16">
           <div className="flex items-center gap-6">
@@ -104,7 +105,7 @@ export function AuthLayout() {
           <div className="my-auto grid items-center gap-12 py-12 min-[1360px]:grid-cols-[minmax(0,1fr)_auto]">
             <div className="max-w-xl">
               <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-white/75">
-                <span className="size-1.5 rounded-full bg-[#2BD98F]" /> {t('Made for Kosovo and Albania')}
+                <span className="size-1.5 rounded-full bg-white" /> {t('Made for Kosovo and Albania')}
               </p>
               <h1 className="text-[2.75rem] font-bold leading-[1.05] tracking-[-0.03em] xl:text-[3.25rem]">
                 {t('Stock, sales, purchasing and accounting — all in one place.')}
@@ -119,7 +120,7 @@ export function AuthLayout() {
           <ul className="grid gap-5 border-t border-white/10 pt-8 min-[1500px]:grid-cols-3 min-[1500px]:gap-6">
             {FACTS.map((f) => (
               <li key={f.title} className="flex gap-3">
-                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-white/[0.07] text-[#2BD98F]"><f.icon className="size-[18px]" /></span>
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-white/[0.07] text-white"><f.icon className="size-[18px]" /></span>
                 <div><p className="text-sm font-medium">{t(f.title)}</p><p className="mt-0.5 text-[13px] leading-snug text-white/55">{t(f.text)}</p></div>
               </li>
             ))}
@@ -130,7 +131,7 @@ export function AuthLayout() {
       {/* ---------------- the form: a card on the phone, a calm column on the desktop ---------------- */}
       <main className="relative flex min-h-dvh flex-col">
         {/* phone and tablet: the brand on top, the form rises over it */}
-        <header className="relative overflow-hidden bg-[hsl(196_48%_11%)] px-5 pb-24 pt-5 text-white sm:px-8 lg:hidden">
+        <header className="relative overflow-hidden bg-[#0B0B0C] px-5 pb-24 pt-5 text-white sm:px-8 lg:hidden">
           <Backdrop />
           <div className="relative flex items-center justify-between">
             <Brand />

@@ -10,6 +10,8 @@ export default {
       fontFamily: { sans: ['Manrope', 'ui-sans-serif', 'system-ui', 'sans-serif'], brand: ['"Red Hat Display"', 'Manrope', 'ui-sans-serif', 'sans-serif'] },
       boxShadow: { card: 'var(--shadow-card)' },
       fontSize: { '2xs': ['0.6875rem', { lineHeight: '1rem' }] },
+      // heavier type throughout: the body is 500, and each weight class one step up
+      fontWeight: { normal: '500', medium: '600', semibold: '700', bold: '800' },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',

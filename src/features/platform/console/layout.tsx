@@ -18,6 +18,7 @@ import { DemoClientDialog } from '../demo-client-dialog'
 import { NewClientDialog } from '../dialogs'
 import { usePlatformDevices } from '../api'
 import { ClientSearch } from './client-search'
+import { LogoMark } from '@/components/logo-mark'
 
 type Item = { label: string; href: string; icon: LucideIcon; end?: boolean; badge?: 'attention' | 'ending' | 'links' | 'server' | 'devices' }
 const NAV: { title?: string; items: Item[] }[] = [
@@ -69,8 +70,8 @@ function SideNav({ onNavigate }: { onNavigate?: () => void }) {
             const n = badge(it.badge)
             return (
               <NavLink key={it.href} to={it.href} end={it.end} onClick={onNavigate}
-                className={({ isActive }) => cn('relative flex h-9 items-center gap-2.5 rounded-md px-2 text-[13.5px] font-medium text-sidebar-foreground transition-colors hover:bg-primary/[0.08] hover:text-foreground',
-                  isActive && 'bg-primary/[0.14] text-white before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-full before:bg-primary')}>
+                className={({ isActive }) => cn('relative flex h-9 items-center gap-2.5 rounded-md px-2 text-[13.5px] font-medium text-sidebar-foreground transition-colors hover:bg-[hsl(var(--sidebar-active)/0.55)] hover:text-foreground',
+                  isActive && 'bg-[hsl(var(--sidebar-active))] text-foreground')}>
                 {({ isActive }) => <>
                   <it.icon className={cn('size-[18px] shrink-0', isActive ? 'text-primary' : 'text-muted-foreground')} strokeWidth={1.75} />
                   <span className="flex-1 truncate">{t(it.label)}</span>
@@ -88,9 +89,9 @@ function SideNav({ onNavigate }: { onNavigate?: () => void }) {
 function Brand() {
   return (
     <div className="flex h-[52px] items-center gap-2.5 px-3">
-      <img src="/favicon.svg" alt="" className="size-7" />
+      <LogoMark className="text-foreground" />
       <div className="leading-tight">
-        <Wordmark dark className="block text-[15px] text-white" />
+        <Wordmark className="block text-[15px]" />
         <div className="text-2xs text-muted-foreground">{t('Platform')}</div>
       </div>
     </div>
@@ -123,22 +124,22 @@ export function PlatformLayout() {
   const bottom = (
     <div className="flex flex-col gap-1 border-t border-sidebar-border p-2.5">
       {companies.length > 0 && <button type="button" onClick={() => navigate('/')}
-        className="flex h-8 items-center gap-2 rounded-md px-2 text-[13px] text-muted-foreground hover:bg-primary/[0.08] hover:text-foreground"><Boxes className="size-4" /> {t('Open the app')} <ArrowRight className="ml-auto size-3.5" /></button>}
+        className="flex h-8 items-center gap-2 rounded-md px-2 text-[13px] text-muted-foreground hover:bg-[hsl(var(--sidebar-active)/0.55)] hover:text-foreground"><Boxes className="size-4" /> {t('Open the app')} <ArrowRight className="ml-auto size-3.5" /></button>}
       <button type="button" onClick={() => void signOut()}
-        className="flex h-8 items-center gap-2 rounded-md px-2 text-[13px] text-muted-foreground hover:bg-primary/[0.08] hover:text-foreground"><LogOut className="size-4" /> {t('Sign out')}</button>
+        className="flex h-8 items-center gap-2 rounded-md px-2 text-[13px] text-muted-foreground hover:bg-[hsl(var(--sidebar-active)/0.55)] hover:text-foreground"><LogOut className="size-4" /> {t('Sign out')}</button>
       <div className="truncate px-2 pt-1 text-2xs text-muted-foreground" title={user?.email}>{user?.email}</div>
     </div>
   )
   return (
     <ConsoleActions.Provider value={{ newClient: () => setCreating(true), demo: () => setDemo(true) }}>
       <div className="flex min-h-dvh bg-background">
-        <aside className="sidebar-navy sticky top-0 hidden h-dvh w-[244px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex">
+        <aside className="sidebar-mono sticky top-0 hidden h-dvh w-[244px] shrink-0 flex-col border-r border-sidebar-border bg-[hsl(var(--sidebar-panel))] text-sidebar-foreground lg:flex">
           <Brand />
           <div className="flex-1 overflow-y-auto px-2.5 pb-4 pt-2"><SideNav /></div>
           {bottom}
         </aside>
         <Sheet open={mobile} onOpenChange={setMobile}>
-          <SheetContent side="left" className="sidebar-navy flex w-[280px] flex-col gap-0 border-sidebar-border bg-sidebar p-0 text-sidebar-foreground">
+          <SheetContent side="left" className="sidebar-mono flex w-[280px] flex-col gap-0 border-sidebar-border bg-sidebar p-0 text-sidebar-foreground">
             <SheetTitle className="sr-only">{t('Platform menu')}</SheetTitle>
             <Brand />
             <div className="flex-1 overflow-y-auto px-2.5 pb-4 pt-2"><SideNav onNavigate={() => setMobile(false)} /></div>
