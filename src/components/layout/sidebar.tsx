@@ -1,7 +1,7 @@
 import { ChevronRight, PanelLeftClose, PanelLeftOpen, Search, Star } from 'lucide-react'
 import { UnitPicker } from '@/components/layout/unit-picker'
 import * as React from 'react'
-import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
 import { moduleLook } from '@/app/modules'
 import { NAV, type NavItem } from '@/app/nav'
@@ -234,7 +234,7 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
   return (
     <nav className="flex flex-col gap-1" aria-label={t('Main menu')}>
       <button type="button" onClick={() => palette.open('pages')}
-        className="mb-2 flex h-8 items-center gap-2 rounded-md border border-sidebar-border bg-background/60 px-2 text-[13px] text-muted-foreground hover:text-foreground">
+        className="mb-2 flex h-8 items-center gap-2 rounded-md border border-sidebar-border bg-background px-2 text-[13px] text-muted-foreground hover:text-foreground">
         <Search className="size-4" /> <span className="flex-1 text-left">{t('Find a page…')}</span>
       </button>
 
@@ -306,147 +306,35 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
   )
 }
 
-/*
- * The side menu, in black and white: a narrow rail with one icon per part of the program, and beside it
- * the pages of the part you are in. A click on another icon shows that part's pages without leaving the
- * page you are on; a part with a single page (Reports, Settings) opens it at once. Folded, only the rail
- * stays and each icon shows its pages beside it on hover.
+/**
+ * The side menu, one column in black and white: the company, the unit, the search, then the parts of
+ * the program, each opening its pages under it. Folded, a narrow strip of icons with the pages beside
+ * each on hover.
  */
 export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
-  const sections = useMenuSections()
-  const activeHref = useActiveHref()
-  const navigate = useNavigate()
-  const { can } = useCompany()
-  const palette = useCommandPalette()
-  const { favourites, toggle } = useFavourites()
-  const [fullMenu, setFullMenu] = useFullMenu()
-  const focused = !can('reports.read') && !can('finance.read') && !can('admin.read')
-  React.useEffect(() => { if (activeHref) recordVisit(activeHref) }, [activeHref])
-
-  const activeSection = sections.find((s) => s.items.some((i) => i.href === activeHref))?.label ?? 'Overview'
-  // the part whose pages the panel shows: the one you are in, until you pick another on the rail
-  const [view, setView] = React.useState(activeSection)
-  React.useEffect(() => setView(activeSection), [activeSection])
-  const byHref = React.useMemo(() => new Map(sections.flatMap((s) => s.items).map((i) => [i.href, i])), [sections])
-  const overviewHrefs = new Set(sections.find((s) => s.label === 'Overview')?.items.map((i) => i.href) ?? [])
-  const pinned = favourites.map((h) => byHref.get(h)).filter((i): i is NavItem => !!i && !overviewHrefs.has(i.href))
-  const shown = sections.find((s) => s.label === view) ?? sections[0]
-  const bottom = (label: string) => label === 'Reports|menu' || label === 'Company'
-
-  const railButton = (section: (typeof sections)[number]) => {
-    const entries = menuEntries(section.items)
-    const here = section.label === activeSection
-    const name = t(section.title ?? section.label)
-    if (collapsed) return <SectionFlyout key={section.label} label={section.label} title={section.title} items={section.items} activeHref={activeHref} />
-    return (
-      <Tooltip key={section.label}>
-        <TooltipTrigger asChild>
-          <button type="button" aria-label={name} aria-pressed={section.label === view}
-            onClick={() => { if (entries.length === 1) navigate(entries[0]!.href); setView(section.label) }}
-            className={cn('relative grid size-10 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-[hsl(var(--sidebar-active)/0.6)] hover:text-foreground',
-              section.label === view && 'bg-[hsl(var(--sidebar-active))] text-foreground')}>
-            <SectionIcon label={section.label} active={here} className="size-5" />
-            {here && section.label !== view && <span aria-hidden className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-foreground" />}
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="right">{name}</TooltipContent>
-      </Tooltip>
-    )
-  }
-
   return (
-    <aside className="sidebar-mono sticky top-0 hidden h-dvh shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex print:!hidden">
-      {/* the rail */}
-      <div className={cn('flex w-[60px] shrink-0 flex-col items-center gap-1 py-2.5', !collapsed && 'border-r border-sidebar-border')}>
-        {/* folded, the company is chosen here; open, the panel has it and the rail starts with DrisPRO */}
-        <div className="mb-2 grid h-10 place-items-center">
-          {collapsed ? <CompanySwitcher collapsed />
-            : <NavLink to="/" aria-label="DrisPRO" className="grid size-10 place-items-center rounded-xl hover:bg-[hsl(var(--sidebar-active)/0.6)]"><img src="/favicon.svg" alt="" className="size-7" /></NavLink>}{/* i18n-ignore */}
-        </div>
-        <nav aria-label={t('Main menu')} className="flex min-h-0 flex-1 flex-col items-center gap-1 overflow-y-auto px-2.5">
-          {sections.filter((s) => !bottom(s.label)).map(railButton)}
-          {!collapsed && pinned.length > 0 && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button type="button" aria-label={t('Favourites')} aria-pressed={view === 'favourites'} onClick={() => setView('favourites')}
-                  className={cn('grid size-10 place-items-center rounded-lg text-muted-foreground hover:bg-[hsl(var(--sidebar-active)/0.6)] hover:text-foreground',
-                    view === 'favourites' && 'bg-[hsl(var(--sidebar-active))] text-foreground')}><Star className="size-5" strokeWidth={1.75} /></button>
-              </TooltipTrigger>
-              <TooltipContent side="right">{t('Favourites')}</TooltipContent>
-            </Tooltip>
-          )}
-          <div className="mt-auto flex flex-col items-center gap-1 pt-3">{sections.filter((s) => bottom(s.label)).map(railButton)}</div>
-        </nav>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button type="button" onClick={onToggle} aria-label={collapsed ? t('Expand the menu') : t('Collapse the menu')}
-              className="mt-1 grid size-10 place-items-center rounded-lg text-muted-foreground hover:bg-[hsl(var(--sidebar-active)/0.6)] hover:text-foreground">
-              {collapsed ? <PanelLeftOpen className="size-[18px]" strokeWidth={1.75} /> : <PanelLeftClose className="size-[18px]" strokeWidth={1.75} />}
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="right">{collapsed ? t('Expand the menu') : t('Collapse the menu')}</TooltipContent>
-        </Tooltip>
-      </div>
-
-      {/* the panel: the company, the unit, then the pages of the part */}
-      {!collapsed && (
-        <div className="flex w-[232px] min-w-0 flex-col bg-[hsl(var(--sidebar-panel))]">
-          <div className="flex h-[56px] items-center px-2.5"><CompanySwitcher /></div>
-          <div className="flex flex-col gap-2 px-3">
-            <UnitPicker className="w-auto bg-background" />
-            <button type="button" onClick={() => palette.open('pages')}
-              className="flex h-8 items-center gap-2 rounded-md border border-sidebar-border bg-background px-2 text-[13px] text-muted-foreground hover:text-foreground">
-              <Search className="size-4" /> <span className="flex-1 text-left">{t('Find a page…')}</span>
-              <kbd className="rounded border border-sidebar-border px-1 font-sans text-[10.5px]">Ctrl K</kbd>{/* i18n-ignore */}
-            </button>
-          </div>
-          <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4 pt-4">
-            <p className="px-2 pb-1.5 text-[12px] font-medium text-muted-foreground">
-              {view === 'favourites' ? t('Favourites') : t(shown?.title ?? shown?.label ?? '')}
-            </p>
-            <div className="flex flex-col gap-px">
-              {view === 'favourites'
-                ? pinned.map((i) => <Item key={i.href} item={i} collapsed={false} active={i.href === activeHref} pinned onTogglePin={() => toggle(i.href)} />)
-                : shown && menuEntries(shown.items).map((e) => {
-                  const on = e.items.some((i) => i.href === activeHref)
-                  return (
-                    <React.Fragment key={e.key}>
-                      <Item item={entryItem(e)} collapsed={false} active={on && (e.items.length === 1 || e.items.length > 10)}
-                        pinned={favourites.includes(e.items[0]!.href)} onTogglePin={() => toggle(e.items[0]!.href)} />
-                      {/* the pages of the hub you are in, under it */}
-                      {on && e.items.length > 1 && e.items.length <= 10 && (
-                        <div className="mb-1 flex flex-col gap-px">
-                          {e.items.map((i) => {
-                            const here = i.href === activeHref
-                            return (
-                              <NavLink key={i.href} to={i.href} aria-current={here ? 'page' : undefined}
-                                className={cn('flex min-h-8 items-center rounded-md py-1 pl-[38px] pr-2 text-[13px] leading-snug text-muted-foreground hover:bg-[hsl(var(--sidebar-active)/0.55)] hover:text-foreground',
-                                  here && 'bg-[hsl(var(--sidebar-active))] font-medium text-foreground')}>
-                                <span className="line-clamp-2">{t(i.label)}</span>
-                              </NavLink>
-                            )
-                          })}
-                        </div>
-                      )}
-                    </React.Fragment>
-                  )
-                })}
-            </div>
-            {view === 'Overview' && pinned.length > 0 && (
-              <div className="mt-4 flex flex-col gap-px">
-                <p className="flex items-center gap-1.5 px-2 pb-1.5 text-[12px] font-medium text-muted-foreground"><Star className="size-3 fill-current" /> {t('Favourites')}</p>
-                {pinned.map((i) => <Item key={`f-${i.href}`} item={i} collapsed={false} active={i.href === activeHref} pinned onTogglePin={() => toggle(i.href)} />)}
-              </div>
-            )}
-          </div>
-          {focused && (
-            <button type="button" onClick={() => setFullMenu(!fullMenu)}
-              className="mx-3 mb-3 h-8 rounded-md px-2 text-left text-xs font-medium text-muted-foreground hover:bg-[hsl(var(--sidebar-active)/0.6)] hover:text-foreground">
-              {fullMenu ? t('Only my work') : t('Show the whole menu')}
-            </button>
-          )}
-        </div>
+    <aside
+      className={cn(
+        'sidebar-mono sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-sidebar-border bg-[hsl(var(--sidebar-panel))] text-sidebar-foreground transition-[width] duration-200 lg:flex print:!hidden',
+        collapsed ? 'w-[64px]' : 'w-[252px]',
       )}
+    >
+      <div className={cn('flex h-[56px] items-center px-2.5', collapsed && 'justify-center')}>
+        <CompanySwitcher collapsed={collapsed} />
+      </div>
+      {!collapsed && <UnitPicker className="mx-2.5 w-auto bg-background" />}
+      <div className={cn('flex-1 overflow-y-auto pb-4 pt-2', collapsed ? 'px-3' : 'px-2.5')}>
+        <SidebarNav collapsed={collapsed} />
+      </div>
+      <div className={cn('border-t border-sidebar-border p-2.5', collapsed && 'flex justify-center')}>
+        <button
+          onClick={onToggle}
+          className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-[13px] text-muted-foreground hover:bg-[hsl(var(--sidebar-active)/0.6)] hover:text-foreground"
+          aria-label={collapsed ? t('Expand the menu') : t('Collapse the menu')}
+        >
+          {collapsed ? <PanelLeftOpen className="mx-auto size-4" /> : <><PanelLeftClose className="size-4" /> {t('Collapse|menu')}</>}
+        </button>
+      </div>
     </aside>
   )
 }
