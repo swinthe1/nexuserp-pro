@@ -28,6 +28,8 @@ export interface PlatformClient {
   max_registers?: number | null
   tills?: number
   modules?: string[] | null
+  /** the computers licensed: tills, administration, waiting for approval */
+  devices?: { till: number; office: number; pending: number } | null
   valid_from: string | null
   valid_until: string | null
   status: 'active' | 'suspended' | null
@@ -338,4 +340,40 @@ export function useClientErrors(days = 7) {
       if (r.error?.code === 'PGRST202') return [] as ClientError[]   // a server not updated yet
       return unwrap(r) as unknown as ClientError[]
     } })
+}
+
+/* ------------------------------------------------------------------ the computers: a licence for each */
+export type PlatformDevice = { id: string; company_id: string; company: string | null; number: number; label: string; name: string; kind: 'till' | 'office'
+  status: 'active' | 'pending' | 'blocked'; hostname: string | null; os: string | null; os_user: string | null; platform: string | null; app_version: string | null
+  mode: string | null; server: string | null; last_ip: string | null; migrated: boolean; note: string | null; register: string | null; register_seen_at: string | null
+  created_at: string; approved_at: string | null; approved_by: string | null; blocked_at: string | null; last_seen_at: string | null }
+export type DeviceLimits = { till: number | null; office: number | null; approval: 'auto' | 'request'; max_till_devices: number | null; max_office_devices: number | null; max_registers: number | null }
+export function usePlatformDevices(company?: string, enabled = true) {
+  return useQuery({
+    queryKey: ['platform', 'devices', company ?? 'all'], enabled, refetchInterval: 60_000,
+    queryFn: async () => unwrap(await supabase.rpc('platform_devices', company ? { p_company: company } : {})) as unknown as
+      { devices: PlatformDevice[]; limits: DeviceLimits | null; pending: number },
+  })
+}
+function useDevicesRefresh() {
+  const qc = useQueryClient()
+  return () => Promise.all([qc.invalidateQueries({ queryKey: ['platform', 'devices'] }), qc.invalidateQueries({ queryKey: KEY })])
+}
+export function useDeviceSet() {
+  const refresh = useDevicesRefresh()
+  return useMutation({ mutationFn: async (a: { id: string; status?: string; name?: string; kind?: string; note?: string | null }) => {
+    const { id, ...p } = a
+    unwrap(await supabase.rpc('platform_device_set', { p_device: id, p: p as never }))
+  }, onSuccess: refresh })
+}
+export function useDeviceDelete() {
+  const refresh = useDevicesRefresh()
+  return useMutation({ mutationFn: async (id: string) => { unwrap(await supabase.rpc('platform_device_delete', { p_device: id })) }, onSuccess: refresh })
+}
+export function useDeviceLimits() {
+  const refresh = useDevicesRefresh()
+  return useMutation({ mutationFn: async (a: { company: string; max_till_devices?: number | null; max_office_devices?: number | null; approval?: 'auto' | 'request' }) => {
+    const { company, ...p } = a
+    unwrap(await supabase.rpc('platform_device_limits', { p_company: company, p: p as never }))
+  }, onSuccess: refresh })
 }

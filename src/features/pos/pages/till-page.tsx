@@ -8,6 +8,7 @@ import {
 import * as React from 'react'
 import { bestPromo } from '../promotions'
 import { openCashDrawer } from '@/lib/print'
+import { desktop } from '@/lib/desktop'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useAuth } from '@/app/auth-provider'
@@ -584,6 +585,12 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     printReceipt(r.fiscal && (done.printed ?? 0) > 0 ? { ...r, fiscal: { ...r.fiscal, copy: true } } : r)
     setDone((d) => (d ? { ...d, printed: (d.printed ?? 0) + 1 } : d))
   }
+
+  /* ---------- the computer: its licence says which till it works at (seen by DrisPRO's console) */
+  React.useEffect(() => {
+    if (!desktop || !navigator.onLine) return
+    void desktop.info().then((i) => { if (i.device?.id) void supabase.rpc('device_at_register', { p_device: i.device.id, p_register: data.register.id }) }).catch(() => undefined)
+  }, [data.register.id])
 
   /* ---------- the restaurant: the waiters hand over the cash they took at the tables */
   const waiters = useWaitersOwing(data)

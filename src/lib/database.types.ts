@@ -6374,6 +6374,9 @@ export type Database = {
           ai_chat_limit: number | null
           package: string | null
           max_registers: number | null
+          max_till_devices: number | null
+          max_office_devices: number | null
+          device_approval: string
         }
         Insert: {
           company_id: string
@@ -6399,6 +6402,9 @@ export type Database = {
           ai_chat_limit?: number | null
           package?: string | null
           max_registers?: number | null
+          max_till_devices?: number | null
+          max_office_devices?: number | null
+          device_approval?: string
         }
         Update: {
           company_id?: string
@@ -6424,6 +6430,9 @@ export type Database = {
           ai_chat_limit?: number | null
           package?: string | null
           max_registers?: number | null
+          max_till_devices?: number | null
+          max_office_devices?: number | null
+          device_approval?: string
         }
         Relationships: [
           { foreignKeyName: "licenses_company_id_fkey"; columns: ["company_id"]; isOneToOne: true; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -17333,6 +17342,28 @@ export type Database = {
         }
         Returns: Json
       }
+      device_activate: {
+        Args: {
+          p_code: string
+          p: Json
+        }
+        Returns: Json
+      }
+      device_at_register: {
+        Args: {
+          p_device: string
+          p_register: string
+        }
+        Returns: undefined
+      }
+      device_ping: {
+        Args: {
+          p_device: string
+          p_secret: string
+          p?: Json
+        }
+        Returns: Json
+      }
       dismiss_statement_suggestion: {
         Args: {
           p_line: string
@@ -18534,6 +18565,32 @@ export type Database = {
       platform_desktop_releases: {
         Args: Record<PropertyKey, never>
         Returns: { platform: string | null; version: string | null; file_name: string | null; size_bytes: number | null; published_at: string | null }[]
+      }
+      platform_device_delete: {
+        Args: {
+          p_device: string
+        }
+        Returns: undefined
+      }
+      platform_device_limits: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: undefined
+      }
+      platform_device_set: {
+        Args: {
+          p_device: string
+          p: Json
+        }
+        Returns: undefined
+      }
+      platform_devices: {
+        Args: {
+          p_company?: string
+        }
+        Returns: Json
       }
       platform_events: {
         Args: {

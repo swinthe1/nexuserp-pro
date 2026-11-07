@@ -55,6 +55,10 @@ export function ClientsPage() {
       cell: ({ row: { original: c } }) => <span className="text-[13px]">{c.admins[0] ?? <span className="text-muted-foreground">—</span>}{c.admins.length > 1 && <span className="text-xs text-muted-foreground"> +{c.admins.length - 1}</span>}</span> },
     { id: 'users', accessorFn: (c) => c.users, header: ({ column }) => <ColumnHeader column={column} title={t('Users')} />, meta: { label: t('Users'), align: 'right' },
       cell: ({ row: { original: c } }) => <UsersBar used={c.users} max={c.max_users} /> },
+    { id: 'devices', accessorFn: (c) => (c.devices ? c.devices.till + c.devices.office : 0), header: t('Computers'), meta: { label: t('Computers'),
+        exportValue: (c) => (c.devices ? `${c.devices.till} / ${c.devices.office}` : '') },
+      cell: ({ row: { original: c } }) => !c.devices ? '—' : <span className="text-[12.5px]">{t('{a} tills · {b} admin.', { a: c.devices.till, b: c.devices.office })}
+        {c.devices.pending > 0 && <span className="ml-1.5 rounded-full bg-warning px-1.5 text-[11px] font-semibold text-warning-foreground">{c.devices.pending}</span>}</span> },
     { id: 'plan', accessorFn: (c) => (c.plan === 'package' ? c.package ?? 'package' : c.plan ?? ''), filterFn: inFilter, header: t('Package'), meta: { label: t('Package'), exportValue: (c) => planLabel(c.plan, c.package) },
       cell: ({ row: { original: c } }) => <div><div>{planLabel(c.plan, c.package)}</div>{c.licence_code && <div className="font-mono text-[11px] text-muted-foreground">{c.licence_code}</div>}</div> },
     { id: 'state', accessorFn: stateKey, filterFn: inFilter, header: ({ column }) => <ColumnHeader column={column} title={t('Licence')} />, meta: { label: t('Licence'), exportValue: (c) => licenseState(c).label },

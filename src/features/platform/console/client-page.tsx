@@ -19,6 +19,7 @@ import { formatDateWith, msg, t, tn } from '@/i18n'
 import { describeError } from '@/lib/errors'
 import { daysUntil } from '@/lib/license'
 import { FEATURES } from '@/lib/plans'
+import { ClientDevicesTab } from './devices'
 import { cn, formatDate } from '@/lib/utils'
 import { type ClientDetail, useClientDetail, useUpdateCompany, usePlatformClients, useSetTraining } from '../api'
 import { businessTypeLabel } from '../business-types'
@@ -27,7 +28,7 @@ import { ClientActions, useOpenCompany, useRenew } from './client-actions'
 import { EventRow } from './events'
 import { PeopleTab } from './people-tab'
 
-const TABS = ['summary', 'licence', 'people', 'links', 'diary', 'danger'] as const
+const TABS = ['summary', 'licence', 'devices', 'people', 'links', 'diary', 'danger'] as const
 type Tab = (typeof TABS)[number]
 
 function Field({ label, value, mono }: { label: string; value: React.ReactNode; mono?: boolean }) {
@@ -86,6 +87,7 @@ export function ClientPage() {
         <TabsList className="max-w-full overflow-x-auto">
           <TabsTrigger value="summary">{t('Summary')}</TabsTrigger>
           <TabsTrigger value="licence">{t('Licence')}</TabsTrigger>
+          <TabsTrigger value="devices">{t('Computers')}{c.devices?.pending ? <span className="ml-1 rounded-full bg-warning px-1.5 text-[11px] font-semibold text-warning-foreground">{c.devices.pending}</span> : null}</TabsTrigger>
           <TabsTrigger value="people">{t('People')} <span className="ml-1 text-xs text-muted-foreground">{d.members.length}</span></TabsTrigger>
           <TabsTrigger value="links">{t('Links and server')}</TabsTrigger>
           <TabsTrigger value="diary">{t('Diary')}</TabsTrigger>
@@ -96,6 +98,7 @@ export function ClientPage() {
       {tab === 'summary' && <Summary d={d} />}
       {tab === 'licence' && <LicenceTab d={d} c={c} />}
       {tab === 'people' && <PeopleTab d={d} />}
+      {tab === 'devices' && <ClientDevicesTab company={c.id} />}
       {tab === 'links' && <LinksTab d={d} c={c} />}
       {tab === 'diary' && <Card><CardContent className="p-4">{d.events.length ? <ul className="divide-y">{d.events.map((e) => <EventRow key={e.id} e={e} showClient={false} />)}</ul>
         : <p className="py-8 text-center text-[13px] text-muted-foreground">{t('Nothing yet. From now on every change is written here.')}</p>}</CardContent></Card>}

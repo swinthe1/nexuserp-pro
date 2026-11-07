@@ -1,5 +1,5 @@
 import { Wordmark } from '@/components/wordmark'
-import {
+import { MonitorSmartphone,
   ArrowRight, Boxes, Cable, Cpu, CircleDollarSign, DatabaseBackup, LayoutDashboard, LogOut, Menu, MonitorDown, Plus, ScrollText,
   Search, Server, Settings2, ShieldCheck, Store, Users, type LucideIcon,
 } from 'lucide-react'
@@ -15,14 +15,16 @@ import { cn } from '@/lib/utils'
 import { usePlatformOverview, useServerStatus } from '../api'
 import { DemoClientDialog } from '../demo-client-dialog'
 import { NewClientDialog } from '../dialogs'
+import { usePlatformDevices } from '../api'
 import { ClientSearch } from './client-search'
 
-type Item = { label: string; href: string; icon: LucideIcon; end?: boolean; badge?: 'attention' | 'ending' | 'links' | 'server' }
+type Item = { label: string; href: string; icon: LucideIcon; end?: boolean; badge?: 'attention' | 'ending' | 'links' | 'server' | 'devices' }
 const NAV: { title?: string; items: Item[] }[] = [
   { items: [{ label: msg('Overview'), href: '/platform', icon: LayoutDashboard, end: true, badge: 'attention' }] },
   { title: msg('Clients'), items: [
     { label: msg('Clients'), href: '/platform/clients', icon: Users },
     { label: msg('Licences'), href: '/platform/licences', icon: ShieldCheck, badge: 'ending' },
+    { label: msg('Computers'), href: '/platform/devices', icon: MonitorSmartphone, badge: 'devices' },
   ] },
   { title: msg('Servers and links'), items: [
     { label: msg('Server (VPS)'), href: '/platform/server', icon: Cpu, badge: 'server' },
@@ -47,8 +49,10 @@ export const useConsoleActions = () => React.useContext(ConsoleActions)
 function SideNav({ onNavigate }: { onNavigate?: () => void }) {
   const ov = usePlatformOverview()
   const srv = useServerStatus(1)
+  const devices = usePlatformDevices()
   const badge = (b?: Item['badge']) => {
     if (b === 'server') return srv.data?.alerts.length ?? 0
+    if (b === 'devices') return devices.data?.pending ?? 0
     const d = ov.data
     if (!d || !b) return 0
     if (b === 'attention') return d.attention.filter((a) => a.kind !== 'pending_account' && a.kind !== 'seats_full').length

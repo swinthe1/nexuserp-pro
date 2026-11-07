@@ -875,4 +875,10 @@ export default {
   "This waiter took no payments in this shift": "Ky kamarier nuk ka marrë pagesa në këtë ndërrim",
   "Say why the handover differs from what the waiter owes": "Shkruani pse dorëzimi ndryshon nga ajo që ka për të dorëzuar kamarieri",
   "Unknown package": "Paketë e panjohur",
+  "A computer is a till or administration": "Kompjuteri është arkë ose administratë",
+  "The program sent no key for this computer": "Programi nuk dërgoi çelës për këtë kompjuter",
+  "This computer is registered with another key": "Ky kompjuter është regjistruar me çelës tjetër",
+  "Too many computers are waiting for approval; ask your DrisPRO supplier": "Shumë kompjuterë presin miratimin; pyesni furnitorin e DrisPRO",
+  "Computer not found": "Kompjuteri nuk u gjet",
+  "Unknown state": "Gjendje e panjohur",
 } satisfies Dict

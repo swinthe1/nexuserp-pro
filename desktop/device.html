@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="sq"><head><meta charset="utf-8"><title>Licenca e kompjuterit · DrisPRO</title>
+<style>
+  :root { color-scheme: light; --ink: #172033; --mut: #5a6478; --line: #dfe4ee; --brand: #0E8A5F; --warn: #b54708; --bad: #b42318; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; font: 15px/1.5 "Segoe UI", system-ui, sans-serif; color: var(--ink); background: #f4f6fa; }
+  main { width: min(520px, 92vw); background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 30px; }
+  h1 { margin: 0 0 6px; font-size: 21px; letter-spacing: -0.01em; } p { margin: 0 0 14px; color: var(--mut); }
+  .pc { display: flex; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 16px 0; }
+  .pc b { display: block; font-size: 16px; } .pc small { color: var(--mut); }
+  .tag { margin-left: auto; font: 600 12px/1 "Segoe UI", system-ui, sans-serif; padding: 6px 9px; border-radius: 99px; background: #fef0c7; color: var(--warn); }
+  .tag.bad { background: #fee4e2; color: var(--bad); }
+  .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+  button { height: 42px; padding: 0 18px; border-radius: 9px; border: 1px solid #c9d1e0; background: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+  button.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .msg { font-size: 13px; min-height: 1.2em; color: var(--mut); }
+</style></head>
+<body><main>
+  <h1 id="title"></h1>
+  <p id="text"></p>
+  <div class="pc" id="pc" hidden><div><b id="label"></b><small id="name"></small></div><span class="tag" id="tag"></span></div>
+  <div class="msg" id="msg"></div>
+  <div class="row"><button id="change">Ndrysho licencën</button><button class="primary" id="retry">Kontrollo tani</button></div>
+</main>
+<script>
+  const q = new URLSearchParams(location.search)
+  const state = q.get('state') || 'pending'
+  const $ = (id) => document.getElementById(id)
+  const kind = q.get('kind') === 'till' ? 'Arkë' : 'Administratë'
+  const TEXT = {
+    pending: ['Kompjuteri pret miratimin', 'Licenca e këtij kompjuteri u kërkua te furnitori i DrisPRO. Sapo ta miratojë, programi hapet vetë.', 'Në pritje', ''],
+    blocked: ['Ky kompjuter nuk ka licencë', 'Licenca e këtij kompjuteri është bllokuar. Pyesni furnitorin e DrisPRO.', 'I bllokuar', 'bad'],
+    offline: ['Licenca duhet kontrolluar', 'Kanë kaluar më shumë se 7 ditë pa u kontrolluar licenca e këtij kompjuteri. Lidheni me internet dhe shtypni "Kontrollo tani".', 'Pa internet', 'bad'],
+    unknown: ['Kompjuteri nuk njihet', 'Licenca e këtij kompjuteri nuk gjendet më. Aktivizojeni përsëri me kodin e licencës.', 'I panjohur', 'bad'],
+  }[state] || ['Licenca e kompjuterit', '', '', '']
+  $('title').textContent = TEXT[0]; $('text').textContent = TEXT[1]
+  if (q.get('label')) {
+    $('pc').hidden = false; $('label').textContent = `${q.get('label')} · ${kind}`; $('name').textContent = q.get('name') || ''
+    $('tag').textContent = TEXT[2]; if (TEXT[3]) $('tag').classList.add(TEXT[3])
+  }
+  const check = async () => {
+    $('msg').textContent = 'Po kontrollohet…'
+    const r = await window.drisproDesktop.deviceCheck().catch(() => 'offline')
+    if (r === 'active') return
+    $('msg').textContent = r === 'offline' ? 'Pa internet. Provoni përsëri kur të lidheni.' : r === 'pending' ? 'Ende në pritje të miratimit.' : r === 'blocked' ? 'Kompjuteri është i bllokuar.' : 'Kompjuteri nuk njihet.'
+  }
+  $('retry').onclick = check
+  $('change').onclick = () => window.drisproDesktop.reactivate()
+  // waiting for approval: it looks again by itself
+  if (state === 'pending') setInterval(check, 20000)
+</script>
+</body></html>

@@ -186,6 +186,7 @@ const PlatformOverview = lazyPage(() => import('@/features/platform/console/over
 const PlatformClients = lazyPage(() => import('@/features/platform/console/clients-page'), 'ClientsPage')
 const PlatformClient = lazyPage(() => import('@/features/platform/console/client-page'), 'ClientPage')
 const PlatformLicences = lazyPage(() => import('@/features/platform/console/pages'), 'LicencesPage')
+const PlatformDevices = lazyPage(() => import('@/features/platform/console/devices'), 'DevicesPage')
 const PlatformServer = lazyPage(() => import('@/features/platform/console/server-page'), 'ServerPage')
 const PlatformServers = lazyPage(() => import('@/features/platform/console/pages'), 'ServersPage')
 const PlatformLinks = lazyPage(() => import('@/features/platform/console/pages'), 'LinksPage')
@@ -224,6 +225,7 @@ const router = createBrowserRouter([
       { path: 'clients', element: consolePage(<PlatformClients />) },
       { path: 'clients/:id', element: consolePage(<PlatformClient />) },
       { path: 'licences', element: consolePage(<PlatformLicences />) },
+      { path: 'devices', element: consolePage(<PlatformDevices />) },
       { path: 'server', element: consolePage(<PlatformServer />) },
       { path: 'servers', element: consolePage(<PlatformServers />) },
       { path: 'links', element: consolePage(<PlatformLinks />) },

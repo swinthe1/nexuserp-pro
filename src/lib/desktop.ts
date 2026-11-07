@@ -6,7 +6,9 @@ export interface DesktopSettings {
 }
 export interface DrisproDesktop {
   isDesktop: true
-  info: () => Promise<{ version: string; platform: string; server: string }>
+  /** device: this computer's own licence (from version 1.8): its number, name, till or administration */
+  info: () => Promise<{ version: string; platform: string; server: string; hostname?: string
+    device?: { id: string; label: string; name: string; kind: 'till' | 'office'; status: 'active' | 'pending' | 'blocked' } | null }>
   printers: () => Promise<{ name: string; isDefault: boolean; description: string }[]>
   /** printer: a printer by its name (a restaurant station's), from version 1.7; older versions use the kind's */
   print: (html: string, kind: PrintKind, printer?: string | null) => Promise<{ ok: boolean; printer: string | null; silent: boolean }>

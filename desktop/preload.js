@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld('drisproDesktop', {
   activate: (code) => ipcRenderer.invoke('drispro:activate', code),
   finishActivation: (a) => ipcRenderer.invoke('drispro:finish-activation', a),
   reactivate: () => ipcRenderer.invoke('drispro:reactivate'),
+  /** this computer's licence, checked now: 'active' (the program opens), 'pending', 'blocked', 'unknown', 'offline' */
+  deviceCheck: () => ipcRenderer.invoke('drispro:device-check'),
   /** the files the program saved, newest first: name, full path, time, size */
   downloads: () => ipcRenderer.invoke('drispro:downloads'),
   /** opens the folder with the file selected (only a file this program saved) */

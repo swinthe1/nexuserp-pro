@@ -6,6 +6,8 @@ const { app, BrowserWindow, ipcMain, shell, Menu, dialog, net: enet } = require(
 const fs = require('fs')
 const net = require('net')
 const path = require('path')
+const os = require('os')
+const crypto = require('crypto')
 const isMac = process.platform === 'darwin'
 
 const DEFAULT_SERVER = 'https://erp.dris-ks.com'
@@ -54,7 +56,10 @@ function createWindow() {
   })
   watchDownloads(win.webContents.session)
   if (!settings.licence) void win.loadFile(path.join(__dirname, 'activation.html'))
+  // a computer known to be waiting or blocked does not open the program; the check below may let it in
+  else if (settings.device && settings.device.status !== 'active') showDevice(settings.device.status)
   else void win.loadURL(settings.server)
+  void startupDeviceCheck()
 }
 
 function buildMenu() {
@@ -151,7 +156,9 @@ function handle(name, fn) { ipcMain.handle(name, async (e, arg) => { if (!fromAp
 handle('drispro:downloads', () => downloads.slice(0, 10))
 handle('drispro:show-in-folder', (p) => { if (!known(p)) return false; shell.showItemInFolder(p); return true })
 handle('drispro:open-file', async (p) => { if (!known(p)) return false; return (await shell.openPath(p)) === '' })
-handle('drispro:info', () => ({ version: app.getVersion(), platform: process.platform, server: settings.server }))
+handle('drispro:info', () => ({ version: app.getVersion(), platform: process.platform, server: settings.server, hostname: os.hostname(),
+  // this computer's licence (the till page tells the server which till it works at)
+  device: settings.device?.id ? { id: settings.device.id, label: settings.device.label, name: settings.device.name, kind: settings.device.kind, status: settings.device.status } : null }))
 handle('drispro:printers', async (_a, e) => (await e.sender.getPrintersAsync()).map((p) => ({ name: p.name, isDefault: p.isDefault, description: p.description })))
 handle('drispro:print', (a) => printHtml(a))
 handle('drispro:drawer', () => openDrawer())
@@ -189,6 +196,8 @@ async function post(url, body, headers = {}) {
 const SERVER_MSG = {
   'This licence code is not known': 'Ky kod licence nuk njihet. Kontrollojeni dhe provoni përsëri.',
   'This licence is not active; ask your DrisPRO supplier': 'Kjo licencë nuk është aktive; pyesni furnitorin e DrisPRO.',
+  'Too many computers are waiting for approval; ask your DrisPRO supplier': 'Shumë kompjuterë presin miratimin; pyesni furnitorin e DrisPRO.',
+  'This computer is registered with another key': 'Ky kompjuter është regjistruar me çelës tjetër; pyesni furnitorin e DrisPRO.',
 }
 handle('drispro:activate', async (code) => {
   const c = String(code ?? '').trim().toUpperCase()
@@ -212,6 +221,15 @@ handle('drispro:finish-activation', async (a) => {
   } else if (lic.deployment === 'local') throw new Error('Kjo licencë është vetëm për server lokal.')
   settings = { ...settings, licence: lic.code, mode: a.mode, company: lic.company?.name ?? '', server }
   writeSettings(settings)
+  // this computer's own licence: a till or administration; it may have to wait for DrisPRO's approval
+  const kind = a.kind === 'till' ? 'till' : 'office'
+  try {
+    const d = await activateDevice(lic.code, { kind, name: String(a.name || os.hostname()).slice(0, 60) })
+    if (d.status !== 'active') { showDevice(d.status); return true }
+  } catch (e) {
+    // a server not updated yet has no licences for computers: the program opens as before
+    if (!serverLacksDevices(e)) throw new Error(SERVER_MSG[String(e.message)] ?? String(e.message))
+  }
   // a plain-http local server needs the program to start again once (see the start of this file)
   if (server.startsWith('http://')) { app.relaunch(); app.exit(0); return true }
   void win.loadURL(settings.server)
@@ -225,11 +243,78 @@ handle('drispro:reactivate', async () => {
   return true
 })
 
+/* ------------------------------------------------------------------ this computer's own licence */
+// Every installation has its own licence: an id and a secret made here (the server keeps only the
+// secret's hash), its number (PC-0003), its name and whether it is a till or administration. Within the
+// client's limits it is licensed at once; beyond them it waits until DrisPRO approves it. The program
+// checks it at every start and every 6 hours; without internet it keeps working up to 7 days after the
+// last check, so a till sells on.
+const GRACE_DAYS = 7
+const serverLacksDevices = (e) => /Could not find the function|PGRST202|HTTP 404/.test(String(e?.message ?? e))
+const rpc = (fn, body) => post(`${LICENCE_API}/rest/v1/rpc/${fn}`, body, { apikey: LICENCE_KEY, Authorization: `Bearer ${LICENCE_KEY}` })
+function machine() {
+  const macs = Object.values(os.networkInterfaces()).flat().filter((n) => n && !n.internal && n.mac && n.mac !== '00:00:00:00:00:00').map((n) => n.mac).sort()
+  let user = ''; try { user = os.userInfo().username } catch { /* none */ }
+  return { hostname: os.hostname(), os: `${os.type()} ${os.release()}`, os_user: user, platform: process.platform, version: app.getVersion(),
+    mode: settings.mode, server: settings.server,
+    fingerprint: crypto.createHash('sha256').update([os.hostname(), os.cpus()[0]?.model ?? '', ...macs].join('|')).digest('hex') }
+}
+const keep = (r) => {
+  settings = { ...settings, device: { ...(settings.device || {}), id: r.id, label: r.label, number: r.number, name: r.name, kind: r.kind, status: r.status,
+    company: r.company, checkedAt: r.status === 'active' ? Date.now() : settings.device?.checkedAt ?? null } }
+  writeSettings(settings)
+  return settings.device
+}
+async function activateDevice(code, { kind, name, migrated = false }) {
+  const secret = settings.device?.secret || crypto.randomBytes(32).toString('hex')
+  settings = { ...settings, device: { ...(settings.device || {}), secret } }; writeSettings(settings)
+  const r = await rpc('device_activate', { p_code: code, p: { ...machine(), kind, name, migrated, secret, device_id: settings.device.id || null } })
+  return keep(r)
+}
+async function pingDevice() {
+  const d = settings.device
+  if (!d?.id || !d.secret) return null
+  const r = await rpc('device_ping', { p_device: d.id, p_secret: d.secret, p: machine() })
+  if (r.status === 'unknown') { settings = { ...settings, device: { secret: d.secret } }; writeSettings(settings); return { status: 'unknown' } }
+  return { ...keep(r), licenceOk: r.licence_ok !== false }
+}
+function showDevice(state) { if (win) void win.loadFile(path.join(__dirname, 'device.html'), { query: { state, label: settings.device?.label ?? '', name: settings.device?.name ?? '', kind: settings.device?.kind ?? '' } }) }
+const onDevicePage = () => !!win && win.webContents.getURL().includes('device.html')
+async function startupDeviceCheck() {
+  if (!settings.licence) return
+  try {
+    // installed before computers had licences: it registers itself, approved, as what it looks like
+    if (!settings.device?.id) {
+      const kind = settings.fullScreen || settings.receiptPrinter || settings.drawer?.mode !== 'none' ? 'till' : 'office'
+      await activateDevice(settings.licence, { kind, name: os.hostname(), migrated: true })
+    }
+    const d = await pingDevice()
+    if (!d) return
+    if (d.status === 'unknown') return showDevice('unknown')
+    if (d.status !== 'active') return showDevice(d.status)
+    if (onDevicePage()) void win.loadURL(settings.server)
+  } catch {
+    // no internet: within the grace days it keeps working
+    const at = settings.device?.checkedAt
+    if (settings.device?.status === 'active' && at && Date.now() - at > GRACE_DAYS * 86400_000) showDevice('offline')
+  }
+}
+handle('drispro:device-check', async () => {
+  try {
+    const d = await pingDevice()
+    if (d?.status === 'active') {
+      // a local server on a plain address needs the program to start again once (see the start of this file)
+      if (settings.server.startsWith('http://')) { app.relaunch(); app.exit(0); return 'active' }
+      void win.loadURL(settings.server); return 'active'
+    }
+    return d?.status ?? 'unknown'
+  } catch { return 'offline' }
+})
+
 /* ------------------------------------------------------------------ the program updates itself */
 // The pages come from the server and are always new; this checks the program around them (printers,
 // cash drawer). A newer installer is downloaded quietly, checked (size and sha256), and the person is
 // asked once; it installs over this one with the same settings and licence, and the program opens again.
-const crypto = require('crypto')
 const { spawn } = require('child_process')
 const newer = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0) } return false }
 let updating = false
@@ -296,5 +381,7 @@ app.whenReady().then(() => {
   // a minute after the start (the till is open by then), then every 6 hours
   setTimeout(() => void checkForUpdate(), 60_000)
   setInterval(() => void checkForUpdate(), 6 * 3600_000)
+  // this computer's licence, every 6 hours too
+  setInterval(() => { void pingDevice().then((d) => { if (d && d.status !== 'active') showDevice(d.status) }).catch(() => undefined) }, 6 * 3600_000)
 })
 app.on('window-all-closed', () => app.quit())

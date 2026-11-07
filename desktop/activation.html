@@ -42,6 +42,15 @@
       <label class="choice" id="c-local"><input type="radio" name="mode" value="local">
         <span><b>Server lokal</b><small>Të dhënat ruhen në serverin e lokalit tuaj. Punon edhe pa internet; licenca kontrollohet një herë në natë.</small></span></label>
     </div>
+    <label style="margin-top:18px">Ky kompjuter është</label>
+    <div class="choices">
+      <label class="choice"><input type="radio" name="kind" value="till">
+        <span><b>Arkë</b><small>Shitja me kupona, me printerin e kuponëve dhe sirtarin e parave.</small></span></label>
+      <label class="choice"><input type="radio" name="kind" value="office">
+        <span><b>Administratë</b><small>Zyra: blerjet, stoku, kontabiliteti, raportet.</small></span></label>
+    </div>
+    <label for="pcname">Emri i kompjuterit</label>
+    <input id="pcname" placeholder="p.sh. Arka 1, Zyra e kontabilistes" maxlength="60">
     <div id="local" hidden>
       <label for="addr">Adresa e serverit lokal</label>
       <input id="addr" placeholder="http://192.168.1.20" spellcheck="false">
@@ -73,12 +82,15 @@
     } catch (e) { $('m1').className = 'msg bad'; $('m1').textContent = clean(e) } finally { $('check').disabled = false }
   }
   const mode = () => (document.querySelector('input[name=mode]:checked') || {}).value
-  function pick() { $('local').hidden = mode() !== 'local'; $('go').disabled = !mode() }
-  document.querySelectorAll('input[name=mode]').forEach((r) => r.addEventListener('change', pick))
+  const kind = () => (document.querySelector('input[name=kind]:checked') || {}).value
+  function pick() { $('local').hidden = mode() !== 'local'; $('go').disabled = !mode() || !kind() }
+  document.querySelectorAll('input[name=mode], input[name=kind]').forEach((r) => r.addEventListener('change', pick))
+  // the computer's own name, to start from
+  window.drisproDesktop.info().then((i) => { if (!$('pcname').value) $('pcname').value = i.hostname || '' }).catch(() => {})
   $('back').onclick = () => { $('s2').hidden = true; $('s1').hidden = false }
   $('go').onclick = async () => {
     $('m2').className = 'msg'; $('m2').textContent = mode() === 'local' ? 'Po kërkohet serveri…' : ''; $('go').disabled = true
-    try { await window.drisproDesktop.finishActivation({ code: lic.code, mode: mode(), server: addr.value.trim() }) }
+    try { await window.drisproDesktop.finishActivation({ code: lic.code, mode: mode(), server: addr.value.trim(), kind: kind(), name: $('pcname').value.trim() }) }
     catch (e) { $('m2').className = 'msg bad'; $('m2').textContent = clean(e); $('go').disabled = false }
   }
 </script>
