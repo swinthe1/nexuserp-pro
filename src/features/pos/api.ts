@@ -502,3 +502,19 @@ export async function xReport(session: string) {
     discounts_total: number; net_sales: number; tax_total: number; payments_by_method: Record<string, number>; tax_breakdown: { rate: number; base: number; tax: number }[]
     opening_cash: number; cash_in: number; cash_out: number; expected_cash: number | null; items: { name: string; quantity: number; total: number }[] }
 }
+
+/* ------------------------------------------------------------------ the restaurant: waiters hand over their takings */
+export type WaiterOwes = { waiter_id: string; name: string; receipts: number; cash: number; card: number; other: number; handed: number; handed_owed: number; owed: number; open_tables: number; me: boolean }
+export type WaiterHandover = { id: string; at: string; waiter: string; waiter_id: string; owed: number; counted: number; difference: number; card: number; receipts: number; note: string | null
+  notes_coins: Record<string, number> | null; received_by: string | null }
+export type WaitersData = { required: boolean; holder: string | null; waiters: WaiterOwes[]; handovers: WaiterHandover[] }
+export function usePosWaiters(session: string | undefined, poll = false) {
+  return useQuery({
+    queryKey: ['pos', 'waiters', session], enabled: !!session, refetchInterval: poll ? 60_000 : false,
+    queryFn: async () => unwrap(await supabase.rpc('pos_waiters', { p_session: session! })) as unknown as WaitersData,
+  })
+}
+export async function waiterHandover(a: { session: string; waiter: string; counted: number; note?: string | null; notesCoins?: Record<string, number> | null }) {
+  return unwrap(await supabase.rpc('pos_waiter_handover', { p_session: a.session, p: { waiter: a.waiter, counted: a.counted, note: a.note ?? null, notes_coins: a.notesCoins ?? null } as never })) as unknown as
+    { id: string; owed: number; counted: number; difference: number }
+}

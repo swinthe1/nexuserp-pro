@@ -3,7 +3,7 @@ import { TillTasks } from '@/features/tasks/components/till-tasks'
 import { whereElsewhere } from '@/features/inventory/where'
 import {
   ArrowLeft, BadgePercent, Banknote, Camera, Check, CloudOff, CreditCard, Ellipsis, Landmark, ListOrdered, LogOut, Minus, NotebookPen, Plus, Printer, ReceiptText, RotateCcw, ScanLine, Search,
-  Lock, NotebookTabs, Pin, PinOff, ShieldCheck, Ticket, Trash2, UserRound, Users, Wallet, X,
+  HandCoins, Lock, NotebookTabs, Pin, PinOff, ShieldCheck, Ticket, Trash2, UserRound, Users, Wallet, X,
 } from 'lucide-react'
 import * as React from 'react'
 import { bestPromo } from '../promotions'
@@ -31,6 +31,8 @@ import { enqueue, logTill, nextDeviceRef, syncNow, useOnSynced, useSyncState, ty
 import { ManagerDialog, ManagerPinFields, pinReady } from '../manager-pin'
 import { ChoosePinDialog, LockScreen, SwitchCashierDialog, useTillLock } from '../till-lock'
 import { CashCount, countedOf, countsToNotes, denomsOf } from '../cash-count'
+import { WaiterHandoverDialog, useWaitersOwing } from '../waiters'
+import type { WaiterOwes } from '../api'
 import { readScaleBarcode } from '@/lib/scale-barcode'
 import { printReceipt, printVoucher, printZReport, type ReceiptData } from '../receipt'
 import { qrSvg, signAtkSale, useAtkState, waitForAtk } from '../atk'
@@ -583,6 +585,10 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     setDone((d) => (d ? { ...d, printed: (d.printed ?? 0) + 1 } : d))
   }
 
+  /* ---------- the restaurant: the waiters hand over the cash they took at the tables */
+  const waiters = useWaitersOwing(data)
+  const [handover, setHandover] = React.useState(false)
+
   /* ---------- the X-report: the shift so far, printed without closing it */
   const printX = async () => {
     try {
@@ -697,6 +703,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
               <DropdownMenuItem onSelect={() => setDialog('cash')}><Wallet /> {t('Cash and payments')}</DropdownMenuItem>
               <DropdownMenuCheckboxItem checked={autoPrint} onCheckedChange={() => setAutoPrint((a) => { prefSet('pos.autoprint', a ? '0' : '1'); return !a })}>
                 <Printer className="mr-2 size-4" /> {t('Print a receipt automatically after each sale')}</DropdownMenuCheckboxItem>
+              {waiters.restaurant && <DropdownMenuItem onSelect={() => setHandover(true)}><HandCoins /> {t('The waiters\' takings')}{waiters.owing.length > 0 ? ` (${waiters.owing.length})` : ''}</DropdownMenuItem>}
               <DropdownMenuItem onSelect={() => void printX()}><ReceiptText /> {t('X-report')}</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => void tillLock.lock()}><Lock /> {t('Lock the till')}</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setSwitching(true)}><Users /> {t('Switch cashier')}</DropdownMenuItem>
@@ -711,6 +718,8 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
           <Button variant="ghost" size="sm" onClick={() => setDialog('cash')}><Wallet /> {t('Cash and payments')}</Button>
           <Button variant="ghost" size="sm" onClick={() => { setAutoPrint((a) => { prefSet('pos.autoprint', a ? '0' : '1'); return !a }) }} aria-pressed={autoPrint}
             title={t('Print a receipt automatically after each sale')} className={cn(autoPrint && 'text-primary')}><Printer /> <span className="max-2xl:sr-only">{autoPrint ? t('Auto-print on') : t('Auto-print off')}</span></Button>
+          {waiters.restaurant && <Button variant="ghost" size="sm" onClick={() => setHandover(true)} title={t('The waiters\' takings')} className={cn(waiters.owing.length > 0 && 'text-warning')}>
+            <HandCoins /> <span className="max-2xl:sr-only">{t('Waiters|till')}</span>{waiters.owing.length > 0 && <span className="rounded-full bg-warning px-1.5 text-[11px] font-semibold text-warning-foreground">{waiters.owing.length}</span>}</Button>}
           <Button variant="ghost" size="sm" onClick={() => void printX()} title={t('X-report: the shift so far, without closing it')}><ReceiptText /> <span className="max-2xl:sr-only">{t('X-report')}</span></Button>
           <Button variant="ghost" size="sm" onClick={() => setSwitching(true)} title={t('Switch cashier')}><Users /> <span className="max-2xl:sr-only">{t('Switch cashier')}</span></Button>
           <Button variant="ghost" size="sm" onClick={() => void tillLock.lock()} title={t('Lock the till: it opens again with your PIN')}><Lock /> {t('Lock|till')}</Button>
@@ -949,7 +958,9 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       )}
       {dialog === 'voucher' && <VoucherDialog data={data} sessionId={session.id} currency={cur} onClose={() => { setDialog(null); focusSearch() }} />}
       {dialog === 'cash' && <CashDialog data={data} sessionId={session.id} currency={cur} onClose={() => { setDialog(null); focusSearch() }} />}
-      {dialog === 'close' && <CloseDialog data={data} pending={pending.length} onClose={() => { setDialog(null); switchAfterClose.current = false; focusSearch() }}
+      {handover && <WaiterHandoverDialog data={data} onClose={() => { setHandover(false); void waiters.refetch(); focusSearch() }} />}
+      {dialog === 'close' && <CloseDialog data={data} pending={pending.length} waitersOwing={waiters.required ? waiters.owing : []} onHandover={() => { setDialog(null); setHandover(true) }}
+        onClose={() => { setDialog(null); switchAfterClose.current = false; focusSearch() }}
         onClosed={async (sessionId) => {
           // switching cashier: the shift is closed, the next cashier signs in and opens hers
           if (switchAfterClose.current) { switchAfterClose.current = false; toast.success(t('Shift closed. The next cashier signs in and opens her shift.')); await leave(); return }
@@ -1644,7 +1655,9 @@ function CashDialog({ data, sessionId, currency, onClose }: { data: TillData; se
   )
 }
 
-function CloseDialog({ data, pending, onClose, onClosed }: { data: TillData; pending: number; onClose: () => void; onClosed: (sessionId: string) => Promise<void> }) {
+function CloseDialog({ data, pending, onClose, onClosed, waitersOwing = [], onHandover }: { data: TillData; pending: number; onClose: () => void; onClosed: (sessionId: string) => Promise<void>
+  /** the restaurant: waiters who have not handed over their takings yet (the shift waits for them) */
+  waitersOwing?: WaiterOwes[]; onHandover?: () => void }) {
   const session = data.session!
   const summary = useSessionSummary(session.id)
   const close = useCloseSession()
@@ -1704,6 +1717,9 @@ function CloseDialog({ data, pending, onClose, onClosed }: { data: TillData; pen
         <DialogHeader><DialogTitle>{t('Close {name}', { name: data.register.name })}</DialogTitle>
           <DialogDescription>{review ? t('Count the drawer. Closing prints the Z-report and books the sales; the manager then reconciles the cash.')
             : t('Count the drawer. Closing prints the Z-report and books the shift\'s sales and cash in accounting.')}</DialogDescription></DialogHeader>
+        {waitersOwing.length > 0 && <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-warning/50 bg-warning/5 px-3 py-2 text-[13px]">
+          <span className="flex-1">{t('The waiters hand over their takings first: {list}', { list: waitersOwing.map((w) => `${w.name} ${formatMoney(num(w.owed))}`).join(', ') })}</span>
+          {onHandover && <Button size="sm" variant="outline" onClick={onHandover}><HandCoins /> {t('Take in the handovers')}</Button>}</div>}
         {pending > 0 && <div className="rounded-md border border-warning/50 bg-warning/5 px-3 py-2 text-[13px]">
           {tn(pending, '{n} sale from this device is still waiting to be sent.', '{n} sales from this device are still waiting to be sent.')} <button type="button" className="font-medium text-primary hover:underline" onClick={() => void syncNow()}>{t('Send now')}</button> {t('before closing, or they move to the next shift.')}</div>}
         <div className="grid gap-5 sm:grid-cols-2">
@@ -1742,7 +1758,7 @@ function CloseDialog({ data, pending, onClose, onClosed }: { data: TillData; pen
         )}
         {error && <p className="text-[13px] text-destructive">{error}</p>}
         <DialogFooter><Button variant="ghost" onClick={onClose} disabled={close.isPending}>{t('Keep selling')}</Button>
-          <Button loading={close.isPending} disabled={!s || (mustWitness && !witnessed)} onClick={() => void doClose().catch((e) => setError(describeError(e)))}>{t('Close till and print Z-report')}</Button></DialogFooter>
+          <Button loading={close.isPending} disabled={!s || (mustWitness && !witnessed) || waitersOwing.length > 0} onClick={() => void doClose().catch((e) => setError(describeError(e)))}>{t('Close till and print Z-report')}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   )

@@ -552,4 +552,5 @@ export const serverTemplates: [string, string][] = [
   ["% is still a request: accept it first", "{0} është ende kërkesë: pranojeni së pari"],
   ["Transfer % is already on an open pick list", "Transferi {0} është tashmë në një listë mbledhjeje të hapur"],
   ["Transfer % is on a pick list still open: finish the picking first", "Transferi {0} është në një listë mbledhjeje ende të hapur: përfundoni mbledhjen së pari"],
+  ["WAITERS_OWE: the waiters have not handed over their takings yet: %", "Kamarierët ende nuk e kanë dorëzuar xhiron: {0}"],
 ]

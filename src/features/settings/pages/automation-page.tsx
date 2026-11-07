@@ -23,7 +23,7 @@ type Settings = { pos_cash_tolerance: number; pos_count_notes: boolean; pos_void
   payroll_night_pct: number | null; payroll_holiday_pct: number | null; purchase_price_tolerance: number
   new_items_from_bills: 'anyone' | 'approval'
   /** a server not updated yet has none of these */
-  pos_review?: 'off' | 'manager'; pos_review_hours?: number; pos_blind_count?: boolean; pos_lock_minutes?: number
+  pos_review?: 'off' | 'manager'; pos_review_hours?: number; pos_blind_count?: boolean; pos_lock_minutes?: number; pos_waiter_handover?: boolean
   pos_payouts?: 'off' | 'manager' | 'anyone'; pos_receipt_max?: number | null; scale_barcode?: ScaleSetup; pos_void_notify?: boolean; pos_void_notify_over?: number; pos_void_whatsapp?: string[]; min_shelf_days?: number | null }
 
 export function usePayrollTillSettings() {
@@ -125,6 +125,14 @@ export function AutomationPage() {
                 onCheckedChange={(on) => save.mutate({ pos_blind_count: on })} />
             </label>
           </>}
+          {s.pos_waiter_handover !== undefined && (
+            <label className="flex items-start justify-between gap-3 rounded-md border p-3 text-[13px]">
+              <span><span className="font-medium">{t('Waiters hand over their takings')}</span>
+                <span className="block text-muted-foreground">{t('On a restaurant or café till, a waiter who takes the payment at the table keeps the cash and hands it over at the till; the shift does not close until every waiter has. A difference stays with the waiter.')}</span></span>
+              <Switch checked={s.pos_waiter_handover} disabled={!can('pos.approve') || save.isPending} aria-label={t('Waiters hand over their takings')}
+                onCheckedChange={(on) => save.mutate({ pos_waiter_handover: on })} />
+            </label>
+          )}
           {s.pos_lock_minutes !== undefined && (
             <div className="flex flex-wrap items-start justify-between gap-3 rounded-md border p-3 text-[13px]">
               <span className="min-w-0 flex-1"><span className="font-medium">{t('The till locks by itself')}</span>

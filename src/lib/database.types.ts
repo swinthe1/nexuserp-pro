@@ -2396,6 +2396,7 @@ export type Database = {
           pos_review_hours: number
           pos_blind_count: boolean
           pos_lock_minutes: number
+          pos_waiter_handover: boolean
         }
         Insert: {
           id?: string
@@ -2488,6 +2489,7 @@ export type Database = {
           pos_review_hours?: number
           pos_blind_count?: boolean
           pos_lock_minutes?: number
+          pos_waiter_handover?: boolean
         }
         Update: {
           id?: string
@@ -2580,6 +2582,7 @@ export type Database = {
           pos_review_hours?: number
           pos_blind_count?: boolean
           pos_lock_minutes?: number
+          pos_waiter_handover?: boolean
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -8741,6 +8744,73 @@ export type Database = {
           { foreignKeyName: "pos_till_log_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
           { foreignKeyName: "pos_till_log_company_id_register_id_fkey"; columns: ["company_id", "register_id"]; isOneToOne: false; referencedRelation: "pos_registers"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "pos_till_log_company_id_session_id_fkey"; columns: ["company_id", "session_id"]; isOneToOne: false; referencedRelation: "pos_sessions"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
+      pos_waiter_handovers: {
+        Row: {
+          id: string
+          company_id: string
+          session_id: string
+          waiter_id: string
+          owed: number
+          counted: number
+          difference: number
+          card: number
+          receipts: number
+          notes_coins: Json | null
+          note: string | null
+          received_by: string
+          movement_id: string | null
+          at: string
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          session_id: string
+          waiter_id: string
+          owed: number
+          counted: number
+          difference: number
+          card?: number
+          receipts?: number
+          notes_coins?: Json | null
+          note?: string | null
+          received_by?: string
+          movement_id?: string | null
+          at?: string
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          session_id?: string
+          waiter_id?: string
+          owed?: number
+          counted?: number
+          difference?: number
+          card?: number
+          receipts?: number
+          notes_coins?: Json | null
+          note?: string | null
+          received_by?: string
+          movement_id?: string | null
+          at?: string
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "pos_waiter_handovers_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "pos_waiter_handovers_movement_id_fkey"; columns: ["movement_id"]; isOneToOne: false; referencedRelation: "pos_cash_movements"; referencedColumns: ["id"] },
+          { foreignKeyName: "pos_waiter_handovers_session_id_fkey"; columns: ["session_id"]; isOneToOne: false; referencedRelation: "pos_sessions"; referencedColumns: ["id"] },
         ]
       }
       price_changes: {
@@ -18737,6 +18807,13 @@ export type Database = {
         }
         Returns: Json
       }
+      pos_handover_history: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: Json
+      }
       pos_history: {
         Args: {
           p_company: string
@@ -18919,6 +18996,19 @@ export type Database = {
         Args: {
           p_session: string
           p: Json
+        }
+        Returns: Json
+      }
+      pos_waiter_handover: {
+        Args: {
+          p_session: string
+          p: Json
+        }
+        Returns: Json
+      }
+      pos_waiters: {
+        Args: {
+          p_session: string
         }
         Returns: Json
       }

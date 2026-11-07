@@ -869,4 +869,9 @@ export default {
   "Choose the dates": "Zgjidhni datat",
   "At most 400 days at once": "Më së shumti 400 ditë njëherësh",
   "Unknown report": "Raport i panjohur",
+  "The person at the till takes the handover in": "Dorëzimin e pranon personi në arkë",
+  "A waiter hands over to someone else": "Kamarieri ia dorëzon dikujt tjetër",
+  "Count the cash the waiter hands over": "Numëroni paratë që dorëzon kamarieri",
+  "This waiter took no payments in this shift": "Ky kamarier nuk ka marrë pagesa në këtë ndërrim",
+  "Say why the handover differs from what the waiter owes": "Shkruani pse dorëzimi ndryshon nga ajo që ka për të dorëzuar kamarieri",
 } satisfies Dict

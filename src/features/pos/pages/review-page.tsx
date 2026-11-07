@@ -127,7 +127,7 @@ export function PosReviewPage() {
 
 /* ------------------------------------------------------------------ one shift, as the manager checks it */
 const KIND: Record<string, string> = { close: msg('Counted at the close'), recounted: msg('Counted again'), reconciled: msg('Reconciled'), returned: msg('Returned for a recount') }
-const MOVE: Record<string, string> = { supplier: msg('Paid to a supplier'), expense: msg('Expense paid'), voucher: msg('Gift voucher sold') }
+const MOVE: Record<string, string> = { supplier: msg('Paid to a supplier'), expense: msg('Expense paid'), voucher: msg('Gift voucher sold'), waiter: msg('Waiter\'s handover differs') }
 /** the cashier's last count by note (at the close, or her recount) */
 const lastCashierNotes = (d: ReviewDetail | undefined) => [...(d?.counts ?? [])].reverse().find((c) => c.kind === 'close' || c.kind === 'recounted')?.notes_coins ?? null
 

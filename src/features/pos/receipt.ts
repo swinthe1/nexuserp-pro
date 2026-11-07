@@ -108,3 +108,18 @@ export function printZReport(z: ZData) {
     <div class="b">${esc(t('Best sellers · sales with VAT'))}</div><table>${z.items.slice(0, 10).map((i) => row(`${qty(Number(i.quantity))} × ${i.name}`, money(Number(i.total)))).join('')}</table>
     <hr><div class="c muted">${esc(t('Printed {date}', { date: stamp(new Date()) }))}</div>`, css(paperOf(z.paper)), 'receipt')
 }
+
+/** a waiter's takings: what he took at the tables, and (handed over) what the till counted, signed by both */
+export function printWaiterSlip(w: { company: string; register: string; session: string; waiter: string; receipts: number; cash: number; card: number; other: number
+  owed: number; counted?: number | null; difference?: number | null; receivedBy?: string | null; note?: string | null; at: Date; currency: string; paper?: number | null }) {
+  const mm = paperOf(w.paper)
+  const row = (k: string, v: string, cls = '') => `<tr class="${cls}"><td>${esc(k)}</td><td class="r">${esc(v)}</td></tr>`
+  const handed = w.counted != null
+  printHtml(`<div class="c b big">${esc(handed ? t('TAKINGS HANDED OVER') : t('WAITER\'S TAKINGS'))}</div>
+    <div class="c muted">${esc(w.company)}<br>${esc(w.register)} · ${esc(t('shift {number}', { number: w.session }))}<br>${esc(stamp(w.at))}</div><hr>
+    <div class="b">${esc(w.waiter)}</div>
+    <table>${row(t('Receipts'), String(w.receipts))}${row(tEnum('card'), money(w.card))}${w.other ? row(t('Other payments'), money(w.other)) : ''}${row(t('Cash taken'), money(w.cash))}</table><hr>
+    <table>${row(t('To hand over'), `${money(w.owed)} ${w.currency}`, 'b')}${handed ? row(t('Handed over'), money(w.counted!), 'b') + row(t('Difference'), money(w.difference ?? 0), 'b') : ''}</table>
+    ${w.note ? `<div class="muted">“${esc(w.note)}”</div>` : ''}<hr>
+    ${handed ? `<table><tr><td>${esc(t('Waiter'))}<br><br>______________</td><td class="r">${esc(w.receivedBy ?? t('Till'))}<br><br>______________</td></tr></table>` : ''}`, css(mm), 'receipt')
+}

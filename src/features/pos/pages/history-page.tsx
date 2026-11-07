@@ -40,7 +40,7 @@ type Filters = { report: string; period: string; from: string; to: string; regis
 const REPORTS = [
   { value: 'shifts', label: msg('Shifts') }, { value: 'cashiers', label: msg('By cashier') }, { value: 'tills', label: msg('By till') },
   { value: 'movements', label: msg('Cash in and out') }, { value: 'voids', label: msg('Items taken off') }, { value: 'differences', label: msg('Differences by month') },
-  { value: 'hours', label: msg('By hour of the day') }, { value: 'z_archive', label: msg('Z-reports') },
+  { value: 'hours', label: msg('By hour of the day') }, { value: 'handovers', label: msg('Waiters\' handovers') }, { value: 'z_archive', label: msg('Z-reports') },
 ]
 const PERIODS = [
   { value: 'today', label: msg('Today') }, { value: 'yesterday', label: msg('Yesterday') }, { value: 'this_week', label: msg('This week') },
@@ -48,7 +48,7 @@ const PERIODS = [
   { value: 'this_quarter', label: msg('This quarter') }, { value: 'this_year', label: msg('This year') }, { value: 'custom', label: msg('Other dates') },
 ]
 const KIND: Record<string, string> = {
-  supplier: msg('Paid to a supplier'), expense: msg('Expense paid'), voucher: msg('Gift voucher sold'), other: msg('Other'),
+  supplier: msg('Paid to a supplier'), expense: msg('Expense paid'), voucher: msg('Gift voucher sold'), waiter: msg('Waiter\'s handover differs'), other: msg('Other'),
   void_line: msg('Line taken off'), void_qty: msg('Quantity lowered'), void_sale: msg('Sale cleared'),
   cash_in: msg('Cash in'), cash_out: msg('Cash out'),
 }
@@ -97,6 +97,12 @@ function columnsOf(report: string): Col[] {
       { id: 'month', label: msg('Month'), type: 'text' }, { id: 'name', label: msg('Counted by'), type: 'text', strong: true }, count('shifts', msg('Shifts')), count('off', msg('Shifts off')),
       { id: 'short', label: msg('Short|cash'), type: 'diff', sum: true }, { id: 'over', label: msg('Over|cash'), type: 'diff', sum: true },
       { id: 'difference', label: msg('Difference'), type: 'diff', sum: true, strong: true }, { id: 'largest_short', label: msg('Largest short'), type: 'diff' },
+    ]
+    case 'handovers': return [
+      { id: 'at', label: msg('When'), type: 'time' }, { id: 'register', label: msg('Till'), type: 'text' }, { id: 'shift', label: msg('Shift'), type: 'text' },
+      { id: 'name', label: msg('Waiter'), type: 'text', strong: true }, count('receipts', msg('Receipts')), money('card', msg('Card'), { hidden: true }),
+      money('owed', msg('To hand over')), money('counted', msg('Handed over')), { id: 'difference', label: msg('Difference'), type: 'diff', sum: true, strong: true },
+      { id: 'note', label: msg('Note'), type: 'text' }, { id: 'received_by', label: msg('Taken in by'), type: 'text' },
     ]
     case 'hours': return [
       { id: 'label', label: msg('Hour'), type: 'text', strong: true }, count('receipts', msg('Receipts')), { id: 'per_day', label: msg('Receipts a day'), type: 'qty' },
@@ -149,7 +155,7 @@ export function PosHistoryPage() {
   const whs = useWarehouses()
   const q = useQuery({
     queryKey: ['pos-history', companyId, applied], enabled: !!companyId && !!applied.from && !!applied.to,
-    queryFn: async () => unwrap(await supabase.rpc('pos_history', { p_company: companyId!, p: { report: applied.report, from: applied.from, to: applied.to,
+    queryFn: async () => unwrap(await supabase.rpc(applied.report === 'handovers' ? 'pos_handover_history' : 'pos_history', { p_company: companyId!, p: { report: applied.report, from: applied.from, to: applied.to,
       registers: applied.registers, people: applied.people, units: applied.units } as unknown as Json })) as unknown as
       { rows: Row[]; currency: string; tolerance: number; manager: boolean; blind: boolean },
   })
@@ -200,6 +206,7 @@ export function PosHistoryPage() {
     if (applied.report === 'cashiers' && r.key) return go({ report: 'shifts', people: [String(r.key)] })
     if (applied.report === 'tills' && r.key) return go({ report: 'shifts', registers: [String(r.key)] })
     if (applied.report === 'differences' && r.key) return go({ report: 'shifts', people: [String(r.key)] })
+    if (applied.report === 'handovers' && r.session_id) { navigate(`/pos/sessions/${r.session_id}`); return }
     const id = applied.report === 'shifts' ? r.id : r.session_id
     if (id) navigate(`/pos/sessions/${id}`)
   }

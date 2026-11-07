@@ -21,4 +21,5 @@ export const serverTemplatesSr: [string, string][] = [
   ['ATK answered %', 'PAK je odgovorila {0}'],
   ['ATK refused a receipt: %', 'PAK je odbila kupon: {0}'],
   ['ATK registers each till number once, and number % of this store is taken: give this till number %', 'PAK registruje svaki broj kase samo jednom, a broj {0} ove jedinice je zauzet: dajte ovoj kasi broj {1}'],
+  ["WAITERS_OWE: the waiters have not handed over their takings yet: %", "Konobari još nisu predali pazar: {0}"],
 ]

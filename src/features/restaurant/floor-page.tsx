@@ -17,6 +17,7 @@ import { formatDateWith, t, td, tn } from '@/i18n'
 import { openCashDrawer, printHtml } from '@/lib/print'
 import { cn, formatMoney, num } from '@/lib/utils'
 import { type CatalogItem, type TillData, useTill } from '@/features/pos/api'
+import { MyTakings } from '@/features/pos/waiters'
 import { nextDeviceRef } from '@/features/pos/offline'
 import { printReceipt, type ReceiptData } from '@/features/pos/receipt'
 import { Centered, OpenTill, PayDialog, type Tender, TillSkeleton } from '@/features/pos/pages/till-page'
@@ -127,6 +128,7 @@ function Restaurant({ data }: { data: TillData }) {
         {!phone && areaNav}
         {phone ? (
           <div className="ml-auto flex items-center gap-1">
+            <MyTakings data={data} />
             {!tabId && <Button variant="outline" size="icon" aria-label={t('Takeaway')} onClick={takeaway}><ShoppingBag /></Button>}
             <DropdownMenu>
               <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label={t('More')}><Ellipsis /></Button></DropdownMenuTrigger>
@@ -140,6 +142,7 @@ function Restaurant({ data }: { data: TillData }) {
           </div>
         ) : (
         <div className="ml-auto flex items-center gap-1.5">
+          <MyTakings data={data} />
           {!tabId && <Button variant="outline" size="sm" onClick={takeaway}><ShoppingBag /> {t('Takeaway')}</Button>}
           <Button variant="ghost" size="sm" asChild><a href={`/pos/kitchen/${data.register.warehouse_id}`} target="_blank" rel="noreferrer"><ChefHat /> {t('Kitchen screen')}</a></Button>
           <Button variant="ghost" size="sm" aria-pressed={kitchenPrint} onClick={toggleTickets}
