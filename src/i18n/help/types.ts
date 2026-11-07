@@ -18,3 +18,34 @@ export type Guide = {
   related?: { href: string; label: L }[]
   tour?: TourStep[]
 }
+
+/** One question that checks a lesson was understood: three answers, one right */
+export type Check = { q: L; options: L[]; answer: number; explain: L }
+
+/**
+ * One lesson of the training: what you will be able to do, the steps on the page, a small task to try
+ * yourself and one question. The page's own ⓘ guide and "Show me" open with it.
+ */
+export type Lesson = {
+  /** stays the same once given: the progress of people is kept by it */
+  key: string
+  title: L
+  /** the page the lesson opens */
+  href: string
+  minutes: number
+  /** one line under the title: why this matters */
+  why: L
+  /** "after this lesson you can …" */
+  goal: L
+  /** the steps of this task, with the buttons named as the screen shows them */
+  steps: L[]
+  /** a small real task to do on the page */
+  practice?: L
+  check?: Check
+  /** shown only to someone with this permission ('a|b' = either) */
+  perm?: string
+  /** shown only when the licence has this module */
+  feature?: string
+}
+/** A training path for a kind of work. roles ['*'] = everyone */
+export type Track = { key: string; title: L; who: L; roles: string[]; lessons: Lesson[] }

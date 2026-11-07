@@ -5,19 +5,20 @@ import { useAuth } from '@/app/auth-provider'
 import { useCompany } from '@/app/company-provider'
 import { Button } from '@/components/ui/button'
 import { t } from '@/i18n'
-import { tracksFor } from '@/i18n/help/training'
-import { useMyTraining } from './api'
+import { useMyTracks, useMyTraining } from './api'
 
 /** A new person who has not started the training is invited to it once (until they start or say later) */
 export function TrainingNudge() {
   const { user } = useAuth()
   const { company } = useCompany()
+  const tracks = useMyTracks()
   const { pathname } = useLocation()
   const done = useMyTraining()
   const key = `drispro-training-later:${user?.id ?? ''}:${company?.id ?? ''}`
   const [later, setLater] = React.useState(() => { try { return localStorage.getItem(key) === '1' } catch { return true } })
   if (later || !done.data || done.data.size > 0 || pathname.startsWith('/training') || pathname.startsWith('/pos/till')) return null
-  const minutes = tracksFor(company?.roles ?? []).slice(0, 1).flatMap((tr) => tr.lessons).reduce((s, l) => s + l.minutes, 0)
+  // the first path that is not "Getting started": that one is short and comes first anyway
+  const minutes = tracks.filter((tr) => !tr.roles.includes('*')).concat(tracks).slice(0, 1).flatMap((tr) => tr.lessons).reduce((s, l) => s + l.minutes, 0)
   const dismiss = () => { try { localStorage.setItem(key, '1') } catch { /* private window */ } setLater(true) }
   return (
     <div className="flex flex-wrap items-center gap-3 border-b border-primary/20 bg-primary/5 px-4 py-2.5 text-[13px]">

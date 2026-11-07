@@ -9,6 +9,7 @@ export const GUIDES_A: Record<string, Guide> = {
   '/': {
     what: { sq: 'Faqja e parë: shifrat kryesore (stoku, shitjet, borxhet, miratimet) dhe lëvizjet e fundit të stokut.', en: 'The start page: the key figures (stock, sales, debts, approvals) and the latest stock movements.' },
     steps: [
+      { sq: '"Dita deri tani" të thotë me një fjali sa ke shitur sot, krahasuar me ditët e zakonshme, dhe çka shitet më shumë.', en: '"The day so far" tells you in one sentence what you sold today, compared with usual days, and what sells most.' },
       { sq: 'Kliko një kartelë me shifër për të hapur faqen pas saj, p.sh. borxhet ose stokun.', en: 'Click a figure card to open the page behind it, e.g. debts or stock.' },
       { sq: 'Kliko "Personalizo panelin" për të zgjedhur cilat kartela dalin dhe me çfarë radhe; zgjedhjen e sheh vetëm ti.', en: 'Click "Choose cards" to pick which cards show and in what order; only you see this choice.' },
       { sq: 'Kur lart del shiriti "gjëra për t\'u kontrolluar në libra", klikoje: të hap kontrollin e librave.', en: 'When the "things to check in the books" strip shows on top, click it: it opens the books check.' },
@@ -28,7 +29,7 @@ export const GUIDES_A: Record<string, Guide> = {
     what: { sq: 'Dokumentet që presin vendimin tënd: porosi, kërkesa blerjeje, rregullime stoku, pagesa. Kërkesat e tua nuk i miraton dot vetë.', en: 'Documents waiting for your decision: orders, requisitions, stock adjustments, payments. You cannot approve your own requests.' },
     steps: [
       { sq: 'Te "Në pritje" sheh çka pret vendimin; kliko numrin për të parë dokumentin.', en: 'Under "Waiting" see what waits for a decision; click the number to see the document.' },
-      { sq: 'Kliko "Mirato" ose "Refuzo"; te miratimi mund të shtosh një shënim.', en: 'Click "Approve" or "Reject"; when approving you can add a note.' },
+      { sq: '"Mirato" e miraton me një klikim. "Refuzo" kërkon arsyen.', en: '"Approve" approves it in one click. "Reject" asks for the reason.' },
       { sq: 'Kur refuzon, shkruaj patjetër arsyen: kërkuesi e sheh se çka duhet ndryshuar.', en: 'When you reject, you must write the reason: the requester sees what to change.' },
       { sq: 'Te "Të vendosura" sheh vendimet e mëparshme.', en: 'Under "Decided" see the earlier decisions.' },
     ],
@@ -36,7 +37,7 @@ export const GUIDES_A: Record<string, Guide> = {
       { sq: 'Te kërkesa jote del "Kërkesa juaj" pa butona: atë e miraton dikush tjetër.', en: 'Your own request shows "Your request" without buttons: someone else approves it.' },
       { sq: 'Cilat dokumente kërkojnë miratim dhe nga kush caktohet te Rregullat e miratimit.', en: 'Which documents need approval, and by whom, is set in Approval workflows.' },
     ],
-    after: { sq: 'Kërkuesi njoftohet për vendimin. Nëse rregulli ka edhe një hap, njoftohet miratuesi i radhës; pas miratimit të fundit dokumenti vazhdon (p.sh. porosia rezervon mallin).', en: 'The requester is notified of the decision. If the workflow has another step, the next approver is notified; after the last approval the document goes on (e.g. the order reserves stock).' },
+    after: { sq: 'Kërkuesi njoftohet për vendimin. Nëse rregulli ka edhe një hap, njoftohet miratuesi i radhës; pas miratimit të fundit dokumenti vazhdon (p.sh. porosia rezervon mallin). Një miratim që pret më shumë se 2 ditë bëhet detyrë për administratorin e kompanisë.', en: 'The requester is notified of the decision. If the workflow has another step, the next approver is notified; after the last approval the document goes on (e.g. the order reserves stock). An approval waiting more than 2 days becomes a task for the company\'s administrator.' },
     related: [{ href: '/settings/workflows', label: { sq: 'Rregullat e miratimit', en: 'Approval workflows' } }, { href: '/notifications', label: { sq: 'Njoftimet', en: 'Notifications' } }],
     tour: [
       { target: 'Waiting', say: { sq: 'Këtu janë dokumentet që presin ty.', en: 'Here are the documents waiting for you.' } },
@@ -76,7 +77,7 @@ export const GUIDES_A: Record<string, Guide> = {
     steps: [
       { sq: 'Dërgesa krijohet nga porosia e konfirmuar me "Krijo dërgesën", ose nga "Porositë në pritje".', en: 'A delivery is created from a confirmed order with "Create delivery", or from the "Order desk".' },
       { sq: 'Hape dërgesën dhe kontrollo sasitë dhe raftin te "Merret nga"; shto "Numri i gjurmimit" ose "Shënime për shoferin" kur duhen.', en: 'Open the delivery and check the quantities and the shelf under "Pick from"; add a "Tracking number" or "Notes for the driver" when needed.' },
-      { sq: 'Kliko "Gati për dërgim" kur malli është përgatitur.', en: 'Click "Ready to ship" when the goods are prepared.' },
+      { sq: 'Kur malli është përgatitur, mund ta shënosh "Gati për dërgim" (te butoni ⋯ i dërgesës).', en: 'When the goods are prepared you can mark it "Ready to ship" (under the delivery\'s ⋯ button).' },
       { sq: 'Kur malli niset, kliko "Përfundo dërgesën".', en: 'When the goods leave, click "Complete delivery".' },
     ],
     mistakes: [{ sq: 'Për të dërguar më pak se porosia, ul sasinë: pjesa tjetër mbetet e rezervuar në porosi për një dërgesë tjetër.', en: 'To send less than ordered, lower the quantity: the rest stays reserved on the order for a later delivery.' }],
@@ -254,12 +255,12 @@ export const GUIDES_A: Record<string, Guide> = {
       { sq: 'Zgjidh furnitorin, "Dorëzimi i pritur" dhe njësinë te "Dorëzo në".', en: 'Choose the vendor, the "Expected delivery" and the unit under "Deliver to".' },
       { sq: 'Shto rreshtat: çmimi vjen nga çmimet e furnitorit, nga çmimi i fundit i paguar ose nga kostoja mesatare.', en: 'Add the lines: the price comes from the vendor\'s prices, the last price paid or the average cost.' },
       { sq: 'Kliko "Dërgo": porosia kontrollohet dhe miratohet, ose shkon te miratuesi kur shuma e kërkon.', en: 'Click "Submit": the order is checked and approved, or goes to the approver when the amount needs it.' },
-      { sq: 'Kur ia dërgon furnitorit, kliko "Shëno si të dërguar"; kur vjen malli, "Prano mallin".', en: 'When it is with the vendor, click "Mark as sent"; when the goods arrive, "Receive goods".' },
+      { sq: 'Dërgoja furnitorit me "Dërgo me e-mail" (te shigjeta pranë "Printo"): porosia shënohet vetë si e dërguar (kur e dërgon ndryshe, "Shëno si të dërguar" është te butoni ⋯). Kur vjen malli, kliko "Prano mallin".', en: 'Send it to the vendor with "Send by email" (the arrow next to "Print"): the order is marked sent by itself (when you send it another way, "Mark as sent" is under the ⋯ button). When the goods arrive, click "Receive goods".' },
       { sq: 'Kur vjen fatura, kliko "Regjistro faturën": krahasohet me porosinë dhe me mallin e pranuar.', en: 'When the bill comes, click "Enter bill": it is checked against the order and the goods received.' },
     ],
     mistakes: [
       { sq: 'Pas "Dërgo" rreshtat nuk ndryshohen; nëse pret ende miratim, kliko "Tërhiq" që të kthehet në skicë.', en: 'After "Submit" the lines cannot change; while it still waits for approval, click "Withdraw" to get it back as a draft.' },
-      { sq: 'Nëse pjesa tjetër e mallit nuk do të vijë, kliko "Mbyll", që të mos llogaritet më si mall në ardhje.', en: 'If the rest of the goods will not come, click "Close" so it no longer counts as incoming stock.' },
+      { sq: 'Nëse pjesa tjetër e mallit nuk do të vijë, kliko "Mbyll porosinë" te butoni ⋯, që të mos llogaritet më si mall në ardhje. Aty janë edhe "Furnitori konfirmoi", "Porosit sërish pjesën që mungon" dhe "Anulo porosinë".', en: 'If the rest of the goods will not come, click "Close order" under the ⋯ button so it no longer counts as incoming stock. "Vendor confirmed", "Order the rest again" and "Cancel order" are there too.' },
     ],
     after: { sq: 'Porosia e miratuar del si mall në ardhje te stoku dhe te rifurnizimi. "Prano mallin" hap një pranim skicë; malli hyn në stok kur e konfirmon.', en: 'An approved order shows as incoming stock and in replenishment. "Receive goods" opens a draft receipt; the goods enter stock when you confirm it.' },
     related: [{ href: '/procurement/vendor-prices', label: { sq: 'Çmimet e furnitorëve', en: 'Vendor prices' } }, { href: '/procurement/bills', label: { sq: 'Faturat e blerjes', en: 'Vendor bills' } }],
@@ -316,18 +317,18 @@ export const GUIDES_A: Record<string, Guide> = {
   '/procurement/replenishment': {
     what: { sq: 'Çka duhet porositur: artikujt që ranë te pika e riporositjes ose poshtë saj, me sasinë e propozuar deri te maksimumi.', en: 'Replenishment: items at or below their reorder point, with the suggested quantity up to the maximum.' },
     steps: [
-      { sq: 'Kliko "Kontrollo stokun tani" që programi të llogarisë çka duhet porositur.', en: 'Click "Check stock now" for the program to work out what needs ordering.' },
+      { sq: 'Kliko "Nis rifurnizimin" që programi të llogarisë çka mungon në të gjitha njësitë; ose "Kontrollo stokun tani" (te butoni ⋯) për njësinë e zgjedhur.', en: 'Click "Run replenishment" for the program to work out what is missing in all units; or "Check stock now" (under the ⋯ button) for the chosen unit.' },
       { sq: 'Kontrollo sasinë dhe furnitorin në çdo rresht; ndryshoji nëse duhet.', en: 'Check the quantity and the vendor on each line; change them if needed.' },
-      { sq: 'Zgjidh rreshtat dhe kliko "Krijo porosi blerjeje" (ose "Krijo transferime" kur malli merret nga një njësi tjetër).', en: 'Tick the lines and click "Create purchase orders" (or "Create transfers" when the goods come from another unit).' },
+      { sq: 'Zgjidh rreshtat dhe kliko "Krijo dokumentet": secili rresht bëhet dokumenti që i duhet — porosi blerjeje (një për çdo furnitor), transfer nga njësia tjetër ose urdhër pune.', en: 'Tick the lines and click "Create documents": each line becomes the document it needs — a purchase order (one per vendor), a transfer from the other unit or a work order.' },
       { sq: 'Rreshtat që s\'të duhen hiqi me "Hidh poshtë".', en: 'Remove the lines you do not need with "Dismiss".' },
     ],
-    mistakes: [{ sq: 'Pika e riporositjes (min/maks) caktohet për çdo artikull dhe njësi te faqja e produktit: pa të, artikulli nuk del këtu.', en: 'The reorder point (min/max) is set per item and unit on the product page: without it the item does not show here.' }],
-    after: { sq: 'Krijohen porosi blerjeje skicë, një për çdo furnitor; ti i kontrollon dhe i dërgon. Me "Rifurnizim automatik" kjo bëhet vetë çdo ditë.', en: 'Draft purchase orders are made, one per vendor; you review and submit them. With "Automatic replenishment" this happens every day by itself.' },
+    mistakes: [{ sq: 'Pika e riporositjes (min/maks) caktohet për çdo artikull dhe njësi te faqja e produktit, ose me "Min dhe maks nga shitjet" (te butoni ⋯): pa të, artikulli nuk del këtu.', en: 'The reorder point (min/max) is set per item and unit on the product page, or with "Min and max from sales" (under the ⋯ button): without it the item does not show here.' }],
+    after: { sq: 'Krijohen dokumente skicë; ti i kontrollon dhe i dërgon. Me "Rifurnizim automatik" kjo bëhet vetë çdo ditë.', en: 'Draft documents are made; you review and send them. With "Automatic replenishment" this happens every day by itself.' },
     related: [{ href: '/procurement/vendor-prices', label: { sq: 'Çmimet e furnitorëve', en: 'Vendor prices' } }, { href: '/procurement/orders', label: { sq: 'Porositë e blerjes', en: 'Purchase orders' } }],
     tour: [
-      { target: 'Check stock now', say: { sq: 'Fillo këtu: programi llogarit çka mungon.', en: 'Start here: the program works out what is missing.' } },
-      { target: 'Create purchase orders', say: { sq: 'Zgjidh rreshtat dhe bëj porositë, një për çdo furnitor.', en: 'Tick the lines and make the orders, one per vendor.' } },
-      { target: 'Run replenishment', say: { sq: 'Ose llogarit gjithçka për të gjitha njësitë njëherësh.', en: 'Or work out everything for all units at once.' } },
+      { target: 'Run replenishment', say: { sq: 'Fillo këtu: programi llogarit çka mungon në të gjitha njësitë.', en: 'Start here: the program works out what is missing in all units.' } },
+      { target: 'More', say: { sq: 'Te ⋯: kontrollo stokun e kësaj njësie dhe min/maks nga shitjet.', en: 'Under ⋯: check this unit\'s stock and min/max from sales.' } },
+      { target: 'Create documents', say: { sq: 'Zgjidh rreshtat dhe bëj të gjitha dokumentet njëherësh.', en: 'Tick the lines and make all the documents at once.' } },
     ],
   },
   '/procurement/requisitions': {
@@ -349,19 +350,21 @@ export const GUIDES_A: Record<string, Guide> = {
   '/sales/quotes/:id': {
     what: { sq: 'Një ofertë për klientin: artikujt, çmimet dhe deri kur vlen.', en: 'One quote for a customer: the items, the prices and how long it is valid.' },
     steps: [
-      { sq: 'Zgjidh klientin: çmimet vijnë nga lista e tij, ose zgjidh një tjetër te "Lista e çmimeve".', en: 'Choose the customer: prices come from their list, or choose another under "Price list".' },
+      { sq: 'Zgjidh klientin: çmimet vijnë nga lista e tij, ose zgjidh tjetër te "Lista e çmimeve".', en: 'Choose the customer: prices come from their list, or choose another under "Price list".' },
       { sq: 'Cakto "E vlefshme deri më" dhe shto rreshtat.', en: 'Set "Valid until" and add the lines.' },
-      { sq: 'Printoje ose dërgoje me e-mail, pastaj kliko "Shëno si të dërguar".', en: 'Print it or send it by email, then click "Mark as sent".' },
-      { sq: 'Kur klienti pranon, kliko "Krijo porosinë"; kur refuzon, "Klienti refuzoi".', en: 'When the customer accepts, click "Create order"; when they say no, "Customer said no".' },
+      { sq: 'Te shigjeta e vogël pranë "Printo" kliko "Dërgo me e-mail": oferta shënohet vetë si e dërguar. Nëse e dërgon ndryshe, "Shëno si e dërguar pa e-mail" është te butoni ⋯.', en: 'From the small arrow next to "Print" click "Send by email": the quote is marked sent by itself. If you send it another way, "Mark as sent without e-mail" is under the ⋯ button.' },
+      { sq: 'Kur klienti pranon, kliko "Krijo porosinë". Kur refuzon, "Klienti refuzoi" është te butoni ⋯.', en: 'When the customer accepts, click "Create order". When they say no, "Customer said no" is under the ⋯ button.' },
     ],
-    mistakes: [{ sq: 'Oferta e dërguar nuk ndryshohet: kliko "Ndrysho përsëri" që të kthehet në skicë.', en: 'A sent quote cannot be changed: click "Edit again" to bring it back to draft.' }],
-    after: { sq: 'Oferta nuk prek as stokun as librat. "Krijo porosinë" bën një porosi skicë me të njëjtat rreshta dhe çmime, dhe mundësia shënohet si e fituar.', en: 'A quote touches neither stock nor the books. "Create order" makes a draft order with the same lines and prices, and the deal is marked as won.' },
-    related: [{ href: '/sales/quotes', label: { sq: 'Ofertat', en: 'Quotes' } }, { href: '/crm/pipeline', label: { sq: 'Marrëveshjet', en: 'Pipeline' } }],
+    mistakes: [
+      { sq: 'Një ofertë e dërguar nuk ndryshohet: "Ndrysho përsëri" (te ⋯) e kthen në skicë.', en: 'A sent quote cannot be changed: "Edit again" (under ⋯) brings it back to draft.' },
+    ],
+    after: { sq: 'Oferta nuk prek as stokun as kontabilitetin. Pas 3 ditësh pa përgjigje, programi të jep detyrën "Telefono klientin"; kur kalon data, oferta skadon vetë.', en: 'A quote touches neither stock nor the books. After 3 days without an answer, the program gives you the task "Call the customer"; when the date passes, the quote expires by itself.' },
     tour: [
       { target: 'Customer', say: { sq: 'Fillo me klientin: çmimet e tij plotësohen vetë.', en: 'Start with the customer: their prices fill in by themselves.' } },
       { target: 'Valid until', say: { sq: 'Deri kur e mban ofertën.', en: 'How long you hold the offer.' } },
-      { target: 'Lines', say: { sq: 'Këtu shton artikujt.', en: 'Add the items here.' } },
-      { target: 'Create order', say: { sq: 'Kur klienti pranon, bëje porosi pa e shkruar prapë.', en: 'When the customer accepts, turn it into an order without typing it again.' } },
+      { target: 'Lines', say: { sq: 'Shto artikujt këtu.', en: 'Add the items here.' } },
+      { target: 'Create order', say: { sq: 'Kur klienti pranon, ktheje në porosi pa e shkruar përsëri.', en: 'When the customer accepts, turn it into an order without typing it again.' } },
+      { target: 'More', say: { sq: 'Te ⋯: shëno si e dërguar pa e-mail, klienti refuzoi, ndrysho përsëri.', en: 'Under ⋯: mark sent without e-mail, customer said no, edit again.' } },
     ],
   },
   '/sales/orders/:id': {
@@ -374,7 +377,7 @@ export const GUIDES_A: Record<string, Guide> = {
     ],
     mistakes: [
       { sq: 'Pas konfirmimit rreshtat nuk ndryshohen më.', en: 'After confirming, the lines can no longer change.' },
-      { sq: 'Nëse pjesa tjetër s\'do të dërgohet, kliko "Mbyll porosinë" që të lirohet malli i rezervuar.', en: 'If the rest will not be delivered, click "Close order" to release the reserved stock.' },
+      { sq: 'Nëse pjesa tjetër s\'do të dërgohet, kliko "Mbyll porosinë" te butoni ⋯, që të lirohet malli i rezervuar. Aty janë edhe "Rezervo stokun" dhe "Anulo porosinë"; rezervimi bëhet edhe vetë çdo orë, kur vjen malli.', en: 'If the rest will not be delivered, click "Close order" under the ⋯ button to release the reserved stock. "Reserve stock" and "Cancel order" are there too; reservation also runs by itself every hour, as goods arrive.' },
     ],
     after: { sq: 'Malli i rezervuar nuk i shitet dot tjetërkujt; stoku zbret kur përfundon dërgesa, dhe borxhi i klientit lind me faturën. Kur kalohet kufiri i kredisë ose i zbritjes, porosia shkon për miratim.', en: 'Reserved goods cannot be sold to anyone else; stock goes down when the delivery is completed, and the customer\'s debt starts with the invoice. Over the credit or discount limit, the order goes for approval.' },
     related: [{ href: '/sales/deliveries', label: { sq: 'Dërgesat', en: 'Deliveries' } }, { href: '/oms/fulfillment', label: { sq: 'Porositë në pritje', en: 'Order desk' } }],

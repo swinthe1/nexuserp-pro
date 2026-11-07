@@ -64,6 +64,11 @@ export function entityHref(type: string | null, id: string | null, label: string
     case 'purchase_orders': return id ? `/procurement/orders/${id}` : null
     case 'vendor_bills': return id ? `/procurement/bills/${id}` : null
     case 'sales_orders': return id ? `/sales/orders/${id}` : null
+    // the tasks the program makes by itself
+    case 'sales_quotes': return id ? `/sales/quotes/${id}` : null
+    case 'goods_receipts': return id ? `/inventory/receipts/${id}` : null
+    case 'approval_requests': return '/approvals'
+    case 'hotel_reservations': return '/hotel/reservations'
     default: return null
   }
 }
@@ -71,4 +76,5 @@ export const ENTITY_LABEL: Record<string, string> = {
   sales_invoices: msg('Invoice'), business_partners: msg('Customer or vendor'), pos_sessions: msg('Till shift'), employment_contracts: msg('Contract'),
   employees: msg('Employee'), lots: msg('Lot'), leads: msg('Lead'), products: msg('Product'), product_variants: msg('Product'),
   purchase_orders: msg('Purchase order'), vendor_bills: msg('Vendor bill'), sales_orders: msg('Sales order'),
+  sales_quotes: msg('Quote'), goods_receipts: msg('Goods receipt'), approval_requests: msg('Approval'), hotel_reservations: msg('Reservation'),
 }

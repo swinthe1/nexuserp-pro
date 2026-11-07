@@ -3,6 +3,7 @@ import { GUIDES_A } from './guides-a'
 import { GUIDES_B } from './guides-b'
 import { GUIDES_C } from './guides-c'
 import { GUIDES_D } from './guides-d'
+import { GUIDES_E } from './guides-e'
 
 /**
  * What every page is for, in plain words: opened with the small ⓘ next to the page title.
@@ -12,15 +13,22 @@ import { GUIDES_D } from './guides-d'
 const BASE: Record<string, Guide> = {
   /* ------------------------------------------------------------------ the till */
   '/pos': {
-    what: { sq: 'Këtu janë arkat e dyqanit: hap një arkë për të shitur, shiko turnet dhe raportet Z të ditës.', en: 'The shop\'s tills: open one to sell, and see the shifts and the day\'s Z reports.' },
+    what: { sq: 'Këtu janë arkat e dyqanit: hap një arkë për të shitur, shiko turnet dhe raportet Z të ditës. Te restoranti dhe kafeja, arka hap tavolinat dhe ekranin e kuzhinës.', en: 'The shop\'s tills: open one to sell, and see the shifts and the day\'s Z reports. In a restaurant or café the till opens the tables and the kitchen screen.' },
     steps: [
-      { sq: 'Kliko "Shko te arka" te arka ku punon.', en: 'Click "Go to the till" on the till you work at.' },
-      { sq: 'Në fillim të ditës shkruaj sa para ka në sirtar dhe kliko "Hap arkën".', en: 'At the start of the day, type the cash in the drawer and click "Open the till".' },
+      { sq: 'Te arka ku punon kliko "Hap arkën" (në mëngjes) ose "Shko te arka" (kur turni është i hapur).', en: 'On the till you work at, click "Open till" (in the morning) or "Go to till" (when the shift is open).' },
+      { sq: 'Në fillim të ditës shkruaj sa para ka në sirtar: ato janë baza për numërimin në fund.', en: 'At the start of the day, type the cash in the drawer: it is the base for the count at the end.' },
+      { sq: 'Te restoranti kliko "Hap tavolinat" ose "Shko te tavolinat"; kuzhina hap "Ekrani i kuzhinës".', en: 'In a restaurant click "Open the tables" or "Go to the tables"; the kitchen opens "Kitchen screen".' },
       { sq: 'Në fund të ditës mbyll turnin: numëro paratë dhe printo raportin Z.', en: 'At the end of the day close the shift: count the cash and print the Z report.' },
     ],
     mistakes: [{ sq: 'Mos e lër arkën të hapur natën: shitjet e ditës tjetër përzihen me të sotmet.', en: 'Do not leave the till open overnight: tomorrow\'s sales get mixed with today\'s.' }],
     after: { sq: 'Çdo turn i mbyllur bëhet raport Z dhe regjistrim në kontabilitet; diferenca e parave del te sefi.', en: 'Each closed shift becomes a Z report and a book entry; any cash difference shows at the safe.' },
     related: [{ href: '/safe', label: { sq: 'Sefi', en: 'Safe' } }, { href: '/pos/loyalty', label: { sq: 'Kartat e zbritjes', en: 'Loyalty cards' } }],
+    tour: [
+      { target: 'Open till', say: { sq: 'Në mëngjes: shkruaj paratë e sirtarit dhe hape arkën.', en: 'In the morning: type the drawer cash and open the till.' } },
+      { target: 'Go to till', say: { sq: 'Turni është i hapur: vazhdo të shesësh.', en: 'The shift is open: carry on selling.' } },
+      { target: 'Go to the tables', say: { sq: 'Te restoranti: tavolinat dhe porositë.', en: 'In a restaurant: the tables and the orders.' } },
+      { target: 'Kitchen screen', say: { sq: 'Ekrani që kuzhina e mban hapur: porositë e reja dalin vetë.', en: 'The screen the kitchen keeps open: new orders appear by themselves.' } },
+    ],
   },
   '/pos/till/:registerId': {
     what: { sq: 'Ekrani i shitjes në arkë: skano mallin, merr paratë, printo kuponin.', en: 'The till screen: scan the goods, take the money, print the receipt.' },
@@ -28,16 +36,19 @@ const BASE: Record<string, Guide> = {
       { sq: 'Skano barkodin ose kërko artikullin me emër; çdo skanim shton një copë.', en: 'Scan the barcode or search the item by name; each scan adds one piece.' },
       { sq: 'Për sasi ose zbritje kliko rreshtin dhe zgjidh "Sasia, zbritja…".', en: 'For a quantity or a discount, click the line and choose "Quantity, discount…".' },
       { sq: 'Kliko "Paguaj", zgjidh para në dorë ose kartë dhe shkruaj sa të dha klienti: kusuri del vetë.', en: 'Click "Pay", choose cash or card and type what the customer gave: the change is shown.' },
-      { sq: 'Kliko "Përfundo shitjen"; kuponi printohet dhe fillon shitja tjetër.', en: 'Click "Finish the sale"; the receipt prints and the next sale starts.' },
+      { sq: 'Kliko "Përfundo shitjen"; kuponi printohet dhe fillon shitja tjetër.', en: 'Click "Complete sale"; the receipt prints and the next sale starts.' },
+      { sq: 'Lart: "Kthim" (F9) për mallin që kthehet; te butoni ⋯ janë "Para dhe pagesa", "Shit kupon dhurate", "Raporti X" dhe "Ndërro arkëtarin". "Kyçe" e mbyll ekranin kur largohesh; "Mbyll turnin" në fund të ditës.', en: 'On top: "Refund" (F9) for goods brought back; under the ⋯ button are "Cash and payments", "Sell a gift voucher", "X-report" and "Switch cashier". "Lock" locks the screen when you step away; "Close till" at the end of the day.' },
     ],
     mistakes: [
-      { sq: 'Kthimi i mallit bëhet me "Kthim" nga menyja "Më shumë", jo duke shitur me minus.', en: 'A return is done with "Return" in "More", not by selling a negative quantity.' },
+      { sq: 'Kthimi bëhet me "Kthim", jo duke shitur me minus.', en: 'A return is done with "Refund", not by selling a negative quantity.' },
       { sq: 'Zbritjet e mëdha kërkojnë menaxherin: thirre para se ta premtosh zbritjen.', en: 'Big discounts need the manager: call them before promising the discount.' },
     ],
     after: { sq: 'Malli zbret nga stoku menjëherë; paratë shkojnë te sirtari i arkës deri në mbylljen e turnit.', en: 'The goods leave stock at once; the money goes to the till drawer until the shift is closed.' },
     tour: [
       { target: 'input[type=search], [data-help=till-scan]', say: { sq: 'Këtu skanon ose shkruan emrin e artikullit.', en: 'Scan here, or type the item\'s name.' } },
-      { target: 'More', say: { sq: 'Te "Më shumë" janë kthimi, hyrje/dalje parash dhe mbyllja e turnit.', en: '"More" holds returns, cash in/out and closing the shift.' } },
+      { target: 'Refund', say: { sq: 'Malli që kthehet: skano kuponin e shitjes.', en: 'Goods brought back: scan the sale\'s receipt.' } },
+      { target: 'More', say: { sq: 'Te ⋯: hyrje/dalje parash, kupon dhurate, raporti X, ndërrimi i arkëtarit.', en: 'Under ⋯: cash in/out, gift vouchers, the X report, switching cashier.' } },
+      { target: 'Close till', say: { sq: 'Në fund të ditës: numëro paratë dhe printo raportin Z.', en: 'At the end of the day: count the cash and print the Z report.' } },
       { target: 'Pay', say: { sq: 'Kur mbaron, kliko "Paguaj" dhe zgjidh si paguan klienti.', en: 'When done, click "Pay" and choose how the customer pays.' } },
     ],
   },
@@ -94,7 +105,7 @@ const BASE: Record<string, Guide> = {
       { sq: 'Kontrollo sasitë me fletëdërgesën dhe përfundo pranimin.', en: 'Check the quantities against the delivery note and finish the receipt.' },
     ],
     mistakes: [{ sq: 'Nëse ke edhe faturën, përdor "Fatura e blerjes me mall": pranimi dhe fatura bëhen njëherësh.', en: 'If you also have the invoice, use "Purchase invoice with goods": receipt and bill in one go.' }],
-    after: { sq: 'Malli hyn në stok me koston e rreshtit; transporti dhe dogana shtohen me "Shto koston e mbërritjes".', en: 'The goods enter stock at the line cost; freight and customs are added with "Add arrival costs".' },
+    after: { sq: 'Malli hyn në stok me koston e rreshtit; transporti dhe dogana shtohen me "Shto koston e mbërritjes".', en: 'The goods enter stock at the line cost; freight and customs are added with "Add landed cost".' },
   },
   '/inventory/transfers/new': {
     what: { sq: 'Kalimi i mallit nga një njësi në tjetrën (p.sh. nga depo në dyqan).', en: 'Moving goods from one unit to another (for example from the depot to the shop).' },
@@ -129,7 +140,7 @@ const BASE: Record<string, Guide> = {
   '/wms/counts/:id': {
     what: { sq: 'Një numërim: skano raftin, pastaj çdo artikull në të.', en: 'One count: scan the shelf, then every item on it.' },
     steps: [
-      { sq: 'Skano etiketën e raftit (ose printo fletën e numërimit).', en: 'Scan the shelf label (or print the count sheet).' },
+      { sq: 'Skano etiketën e raftit. Për numërim me letër, fletën e printon te butoni ⋯.', en: 'Scan the shelf label. To count on paper, print the sheet under the ⋯ button.' },
       { sq: 'Skano çdo artikull; çdo skanim shton një copë. Kliko rreshtin për ta shkruar sasinë me dorë.', en: 'Scan each item; each scan adds one. Click a line to type the quantity.' },
       { sq: 'Kur mbaron, "Përfundo numërimin" e dërgon për shqyrtim.', en: 'When done, "Finish counting" sends it for review.' },
       { sq: 'Te shqyrtimi shiko çka mungon dhe sa vlen; diferencat e mëdha ktheji për rinumërim.', en: 'In the review see what is missing and what it is worth; send big differences back to be counted again.' },
@@ -137,8 +148,7 @@ const BASE: Record<string, Guide> = {
     ],
     after: { sq: 'Diferencat bëhen një rregullim stoku me arsye "Numërim" dhe dalin te Humbjet dhe firot.', en: 'The differences become one stock adjustment (reason: count) and show in Shrinkage.' },
     tour: [
-      { target: 'Print the count sheet', say: { sq: 'Printo fletën nëse numëroni me letër.', en: 'Print the sheet if you count on paper.' } },
-      { target: 'From Excel', say: { sq: 'Ose sill sasitë nga Excel-i.', en: 'Or bring the quantities from Excel.' } },
+      { target: 'More', say: { sq: 'Te butoni ⋯ printon fletën e numërimit (nëse numëroni me letër) ose sjell sasitë nga Excel-i.', en: 'Under the ⋯ button you print the count sheet (if you count on paper) or bring the quantities from Excel.' } },
       { target: 'Finish counting', say: { sq: 'Kur mbaroni, dërgojeni për shqyrtim.', en: 'When you are done, send it for review.' } },
     ],
   },
@@ -175,7 +185,7 @@ const BASE: Record<string, Guide> = {
     ],
     after: { sq: 'Malli hyn në stok, fatura shkon te "Të pagueshmet" dhe në librin e blerjeve.', en: 'The goods enter stock; the bill goes to payables and the purchase book.' },
     tour: [
-      { target: 'Vendor', say: { sq: 'Fillo me furnitorin.', en: 'Start with the vendor.' } },
+      { target: 'Supplier', say: { sq: 'Fillo me furnitorin.', en: 'Start with the supplier.' } },
       { target: 'Invoice date', say: { sq: 'Data e faturës, si në letër.', en: 'The invoice date, as on the paper.' } },
       { target: 'Margin for all', say: { sq: 'Këtu cakton marzhën dhe programi i llogarit çmimet e shitjes.', en: 'Set a margin here and the program works out the selling prices.' } },
       { target: 'Complete', say: { sq: 'Në fund: malli hyn në stok dhe fatura regjistrohet.', en: 'At the end: the goods go into stock and the bill is recorded.' } },
@@ -196,35 +206,37 @@ const BASE: Record<string, Guide> = {
     steps: [
       { sq: 'Kliko "Faturë e re", zgjidh klientin dhe shto artikujt.', en: 'Click "New invoice", choose the customer and add the items.' },
       { sq: 'Filtro sipas statusit: "Papaguar" janë ato që duhen arkëtuar.', en: 'Filter by status: "Unpaid" are the ones still to collect.' },
-      { sq: 'Për gabim në një faturë të kontabilizuar bëj "Notë krediti", jo fshirje.', en: 'For a mistake on a posted invoice make a "Credit note", not a deletion.' },
+      { sq: 'Për gabim në një faturë të kontabilizuar bëj "Notë krediti" (te butoni ⋯ i faturës), jo fshirje.', en: 'For a mistake on a posted invoice make a "Credit note" (under the invoice\'s ⋯ button), not a deletion.' },
     ],
     related: [{ href: '/finance/receivables', label: { sq: 'Borxhet', en: 'Debts' } }, { href: '/sales/recurring', label: { sq: 'Faturat mujore', en: 'Recurring invoices' } }],
   },
   '/sales/invoices/:id': {
     what: { sq: 'Një faturë shitjeje: klienti, artikujt, afati i pagesës.', en: 'One sales invoice: the customer, the items, the due date.' },
     steps: [
-      { sq: 'Zgjidh klientin: kushtet e pagesës dhe çmimet e tij plotësohen vetë.', en: 'Choose the customer: their payment terms and prices fill in by themselves.' },
+      { sq: 'Zgjidh klientin: kushtet e pagesës dhe çmimet plotësohen vetë.', en: 'Choose the customer: their payment terms and prices fill in by themselves.' },
       { sq: 'Shto rreshtat: skano barkodin ose kërko artikullin, shkruaj sasinë.', en: 'Add the lines: scan the barcode or search the item, type the quantity.' },
       { sq: 'Kontrollo totalin dhe kliko "Kontabilizo faturën".', en: 'Check the total and click "Post invoice".' },
-      { sq: 'Printoje ose dërgoje me email; kur paguan klienti, "Regjistro arkëtimin".', en: 'Print it or email it; when the customer pays, "Record a receipt".' },
+      { sq: 'Printoje ose dërgoje me e-mail; kur klienti paguan, kliko "Regjistro arkëtimin".', en: 'Print it or email it; when the customer pays, click "Record payment".' },
+      { sq: 'Te butoni ⋯ janë "Notë krediti" (për ta korrigjuar), "Notë debiti" dhe "Përsërit" (faturë që përsëritet çdo muaj).', en: 'Under the ⋯ button are "Credit note" (to correct it), "Debit note" and "Repeat" (an invoice that repeats every month).' },
     ],
     mistakes: [
-      { sq: 'Një faturë e kontabilizuar nuk ndryshohet më: për korrigjim bëj notë krediti.', en: 'A posted invoice cannot be changed: make a credit note to correct it.' },
-      { sq: 'Nëse klienti paguan me pjesë, ndaje faturën në këste te kartela "Këstet".', en: 'If the customer pays in parts, split the invoice under "Instalments".' },
+      { sq: 'Fatura e kontabilizuar nuk ndryshohet: bëj notë krediti për ta korrigjuar.', en: 'A posted invoice cannot be changed: make a credit note to correct it.' },
+      { sq: 'Nëse klienti paguan me këste, ndaje faturën te "Këstet".', en: 'If the customer pays in parts, split the invoice under "Instalments".' },
     ],
-    after: { sq: 'Malli zbret nga stoku (nëse s\'ka dalë me dërgesë), fatura shkon te Borxhet, në librin e shitjeve dhe në kontabilitet.', en: 'The goods leave stock (unless delivered already); the invoice goes to Debts, the sales book and the books.' },
+    after: { sq: 'Malli del nga stoku (nëse s\'është dërguar më parë); fatura shkon te Borxhet, libri i shitjeve dhe kontabiliteti. Pamja e printimit (e thjeshtë, standarde ose e detajuar) zgjidhet te Cilësimet › Dokumentet e printuara.', en: 'The goods leave stock (unless delivered already); the invoice goes to Debts, the sales book and the books. The print look (simple, standard or detailed) is chosen under Settings › Printed documents.' },
     tour: [
       { target: 'Customer', say: { sq: 'Fillo me klientin.', en: 'Start with the customer.' } },
-      { target: 'Payment terms', say: { sq: 'Afati i pagesës vjen nga klienti; mund ta ndryshosh.', en: 'The payment terms come from the customer; you can change them.' } },
-      { target: 'Lines', say: { sq: 'Këtu shton artikujt: skano ose kërko.', en: 'Add the items here: scan or search.' } },
+      { target: 'Payment terms', say: { sq: 'Kushtet e pagesës vijnë nga klienti; mund t\'i ndryshosh.', en: 'The payment terms come from the customer; you can change them.' } },
+      { target: 'Lines', say: { sq: 'Shto artikujt këtu: skano ose kërko.', en: 'Add the items here: scan or search.' } },
       { target: 'Post invoice', say: { sq: 'Në fund kontabilizoje: pas kësaj nuk ndryshohet më.', en: 'At the end, post it: after that it can no longer change.' } },
+      { target: 'Record payment', say: { sq: 'Kur klienti paguan, regjistroje këtu: fatura mbyllet.', en: 'When the customer pays, record it here: the invoice is settled.' } },
     ],
   },
   '/sales/quotes': {
     what: { sq: 'Ofertat për klientët: çmime që i premton para porosisë.', en: 'Quotes for customers: prices you promise before the order.' },
     steps: [
-      { sq: 'Bëj ofertën dhe dërgoja klientit.', en: 'Make the quote and send it to the customer.' },
-      { sq: 'Kur pranon, kliko "Krijo porosinë": nuk e shkruan dy herë.', en: 'When they accept, click "Create the order": you do not type it twice.' },
+      { sq: 'Bëj ofertën dhe dërgoja klientit me "Dërgo me e-mail": shënohet vetë si e dërguar.', en: 'Make the quote and send it to the customer with "Send by email": it is marked sent by itself.' },
+      { sq: 'Kur pranon, kliko "Krijo porosinë": nuk e shkruan dy herë. Pa përgjigje pas 3 ditësh merr detyrën "Telefono klientin"; kur kalon afati, oferta skadon vetë.', en: 'When they accept, click "Create order": you do not type it twice. With no answer after 3 days you get the task "Call the customer"; when the date passes, the quote expires by itself.' },
     ],
   },
   '/sales/orders': {
@@ -291,7 +303,7 @@ const BASE: Record<string, Guide> = {
       { sq: 'Zgjidh llogarinë nga paguan: programi shënon të vonuarat dhe ato me afat këtë javë, aq sa mjaftojnë paratë.', en: 'Choose the account you pay from: the program ticks the overdue and this week\'s, as far as the money goes.' },
       { sq: 'Ndrysho çka të duash: hiq ose shto fatura, ose paguaj vetëm një pjesë.', en: 'Change what you like: untick or tick bills, or pay only part.' },
       { sq: '"Lista për bankën" të jep IBAN-et dhe shumat për e-banking.', en: '"List for the bank" gives the IBANs and amounts for e-banking.' },
-      { sq: 'Kliko "Paguaj": bëhet një pagesë për çdo furnitor.', en: 'Click "Pay": one payment per vendor is made.' },
+      { sq: 'Kliko "Paguaj {n} fatura · shuma": bëhet një pagesë për çdo furnitor.', en: 'Click "Pay {n} bills · amount": one payment per vendor is made.' },
     ],
   },
   '/finance/cash-forecast': {
@@ -306,11 +318,16 @@ const BASE: Record<string, Guide> = {
   '/finance/bank': {
     what: { sq: 'Banka dhe arka: gjendja e çdo llogarie dhe krahasimi me ekstraktin e bankës.', en: 'Bank and cash: each account\'s balance and the comparison with the bank statement.' },
     steps: [
-      { sq: 'Importo ekstraktin nga e-banking (Excel, CSV ose XML).', en: 'Import the statement from e-banking (Excel, CSV or XML).' },
-      { sq: 'Programi i lidh rreshtat me pagesat; ato që mbeten lidhi me dorë.', en: 'The program matches the lines to payments; match the rest by hand.' },
+      { sq: 'Kliko "Importo ekstraktin" dhe zgjidh skedarin nga e-banking (Excel, CSV ose XML).', en: 'Click "Import statement" and choose the file from e-banking (Excel, CSV or XML).' },
+      { sq: 'Hape ekstraktin: programi i lidh vetë rreshtat me pagesat; ti mbyll pjesën që mbetet me "Mbyll ekstraktin".', en: 'Open the statement: the program matches the lines to payments by itself; you finish the rest with "Finish statement".' },
       { sq: '"Pse?" shpjegon diferencën mes librave dhe bankës.', en: '"Why?" explains the difference between the books and the bank.' },
     ],
     mistakes: [{ sq: 'Kontrollo që saldo fillestare e ekstraktit të jetë e saktë: përndryshe del diferencë "e pashpjeguar".', en: 'Check that the statement\'s opening balance is right, or an "unexplained" difference appears.' }],
+    after: { sq: 'Ekstraktet e hapura përputhen sërish vetë çdo mëngjes herët me pagesat e reja.', en: 'Open statements are matched again by themselves early every morning against new payments.' },
+    tour: [
+      { target: 'Import statement', say: { sq: 'Sille ekstraktin e bankës këtu.', en: 'Bring the bank statement in here.' } },
+      { target: 'Why?', say: { sq: 'Pse librat dhe banka nuk përputhen.', en: 'Why the books and the bank do not match.' } },
+    ],
   },
   '/finance/cash-book': {
     what: { sq: 'Libri i arkës: çdo hyrje dhe dalje e parave në dorë, ditë për ditë.', en: 'The cash book: every cash movement in and out, day by day.' },
@@ -375,9 +392,9 @@ const BASE: Record<string, Guide> = {
       { sq: 'Kliko "Kontabilizo faturën". Pastaj "Paguaj këtë faturë" ose ndaje në këste.', en: 'Click "Post bill". Then "Pay this bill" or split it into instalments.' },
     ],
     mistakes: [
-      { sq: 'Fatura me mall që nuk ka kaluar nga pranimi bëhet më mirë te "Fatura e blerjes me mall", që të hyjë malli në stok.', en: 'A bill with goods that did not go through a receipt is better done in "Purchase invoice with goods", so the stock comes in.' },
+      { sq: 'Fatura me mall që nuk ka kaluar nga pranimi bëhet më mirë si "Faturë e re blerjeje" (Blerja › Faturë blerje), që të hyjë malli në stok.', en: 'A bill with goods that did not go through a receipt is better done as a "New purchase invoice" (Buying › Purchase invoice), so the stock comes in.' },
       { sq: '"Kontabilizo gjithsesi…" kërkon arsye dhe mbetet e shënuar; përdore vetëm kur diferenca është e kuptuar.', en: '"Post anyway…" asks for a reason and stays recorded; use it only when the difference is understood.' },
-      { sq: 'Fatura e kontabilizuar nuk fshihet; korrigjohet me notë krediti.', en: 'A posted bill is not deleted; it is corrected with a credit note.' },
+      { sq: 'Fatura e kontabilizuar nuk fshihet; korrigjohet me "Regjistro notë krediti" te butoni ⋯. Skica fshihet me "Fshi skicën", po aty.', en: 'A posted bill is not deleted; it is corrected with "Record credit note" under the ⋯ button. A draft is deleted with "Delete draft", in the same place.' },
     ],
     after: { sq: 'Detyrimi ndaj furnitorit hyn në Borxhe, TVSH-ja e zbritshme në librin e blerjeve dhe fatura del te Propozimi i pagesave sipas afatit.', en: 'What you owe goes into Debts, the deductible VAT into the purchase book, and the bill shows in the Payment proposal by its due date.' },
     related: [{ href: '/finance/payment-proposal', label: { sq: 'Propozimi i pagesave', en: 'Payment proposal' } }, { href: '/procurement/invoice/new', label: { sq: 'Fatura me mall', en: 'Invoice with goods' } }],
@@ -467,20 +484,19 @@ const BASE: Record<string, Guide> = {
     ],
   },
   '/sales/deliveries/:id': {
-    what: { sq: 'Një dërgesë te klienti: çfarë merret nga depo dhe kur del malli. Kur përfundon, stoku zbret dhe kostoja e mallit kontabilizohet.', en: 'One delivery to a customer: what is taken from the warehouse and when the goods leave. When completed, stock goes down and the cost of goods is booked.' },
+    what: { sq: 'Një dërgesë te klienti: çka merret nga magazina dhe kur del malli. Kur përfundon, stoku zbret dhe kostoja e mallit regjistrohet.', en: 'One delivery to a customer: what is taken from the warehouse and when the goods leave. When completed, stock goes down and the cost of goods is booked.' },
     steps: [
-      { sq: 'Kontrollo "Merret nga" (depo), datën dhe rreshtat me sasi; për mall me lot zgjidh lotin.', en: 'Check "Pick from" (the warehouse), the date and the lines with quantities; for lot goods choose the lot.' },
-      { sq: 'Shkruaj shënimet për shoferin dhe numrin e gjurmimit nëse e dërgon me korrier.', en: 'Write notes for the driver and the tracking number if a courier takes it.' },
-      { sq: 'Kliko "Përfundo dërgesën" kur malli largohet.', en: 'Click "Complete delivery" when the goods leave.' },
+      { sq: 'Kontrollo "Merret nga" (magazina), datën dhe rreshtat me sasi; për mallin me lot zgjidh lotin.', en: 'Check "Pick from" (the warehouse), the date and the lines with quantities; for lot goods choose the lot.' },
+      { sq: 'Shkruaj shënime për shoferin dhe numrin e gjurmimit nëse e merr korrieri.', en: 'Write notes for the driver and the tracking number if a courier takes it.' },
+      { sq: 'Kliko "Përfundo dërgesën" kur malli del.', en: 'Click "Complete delivery" when the goods leave.' },
+      { sq: 'Te butoni ⋯ janë "Gati për dërgim" (kur malli përgatitet, para se të niset), "Anulo dërgesën" dhe "Fshi" (vetëm skica).', en: 'Under the ⋯ button are "Ready to ship" (when the goods are packed, before they leave), "Cancel delivery" and "Delete" (drafts only).' },
     ],
-    mistakes: [
-      { sq: 'Mos e përfundo para se malli të dalë realisht: stoku zbret menjëherë.', en: 'Do not complete it before the goods really leave: stock goes down at once.' },
-    ],
-    after: { sq: 'Nga porosia mund të bësh faturën për sasinë e dërguar; dërgesa e përfunduar nuk fshihet.', en: 'From the order you can invoice the quantity delivered; a completed delivery is not deleted.' },
-    related: [{ href: '/sales/deliveries', label: { sq: 'Dërgesat', en: 'Deliveries' } }],
+    mistakes: [{ sq: 'Mos e përfundo para se malli të dalë vërtet: stoku zbret menjëherë.', en: 'Do not complete it before the goods really leave: stock goes down at once.' }],
+    after: { sq: 'Nga porosia mund ta faturosh sasinë e dërguar; dërgesa e përfunduar nuk fshihet.', en: 'From the order you can invoice the quantity delivered; a completed delivery is not deleted.' },
     tour: [
-      { target: 'Pick from', say: { sq: 'Nga cila depo del malli.', en: 'Which warehouse the goods leave from.' } },
-      { target: 'Complete delivery', say: { sq: 'Kur malli largohet, përfundoje këtu.', en: 'When the goods leave, complete it here.' } },
+      { target: 'Pick from', say: { sq: 'Nga cila magazinë del malli.', en: 'Which warehouse the goods leave from.' } },
+      { target: 'Complete delivery', say: { sq: 'Kur malli del, përfundoje këtu.', en: 'When the goods leave, complete it here.' } },
+      { target: 'More', say: { sq: 'Te ⋯: gati për dërgim, anulo ose fshi skicën.', en: 'Under ⋯: ready to ship, cancel, or delete the draft.' } },
     ],
   },
   '/finance/accounts/:id': {
@@ -514,10 +530,11 @@ const BASE: Record<string, Guide> = {
     ],
   },
   '/training': {
-    what: { sq: 'Mësime të shkurtra sipas rolit tënd. Çdo mësim hap faqen e vërtetë, e shpjegon hap pas hapi dhe të tregon ku të klikosh.', en: 'Short lessons for your role. Each one opens the real page, explains it step by step and shows you where to click.' },
+    what: { sq: 'Mësime të shkurtra sipas rolit tënd dhe llojit të biznesit. Çdo mësim hap faqen e vërtetë, e shpjegon hap pas hapi dhe të tregon ku të klikosh.', en: 'Short lessons for your role and your kind of business. Each one opens the real page, explains it step by step and shows you where to click.' },
     steps: [
-      { sq: 'Kliko "Fillo" te mësimi i parë. Faqja hapet me shpjegimin anash.', en: 'Click "Start" on the first lesson. The page opens with the explanation beside it.' },
-      { sq: 'Lexoje, provoje dhe kliko "Mësimi u krye".', en: 'Read it, try it and click "Lesson done".' },
+      { sq: 'Kliko një mësim për të parë çka do të mësosh, hapat dhe detyrën "Provo vetë".', en: 'Click a lesson to see what you will learn, the steps and the "Try it" task.' },
+      { sq: 'Kliko "Fillo": faqja e vërtetë hapet me mësimin anash dhe "Më trego në faqe".', en: 'Click "Start": the real page opens with the lesson beside it and "Show me on the page".' },
+      { sq: 'Në fund përgjigju pyetjes: me përgjigjen e saktë mësimi shënohet i kryer dhe "Mësimi tjetër" të çon më tej.', en: 'At the end answer the question: with the right answer the lesson is marked done and "Next lesson" takes you on.' },
       { sq: 'Pronari sheh te Përdoruesit sa mësime ka kryer secili.', en: 'The owner sees under Users how many lessons each person finished.' },
     ],
     after: { sq: 'Te çdo faqe, ⓘ pranë titullit e hap të njëjtin shpjegim kur të duhet përsëri.', en: 'On every page, the ⓘ next to the title opens the same explanation whenever you need it again.' },
@@ -542,31 +559,30 @@ const BASE: Record<string, Guide> = {
     ],
   },
   '/hr/contracts/:id': {
-    what: { sq: 'Një kontratë pune ose aneks: teksti që printohet, kushtet, kopja e nënshkruar dhe historia e punonjësit.', en: 'One employment contract or annex: the text to print, the terms, the signed copy and the person\'s history.' },
+    what: { sq: 'Një kontratë pune ose aneks: teksti për printim, kushtet, kopja e nënshkruar dhe historia e personit.', en: 'One employment contract or annex: the text to print, the terms, the signed copy and the person\'s history.' },
     steps: [
-      { sq: 'Kontrollo tekstin. Kur është skicë, me "Ndrysho tekstin" e përshtat dhe me "Ndrysho kushtet" ndryshon pagën, datat ose pozitën.', en: 'Check the text. While it is a draft, "Edit the text" changes the wording and "Change terms" changes pay, dates or position.' },
-      { sq: 'Kliko "Printo", nënshkruajeni të dy palët, pastaj "Shëno si të nënshkruar". Nga ajo ditë kontrata nuk ndryshon më.', en: 'Click "Print", have both sides sign, then "Mark as signed". From then on the contract does not change.' },
+      { sq: 'Kontrollo tekstin. Sa është skicë, "Ndrysho tekstin" ndryshon fjalët dhe "Ndrysho kushtet" ndryshon pagën, datat ose pozitën.', en: 'Check the text. While it is a draft, "Edit the text" changes the wording and "Change terms" changes pay, dates or position.' },
+      { sq: 'Kliko "Printo", nënshkruani të dyja palët, pastaj "Shëno si të nënshkruar". Nga ai moment kontrata nuk ndryshon.', en: 'Click "Print", have both sides sign, then "Mark as signed". From then on the contract does not change.' },
       { sq: 'Te "Kopja e nënshkruar" ngarko skanimin ose foton e kontratës së nënshkruar.', en: 'Under "Signed copy" upload the scan or photo of the signed contract.' },
-      { sq: 'Për rritje page, pozitë të re ose orar tjetër kliko "Aneks"; për kontratë me afat kliko "Zgjat".', en: 'For a raise, a new position or other hours click "Annex"; for a fixed-term contract click "Extend".' },
-      { sq: 'Kur punonjësi largohet, kliko "Ndërprit kontratën": arsyeja, data e njoftimit dhe dita e fundit. Pastaj printo njoftimin.', en: 'When the person leaves, click "End the contract": the reason, the notice date and the last day. Then print the notice.' },
+      { sq: 'Te butoni ⋯: "Aneks" për rritje page, pozitë të re ose orar tjetër; "Zgjat" për kontratë me afat.', en: 'Under the ⋯ button: "Annex" for a raise, a new position or other hours; "Extend" for a fixed-term contract.' },
+      { sq: 'Kur personi largohet, te butoni ⋯ kliko "Ndërprit kontratën": arsyeja, data e njoftimit dhe dita e fundit. Pastaj "Printo njoftimin".', en: 'When the person leaves, under the ⋯ button click "End the contract": the reason, the notice date and the last day. Then "Print the notice".' },
     ],
     mistakes: [
       { sq: 'Afati i njoftimit varet nga vjetërsia; programi e llogarit sipas ligjit dhe të paralajmëron kur është më i shkurtër.', en: 'The notice period depends on length of service; the program works it out by law and warns you when it is shorter.' },
-      { sq: 'Para fillimit të punës punonjësi duhet deklaruar në administratën tatimore (ATK / DPT), të paktën një ditë më parë.', en: 'Before work starts, the employee must be declared to the tax office (ATK / DPT), at least one day before.' },
+      { sq: 'Para fillimit të punës, punonjësi duhet të deklarohet te tatimet (ATK / DPT), së paku një ditë më parë.', en: 'Before work starts, the employee must be declared to the tax office (ATK / DPT), at least one day before.' },
     ],
     after: { sq: 'Paga paguan sipas kontratës në fuqi; kur aneksi fillon në mes të muajit, secila pjesë paguan ditët e veta.', en: 'Payroll pays by the contract in force; when an annex starts mid-month, each part pays its own days.' },
     related: [{ href: '/hr/payroll', label: { sq: 'Pagat', en: 'Payroll' } }],
     tour: [
       { target: 'Print', say: { sq: 'Printo kontratën për nënshkrim.', en: 'Print the contract for signing.' } },
-      { target: 'Mark as signed', say: { sq: 'Pasi nënshkruhet, shënoje këtu: kontrata hyn në fuqi.', en: 'Once signed, mark it here: the contract comes into force.' } },
-      { target: 'Annex', say: { sq: 'Rritje page, pozitë e re ose orar tjetër.', en: 'A raise, a new position or other hours.' } },
-      { target: 'End the contract', say: { sq: 'Largimi: arsyeja, njoftimi dhe dita e fundit.', en: 'Leaving: the reason, the notice and the last day.' } },
+      { target: 'Mark as signed', say: { sq: 'Kur nënshkruhet, shënoje këtu: kontrata hyn në fuqi.', en: 'Once signed, mark it here: the contract comes into force.' } },
+      { target: 'More', say: { sq: 'Te ⋯: aneksi, zgjatja dhe ndërprerja e kontratës.', en: 'Under ⋯: the annex, extending and ending the contract.' } },
       { target: 'Signed copy', say: { sq: 'Ruaj skanimin e kontratës së nënshkruar.', en: 'Keep the scan of the signed contract.' } },
     ],
   },
 
   '/tasks': {
-    what: { sq: 'Detyrat: çfarë duhet bërë, kush e bën dhe deri kur. Disa i shkruan ti, disa i krijon vetë programi (fatura të vonuara, diferenca në arkë, kontrata që mbarojnë).', en: 'Tasks: what needs doing, by whom and by when. You write some; the program makes others by itself (late invoices, till differences, contracts ending).' },
+    what: { sq: 'Detyrat: çfarë duhet bërë, kush e bën dhe deri kur. Disa i shkruan ti, disa i krijon vetë programi (fatura të vonuara, diferenca në arkë, kontrata që mbarojnë, oferta pa përgjigje, mall pa faturën e furnitorit, miratime që presin, hyrje pa dalje, mysafirë që s\'erdhën).', en: 'Tasks: what needs doing, by whom and by when. You write some; the program makes others by itself (late invoices, till differences, contracts ending, quotes with no answer, goods without the supplier\'s invoice, approvals waiting, clock-ins without a clock-out, guests who did not arrive).' },
     steps: [
       { sq: 'Shkruaj detyrën në rreshtin sipër dhe shtyp Enter. "nesër", "e premte" ose "15.11" vendosin afatin; "@Ilir" personin; "!lartë" përparësinë.', en: 'Type the task in the line at the top and press Enter. "tomorrow", "friday" or "15.11" set the date; "@Ilir" the person; "!high" the priority.' },
       { sq: 'Kliko detyrën për ta hapur: pikat e kontrollit, nën-detyrat, komentet dhe fotot si provë.', en: 'Click a task to open it: checklist, sub-tasks, comments and photos as proof.' },
@@ -647,4 +663,4 @@ const BASE: Record<string, Guide> = {
   },
 }
 
-export const GUIDES: Record<string, Guide> = { ...GUIDES_A, ...GUIDES_B, ...GUIDES_C, ...GUIDES_D, ...BASE }
+export const GUIDES: Record<string, Guide> = { ...GUIDES_A, ...GUIDES_B, ...GUIDES_C, ...GUIDES_D, ...BASE, ...GUIDES_E }

@@ -36,20 +36,20 @@ export const GUIDES_C: Record<string, Guide> = {
   '/tax/declarations/:id': {
     what: { sq: 'Një deklaratë TVSH-je: fushat e formularit, rezultati i muajit dhe dorëzimi.', en: 'One VAT declaration: the fields of the form, the result of the month and the filing.' },
     steps: [
-      { sq: 'Kontrollo shifrat e formularit; me "Librat" sheh dokumentet pas tyre.', en: 'Check the figures of the form; with "Books" you see the documents behind them.' },
-      { sq: 'Nëse ke shtuar ose ndryshuar fatura të këtij muaji, kliko "Rillogarit".', en: 'If you added or changed invoices of this month, click "Recalculate".' },
+      { sq: 'Kontrollo shifrat e formularit; me "Librat" (te butoni ⋯) sheh dokumentet pas tyre. Drafti i muajit të kaluar bëhet vetë në ditët 1–3 të muajit.', en: 'Check the figures of the form; with "Books" (under the ⋯ button) you see the documents behind them. Last month\'s draft is made by itself on days 1–3 of the month.' },
+      { sq: 'Nëse ke shtuar ose ndryshuar fatura të këtij muaji, kliko "Rillogarit" te butoni ⋯.', en: 'If you added or changed invoices of this month, click "Recalculate" under the ⋯ button.' },
       { sq: 'Shiko "Kontrolli me kontabilitetin": TVSH-ja e librave duhet të përputhet me kontabilitetin.', en: 'Look at "Accounting check": the VAT in the books should match accounting.' },
       { sq: 'Nëse ke kredi dhe kërkon rimbursim, shkruaj shumën te "Rimbursimi që kërkohet" dhe kliko "Zbato".', en: 'If you have a credit and ask for a refund, type the amount under "Refund to request" and click "Apply".' },
       { sq: 'Deklaroje te ATK-ja (DPT në Shqipëri), pastaj kliko "Dorëzo deklaratën" dhe shkruaj numrin te "Referenca e dorëzimit".', en: 'File it with the ATK (DPT in Albania), then click "Submit declaration" and type the number under "Filing reference".' },
     ],
     mistakes: [
       { sq: '"Dorëzo deklaratën" nuk e dërgon deklaratën te ATK-ja: e regjistron në libra dhe e mbyll muajin. Deklarimi bëhet në portalin e tatimeve.', en: '"Submit declaration" does not send it to the ATK: it books it and closes the month. The filing itself is done on the tax office portal.' },
-      { sq: 'Nëse tatimet e refuzojnë, kliko "Shëno si të refuzuar", pastaj "Rihape si skicë" për ta korrigjuar dhe dorëzuar përsëri.', en: 'If the tax office rejects it, click "Mark rejected", then "Reopen as draft" to correct it and submit it again.' },
+      { sq: 'Nëse tatimet e refuzojnë, kliko "Shëno si të refuzuar" (te butoni ⋯), pastaj "Rihape si skicë" për ta korrigjuar dhe dorëzuar përsëri.', en: 'If the tax office rejects it, click "Mark rejected" (under the ⋯ button), then "Reopen as draft" to correct it and submit it again.' },
     ],
     after: { sq: 'TVSH-ja e shitjeve dhe e blerjeve e muajit kalon në kontin 4455; diferenca paguhet ose mbartet si kredi në muajin tjetër. Pas dorëzimit nuk shtohet më asnjë faturë në atë muaj.', en: 'The month\'s sales and purchase VAT moves to account 4455; the balance is paid or carried as a credit to next month. After submitting, no invoice can be added to that month.' },
     related: [{ href: '/tax/books', label: { sq: 'Librat e TVSH-së', en: 'VAT books' } }],
     tour: [
-      { target: 'Recalculate', say: { sq: 'Merr përsëri shifrat nga librat, nëse ke ndryshuar diçka.', en: 'Takes the figures from the books again, if you changed something.' } },
+      { target: 'More', say: { sq: 'Te butoni ⋯ janë "Librat", "Printo", "Rillogarit" (merr përsëri shifrat nga librat) dhe "Shëno si të refuzuar".', en: 'Under the ⋯ button are "Books", "Print", "Recalculate" (takes the figures from the books again) and "Mark rejected".' } },
       { target: 'Accounting check', say: { sq: 'Këtu sheh nëse librat përputhen me kontabilitetin.', en: 'Here you see whether the books match accounting.' } },
       { target: 'Result', say: { sq: 'Sa TVSH paguhet këtë muaj, ose sa kredi mbartet.', en: 'How much VAT is paid this month, or how much credit is carried.' } },
       { target: 'Submit declaration', say: { sq: 'Në fund: regjistrohet në libra dhe muaji mbyllet për TVSH.', en: 'At the end: it is booked and the month closes for VAT.' } },
@@ -378,7 +378,7 @@ export const GUIDES_C: Record<string, Guide> = {
       { sq: 'Zgjidh periudhën lart.', en: 'Choose the period on top.' },
       { sq: 'Kliko një shifër për të parë çka ka pas saj.', en: 'Click a figure to see what is behind it.' },
       { sq: 'Shiko grafikun: paratë në fund të çdo muaji dhe fitimin e muajit.', en: 'Look at the chart: cash at the end of each month and the month\'s profit.' },
-      { sq: 'Me "Arkëto një pagesë", "Paguaj një furnitor" ose "Regjistrim manual" fillon punën e zakonshme.', en: 'With "Receive a payment", "Pay a vendor" or "Manual entry" you start the usual work.' },
+      { sq: '"Arkëto një pagesë" është butoni kryesor; "Paguaj një furnitor" dhe "Regjistrim manual" janë te butoni ⋯.', en: '"Receive a payment" is the main button; "Pay a vendor" and "Manual entry" are under the ⋯ button.' },
     ],
     mistakes: [{ sq: '"Regjistrime si skicë" janë regjistrime manuale ende të pakontabilizuara: kontabilizoji ose fshiji.', en: '"Draft entries" are manual entries not posted yet: post them or delete them.' }],
     related: [{ href: '/finance/reports', label: { sq: 'Pasqyrat financiare', en: 'Financial statements' } }],

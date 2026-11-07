@@ -82,7 +82,7 @@ export const GUIDES_D: Record<string, Guide> = {
       { sq: 'Në fund të rreshtit sheh orët, orët shtesë, ditët në punë dhe mungesat e muajit.', en: 'At the end of the row see the month\'s hours, overtime, days present and absences.' },
     ],
     mistakes: [{ sq: 'Një ditë pune pa regjistrim dhe pa leje del si mungesë: korrigjoje para pagave nëse punonjësi ishte në punë.', en: 'A working day with no record and no leave shows as absent: correct it before payroll if the person was at work.' }],
-    after: { sq: 'Orët shtesë nga prezenca paguhen me shtesën ligjore kur llogaritet paga.', en: 'Overtime from attendance is paid at the legal premium when payroll is calculated.' },
+    after: { sq: 'Orët shtesë nga prezenca paguhen me shtesën ligjore kur llogaritet paga. Një hyrje pa dalje (shenja "•") nuk plotësohet vetë: çdo mëngjes programi i jep HR-së një detyrë për t\'i plotësuar.', en: 'Overtime from attendance is paid at the legal premium when payroll is calculated. A clock-in without a clock-out (the "•" mark) is not filled in by itself: every morning the program gives HR a task to complete them.' },
   },
   '/hr/payroll': {
     what: { sq: 'Pagat: një listëpagesë për çdo muaj, e llogarit, e miraton dikush tjetër, bëhet përfundimtare dhe paguhet.', en: 'Payroll: one payroll per month, calculated, approved by someone else, made final, then paid.' },
@@ -105,7 +105,7 @@ export const GUIDES_D: Record<string, Guide> = {
     ],
     mistakes: [
       { sq: 'Ai që e llogarit listëpagesën nuk mund ta miratojë vetë: duhet dikush tjetër me të drejtë miratimi.', en: 'The person who calculated the payroll cannot approve it: someone else with approval rights must.' },
-      { sq: 'Deri sa ta kontabilizosh, mund ta kthesh me "Kthe në skicë"; pas kontabilizimit nuk ndryshohet më.', en: 'Until it is booked you can send it back with "Back to draft"; once booked it no longer changes.' },
+      { sq: 'Deri sa ta kontabilizosh, mund ta kthesh me "Kthe në skicë" ose ta anulosh me "Anulo listëpagesën" (të dyja te butoni ⋯); pas kontabilizimit nuk ndryshohet më.', en: 'Until it is booked you can send it back with "Back to draft" or cancel it with "Cancel payroll" (both under the ⋯ button); once booked it no longer changes.' },
     ],
     after: { sq: 'Pagat dhe kontributet regjistrohen si shpenzim; neto, kontributet dhe tatimi bëhen detyrime për t\'u paguar. Punonjësit i shohin fletëpagesat te "Vendi im i punës".', en: 'Salaries and contributions are booked as expenses; net pay, contributions and tax become amounts to pay. Employees see their payslips under "My workplace".' },
     tour: [
@@ -132,6 +132,7 @@ export const GUIDES_D: Record<string, Guide> = {
     steps: [
       { sq: 'Te "Kompania" plotëso emrin, NUI-në ose NIPT-in, adresën dhe kontaktet: dalin në fatura, kupona dhe fletëpagesa.', en: 'Under "Company" fill in the name, NUI or NIPT, address and contacts: they print on invoices, receipts and payslips.' },
       { sq: 'Te "Vlerat fillestare dhe rregullat" zgjidh njësinë dhe TVSH-në që propozohen, dhe rregullat si "Lejo stok negativ".', en: 'Under "Defaults and rules" choose the warehouse and VAT that are suggested, and rules such as "Allow negative stock".' },
+      { sq: 'Te "Dokumentet e printuara" zgjidh modelin e faturës — "E thjeshtë", "Standarde" ose "E detajuar" —, logon, ngjyrën, vulën dhe llogaritë bankare; "Pamja paraprake" tregon një faturë shembull.', en: 'Under "Printed documents" choose the invoice layout — "Simple", "Standard" or "Detailed" —, the logo, colour, stamp and bank accounts; "Preview" shows an example invoice.' },
       { sq: 'Te "Fiskalizimi" ndiz "Fiskalizo dokumentet" dhe shkruaj kodet nga administrata tatimore.', en: 'Under "Fiscalization" switch on "Fiscalize documents" and type the codes from the tax office.' },
       { sq: 'Kliko "Ruaj ndryshimet" poshtë faqes; te "Menuja" çdo ndryshim ruhet menjëherë.', en: 'Click "Save changes" at the bottom; under "Menu" each change is saved at once.' },
     ],
@@ -140,6 +141,7 @@ export const GUIDES_D: Record<string, Guide> = {
     tour: [
       { target: 'Company', say: { sq: 'Të dhënat që dalin në çdo dokument.', en: 'The details printed on every document.' } },
       { target: 'Defaults and rules', say: { sq: 'Me çka fillon një dokument i ri, dhe kontrollet që bën programi.', en: 'What a new document starts with, and the checks the program makes.' } },
+      { target: 'Printed documents', say: { sq: 'Si duken faturat dhe ofertat: tre modele, logo, vula, bankat.', en: 'How invoices and offers look: three layouts, logo, stamp, banks.' } },
       { target: 'Fiscalization', say: { sq: 'Lidhja me tatimet për faturat dhe kuponat.', en: 'The tax office link for invoices and receipts.' } },
       { target: 'Menu', say: { sq: 'Fshih nga menuja atë që kompania nuk e përdor.', en: 'Hide from the menu what the company does not use.' } },
     ],
@@ -151,6 +153,7 @@ export const GUIDES_D: Record<string, Guide> = {
       { sq: 'Nëse personi ka llogari, i vjen ftesa dhe duhet të klikojë "Prano"; deri atëherë del si "I ftuar". Për dikë pa llogari, llogarinë e hap administratori i DrisPRO.', en: 'If the person has an account, they get the invitation and must click "Accept"; until then they show as "Invited". For someone without an account, the DrisPRO administrator makes one.' },
       { sq: 'Te menyja "…" e çdo personi: "Ndrysho rolet", "Njësitë ku punon", PIN për arkën e përbashkët ose "Pezullo aksesin".', en: 'In each person\'s "…" menu: "Change roles", "Warehouses they work in", a PIN for the shared till, or "Suspend access".' },
       { sq: 'Fto kontabilistin te "Kontabilisti juaj, falas": nuk zë vend përdoruesi në licencë.', en: 'Invite your accountant under "Your accountant, free": they do not take a user place of your licence.' },
+      { sq: 'Kolona "Trajnimi" tregon sa mësime ka kryer secili nga trajnimi për rolet e veta.', en: 'The "Training" column shows how many lessons each person has done of the training for their roles.' },
     ],
     mistakes: [{ sq: 'Me "Hiq nga kompania" personi humb aksesin menjëherë. Për një largim të përkohshëm përdor "Pezullo aksesin" dhe më vonë "Rikthe aksesin".', en: 'With "Remove from company" the person loses access at once. For a temporary break use "Suspend access", and later "Restore access".' }],
     after: { sq: 'Rolet e ndryshuara vlejnë herën tjetër që personi hap një faqe. Dokumentet që ka bërë mbeten me emrin e tij.', en: 'Changed roles apply the next time the person opens a page. Documents they made keep their name.' },
@@ -203,7 +206,7 @@ export const GUIDES_D: Record<string, Guide> = {
       { sq: 'Kliko "Hap" te "Faturat mujore", "Çmimet e reja nga kosto" ose "Rifurnizim" për t\'i rregulluar.', en: 'Click "Open" on "Recurring invoices", "New selling prices from the cost" or "Replenishment" to set them up.' },
     ],
     mistakes: [{ sq: 'Për Gmail përdor një fjalëkalim aplikacioni (Google › Security › App passwords), jo fjalëkalimin e zakonshëm.', en: 'For Gmail use an app password (Google › Security › App passwords), not your usual password.' }],
-    after: { sq: 'Listëpagesa e përgatitur vetë mbetet skicë: miratimi dhe pagesa mbeten te ti.', en: 'The payroll prepared by itself stays a draft: approving and paying stay with you.' },
+    after: { sq: 'Listëpagesa e përgatitur vetë mbetet skicë: miratimi dhe pagesa mbeten te ti. Çdo ditë, pa e ndezur, programi gjithashtu: skadon ofertat e vjetra dhe jep detyra (oferta pa përgjigje, mall pa faturë pas 7 ditësh, miratime që presin, hyrje pa dalje), hap vitin e ri financiar, bën draftin e TVSH-së në fillim të muajit, përputh ekstraktet e hapura, shënon terminet "Nuk erdhi" dhe të lajmëron kur po mbaron licenca. Çdo orë rezervon mallin që vjen për porositë e konfirmuara.', en: 'The payroll prepared by itself stays a draft: approving and paying stay with you. Every day, with nothing to switch on, the program also expires old quotes and gives tasks (quotes with no answer, goods without an invoice after 7 days, approvals waiting, clock-ins without a clock-out), opens the new financial year, drafts the VAT return at the start of the month, matches open statements, marks appointments "Did not come" and tells you when the licence is ending. Every hour it reserves arriving goods for confirmed orders.' },
     related: [{ href: '/hr/payroll', label: { sq: 'Pagat', en: 'Payroll' } }, { href: '/sales/recurring', label: { sq: 'Faturat mujore', en: 'Recurring invoices' } }],
   },
   '/settings/workflows': {
@@ -277,9 +280,10 @@ export const GUIDES_D: Record<string, Guide> = {
       { sq: 'Kliko një vend të lirë në kolonën e personit, ose "Termin i ri".', en: 'Click a free place in the person\'s column, or "New appointment".' },
       { sq: 'Zgjidh shërbimin dhe orën te "Oraret e lira"; zgjidh klientin ose shkruaj emrin dhe telefonin e një klienti të ri, pastaj ruaje.', en: 'Choose the service and a time under "Free times"; pick the client or type a new client\'s name and phone, then save.' },
       { sq: 'Kur vjen klienti kliko terminin dhe "Erdhi"; kur mbaron puna, "U krye, te fatura".', en: 'When the client arrives click the appointment and "Arrived"; when the work is done, "Done, to the invoice".' },
+      { sq: '"Konfirmuar" (kur klienti e konfirmon me telefon), "Nuk erdhi" dhe "Anuloje" janë te butoni ⋯ i terminit.', en: '"Confirmed" (when the client confirms by phone), "Did not come" and "Cancel it" are under the appointment\'s ⋯ button.' },
     ],
     mistakes: [{ sq: 'Pa email te "Email (për kujtesën)" klienti nuk merr kujtesë një ditë para terminit.', en: 'Without an email under "Email (for the reminder)" the client gets no reminder the day before.' }],
-    after: { sq: '"U krye, te fatura" bën faturën me shërbimin dhe çmimin për ta kontrolluar, dhe e shton vizitën në kartelën e klientit.', en: '"Done, to the invoice" makes the invoice with the service and price for you to check, and adds the visit to the client card.' },
+    after: { sq: '"U krye, te fatura" bën faturën me shërbimin dhe çmimin për ta kontrolluar, dhe e shton vizitën në kartelën e klientit. Terminet që mbeten "të rezervuara" pasi kanë mbaruar, shënohen vetë "Nuk erdhi" të nesërmen.', en: '"Done, to the invoice" makes the invoice with the service and price for you to check, and adds the visit to the client card. Appointments still "booked" after they ended are marked "Did not come" by themselves the next day.' },
     related: [{ href: '/appointments/setup', label: { sq: 'Shërbimet dhe stafi', en: 'Services and staff' } }, { href: '/appointments/cards', label: { sq: 'Dosjet e klientëve', en: 'Client cards' } }],
     tour: [
       { target: 'Services and staff', say: { sq: 'Fillo këtu: kush punon dhe çfarë shërbimesh ofron.', en: 'Start here: who works and which services they offer.' } },
@@ -356,7 +360,7 @@ export const GUIDES_D: Record<string, Guide> = {
       { sq: 'Kur mysafiri është në hotel, shto te "Shtesat në dhomë" minibarin, mëngjesin ose lavanderinë.', en: 'While the guest is in the hotel, add the minibar, breakfast or laundry under "Extras on the room".' },
     ],
     mistakes: [{ sq: 'Nëse fatura duhet të dalë në emër të një firme, zgjidhe te "Fatura në emër të (sipas dëshirës)" para check-out.', en: 'If the invoice must be in a company\'s name, choose it under "Invoice to (optional)" before check-out.' }],
-    after: { sq: 'Shtesat dalin në faturë me check-out. Me "Anulo rezervimin" dhoma lirohet për ato net.', en: 'Extras go on the invoice at check-out. "Cancel the reservation" frees the room for those nights.' },
+    after: { sq: 'Shtesat dalin në faturë me check-out. "Anulo rezervimin" dhe "Nuk erdhi" janë te butoni ⋯ i rezervimit; anulimi e liron dhomën për ato net. Çdo mëngjes, dhomat me mysafir shënohen për pastrim dhe mysafirët që s\'erdhën ose s\'u larguan në datën e tyre bëhen detyrë për recepsionin.', en: 'Extras go on the invoice at check-out. "Cancel the reservation" and "Did not come" are under the reservation\'s ⋯ button; cancelling frees the room for those nights. Every morning rooms with a guest are marked for cleaning, and guests who did not arrive or leave on their date become a task for the front desk.' },
   },
   '/hotel/rooms': {
     what: { sq: 'Dhomat: llojet e dhomave me çmimin për natë, dhe çdo dhomë me gjendjen e pastrimit.', en: 'Rooms: the room types with their price a night, and every room with its cleaning state.' },

@@ -123,7 +123,7 @@ function ResourceDialog({ value, count, onClose }: { value: (Resource & { is_act
         <div className="grid gap-3">
           <div className="grid grid-cols-[1fr_150px] gap-2">
             <div className="grid gap-1.5"><Label htmlFor="rn">{t('Name')}</Label><Input id="rn" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('e.g. Arta, Chair 2, Lift 1')} /></div>
-            <div className="grid gap-1.5"><Label>{t('Kind')}</Label><Select value={kind} onValueChange={setKind}><SelectTrigger><SelectValue /></SelectTrigger>
+            <div className="grid gap-1.5"><Label>{t('Kind|resource')}</Label><Select value={kind} onValueChange={setKind}><SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{Object.entries(RESOURCE_KINDS).map(([k, l]) => <SelectItem key={k} value={k}>{t(l)}</SelectItem>)}</SelectContent></Select></div>
           </div>
           <div className="flex flex-wrap gap-1.5">{COLORS.map((c) => <button key={c} type="button" aria-label={c} onClick={() => setColor(c)} className="size-6 rounded-full ring-offset-2" style={{ background: c, boxShadow: color === c ? `0 0 0 2px hsl(var(--background)), 0 0 0 4px ${c}` : undefined }} />)}</div>
