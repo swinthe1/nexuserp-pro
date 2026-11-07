@@ -25,6 +25,7 @@ import {
   useRefreshDeclaration, useReopenDeclaration, useSubmitDeclaration, useVatLayout,
 } from '../api'
 import { NewDeclarationDialog, TieOut } from '../components/tax-ui'
+import { MoreMenu } from '@/components/more-menu'
 
 export function DeclarationsPage() {
   const navigate = useNavigate()
@@ -67,7 +68,7 @@ export function DeclarationPage() {
   const d = useDeclaration(id)
   const layout = useVatLayout()
   const profile = useCompanyTaxProfile()
-  const { company } = useCompany()
+  const { company, can } = useCompany()
   const refresh = useRefreshDeclaration()
   const submit = useSubmitDeclaration()
   const decide = useDecideDeclaration()
@@ -96,19 +97,18 @@ export function DeclarationPage() {
         back={{ href: '/tax/declarations', label: t('Declarations') }}
         description={`${formTitle} · ${profile.data?.legal_name ?? profile.data?.name ?? company?.name ?? ''} · ${taxLabel} ${profile.data?.tax_number ?? '—'} · ${formatDate(decl.period_start)} – ${formatDate(decl.period_end)}`}
         actions={<><PageTableExport />{<>
-          <Button variant="outline" asChild><Link to={`/tax/books?month=${ym}`}><FileSpreadsheet /> {t('Books')}</Link></Button>
-          <Button variant="outline" onClick={() => window.print()}><Printer /> {t('Print')}</Button>
+          {/* one step at a time: submit the draft, then record the answer; the books, printing and recalculating under More */}
+          <MoreMenu items={[
+            { label: t('Books'), icon: FileSpreadsheet, to: `/tax/books?month=${ym}` },
+            { label: t('Print'), icon: Printer, onSelect: () => window.print() },
+            { label: t('Recalculate'), icon: RefreshCw, hidden: !(decl.status === 'draft' && can('tax.write')), onSelect: () => refresh.mutate({ id: decl.id }) },
+            { label: t('Mark rejected'), icon: X, separate: true, hidden: !(decl.status === 'submitted' && can('tax.write')), onSelect: () => setRejectOpen(true) },
+          ]} />
           <Can perm="tax.write">
-            {decl.status === 'draft' && <>
-              <Button variant="outline" loading={refresh.isPending} onClick={() => refresh.mutate({ id: decl.id })}><RefreshCw /> {t('Recalculate')}</Button>
-              <Button onClick={() => setSubmitOpen(true)}><Send /> {t('Submit declaration')}</Button>
-            </>}
-            {decl.status === 'submitted' && <>
-              <Button variant="outline" onClick={() => setRejectOpen(true)}><X /> {t('Mark rejected')}</Button>
-              <ConfirmDialog trigger={<Button><Check /> {t('Mark accepted')}</Button>} title={t('Mark as accepted?')}
+            {decl.status === 'draft' && <Button onClick={() => setSubmitOpen(true)}><Send /> {t('Submit declaration')}</Button>}
+            {decl.status === 'submitted' && <ConfirmDialog trigger={<Button><Check /> {t('Mark accepted')}</Button>} title={t('Mark as accepted?')}
                 description={t('Record that the {authority} accepted the return for {period}. The figures stay as submitted.', { authority: xk ? 'ATK' : 'DPT', period })} confirmLabel={t('Mark accepted')}
-                onConfirm={() => decide.mutateAsync({ id: decl.id, accepted: true })} />
-            </>}
+                onConfirm={() => decide.mutateAsync({ id: decl.id, accepted: true })} />}
             {decl.status === 'rejected' && <Button loading={reopen.isPending} onClick={() => reopen.mutate(decl.id)}><RotateCcw /> {t('Reopen as draft')}</Button>}
           </Can>
         </>}</>} />

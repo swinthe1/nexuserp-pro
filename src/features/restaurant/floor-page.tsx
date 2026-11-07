@@ -146,11 +146,16 @@ function Restaurant({ data }: { data: TillData }) {
         <div className="ml-auto flex items-center gap-1.5">
           <MyTakings data={data} />
           {!tabId && <Button variant="outline" size="sm" onClick={takeaway}><ShoppingBag /> {t('Takeaway')}</Button>}
-          <Button variant="ghost" size="sm" asChild><a href={`/pos/kitchen/${data.register.warehouse_id}`} target="_blank" rel="noreferrer"><ChefHat /> {t('Kitchen screen')}</a></Button>
-          <Button variant="ghost" size="sm" aria-pressed={kitchenPrint} onClick={toggleTickets}
-            title={t('Print a kitchen ticket when items are sent')}><Printer /> {kitchenPrint ? t('Tickets on') : t('Tickets off')}</Button>
-          {can('pos.approve') && <Button variant="ghost" size="sm" onClick={() => setSetup(true)}><Settings2 /> {t('Set up the room')}</Button>}
-          <Button variant="outline" size="sm" asChild><Link to={`/pos/till/${data.register.id}`}>{t('Till and shift')}</Link></Button>
+          {/* the waiter's two buttons stay; the room's tools wait under More, as on the phone */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild><Button variant="ghost" size="sm"><Ellipsis /> {t('More')}</Button></DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuItem asChild><a href={`/pos/kitchen/${data.register.warehouse_id}`} target="_blank" rel="noreferrer"><ChefHat /> {t('Kitchen screen')}</a></DropdownMenuItem>
+              <DropdownMenuCheckboxItem checked={kitchenPrint} onCheckedChange={toggleTickets}><Printer className="mr-2 size-4" /> {t('Print a kitchen ticket when items are sent')}</DropdownMenuCheckboxItem>
+              {can('pos.approve') && <DropdownMenuItem onSelect={() => setSetup(true)}><Settings2 /> {t('Set up the room')}</DropdownMenuItem>}
+              <DropdownMenuItem asChild><Link to={`/pos/till/${data.register.id}`}><ReceiptText /> {t('Till and shift')}</Link></DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         )}
       </header>

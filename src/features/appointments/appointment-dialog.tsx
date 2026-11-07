@@ -18,6 +18,7 @@ import { unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { formatMoney, num } from '@/lib/utils'
 import { APPT_SOURCES, APPT_STATUS, type Appt, type Board, CARD_KINDS, type CardKind, useApptAction } from './api'
+import { MoreMenu } from '@/components/more-menu'
 
 const pad = (n: number) => String(n).padStart(2, '0')
 export const localDay = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
@@ -123,9 +124,11 @@ export function AppointmentDialog({ board, appt, initial, open, onOpenChange }: 
           <div className="flex flex-wrap gap-1.5">
             {appt && !locked && can('sales.write') && <>
               {(appt.status === 'booked' || appt.status === 'confirmed') && <Button size="sm" variant="outline" onClick={() => doStatus('arrived', t('Arrived'))}><UserCheck /> {t('Arrived')}</Button>}
-              {appt.status === 'booked' && <Button size="sm" variant="ghost" onClick={() => doStatus('confirmed', t('Confirmed'))}><Phone /> {t('Confirmed')}</Button>}
-              {(appt.status === 'booked' || appt.status === 'confirmed') && <Button size="sm" variant="ghost" onClick={() => doStatus('no_show', t('Marked: did not come'))}><UserX /> {t('Did not come')}</Button>}
-              <Button size="sm" variant="ghost" className="text-destructive" onClick={() => doStatus('cancelled', t('Appointment cancelled'))}><Ban /> {t('Cancel it')}</Button>
+              <MoreMenu size="sm" items={[
+                { label: t('Confirmed'), icon: Phone, hidden: appt.status !== 'booked', onSelect: () => doStatus('confirmed', t('Confirmed')) },
+                { label: t('Did not come'), icon: UserX, hidden: !(appt.status === 'booked' || appt.status === 'confirmed'), onSelect: () => doStatus('no_show', t('Marked: did not come')) },
+                { label: t('Cancel it'), icon: Ban, destructive: true, separate: true, onSelect: () => doStatus('cancelled', t('Appointment cancelled')) },
+              ]} />
             </>}
             {appt?.invoice_id && <Button size="sm" variant="outline" asChild><Link to={`/sales/invoices/${appt.invoice_id}`}><FileText /> {t('Open the invoice')}</Link></Button>}
             {appt && (appt.status === 'cancelled' || appt.status === 'no_show') && can('sales.write') && <Button size="sm" variant="outline" onClick={() => doStatus('booked', t('Booked again'))}>{t('Book again')}</Button>}

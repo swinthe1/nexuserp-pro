@@ -1056,4 +1056,7 @@ export default {
   "The supplier’s invoice": "Fatura e furnitorit",
   "For the goods of {number}. Write the number and date as they are on the invoice: they go to the purchase book.": "Për mallin e {number}. Shkruani numrin dhe datën si janë në faturë: ato shkojnë në librin e blerjes.",
   "Write the number and date as they are on the invoice: they go to the purchase book.": "Shkruani numrin dhe datën si janë në faturë: ato shkojnë në librin e blerjes.",
+  "Mark as sent without e-mail": "Shëno si e dërguar pa e-mail",
+  "Finish statement": "Mbyll ekstraktin",
+  "Create documents": "Krijo dokumentet",
 } satisfies Dict

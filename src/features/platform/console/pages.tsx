@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '@/app/auth-provider'
 import { EmptyState } from '@/components/empty-state'
+import { MoreMenu } from '@/components/more-menu'
 import { ErrorState } from '@/components/error-state'
 import { PageHeader } from '@/components/page-header'
 import { SearchSelect } from '@/components/search-select'
@@ -82,8 +83,10 @@ export function LicencesPage() {
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1.5">
                           <Button size="sm" disabled={pending} onClick={() => renew(c, 12)}><CalendarPlus /> {t('One more year')}</Button>
-                          <Button size="sm" variant="outline" disabled={pending} onClick={() => renew(c, 1)}>{t('+1 month')}</Button>
-                          <Button size="sm" variant="ghost" onClick={() => setEditing(c)}>{t('Change|edit')}</Button>
+                          <MoreMenu size="sm" items={[
+                            { label: t('+1 month'), icon: CalendarPlus, onSelect: () => renew(c, 1), disabled: pending },
+                            { label: t('Change|edit'), onSelect: () => setEditing(c) },
+                          ]} />
                         </div>
                       </TableCell>
                     </TableRow>

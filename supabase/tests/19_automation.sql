@@ -195,8 +195,9 @@ insert into public.purchase_order_lines (company_id, purchase_order_id, line_no,
   values (:'aco', :'apo', 1, :'avar', 'Coca Cola 0.5', 48, 0.42, :'avat');
 select public.submit_purchase_order(:'apo') as po_status \gset
 reset role;
-select t.ok(:'po_status' = 'approved' and exists (select 1 from app.message_outbox where entity_id = :'apo' and to_address = 'porosi@furnitori.xk' and body_text like '%48 × Coca Cola 0.5%'),
-  'an approved purchase order goes to the vendor by email');
+select t.ok(:'po_status' in ('approved', 'sent') and (select status from public.purchase_orders where id = :'apo') = 'sent'
+        and exists (select 1 from app.message_outbox where entity_id = :'apo' and to_address = 'porosi@furnitori.xk' and body_text like '%48 × Coca Cola 0.5%'),
+  'an approved purchase order goes to the vendor by email, and is marked sent');
 set role authenticated;
 select t.login('ana@auto.xk');
 select public.document_email('purchase_order', :'apo', 'tjeter@furnitori.xk', null, 'Porosia', 'JVBERi0xLjQ=', 'porosia.pdf') as po_msg \gset

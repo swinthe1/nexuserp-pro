@@ -193,7 +193,8 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
   // what is not the next step goes under More
   const more: MoreItem[] = []
   if (kind === 'quotes' && doc) {
-    if (doc.status === 'draft') actions.push(<Button key="send" variant="outline" onClick={async () => { const id = await saveFirst(); if (id) { await setStatus.mutateAsync({ id, status: 'sent' }); toast.success(t('Quote marked as sent')) } }}><Send /> {t('Mark as sent')}</Button>)
+    // e-mailing it from Print › Send by e-mail marks it sent; this is for a quote handed over another way
+    if (doc.status === 'draft') more.push({ label: t('Mark as sent without e-mail'), icon: Send, onSelect: async () => { const id = await saveFirst(); if (id) { await setStatus.mutateAsync({ id, status: 'sent' }); toast.success(t('Quote marked as sent')) } } })
     if (doc.status === 'sent') {
       more.push({ label: t('Customer said no'), icon: X, onSelect: () => setStatus.mutate({ id: doc.id, status: 'rejected' }) })
       more.push({ label: t('Edit again'), icon: Undo2, onSelect: () => setStatus.mutate({ id: doc.id, status: 'draft' }) })

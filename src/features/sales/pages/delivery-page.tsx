@@ -28,6 +28,7 @@ import { useDeleteSalesDocument, usePostDelivery, useSalesDocument, useSaveSales
 import { AccountingTab } from '@/features/finance/components/t-accounts'
 import { ErrorState } from '@/components/error-state'
 import { t, td } from '@/i18n'
+import { MoreMenu } from '@/components/more-menu'
 
 type Delivery = Tables<'deliveries'> & {
   lines: Tables<'delivery_lines'>[]
@@ -103,19 +104,18 @@ function DeliveryForm({ doc }: { doc: Delivery }) {
           meta={<StatusBadge status={doc.status} />}
           description={t('To {customer} · from {warehouse}', { customer: doc.partner?.name ?? t('customer'), warehouse: warehouse?.name ? td(warehouse.name) : t('the warehouse') })}
           actions={<><DocumentActions id={doc.id} kind="delivery" /><Can perm="wms.write">
-            {doc.status === 'draft' && (
-              <ConfirmDialog trigger={<Button variant="ghost" size="sm" className="text-destructive"><Trash2 /> {t('Delete')}</Button>} title={t('Delete {number}?', { number: doc.number })}
-                description={t("Nothing has left the warehouse yet; the order's reservations stay in place.")} confirmLabel={t('Delete')} destructive
-                onConfirm={async () => { await del.mutateAsync(doc.id); navigate(doc.order ? `/sales/orders/${doc.order.id}` : '/sales/deliveries') }} />
-            )}
-            {editable && (
-              <ConfirmDialog trigger={<Button variant="ghost" size="sm"><Ban /> {t('Cancel delivery')}</Button>} title={t('Cancel {number}?', { number: doc.number })}
-                description={t('The delivery stays on record as cancelled. The order stays open with its stock reserved.')} confirmLabel={t('Cancel delivery')}
-                onConfirm={() => setStatus.mutateAsync({ id: doc.id, status: 'cancelled' })} />
-            )}
+            <MoreMenu items={[
+              { label: t('Ready to ship'), icon: Truck, hidden: doc.status !== 'draft',
+                onSelect: () => saveThen(() => setStatus.mutateAsync({ id: doc.id, status: 'ready' })).then(() => toast.success(t('Ready to ship'))).catch(() => {}) },
+              { label: t('Back to draft'), icon: Undo2, hidden: doc.status !== 'ready', onSelect: () => setStatus.mutate({ id: doc.id, status: 'draft' }) },
+              { label: t('Cancel delivery'), icon: Ban, hidden: !editable, separate: true,
+                confirm: { title: t('Cancel {number}?', { number: doc.number }), description: t('The delivery stays on record as cancelled. The order stays open with its stock reserved.'), confirmLabel: t('Cancel delivery') },
+                onSelect: () => setStatus.mutateAsync({ id: doc.id, status: 'cancelled' }) },
+              { label: t('Delete'), icon: Trash2, destructive: true, hidden: doc.status !== 'draft',
+                confirm: { title: t('Delete {number}?', { number: doc.number }), description: t("Nothing has left the warehouse yet; the order's reservations stay in place.") },
+                onSelect: async () => { await del.mutateAsync(doc.id); navigate(doc.order ? `/sales/orders/${doc.order.id}` : '/sales/deliveries') } },
+            ]} />
             {editable && <Button variant="outline" onClick={() => void onSave()} loading={save.isPending}>{t('Save')}</Button>}
-            {doc.status === 'draft' && <Button variant="outline" onClick={() => void saveThen(() => setStatus.mutateAsync({ id: doc.id, status: 'ready' })).then(() => toast.success(t('Ready to ship'))).catch(() => {})}><Truck /> {t('Ready to ship')}</Button>}
-            {doc.status === 'ready' && <Button variant="ghost" onClick={() => setStatus.mutate({ id: doc.id, status: 'draft' })}><Undo2 /> {t('Back to draft')}</Button>}
             {editable && (
               <ConfirmDialog trigger={<Button><PackageCheck /> {t('Complete delivery')}</Button>} title={t('Complete this delivery?')}
                 description={t("{units} units leave {warehouse}. Stock goes down, the order's reservations are used up and the cost of the goods is recorded at average cost.", { units: formatQty(units), warehouse: warehouse?.name ? td(warehouse.name) : t('the warehouse') })}

@@ -27,6 +27,7 @@ import { useCount, useCountItem, useCounts, useCreateCount, usePostCount, useRes
 import { QtyDialog, ScanShell, useScanStatus } from '../components/scan-shell'
 import { useCountPlan, useCreateCountDue } from '@/features/inventory/abc'
 import { CountImportDialog, CountReviewPanel, printCountSheet } from '../components/count-tools'
+import { MoreMenu } from '@/components/more-menu'
 
 /** Count lists and screens refresh when someone else counts, submits or posts */
 function useLiveCounts() {
@@ -188,8 +189,11 @@ export function CountPage() {
     <ScanShell title={c.number} back={{ href: '/wms/counts', label: t('Stock counts') }}
       meta={<><StatusBadge status={c.status} /><span className="text-[13px] text-muted-foreground">{td(c.warehouse?.name)} · {t('{done} of {total} counted', { done: counted, total: c.lines.length })}{c.blind_count ? ` · ${t('blind')}` : ''}</span></>}
       actions={<>
-        <Button variant="outline" onClick={() => printCountSheet(c, company?.name ?? '')}><Printer /> {t('Print the count sheet')}</Button>
-        {counting && <Can perm="wms.write"><Button variant="outline" onClick={() => setImporting(true)}><FileSpreadsheet /> {t('From Excel')}</Button></Can>}
+        {/* one button follows the count (finish → confirm → the adjustment); printing and Excel under More */}
+        <MoreMenu items={[
+          { label: t('Print the count sheet'), icon: Printer, onSelect: () => printCountSheet(c, company?.name ?? '') },
+          { label: t('From Excel'), icon: FileSpreadsheet, hidden: !(counting && can('wms.write')), onSelect: () => setImporting(true) },
+        ]} />
         {counting && <Can perm="wms.write"><ConfirmDialog trigger={<Button>{t('Finish counting')}</Button>} title={t('Finish counting?')}
           description={<span className="grid gap-3"><span>{tn(c.lines.length - counted, '{n} line is not counted.', '{n} lines are not counted.')}</span>
             <label className="flex items-center gap-2"><Checkbox checked={zero} onCheckedChange={(v) => setZero(!!v)} /> {t('Count the missing lines as zero (the shelf was checked and they are not there)')}</label></span>}

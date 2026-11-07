@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch'
 import { cn, formatDate, formatMoney, formatQty, num } from '@/lib/utils'
 import { t, td, tEnum } from '@/i18n'
 import { type PriceRules, type PriceSuggestion, useDecidePrices, usePriceRules, usePriceSuggestions, useSavePriceRules } from '../api'
+import { MoreMenu } from '@/components/more-menu'
 
 const pctChange = (s: PriceSuggestion) => (s.gross_now ? ((s.gross_new - s.gross_now) / s.gross_now) * 100 : null)
 
@@ -67,9 +68,11 @@ export function PriceSuggestions() {
       id: 'actions', enableHiding: false, meta: { noExport: true },
       cell: ({ row: { original: r } }: { row: { original: PriceSuggestion } }) => (
         <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-          <Button size="xs" variant="outline" onClick={() => setEdit(r)}>{t('Other price')}</Button>
-          <Button size="xs" variant="ghost" aria-label={t('Reject')} onClick={() => decide.mutate({ ids: [r.id], accept: false })}><X /></Button>
           <Button size="xs" onClick={() => decide.mutate({ ids: [r.id], accept: true })}><Check /> {t('Accept')}</Button>
+          <MoreMenu size="sm" className="h-7" items={[
+            { label: t('Other price'), onSelect: () => setEdit(r) },
+            { label: t('Reject'), icon: X, onSelect: () => decide.mutate({ ids: [r.id], accept: false }) },
+          ]} />
         </div>
       ),
     } as ColumnDef<PriceSuggestion>] : []),

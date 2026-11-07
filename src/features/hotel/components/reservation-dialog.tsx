@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { MoreMenu } from '@/components/more-menu'
 import { SearchSelect } from '@/components/search-select'
 import { StatusBadge } from '@/components/status-badge'
 import { Button } from '@/components/ui/button'
@@ -148,10 +149,12 @@ export function ReservationDialog({ id, initial, open, onOpenChange }: { id?: st
               <>
                 <Button onClick={() => void run(() => checkIn.mutateAsync(), t('{guest} is in the hotel', { guest: r.guest_name }))} loading={checkIn.isPending} disabled={r.check_in > todayISO()}
                   title={r.check_in > todayISO() ? t('The stay starts on {date}', { date: formatDate(r.check_in) }) : undefined}><LogIn />{t('Check in')}</Button>
-                <ConfirmDialog trigger={<Button variant="outline">{t('Cancel the reservation')}</Button>} title={t('Cancel this reservation?')}
-                  description={t('The room becomes free for those nights. It can be booked again later.')} confirmLabel={t('Cancel the reservation')} destructive
-                  onConfirm={() => run(() => status.mutateAsync('cancelled'), t('Reservation cancelled'))} />
-                {r.check_in <= todayISO() && <Button variant="ghost" onClick={() => void run(() => status.mutateAsync('no_show'), t('Marked as did not come'))}>{t('Did not come')}</Button>}
+                <MoreMenu items={[
+                  { label: t('Did not come'), hidden: r.check_in > todayISO(), onSelect: () => run(() => status.mutateAsync('no_show'), t('Marked as did not come')) },
+                  { label: t('Cancel the reservation'), destructive: true, separate: true,
+                    confirm: { title: t('Cancel this reservation?'), description: t('The room becomes free for those nights. It can be booked again later.'), confirmLabel: t('Cancel the reservation') },
+                    onSelect: () => run(() => status.mutateAsync('cancelled'), t('Reservation cancelled')) },
+                ]} />
               </>
             )}
             {r?.status === 'checked_in' && can('invoicing.write') && (

@@ -33,6 +33,7 @@ import {
   useEmployee, useEmployees, useEndContract, useSignContract, useUpdateContract, useUploadSignedCopy, type ContractFull,
 } from '../api'
 import { contractPaper, CONTRACT_CSS, contractValues, countryOf, defaultModel, fillModel, printContract, probationEnd, type ContractFacts } from '../contract-doc'
+import { MoreMenu } from '@/components/more-menu'
 
 export const CONTRACT_TYPES = ['indefinite', 'fixed_term', 'seasonal', 'service'] as const
 export const END_REASONS = ['resigned', 'dismissed', 'mutual', 'expired', 'probation', 'retired', 'other'] as const
@@ -245,11 +246,11 @@ export function ContractPage() {
         actions={<>
           <Button variant="outline" disabled={!facts} onClick={() => facts && printContract(facts, model)}><Printer /> {t('Print')}</Button>
           {write && unsigned && <Button onClick={() => setDialog('sign')}><FileSignature /> {t('Mark as signed')}</Button>}
-          {write && c.status === 'active' && <>
-            <Button variant="outline" onClick={() => setDialog('annex')}><PenLine /> {t('Annex')}</Button>
-            {c.end_date && <Button variant="outline" onClick={() => setDialog('extend')}><CalendarPlus /> {t('Extend')}</Button>}
-            <Button variant="outline" onClick={() => setDialog('end')}><UserX /> {t('End the contract')}</Button>
-          </>}
+          {write && c.status === 'active' && <MoreMenu items={[
+            { label: t('Annex'), icon: PenLine, onSelect: () => setDialog('annex') },
+            { label: t('Extend'), icon: CalendarPlus, hidden: !c.end_date, onSelect: () => setDialog('extend') },
+            { label: t('End the contract'), icon: UserX, destructive: true, separate: true, onSelect: () => setDialog('end') },
+          ]} />}
           {c.status === 'ended' && c.ended_reason && !['changed', 'replaced'].includes(c.ended_reason) && facts &&
             <Button variant="outline" onClick={() => printContract(facts, noticeModel)}><FileText /> {t('Print the notice')}</Button>}
         </>} />

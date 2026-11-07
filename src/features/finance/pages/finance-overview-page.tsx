@@ -3,6 +3,7 @@ import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { Can, useCompany } from '@/app/company-provider'
+import { MoreMenu } from '@/components/more-menu'
 import { PageHeader } from '@/components/page-header'
 import { StatCard } from '@/components/stat-card'
 import { Button } from '@/components/ui/button'
@@ -26,7 +27,7 @@ const RANGES = {
 type RangeKey = keyof typeof RANGES
 
 export function FinanceOverviewPage() {
-  const { company } = useCompany()
+  const { company, can } = useCompany()
   const cur = company?.base_currency ?? 'ALL'
   const [rangeKey, setRangeKey] = React.useState<RangeKey>('ytd')
   const [from, to] = React.useMemo(() => RANGES[rangeKey].range().map(iso) as [string, string], [rangeKey])
@@ -44,9 +45,11 @@ export function FinanceOverviewPage() {
             <SelectTrigger className="w-[150px]" aria-label={t('Period')}><SelectValue /></SelectTrigger>
             <SelectContent>{Object.entries(RANGES).map(([k, r]) => <SelectItem key={k} value={k}>{t(r.label)}</SelectItem>)}</SelectContent>
           </Select>
-          <Can perm="finance.write"><Button variant="outline" asChild><Link to="/finance/journal/new"><BookPlus /> {t('Manual entry')}</Link></Button></Can>
+          <MoreMenu items={[
+            { label: t('Pay a vendor'), icon: ArrowUpRight, to: '/finance/payments/new?type=vendor_payment', hidden: !can('invoicing.write') },
+            { label: t('Manual entry'), icon: BookPlus, to: '/finance/journal/new', hidden: !can('finance.write') },
+          ]} />
           <Can perm="invoicing.write">
-            <Button variant="outline" asChild><Link to="/finance/payments/new?type=vendor_payment"><ArrowUpRight /> {t('Pay a vendor')}</Link></Button>
             <Button asChild><Link to="/finance/payments/new?type=customer_payment"><ArrowDownLeft /> {t('Receive a payment')}</Link></Button>
           </Can>
         </>} />

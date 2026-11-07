@@ -1133,4 +1133,6 @@ export default {
   "Message": "Poruka",
   "Set it up": "Podesi",
   "Send": "Pošalji",
+  'Finish statement': 'Zatvori izvod',
+  'Create documents': 'Kreiraj dokumente',
 } satisfies Dict

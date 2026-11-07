@@ -26,5 +26,8 @@ select t.ok(position('automations_daily' in pg_get_functiondef('public.automatio
         and position('automations_hourly' in pg_get_functiondef('public.automation_tick'::regproc)) > 0, 'the tick runs the daily and hourly work');
 select t.ok((app.automations_hourly(:'qco')) ? 'orders_reserved', 'the hourly work runs');
 
+select t.ok(app.automations_daily_more(:'qco') ?& array['approval_tasks', 'open_clock_ins', 'rooms_to_clean', 'desk_tasks', 'renewal_mails'], 'the other daily work runs');
+select t.ok(position('status = ''sent''' in pg_get_functiondef('app.tg_po_email'::regproc)) > 0, 'an order e-mailed to the supplier is marked sent');
+
 \set QUIET off
 select count(*) as assertions_passed from t.results;

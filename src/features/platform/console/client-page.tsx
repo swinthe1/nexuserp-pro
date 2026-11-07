@@ -4,6 +4,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
 import { toast } from 'sonner'
 import { EmptyState } from '@/components/empty-state'
+import { MoreMenu } from '@/components/more-menu'
 import { ErrorState } from '@/components/error-state'
 import { PageHeader } from '@/components/page-header'
 import { Badge } from '@/components/ui/badge'
@@ -57,7 +58,6 @@ export function ClientPage() {
   const list = usePlatformClients()
   const c = list.data?.clients.find((x) => x.id === id)
   const open = useOpenCompany()
-  const { renew, pending } = useRenew()
 
   if (q.isLoading || list.isLoading) return <Skeleton className="h-96" />
   if (q.isError || !c) {
@@ -78,7 +78,6 @@ export function ClientPage() {
         description={[d.company.country_code === 'XK' ? t('Kosovo') : t('Albania'), d.company.tax_number && `NUI ${d.company.tax_number}`, t(businessTypeLabel(d.company.business_type)),
           t('client since {date}', { date: formatDate(d.company.created_at) })].filter(Boolean).join(' · ')}
         actions={<>
-          {c.valid_until && <Button variant="outline" loading={pending} onClick={() => renew(c, 12)}><CalendarPlus /> {t('One more year')}</Button>}
           <Button onClick={() => void open(c.id)}>{t('Open this company')} <ArrowRight /></Button>
           <ClientActions c={c} button={<Button variant="outline" size="icon" aria-label={t('More')}>⋯</Button>} />
         </>} />
@@ -232,10 +231,12 @@ function LicenceTab({ d, c }: { d: ClientDetail; c: NonNullable<ReturnType<typeo
           </dl>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button loading={pending} onClick={() => renew(c, 12)}><CalendarPlus /> {t('One more year')}</Button>
-            <Button variant="outline" disabled={pending} onClick={() => renew(c, 1)}>{t('One more month')}</Button>
-            {l.status === 'suspended'
-              ? <Button variant="outline" disabled={pending} onClick={() => pause(c, false)}><Play /> {t('Resume the licence')}</Button>
-              : <Button variant="outline" disabled={pending} onClick={() => pause(c, true)}><Pause /> {t('Pause the licence')}</Button>}
+            <MoreMenu items={[
+              { label: t('One more month'), icon: CalendarPlus, onSelect: () => renew(c, 1), disabled: pending },
+              l.status === 'suspended'
+                ? { label: t('Resume the licence'), icon: Play, onSelect: () => pause(c, false), disabled: pending }
+                : { label: t('Pause the licence'), icon: Pause, onSelect: () => pause(c, true), disabled: pending, destructive: true },
+            ]} />
           </div>
         </CardContent>
       </Card>

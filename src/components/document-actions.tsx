@@ -1,5 +1,5 @@
 import { ChevronDown, Download, FileText, Mail, PenLine, Printer, Share2 } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/app/auth-provider'
 import { useCompany } from '@/app/company-provider'
 import * as React from 'react'
@@ -125,12 +125,15 @@ function EmailDialog({ doc, kind, id, signature, signer, onClose }: { doc: Print
   }))
   const [sending, setSending] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const qc = useQueryClient()
   const send = async () => {
     setSending(true); setError(null)
     try {
       const pdf = await pdfBase64(await withSignature(doc, kind, id, signature, 'email'))
       unwrap(await supabase.rpc('document_email', { p_kind: kind, p_id: id, p_to: to.trim(), p_subject: subject, p_message: text, p_pdf: pdf, p_filename: fileName(doc) }))
       toast.success(t('Sent to {to}. It goes out within a minute.', { to: to.trim() }))
+      // a quote or a purchase order sent this way is now "sent": its page shows it
+      if (['sales_quote', 'proforma_quote', 'purchase_order'].includes(kind)) { void qc.invalidateQueries({ queryKey: ['sales'] }); void qc.invalidateQueries({ queryKey: ['proc'] }) }
       onClose()
     } catch (e) { setError(tServer(describeError(e))) } finally { setSending(false) }
   }

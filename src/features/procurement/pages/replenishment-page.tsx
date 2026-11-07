@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Bot, Factory, Gauge, Play, RefreshCw, ShoppingCart, X } from 'lucide-react'
+import { ArrowLeftRight, Bot, Gauge, Play, RefreshCw, ShoppingCart, X } from 'lucide-react'
 import { PageTableExport } from '@/components/page-table-export'
 import { useQueryClient } from '@tanstack/react-query'
 import * as React from 'react'
@@ -6,6 +6,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Can, useCompany } from '@/app/company-provider'
 import { EmptyState } from '@/components/empty-state'
+import { MoreMenu } from '@/components/more-menu'
 import { PageHeader } from '@/components/page-header'
 import { SearchSelect } from '@/components/search-select'
 import { StatusBadge } from '@/components/status-badge'
@@ -79,12 +80,14 @@ export function ReplenishmentPage() {
             <SelectTrigger className="w-[180px]" aria-label={t('Warehouse')}><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="all">{t('All warehouses')}</SelectItem>{(warehouses.data ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{td(w.name)}</SelectItem>)}</SelectContent>
           </Select>
-          {writable && <Button variant="outline" loading={generate.isPending} onClick={async () => {
-            const n = await generate.mutateAsync(warehouse === 'all' ? null : warehouse)
-            setSelected(new Set())
-            toast.success(n ? tn(n, '{n} item needs replenishing', '{n} items need replenishing') : t('Everything is above its reorder point'))
-          }}><RefreshCw /> {t('Check stock now')}</Button>}
-          <Can perm="procurement.read"><Button variant="outline" onClick={() => setFromSales(true)}><Gauge /> {t('Min and max from sales')}</Button></Can>
+          <MoreMenu items={[
+            { label: t('Check stock now'), icon: RefreshCw, hidden: !writable, disabled: generate.isPending, onSelect: async () => {
+              const n = await generate.mutateAsync(warehouse === 'all' ? null : warehouse)
+              setSelected(new Set())
+              toast.success(n ? tn(n, '{n} item needs replenishing', '{n} items need replenishing') : t('Everything is above its reorder point'))
+            } },
+            { label: t('Min and max from sales'), icon: Gauge, hidden: !can('procurement.read'), onSelect: () => setFromSales(true) },
+          ]} />
           <Can perm="procurement.write"><Button onClick={() => setRunOpen(true)}><Play /> {t('Run replenishment')}</Button></Can>
         </>}</>}
       />
@@ -100,30 +103,39 @@ export function ReplenishmentPage() {
             <div className="flex flex-wrap items-center gap-2">
               {selected.size > 0 && <span className="text-[13px] text-muted-foreground">{t('{n} selected', { n: selected.size })}</span>}
               {writable && <Button variant="ghost" size="sm" disabled={!selected.size} onClick={() => update.mutate({ ids: [...selected], values: { status: 'dismissed' } }, { onSuccess: () => setSelected(new Set()) })}><X /> {t('Dismiss')}</Button>}
-              <Can perm="inventory.write">
-                <Button variant="outline" size="sm" disabled={!selTransfer.length} loading={transfer.isPending} onClick={async () => {
-                  const r = await transfer.mutateAsync(selTransfer.map((s) => s.id))
-                  setSelected(new Set())
-                  toast.success(tn(r.length, '{n} draft transfer created', '{n} draft transfers created'), { description: r.map((x) => x.number).join(', ') })
-                  if (r.length === 1) navigate(`/inventory/transfers/${r[0]!.id}`)
-                }}><ArrowLeftRight /> {t('Create transfers')}{selTransfer.length ? ` (${selTransfer.length})` : ''}</Button>
-              </Can>
-              <Can perm="manufacturing.write">
-                <Button variant="outline" size="sm" disabled={!selMake.length} loading={makeWos.isPending} onClick={async () => {
-                  const r = await makeWos.mutateAsync(selMake.map((s) => s.id))
-                  setSelected(new Set())
-                  toast.success(tn(r.length, '{n} work order created', '{n} work orders created'), { description: r.map((x) => x.number).join(', ') })
-                  if (r.length === 1) navigate(`/manufacturing/orders/${r[0]!.id}`)
-                }}><Factory /> {t('Create work orders')}{selMake.length ? ` (${selMake.length})` : ''}</Button>
-              </Can>
-              <Can perm="procurement.write">
-                <Button size="sm" disabled={!selBuy.length} loading={order.isPending} onClick={async () => {
-                  const r = await order.mutateAsync(selBuy.map((s) => s.id))
-                  setSelected(new Set())
-                  toast.success(tn(r.orders.length, '{n} draft purchase order created', '{n} draft purchase orders created'), { description: t('Review and submit them.') })
-                  if (r.orders.length === 1) navigate(`/procurement/orders/${r.orders[0]}`)
-                }}><ShoppingCart /> {t('Create purchase orders')}{selBuy.length ? ` (${vendorCount})` : ''}</Button>
-              </Can>
+              {(() => {
+                // one button: each selected line becomes the document it needs (a purchase order, a transfer or a work order)
+                const buy = can('procurement.write') ? selBuy : []
+                const move = can('inventory.write') ? selTransfer : []
+                const make = can('manufacturing.write') ? selMake : []
+                const n = (buy.length ? vendorCount : 0) + move.length + make.length
+                const busy = order.isPending || transfer.isPending || makeWos.isPending
+                if (!can('procurement.write') && !can('inventory.write') && !can('manufacturing.write')) return null
+                return (
+                  <Button size="sm" disabled={!n} loading={busy} onClick={async () => {
+                    const made: string[] = []
+                    let only: string | null = null
+                    if (buy.length) {
+                      const r = await order.mutateAsync(buy.map((s) => s.id))
+                      made.push(tn(r.orders.length, '{n} draft purchase order created', '{n} draft purchase orders created'))
+                      if (r.orders.length === 1) only = `/procurement/orders/${r.orders[0]}`
+                    }
+                    if (move.length) {
+                      const r = await transfer.mutateAsync(move.map((s) => s.id))
+                      made.push(tn(r.length, '{n} draft transfer created', '{n} draft transfers created'))
+                      if (r.length === 1) only = only ? 'many' : `/inventory/transfers/${r[0]!.id}`
+                    }
+                    if (make.length) {
+                      const r = await makeWos.mutateAsync(make.map((s) => s.id))
+                      made.push(tn(r.length, '{n} work order created', '{n} work orders created'))
+                      if (r.length === 1) only = only ? 'many' : `/manufacturing/orders/${r[0]!.id}`
+                    }
+                    setSelected(new Set())
+                    toast.success(made.join(' · '), { description: t('Review and submit them.') })
+                    if (only && only !== 'many' && made.length === 1) navigate(only)
+                  }}><ShoppingCart /> {t('Create documents')}{n ? ` (${n})` : ''}</Button>
+                )
+              })()}
             </div>
           </CardHeader>
           <CardContent className="overflow-x-auto p-0">

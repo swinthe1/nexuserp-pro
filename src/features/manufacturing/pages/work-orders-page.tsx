@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { Can, useCompany } from '@/app/company-provider'
 import { ActivityTimeline } from '@/components/activity-timeline'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { MoreMenu, type MoreItem } from '@/components/more-menu'
 import { ColumnHeader, DataTable, inFilter } from '@/components/data-table/data-table'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
@@ -216,31 +217,33 @@ function WorkOrderView({ w }: { w: WorkOrderDetail }) {
   const actualUnit = num(w.quantity_produced) ? num(w.output_value) / num(w.quantity_produced) : null
   const shortages = (materials.data ?? []).filter((m) => m.shortage > 0)
 
+  // one main button for the next step of the order; the rest under More
+  const more: MoreItem[] = [
+    { label: t('Use materials'), icon: Boxes, hidden: !live, onSelect: () => setDlg('consume') },
+    { label: t('Return unused material'), icon: Undo2, hidden: w.status !== 'completed', onSelect: () => setDlg('return') },
+    { label: t('Finish early'), icon: Check, hidden: w.status !== 'in_progress',
+      confirm: { title: t('Finish {number} with {a} of {b}?', { number: w.number, a: formatQty(w.quantity_produced), b: formatQty(w.quantity_planned) }),
+        description: t('Open steps are marked done. When you close the order, any cost the output did not take is booked as a cost difference.'), confirmLabel: t('Finish') },
+      onSelect: async () => { await complete.mutateAsync(w.id); toast.success(t('Work order finished')) } },
+    { label: t('Back to draft'), icon: Undo2, hidden: !(w.status === 'released' && num(w.material_cost) === 0 && num(w.labor_cost) === 0),
+      onSelect: async () => { await backToDraft.mutateAsync(w.id); toast.success(t('Back to draft')) } },
+    { label: t('Cancel work order'), icon: X, destructive: true, separate: true, hidden: w.status !== 'draft',
+      confirm: { title: t('Cancel {number}?', { number: w.number }), description: t('Nothing has been booked on it; orders for semi-finished products that have not started are cancelled too.'), confirmLabel: t('Cancel work order') },
+      onSelect: async () => { await cancel.mutateAsync(w.id); toast.success(t('Work order cancelled')) } },
+  ]
   const actions = write && <>
-    {w.status === 'draft' && <>
-      <ConfirmDialog trigger={<Button variant="ghost" className="text-destructive"><X /> {t('Cancel work order')}</Button>} title={t('Cancel {number}?', { number: w.number })} description={t('Nothing has been booked on it; orders for semi-finished products that have not started are cancelled too.')} confirmLabel={t('Cancel work order')} destructive
-        onConfirm={async () => { await cancel.mutateAsync(w.id); toast.success(t('Work order cancelled')) }} />
+    <MoreMenu items={more} />
+    {w.status === 'draft' &&
       <Button loading={release.isPending} onClick={async () => {
         const r = await release.mutateAsync(w.id)
         if (r.shortages.length) toast.warning(tn(r.shortages.length, 'Released with {n} missing material', 'Released with {n} missing materials'), { description: r.shortages.map((s) => t('{sku}: {qty} missing', { sku: s.sku, qty: formatQty(s.shortage) })).join(' · ') })
         else toast.success(t('Released to production'))
-      }}><Play /> {t('Release')}</Button>
-    </>}
-    {w.status === 'released' && num(w.material_cost) === 0 && num(w.labor_cost) === 0 &&
-      <Button variant="ghost" onClick={async () => { await backToDraft.mutateAsync(w.id); toast.success(t('Back to draft')) }}><Undo2 /> {t('Back to draft')}</Button>}
-    {live && <>
-      <Button variant="outline" onClick={() => setDlg('consume')}><Boxes /> {t('Use materials')}</Button>
-      <Button onClick={() => setDlg('produce')}><PackageCheck /> {t('Book output')}</Button>
-    </>}
-    {w.status === 'in_progress' && <ConfirmDialog trigger={<Button variant="ghost">{t('Finish early')}</Button>} title={t('Finish {number} with {a} of {b}?', { number: w.number, a: formatQty(w.quantity_produced), b: formatQty(w.quantity_planned) })}
-      description={t('Open steps are marked done. When you close the order, any cost the output did not take is booked as a cost difference.')} confirmLabel={t('Finish')}
-      onConfirm={async () => { await complete.mutateAsync(w.id); toast.success(t('Work order finished')) }} />}
-    {w.status === 'completed' && <>
-      <Button variant="outline" onClick={() => setDlg('return')}><Undo2 /> {t('Return unused material')}</Button>
+      }}><Play /> {t('Release')}</Button>}
+    {live && <Button onClick={() => setDlg('produce')}><PackageCheck /> {t('Book output')}</Button>}
+    {w.status === 'completed' &&
       <ConfirmDialog trigger={<Button><Check /> {t('Close and settle cost')}</Button>} title={t('Close {number}?', { number: w.number })}
         description={Math.abs(wip) < 0.005 ? t('All cost went into the finished goods; nothing is left in production.') : t('{amount} is still in production and will be booked as a cost difference.', { amount: formatMoney(wip) })}
-        confirmLabel={t('Close')} onConfirm={async () => { const r = await close.mutateAsync(w.id); toast.success(num(r.variance) ? t('Closed · cost difference {amount}', { amount: formatMoney(r.variance) }) : t('Closed · no cost difference')) }} />
-    </>}
+        confirmLabel={t('Close')} onConfirm={async () => { const r = await close.mutateAsync(w.id); toast.success(num(r.variance) ? t('Closed · cost difference {amount}', { amount: formatMoney(r.variance) }) : t('Closed · no cost difference')) }} />}
   </>
 
   return (
