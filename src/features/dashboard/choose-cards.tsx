@@ -33,7 +33,7 @@ export function ChooseCards({ all, shown, usual, onSave }: { all: Card[]; shown:
     <>
       <Button variant="outline" size="sm" onClick={start}><SlidersHorizontal /> {t('Choose cards')}</Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>{t('Choose cards')}</DialogTitle>
             <DialogDescription>{t('Tick what you want to see on the dashboard; the arrows change the order. Only you see this choice.')}</DialogDescription>

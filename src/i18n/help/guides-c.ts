@@ -342,7 +342,8 @@ export const GUIDES_C: Record<string, Guide> = {
   '/reports': {
     what: { sq: 'Raportet: shitjet, blerjet, stoku, financat dhe tatimet, secili raport si një pyetje.', en: 'Reports: sales, purchasing, stock, finance and tax, each report as a question.' },
     steps: [
-      { sq: 'Kliko raportin që i përgjigjet pyetjes tënde.', en: 'Click the report that answers your question.' },
+      { sq: 'Lart janë katër pyetjet më të shpeshta: "Sa shitëm?", "Ku fitojmë më shumë?", "Sa vlen stoku?", "Kush na ka borxh?". Poshtë, raportet janë të grupuara sipas pyetjes: Shitjet, Fitimi, Stoku, Blerja, Paratë dhe borxhet, Tatimet.', en: 'On top are the four most common questions: "How much did we sell?", "Where do we earn most?", "What is the stock worth?", "Who owes us?". Below, the reports are grouped by question: Sales, Profit, Stock, Buying, Money and debts, Taxes.' },
+      { sq: 'Nuk e gjen? Shkruaj një fjalë te "Gjej një raport…" (p.sh. "TVSH", "skadim", "klient").', en: 'Cannot find it? Type a word in "Find a report…" (e.g. "VAT", "expiry", "customer").' },
       { sq: 'Zgjidh periudhën dhe si grupohen shifrat te "Grupo sipas"; me "Në kolona" e kthen në tabelë me kolona.', en: 'Choose the period and how the figures are grouped under "Group by"; with "Across" you turn it into a table with columns.' },
       { sq: 'Kliko një rresht për të parë nga se përbëhet; rruga mbi tabelë të kthen pas.', en: 'Click a row to see what makes it up; the path above the table takes you back.' },
       { sq: 'Kliko "Ruaj raportin" për ta gjetur më vonë te "Raportet e mia", ose "Eksporto" për Excel, CSV ose PDF.', en: 'Click "Save the report" to find it later under "My reports", or "Export" for Excel, CSV or PDF.' },
