@@ -17,6 +17,8 @@ import { supabase } from '@/lib/supabase'
 import { cn, formatDate, formatMoney } from '@/lib/utils'
 import { t, tn, tServer } from '@/i18n'
 import { AutomationCard } from './automation-card'
+import { ErrorState } from '@/components/error-state'
+import { Skeleton } from '@/components/ui/skeleton'
 
 type Mailbox = { host: string; port: number; security: 'tls' | 'starttls' | 'none'; username: string | null; has_password: boolean; from_name: string | null
   from_email: string; reply_to: string | null; is_active: boolean; verified_at: string | null; last_error: string | null }
@@ -54,7 +56,9 @@ function useSaveMessaging() {
 export function MessagingSettings() {
   const { can } = useCompany()
   const q = useMessaging()
-  if (!can('admin.read') || !q.data) return null
+  if (!can('admin.read')) return null
+  if (q.isError) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />
+  if (!q.data) return <Skeleton className="h-40" />
   const d = q.data
   const writer = can('admin.write')
   return (

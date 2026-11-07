@@ -2,7 +2,7 @@ import { CalendarPlus, Cable, CircleDollarSign, ExternalLink, Server } from 'luc
 import { useQuery } from '@tanstack/react-query'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { toast } from 'sonner'
+
 import { useAuth } from '@/app/auth-provider'
 import { EmptyState } from '@/components/empty-state'
 import { ErrorState } from '@/components/error-state'
@@ -13,15 +13,15 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Switch } from '@/components/ui/switch'
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { t, tn } from '@/i18n'
-import { describeError, unwrap } from '@/lib/errors'
+import { unwrap } from '@/lib/errors'
 import { daysUntil } from '@/lib/license'
 import { supabase } from '@/lib/supabase'
 import { cn, formatDate, formatMoney } from '@/lib/utils'
-import { type PlatformClient, usePlatformClients, usePlatformEvents, useSetSelfService } from '../api'
+import { type PlatformClient, usePlatformClients, usePlatformEvents } from '../api'
 import { BackupCard } from '../backup-card'
 import { DesktopReleaseCard } from '../desktop-release-card'
 import { countsText, LicenseDialog, licenseState, LiveLinkDialog, linkState, planLabel } from '../dialogs'
@@ -116,7 +116,7 @@ export function ServersPage() {
         <Card><CardContent className="p-4"><div className="text-xs text-muted-foreground">{t('Newest version in use')}</div><div className="text-2xl font-semibold tabular">{latest ?? '—'}</div></CardContent></Card>
       </div>
       <Card><CardContent className="overflow-x-auto p-0">
-        {clients.isLoading ? <Skeleton className="m-4 h-48" /> : !rows.length ? <EmptyState compact icon={Server} title={t('No local server yet')} description={t('When a client installs a local server with its licence code, it shows here.')} /> : (
+        {clients.isLoading ? <Skeleton className="m-4 h-48" /> : clients.isError ? <ErrorState error={clients.error} onRetry={() => void clients.refetch()} /> : !rows.length ? <EmptyState compact icon={Server} title={t('No local server yet')} description={t('When a client installs a local server with its licence code, it shows here.')} /> : (
           <Table className="min-w-[760px]">
             <TableHeader><TableRow className="hover:bg-transparent">
               <TableHead>{t('Client')}</TableHead><TableHead>{t('State')}</TableHead><TableHead>{t('Version')}</TableHead><TableHead>{t('Address')}</TableHead><TableHead>{t('Last seen')}</TableHead>
@@ -151,7 +151,7 @@ export function LinksPage() {
     <>
       <PageHeader icon={false} title={t('Live links')} description={t('The links that send sales, stock and prices from a client\'s old program. Links with errors come first.')} />
       <Card><CardContent className="overflow-x-auto p-0">
-        {clients.isLoading ? <Skeleton className="m-4 h-48" /> : !rows.length ? <EmptyState compact icon={Cable} title={t('No live link yet')} description={t('A link is made from the client\'s page, under "Links and server".')} /> : (
+        {clients.isLoading ? <Skeleton className="m-4 h-48" /> : clients.isError ? <ErrorState error={clients.error} onRetry={() => void clients.refetch()} /> : !rows.length ? <EmptyState compact icon={Cable} title={t('No live link yet')} description={t('A link is made from the client\'s page, under "Links and server".')} /> : (
           <Table className="min-w-[860px]">
             <TableHeader><TableRow className="hover:bg-transparent">
               <TableHead>{t('Client')}</TableHead><TableHead>{t('Link')}</TableHead><TableHead>{t('State')}</TableHead><TableHead>{t('Last seen')}</TableHead><TableHead>{t('Last send')}</TableHead><TableHead className="w-24" />
@@ -194,13 +194,13 @@ export function ReleasesPage() {
 }
 
 /* ------------------------------------------------------------------ prices */
-type PriceRow = { plan: string; price_month: number | null; price_year: number | null; per_user: number | null; users: number; note: string | null }
+type PriceRow = { plan: string; package?: boolean; price_month: number | null; price_year: number | null; per_user: number | null; users: number; note: string | null }
 export function PricesPage() {
   const [open, setOpen] = React.useState(false)
   const q = useQueryPrices(open)
   return (
     <>
-      <PageHeader icon={false} title={t('Prices')} description={t('The prices of the plans, without VAT. The overview counts the income from them. The public price page stays off until you decide.')}
+      <PageHeader icon={false} title={t('Prices')} description={t('The price of each package and of the older plans, without VAT. Only you see them; the overview counts the income from them.')}
         actions={<Button onClick={() => setOpen(true)}><CircleDollarSign /> {t('Change the prices')}</Button>} />
       <Card><CardContent className="overflow-x-auto p-0">
         {q.isLoading ? <Skeleton className="m-4 h-32" /> : q.isError ? <ErrorState error={q.error} onRetry={() => void q.refetch()} /> : (
@@ -212,7 +212,7 @@ export function PricesPage() {
             <TableBody>
               {(q.data ?? []).map((p) => (
                 <TableRow key={p.plan}>
-                  <TableCell className="font-medium">{planLabel(p.plan)}</TableCell>
+                  <TableCell className="font-medium">{p.package ? planLabel('package', p.plan) : planLabel(p.plan)}</TableCell>
                   <TableCell className="text-right tabular">{p.price_month != null ? formatMoney(p.price_month) : <span className="text-muted-foreground">{t('on offer')}</span>}</TableCell>
                   <TableCell className="text-right tabular">{p.price_year != null ? formatMoney(p.price_year) : '—'}</TableCell>
                   <TableCell className="text-right tabular">{p.users}</TableCell>
@@ -265,8 +265,6 @@ export function DiaryPage() {
 
 /* ------------------------------------------------------------------ settings */
 export function ConsoleSettingsPage() {
-  const clients = usePlatformClients()
-  const selfService = useSetSelfService()
   const { user } = useAuth()
   const navigate = useNavigate()
   return (
@@ -274,16 +272,9 @@ export function ConsoleSettingsPage() {
       <PageHeader icon={false} title={t('Settings')} description={t('How the platform works for everyone.')} />
       <div className="grid max-w-3xl gap-4">
         <Card>
-          <CardContent className="flex items-start justify-between gap-4 p-5">
-            <div>
-              <p className="font-medium">{t('Open sign-up')}</p>
-              <p className="mt-0.5 text-[13px] text-muted-foreground">{t('When on, anyone can create an account and a company with a 30-day trial. Keep it off to decide every client yourself; invited staff can always sign up.')}</p>
-            </div>
-            <Switch checked={!!clients.data?.self_service} disabled={selfService.isPending || clients.isLoading} aria-label={t('Open sign-up')}
-              onCheckedChange={(on) => selfService.mutate(on, {
-                onSuccess: () => toast.success(on ? t('Anyone can sign up now') : t('Sign-up is by invitation only')),
-                onError: (e) => toast.error(describeError(e)),
-              })} />
+          <CardContent className="p-5">
+            <p className="font-medium">{t('Who creates companies')}</p>
+            <p className="mt-0.5 text-[13px] text-muted-foreground">{t('Only you, from Clients › New client. Nobody can open a company on their own; the people you invite sign up into the company you made.')}</p>
           </CardContent>
         </Card>
         <Card>

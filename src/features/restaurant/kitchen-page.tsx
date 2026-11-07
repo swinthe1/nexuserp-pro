@@ -8,6 +8,7 @@ import { formatDateWith, t, tn } from '@/i18n'
 import { printHtml } from '@/lib/print'
 import { cn, num } from '@/lib/utils'
 import { type KitchenOrder, useKitchen, useSetLineStatus, useStations } from './api'
+import { ErrorState } from '@/components/error-state'
 
 const minutes = (iso: string | null) => (iso ? Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000)) : 0)
 
@@ -65,8 +66,12 @@ export function KitchenPage() {
           onClick={() => setAutoPrint((on) => { setPref('kitchen.print', on ? '0' : '1'); return !on })}><Printer /> <span className="max-sm:sr-only">{autoPrint ? t('Printing new orders') : t('Print new orders')}</span></Button>
         <Button variant="ghost" size="sm" className="max-sm:hidden" onClick={() => void document.documentElement.requestFullscreen?.().catch(() => undefined)}><Maximize /> {t('Full screen')}</Button>
       </header>
+      {/* the line dropped: say so, and keep the last orders on the screen */}
+      {kitchen.isError && <div role="alert" className="bg-destructive px-4 py-2 text-center text-sm font-medium text-destructive-foreground">{t('No connection: these may not be the latest orders. Trying again…')}</div>}
       {kitchen.isLoading ? (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 p-4">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-52" />)}</div>
+      ) : kitchen.isError && !orders.length ? (
+        <div className="grid flex-1 place-items-center p-8"><ErrorState error={kitchen.error} onRetry={() => void kitchen.refetch()} /></div>
       ) : !orders.length ? (
         <div className="grid flex-1 place-items-center p-8 text-center">
           <div><CheckCheck className="mx-auto size-10 text-success" /><p className="mt-3 text-lg font-semibold">{t('Nothing to prepare')}</p>

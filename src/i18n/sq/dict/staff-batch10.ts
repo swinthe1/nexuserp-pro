@@ -1047,4 +1047,10 @@ export default {
   "How to pay": "Si të paguani",
   "Payment reference": "Referenca e pagesës",
   "Scanning screens for the warehouse. Keys 1–9 open a screen; each works with a scanner, a phone camera or the keyboard.": "Ekranet e skanimit për njësinë. Tastet 1–9 hapin një ekran; secili punon me skaner, kamerën e telefonit ose tastierën.",
+  "No connection: these may not be the latest orders. Trying again…": "Pa lidhje: këto mund të mos jenë porositë e fundit. Po provoj sërish…",
+  "Who creates companies": "Kush krijon kompani",
+  "Only you, from Clients › New client. Nobody can open a company on their own; the people you invite sign up into the company you made.": "Vetëm ju, te Klientët › Klient i ri. Askush nuk mund të hapë kompani vetë; personat që ftoni hyjnë në kompaninë që keni krijuar ju.",
+  "The price of each package and of the older plans, without VAT. Only you see them; the overview counts the income from them.": "Çmimi i çdo pakete dhe i planeve të vjetra, pa TVSH. I shihni vetëm ju; pasqyra numëron të ardhurat prej tyre.",
+  "The price of each package and of the older plans, without VAT. Only you see them; a package without a price counts as on offer.": "Çmimi i çdo pakete dhe i planeve të vjetra, pa TVSH. I shihni vetëm ju; një paketë pa çmim llogaritet me ofertë.",
+  "The amounts differ: the line is {line}, the payment {payment}. Match them anyway?": "Shumat ndryshojnë: rreshti është {line}, pagesa {payment}. T’i përputh gjithsesi?",
 } satisfies Dict

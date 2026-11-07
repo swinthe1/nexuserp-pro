@@ -438,7 +438,10 @@ function MatchDialog({ line, bankId, currency, onClose }: { line: StatementLine;
             const exact = Math.abs(signed(p) - num(line.amount)) < 0.005
             return (
               <button key={p.id} type="button" className="flex w-full items-center justify-between gap-3 border-b px-3 py-2 text-left text-[13px] last:border-0 hover:bg-muted/60 focus-visible:bg-muted focus-visible:outline-none"
-                onClick={async () => { await update.mutateAsync({ id: line.id, match_status: 'matched', matched_payment_id: p.id }); toast.success(t('Matched to {doc}', { doc: p.number })); onClose() }}>
+                onClick={async () => {
+                  if (!exact && !window.confirm(t('The amounts differ: the line is {line}, the payment {payment}. Match them anyway?', { line: formatMoney(line.amount), payment: formatMoney(signed(p)) }))) return
+                  await update.mutateAsync({ id: line.id, match_status: 'matched', matched_payment_id: p.id }); toast.success(t('Matched to {doc}', { doc: p.number })); onClose()
+                }}>
                 <span><span className="font-medium">{p.number}</span> <span className="text-muted-foreground">{p.partner?.name} · {formatDate(p.payment_date)}{p.reference ? ` · ${p.reference}` : ''}</span></span>
                 <span className={cn('tabular', exact ? 'font-semibold text-success' : 'text-muted-foreground')}>{formatMoney(signed(p))} {p.currency_code !== currency ? company?.base_currency : ''}</span>
               </button>

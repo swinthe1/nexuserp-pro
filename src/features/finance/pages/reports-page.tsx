@@ -236,7 +236,9 @@ export function ReportsPage() {
   const setLedger = (l: Ledger) => setParams((p) => { if (l === 'management') p.set('ledger', l); else p.delete('ledger'); return p }, { replace: true })
   const ledgerLabel = ledger === 'management' ? t('Management ledger') : t('Statutory ledger')
   const ccs = useCostCenters()
-  const cols = React.useMemo(() => buildColumns(kind, compare, year, fyMonth, custom), [kind, compare, year, fyMonth, custom])
+  // the trial balance has no comparison: one period, the one chosen (also after "month by month" on another tab)
+  const cmp: Compare = tab === 'tb' ? 'none' : compare
+  const cols = React.useMemo(() => buildColumns(kind, cmp, year, fyMonth, custom), [kind, cmp, year, fyMonth, custom])
   const useCc = tab === 'pl' || tab === 'tb' ? cc : null
   const ranges = cols.map((c) => (tab === 'bs' ? { from: fyStartOf(c.to, fyMonth), to: c.to } : { from: c.from, to: c.to }))
   const results = useQueries({
@@ -251,7 +253,7 @@ export function ReportsPage() {
   const failed = results.find((r) => r.isError)
   const maps = results.map((r) => new Map((r.data ?? []).map((b) => [b.account_id, b])))
   const accounts = results[0]?.data ?? []
-  const yearly = compare.startsWith('prev')
+  const yearly = cmp.startsWith('prev')
 
   const statement = React.useMemo((): { rows: Row[]; revenue?: number[]; gross?: number[]; net?: number[] } | null => {
     if (loading || !accounts.length) return null

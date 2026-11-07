@@ -18,6 +18,7 @@ import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { cn, formatMoney, num, todayISO } from '@/lib/utils'
 import { useAccounts, useAssetCategories, useExpensePayAccounts } from '../api'
+import { ErrorState } from '@/components/error-state'
 
 const CATEGORIES: { key: string; label: string }[] = [
   { key: 'fuel', label: msg('Fuel') }, { key: 'utilities', label: msg('Electricity, water, heating') }, { key: 'telecom', label: msg('Phone and internet') },
@@ -131,6 +132,7 @@ function Review({ id, kind, onDone }: { id: string | null; kind: Kind; onDone: (
     onError: (e) => toast.error(describeError(e)),
   })
 
+  if (id && q.isError) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />
   if (id && (!q.data || q.data.status === 'queued' || q.data.status === 'reading')) {
     return <Card><CardContent className="flex items-center justify-center gap-3 p-10 text-sm text-muted-foreground"><Loader2 className="size-5 animate-spin" /> {t('Reading the receipt… it takes about half a minute.')}</CardContent></Card>
   }

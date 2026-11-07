@@ -352,8 +352,15 @@ export function useMatchCandidates(bankAccountId: string | undefined, amount: nu
   return useQuery({
     queryKey: [...finKeys.all(companyId), 'match-candidates', bankAccountId ?? '', amount ?? 0],
     enabled: !!companyId && !!bankAccountId && amount !== undefined,
-    queryFn: async () => unwrap(await supabase.from('payments').select('id, number, document_type, amount, amount_base, currency_code, payment_date, reference, partner:business_partners(name)')
-      .eq('bank_account_id', bankAccountId!).eq('status', 'posted').order('payment_date', { ascending: false }).limit(200)),
+    queryFn: async () => {
+      const pays = unwrap(await supabase.from('payments').select('id, number, document_type, amount, amount_base, currency_code, payment_date, reference, partner:business_partners(name)')
+        .eq('bank_account_id', bankAccountId!).eq('status', 'posted').order('payment_date', { ascending: false }).limit(200))
+      // a payment already matched to a statement line is not offered again
+      const ids = pays.map((p) => p.id)
+      const taken = ids.length ? unwrap(await supabase.from('bank_statement_lines').select('matched_payment_id').in('matched_payment_id', ids)) : []
+      const used = new Set(taken.map((x) => x.matched_payment_id))
+      return pays.filter((p) => !used.has(p.id))
+    },
   })
 }
 

@@ -19,6 +19,7 @@ import { unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { formatMoney, num } from '@/lib/utils'
 import { RESOURCE_KINDS, type Resource, type Service, useApptAction, useResources, useServices } from './api'
+import { ErrorState } from '@/components/error-state'
 
 const DAYS = [msg('Mon'), msg('Tue'), msg('Wed'), msg('Thu'), msg('Fri'), msg('Sat'), msg('Sun')]
 const COLORS = ['#0E8A5F', '#1E88E5', '#8E24AA', '#E53935', '#F4511E', '#F6BF26', '#00897B', '#5E35B1', '#6D4C41', '#546E7A']
@@ -50,7 +51,9 @@ export function AppointmentsSetupPage() {
                   <Can perm="sales.write"><Button variant="ghost" size="icon" aria-label={t('Edit')} onClick={() => setRes(r)}><Pencil /></Button></Can>
                 </li>
               ))}
-              {!resources.data?.length && <li className="px-4 py-6 text-center text-[13px] text-muted-foreground">{t('Nobody yet')}</li>}
+              {resources.isLoading ? <li className="px-4 py-6 text-center text-[13px] text-muted-foreground">{t('Loading…')}</li>
+                : resources.isError ? <li className="px-4 py-3"><ErrorState compact error={resources.error} onRetry={() => void resources.refetch()} /></li>
+                : !resources.data?.length && <li className="px-4 py-6 text-center text-[13px] text-muted-foreground">{t('Nobody yet')}</li>}
             </ul>
           </CardContent>
         </Card>
@@ -71,7 +74,9 @@ export function AppointmentsSetupPage() {
                   <Can perm="sales.write"><Button variant="ghost" size="icon" aria-label={t('Edit')} onClick={() => setSvc(s)}><Pencil /></Button></Can>
                 </li>
               ))}
-              {!services.data?.length && <li className="px-4 py-6 text-center text-[13px] text-muted-foreground">{t('No service yet')}</li>}
+              {services.isLoading ? <li className="px-4 py-6 text-center text-[13px] text-muted-foreground">{t('Loading…')}</li>
+                : services.isError ? <li className="px-4 py-3"><ErrorState compact error={services.error} onRetry={() => void services.refetch()} /></li>
+                : !services.data?.length && <li className="px-4 py-6 text-center text-[13px] text-muted-foreground">{t('No service yet')}</li>}
             </ul>
           </CardContent>
         </Card>

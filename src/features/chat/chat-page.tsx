@@ -18,6 +18,7 @@ import { formatDateWith, t, tServer } from '@/i18n'
 import { describeError } from '@/lib/errors'
 import { fuzzyFind } from '@/lib/fuzzy'
 import { cn, formatMoney, initials } from '@/lib/utils'
+import { ErrorState } from '@/components/error-state'
 import {
   docLinks, MAX_FILE, uploadChatFile, useChatActions, useChatList, useChatMembers, useChatMessages, useChatPeople, useFileUrl, useLinkCard, useOnline, useSendMessage, useTyping,
   type ChatAttachment, type ChatConversation, type ChatMessage, type ChatPerson,
@@ -81,6 +82,7 @@ export function ChatPage() {
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">
           {list.isLoading ? <div className="grid gap-2 p-3">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-12" />)}</div>
+            : list.isError ? <ErrorState compact error={list.error} onRetry={() => void list.refetch()} />
             : !shown.length ? <EmptyState compact icon={MessageSquarePlus} title={q ? t('Nothing found') : t('No conversations yet')} description={q ? undefined : t('Write to a colleague, or make a group for a team.')} />
             : shown.map((c) => (
               <button key={c.id} type="button" onClick={() => open(c.id)}

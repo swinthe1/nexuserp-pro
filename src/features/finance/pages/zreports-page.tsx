@@ -17,6 +17,7 @@ import { t, td } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { cn, formatMoney, num, todayISO } from '@/lib/utils'
+import { ErrorState } from '@/components/error-state'
 
 type Line = { rate: number; net: number; vat: number; tax_code_id: string | null }
 type Result = { z_number?: string; device?: string; date?: string; total?: number; receipts?: number; cash?: number; card?: number; other?: number
@@ -87,6 +88,7 @@ function Review({ id, onDone }: { id: string | null; onDone: () => void }) {
     onError: (e) => toast.error(describeError(e)),
   })
 
+  if (id && q.isError) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />
   if (id && (!q.data || q.data.status === 'queued' || q.data.status === 'reading')) {
     return <Card><CardContent className="flex items-center justify-center gap-3 p-10 text-sm text-muted-foreground"><Loader2 className="size-5 animate-spin" /> {t('Reading the Z report… it takes about half a minute.')}</CardContent></Card>
   }

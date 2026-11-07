@@ -17,6 +17,8 @@ import { formatMoney } from '@/lib/utils'
 import { t } from '@/i18n'
 import { MessagingSettings } from '../components/messaging'
 import { AutomationCard } from '../components/automation-card'
+import { ErrorState } from '@/components/error-state'
+import { Skeleton } from '@/components/ui/skeleton'
 
 type Settings = { pos_cash_tolerance: number; pos_count_notes: boolean; pos_void_approval: boolean; pos_close_witness: 'never' | 'difference' | 'always'
   payroll_auto_day: number | null; payroll_auto_for: 'previous' | 'current'; payroll_deduct_absence: boolean
@@ -65,6 +67,8 @@ export function AutomationPage() {
   return (
     <div className="mx-auto grid max-w-3xl gap-3">
       <PageHeader title={t('Automations')} description={t('What DrisPRO does by itself, and when. Each one prepares the work; whatever touches money, the law or goods in the shop still waits for a person to confirm.')} />
+      {q.isLoading && <Skeleton className="h-40" />}
+      {q.isError && <ErrorState error={q.error} onRetry={() => void q.refetch()} />}
 
       {can('inventory.read') && (
         <AutomationCard icon={Tags} title={t('New selling prices from the cost')} aside={<Button variant="outline" size="sm" asChild><Link to="/inventory/levelling?tab=suggestions">{t('Open')}</Link></Button>}>

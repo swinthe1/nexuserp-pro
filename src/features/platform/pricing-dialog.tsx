@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { ExternalLink } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -10,10 +9,10 @@ import { Switch } from '@/components/ui/switch'
 import { t } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
+import { planLabel } from './dialogs'
 
-type Row = { plan: string; price_month: number | null; price_year: number | null; per_user: number | null; users: number; highlight: boolean; note: string | null }
+type Row = { plan: string; package?: boolean; price_month: number | null; price_year: number | null; per_user: number | null; users: number; highlight: boolean; note: string | null }
 type Contact = { email: string | null; phone: string | null; whatsapp: string | null; currency: string; vat_note: string | null }
-const NAMES: Record<string, string> = { basic: 'Basic', standard: 'Standard', pro: 'Pro' } // i18n-ignore
 
 /** The prices the public page /cmimet shows. Empty price: "on offer". */
 export function PricingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
@@ -23,7 +22,7 @@ export function PricingDialog({ open, onOpenChange }: { open: boolean; onOpenCha
   React.useEffect(() => { if (q.data) { setPlans(q.data.plans); setContact(q.data.contact) } }, [q.data])
   const save = useMutation({
     mutationFn: async () => unwrap(await supabase.rpc('platform_pricing_save', { p: { plans, contact } as never })),
-    onSuccess: () => { toast.success(t('Saved: the public page shows it now')); void q.refetch(); onOpenChange(false) },
+    onSuccess: () => { toast.success(t('Saved')); void q.refetch(); onOpenChange(false) },
     onError: (e) => toast.error(describeError(e)),
   })
   const set = (i: number, p: Partial<Row>) => setPlans((x) => x.map((r, j) => (j === i ? { ...r, ...p } : r)))
@@ -31,12 +30,12 @@ export function PricingDialog({ open, onOpenChange }: { open: boolean; onOpenCha
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
-        <DialogHeader><DialogTitle>{t('Public prices')}</DialogTitle>
-          <DialogDescription>{t('What the page /cmimet shows, without VAT. A plan without a price says “on offer”.')} <a href="/cmimet" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">{t('Open the page')} <ExternalLink className="size-3" /></a></DialogDescription></DialogHeader>
-        <div className="grid gap-3">
+        <DialogHeader><DialogTitle>{t('Prices')}</DialogTitle>
+          <DialogDescription>{t('The price of each package and of the older plans, without VAT. Only you see them; a package without a price counts as on offer.')}</DialogDescription></DialogHeader>
+        <div className="grid max-h-[60vh] gap-3 overflow-y-auto pr-1">
           {plans.map((p, i) => (
             <div key={p.plan} className="grid items-end gap-2 rounded-lg border p-3 sm:grid-cols-[90px_repeat(4,minmax(0,1fr))_auto]">
-              <div className="font-semibold">{NAMES[p.plan]}</div>
+              <div className="text-sm font-semibold">{p.package ? planLabel('package', p.plan) : planLabel(p.plan)}</div>
               <div className="grid gap-1"><Label className="text-xs">{t('A month')}</Label><Input type="number" step="0.01" value={p.price_month ?? ''} onChange={(e) => set(i, { price_month: n(e.target.value) })} /></div>
               <div className="grid gap-1"><Label className="text-xs">{t('A year')}</Label><Input type="number" step="0.01" value={p.price_year ?? ''} onChange={(e) => set(i, { price_year: n(e.target.value) })} /></div>
               <div className="grid gap-1"><Label className="text-xs">{t('Users included')}</Label><Input type="number" min={1} value={p.users} onChange={(e) => set(i, { users: Number(e.target.value) || 1 })} /></div>

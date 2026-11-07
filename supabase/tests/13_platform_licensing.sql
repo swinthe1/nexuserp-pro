@@ -106,9 +106,8 @@ select t.throws($$ select public.platform_set_password('olga@drita.xk', 'newpass
 select t.login('zoe@platform.io');
 select public.platform_set_password('olga@drita.xk', 'newpass123');
 select t.throws($$ select public.platform_set_password('ghost@drita.xk', 'newpass123') $$, 'No account', 'unknown accounts are reported');
-select public.platform_set_self_service(true);
-select t.ok((public.platform_clients() ->> 'self_service')::boolean, 'self-service can be switched on');
-select public.platform_set_self_service(false);
+select t.throws($q$select public.platform_set_self_service(true)$q$, 'platform administrator creates companies', 'open sign-up cannot be switched on');
+select t.ok(not (public.platform_clients() ->> 'self_service')::boolean, 'sign-up stays closed');
 reset role;
 
 -- simpler menu: personal favourites kept beside other preferences; company hides unused parts

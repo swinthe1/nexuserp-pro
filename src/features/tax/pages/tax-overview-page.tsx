@@ -92,7 +92,7 @@ export function TaxOverviewPage() {
           <Card>
             <CardHeader className="pb-2"><CardTitle>{t('Accounting check')}</CardTitle><CardDescription>{t('This month\'s books compared with the VAT booked in accounting.')}</CardDescription></CardHeader>
             <CardContent className="grid gap-3">
-              {!p ? <Skeleton className="h-24" /> : <>
+              {pv.isError ? <ErrorState compact error={pv.error} onRetry={() => void pv.refetch()} /> : !p ? <Skeleton className="h-24" /> : <>
                 <TieOut label={t('Output VAT')} book={num(p.output_vat) - num(p.ledger.credit_notes_moved) - num(p.ledger.open_pos_vat)} ledger={num(p.ledger.output_vat)} diff={num(p.ledger.output_difference)}
                   note={num(p.ledger.open_pos_vat) ? t('{amount} of till VAT is in open shifts; it is booked with the Z-report.', { amount: formatMoney(p.ledger.open_pos_vat) }) : undefined} />
                 <TieOut label={t('Input VAT')} book={num(p.input_vat) - num(p.ledger.credit_notes_moved)} ledger={num(p.ledger.input_vat)} diff={num(p.ledger.input_difference)} />
@@ -123,7 +123,7 @@ export function TaxOverviewPage() {
           <Button variant="ghost" size="sm" asChild><Link to="/tax/declarations"><ClipboardPen /> {t('All declarations')}</Link></Button>
         </CardHeader>
         <CardContent className="overflow-x-auto p-0">
-          {decl.isLoading ? <Skeleton className="m-4 h-24" /> : !decl.data?.length
+          {decl.isLoading ? <Skeleton className="m-4 h-24" /> : decl.isError ? <ErrorState compact error={decl.error} onRetry={() => void decl.refetch()} /> : !decl.data?.length
             ? <EmptyState compact icon={ClipboardPen} title={t('No declarations yet')} description={t('Create the declaration for {month} from its books.', { month: monthLabel(previousMonth()) })} />
             : (
               <Table>

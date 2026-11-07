@@ -21,6 +21,7 @@ import { unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { cn, formatDate, formatMoney, num } from '@/lib/utils'
 import { MEMBERSHIP_STATUS, type Plan, useApptAction, useMemberships, usePlans } from './api'
+import { ErrorState } from '@/components/error-state'
 
 type CheckIn = { ok: boolean; reason?: 'unknown' | 'frozen' | 'expired' | 'not_yet' | 'no_visits'; member?: string; plan?: string; ends_on?: string; starts_on?: string; days_left?: number
   visits?: number | null; visits_used?: number; again_today?: boolean; id?: string; partner_id?: string; code?: string }
@@ -54,7 +55,7 @@ export function MembershipsPage() {
             </div>
             <Input className="max-w-xs" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('Name, phone or card')} aria-label={t('Search')} />
           </div>
-          {list.isLoading ? <Skeleton className="h-64" /> : !rows.length ? <EmptyState icon={CreditCard} title={t('No members here')} description={t('Sell the first membership; the member gets a card number to show at the door.')} /> : (
+          {list.isLoading ? <Skeleton className="h-64" /> : list.isError ? <ErrorState error={list.error} onRetry={() => void list.refetch()} /> : !rows.length ? <EmptyState icon={CreditCard} title={t('No members here')} description={t('Sell the first membership; the member gets a card number to show at the door.')} /> : (
             <Card><CardContent className="p-0"><ul className="divide-y">
               {rows.map((m) => {
                 const left = Math.round((Date.parse(m.ends_on) - Date.parse(today)) / 86_400_000)

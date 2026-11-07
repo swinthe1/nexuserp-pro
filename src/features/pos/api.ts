@@ -79,8 +79,9 @@ export function useSessionDetail(id: string | undefined) {
   })
 }
 export function useSessionSummary(id: string | undefined) {
+  const { companyId } = useCompany()
   return useQuery({
-    queryKey: ['pos', 'summary', id],
+    queryKey: [...posKeys.all(companyId!), 'summary', id],
     enabled: !!id,
     queryFn: async () => unwrap(await supabase.rpc('pos_session_summary', { p_session: id! })) as unknown as {
       orders: number; refunds: number; gross: number; refunded: number; net: number; tax: number; payments: Record<string, number>
@@ -143,7 +144,8 @@ export const useBlockVoucher = () => useAction(async (a: { id: string; reason: s
 export type SessionPayout = { id: string; kind: 'cash' | 'supplier' | 'expense'; movement_type: 'cash_in' | 'cash_out'; amount: number; reason: string
   partner: string | null; payment: string | null; account: string | null; document_no: string | null; at: string; by: string | null; approved_by: string | null }
 export function useSessionPayouts(id: string | undefined) {
-  return useQuery({ queryKey: ['pos', 'payouts', id], enabled: !!id,
+  const { companyId } = useCompany()
+  return useQuery({ queryKey: [...posKeys.all(companyId!), 'payouts', id], enabled: !!id,
     queryFn: async () => {
       const r = await supabase.rpc('pos_session_payouts', { p_session: id! })
       if (r.error?.code === 'PGRST202') return [] as SessionPayout[]   // a server not updated yet
@@ -175,7 +177,8 @@ export async function sessionControls(id: string) {
   return unwrap(await supabase.rpc('pos_session_controls', { p_session: id })) as unknown as SessionControls
 }
 export function useSessionControls(id: string | undefined) {
-  return useQuery({ queryKey: ['pos', 'controls', id], enabled: !!id, queryFn: () => sessionControls(id!) })
+  const { companyId } = useCompany()
+  return useQuery({ queryKey: [...posKeys.all(companyId!), 'controls', id], enabled: !!id, queryFn: () => sessionControls(id!) })
 }
 
 /* ------------------------------------------------------------------ till data (cached for offline) */
@@ -476,8 +479,9 @@ export type ReviewDetail = {
   counts: ShiftCount[]
 }
 export function useReviewDetail(id: string | undefined) {
+  const { companyId } = useCompany()
   return useQuery({
-    queryKey: ['pos', 'review-detail', id], enabled: !!id,
+    queryKey: [...posKeys.all(companyId!), 'review-detail', id], enabled: !!id,
     queryFn: async () => unwrap(await supabase.rpc('pos_review_detail', { p_session: id! })) as unknown as ReviewDetail,
   })
 }

@@ -90,6 +90,8 @@ function Restaurant({ data }: { data: TillData }) {
   const floor = useFloor(data.register.id)
   const openTab = useOpenTab()
   const [tabId, setTabId] = React.useState<string | null>(null)
+  // the open order's own way out: it asks about items not yet sent to the kitchen
+  const leaveTab = React.useRef<(() => Promise<void>) | null>(null)
   const [area, setArea] = React.useState<string | null>(null)
   const [setup, setSetup] = React.useState(false)
   const [kitchenPrint, setKitchenPrint] = React.useState(() => prefGet('pos.kitchenprint', '1') === '1')
@@ -119,7 +121,7 @@ function Restaurant({ data }: { data: TillData }) {
     <div className="flex h-dvh flex-col bg-muted/30 text-foreground">
       <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-card px-3">
         {tabId
-          ? <Button variant="ghost" size="icon" aria-label={t('Back to the floor')} onClick={() => setTabId(null)}><ArrowLeft /></Button>
+          ? <Button variant="ghost" size="icon" aria-label={t('Back to the floor')} onClick={() => (leaveTab.current ? void leaveTab.current() : setTabId(null))}><ArrowLeft /></Button>
           : <Button variant="ghost" size="icon" asChild aria-label={t('Leave the floor')}><Link to="/pos"><ArrowLeft /></Link></Button>}
         <div className="min-w-0 flex-1 sm:flex-none">
           <div className="truncate text-sm font-semibold">{data.register.name}</div>
@@ -156,7 +158,7 @@ function Restaurant({ data }: { data: TillData }) {
       <OfflineBanner />
 
       {tabId
-        ? <TabScreen key={tabId} data={data} tabId={tabId} floor={floor.data} kitchenPrint={kitchenPrint} onClose={() => setTabId(null)} onMoved={setTabId} cashier={cashier} />
+        ? <TabScreen key={tabId} data={data} tabId={tabId} floor={floor.data} kitchenPrint={kitchenPrint} onClose={() => setTabId(null)} onMoved={setTabId} cashier={cashier} leaveRef={leaveTab} />
         : <FloorView floor={floor.data} loading={floor.isLoading || (!floor.data && floor.fetchStatus === 'paused')} areaId={current?.id} onOpen={(table) => void open(table)} onOpenTab={setTabId}
             onSetup={can('pos.approve') ? () => setSetup(true) : undefined} />}
       {setup && <RoomSetupDialog warehouseId={data.register.warehouse_id} onClose={() => setSetup(false)} />}
@@ -262,8 +264,9 @@ function TableStatus({ o }: { o: FloorOrder }) {
 }
 
 /* ------------------------------------------------------------------ one order */
-function TabScreen({ data, tabId, floor, kitchenPrint, onClose, onMoved, cashier }: {
+function TabScreen({ data, tabId, floor, kitchenPrint, onClose, onMoved, cashier, leaveRef }: {
   data: TillData; tabId: string; floor: Floor | undefined; kitchenPrint: boolean; onClose: () => void; onMoved: (id: string) => void; cashier: string
+  leaveRef?: React.MutableRefObject<(() => Promise<void>) | null>
 }) {
   const { can } = useCompany()
   const tab = useTab(tabId)
@@ -319,6 +322,7 @@ function TabScreen({ data, tabId, floor, kitchenPrint, onClose, onMoved, cashier
     if (drafts.length && !(await sendAll())) return
     onClose()
   }
+  React.useEffect(() => { if (!leaveRef) return; leaveRef.current = leave; return () => { leaveRef.current = null } })
 
   if (tab.isLoading) return <div className="flex flex-1 gap-4 p-4"><Skeleton className="flex-1" /><Skeleton className="w-[420px] max-sm:hidden" /></div>
   if (!tab.data) return <Centered><p className="text-[13px] text-muted-foreground">{tab.fetchStatus === 'paused' ? t('This order is not on this device yet. It opens when the connection is back.') : t('This order is closed.')}</p><Button className="mt-3" onClick={onClose}>{t('Back to the floor')}</Button></Centered>

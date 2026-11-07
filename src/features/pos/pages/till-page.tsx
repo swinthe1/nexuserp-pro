@@ -1689,7 +1689,9 @@ function CloseDialog({ data, pending, onClose, onClosed, waitersOwing = [], onHa
   const managers = opt?.managers ?? []
   const mode = opt?.close_witness ?? 'difference'
   const canWitness = managers.length > 0 && !can('pos.approve')
-  const mustWitness = canWitness && (mode === 'always' || (mode === 'difference' && !review && Math.abs(diff) > num(opt?.tolerance ?? 0)))
+  // counting blind, the expected cash is not sent here: the server decides whether a manager must confirm
+  const known = s?.expected_cash != null
+  const mustWitness = canWitness && (mode === 'always' || (mode === 'difference' && !review && known && Math.abs(diff) > num(opt?.tolerance ?? 0)))
   const witnessed = pinReady(member, pin)
   const [error, setError] = React.useState<string | null>(null)
   const doClose = async () => {

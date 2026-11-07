@@ -41,14 +41,14 @@ type Due = { id: string; number: string; ref: string | null; partner_id: string;
  * Every open invoice or bill by its due date (from the meeting with the staff): late ones first,
  * then week by week, with what falls due each week; bills also by unit and by kind of supplier.
  */
-function DueList({ kind }: { kind: 'ar' | 'ap' }) {
+function DueList({ kind, asOf }: { kind: 'ar' | 'ap'; asOf: string }) {
   const { companyId } = useCompany()
   const whs = useWarehouses()
   const [units, setUnits] = React.useState<string[]>([])
   const [kinds, setKinds] = React.useState<string[]>([])
   const q = useQuery({
-    queryKey: ['fin', companyId, 'debts-by-due', kind, units, kinds], enabled: !!companyId,
-    queryFn: async () => unwrap(await supabase.rpc('debts_by_due', { p_company: companyId!, p_kind: kind, p: { units, kinds } as never })) as unknown as { rows: Due[]; as_of: string },
+    queryKey: ['fin', companyId, 'debts-by-due', kind, units, kinds, asOf], enabled: !!companyId,
+    queryFn: async () => unwrap(await supabase.rpc('debts_by_due', { p_company: companyId!, p_kind: kind, p: { units, kinds, as_of: asOf } as never })) as unknown as { rows: Due[]; as_of: string },
   })
   const rows = q.data?.rows ?? []
   // the week a due date falls in: late, this week, next week, then the Monday it starts
@@ -155,7 +155,7 @@ export function AgingPage({ kind }: { kind: 'ar' | 'ap' }) {
             className={cn('rounded-md px-3 py-1.5 font-medium', view === v ? 'bg-background shadow-sm' : 'text-muted-foreground')}>{v === 'partner' ? t('By partner') : t('By due date')}</button>
         ))}
       </div>
-      {view === 'due' ? <DueList kind={kind} /> : <>
+      {view === 'due' ? <DueList kind={kind} asOf={asOf} /> : <>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label={isAR ? t('Total to collect (with VAT)') : t('Total to pay (with VAT)')} value={formatMoney(total)} loading={aging.isLoading} hint={[isAR ? tn(rows.length, '{n} customer', '{n} customers') : tn(rows.length, '{n} vendor', '{n} vendors'), company?.base_currency].filter(Boolean).join(' · ')} />
         <StatCard label={t('Overdue (with VAT)')} value={formatMoney(overdue)} loading={aging.isLoading} tone={overdue ? (isAR ? 'warning' : 'destructive') : 'default'} hint={total ? t('{pct}% of the balance', { pct: ((overdue / total) * 100).toFixed(0) }) : undefined} />
