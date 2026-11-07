@@ -1124,4 +1124,13 @@ export default {
   "Waiter": "Konobar",
   "Handed over": "Predato",
   "Back one step": "Nazad jedan korak",
+  "Send by email": "Pošalji e-mailom",
+  "Hello,\n\nPlease find attached {what}.\n\nKind regards,\n{company}": "Poštovani,\n\nU prilogu vam šaljemo {what}.\n\nS poštovanjem,\n{company}",
+  "Sent to {to}. It goes out within a minute.": "Poslato na {to}. Odlazi u roku od jednog minuta.",
+  "The file goes as an attachment from the company mailbox.": "Fajl se šalje kao prilog sa e-mail adrese firme.",
+  "To": "Za",
+  "Subject": "Naslov",
+  "Message": "Poruka",
+  "Set it up": "Podesi",
+  "Send": "Pošalji",
 } satisfies Dict
