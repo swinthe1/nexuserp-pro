@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Download, ExternalLink, FileSpreadsheet, FileText, FolderDown, Trash2 } from 'lucide-react'
+import { Download, ExternalLink, FileSpreadsheet, FileText, FolderDown, Mail, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
 import { DataTable } from '@/components/data-table/data-table'
+import { ExportEmailDialog } from '@/components/layout/last-export'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import { t, tServer } from '@/i18n'
@@ -23,6 +24,7 @@ export function ExportsPage() {
   const qc = useQueryClient()
   const list = useMyExports()
   const [busy, setBusy] = React.useState<string | null>(null)
+  const [mail, setMail] = React.useState<Row | null>(null)
   const again = async (r: Row) => { setBusy(r.id); try { await downloadExport(r) } catch (e) { toast.error(tServer(describeError(e))) } finally { setBusy(null) } }
   const open = async (r: Row) => {
     const { data, error } = await supabase.storage.from('my-exports').createSignedUrl(r.path, 300)
@@ -55,6 +57,7 @@ export function ExportsPage() {
             cell: ({ row: { original: r } }) => (
               <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                 <Button size="sm" variant="outline" loading={busy === r.id} onClick={() => void again(r)}><Download /> {t('Download again')}</Button>
+                <Button size="sm" variant="ghost" onClick={() => setMail(r)} title={t('Send by email')} aria-label={t('Send by email')}><Mail /></Button>
                 {r.kind === 'pdf' && <Button size="sm" variant="ghost" onClick={() => void open(r)} title={t('Open in a new tab')}><ExternalLink /></Button>}
                 <Button size="sm" variant="ghost" className="text-muted-foreground" aria-label={t('Delete')} onClick={() => del.mutate(r)}><Trash2 /></Button>
               </div>
@@ -62,6 +65,7 @@ export function ExportsPage() {
         ]} />
       <p className="mt-3 flex items-center gap-1.5 text-[12px] text-muted-foreground"><FolderDown className="size-4" />
         {t('Where the browser saved a file: press Ctrl+J in the browser for its downloads, with "Show in folder".')}</p>
+      {mail && <ExportEmailDialog file={mail} onClose={() => setMail(null)} />}
     </>
   )
 }

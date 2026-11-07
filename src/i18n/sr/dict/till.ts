@@ -1123,4 +1123,5 @@ export default {
   "{n} receipts": "{n} računa",
   "Waiter": "Konobar",
   "Handed over": "Predato",
+  "Back one step": "Nazad jedan korak",
 } satisfies Dict

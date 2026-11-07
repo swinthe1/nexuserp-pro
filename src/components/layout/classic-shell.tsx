@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
+import { useGoBack } from '@/components/layout/back-button'
 import { UnitPicker } from '@/components/layout/unit-picker'
 import { ArrowLeft, ArrowRight, Bot, Building2, CalendarDays, ChevronRight, Clock, GraduationCap, Keyboard, Menu, Plus, Printer, RefreshCw, Search, Server, UserRound } from 'lucide-react'
 import * as React from 'react'
@@ -159,6 +160,7 @@ export function ClassicShell({ children, onOpenMobileNav }: { children: React.Re
   const here = sections.find((s) => s.items.some((i) => i.href === activeHref))
   const look = moduleLook(here?.label)
   const shortcuts = useShortcuts()
+  const { go: goBack } = useGoBack()
 
   return (
     <div className="classic-shell flex min-h-dvh flex-col pb-[28px]">
@@ -188,7 +190,7 @@ export function ClassicShell({ children, onOpenMobileNav }: { children: React.Re
             <ToolButton icon={Printer} label={t('Print')} onClick={() => window.print()} />
           </RibbonGroup>
           <RibbonGroup label={t('View|ribbon')}>
-            <ToolButton icon={ArrowLeft} label={t('Back')} onClick={() => navigate(-1)} />
+            <ToolButton icon={ArrowLeft} label={t('Back')} onClick={goBack} />
             <ToolButton icon={ArrowRight} label={t('Forward')} onClick={() => navigate(1)} />
             <ToolButton icon={RefreshCw} label={t('Refresh')} onClick={refresh} className={spin ? '[&_svg]:animate-spin' : undefined} />
           </RibbonGroup>

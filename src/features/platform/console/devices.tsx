@@ -28,7 +28,7 @@ import { useDeviceDelete, useDeviceLimits, useDeviceSet, usePlatformDevices, typ
 const STATUS: Record<PlatformDevice['status'], { label: string; tone: 'success' | 'warning' | 'destructive' }> = {
   active: { label: msg('Licensed'), tone: 'success' }, pending: { label: msg('Waiting for approval'), tone: 'warning' }, blocked: { label: msg('Blocked|device'), tone: 'destructive' },
 }
-const KIND = (k: string) => (k === 'till' ? t('Till') : t('Administration'))
+const KIND = (k: string) => (k === 'till' ? t('Till|device') : t('Administration|device'))
 /** seen in the last 7 hours: the program checks every 6 */
 const recent = (at: string | null) => !!at && Date.now() - Date.parse(at) < 7 * 3600_000
 
@@ -119,7 +119,7 @@ export function DevicesPage() {
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
         <StatCard label={t('Waiting for approval')} value={String(q.data?.pending ?? 0)} />
         <StatCard label={t('Tills')} value={String(all.filter((d) => d.kind === 'till' && d.status === 'active').length)} />
-        <StatCard label={t('Administration')} value={String(all.filter((d) => d.kind === 'office' && d.status === 'active').length)} />
+        <StatCard label={t('Administration|device')} value={String(all.filter((d) => d.kind === 'office' && d.status === 'active').length)} />
         <StatCard label={t('Checked in the last 7 hours')} value={String(all.filter((d) => recent(d.last_seen_at)).length)} />
       </div>
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="mb-3">
@@ -149,7 +149,7 @@ export function ClientDevicesTab({ company }: { company: string }) {
         </CardHeader>
         <CardContent className="grid gap-3 pt-0 sm:grid-cols-3">
           <Limit label={t('Tills')} used={used('till')} max={limits?.till ?? null} hint={limits?.max_till_devices == null && limits?.max_registers ? t('as many as its tills') : undefined} />
-          <Limit label={t('Administration')} used={used('office')} max={limits?.office ?? null} />
+          <Limit label={t('Administration|device')} used={used('office')} max={limits?.office ?? null} />
           <label className="flex items-start justify-between gap-3 rounded-md border p-3 text-[13px]">
             <span><span className="font-medium">{t('Every computer waits for approval')}</span>
               <span className="block text-muted-foreground">{t('Even within the limits, a new computer works only once you approve it.')}</span></span>
@@ -188,7 +188,7 @@ function LimitsDialog({ company, limits, onClose }: { company: string; limits: D
         <div className="grid grid-cols-2 gap-3">
           <div className="grid gap-1.5"><Label htmlFor="lim-till">{t('Tills')}</Label><Input id="lim-till" type="number" min={0} className="tabular" value={till} onChange={(e) => setTill(e.target.value)}
             placeholder={limits.max_registers ? String(limits.max_registers) : t('No limit')} /></div>
-          <div className="grid gap-1.5"><Label htmlFor="lim-office">{t('Administration')}</Label><Input id="lim-office" type="number" min={0} className="tabular" value={office} onChange={(e) => setOffice(e.target.value)} placeholder={t('No limit')} /></div>
+          <div className="grid gap-1.5"><Label htmlFor="lim-office">{t('Administration|device')}</Label><Input id="lim-office" type="number" min={0} className="tabular" value={office} onChange={(e) => setOffice(e.target.value)} placeholder={t('No limit')} /></div>
         </div>
         <DialogFooter><Button variant="ghost" onClick={onClose}>{t('Cancel')}</Button>
           <Button loading={save.isPending} onClick={() => void save.mutateAsync({ company, max_till_devices: n(till), max_office_devices: n(office) }).then(() => { toast.success(t('Saved')); onClose() })

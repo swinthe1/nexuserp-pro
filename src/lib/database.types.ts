@@ -17364,6 +17364,23 @@ export type Database = {
         }
         Returns: Json
       }
+      device_support_check: {
+        Args: {
+          p_device: string
+          p_secret: string
+          p_session: string
+        }
+        Returns: Json
+      }
+      device_support_event: {
+        Args: {
+          p_device: string
+          p_secret: string
+          p_session: string
+          p_event: string
+        }
+        Returns: undefined
+      }
       dismiss_statement_suggestion: {
         Args: {
           p_line: string
@@ -17559,6 +17576,16 @@ export type Database = {
           p: Json
         }
         Returns: Json
+      }
+      export_email: {
+        Args: {
+          p_export: string
+          p_to: string
+          p_subject: string
+          p_message: string
+          p_data: string
+        }
+        Returns: string
       }
       finance_overview: {
         Args: {
@@ -18725,6 +18752,33 @@ export type Database = {
           p_on: boolean
         }
         Returns: undefined
+      }
+      platform_support_end: {
+        Args: {
+          p_session: string
+          p_status?: string
+          p_note?: string
+        }
+        Returns: undefined
+      }
+      platform_support_sessions: {
+        Args: {
+          p_company?: string
+        }
+        Returns: Json
+      }
+      platform_support_settings: {
+        Args: {
+          p?: Json
+        }
+        Returns: Json
+      }
+      platform_support_start: {
+        Args: {
+          p_device: string
+          p_mode?: string
+        }
+        Returns: Json
       }
       platform_update_company: {
         Args: {

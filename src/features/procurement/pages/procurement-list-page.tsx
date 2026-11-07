@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { ChevronDown, FileText, PackagePlus, Plus, ReceiptText } from 'lucide-react'
+import { Car, ChevronDown, FileText, PackagePlus, Plus, ReceiptText } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Can, useCompany } from '@/app/company-provider'
@@ -10,7 +10,7 @@ import { StatusBadge } from '@/components/status-badge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { t, td } from '@/i18n'
+import { msg, t, td } from '@/i18n'
 import { cn, formatDate, formatMoney, humanize, num, todayISO } from '@/lib/utils'
 import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { PROC_TABLE, procKeys, useProcDocuments, type ProcKind } from '../api'
@@ -21,6 +21,16 @@ type Row = Record<string, unknown> & { id: string; number: string; status: strin
 const nm = (v: unknown, k = 'name') => (v as Record<string, string> | null)?.[k] ?? ''
 const sum = (v: unknown, k: string) => ((v as Record<string, number>[] | null) ?? []).reduce((s, l) => s + num(l[k]), 0)
 const OPEN_PO = ['approved', 'sent', 'partially_received']
+
+/** the three books inside the purchase book: what the invoice bought (computed on the server) */
+type Book = 'goods' | 'expense' | 'investment'
+const BOOKS: { key: Book; label: string; title: string }[] = [
+  { key: 'goods', label: msg('Goods|book'), title: msg('Goods purchase book') },
+  { key: 'expense', label: msg('Expenses|book'), title: msg('Expense book') },
+  { key: 'investment', label: msg('Investments|book'), title: msg('Investment book') },
+]
+const bookOf = (r: Row) => ((r.book as Book | undefined) ?? 'expense')
+const bookLabel = (b: Book) => t(BOOKS.find((x) => x.key === b)!.label)
 
 const dateCol = (key: string, title: string): ColumnDef<Row> => ({
   accessorKey: key, header: ({ column }) => <ColumnHeader column={column} title={title} />, meta: { label: title },
@@ -113,6 +123,8 @@ const buildCfg = (): Record<ProcKind, Cfg> => ({
     columns: (base) => [
       { id: 'warehouse', accessorFn: (r) => td(nm(r.warehouse)), filterFn: inFilter, header: t('Unit|store'), meta: { label: t('Unit|store') }, cell: ({ getValue }) => (getValue() as string) || '—' },
       dateCol('bill_date', t('Date')),
+      { id: 'book', accessorFn: (r) => bookOf(r), filterFn: inFilter, header: t('Book'), meta: { label: t('Book'), exportValue: (r) => bookLabel(bookOf(r)) },
+        cell: ({ getValue }) => { const b = getValue() as Book; return <span className={cn('inline-flex items-center gap-1.5 text-[12.5px]')}><span className={cn('size-2 rounded-full', b === 'goods' ? 'bg-primary' : b === 'investment' ? 'bg-violet-500' : 'bg-amber-500')} />{bookLabel(b)}</span> } },
       { id: 'document_type', accessorFn: (r) => r.is_debit_note ? 'vendor_debit' : r.document_type, header: t('Type'), meta: { label: t('Type'), exportValue: (r) => r.document_type === 'vendor_credit' ? t('Credit note') : r.is_debit_note ? t('Debit note') : t('Bill') },
         cell: ({ getValue }) => getValue() === 'vendor_credit' ? <Badge variant="outline">{t('Credit note')}</Badge> : getValue() === 'vendor_debit' ? <Badge variant="outline" className="border-amber-500/50">{t('Debit note')}</Badge> : t('Bill') },
       vendorCol(),
@@ -135,7 +147,7 @@ const buildCfg = (): Record<ProcKind, Cfg> => ({
 
 export function ProcurementListPage({ kind }: { kind: ProcKind }) {
   const navigate = useNavigate()
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const { company, companyId } = useCompany()
   // requisitions are not published for live updates; orders and bills are
   useRealtimeInvalidate(kind === 'requisitions' ? 'approval_requests' : PROC_TABLE[kind], companyId, [procKeys.all(companyId)])
@@ -143,7 +155,9 @@ export function ProcurementListPage({ kind }: { kind: ProcKind }) {
   const cfg = React.useMemo(() => buildCfg()[kind], [kind])
   const docs = useProcDocuments<Row>(kind)
   const vendorFilter = params.get('vendor')
-  const rows = React.useMemo(() => (docs.data ?? []).filter((r) => !vendorFilter || (r as { vendor_id?: string }).vendor_id === vendorFilter || nm(r.vendor) === vendorFilter), [docs.data, vendorFilter])
+  const book = kind === 'bills' ? (BOOKS.find((b) => b.key === params.get('book'))?.key ?? null) : null
+  const byVendor = React.useMemo(() => (docs.data ?? []).filter((r) => !vendorFilter || (r as { vendor_id?: string }).vendor_id === vendorFilter || nm(r.vendor) === vendorFilter), [docs.data, vendorFilter])
+  const rows = React.useMemo(() => byVendor.filter((r) => !book || bookOf(r) === book), [byVendor, book])
 
   // the groups of the items on each invoice or order (from the meeting with the staff)
   const groups = useDocGroups<Row>(kind === 'bills' ? 'vendor_bills' : kind === 'orders' ? 'purchase_orders' : null, docs.data)
@@ -169,6 +183,11 @@ export function ProcurementListPage({ kind }: { kind: ProcKind }) {
               <span><span className="block font-medium">{t('An expense, without goods')}</span>
                 <span className="block text-[12px] text-muted-foreground">{t('Electricity, rent, fuel, repairs: booked to its account. From a photo too.')}</span></span>
             </DropdownMenuItem>
+            <DropdownMenuItem className="items-start gap-3 py-2" onSelect={() => navigate('/finance/asset-invoices')}>
+              <Car className="mt-0.5 size-5 text-primary" />
+              <span><span className="block font-medium">{t('An investment (fixed asset)')}</span>
+                <span className="block text-[12px] text-muted-foreground">{t('A vehicle, a machine, computers: the fixed asset is made and depreciated. From a photo too.')}</span></span>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="items-start gap-3 py-2" onSelect={() => navigate('/procurement/bills/new')}>
               <FileText className="mt-0.5 size-5 text-muted-foreground" />
@@ -182,10 +201,12 @@ export function ProcurementListPage({ kind }: { kind: ProcKind }) {
 
   return (
     <>
-      <PageHeader title={cfg.title} description={cfg.description} actions={newButton} />
+      <PageHeader title={book ? t(BOOKS.find((b) => b.key === book)!.title) : cfg.title} description={cfg.description} actions={newButton} />
+      {kind === 'bills' && <BookTabs rows={byVendor} base={base} value={book} loading={docs.isLoading}
+        onChange={(b) => setParams((p) => { const n = new URLSearchParams(p); if (b) n.set('book', b); else n.delete('book'); return n }, { replace: true })} />}
       <DataTable
         tableKey={`procurement.${kind}`} columns={columns} data={docs.data ? rows : undefined} isLoading={docs.isLoading} error={docs.error}
-        getRowId={(r) => r.id} searchPlaceholder={kind === 'bills' ? t('Number, vendor, vendor invoice no.…') : t('Number, vendor…')} exportName={kind}
+        getRowId={(r) => r.id} searchPlaceholder={kind === 'bills' ? t('Number, vendor, vendor invoice no.…') : t('Number, vendor…')} exportName={book ? t(BOOKS.find((b) => b.key === book)!.title) : kind}
         onRowClick={(r) => navigate(`${cfg.href}/${r.id}`)}
         preview={kind === 'orders' ? (r) => ({ print: { kind: 'purchase_order', id: r.id }, id: r.id, duplicate: 'purchase_orders' }) : kind === 'bills' ? (r) => ({ lines: billLines(r.id), id: r.id, duplicate: 'vendor_bills' }) : undefined}
         facets={[{ columnId: 'status', title: t('Status'), options: cfg.statuses.map((s) => ({ label: humanize(s), value: s })) }, ...(cfg.extraFacets?.(docs.data ?? []) ?? []), ...groups.facets]}
@@ -193,5 +214,33 @@ export function ProcurementListPage({ kind }: { kind: ProcKind }) {
         empty={{ title: cfg.emptyTitle, description: cfg.empty, action: newButton }}
       />
     </>
+  )
+}
+
+/** All · Goods · Expenses · Investments: each with how many invoices and their total (posted, in the base currency) */
+function BookTabs({ rows, base, value, loading, onChange }: { rows: Row[]; base: string; value: Book | null; loading: boolean; onChange: (b: Book | null) => void }) {
+  const stat = (b: Book | null) => {
+    const list = rows.filter((r) => !b || bookOf(r) === b)
+    const sign = (r: Row) => (r.document_type === 'vendor_credit' ? -1 : 1)
+    return { n: list.length, total: list.filter((r) => r.status === 'posted').reduce((s, r) => s + sign(r) * num(r.total_base ?? r.total), 0) }
+  }
+  const tabs: { key: Book | null; label: string; dot?: string }[] = [
+    { key: null, label: t('All|book') },
+    ...BOOKS.map((b) => ({ key: b.key, label: t(b.label), dot: b.key === 'goods' ? 'bg-primary' : b.key === 'investment' ? 'bg-violet-500' : 'bg-amber-500' })),
+  ]
+  return (
+    <div role="tablist" aria-label={t('Book')} className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {tabs.map((x) => {
+        const s = stat(x.key); const on = value === x.key
+        return (
+          <button key={x.key ?? 'all'} type="button" role="tab" aria-selected={on} onClick={() => onChange(x.key)}
+            className={cn('grid gap-0.5 rounded-lg border px-3 py-2 text-left transition-colors', on ? 'border-primary bg-primary/5 ring-1 ring-primary/30' : 'bg-card hover:bg-secondary/60')}>
+            <span className="flex items-center gap-1.5 text-[13px] font-medium">{x.dot && <span className={cn('size-2 rounded-full', x.dot)} />}{x.label}
+              <span className="ml-auto rounded-full bg-secondary px-1.5 text-[11.5px] tabular text-muted-foreground">{loading ? '…' : s.n}</span></span>
+            <span className="tabular text-[12.5px] text-muted-foreground">{loading ? '' : `${formatMoney(s.total)} ${base}`}</span>
+          </button>
+        )
+      })}
+    </div>
   )
 }

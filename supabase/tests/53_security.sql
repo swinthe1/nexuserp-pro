@@ -16,7 +16,7 @@ reset role;
 select t.ok((select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
               where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute')
                 and p.proname not in ('api_invoices', 'api_order_create', 'api_order_get', 'api_partner_upsert', 'api_partners', 'api_prices', 'api_products', 'api_stock',
-                  'desktop_publish_ticket', 'desktop_publish_with_key', 'desktop_release', 'device_activate', 'device_ping', 'licence_activate', 'licence_ai_result', 'licence_ai_submit', 'licence_backup_done',
+                  'desktop_publish_ticket', 'desktop_publish_with_key', 'desktop_release', 'device_activate', 'device_ping', 'device_support_check', 'device_support_event', 'licence_activate', 'licence_ai_result', 'licence_ai_submit', 'licence_backup_done',
                   'licence_backup_ticket', 'licence_check', 'licence_read_result', 'licence_read_submit', 'licence_whatsapp_relay', 'mcp_http', 'partner_info_form',
                   'partner_info_submit', 'pin_login', 'pin_login_result', 'portal_catalog', 'portal_document', 'portal_home', 'portal_images', 'portal_order',
                   'public_pricing', 'scale_feed', 'scale_feed_error', 'shared_device_people', 'sync_history', 'sync_images', 'sync_log', 'sync_push')) = 0,

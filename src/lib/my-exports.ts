@@ -15,6 +15,16 @@ export async function downloadExport(r: Pick<MyExport, 'path' | 'file_name'>) {
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
+/** the file's bytes as base64, to go as an email attachment */
+export async function exportBase64(r: Pick<MyExport, 'path'>) {
+  const { data, error } = await supabase.storage.from('my-exports').download(r.path)
+  if (error) throw error
+  const bytes = new Uint8Array(await data.arrayBuffer())
+  let bin = ''
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+  return btoa(bin)
+}
+
 export function useMyExports() {
   const { companyId } = useCompany()
   return useQuery({
