@@ -105,7 +105,7 @@ export const GUIDES_D: Record<string, Guide> = {
     ],
     mistakes: [
       { sq: 'Ai që e llogarit listëpagesën nuk mund ta miratojë vetë: duhet dikush tjetër me të drejtë miratimi.', en: 'The person who calculated the payroll cannot approve it: someone else with approval rights must.' },
-      { sq: 'Deri sa ta kontabilizosh, mund ta kthesh me "Kthe në skicë"; pas kontabilizimit nuk ndryshohet më.', en: 'Until it is booked you can send it back with "Back to draft"; once booked it no longer changes.' },
+      { sq: 'Deri sa ta kontabilizosh, mund ta kthesh me "Kthe në skicë" (te butoni ⋯); pas kontabilizimit nuk ndryshohet më.', en: 'Until it is booked you can send it back with "Back to draft" (under the ⋯ button); once booked it no longer changes.' },
     ],
     after: { sq: 'Pagat dhe kontributet regjistrohen si shpenzim; neto, kontributet dhe tatimi bëhen detyrime për t\'u paguar. Punonjësit i shohin fletëpagesat te "Vendi im i punës".', en: 'Salaries and contributions are booked as expenses; net pay, contributions and tax become amounts to pay. Employees see their payslips under "My workplace".' },
     tour: [
@@ -277,9 +277,10 @@ export const GUIDES_D: Record<string, Guide> = {
       { sq: 'Kliko një vend të lirë në kolonën e personit, ose "Termin i ri".', en: 'Click a free place in the person\'s column, or "New appointment".' },
       { sq: 'Zgjidh shërbimin dhe orën te "Oraret e lira"; zgjidh klientin ose shkruaj emrin dhe telefonin e një klienti të ri, pastaj ruaje.', en: 'Choose the service and a time under "Free times"; pick the client or type a new client\'s name and phone, then save.' },
       { sq: 'Kur vjen klienti kliko terminin dhe "Erdhi"; kur mbaron puna, "U krye, te fatura".', en: 'When the client arrives click the appointment and "Arrived"; when the work is done, "Done, to the invoice".' },
+      { sq: '"Konfirmuar" (kur klienti e konfirmon me telefon), "Nuk erdhi" dhe "Anuloje" janë te butoni ⋯ i terminit.', en: '"Confirmed" (when the client confirms by phone), "Did not come" and "Cancel it" are under the appointment\'s ⋯ button.' },
     ],
     mistakes: [{ sq: 'Pa email te "Email (për kujtesën)" klienti nuk merr kujtesë një ditë para terminit.', en: 'Without an email under "Email (for the reminder)" the client gets no reminder the day before.' }],
-    after: { sq: '"U krye, te fatura" bën faturën me shërbimin dhe çmimin për ta kontrolluar, dhe e shton vizitën në kartelën e klientit.', en: '"Done, to the invoice" makes the invoice with the service and price for you to check, and adds the visit to the client card.' },
+    after: { sq: '"U krye, te fatura" bën faturën me shërbimin dhe çmimin për ta kontrolluar, dhe e shton vizitën në kartelën e klientit. Terminet që mbeten "të rezervuara" pasi kanë mbaruar, shënohen vetë "Nuk erdhi" të nesërmen.', en: '"Done, to the invoice" makes the invoice with the service and price for you to check, and adds the visit to the client card. Appointments still "booked" after they ended are marked "Did not come" by themselves the next day.' },
     related: [{ href: '/appointments/setup', label: { sq: 'Shërbimet dhe stafi', en: 'Services and staff' } }, { href: '/appointments/cards', label: { sq: 'Dosjet e klientëve', en: 'Client cards' } }],
     tour: [
       { target: 'Services and staff', say: { sq: 'Fillo këtu: kush punon dhe çfarë shërbimesh ofron.', en: 'Start here: who works and which services they offer.' } },
@@ -356,7 +357,7 @@ export const GUIDES_D: Record<string, Guide> = {
       { sq: 'Kur mysafiri është në hotel, shto te "Shtesat në dhomë" minibarin, mëngjesin ose lavanderinë.', en: 'While the guest is in the hotel, add the minibar, breakfast or laundry under "Extras on the room".' },
     ],
     mistakes: [{ sq: 'Nëse fatura duhet të dalë në emër të një firme, zgjidhe te "Fatura në emër të (sipas dëshirës)" para check-out.', en: 'If the invoice must be in a company\'s name, choose it under "Invoice to (optional)" before check-out.' }],
-    after: { sq: 'Shtesat dalin në faturë me check-out. Me "Anulo rezervimin" dhoma lirohet për ato net.', en: 'Extras go on the invoice at check-out. "Cancel the reservation" frees the room for those nights.' },
+    after: { sq: 'Shtesat dalin në faturë me check-out. "Anulo rezervimin" dhe "Nuk erdhi" janë te butoni ⋯ i rezervimit; anulimi e liron dhomën për ato net. Çdo mëngjes, dhomat me mysafir shënohen për pastrim dhe mysafirët që s\'erdhën ose s\'u larguan në datën e tyre bëhen detyrë për recepsionin.', en: 'Extras go on the invoice at check-out. "Cancel the reservation" and "Did not come" are under the reservation\'s ⋯ button; cancelling frees the room for those nights. Every morning rooms with a guest are marked for cleaning, and guests who did not arrive or leave on their date become a task for the front desk.' },
   },
   '/hotel/rooms': {
     what: { sq: 'Dhomat: llojet e dhomave me çmimin për natë, dhe çdo dhomë me gjendjen e pastrimit.', en: 'Rooms: the room types with their price a night, and every room with its cleaning state.' },

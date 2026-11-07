@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, GraduationCap, Info, Lightbulb, MousePointerClick, TriangleAlert, X } from 'lucide-react'
+import { ArrowRight, ChevronLeft, ChevronRight, Info, Lightbulb, MousePointerClick, TriangleAlert, X } from 'lucide-react'
 import * as React from 'react'
 import { createPortal } from 'react-dom'
 import { Link, matchPath, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
@@ -10,7 +10,7 @@ import { GUIDES } from '@/i18n/help/guides'
 import { TIPS } from '@/i18n/help/tips'
 import type { Guide, L, TourStep } from '@/i18n/help/types'
 import { ALL_LESSONS } from '@/i18n/help/training'
-import { useMarkLesson } from '@/features/training/api'
+import { LessonPanel } from '@/features/training/lesson-panel'
 import { cn } from '@/lib/utils'
 
 function usePick() {
@@ -30,9 +30,8 @@ export function useGuide(): Guide | null {
 export function PageHelpButton({ className }: { className?: string }) {
   const guide = useGuide()
   const pick = usePick()
-  const [params, setParams] = useSearchParams()
+  const [params] = useSearchParams()
   const navigate = useNavigate()
-  const mark = useMarkLesson()
   // opened from the training page: the panel opens by itself, with "Lesson done" at the bottom
   const lesson = ALL_LESSONS.find((l) => l.key === params.get('learn'))
   const [open, setOpen] = React.useState(!!lesson)
@@ -64,8 +63,14 @@ export function PageHelpButton({ className }: { className?: string }) {
             <SheetDescription className="text-[14px] leading-relaxed text-foreground">{pick(guide.what)}</SheetDescription>
           </SheetHeader>
           <div className="grid gap-5 px-5 pb-8 pt-5 text-[13.5px] leading-relaxed">
+            {lesson && (
+              <LessonPanel key={lesson.key} lesson={lesson} tour={tour}
+                onShowMe={() => { setOpen(false); setTimeout(() => startTour(tour!), 250) }}
+                onTry={() => setOpen(false)}
+                onGo={(href) => { setOpen(false); navigate(href) }} />
+            )}
             <section>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('Step by step')}</h3>
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{lesson ? t('About this page') : t('Step by step')}</h3>
               <ol className="grid gap-2">
                 {guide.steps.map((s, i) => (
                   <li key={i} className="flex gap-3"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{i + 1}</span><span className="pt-0.5">{pick(s)}</span></li>
@@ -92,18 +97,8 @@ export function PageHelpButton({ className }: { className?: string }) {
                 </div>
               </section>
             )}
-            {!!tour?.length && (
-              <Button className="justify-self-start" variant={lesson ? 'outline' : 'default'} onClick={() => { setOpen(false); setTimeout(() => startTour(tour), 250) }}><MousePointerClick /> {t('Show me on the page')}</Button>
-            )}
-            {lesson && (
-              <section className="rounded-lg border border-primary/30 bg-primary/5 p-3">
-                <h3 className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-primary"><GraduationCap className="size-3.5" /> {t('Lesson')}: {pick(lesson.title)}</h3>
-                <p className="mb-3 text-[13px]">{pick(lesson.why)}</p>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" loading={mark.isPending} onClick={async () => { await mark.mutateAsync({ lesson: lesson.key, done: true }); setOpen(false); navigate('/training') }}><CheckCircle2 /> {t('Lesson done')}</Button>
-                  <Button size="sm" variant="ghost" onClick={() => { setOpen(false); params.delete('learn'); setParams(params, { replace: true }) }}>{t('Try it on the page first')}</Button>
-                </div>
-              </section>
+            {!!tour?.length && !lesson && (
+              <Button className="justify-self-start" variant="default" onClick={() => { setOpen(false); setTimeout(() => startTour(tour), 250) }}><MousePointerClick /> {t('Show me on the page')}</Button>
             )}
           </div>
         </SheetContent>

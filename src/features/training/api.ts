@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import * as React from 'react'
+import { tracksFor } from '@/i18n/help/training'
 import { toast } from 'sonner'
 import { useAuth } from '@/app/auth-provider'
 import { useCompany } from '@/app/company-provider'
@@ -32,4 +34,10 @@ export function useTrainingOverview(enabled = true) {
     enabled: !!companyId && enabled,
     queryFn: async () => new Map((unwrap(await supabase.rpc('training_overview', { p_company: companyId! })) as unknown as { user_id: string; lessons: string[] }[]).map((r) => [r.user_id, new Set(r.lessons)])),
   })
+}
+
+/** the training paths of the person signed in: for their roles, with only the pages the licence opens */
+export function useMyTracks(all = false) {
+  const { company, pageAllowed } = useCompany()
+  return React.useMemo(() => tracksFor(company?.roles ?? [], pageAllowed, all), [company?.roles, pageAllowed, all])
 }

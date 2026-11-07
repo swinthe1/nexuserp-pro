@@ -24,7 +24,7 @@ import { ProfileDialog } from '../components/profile-dialog'
 import { PinDialog, SharedTillCard, useMemberExtras, useSetView } from '../components/easy-access'
 
 export function UsersPage() {
-  const { can } = useCompany()
+  const { can, pageAllowed } = useCompany()
   const users = useCompanyUsers()
   const roles = useRoles()
   const [params, setParams] = useSearchParams()
@@ -38,10 +38,10 @@ export function UsersPage() {
   /** lessons done of the lessons meant for this person's roles */
   const trainingOf = React.useCallback((u: CompanyUser) => {
     const keys = (roles.data ?? []).filter((r) => u.role_ids.includes(r.id)).map((r) => r.key)
-    const lessons = tracksFor(keys).flatMap((tr) => tr.lessons)
+    const lessons = tracksFor(keys, pageAllowed).flatMap((tr) => tr.lessons)
     const mine = (u.user_id && training.data?.get(u.user_id)) || new Set<string>()
     return { done: lessons.filter((l) => mine.has(l.key)).length, total: lessons.length }
-  }, [roles.data, training.data])
+  }, [roles.data, training.data, pageAllowed])
   const setView = useSetView()
   const [pinFor, setPinFor] = React.useState<CompanyUser | null>(null)
   const [whFor, setWhFor] = React.useState<CompanyUser | null>(null)
