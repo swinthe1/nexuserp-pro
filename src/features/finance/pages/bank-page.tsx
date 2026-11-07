@@ -29,6 +29,7 @@ import { cn, formatDate, formatMoney, humanize, num, todayISO } from '@/lib/util
 import { usePartners } from '@/features/sales/api'
 import { type BankFile, parseAmount, parseDate, readBankFile } from '../bank-formats'
 import { BankPositionDialog, BankPositionLine } from '../components/bank-position'
+import { MoreMenu } from '@/components/more-menu'
 import {
   finKeys, useAcceptAllSuggestions, useAcceptSuggestion, useAccountBalances, useAccountDefaults, useAccounts, useAutoMatch, useDismissSuggestion, useBankAccounts, useBookStatementLine, useCreateStatement, useJournals, useMatchCandidates,
   useBankPosition, useReconcileStatement, useSaveBankAccount, useStatement, useStatements, useUpdateStatementLine, type StatementLine, type StatementRow,
@@ -354,10 +355,14 @@ export function StatementPage() {
                   <TableCell className="whitespace-nowrap text-right">
                     {open && <Can perm="finance.write">
                       {l.match_status === 'unmatched' ? (<>
-                        <Button size="sm" variant="ghost" onClick={() => setMatchLine(l)}><Link2 /> {t('Match')}</Button>
-                        <Button size="sm" variant="ghost" onClick={() => setBookLine(l)}>{t('Record to account')}</Button>
-                        <Button size="sm" variant="ghost" asChild><Link to={recordHref(l)}>{num(l.amount) > 0 ? t('Receipt|payment') : t('Payment')}</Link></Button>
-                        <Button size="icon" variant="ghost" className="size-8" aria-label={t('Ignore line')} title={t('Ignore: not a real transaction')} onClick={() => update.mutate({ id: l.id, match_status: 'ignored' })}><Ban /></Button>
+                        <span className="inline-flex items-center gap-1">
+                          <Button size="sm" variant="outline" onClick={() => setMatchLine(l)}><Link2 /> {t('Match')}</Button>
+                          <MoreMenu size="sm" items={[
+                            { label: num(l.amount) > 0 ? t('Receipt|payment') : t('Payment'), to: recordHref(l) },
+                            { label: t('Record to account'), onSelect: () => setBookLine(l) },
+                            { label: t('Ignore: not a real transaction'), icon: Ban, separate: true, onSelect: () => update.mutate({ id: l.id, match_status: 'ignored' }) },
+                          ]} />
+                        </span>
                       </>) : !l.journal_entry_id && (
                         <Button size="sm" variant="ghost" onClick={() => update.mutate({ id: l.id, match_status: 'unmatched', matched_payment_id: null, matched_journal_line_id: null })}><Undo2 /> {t('Undo')}</Button>
                       )}

@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button'
 import { AssistantButton } from '@/features/assistant/assistant'
 import { TillLockButton } from '@/components/layout/till-lock'
 import { t } from '@/i18n'
-import { LanguageMenuButton, LanguageToggle } from '@/i18n/language'
 
 export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
   const { open } = useCommandPalette()
@@ -33,8 +32,6 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
       <NewMenu />
       <div className="ml-auto flex items-center gap-1">
         <LastExportButton />
-        <LanguageToggle className="hidden sm:inline-flex" />
-        <span className="sm:hidden"><LanguageMenuButton /></span>
         <TillLockButton />
         <AssistantButton />
         <ChatButton />

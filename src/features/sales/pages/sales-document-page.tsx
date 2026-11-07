@@ -47,6 +47,7 @@ import { RepeatInvoiceDialog } from '../recurring'
 import { DuplicateButton } from '@/components/duplicate-button'
 import { ReopenButton } from '@/components/reopen-button'
 import { msg, t, td, tr } from '@/i18n'
+import { MoreMenu, type MoreItem } from '@/components/more-menu'
 
 type DocKind = Exclude<SalesKind, 'deliveries'>
 type AnyLine = Tables<'sales_quote_lines'> & Partial<Tables<'sales_order_lines'>> & Partial<Tables<'sales_invoice_lines'>>
@@ -189,11 +190,13 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
 
   /* -------------------------------------------------------- actions */
   const actions: React.ReactNode[] = []
+  // what is not the next step goes under More
+  const more: MoreItem[] = []
   if (kind === 'quotes' && doc) {
     if (doc.status === 'draft') actions.push(<Button key="send" variant="outline" onClick={async () => { const id = await saveFirst(); if (id) { await setStatus.mutateAsync({ id, status: 'sent' }); toast.success(t('Quote marked as sent')) } }}><Send /> {t('Mark as sent')}</Button>)
     if (doc.status === 'sent') {
-      actions.push(<Button key="rej" variant="ghost" onClick={() => setStatus.mutate({ id: doc.id, status: 'rejected' })}><X /> {t('Customer said no')}</Button>)
-      actions.push(<Button key="back" variant="ghost" onClick={() => setStatus.mutate({ id: doc.id, status: 'draft' })}><Undo2 /> {t('Edit again')}</Button>)
+      more.push({ label: t('Customer said no'), icon: X, onSelect: () => setStatus.mutate({ id: doc.id, status: 'rejected' }) })
+      more.push({ label: t('Edit again'), icon: Undo2, onSelect: () => setStatus.mutate({ id: doc.id, status: 'draft' }) })
     }
     if (['sent', 'accepted'].includes(doc.status)) {
       actions.push(<ConfirmDialog key="conv" trigger={<Button><ShoppingCart /> {t('Create order')}</Button>} title={t('Turn this quote into a sales order?')}
@@ -220,28 +223,26 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
   if (kind === 'orders' && doc) {
     if (isOpenOrder) {
       if (availability.data?.some((a) => num(a.to_reserve) > 0 && num(a.available) > 0)) {
-        actions.push(<Button key="res" variant="outline" loading={reserve.isPending} onClick={async () => { const n = await reserve.mutateAsync(doc.id); toast.success(t('{qty} more reserved', { qty: formatQty(n) })) }}><PackageOpen /> {t('Reserve stock')}</Button>)
+        more.push({ label: t('Reserve stock'), icon: PackageOpen, onSelect: async () => { const n = await reserve.mutateAsync(doc.id); toast.success(t('{qty} more reserved', { qty: formatQty(n) })) } })
       }
       const deliverable = availability.data?.some((a) => a.is_stockable && num(a.ordered) - num(a.delivered) > 0 && num(a.reserved) + num(a.available) > 0)
       if (deliverable && (can('wms.write') || can('sales.write'))) {
-        actions.push(<Button key="del" variant="outline" loading={createDelivery.isPending} onClick={async () => { const d = await createDelivery.mutateAsync(doc.id); toast.success(t('Delivery created')); navigate(`/sales/deliveries/${d}`) }}><Truck /> {t('Create delivery')}</Button>)
+        actions.push(<Button key="del" loading={createDelivery.isPending} onClick={async () => { const d = await createDelivery.mutateAsync(doc.id); toast.success(t('Delivery created')); navigate(`/sales/deliveries/${d}`) }}><Truck /> {t('Create delivery')}</Button>)
       }
     }
     if (['confirmed', 'partially_delivered'].includes(doc.status) && doc.invoice_status !== 'invoiced' && can('invoicing.write')) {
       actions.push(<AdvanceButton key="adv" order={{ id: doc.id, total: num(doc.total), currency_code: doc.currency_code as string }} />)
     }
     if (['confirmed', 'partially_delivered', 'delivered', 'closed'].includes(doc.status) && doc.invoice_status !== 'invoiced' && can('invoicing.write')) {
-      actions.push(<Button key="inv" loading={createInvoice.isPending} onClick={async () => { const i = await createInvoice.mutateAsync(doc.id); toast.success(t('Draft invoice created')); navigate(`/sales/invoices/${i}`) }}><Receipt /> {t('Create invoice')}</Button>)
+      actions.push(<Button key="inv" variant={actions.some((a) => (a as React.ReactElement).key === 'del') ? 'outline' : 'default'} loading={createInvoice.isPending} onClick={async () => { const i = await createInvoice.mutateAsync(doc.id); toast.success(t('Draft invoice created')); navigate(`/sales/invoices/${i}`) }}><Receipt /> {t('Create invoice')}</Button>)
     }
     if (doc.status === 'partially_delivered') {
-      actions.push(<ConfirmDialog key="close" trigger={<Button variant="ghost"><CheckCheck /> {t('Close order')}</Button>} title={t('Close the order without delivering the rest?')}
-        description={t("The rest of the order won't be delivered. Its reserved stock is released.")} confirmLabel={t('Close order')}
-        onConfirm={() => setStatus.mutateAsync({ id: doc.id, status: 'closed' })} />)
+      more.push({ label: t('Close order'), icon: CheckCheck, onSelect: () => setStatus.mutateAsync({ id: doc.id, status: 'closed' }),
+        confirm: { title: t('Close the order without delivering the rest?'), description: t("The rest of the order won't be delivered. Its reserved stock is released.") } })
     }
     if (['pending_approval', 'confirmed'].includes(doc.status) && doc.lines.every((l) => !num(l.qty_delivered))) {
-      actions.push(<ConfirmDialog key="cancel" trigger={<Button variant="ghost" className="text-destructive"><Ban /> {t('Cancel order|sales')}</Button>} title={t('Cancel {number}?', { number: doc.number })}
-        description={t('Reserved stock is released. The order stays on record as cancelled.')} confirmLabel={t('Cancel order|sales')} destructive
-        onConfirm={() => setStatus.mutateAsync({ id: doc.id, status: 'cancelled', extra: { cancel_reason: t('Cancelled by user') } })} />)
+      more.push({ label: t('Cancel order|sales'), icon: Ban, destructive: true, separate: true, onSelect: () => setStatus.mutateAsync({ id: doc.id, status: 'cancelled', extra: { cancel_reason: t('Cancelled by user') } }),
+        confirm: { title: t('Cancel {number}?', { number: doc.number }), description: t('Reserved stock is released. The order stays on record as cancelled.') } })
     }
   }
   if (kind === 'invoices' && (!doc || doc.status === 'draft') && can('invoicing.write')) {
@@ -260,12 +261,11 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
   }
   if (kind === 'invoices' && doc) {
     if (doc.status === 'posted' && !isCredit) {
-      actions.push(<Button key="cn" variant="outline" loading={creditNote.isPending} onClick={async () => { const cn = await creditNote.mutateAsync(doc.id); toast.success(t('Draft credit note created — adjust the lines, then post it')); navigate(`/sales/invoices/${cn}`) }}><Undo2 /> {t('Credit note')}</Button>)
-      if (!isDebit && can('invoicing.write')) actions.push(<Button key="dn" variant="outline" loading={debitNote.isPending} title={t('Add to this invoice: a price agreed higher, transport billed later, interest')}
-        onClick={async () => { const dn = await debitNote.mutateAsync(doc.id); toast.success(t('Draft debit note created: write what is added, then post it')); navigate(`/sales/invoices/${dn}`) }}><Redo2 /> {t('Debit note')}</Button>)
+      more.push({ label: t('Credit note'), icon: Undo2, onSelect: async () => { const cn = await creditNote.mutateAsync(doc.id); toast.success(t('Draft credit note created — adjust the lines, then post it')); navigate(`/sales/invoices/${cn}`) } })
+      if (!isDebit && can('invoicing.write')) more.push({ label: t('Debit note'), icon: Redo2, onSelect: async () => { const dn = await debitNote.mutateAsync(doc.id); toast.success(t('Draft debit note created: write what is added, then post it')); navigate(`/sales/invoices/${dn}`) } })
     }
     if (!isCredit && can('invoicing.write')) {
-      actions.push(<Button key="repeat" variant="outline" onClick={() => setRepeat(true)}><Repeat /> {t('Repeat')}</Button>)
+      more.push({ label: t('Repeat'), icon: Repeat, onSelect: () => setRepeat(true) })
     }
     if (doc.status === 'posted' && !isCredit && Number(doc.amount_due) > 0 && can('invoicing.write')) {
       actions.push(<Button key="pay" asChild><Link to={`/finance/payments/new?type=customer_payment&partner=${doc.partner_id}&doc=${doc.id}`}>{t('Record payment')}</Link></Button>)
@@ -392,6 +392,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
             )}
             {editable && <Button variant={doc || kind === 'invoices' ? 'outline' : 'default'} onClick={() => void saveOnly()} loading={save.isPending}>{doc ? t('Save draft') : t('Create draft')}</Button>}
             {actions}
+            {more.length > 0 && <MoreMenu items={more} />}
           </Can></>}
         />
         {doc?.status === 'pending_approval' && (

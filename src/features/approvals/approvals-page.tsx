@@ -134,7 +134,7 @@ export function ApprovalsPage() {
                         {r.status === 'pending' && canDecide(r) && (
                           <div className="flex justify-end gap-1.5">
                             <Button size="xs" variant="outline" onClick={() => setDeciding({ req: r, decision: 'rejected' })}><X /> {t('Reject')}</Button>
-                            <Button size="xs" onClick={() => setDeciding({ req: r, decision: 'approved' })}><Check /> {t('Approve')}</Button>
+                            <Button size="xs" loading={decide.isPending && decide.variables?.id === r.id} onClick={() => decide.mutate({ id: r.id, decision: 'approved', note: '' })}><Check /> {t('Approve')}</Button>
                           </div>
                         )}
                         {r.status === 'pending' && r.requested_by === user?.id && <span className="text-xs text-muted-foreground">{t('Your request')}</span>}

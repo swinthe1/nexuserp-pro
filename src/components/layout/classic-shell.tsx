@@ -20,7 +20,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, D
 import { menuEntries } from '@/components/layout/hubs'
 import { AssistantButton } from '@/features/assistant/assistant'
 import { t } from '@/i18n'
-import { LanguageToggle } from '@/i18n/language'
 import { LastExportButton } from '@/components/layout/last-export'
 import { cn, formatDate } from '@/lib/utils'
 
@@ -208,7 +207,6 @@ export function ClassicShell({ children, onOpenMobileNav }: { children: React.Re
           )}
           <div className="ml-auto flex shrink-0 items-center gap-1 pl-2 pr-1">
             <LastExportButton />
-            <LanguageToggle className="hidden sm:inline-flex" />
             <TillLockButton />
             {/* the assistant's own panel (Ctrl+J) lives in its launcher */}
             <span className="hidden"><AssistantButton /></span>

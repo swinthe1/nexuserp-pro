@@ -46,6 +46,7 @@ import { billSchema, purchaseOrderSchema, type BillValues, type PurchaseOrderVal
 import { DuplicateButton } from '@/components/duplicate-button'
 import { ReopenButton } from '@/components/reopen-button'
 import { AccountingTab } from '@/features/finance/components/t-accounts'
+import { MoreMenu, type MoreItem } from '@/components/more-menu'
 
 type Kind = 'orders' | 'bills'
 type PoDoc = Tables<'purchase_orders'> & {
@@ -161,6 +162,8 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
   const remaining = doc?.lines.filter((l) => num(l.quantity) > num(l.qty_received)) ?? []
   const receivedAny = doc?.lines.some((l) => num(l.qty_received) > 0)
   const actions: React.ReactNode[] = []
+  // what is not the next step goes under More
+  const more: MoreItem[] = []
   if (editable) {
     actions.push(<ConfirmDialog key="submit" trigger={<Button><Send /> {t('Submit')}</Button>} title={t('Submit this purchase order?')}
       description={t("It is checked (active vendor, items that can be bought) and approved — directly, or by an approver when the amount needs it. Lines can't be changed afterwards.")}
@@ -180,10 +183,10 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
         onConfirm={() => setStatus.mutateAsync({ id: doc.id, status: 'draft' })} />)
     }
     if (doc.status === 'approved') {
-      actions.push(<Button key="sent" variant="outline" onClick={() => setStatus.mutate({ id: doc.id, status: 'sent' }, { onSuccess: () => toast.success(t('Marked as sent')) })}><Send /> {t('Mark as sent')}</Button>)
+      more.push({ label: t('Mark as sent'), icon: Send, onSelect: () => setStatus.mutate({ id: doc.id, status: 'sent' }, { onSuccess: () => toast.success(t('Marked as sent')) }) })
     }
     if (['approved', 'sent', 'partially_received'].includes(doc.status)) {
-      actions.push(<Button key="confirm" variant="outline" onClick={() => setFollow('confirm')}><PhoneCall /> {doc.confirmed_at ? t('Change the promised date') : t('Vendor confirmed')}</Button>)
+      more.push({ label: doc.confirmed_at ? t('Change the promised date') : t('Vendor confirmed'), icon: PhoneCall, onSelect: () => setFollow('confirm') })
     }
   }
   if (doc && ['approved', 'sent', 'partially_received'].includes(doc.status) && remaining.length > 0 && (can('wms.write') || can('procurement.write'))) {
@@ -192,21 +195,19 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
       <PackageCheck /> {t('Receive goods')}</Button>)
   }
   if (doc && ['approved', 'sent', 'partially_received', 'received', 'closed'].includes(doc.status) && doc.billing_status !== 'billed' && can('invoicing.write')) {
-    actions.push(<Button key="bill" variant="outline" onClick={() => setBillOpen(true)}><Receipt /> {t('Enter bill')}</Button>)
+    actions.push(<Button key="bill" variant={actions.some((a) => (a as React.ReactElement).key === 'recv') ? 'outline' : 'default'} onClick={() => setBillOpen(true)}><Receipt /> {t('Enter bill')}</Button>)
   }
   if (doc && can('procurement.write')) {
     if (['approved', 'sent', 'partially_received'].includes(doc.status) && remaining.some((l) => l.variant_id) && (doc.status === 'partially_received' || isLate(doc))) {
-      actions.push(<Button key="rest" variant="outline" onClick={() => setFollow('rest')}><Repeat /> {t('Order the rest again')}</Button>)
+      more.push({ label: t('Order the rest again'), icon: Repeat, onSelect: () => setFollow('rest') })
     }
     if (doc.status === 'partially_received' || (doc.status === 'received' && doc.billing_status !== 'billed')) {
-      actions.push(<ConfirmDialog key="close" trigger={<Button variant="ghost"><CheckCheck /> {t('Close')}</Button>} title={t('Close {number}?', { number: doc.number })}
-        description={doc.status === 'partially_received' ? t('The rest of the order is no longer expected. It stops counting as incoming stock.') : t('The order is finished; it will not be billed further.')}
-        confirmLabel={t('Close order')} onConfirm={() => setStatus.mutateAsync({ id: doc.id, status: 'closed' })} />)
+      more.push({ label: t('Close order'), icon: CheckCheck, onSelect: () => setStatus.mutateAsync({ id: doc.id, status: 'closed' }), separate: true,
+        confirm: { title: t('Close {number}?', { number: doc.number }), description: doc.status === 'partially_received' ? t('The rest of the order is no longer expected. It stops counting as incoming stock.') : t('The order is finished; it will not be billed further.') } })
     }
     if (['approved', 'sent'].includes(doc.status) && !receivedAny && !doc.lines.some((l) => num(l.qty_billed) > 0)) {
-      actions.push(<ConfirmDialog key="cancel" trigger={<Button variant="ghost" className="text-destructive"><Ban /> {t('Cancel order')}</Button>} title={t('Cancel {number}?', { number: doc.number })}
-        description={t('Tell the vendor too. The order stays on record as cancelled and stops counting as incoming stock.')} confirmLabel={t('Cancel order')} destructive
-        onConfirm={() => setStatus.mutateAsync({ id: doc.id, status: 'cancelled', extra: { cancel_reason: 'Cancelled by buyer' } })} />)
+      more.push({ label: t('Cancel order'), icon: Ban, destructive: true, separate: true, onSelect: () => setStatus.mutateAsync({ id: doc.id, status: 'cancelled', extra: { cancel_reason: 'Cancelled by buyer' } }),
+        confirm: { title: t('Cancel {number}?', { number: doc.number }), description: t('Tell the vendor too. The order stays on record as cancelled and stops counting as incoming stock.') } })
     }
   }
 
@@ -309,6 +310,7 @@ function PurchaseOrderForm({ doc }: { doc?: PoDoc }) {
             )}
             {editable && <Button variant="outline" onClick={() => void saveOnly()} loading={save.isPending}>{doc ? t('Save draft') : t('Create draft')}</Button>}
             {actions}
+            {more.length > 0 && <MoreMenu items={more} />}
           </Can>}
         />
         {doc?.status === 'pending_approval' && (
@@ -448,7 +450,6 @@ function BillForm({ doc }: { doc?: BillDoc }) {
   const terms = usePaymentTerms()
   const save = useSaveProcDocument('bills')
   const del = useDeleteProcDocument('bills')
-  const setStatus = useSetProcStatus('bills')
   const matchBill = useMatchBill()
   const post = usePostBill()
   const credit = useVendorCredit()
@@ -524,10 +525,9 @@ function BillForm({ doc }: { doc?: BillDoc }) {
   }
 
   const actions: React.ReactNode[] = []
+  const billMore: MoreItem[] = []
   if (doc && editable && !isCredit && doc.purchase_order_id) {
-    actions.push(<Button key="match" variant="outline" loading={matchBill.isPending}
-      onClick={async () => { const id = await saveFirst(); if (!id) return; const m = await matchBill.mutateAsync(id); toast[m.status === 'exception' ? 'error' : 'success'](m.status === 'exception' ? t('The bill does not match — see the flagged lines') : t('The bill matches the order and the goods received')) }}>
-      <ClipboardCheck /> {t('Check against the order')}</Button>)
+    billMore.push({ label: t('Check against the order'), icon: ClipboardCheck, onSelect: async () => { const id = await saveFirst(); if (!id) return; const m = await matchBill.mutateAsync(id); toast[m.status === 'exception' ? 'error' : 'success'](m.status === 'exception' ? t('The bill does not match — see the flagged lines') : t('The bill matches the order and the goods received')) } })
   }
   if (doc && editable) {
     actions.push(<ConfirmDialog key="post" trigger={<Button><FileText /> {isCredit ? t('Post credit note') : t('Post bill')}</Button>} title={isCredit ? t('Post this credit note?') : t('Post this bill?')}
@@ -546,11 +546,8 @@ function BillForm({ doc }: { doc?: BillDoc }) {
       }} />)
   }
   if (doc && doc.status === 'posted' && !isCredit && can('invoicing.write')) {
-    actions.push(<Button key="cn" variant="outline" loading={credit.isPending}
-      onClick={async () => { const id = await credit.mutateAsync(doc.id); toast.success(t('Draft credit note created — adjust it to the vendor’s document, then post it')); navigate(`/procurement/bills/${id}`) }}>
-      <Undo2 /> {t('Record credit note')}</Button>)
-    if (!isDebit) actions.push(<Button key="dn" variant="outline" onClick={() => setDebitNo('')} title={t('The supplier adds to this bill: a price difference, transport, interest')}>
-      <Redo2 /> {t('Record debit note')}</Button>)
+    billMore.push({ label: t('Record credit note'), icon: Undo2, onSelect: async () => { const id = await credit.mutateAsync(doc.id); toast.success(t('Draft credit note created — adjust it to the vendor’s document, then post it')); navigate(`/procurement/bills/${id}`) } })
+    if (!isDebit) billMore.push({ label: t('Record debit note'), icon: Redo2, onSelect: () => setDebitNo('') })
   }
   if (doc && doc.status === 'posted' && !isCredit && Number(doc.amount_due) > 0 && can('invoicing.write')) {
     actions.push(<Button key="pay" asChild><Link to={`/finance/payments/new?type=vendor_payment&partner=${doc.vendor_id}&doc=${doc.id}`}>{t('Pay this bill')}</Link></Button>)
@@ -629,17 +626,14 @@ function BillForm({ doc }: { doc?: BillDoc }) {
           actions={<Can perm="invoicing.read">
             {doc && <DuplicateButton table="vendor_bills" id={doc.id} />}
             {doc && doc.status === 'posted' && !isCredit && !doc.purchase_order_id && <ReopenButton kind="vendor_bill" id={doc.id} number={doc.number} />}
-            {doc && editable && (
-              <ConfirmDialog trigger={<Button variant="ghost" size="sm" className="text-destructive"><Trash2 /> {t('Delete')}</Button>} title={t('Delete draft {number}?', { number: doc.number })}
-                description={t('The draft disappears; its quantities can be billed again.')} confirmLabel={t('Delete draft')} destructive
-                onConfirm={async () => { await del.mutateAsync(doc.id); navigate('/procurement/bills') }} />
-            )}
-            {doc && editable && <Button variant="ghost" size="sm" onClick={() => setStatus.mutate({ id: doc.id, status: 'cancelled' })}><Ban /> {t('Cancel bill')}</Button>}
-            {doc && !isCredit && doc.status === 'posted' && doc.lines.some((l) => l.variant_id) && (
-              <Button variant="outline" size="sm" asChild><Link to={`/inventory/labels?bill=${doc.id}`}><Tag /> {t('Labels')}</Link></Button>
-            )}
+
             {editable && <Button variant="outline" onClick={() => void saveOnly()} loading={save.isPending}>{doc ? t('Save draft') : t('Create draft')}</Button>}
             {actions}
+            {doc && <MoreMenu items={[...billMore,
+              { label: t('Labels'), icon: Tag, to: `/inventory/labels?bill=${doc.id}`, hidden: !(!isCredit && doc.status === 'posted' && doc.lines.some((l) => l.variant_id)) },
+              { label: t('Delete draft'), icon: Trash2, destructive: true, separate: true, hidden: !editable, onSelect: async () => { await del.mutateAsync(doc.id); navigate('/procurement/bills') },
+                confirm: { title: t('Delete draft {number}?', { number: doc.number }), description: t('The draft disappears; its quantities can be billed again.') } },
+            ]} />}
           </Can>}
         />
         {doc ? (

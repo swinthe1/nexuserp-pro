@@ -719,16 +719,23 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
           </DropdownMenu>
         ) : (
         <div className="ml-auto flex items-center gap-1.5">
-          {data.atk?.required && <Button variant="ghost" size="sm" onClick={() => setBlockOpen(true)} title={t('Register a coupon written in the fiscal receipt book while the till was down')}><NotebookPen /> {t('From the receipt book')}</Button>}
+          {/* the cashier's own buttons stay in sight; the rest of the shift's tools wait under More */}
           <Button variant="ghost" size="sm" onClick={openRefund}><RotateCcw /> {t('Refund')} <Kbd>F9</Kbd></Button>
-          <Button variant="ghost" size="sm" onClick={() => setDialog('voucher')}><Ticket /> {t('Gift voucher')}</Button>
-          <Button variant="ghost" size="sm" onClick={() => setDialog('cash')}><Wallet /> {t('Cash and payments')}</Button>
-          <Button variant="ghost" size="sm" onClick={() => { setAutoPrint((a) => { prefSet('pos.autoprint', a ? '0' : '1'); return !a }) }} aria-pressed={autoPrint}
-            title={t('Print a receipt automatically after each sale')} className={cn(autoPrint && 'text-primary')}><Printer /> <span className="max-2xl:sr-only">{autoPrint ? t('Auto-print on') : t('Auto-print off')}</span></Button>
-          {waiters.restaurant && <Button variant="ghost" size="sm" onClick={() => setHandover(true)} title={t('The waiters\' takings')} className={cn(waiters.owing.length > 0 && 'text-warning')}>
-            <HandCoins /> <span className="max-2xl:sr-only">{t('Waiters|till')}</span>{waiters.owing.length > 0 && <span className="rounded-full bg-warning px-1.5 text-[11px] font-semibold text-warning-foreground">{waiters.owing.length}</span>}</Button>}
-          <Button variant="ghost" size="sm" onClick={() => void printX()} title={t('X-report: the shift so far, without closing it')}><ReceiptText /> <span className="max-2xl:sr-only">{t('X-report')}</span></Button>
-          <Button variant="ghost" size="sm" onClick={() => setSwitching(true)} title={t('Switch cashier')}><Users /> <span className="max-2xl:sr-only">{t('Switch cashier')}</span></Button>
+          {waiters.restaurant && waiters.owing.length > 0 && <Button variant="ghost" size="sm" onClick={() => setHandover(true)} title={t('The waiters\' takings')} className="text-warning">
+            <HandCoins /> <span className="max-2xl:sr-only">{t('Waiters|till')}</span><span className="rounded-full bg-warning px-1.5 text-[11px] font-semibold text-warning-foreground">{waiters.owing.length}</span></Button>}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild><Button variant="ghost" size="sm"><Ellipsis /> {t('More')}</Button></DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuItem onSelect={() => setDialog('voucher')}><Ticket /> {t('Sell a gift voucher')}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setDialog('cash')}><Wallet /> {t('Cash and payments')}</DropdownMenuItem>
+              {data.atk?.required && <DropdownMenuItem onSelect={() => setBlockOpen(true)}><NotebookPen /> {t('From the receipt book')}</DropdownMenuItem>}
+              {waiters.restaurant && <DropdownMenuItem onSelect={() => setHandover(true)}><HandCoins /> {t('The waiters\' takings')}{waiters.owing.length > 0 ? ` (${waiters.owing.length})` : ''}</DropdownMenuItem>}
+              <DropdownMenuItem onSelect={() => void printX()}><ReceiptText /> {t('X-report')}</DropdownMenuItem>
+              <DropdownMenuCheckboxItem checked={autoPrint} onCheckedChange={() => setAutoPrint((a) => { prefSet('pos.autoprint', a ? '0' : '1'); return !a })}>
+                <Printer className="mr-2 size-4" /> {t('Print a receipt automatically after each sale')}</DropdownMenuCheckboxItem>
+              <DropdownMenuItem onSelect={() => setSwitching(true)}><Users /> {t('Switch cashier')}</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="ghost" size="sm" onClick={() => void tillLock.lock()} title={t('Lock the till: it opens again with your PIN')}><Lock /> {t('Lock|till')}</Button>
           <Button variant="outline" size="sm" onClick={() => setDialog('close')}><LogOut /> {t('Close till')}</Button>
         </div>

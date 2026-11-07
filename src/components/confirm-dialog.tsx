@@ -6,19 +6,24 @@ import {
 import { Button } from '@/components/ui/button'
 import { t } from '@/i18n'
 
-export function ConfirmDialog({ trigger, title, description, confirmLabel, destructive, onConfirm }: {
-  trigger: React.ReactNode
+export function ConfirmDialog({ trigger, title, description, confirmLabel, destructive, onConfirm, open: openProp, onOpenChange }: {
+  /** the button that opens it; leave it out when the dialog is opened from elsewhere (open + onOpenChange) */
+  trigger?: React.ReactNode
   title: string
   description: React.ReactNode
   confirmLabel: string
   destructive?: boolean
   onConfirm: () => Promise<unknown> | void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }) {
-  const [open, setOpen] = React.useState(false)
+  const [own, setOwn] = React.useState(false)
+  const open = openProp ?? own
+  const setOpen = (o: boolean) => { setOwn(o); onOpenChange?.(o) }
   const [busy, setBusy] = React.useState(false)
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
+      {trigger && <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>}
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>

@@ -13,6 +13,7 @@ import { formatDate } from '@/lib/utils'
 import { DOC_TABLE, useCancelDocument, useDeleteDocument, type DocKind } from '../api'
 import { AccountingTab } from '@/features/finance/components/t-accounts'
 import { msg, t } from '@/i18n'
+import { MoreMenu } from '@/components/more-menu'
 
 /** stock documents that post to the ledger (transfers move stock without changing its value) */
 const GL_SOURCE: Partial<Record<DocKind, string>> = { receipts: 'goods_receipt', adjustments: 'stock_adjustment', 'landed-costs': 'landed_cost' }
@@ -69,24 +70,12 @@ export function DocumentShell({
         description={doc?.created_at ? t('Created {date}', { date: formatDate(doc.created_at, true) }) : undefined}
         actions={postable && (
           <Can perm={writePerm}>
-            {doc && editable && (
-              <>
-                <ConfirmDialog
-                  trigger={<Button variant="ghost" size="sm" className="text-destructive"><Trash2 /> {t('Delete')}</Button>}
-                  title={t('Delete draft {number}?', { number: doc.number })}
-                  description={t('The draft is removed from the lists. Nothing was recorded yet, so stock does not change.')}
-                  confirmLabel={t('Delete draft')} destructive
-                  onConfirm={async () => { await remove.mutateAsync(doc.id); navigate(list.href) }}
-                />
-                <ConfirmDialog
-                  trigger={<Button variant="ghost" size="sm"><Ban /> {t('Cancel document')}</Button>}
-                  title={t('Cancel {number}?', { number: doc.number })}
-                  description={t('It stays in the records as cancelled and can no longer be completed. Its number is kept.')}
-                  confirmLabel={t('Cancel document')}
-                  onConfirm={() => cancel.mutateAsync(doc.id)}
-                />
-              </>
-            )}
+            {doc && editable && <MoreMenu items={[
+              { label: t('Cancel document'), icon: Ban, onSelect: () => cancel.mutateAsync(doc.id),
+                confirm: { title: t('Cancel {number}?', { number: doc.number }), description: t('It stays in the records as cancelled and can no longer be completed. Its number is kept.') } },
+              { label: t('Delete draft'), icon: Trash2, destructive: true, separate: true, onSelect: async () => { await remove.mutateAsync(doc.id); navigate(list.href) },
+                confirm: { title: t('Delete draft {number}?', { number: doc.number }), description: t('The draft is removed from the lists. Nothing was recorded yet, so stock does not change.') } },
+            ]} />}
             {editable && <Button variant="outline" onClick={onSave} loading={saving}>{doc ? t('Save draft') : t('Create draft')}</Button>}
             <ConfirmDialog
               trigger={<Button disabled={saving || posting}><Send /> {postLabel}</Button>}

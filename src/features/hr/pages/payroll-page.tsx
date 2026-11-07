@@ -35,6 +35,7 @@ import {
   usePayrollRun, usePayrollRuns, usePayslips, usePostPayroll, useReopenPayroll, useRunItems, useSaveRunItem, type PayrollRun, type PayslipRow, type RegisterRow,
 } from '../api'
 import { PayslipDialog } from '../components/payslip'
+import { MoreMenu } from '@/components/more-menu'
 
 const monthName = (d: string) => formatMonth(`${d}T00:00:00`)
 
@@ -122,9 +123,11 @@ export function PayrollRunPage() {
       <PageHeader back={{ href: '/hr/payroll', label: t('Payroll') }} title={`${r.number} · ${monthName(r.period_start)}`} meta={<StatusBadge status={r.status} />}
         description={[r.country_rules === 'XK' ? t('Kosovo rules: pension 5% + 5%, income tax 0 / 8 / 10%') : t('Albanian rules: social 9.5% + 15%, health 1.7% + 1.7%, TAP'), t('pay date {date}', { date: formatDate(r.pay_date) })].join(' · ')}
         actions={<><Can perm="payroll.write">
-          {editable && <ConfirmDialog trigger={<Button variant="ghost" className="text-destructive"><X /> {t('Cancel payroll')}</Button>} title={t('Cancel {number}?', { number: r.number })}
-            description={t('The payroll and its payslips are set aside; nothing was booked.')} confirmLabel={t('Cancel payroll')} destructive onConfirm={async () => { await cancel.mutateAsync(r.id); toast.success(t('Payroll cancelled')) }} />}
-          {['calculated', 'approved'].includes(r.status) && <Button variant="outline" loading={reopen.isPending} onClick={async () => { await reopen.mutateAsync(r.id); toast.success(t('Back to draft')) }}><Undo2 /> {t('Back to draft')}</Button>}
+          <MoreMenu items={[
+            { label: t('Back to draft'), icon: Undo2, hidden: !['calculated', 'approved'].includes(r.status), onSelect: async () => { await reopen.mutateAsync(r.id); toast.success(t('Back to draft')) } },
+            { label: t('Cancel payroll'), icon: X, destructive: true, separate: true, hidden: !editable, onSelect: async () => { await cancel.mutateAsync(r.id); toast.success(t('Payroll cancelled')) },
+              confirm: { title: t('Cancel {number}?', { number: r.number }), description: t('The payroll and its payslips are set aside; nothing was booked.') } },
+          ]} />
           {editable && <Button variant={r.status === 'calculated' ? 'outline' : 'default'} loading={calc.isPending}
             onClick={async () => { const x = await calc.mutateAsync(r.id) as { employees: number }; toast.success(tn(x.employees, 'Payroll calculated for {n} person', 'Payroll calculated for {n} people')) }}>
             <Calculator /> {r.status === 'calculated' ? t('Recalculate') : t('Calculate payroll')}</Button>}
