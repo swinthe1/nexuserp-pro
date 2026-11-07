@@ -4,9 +4,9 @@
  * approves, blocks, renames, changes what a computer is, or removes it.
  */
 import type { ColumnDef } from '@tanstack/react-table'
-import { Ban, Check, CheckCheck, Monitor, MonitorSmartphone, Pencil, Trash2 } from 'lucide-react'
+import { Ban, Check, CheckCheck, Monitor, MonitorSmartphone, Pencil, ScreenShare, Settings2, Trash2 } from 'lucide-react'
 import * as React from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ColumnHeader, DataTable } from '@/components/data-table/data-table'
 import { PageHeader } from '@/components/page-header'
@@ -20,10 +20,10 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import { msg, t } from '@/i18n'
+import { msg, t, tServer } from '@/i18n'
 import { describeError } from '@/lib/errors'
 import { cn, formatDate } from '@/lib/utils'
-import { useDeviceDelete, useDeviceLimits, useDeviceSet, usePlatformDevices, type DeviceLimits, type PlatformDevice } from '../api'
+import { supportStart, useDeviceDelete, useDeviceLimits, useDeviceSet, usePlatformDevices, useSupportSessions, useSupportSettings, type DeviceLimits, type PlatformDevice, type SupportSession } from '../api'
 
 const STATUS: Record<PlatformDevice['status'], { label: string; tone: 'success' | 'warning' | 'destructive' }> = {
   active: { label: msg('Licensed'), tone: 'success' }, pending: { label: msg('Waiting for approval'), tone: 'warning' }, blocked: { label: msg('Blocked|device'), tone: 'destructive' },
@@ -36,6 +36,13 @@ function DevicesTable({ rows, loading, error, showClient, tableKey }: { rows: Pl
   const set = useDeviceSet()
   const del = useDeviceDelete()
   const [editing, setEditing] = React.useState<PlatformDevice | null>(null)
+  const navigate = useNavigate()
+  const [calling, setCalling] = React.useState<string | null>(null)
+  const connect = async (d: PlatformDevice) => {
+    setCalling(d.id)
+    try { const r = await supportStart(d.id); navigate(`/platform/support/${r.session}`, { state: r }) }
+    catch (e) { toast.error(tServer(describeError(e))) } finally { setCalling(null) }
+  }
   const act = (d: PlatformDevice, status: PlatformDevice['status']) => set.mutateAsync({ id: d.id, status })
     .then(() => toast.success(status === 'active' ? t('{pc} is licensed', { pc: d.label }) : t('{pc} is blocked', { pc: d.label })))
     .catch((e) => toast.error(describeError(e)))
@@ -60,6 +67,8 @@ function DevicesTable({ rows, loading, error, showClient, tableKey }: { rows: Pl
     { id: 'actions', meta: { label: '', noExport: true }, header: () => null, enableSorting: false,
       cell: ({ row: { original: d } }) => (
         <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+          {d.status === 'active' && <Button size="sm" variant="outline" loading={calling === d.id} title={t('See this computer\'s screen, once the person there allows it')}
+            onClick={() => void connect(d)}><ScreenShare /> {t('Connect|support')}</Button>}
           {d.status !== 'active' && <Button size="sm" onClick={() => void act(d, 'active')}><Check /> {d.status === 'pending' ? t('Approve') : t('Unblock')}</Button>}
           {d.status !== 'blocked' && <Button size="sm" variant="outline" onClick={() => void act(d, 'blocked')}><Ban /> {t('Block')}</Button>}
           <Button size="icon" variant="ghost" className="size-8" aria-label={t('Change')} onClick={() => setEditing(d)}><Pencil className="size-4" /></Button>
@@ -69,7 +78,7 @@ function DevicesTable({ rows, loading, error, showClient, tableKey }: { rows: Pl
           }}><Trash2 className="size-4" /></Button>
         </div>) },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [showClient])
+  ], [showClient, calling])
   return (
     <>
       <DataTable tableKey={tableKey} columns={columns} data={rows} isLoading={loading} error={error} getRowId={(d) => d.id} exportName={t('Computers')}
@@ -127,7 +136,79 @@ export function DevicesPage() {
           <TabsTrigger value="all">{t('All')}</TabsTrigger><TabsTrigger value="blocked">{t('Blocked|device')}</TabsTrigger></TabsList>
       </Tabs>
       <DevicesTable key={tab} rows={rows} loading={q.isLoading} error={q.error} showClient tableKey={`platform.devices.${tab}`} />
+      <SupportSessions />
     </>
+  )
+}
+
+const SESSION: Record<SupportSession['status'], { label: string; tone: 'success' | 'warning' | 'destructive' | 'secondary' }> = {
+  requested: { label: msg('Asked'), tone: 'warning' }, accepted: { label: msg('Watching'), tone: 'success' }, ended: { label: msg('Ended|support'), tone: 'secondary' },
+  declined: { label: msg('Refused'), tone: 'destructive' }, expired: { label: msg('No answer'), tone: 'secondary' }, failed: { label: msg('Did not connect'), tone: 'destructive' },
+}
+/** help at a distance: who saw which computer, when, for how long; and how the computers reach each other */
+export function SupportSessions({ company }: { company?: string }) {
+  const q = useSupportSessions(company)
+  const [settings, setSettings] = React.useState(false)
+  const rows = (q.data ?? []).slice(0, 15)
+  return (
+    <Card className="mt-6">
+      <CardHeader className="flex-row items-start justify-between space-y-0">
+        <div><CardTitle>{t('Help at a distance')}</CardTitle>
+          <CardDescription>{t('"Connect" on a licensed computer asks the person there to let you see the screen. Every request and answer is kept here and in the diary.')}</CardDescription></div>
+        {!company && <Button variant="outline" size="sm" onClick={() => setSettings(true)}><Settings2 /> {t('Connection settings')}</Button>}
+      </CardHeader>
+      <CardContent className="pt-0">
+        {rows.length === 0
+          ? <p className="text-[13px] text-muted-foreground">{t('No sessions yet.')}</p>
+          : <div className="overflow-x-auto"><table className="w-full text-[13px]">
+              <thead><tr className="border-b text-left text-[12px] text-muted-foreground">
+                <th className="py-2 pr-3 font-medium">{t('When')}</th>{!company && <th className="py-2 pr-3 font-medium">{t('Client')}</th>}
+                <th className="py-2 pr-3 font-medium">{t('Computer')}</th><th className="py-2 pr-3 font-medium">{t('By')}</th>
+                <th className="py-2 pr-3 font-medium">{t('State')}</th><th className="py-2 text-right font-medium">{t('Minutes')}</th></tr></thead>
+              <tbody>{rows.map((s) => (
+                <tr key={s.id} className="border-b last:border-0">
+                  <td className="py-2 pr-3 tabular">{formatDate(s.requested_at, true)}</td>
+                  {!company && <td className="py-2 pr-3">{s.company}</td>}
+                  <td className="py-2 pr-3">{s.device} · {s.device_name}</td>
+                  <td className="py-2 pr-3">{s.by ?? '—'}</td>
+                  <td className="py-2 pr-3"><Badge variant={SESSION[s.status].tone}>{t(SESSION[s.status].label)}</Badge>
+                    {s.ended_by === 'client' && s.status === 'ended' && <span className="ml-1.5 text-[11.5px] text-muted-foreground">{t('stopped at the computer')}</span>}</td>
+                  <td className="py-2 text-right tabular">{s.status === 'ended' || s.status === 'failed' ? (s.minutes ?? '—') : '—'}</td>
+                </tr>))}</tbody>
+            </table></div>}
+      </CardContent>
+      {settings && <ConnectionSettings onClose={() => setSettings(false)} />}
+    </Card>
+  )
+}
+
+/** STUN finds the way through most networks; a TURN server (e.g. coturn on the VPS) carries the picture when nothing else gets through */
+function ConnectionSettings({ onClose }: { onClose: () => void }) {
+  const s = useSupportSettings()
+  const [stun, setStun] = React.useState('')
+  const [turn, setTurn] = React.useState('')
+  const [user, setUser] = React.useState('')
+  const [pass, setPass] = React.useState('')
+  React.useEffect(() => { if (s.data) { setStun(s.data.stun_url); setTurn(s.data.turn_url ?? ''); setUser(s.data.turn_username ?? '') } }, [s.data])
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader><DialogTitle>{t('Connection settings')}</DialogTitle>
+          <DialogDescription>{t('How the console and the client\'s computer reach each other. Without a TURN server some networks (strict firewalls, mobile internet) do not let the picture through.')}</DialogDescription></DialogHeader>
+        <div className="grid gap-3">
+          <div className="grid gap-1.5"><Label htmlFor="sp-stun">STUN</Label><Input id="sp-stun" value={stun} onChange={(e) => setStun(e.target.value)} placeholder="stun:stun.l.google.com:19302" />{/* i18n-ignore */}</div>
+          <div className="grid gap-1.5"><Label htmlFor="sp-turn" optional>TURN</Label><Input id="sp-turn" value={turn} onChange={(e) => setTurn(e.target.value)} placeholder="turn:turn.dris-ks.com:3478" />{/* i18n-ignore */}</div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5"><Label htmlFor="sp-user" optional>{t('User')}</Label><Input id="sp-user" value={user} onChange={(e) => setUser(e.target.value)} autoComplete="off" /></div>
+            <div className="grid gap-1.5"><Label htmlFor="sp-pass" optional>{t('Password')}</Label><Input id="sp-pass" type="password" value={pass} onChange={(e) => setPass(e.target.value)} autoComplete="new-password"
+              placeholder={s.data?.has_turn_credential ? t('kept; write to change') : ''} /></div>
+          </div>
+        </div>
+        <DialogFooter><Button variant="ghost" onClick={onClose}>{t('Cancel')}</Button>
+          <Button loading={s.save.isPending} onClick={() => void s.save.mutateAsync({ stun_url: stun.trim(), turn_url: turn.trim(), turn_username: user.trim(), ...(pass ? { turn_credential: pass } : {}) })
+            .then(() => { toast.success(t('Saved')); onClose() }).catch((e) => toast.error(tServer(describeError(e))))}><CheckCheck /> {t('Save')}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -159,6 +240,7 @@ export function ClientDevicesTab({ company }: { company: string }) {
         </CardContent>
       </Card>
       <DevicesTable rows={rows} loading={q.isLoading} error={q.error} showClient={false} tableKey="platform.client.devices" />
+      <SupportSessions company={company} />
       {edit && limits && <LimitsDialog company={company} limits={limits} onClose={() => setEdit(false)} />}
     </div>
   )

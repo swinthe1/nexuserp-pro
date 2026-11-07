@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="sq"><head><meta charset="utf-8"><title>Ndihmë në distancë · DrisPRO</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; }
+  body { font: 600 13px/1 "Segoe UI", system-ui, sans-serif; color: #fff; -webkit-user-select: none; user-select: none; }
+  .bar { height: 100%; display: flex; align-items: center; gap: 10px; padding: 0 6px 0 14px; border-radius: 12px; background: #9b1c1c; -webkit-app-region: drag; box-shadow: 0 6px 18px rgba(80, 0, 0, .35); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #fff; animation: pulse 1.6s ease-in-out infinite; flex: none; }
+  @keyframes pulse { 50% { opacity: .35; } }
+  @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+  .text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .text small { font-weight: 400; opacity: .85; margin-left: 6px; }
+  .time { font-variant-numeric: tabular-nums; opacity: .9; }
+  button { -webkit-app-region: no-drag; height: 32px; padding: 0 14px; border: 0; border-radius: 8px; background: #fff; color: #9b1c1c; font: inherit; cursor: pointer; }
+  button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+</style></head>
+<body>
+<div class="bar" role="status">
+  <span class="dot" aria-hidden="true"></span>
+  <span class="text" id="text"></span>
+  <span class="time" id="time">00:00</span>
+  <button id="stop">Ndal</button>
+</div>
+<script>
+  const q = new URLSearchParams(location.search)
+  const who = q.get('who') || 'DrisPRO'
+  const t = document.getElementById('text')
+  t.append(`${who} po e sheh ekranin`)
+  const s = document.createElement('small'); s.textContent = 'vetëm shikim'; t.append(s)
+  const start = Date.now()
+  const pad = (n) => String(n).padStart(2, '0')
+  setInterval(() => { const x = Math.floor((Date.now() - start) / 1000); document.getElementById('time').textContent = `${pad(Math.floor(x / 60))}:${pad(x % 60)}` }, 1000)
+  document.getElementById('stop').onclick = () => window.drisproSupport.stop()
+</script>
+</body></html>

@@ -2,7 +2,7 @@
 // printing straight to the receipt and kitchen printers (no print window), opening the cash drawer of a
 // network printer, starting with Windows, full screen for tills. The application itself comes from the
 // server (always the latest version) and keeps working offline the same way as in the browser.
-const { app, BrowserWindow, ipcMain, shell, Menu, dialog, net: enet } = require('electron')
+const { app, BrowserWindow, ipcMain, shell, Menu, dialog, net: enet, session: esession, desktopCapturer, screen } = require('electron')
 const fs = require('fs')
 const net = require('net')
 const path = require('path')
@@ -43,6 +43,8 @@ function createWindow() {
   })
   if (settings.fullScreen) win.setFullScreen(true)
   win.once('ready-to-show', () => win.show())
+  // the hidden help window must not keep the program running once its window is closed
+  win.on('closed', () => { win = null; app.quit() })
   win.on('close', () => { if (!win.isFullScreen() && !win.isMaximized()) { settings.bounds = win.getBounds(); writeSettings(settings) } })
   // links to other sites open in the normal browser
   win.webContents.setWindowOpenHandler(({ url }) => {
@@ -261,8 +263,9 @@ function machine() {
 }
 const keep = (r) => {
   settings = { ...settings, device: { ...(settings.device || {}), id: r.id, label: r.label, number: r.number, name: r.name, kind: r.kind, status: r.status,
-    company: r.company, checkedAt: r.status === 'active' ? Date.now() : settings.device?.checkedAt ?? null } }
+    company: r.company, channel: r.channel ?? settings.device?.channel ?? null, checkedAt: r.status === 'active' ? Date.now() : settings.device?.checkedAt ?? null } }
   writeSettings(settings)
+  syncSupport()
   return settings.device
 }
 async function activateDevice(code, { kind, name, migrated = false }) {
@@ -275,7 +278,7 @@ async function pingDevice() {
   const d = settings.device
   if (!d?.id || !d.secret) return null
   const r = await rpc('device_ping', { p_device: d.id, p_secret: d.secret, p: machine() })
-  if (r.status === 'unknown') { settings = { ...settings, device: { secret: d.secret } }; writeSettings(settings); return { status: 'unknown' } }
+  if (r.status === 'unknown') { settings = { ...settings, device: { secret: d.secret } }; writeSettings(settings); syncSupport(); return { status: 'unknown' } }
   return { ...keep(r), licenceOk: r.licence_ok !== false }
 }
 function showDevice(state) { if (win) void win.loadFile(path.join(__dirname, 'device.html'), { query: { state, label: settings.device?.label ?? '', name: settings.device?.name ?? '', kind: settings.device?.kind ?? '' } }) }
@@ -310,6 +313,94 @@ handle('drispro:device-check', async () => {
     return d?.status ?? 'unknown'
   } catch { return 'offline' }
 })
+
+/* ------------------------------------------------------------------ help at a distance */
+// DrisPRO's support can ask to see this computer's screen. A hidden page listens on the computer's own
+// channel (from its licence); a request is shown only after the server confirmed it was made for this
+// computer a moment ago, and the screen is shared only if the person here allows it. While it is shared
+// a red bar stays on top of everything with "Stop"; nothing is shared without it. Step 1: viewing only.
+let supportWin = null
+let supportChannel = null
+let barWin = null
+let captureAllowedAt = 0
+let asking = false
+const SUPPORT_PARTITION = 'drispro-support'
+function syncSupport() {
+  const d = settings.device
+  const want = app.isReady() && d?.status === 'active' && d.channel && d.secret ? d.channel : null
+  if (want === supportChannel && (!want || (supportWin && !supportWin.isDestroyed()))) return
+  if (supportWin && !supportWin.isDestroyed()) supportWin.destroy()
+  supportWin = null; supportChannel = want
+  if (!want) return closeBar()
+  const ses = esession.fromPartition(SUPPORT_PARTITION)
+  // the screen goes out only right after the person allowed it, and only the main screen
+  ses.setDisplayMediaRequestHandler((_req, cb) => {
+    if (!captureAllowedAt || Date.now() - captureAllowedAt > 30_000) return cb({})
+    captureAllowedAt = 0
+    desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 0, height: 0 } }).then((list) => {
+      const main = String(screen.getPrimaryDisplay().id)
+      cb({ video: list.find((x) => x.display_id === main) || list[0] })
+    }).catch(() => cb({}))
+  })
+  ses.setPermissionRequestHandler((_wc, perm, ok) => ok(perm === 'display-capture' || perm === 'media'))
+  supportWin = new BrowserWindow({ show: false, width: 400, height: 300, skipTaskbar: true,
+    webPreferences: { partition: SUPPORT_PARTITION, preload: path.join(__dirname, 'support-preload.js'), contextIsolation: true, sandbox: true, backgroundThrottling: false } })
+  void supportWin.loadFile(path.join(__dirname, 'support.html'))
+}
+function showBar(who) {
+  closeBar()
+  const area = screen.getPrimaryDisplay().workArea
+  const width = Math.min(560, area.width - 40)
+  barWin = new BrowserWindow({ width, height: 46, x: Math.round(area.x + (area.width - width) / 2), y: area.y + 8, frame: false, resizable: false,
+    movable: true, minimizable: false, maximizable: false, fullscreenable: false, skipTaskbar: true, alwaysOnTop: true, transparent: true, hasShadow: false,
+    webPreferences: { preload: path.join(__dirname, 'support-preload.js'), contextIsolation: true, sandbox: true } })
+  barWin.setAlwaysOnTop(true, 'screen-saver')
+  barWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+  // closing the bar (Alt+F4) stops the sharing too
+  barWin.on('close', () => { barWin = null; if (supportWin && !supportWin.isDestroyed()) supportWin.webContents.send('support:stop') })
+  void barWin.loadFile(path.join(__dirname, 'support-bar.html'), { query: { who: who || 'DrisPRO' } })
+}
+function closeBar() { if (barWin && !barWin.isDestroyed()) { const b = barWin; barWin = null; b.removeAllListeners('close'); b.destroy() } }
+const fromSupport = (e) => !!supportWin && !supportWin.isDestroyed() && e.sender === supportWin.webContents
+const fromBar = (e) => !!barWin && !barWin.isDestroyed() && e.sender === barWin.webContents
+const supportEvent = (session, event) => rpc('device_support_event', { p_device: settings.device.id, p_secret: settings.device.secret, p_session: session, p_event: event }).catch(() => undefined)
+ipcMain.handle('support:config', (e) => {
+  if (!fromSupport(e) || !supportChannel) return null
+  return { url: `${LICENCE_API.replace(/^http/, 'ws')}/realtime/v1/websocket?apikey=${LICENCE_KEY}&vsn=1.0.0`, key: LICENCE_KEY,
+    channel: supportChannel, label: settings.device?.label ?? '', version: app.getVersion() }
+})
+ipcMain.handle('support:request', async (e, session) => {
+  if (!fromSupport(e) || asking || typeof session !== 'string') return { ok: false }
+  asking = true
+  try {
+    const r = await rpc('device_support_check', { p_device: settings.device.id, p_secret: settings.device.secret, p_session: session }).catch(() => null)
+    if (!r?.ok) return { ok: false }
+    const parent = win && !win.isDestroyed() ? win : undefined
+    if (parent) { if (parent.isMinimized()) parent.restore(); parent.show(); parent.flashFrame(true) }
+    const ac = new AbortController()
+    const timer = setTimeout(() => ac.abort(), 90_000)
+    const a = await dialog.showMessageBox(parent, {
+      type: 'question', title: 'Ndihmë në distancë', noLink: true, defaultId: 1, cancelId: 1, signal: ac.signal,
+      buttons: ['Lejo shikimin e ekranit', 'Refuzo'],
+      message: `${r.who || 'Mbështetja'} nga ${r.org || 'DrisPRO'} kërkon ta shohë ekranin e këtij kompjuteri.`,
+      detail: 'Do ta shohin vetëm ekranin: nuk mund të klikojnë, të shkruajnë ose të marrin skedarë. Sa të jetë e ndezur, lart shfaqet një shirit i kuq; me "Ndal" e mbyllni në çdo moment.\n\nLejojeni vetëm nëse e keni kërkuar ju ndihmën ose e prisni këtë thirrje.',
+    }).catch(() => ({ response: 1 }))
+    clearTimeout(timer)
+    if (parent) parent.flashFrame(false)
+    if (ac.signal.aborted) { void supportEvent(session, 'ended'); return { ok: false, unanswered: true } }
+    if (a.response !== 0) { void supportEvent(session, 'declined'); return { ok: false, declined: true } }
+    await supportEvent(session, 'accepted')
+    captureAllowedAt = Date.now()
+    return { ok: true, ice: r.ice, who: r.who }
+  } finally { asking = false }
+})
+ipcMain.handle('support:active', (e, a) => { if (fromSupport(e)) showBar(String(a?.who ?? '')) })
+ipcMain.handle('support:ended', (e, a) => {
+  if (!fromSupport(e)) return
+  closeBar(); captureAllowedAt = 0
+  if (a?.session && a.by !== 'admin') void supportEvent(String(a.session), 'ended')
+})
+ipcMain.handle('support:stop', (e) => { if ((fromBar(e) || fromSupport(e)) && supportWin && !supportWin.isDestroyed()) supportWin.webContents.send('support:stop') })
 
 /* ------------------------------------------------------------------ the program updates itself */
 // The pages come from the server and are always new; this checks the program around them (printers,
@@ -378,6 +469,7 @@ async function checkForUpdate(manual = false) {
 app.whenReady().then(() => {
   buildMenu()
   createWindow()
+  syncSupport()
   // a minute after the start (the till is open by then), then every 6 hours
   setTimeout(() => void checkForUpdate(), 60_000)
   setInterval(() => void checkForUpdate(), 6 * 3600_000)

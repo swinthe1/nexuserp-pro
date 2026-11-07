@@ -377,3 +377,36 @@ export function useDeviceLimits() {
     unwrap(await supabase.rpc('platform_device_limits', { p_company: company, p: p as never }))
   }, onSuccess: refresh })
 }
+
+/* ------------------------------------------------------------------ help at a distance */
+export type SupportStart = { session: string; channel: string; ice: RTCIceServer[]; mode: 'view' | 'control'; device: { id: string; label: string; name: string; kind: string; company: string | null }; who: string | null }
+export type SupportSession = { id: string; device: string; device_name: string; kind: string; company: string | null; company_id: string; mode: string
+  status: 'requested' | 'accepted' | 'declined' | 'ended' | 'failed' | 'expired'; by: string | null; requested_at: string; answered_at: string | null; ended_at: string | null
+  ended_by: string | null; note: string | null; minutes: number | null }
+export type SupportSettings = { stun_url: string; turn_url: string | null; turn_username: string | null; has_turn_credential: boolean }
+export async function supportStart(device: string) {
+  return unwrap(await supabase.rpc('platform_support_start', { p_device: device, p_mode: 'view' })) as unknown as SupportStart
+}
+export async function supportEnd(session: string, status: 'ended' | 'failed' = 'ended', note?: string) {
+  await supabase.rpc('platform_support_end', { p_session: session, p_status: status, p_note: note ?? undefined })
+}
+export function useSupportSessions(company?: string) {
+  return useQuery({
+    queryKey: ['platform', 'support', company ?? 'all'], refetchOnMount: 'always', refetchInterval: 30_000,
+    queryFn: async () => {
+      const r = await supabase.rpc('platform_support_sessions', company ? { p_company: company } : {})
+      if (r.error?.code === 'PGRST202') return [] as SupportSession[]   // a server not updated yet
+      return unwrap(r) as unknown as SupportSession[]
+    },
+  })
+}
+export function useSupportSettings() {
+  const qc = useQueryClient()
+  const q = useQuery({ queryKey: ['platform', 'support-settings'], queryFn: async () => unwrap(await supabase.rpc('platform_support_settings', {})) as unknown as SupportSettings })
+  const save = useMutation({
+    mutationFn: async (p: Partial<{ stun_url: string; turn_url: string; turn_username: string; turn_credential: string }>) =>
+      unwrap(await supabase.rpc('platform_support_settings', { p: p as never })) as unknown as SupportSettings,
+    onSuccess: (d) => qc.setQueryData(['platform', 'support-settings'], d),
+  })
+  return { ...q, save }
+}

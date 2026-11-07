@@ -16660,6 +16660,12 @@ export type Database = {
         }
         Returns: { bom_id: string | null; bom_code: string | null; variant_id: string | null; sku: string | null; name: string | null; quantity: number | null; bom_quantity: number | null }[]
       }
+      book: {
+        Args: {
+          b: unknown
+        }
+        Returns: string
+      }
       book_statement_line: {
         Args: {
           p_line: string

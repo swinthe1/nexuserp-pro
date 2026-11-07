@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="sq"><head><meta charset="utf-8"><title>DrisPRO · ndihmë në distancë</title></head>
+<body>
+<script>
+// Help at a distance, on the client's computer. This hidden page listens on the computer's own channel
+// (known only to this computer and DrisPRO's console). A request is shown to the person only after the
+// server confirmed it is real; only if she allows it is the screen shared, straight to the console
+// (WebRTC, encrypted end to end), and a bar on the screen says so and stops it with one click.
+const S = window.drisproSupport
+let ws = null, ref = 0, joinRef = null, topic = '', hb = null, wait = 1000, cfg = null
+let cur = null   // { session, pc, stream, queue: [] }
+const send = (m) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(m)) }
+const bc = (event, payload) => send({ topic, event: 'broadcast', payload: { type: 'broadcast', event, payload }, ref: String(++ref), join_ref: joinRef })
+
+async function connect() {
+  cfg = await S.config().catch(() => null)
+  if (!cfg) return setTimeout(connect, 60000)
+  topic = `realtime:support-${cfg.channel}`
+  ws = new WebSocket(cfg.url)
+  ws.onopen = () => {
+    wait = 1000; joinRef = String(++ref)
+    send({ topic, event: 'phx_join', ref: joinRef, join_ref: joinRef,
+      payload: { config: { broadcast: { self: false, ack: false }, presence: { key: '' }, postgres_changes: [], private: false }, access_token: cfg.key } })
+    clearInterval(hb); hb = setInterval(() => send({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: String(++ref) }), 25000)
+    // the console may already be waiting
+    bc('here', { device: cfg.label, version: cfg.version, busy: !!cur })
+  }
+  ws.onmessage = (m) => {
+    let d; try { d = JSON.parse(m.data) } catch { return }
+    if (d.topic === topic && d.event === 'broadcast' && d.payload) void onMessage(d.payload.event, d.payload.payload || {})
+    if (d.topic === topic && (d.event === 'phx_error' || d.event === 'phx_close')) ws.close()
+  }
+  ws.onclose = () => { clearInterval(hb); ws = null; setTimeout(connect, wait); wait = Math.min(wait * 2, 60000) }
+  ws.onerror = () => { try { ws.close() } catch { /* closing */ } }
+}
+
+async function onMessage(event, p) {
+  if (event === 'hello') return bc('here', { device: cfg.label, version: cfg.version, busy: !!cur })
+  if (!p.session) return
+  if (event === 'request') {
+    if (cur) { if (cur.session !== p.session) bc('busy', { session: p.session }); return }
+    cur = { session: p.session, pc: null, stream: null, queue: [] }
+    bc('ack', { session: p.session })
+    const r = await S.request(p.session).catch(() => ({ ok: false }))
+    if (!cur || cur.session !== p.session) return
+    if (!r.ok) { bc(r.declined ? 'declined' : r.unanswered ? 'unanswered' : 'invalid', { session: p.session }); cur = null; return }
+    try { await share(r) } catch (e) { bc('error', { session: p.session, message: String(e && e.message || e).slice(0, 200) }); await stop('failed') }
+    return
+  }
+  if (!cur || cur.session !== p.session) return
+  if (event === 'answer' && cur.pc) {
+    await cur.pc.setRemoteDescription(p.sdp)
+    for (const c of cur.queue.splice(0)) await cur.pc.addIceCandidate(c).catch(() => undefined)
+  } else if (event === 'ice' && p.from === 'viewer' && p.candidate) {
+    if (cur.pc && cur.pc.remoteDescription) await cur.pc.addIceCandidate(p.candidate).catch(() => undefined)
+    else cur.queue.push(p.candidate)
+  } else if (event === 'end') await stop('admin')
+}
+
+async function share(r) {
+  const session = cur.session
+  const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 12, max: 15 } }, audio: false })
+  if (!cur || cur.session !== session) { stream.getTracks().forEach((t) => t.stop()); return }
+  cur.stream = stream
+  const track = stream.getVideoTracks()[0]
+  track.contentHint = 'detail'
+  track.onended = () => void stop('client')
+  const pc = new RTCPeerConnection({ iceServers: r.ice || [] })
+  cur.pc = pc
+  const sender = pc.addTrack(track, stream)
+  try { const prm = sender.getParameters(); prm.encodings = [{ ...(prm.encodings?.[0] || {}), maxBitrate: 2_500_000 }]; await sender.setParameters(prm) } catch { /* default quality */ }
+  pc.onicecandidate = (e) => { if (e.candidate) bc('ice', { session, from: 'device', candidate: e.candidate.toJSON() }) }
+  pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed') void stop('failed') }
+  await pc.setLocalDescription(await pc.createOffer())
+  bc('offer', { session, sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp }, screen: { width: track.getSettings().width, height: track.getSettings().height } })
+  S.active({ session, who: r.who })
+}
+
+async function stop(by) {
+  if (!cur) return
+  const c = cur; cur = null
+  try { c.stream && c.stream.getTracks().forEach((t) => t.stop()) } catch { /* stopped */ }
+  try { c.pc && c.pc.close() } catch { /* closed */ }
+  if (by !== 'admin') bc('end', { session: c.session, by })
+  S.ended({ session: c.session, by })
+}
+
+S.onStop(() => void stop('client'))
+void connect()
+</script>
+</body></html>
