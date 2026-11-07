@@ -19419,6 +19419,10 @@ export type Database = {
         }
         Returns: Json
       }
+      public_contact: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       public_pricing: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -20034,6 +20038,12 @@ export type Database = {
           p_company: string
           p_from?: string
           p_to?: string
+        }
+        Returns: Json
+      }
+      sales_pulse: {
+        Args: {
+          p_company: string
         }
         Returns: Json
       }

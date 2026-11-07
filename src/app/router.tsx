@@ -180,6 +180,7 @@ function Home() {
 
 const PortalPage = lazyPage(() => import('@/features/portal/portal-page'), 'PortalPage')
 const DevelopersPage = lazyPage(() => import('@/features/public/developers-page'), 'DevelopersPage')
+const PackagesPage = lazyPage(() => import('@/features/public/packages-page'), 'PackagesPage')
 const PartnerInfoPage = lazyPage(() => import('@/features/public/partner-info-page'), 'PartnerInfoPage')
 const PlatformLayout = lazyPage(() => import('@/features/platform/console/layout'), 'PlatformLayout')
 const PlatformOverview = lazyPage(() => import('@/features/platform/console/overview-page'), 'OverviewPage')
@@ -216,6 +217,8 @@ const router = createBrowserRouter([
   { path: '/api', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><DevelopersPage /></React.Suspense></ErrorBoundary> },
   { path: '/te-dhenat/:token', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PartnerInfoPage /></React.Suspense></ErrorBoundary> },
   { path: '/developers', element: <Navigate to="/api" replace /> },
+  { path: '/paketat', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PackagesPage /></React.Suspense></ErrorBoundary> },
+  { path: '/packages', element: <Navigate to="/paketat" replace /> },
   // the customer's B2B portal: a private link, no account
   { path: '/b2b', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PortalPage /></React.Suspense></ErrorBoundary> },
   // the Super Admin's console: its own side menu and pages

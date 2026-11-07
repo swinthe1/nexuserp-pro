@@ -12,7 +12,8 @@ export function PublicHeader({ children }: { children?: React.ReactNode }) {
       <div aria-hidden className="pointer-events-none absolute -right-24 top-10 size-[460px] rounded-full bg-[#1583C8]/20 blur-[130px]" />
       <nav className="relative mx-auto flex max-w-6xl items-center gap-2 px-4 py-4 sm:px-6">
         <Link to="/login" className="mr-auto flex items-center gap-2"><img src="/favicon.svg" alt="" className="size-7" /> <Wordmark dark className="text-[19px]" /></Link>
-        <PublicLink to="/api">{t('For developers')}</PublicLink>
+        <PublicLink to="/paketat">{t('Packages|offer')}</PublicLink>
+        <PublicLink to="/api" className="hidden sm:block">{t('For developers')}</PublicLink>
         <LanguageToggle className="hidden border-white/20 bg-white/10 text-white sm:inline-flex" />
         <Link to="/login" className="ml-1 rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-[hsl(196_48%_11%)] hover:bg-white/90">{t('Sign in')}</Link>
       </nav>
@@ -21,8 +22,8 @@ export function PublicHeader({ children }: { children?: React.ReactNode }) {
   )
 }
 
-function PublicLink({ to, children }: { to: string; children: React.ReactNode }) {
-  return <NavLink to={to} className={({ isActive }) => cn('rounded-md px-3 py-1.5 text-sm text-white/75 hover:text-white', isActive && 'bg-white/10 text-white')}>{children}</NavLink>
+function PublicLink({ to, className, children }: { to: string; className?: string; children: React.ReactNode }) {
+  return <NavLink to={to} className={({ isActive }) => cn('rounded-md px-3 py-1.5 text-sm text-white/75 hover:text-white', isActive && 'bg-white/10 text-white', className)}>{children}</NavLink>
 }
 
 export function PublicFooter() {
