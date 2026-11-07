@@ -106,7 +106,7 @@ export function AppLayout() {
 
   const mobileNav = (
     <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-      <SheetContent side="left" className="sidebar-navy w-[280px] gap-3 border-sidebar-border bg-sidebar p-3 text-sidebar-foreground">
+      <SheetContent side="left" className="sidebar-mono w-[280px] gap-3 border-sidebar-border bg-[hsl(var(--sidebar-panel))] p-3 text-sidebar-foreground">
         <SheetTitle className="sr-only">{t('Main menu')}</SheetTitle>
         <div className="pr-8"><CompanySwitcher /></div>
         <UnitPicker />
