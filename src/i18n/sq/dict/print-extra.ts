@@ -1,6 +1,6 @@
 import type { Dict } from '../index'
 
-/** Vula, llogaritë bankare, numri me dyqanin, stoku me çmimet e shitjes */
+/** Vula, llogaritë bankare, numri me njësinë, stoku me çmimet e shitjes */
 export default {
   'Size of the logo': 'Madhësia e logos',
   'Stamp and signature': 'Vula dhe nënshkrimi',
@@ -10,8 +10,8 @@ export default {
   'SWIFT with the bank accounts': 'SWIFT te llogaritë bankare',
   'One under the other': 'Njëra nën tjetrën',
   'Side by side on one line': 'Në një rresht',
-  'Store or warehouse code in the number': 'Kodi i dyqanit ose njësisë në numër',
-  'Each store counts on its own, e.g. {example}.': 'Çdo dyqan numëron më vete, p.sh. {example}.',
+  'Store or warehouse code in the number': 'Kodi i njësisë në numër',
+  'Each store counts on its own, e.g. {example}.': 'Çdo njësi numëron më vete, p.sh. {example}.',
   'Account card': 'Kartela e kontos',
   'Partner balances': 'Bilanci i subjekteve',
   'No cash account yet': 'Ende pa konto arke',

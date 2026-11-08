@@ -3,6 +3,7 @@ import { CustomerReminders } from '@/features/finance/components/reminders'
 import { PartnerCards } from '@/features/finance/pages/cards-page'
 import { PortalLinks } from '@/features/portal/portal-links'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
 import { FileText, Pencil, Plus, ShoppingCart, Star, Trash2, Upload } from 'lucide-react'
 import * as React from 'react'
@@ -50,14 +51,33 @@ import { ErrorState } from '@/components/error-state'
 import { t, td } from '@/i18n'
 import { VENDOR_KINDS } from '../vendor-kinds'
 
-type PartnerRow = NonNullable<ReturnType<typeof usePartners>['data']>[number]
+type PartnerRow = NonNullable<ReturnType<typeof usePartners>['data']>[number] & { _bal?: Balance }
 const roleLabel = (r: string) => (r === 'both' ? t('Customer and vendor') : r === 'customer' ? t('Customer') : t('Vendor'))
+
+type Balance = { id: string; balance: number; late: number }
+/** what each customer owes us (or what we owe each vendor) and how much of it is late, from the books */
+function usePartnerBalances(side: 'customer' | 'vendor', on: boolean) {
+  const { companyId } = useCompany()
+  return useQuery({ queryKey: ['co', companyId, 'partner-balances', side], enabled: !!companyId && on, staleTime: 60_000,
+    queryFn: async () => (unwrap(await supabase.rpc('partner_balances', { p_company: companyId, p_side: side, p_date: todayISO() })) as unknown as { rows: Balance[] }).rows })
+}
+const debtState = (b: Balance | undefined) => (!b || Math.abs(b.balance) < 0.005 ? 'none' : b.late > 0.005 ? 'late' : 'open')
 
 export function PartnersPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const role = params.get('role')
   const partners = usePartners()
+  const { can } = useCompany()
+  const side = role === 'vendor' ? 'vendor' : 'customer'
+  const money = can('invoicing.read')
+  const balances = usePartnerBalances(side, money)
+  // the balances go into the rows themselves: the table keeps each row's values until its data changes
+  const rows = React.useMemo<PartnerRow[] | undefined>(() => {
+    if (!partners.data) return undefined
+    const byId = new Map<string, Balance>((balances.data ?? []).map((b: Balance) => [b.id, b]))
+    return partners.data.map((p) => ({ ...p, _bal: byId.get(p.id) }))
+  }, [partners.data, balances.data])
   const columns = React.useMemo<ColumnDef<PartnerRow>[]>(() => [
     { accessorKey: 'code', header: ({ column }) => <ColumnHeader column={column} title={t('Code')} />, meta: { label: t('Code') }, cell: ({ getValue }) => <span className="text-muted-foreground">{getValue() as string}</span> },
     {
@@ -73,21 +93,33 @@ export function PartnersPage() {
     { accessorKey: 'phone', header: t('Phone'), meta: { label: t('Phone') }, cell: ({ getValue }) => (getValue() as string) || '—' },
     { id: 'price_list', accessorFn: (p) => td((p.price_list as { name: string } | null)?.name ?? ''), filterFn: inFilter, header: t('Price list'), meta: { label: t('Price list') }, cell: ({ getValue }) => (getValue() as string) || <span className="text-muted-foreground">{t('Default')}</span> },
     { id: 'salesperson', accessorFn: (p) => (p.salesperson as { full_name: string | null } | null)?.full_name ?? '', filterFn: inFilter, header: t('Salesperson'), meta: { label: t('Salesperson') } },
+    ...(money ? [
+      { id: 'balance', accessorFn: (p: PartnerRow) => p._bal?.balance ?? 0,
+        header: ({ column }) => <ColumnHeader column={column} title={side === 'vendor' ? t('We owe (with VAT)') : t('Owes us (with VAT)')} />,
+        meta: { label: side === 'vendor' ? t('We owe (with VAT)') : t('Owes us (with VAT)'), align: 'right' },
+        cell: ({ getValue }) => { const v = getValue() as number; return Math.abs(v) < 0.005 ? <span className="text-muted-foreground">—</span> : <span className="tabular font-medium">{formatMoney(v)}</span> } },
+      { id: 'late', accessorFn: (p: PartnerRow) => p._bal?.late ?? 0,
+        header: ({ column }) => <ColumnHeader column={column} title={t('Overdue')} />, meta: { label: t('Overdue'), align: 'right' },
+        cell: ({ getValue }) => { const v = getValue() as number; return v < 0.005 ? <span className="text-muted-foreground">—</span> : <span className="tabular font-medium text-destructive">{formatMoney(v)}</span> } },
+      { id: 'debt', accessorFn: (p: PartnerRow) => debtState(p._bal), filterFn: inFilter, enableSorting: false, header: t('Debt'),
+        meta: { label: t('Debt'), exportValue: (p: PartnerRow) => ({ none: t('Nothing open'), open: t('Has to pay'), late: t('Overdue') })[debtState(p._bal)] } },
+    ] as ColumnDef<PartnerRow>[] : []),
     { accessorKey: 'credit_limit', header: ({ column }) => <ColumnHeader column={column} title={t('Credit limit (with VAT)')} />, meta: { label: t('Credit limit (with VAT)'), align: 'right' }, cell: ({ getValue }) => getValue() == null ? '—' : <span className="tabular">{formatMoney(getValue() as number)}</span> },
-  ], [])
-  const lists = [...new Set((partners.data ?? []).map((p) => (p.price_list as { name: string } | null)?.name).filter(Boolean).map((n) => td(n)))] as string[]
+  ], [money, side])
+  const lists = [...new Set((rows ?? []).map((p) => (p.price_list as { name: string } | null)?.name).filter(Boolean).map((n) => td(n)))] as string[]
   const newButton = <Can perm="partners.write"><Button variant="outline" asChild><Link to="/settings/import?kind=partners"><Upload /> {t('Import')}</Link></Button><Button asChild><Link to={role === 'vendor' ? '/partners/new?vendor=1' : '/partners/new'}><Plus /> {role === 'vendor' ? t('New vendor') : t('New customer')}</Link></Button></Can>
   return (
     <>
       <PageHeader title={role === 'vendor' ? t('Vendors') : role === 'customer' ? t('Customers') : t('Customers and vendors')}
         description={t('Customers and vendors share one record: contacts, addresses, payment terms, special prices and vendor prices.')} actions={newButton} />
       <DataTable key={role ?? 'all'} tableKey="partners" columns={columns}
-        initialFilters={role ? [{ id: 'role', value: role === 'vendor' ? ['vendor', 'both'] : ['customer', 'both'] }] : undefined} data={partners.data} isLoading={partners.isLoading} error={partners.error}
-        getRowId={(p) => p.id} exportName="partners" searchPlaceholder={t('Name, code, NIPT, email…')} initialHidden={['phone']}
+        initialFilters={role ? [{ id: 'role', value: role === 'vendor' ? ['vendor', 'both'] : ['customer', 'both'] }] : undefined} data={rows} isLoading={partners.isLoading} error={partners.error}
+        getRowId={(p) => p.id} exportName="partners" searchPlaceholder={t('Name, code, NIPT, email…')} initialHidden={['phone', 'debt', 'salesperson']}
         onRowClick={(p) => navigate(`/partners/${p.id}`)}
         facets={[
           { columnId: 'role', title: t('Type'), options: [{ value: 'customer', label: t('Customer') }, { value: 'vendor', label: t('Vendor') }, { value: 'both', label: t('Both') }] },
           { columnId: 'price_list', title: t('Price list'), options: lists.map((l) => ({ value: l, label: l })) },
+          ...(money ? [{ columnId: 'debt', title: t('Debt'), options: [{ value: 'late', label: t('Overdue') }, { value: 'open', label: side === 'vendor' ? t('We have to pay') : t('Has to pay') }, { value: 'none', label: t('Nothing open') }] }] : []),
         ]}
         empty={role === 'vendor'
           ? { title: t('No vendors yet'), description: t('Add the companies you buy from.'), action: newButton }

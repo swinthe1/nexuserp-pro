@@ -13,7 +13,7 @@ export default {
   "{amount} stays on the card as paid in advance.": "{amount} mbeten në kartelë si paradhënie.",
   "Expense recorded": "Shpenzimi u regjistrua",
   "Cash from the drawer to a supplier. It goes onto the supplier's card at once: on the invoices you tick, otherwise the oldest first.": "Para nga sirtari për një furnitor. Hyn menjëherë në kartelën e furnitorit: te faturat që shënon, përndryshe te më të vjetrat së pari.",
-  "Cash from the drawer for an expense of the shop. It goes into the books with the shop. Keep the receipt.": "Para nga sirtari për një shpenzim të dyqanit. Hyn në kontabilitet me njësinë. Ruaje kuponin.",
+  "Cash from the drawer for an expense of the shop. It goes into the books with the shop. Keep the receipt.": "Para nga sirtari për një shpenzim të njësisë. Hyn në kontabilitet me njësinë. Ruaje kuponin.",
   "Payments from the till are switched off. They are made in Finance.": "Pagesat nga arka janë të ndalura. Bëhen te Financat.",
   "Owed: {amount}": "Borxh: {amount}",
   "In the drawer: {amount}": "Në sirtar: {amount}",

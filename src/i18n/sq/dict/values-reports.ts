@@ -19,7 +19,7 @@ export default {
   '{amount} with VAT from {n} receipts today, from the old program. Updates by itself.': '{amount} me TVSH nga {n} kupona sot, nga programi i vjetër. Përditësohet vetë.',
   '{amount} this month, with VAT': '{amount} këtë muaj, me TVSH',
   '{amount} in {n} stores and warehouses, at purchase price (average cost) without VAT. Open one to see its items.':
-    '{amount} në {n} dyqane dhe magazina, me çmim blerjeje (kosto mesatare) pa TVSH. Hapni njërën për të parë artikujt.',
+    '{amount} në {n} njësi, me çmim blerjeje (kosto mesatare) pa TVSH. Hapni njërën për të parë artikujt.',
   'At purchase price (average cost), without VAT. Open one to see its items.': 'Me çmim blerjeje (kosto mesatare), pa TVSH. Hapni njërën për të parë artikujt.',
 
   // financa

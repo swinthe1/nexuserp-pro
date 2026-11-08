@@ -31,7 +31,7 @@ import { formatDate, formatMoney, formatMonth, formatQty, humanize, num, todayIS
 import { useBankAccounts } from '@/features/finance/api'
 import { AccountingTab } from '@/features/finance/components/t-accounts'
 import {
-  useApprovePayroll, useCalculatePayroll, useCancelPayroll, useCreatePayrollRun, useDeleteRunItem, useEmployees, usePayPayroll, usePayrollRegister,
+  useApprovePayroll, usePayrollOtherApprovers, useCalculatePayroll, useCancelPayroll, useCreatePayrollRun, useDeleteRunItem, useEmployees, usePayPayroll, usePayrollRegister,
   usePayrollRun, usePayrollRuns, usePayslips, usePostPayroll, useReopenPayroll, useRunItems, useSaveRunItem, type PayrollRun, type PayslipRow, type RegisterRow,
 } from '../api'
 import { PayslipDialog } from '../components/payslip'
@@ -104,6 +104,7 @@ export function PayrollRunPage() {
   const slips = usePayslips(id)
   const calc = useCalculatePayroll()
   const approve = useApprovePayroll()
+  const others = usePayrollOtherApprovers()
   const reopen = useReopenPayroll()
   const post = usePostPayroll()
   const cancel = useCancelPayroll()
@@ -117,6 +118,8 @@ export function PayrollRunPage() {
   const rows = [...(slips.data ?? [])].sort((a, b) => (a.employee?.full_name ?? '').localeCompare(b.employee?.full_name ?? ''))
   const slip = rows.find((s) => s.id === slipId)
   const selfCalculated = r.calculated_by === user?.id
+  const alone = others.data === 0          // nobody else may approve payroll here
+  const blocked = selfCalculated && !alone
   const editable = ['draft', 'calculated'].includes(r.status)
   return (
     <>
@@ -135,10 +138,12 @@ export function PayrollRunPage() {
             description={t('Salaries and employer contributions are booked as expenses; net pay, contributions and income tax become amounts to pay. Employees can then see their payslips.')}
             confirmLabel={t('Make final and book')} onConfirm={async () => { await post.mutateAsync(r.id); toast.success(t('Payroll booked')) }} />}
           {r.status === 'posted' && <Button onClick={() => setPayOpen(true)}><Banknote /> {t('Pay salaries')}</Button>}
-        </Can>{r.status === 'calculated' && <Can perm="payroll.approve"><Button className="ml-2" loading={approve.isPending} disabled={selfCalculated}
-            title={selfCalculated ? t('Someone other than the person who calculated it must approve') : undefined}
+        </Can>{r.status === 'calculated' && <Can perm="payroll.approve"><Button className="ml-2" loading={approve.isPending} disabled={blocked || others.isLoading}
+            title={blocked ? t('Someone other than the person who calculated it must approve') : undefined}
             onClick={async () => { await approve.mutateAsync(r.id); toast.success(t('Payroll approved')) }}><Stamp /> {t('Approve payroll')}</Button></Can>}</>} />
-      {r.status === 'calculated' && selfCalculated && <p className="-mt-2 mb-4 text-[13px] text-muted-foreground">{t('You calculated this payroll, so someone else has to approve it.')}</p>}
+      {r.status === 'calculated' && blocked && <p className="-mt-2 mb-4 text-[13px] text-muted-foreground">{t('You calculated this payroll, so someone else has to approve it.')}</p>}
+      {r.status === 'calculated' && selfCalculated && alone && <p className="-mt-2 mb-4 text-[13px] text-muted-foreground">{t('Nobody else in the company may approve payroll, so you can approve it yourself. The payroll will show that.')}</p>}
+      {r.self_approved && ['approved', 'posted', 'paid'].includes(r.status) && <p className="-mt-2 mb-4 text-[13px] text-muted-foreground">{t('Approved by the person who calculated it, the only one who may approve payroll.')}</p>}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <StatCard label={t('Gross pay')} value={formatMoney(r.total_gross)} hint={tn(num(r.employee_count), '{n} person', '{n} people')} />

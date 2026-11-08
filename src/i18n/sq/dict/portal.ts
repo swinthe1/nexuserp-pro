@@ -71,7 +71,7 @@ export default {
 
   // cilësimet dhe API
   'B2B portal and API': 'Portali B2B dhe API',
-  'Let customers order on their own, and connect a web shop or another program to DrisPRO.': 'Lejoni klientët të porosisin vetë dhe lidhni një dyqan online ose program tjetër me DrisPRO.',
+  'Let customers order on their own, and connect a web shop or another program to DrisPRO.': 'Lejoni klientët të porosisin vetë dhe lidhni një faqe të shitjes online ose program tjetër me DrisPRO.',
   'The link for each customer is made on the customer’s page, under “B2B portal”. They see only their own prices, orders and invoices.':
     'Lidhja për çdo klient bëhet te faqja e klientit, te “Portali B2B”. Ata shohin vetëm çmimet, porositë dhe faturat e tyre.',
   'Confirm portal orders at once': 'Konfirmo menjëherë porositë nga portali',
@@ -94,7 +94,7 @@ export default {
     'Kopjojeni tani: për siguri shfaqet vetëm kësaj here. Mbajeni në serverin e programit tjetër, kurrë në një faqe interneti.',
   'Give it to the program that will use it.': 'Jepjani programit që do ta përdorë.',
   'API key': 'Çelësi API',
-  'e.g. the web shop': 'p.sh. dyqani online',
+  'e.g. the web shop': 'p.sh. faqja e shitjes online',
   'What it may do': 'Çfarë mund të bëjë',
   'Make the key': 'Bëj çelësin',
   'Products, prices and stock': 'Artikujt, çmimet dhe stoku',

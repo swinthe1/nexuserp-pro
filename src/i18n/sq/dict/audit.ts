@@ -21,7 +21,7 @@ export default {
   'enum:boms': 'Recetat e prodhimit',
   'enum:business_partners': 'Klientët dhe furnitorët',
   'enum:carriers': 'Transportuesit',
-  'enum:channel_product_links': 'Produktet e dyqanit online',
+  'enum:channel_product_links': 'Produktet e shitjes online',
   'enum:companies': 'Profili i kompanisë',
   'enum:company_account_defaults': 'Llogaritë për regjistrimet automatike',
   'enum:company_members': 'Anëtarët',

@@ -23,6 +23,7 @@ export const GUIDES_D: Record<string, Guide> = {
       { sq: 'Te "Pozicionet" shkruaj titujt e punës: ato dalin në fletëpagesë dhe në listën për tatimet.', en: 'Under "Positions" type the job titles: they show on payslips and on the payroll list for the tax office.' },
       { sq: 'Te "Llojet e lejeve" cakto "Ditë në vit" (0 do të thotë pa kufi, p.sh. pushimi mjekësor) dhe nëse leja paguhet.', en: 'Under "Leave types" set "Days per year" (0 means no limit, e.g. sick leave) and whether the leave is paid.' },
       { sq: 'Te "Festat zyrtare" kliko "Shto festë" për çdo festë të vitit.', en: 'Under "Public holidays" click "Add holiday" for each holiday of the year.' },
+      { sq: 'Festat zyrtare shtohen vetë për çdo vit (Pashkët llogariten, festat në fundjavë zhvendosen). Në dhjetor vjen një detyrë për t\'i kontrolluar festat e vitit të ri dhe për të shtuar Bajramet kur të shpallen.', en: 'Public holidays are added by themselves for every year (Easter is worked out, weekend holidays are moved). In December a task comes to check the new year\'s holidays and add the Bajrams once announced.' },
     ],
     mistakes: [
       { sq: 'Kur festa bie në fundjavë, shkruaj ditën ku zhvendoset pushimi, jo të shtunën ose të dielën.', en: 'When a holiday falls on a weekend, enter the day it moves to, not the Saturday or Sunday.' },
@@ -102,6 +103,7 @@ export const GUIDES_D: Record<string, Guide> = {
       { sq: 'Dikush tjetër, jo ai që e llogariti, klikon "Mirato listëpagesën".', en: 'Someone other than the person who calculated it clicks "Approve payroll".' },
       { sq: 'Kliko "Bëje përfundimtare dhe kontabilizo", pastaj "Paguaj pagat" dhe zgjidh llogarinë bankare.', en: 'Click "Make final and book", then "Pay salaries" and choose the bank account.' },
       { sq: 'Te "Lista për deklaratën" eksporto listën për deklaratën mujore të pagave.', en: 'Under "Declaration list" export the list for the monthly payroll declaration.' },
+      { sq: 'Miraton dikush tjetër, jo ai që i llogariti pagat. Kur në kompani askush tjetër nuk ka të drejtë miratimi (pronari punon vetë), i njëjti person mund t\'i miratojë dhe listëpagesa e shënon këtë.', en: 'Someone other than the person who calculated it approves. When nobody else in the company may approve (the owner works alone), the same person may approve and the payroll records that.' },
     ],
     mistakes: [
       { sq: 'Ai që e llogarit listëpagesën nuk mund ta miratojë vetë: duhet dikush tjetër me të drejtë miratimi.', en: 'The person who calculated the payroll cannot approve it: someone else with approval rights must.' },
@@ -179,7 +181,7 @@ export const GUIDES_D: Record<string, Guide> = {
     steps: [
       { sq: 'Kliko lapsin te dokumenti që do të ndryshosh.', en: 'Click the pencil on the document you want to change.' },
       { sq: 'Ndrysho "Parashtesa", "Shifrat" dhe, nëse do, "Viti në numër"; poshtë sheh si del numri i radhës.', en: 'Change the "Prefix", "Digits" and, if you like, "Year in the number"; below you see how the next number looks.' },
-      { sq: 'Me "Kodi i dyqanit ose njësisë në numër" çdo dyqan numëron më vete.', en: 'With "Store or warehouse code in the number" each store counts on its own.' },
+      { sq: 'Me "Kodi i njësisë në numër" çdo njësi numëron më vete.', en: 'With "Store or warehouse code in the number" each store counts on its own.' },
       { sq: 'Kur vazhdon një seri nga programi i vjetër, rrite "Numri i radhës" dhe kliko "Ruaj numërimin".', en: 'When continuing a series from the old program, move "Next number" forward and click "Save numbering".' },
     ],
     mistakes: [{ sq: '"Numri i radhës" vetëm rritet, nuk zbret. Numërimi që rifillon çdo vit duhet ta ketë vitin në numër, përndryshe numrat e dy viteve do të ishin të njëjtë.', en: '"Next number" only moves forward. Numbering that restarts every year must show the year, or two years would get the same numbers.' }],

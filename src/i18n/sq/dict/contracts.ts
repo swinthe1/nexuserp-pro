@@ -124,7 +124,7 @@ const dict: Record<string, string> = {
   'Contracts already written from it keep their text.': 'Kontratat e shkruara prej tij e mbajnë tekstin e tyre.',
   'Edit model': 'Ndrysho modelin',
   'Plain text. A blank line starts a paragraph, a line starting with "Neni" is a heading, the first line is the title. Click a field to put it where the cursor is.': 'Tekst i thjeshtë. Rreshti bosh fillon paragraf, rreshti që fillon me "Neni" është titull, rreshti i parë është titulli i dokumentit. Kliko një fushë që të vendoset aty ku është kursori.',
-  'e.g. Contract for shop staff': 'p.sh. Kontrata për stafin e dyqanit',
+  'e.g. Contract for shop staff': 'p.sh. Kontrata për stafin e marketit',
   'The model text': 'Teksti i modelit',
   'Model saved': 'Modeli u ruajt',
   'Notice of ending': 'Njoftim për ndërprerje',

@@ -192,27 +192,27 @@ export const GUIDES_A: Record<string, Guide> = {
       { sq: 'Porositë me "Pret ju" presin vendimin tënd: hapi dhe konfirmoji.', en: 'Orders marked "Waits for you" wait for your decision: open and confirm them.' },
     ],
     mistakes: [
-      { sq: 'Paratë e arkëtuara mbeten në çantën e agjentit derisa t\'i dorëzojë: merri në sefin e dyqanit te faqja Sefi.', en: 'Collected cash stays in the agent\'s bag until they hand it in: take it into the shop safe on the Safe page.' },
-      { sq: 'Vizita e regjistruar larg dyqanit të klientit del me ngjyrë portokalli: kontrolloje.', en: 'A visit recorded far from the customer\'s shop shows in orange: check it.' },
+      { sq: 'Paratë e arkëtuara mbeten në çantën e agjentit derisa t\'i dorëzojë: merri në sefin e njësisë te faqja Sefi.', en: 'Collected cash stays in the agent\'s bag until they hand it in: take it into the shop safe on the Safe page.' },
+      { sq: 'Vizita e regjistruar larg vendndodhjes së klientit del me ngjyrë portokalli: kontrolloje.', en: 'A visit recorded far from the customer\'s shop shows in orange: check it.' },
     ],
     related: [{ href: '/agent', label: { sq: 'Agjenti', en: 'Agent app' } }, { href: '/safe', label: { sq: 'Sefi', en: 'Safe' } }],
   },
   '/ecommerce': {
-    what: { sq: 'Dyqani online: dyqanet në internet dhe tregjet online. Porositë e tyre vijnë këtu si porosi shitjeje dhe stoku u kthehet atyre.', en: 'Web shop: online stores and marketplaces. Their orders arrive here as sales orders and stock levels go back to them.' },
+    what: { sq: 'Shitja online: faqet e shitjes online dhe tregjet online. Porositë e tyre vijnë këtu si porosi shitjeje dhe stoku u kthehet atyre.', en: 'Web shop: online stores and marketplaces. Their orders arrive here as sales orders and stock levels go back to them.' },
     steps: [
-      { sq: 'Kliko "Shto kanal", zgjidh platformën (Shopify, WooCommerce…), adresën e dyqanit dhe njësinë nga niset malli.', en: 'Click "Add channel", choose the platform (Shopify, WooCommerce…), the store address and the unit it ships from.' },
-      { sq: 'Hape kanalin dhe kliko "Lidh të gjitha sipas kodit", që artikujt të përputhen me ato të dyqanit.', en: 'Open the channel and click "Link all by SKU" so the items line up with the shop\'s.' },
+      { sq: 'Kliko "Shto kanal", zgjidh platformën (Shopify, WooCommerce…), adresën e faqes online dhe njësinë nga niset malli.', en: 'Click "Add channel", choose the platform (Shopify, WooCommerce…), the store address and the unit it ships from.' },
+      { sq: 'Hape kanalin dhe kliko "Lidh të gjitha sipas kodit", që artikujt të përputhen me ato të faqes online.', en: 'Open the channel and click "Link all by SKU" so the items line up with the shop\'s.' },
       { sq: 'Te "Cilësimet" zgjidh listën e çmimeve, klientin për porositë pa email dhe çka sinkronizohet; kliko "Ruaj cilësimet".', en: 'Under "Settings" choose the price list, the customer for orders without an email and what is synced; click "Save settings".' },
-      { sq: 'Me "Dërgo një porosi prove" e provon importin para se të nisë dyqani i vërtetë.', en: 'With "Send a test order" try the import before the real shop starts.' },
+      { sq: 'Me "Dërgo një porosi prove" e provon importin para se të nisë faqja online e vërtetë.', en: 'With "Send a test order" try the import before the real shop starts.' },
     ],
     mistakes: [{ sq: 'Porosia që dështon e mban arsyen (p.sh. artikull i palidhur): rregulloje dhe kliko "Provo përsëri".', en: 'A failed order keeps its reason (e.g. an unlinked item): fix it and click "Retry".' }],
-    after: { sq: 'Çdo porosi importohet vetëm një herë, si porosi shitjeje; gjendja e lirë e artikujve të lidhur i dërgohet dyqanit ("Sinkronizo stokun tani" e bën menjëherë).', en: 'Each order is imported only once, as a sales order; the available stock of linked items is sent to the shop ("Sync stock now" does it at once).' },
+    after: { sq: 'Çdo porosi importohet vetëm një herë, si porosi shitjeje; gjendja e lirë e artikujve të lidhur i dërgohet faqes online ("Sinkronizo stokun tani" e bën menjëherë).', en: 'Each order is imported only once, as a sales order; the available stock of linked items is sent to the shop ("Sync stock now" does it at once).' },
     related: [{ href: '/sales/orders', label: { sq: 'Porositë', en: 'Sales orders' } }],
   },
 
   /* ------------------------------------------------------------------ the till extras */
   '/pos/loyalty': {
-    what: { sq: 'Kartat e zbritjes: zbritje ose pikë për klientët, në çdo dyqan të kompanisë. Arka i zbaton vetë.', en: 'Loyalty cards: a discount or points for customers, in every store of the company. The till applies them by itself.' },
+    what: { sq: 'Kartat e zbritjes: zbritje ose pikë për klientët, në çdo njësi të kompanisë. Arka i zbaton vetë.', en: 'Loyalty cards: a discount or points for customers, in every store of the company. The till applies them by itself.' },
     steps: [
       { sq: 'Te "Llojet e kartelave" kliko "Lloj i ri kartele" dhe zgjidh çfarë jep: zbritje, pikë ose zbritje për punëtorë.', en: 'Under "Types of card" click "New type of card" and choose what it gives: a discount, points or a staff discount.' },
       { sq: 'Te "Kartelat" kliko "Kartelë e re", zgjidh llojin, shkruaj emrin dhe telefonin e klientit dhe kliko "Krijo kartelën".', en: 'Under "Cards" click "New card", choose the type, type the customer\'s name and phone and click "Make the card".' },
@@ -230,7 +230,7 @@ export const GUIDES_A: Record<string, Guide> = {
     what: { sq: 'Kamarierët: llogaritë, tavolinat, mysafirët dhe xhiroja e secilit, me zbritjet dhe artikujt e anuluar pasi shkuan në kuzhinë.', en: 'Waiters: bills, tables, guests and takings for each one, with the discounts and the items cancelled after they reached the kitchen.' },
     steps: [
       { sq: 'Zgjidh periudhën ("Sot", "Dje", "Këtë javë", "Këtë muaj") ose shkruaj datat te "Nga" dhe "Deri".', en: 'Choose the period ("Today", "Yesterday", "This week", "This month") or type the dates under "From" and "To".' },
-      { sq: 'Zgjidh dyqanin, ose lëre "Të gjitha njësitë".', en: 'Choose the store, or leave "All stores".' },
+      { sq: 'Zgjidh njësinë, ose lëre "Të gjitha njësitë".', en: 'Choose the store, or leave "All stores".' },
       { sq: 'Krahaso kamarierët: xhiron për mysafir, zbritjet dhe kohën mesatare në tavolinë.', en: 'Compare the waiters: takings per guest, discounts and the average table time.' },
     ],
     mistakes: [

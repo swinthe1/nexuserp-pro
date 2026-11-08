@@ -7,7 +7,7 @@ export default {
   "Are we on plan? Customers, average receipt, margin, losses, stock turnover and the tills, against the period before.":
     "A jemi në plan? Klientët, kuponi mesatar, marzhi, humbjet, qarkullimi i stokut dhe arkat, krahasuar me periudhën e mëparshme.",
   "The shop's numbers against its plan and the period before: customers, average receipt, margin, losses, stock and the tills. Amounts without VAT.":
-    "Shifrat e dyqanit kundrejt planit dhe periudhës së mëparshme: klientët, kuponi mesatar, marzhi, humbjet, stoku dhe arkat. Shumat pa TVSH.",
+    "Shifrat e marketit kundrejt planit dhe periudhës së mëparshme: klientët, kuponi mesatar, marzhi, humbjet, stoku dhe arkat. Shumat pa TVSH.",
   "Compared with {a} – {b}": "Krahasuar me {a} – {b}",
   // the plan
   "Plan reached": "Realizimi i planit",
@@ -25,7 +25,7 @@ export default {
   "Plan|target": "Plani",
   "No sales target for this period": "S'ka plan shitjesh për këtë periudhë",
   "Set a monthly target for each store, and the panel shows how far you are and where you should be by today.":
-    "Vendosni planin mujor për çdo dyqan, dhe paneli tregon sa keni arritur dhe ku duhet të ishit deri sot.",
+    "Vendosni planin mujor për çdo njësi, dhe paneli tregon sa keni arritur dhe ku duhet të ishit deri sot.",
   "Set the targets": "Vendos planin",
   // the tiles
   "Average receipt": "Kuponi mesatar",
@@ -49,7 +49,7 @@ export default {
   "{amount} in stock at cost": "{amount} në stok me kosto",
   "Nothing sold from stock in this period": "Asgjë e shitur nga stoku në këtë periudhë",
   "The stock here is below zero: goods were sold before they were received": "Stoku këtu është nën zero: malli u shit para se të pranohej",
-  "The attendance sheet is kept for the whole company, not by store": "Prezenca mbahet për gjithë kompaninë, jo sipas dyqanit",
+  "The attendance sheet is kept for the whole company, not by store": "Prezenca mbahet për gjithë kompaninë, jo sipas njësisë",
   "Fill in the attendance sheet in HR to see this": "Plotësoni prezencën te Burimet njerëzore për ta parë këtë",
   "{n} hours worked": "{n} orë pune",
   "{n} void": "{n} anulim",
@@ -70,16 +70,16 @@ export default {
   "Customers at the tills by the hour": "Klientët në arka sipas orës",
   "Customers at the tills by the hour; the busiest is {h}:00–{h2}:00": "Klientët në arka sipas orës; më e ngarkuara është {h}:00–{h2}:00",
   "No till sales in this period": "S'ka shitje në arka në këtë periudhë",
-  "Stores side by side": "Dyqanet krah për krah",
-  "Open a store to see its own panel.": "Hapni një dyqan për të parë panelin e tij.",
+  "Stores side by side": "Njësitë krah për krah",
+  "Open a store to see its own panel.": "Hapni një njësi për të parë panelin e saj.",
   "Cash off": "Diferenca e arkës",
   "Customers are the receipts and invoices of the period; returns lower the sales but are not counted as customers. Losses are what stock counts and adjustments for damage, theft and expiry took out, less what they found, at cost.":
     "Klientët janë kuponat dhe faturat e periudhës; kthimet i ulin shitjet, por nuk numërohen si klientë. Humbjet janë ajo që numërimet e stokut dhe korrigjimet për dëme, vjedhje dhe skadime nxorën, minus ajo që gjetën, me kosto.",
   // the targets
   "Sales targets": "Plani i shitjeve",
   "Sales without VAT the month should reach. The panel spreads each month over its days. Leave the company empty and it adds up the stores.":
-    "Shitjet pa TVSH që duhet të arrijë muaji. Paneli e ndan çdo muaj në ditët e tij. Nëse kompaninë e lini bosh, mblidhen dyqanet.",
-  "The stores add up to {amount}": "Dyqanet bëjnë gjithsej {amount}",
+    "Shitjet pa TVSH që duhet të arrijë muaji. Paneli e ndan çdo muaj në ditët e tij. Nëse kompaninë e lini bosh, mblidhen njësitë.",
+  "The stores add up to {amount}": "Njësitë bëjnë gjithsej {amount}",
   "Enter an amount for {store}": "Shkruani një shumë për {store}",
   "Save targets": "Ruaj planin",
   "Targets saved for {month}": "Plani u ruajt për {month}",

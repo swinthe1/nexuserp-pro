@@ -13,10 +13,29 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ErrorState } from '@/components/error-state'
 import { useRealtimeInvalidate } from '@/hooks/use-realtime'
-import { t } from '@/i18n'
+import { msg, t } from '@/i18n'
 import { cn, formatDate, formatMoney, num } from '@/lib/utils'
 import { monthLabel, monthRange, previousMonth, thisMonth, useDeclarations, useFiscalOverview, useTaxCalendar, useVatPreview } from '../api'
 import { NewDeclarationDialog, TieOut } from '../components/tax-ui'
+
+const OBLIGATION: Record<string, { label: string; href: string }> = {
+  vat: { label: msg('VAT return'), href: '/tax/declarations' },
+  payroll: { label: msg('Payroll declaration'), href: '/hr/payroll' },
+  withholding: { label: msg('Withholding tax'), href: '/tax/withholding' },
+  small_business: { label: msg('Small business tax'), href: '/tax/small-business' },
+  profit_advance: { label: msg('Profit tax instalment'), href: '/tax/income-tax' },
+}
+const quarterly = (o: string) => o === 'small_business' || o === 'profit_advance'
+
+/** what this company files, in one sentence, by country and by whether it has a VAT number */
+function deadlinesNote(country: string | undefined, vat: boolean) {
+  if (country === 'XK') return vat
+    ? t('VAT return by the 20th; salary tax with pension contributions and withholding tax by the 15th of the next month; the profit tax instalment by the 15th after each quarter.')
+    : t('Small business tax by the 15th after each quarter; salary tax with pension contributions and withholding tax by the 15th of the next month.')
+  return vat
+    ? t('VAT return by the 14th, and the payroll declaration and withholding tax by the 20th of the next month.')
+    : t('The payroll declaration and withholding tax by the 20th of the next month.')
+}
 
 export function TaxOverviewPage() {
   const { company, companyId } = useCompany()
@@ -32,6 +51,7 @@ export function TaxOverviewPage() {
   const p = pv.data
   const net = p ? num(p.output_vat) - num(p.input_vat) : 0
   const authority = company?.country_code === 'XK' ? 'ATK' : 'DPT'
+  const vatReg = company?.vat_registered !== false
   const calendar = [...(cal.data ?? [])].sort((a, b) => b.due_date.localeCompare(a.due_date))
   const ledgerOk = p && Math.abs(num(p.ledger.output_difference)) < 0.01 && Math.abs(num(p.ledger.input_difference)) < 0.01
 
@@ -40,10 +60,16 @@ export function TaxOverviewPage() {
       <PageHeader title={t('Tax overview|menu')} description={t('VAT for {month} so far, what is due to the {authority} and when, and how fiscalization is going.', { month: monthLabel(ym), authority })}
         actions={<><PageTableExport />{<>
           <Button variant="outline" asChild><Link to={`/tax/books?month=${ym}`}><FileSpreadsheet /> {t('Open the books')}</Link></Button>
-          <Can perm="tax.write"><Button onClick={() => setNewOpen(true)}><Plus /> {t('New declaration')}</Button></Can>
+          {vatReg && <Can perm="tax.write"><Button onClick={() => setNewOpen(true)}><Plus /> {t('New declaration')}</Button></Can>}
         </>}</>} />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {!vatReg && <Card className="mb-0"><CardContent className="flex flex-wrap items-center justify-between gap-3 py-4 text-[13px]">
+        <p className="max-w-2xl text-muted-foreground">{company?.country_code === 'XK'
+          ? t('The company has no VAT number, so it files no VAT returns: it pays the small business tax each quarter. When it registers for VAT, enter the number in the company details and the VAT returns appear here.')
+          : t('The company has no VAT number, so it files no VAT returns. When it registers for VAT, enter the number in the company details and the VAT returns appear here.')}</p>
+        {company?.country_code === 'XK' && <Button variant="outline" size="sm" asChild><Link to="/tax/small-business">{t('Small business tax')}</Link></Button>}
+      </CardContent></Card>}
+      {vatReg && <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label={`${t('Output VAT')} · ${monthLabel(ym)}`} value={formatMoney(p?.output_vat, cur)} loading={pv.isLoading}
           hint={p ? (p.counts.pos_days ? t('{n} sales, {days} till days', { n: p.counts.sales, days: p.counts.pos_days }) : t('{n} sales', { n: p.counts.sales })) : undefined} href={`/tax/books?book=sales&month=${ym}`} />
         <StatCard label={t('Input VAT')} value={formatMoney(p?.input_vat, cur)} loading={pv.isLoading}
@@ -53,14 +79,12 @@ export function TaxOverviewPage() {
           hint={p?.credit_brought_forward ? t('Before the {amount} credit from last month', { amount: formatMoney(p.credit_brought_forward) }) : t('Sales VAT minus purchase VAT, before any credit from last month')} />
         <StatCard label={t('Books against accounting')} value={pv.isLoading ? '' : ledgerOk ? t('They match') : t('Check')} loading={pv.isLoading} tone={ledgerOk ? 'default' : 'warning'}
           hint={ledgerOk ? t('VAT in the books equals VAT booked on 4456 / 4457') : t('Open the books to see the difference')} href={`/tax/books?month=${ym}`} />
-      </div>
+      </div>}
 
       <div className="mt-4 grid gap-4 grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_360px]">
         <Card>
           <CardHeader className="pb-2"><CardTitle>{t('Deadlines')}</CardTitle>
-            <CardDescription>{company?.country_code === 'XK'
-              ? t('VAT return by the 20th, and salary tax with pension contributions by the 15th of the next month.')
-              : t('VAT return by the 14th, and the payroll declaration by the 20th of the next month.')}</CardDescription></CardHeader>
+            <CardDescription>{deadlinesNote(company?.country_code, vatReg)}</CardDescription></CardHeader>
           <CardContent className="overflow-x-auto p-0">
             {cal.isLoading ? <Skeleton className="m-4 h-40" /> : cal.isError ? <ErrorState compact error={cal.error} onRetry={() => void cal.refetch()} /> : !calendar.length ? <EmptyState icon={CalendarClock} compact title={t('Nothing due yet')} /> : (
               <Table>
@@ -70,14 +94,17 @@ export function TaxOverviewPage() {
                   const late = c.status === 'overdue'
                   return (
                     <TableRow key={`${c.obligation}-${c.period_start}`}>
-                      <TableCell className="font-medium">{c.obligation === 'vat' ? t('VAT return') : t('Payroll declaration')}</TableCell>
-                      <TableCell>{monthLabel(c.period_start.slice(0, 7))}</TableCell>
+                      <TableCell className="font-medium"><Link to={OBLIGATION[c.obligation]?.href ?? '/tax'} className="hover:underline">{t(OBLIGATION[c.obligation]?.label ?? c.obligation)}</Link></TableCell>
+                      <TableCell>{quarterly(c.obligation)
+                        ? t('Quarter {q} of {year}', { q: Math.floor(Number(c.period_start.slice(5, 7)) / 3) + 1, year: c.period_start.slice(0, 4) })
+                        : monthLabel(c.period_start.slice(0, 7))}</TableCell>
                       <TableCell className={cn('tabular', late && 'text-destructive')}>{formatDate(c.due_date)}</TableCell>
                       <TableCell>
                         {c.document_id
                           ? <Link to={c.obligation === 'vat' ? `/tax/declarations/${c.document_id}` : `/hr/payroll/${c.document_id}`} className="inline-flex items-center gap-1.5 hover:underline">
                               <StatusBadge status={c.status} /><span className="text-xs text-muted-foreground">{c.document_number}</span></Link>
-                          : <StatusBadge status={c.status} label={c.status === 'open' ? t('Not started') : undefined} />}
+                          : <StatusBadge status={c.status === 'passed' ? 'pending' : c.status}
+                              label={c.status === 'passed' ? t('Date passed: check it was filed') : c.status === 'open' ? (OBLIGATION[c.obligation] && !['vat', 'payroll'].includes(c.obligation) ? t('Coming up') : t('Not started')) : undefined} />}
                       </TableCell>
                       <TableCell className="text-right tabular">{c.amount !== null ? formatMoney(c.amount) : '—'}</TableCell>
                     </TableRow>
@@ -89,7 +116,7 @@ export function TaxOverviewPage() {
         </Card>
 
         <div className="grid content-start gap-4">
-          <Card>
+          {vatReg && <Card>
             <CardHeader className="pb-2"><CardTitle>{t('Accounting check')}</CardTitle><CardDescription>{t('This month\'s books compared with the VAT booked in accounting.')}</CardDescription></CardHeader>
             <CardContent className="grid gap-3">
               {pv.isError ? <ErrorState compact error={pv.error} onRetry={() => void pv.refetch()} /> : !p ? <Skeleton className="h-24" /> : <>
@@ -98,7 +125,7 @@ export function TaxOverviewPage() {
                 <TieOut label={t('Input VAT')} book={num(p.input_vat) - num(p.ledger.credit_notes_moved)} ledger={num(p.ledger.input_vat)} diff={num(p.ledger.input_difference)} />
               </>}
             </CardContent>
-          </Card>
+          </Card>}
           <Card>
             <CardHeader className="flex-row items-start justify-between space-y-0 pb-2">
               <div><CardTitle>{t('Fiscalization')}</CardTitle>

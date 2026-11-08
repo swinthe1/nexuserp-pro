@@ -91,7 +91,16 @@ export function useHiddenSections() {
       return data
     },
   })
-  return (q.data?.hidden_menu_sections ?? []) as string[]
+  const { company } = useCompany()
+  const saved = (q.data?.hidden_menu_sections ?? []) as string[]
+  return React.useMemo(() => {
+    // only the tax regime that applies: VAT returns with a VAT number, the small business tax (Kosovo) without one;
+    // the Kosovo small business rules are not Albania's, so that page is not shown there
+    const regime = company?.vat_registered === undefined ? []
+      : company.vat_registered ? ['/tax/small-business']
+      : company.country_code === 'XK' ? ['/tax/declarations'] : ['/tax/small-business', '/tax/declarations']
+    return [...saved, ...regime]
+  }, [saved, company?.vat_registered, company?.country_code])
 }
 
 /* ---------------------------------------------- pages used most on this device */

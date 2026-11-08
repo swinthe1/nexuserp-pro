@@ -147,7 +147,7 @@ function Holidays() {
   const h = edit && edit !== 'new' ? edit : null
   const years = [...new Set((hol.data ?? []).map((x) => x.holiday_date.slice(0, 4)))]
   return (
-    <Shell title={t('Public holidays')} description={t('Days off on weekdays: they do not count as leave or as working days. When a holiday falls on a weekend, enter the day it moves to.')}
+    <Shell title={t('Public holidays')} description={t('Days off on weekdays: they do not count as leave or as working days. The program adds each year by itself, with holidays on a weekend moved to the day off; check them against the official calendar and correct a date if needed.')}
       add={<Button size="sm" onClick={() => setEdit('new')}><Plus /> {t('Add holiday')}</Button>}>
       <Table><TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Date')}</TableHead><TableHead>{t('Day')}</TableHead><TableHead>{t('Holiday')}</TableHead><TableHead className="w-[1%]" /></TableRow></TableHeader>
         <TableBody>{years.map((y) => (

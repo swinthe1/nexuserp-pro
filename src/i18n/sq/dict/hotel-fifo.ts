@@ -26,7 +26,7 @@ export default {
   'Save the report': 'Ruaj raportin',
   'It keeps the grouping, the columns, the filters and the period. A period like "this month" moves on with the calendar.':
     'Ruhen grupimi, kolonat, filtrat dhe periudha. Një periudhë si "ky muaj" ecën bashkë me kalendarin.',
-  'e.g. Sales by shop and month': 'p.sh. Shitjet sipas dyqanit dhe muajit',
+  'e.g. Sales by shop and month': 'p.sh. Shitjet sipas njësisë dhe muajit',
   'Everyone in the company can open it': 'E hap kushdo në kompani',
   'They see only figures their role allows.': 'Secili sheh vetëm shifrat që i lejon roli.',
   'Save as a new one': 'Ruaje si të ri',

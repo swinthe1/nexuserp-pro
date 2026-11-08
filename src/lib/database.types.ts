@@ -7744,6 +7744,7 @@ export type Database = {
           bank_account_id: string | null
           employee_count: number
           notes: string | null
+          self_approved: boolean
         }
         Insert: {
           id?: string
@@ -7775,6 +7776,7 @@ export type Database = {
           bank_account_id?: string | null
           employee_count?: number
           notes?: string | null
+          self_approved?: boolean
         }
         Update: {
           id?: string
@@ -7806,6 +7808,7 @@ export type Database = {
           bank_account_id?: string | null
           employee_count?: number
           notes?: string | null
+          self_approved?: boolean
         }
         Relationships: [
           { foreignKeyName: "payroll_runs_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -18441,6 +18444,12 @@ export type Database = {
           p_taxable: number
           p_params: Json
           p_secondary?: boolean
+        }
+        Returns: number
+      }
+      payroll_other_approvers: {
+        Args: {
+          p_company: string
         }
         Returns: number
       }

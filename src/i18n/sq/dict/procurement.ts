@@ -172,7 +172,7 @@ export default {
   'Requisition rejected': 'Kërkesa u refuzua',
   'Reject this requisition?': 'Ta refuzoni këtë kërkesë?',
   'The requester sees the reason and can change the request and submit it again.': 'Kërkuesi e sheh arsyen dhe mund ta ndryshojë kërkesën e ta dërgojë përsëri.',
-  'e.g. Use the stock in the Tirana store first': 'p.sh. Përdorni fillimisht stokun e dyqanit në Tiranë',
+  'e.g. Use the stock in the Tirana store first': 'p.sh. Përdorni fillimisht stokun e njësisë në Tiranë',
   "One draft order per vendor, priced from each vendor's price list. You can review them before submitting.": 'Një porosi skicë për çdo furnitor, me çmimet nga lista e secilit. Mund t\'i shikoni para se t\'i dërgoni.',
   "{n} item has no suggested vendor. It goes to the item's preferred vendor, or else to:": '{n} artikull nuk ka furnitor të sugjeruar. Shkon te furnitori i preferuar i artikullit, ose ndryshe te:',
   "{n} items have no suggested vendor. They go to each item's preferred vendor, or else to:": '{n} artikuj nuk kanë furnitor të sugjeruar. Shkojnë te furnitori i preferuar i secilit, ose ndryshe te:',

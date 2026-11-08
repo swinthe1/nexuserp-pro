@@ -4,7 +4,7 @@ import type { Dict } from '../index'
 export default {
   'Stock, sales, purchasing and accounting — all in one place.': 'Stoku, shitjet, blerjet dhe kontabiliteti — të gjitha në një vend.',
   'Every receipt updates your average cost, and every movement can be traced back to its document. Made for shops, wholesalers and producers in Albania and Kosovo.':
-    'Çdo pranim malli përditëson koston mesatare dhe çdo lëvizje gjurmohet deri te dokumenti i saj. Ndërtuar për dyqane, shitës me shumicë dhe prodhues në Shqipëri dhe Kosovë.',
+    'Çdo pranim malli përditëson koston mesatare dhe çdo lëvizje gjurmohet deri te dokumenti i saj. Ndërtuar për markete, shitës me shumicë dhe prodhues në Shqipëri dhe Kosovë.',
   'Several companies · Access by role · Full history of changes': 'Disa kompani · Akses sipas rolit · Historik i plotë i ndryshimeve',
   'Email or password is incorrect': 'Email-i ose fjalëkalimi është i gabuar',
   'Confirm your email first: open the link we sent you.': 'Konfirmoni fillimisht email-in: hapni lidhjen që ju dërguam.',
@@ -63,7 +63,7 @@ export default {
   "Stock and average cost": "Stoku dhe kostoja mesatare",
   "Purchases and suppliers": "Blerjet dhe furnitorët",
   "VAT and the books": "TVSH-ja dhe librat",
-  "Your shop · today": "Dyqani juaj · sot",
+  "Your shop · today": "Biznesi juaj · sot",
   "one program": "një program",
   "Thank you, and see you tomorrow": "Faleminderit, mirupafshim nesër",
   "DrisPRO for Windows": "DrisPRO për Windows",

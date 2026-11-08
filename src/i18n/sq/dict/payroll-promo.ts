@@ -79,7 +79,7 @@ export default {
   'every day': 'çdo ditë',
   'On the till': 'Në arkë',
   'On sales documents': 'Në dokumentet e shitjes',
-  'in every shop': 'në çdo dyqan',
+  'in every shop': 'në çdo njësi',
   'Promotion saved': 'Promocioni u ruajt',
   'Pieces': 'Copë',
   'Discount given': 'Zbritja e dhënë',

@@ -29,7 +29,7 @@ export default {
   'Warehouses they work in': 'Njësitë ku punon',
   'Warehouses of {name}': 'Njësitë e {name}',
   'Tick the shops and warehouses this person works in. They can then receive, sell, count and move goods only there. With none ticked, they work in all.':
-    'Shënoni dyqanet dhe magazinat ku punon ky person. Atëherë mund të pranojë, shesë, numërojë dhe lëvizë mall vetëm aty. Pa asnjë të shënuar, punon në të gjitha.',
+    'Shënoni njësitë ku punon ky person. Atëherë mund të pranojë, shesë, numërojë dhe lëvizë mall vetëm aty. Pa asnjë të shënuar, punon në të gjitha.',
   'Saved: only the ticked warehouses': 'U ruajt: vetëm njësitë e shënuara',
   'Saved: all warehouses': 'U ruajt: të gjitha njësitë',
 

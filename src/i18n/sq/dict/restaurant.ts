@@ -63,7 +63,7 @@ export default {
   'Seats': 'Ulëse',
   'Send the new items before leaving? Cancel keeps you on this order.': 'Të dërgohen artikujt e rinj para se të dilni? Anulo ju mban te kjo porosi.',
   'Set up the room': 'Rregullo sallën',
-  'Shop': 'Dyqan',
+  'Shop': 'Market',
   'Station': 'Stacioni',
   'Station name': 'Emri i stacionit',
   'Table {name}': 'Tavolina {name}',

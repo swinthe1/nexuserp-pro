@@ -3,7 +3,8 @@ import { Plus } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Can, useCompany } from '@/app/company-provider'
-import { ColumnHeader, DataTable, inFilter } from '@/components/data-table/data-table'
+import { ColumnHeader, DataTable, inFilter, LeadCell } from '@/components/data-table/data-table'
+import { TableCell, TableFooter, TableRow } from '@/components/ui/table'
 import { PageHeader } from '@/components/page-header'
 import { StatusBadge } from '@/components/status-badge'
 import { Badge } from '@/components/ui/badge'
@@ -11,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import { cn, formatDate, formatMoney, formatQty, humanize, num, todayISO } from '@/lib/utils'
 import { useSalesDocuments, type SalesKind } from '../api'
 import { useRealtimeInvalidate } from '@/hooks/use-realtime'
-import { msg, t, td } from '@/i18n'
+import { msg, t, td, tn } from '@/i18n'
 
 type Row = Record<string, unknown> & { id: string; number: string; status: string; currency_code?: string }
 const nm = (v: unknown, k = 'name') => (v as Record<string, string> | null)?.[k] ?? ''
@@ -35,7 +36,9 @@ const totalCol = (base: string): ColumnDef<Row> => ({
   cell: ({ row: { original: r } }) => <span className="tabular">{formatMoney(r.total as number)} <span className="text-muted-foreground">{r.currency_code !== base ? r.currency_code : ''}</span></span>,
 })
 
-interface Cfg { title: string; emptyTitle: string; description: string; newLabel?: string; perm: string; statuses: string[]; href: string; empty: string; columns: (base: string) => ColumnDef<Row>[]; extraFacets?: () => { columnId: string; title: string; options: { label: string; value: string }[] }[] }
+/** a sum row under the list: the posted documents among those shown, in the company's currency */
+type Footer = (rows: Row[]) => { count: number; cells: Record<string, React.ReactNode> } | null
+interface Cfg { footer?: Footer; title: string; emptyTitle: string; description: string; newLabel?: string; perm: string; statuses: string[]; href: string; empty: string; columns: (base: string) => ColumnDef<Row>[]; extraFacets?: () => { columnId: string; title: string; options: { label: string; value: string }[] }[] }
 
 const CFG: Record<SalesKind, Cfg> = {
   quotes: {
@@ -107,7 +110,18 @@ const CFG: Record<SalesKind, Cfg> = {
     extraFacets: () => [
       { columnId: 'payment_status', title: t('Payment'), options: ['unpaid', 'partially_paid', 'paid', 'overdue'].map((v) => ({ value: v, label: humanize(v) })) },
       { columnId: 'document_type', title: t('Type'), options: [{ value: 'sales_invoice', label: t('Invoice') }, { value: 'credit_note', label: t('Credit note') }, { value: 'debit_note', label: t('Debit note') }] },
+      { columnId: 'fiscal', title: t('Fiscalization'), options: ['fiscalized', 'pending', 'failed', 'not_required'].map((v) => ({ value: v, label: v === 'failed' ? t('Refused') : humanize(v) })) },
     ],
+    footer: (rows) => {
+      const posted = rows.filter((r) => r.status === 'posted')
+      if (posted.length < 2) return null
+      const sg = (r: Row) => (r.document_type === 'credit_note' ? -1 : 1)
+      const rate = (r: Row) => num(r.exchange_rate) || 1
+      const gross = posted.reduce((a, r) => a + sg(r) * num(r.total_base), 0)
+      const vat = posted.reduce((a, r) => a + sg(r) * num(r.tax_total) * rate(r), 0)
+      const due = posted.reduce((a, r) => a + sg(r) * num(r.amount_due) * rate(r), 0)
+      return { count: posted.length, cells: { net: formatMoney(gross - vat), vat: formatMoney(vat), total: formatMoney(gross), amount_due: formatMoney(due) } }
+    },
     columns: (base) => [
       dateCol('invoice_date', t('Date')),
       { id: 'document_type', accessorFn: (r) => r.is_debit_note ? 'debit_note' : r.document_type, filterFn: inFilter, header: t('Type'), meta: { label: t('Type'), exportValue: (r) => r.document_type === 'credit_note' ? t('Credit note') : r.is_debit_note ? t('Debit note') : t('Invoice') },
@@ -120,6 +134,15 @@ const CFG: Record<SalesKind, Cfg> = {
         cell: ({ row: { original: r }, getValue }) => r.status !== 'posted' ? <span className="text-muted-foreground">—</span> : <StatusBadge status={getValue() as string} />,
       },
       dateCol('due_date', t('Due')),
+      {
+        id: 'fiscal', accessorFn: (r) => r.fiscal_status ?? 'not_required', filterFn: inFilter, header: t('Fiscalization'),
+        meta: { label: t('Fiscalization'), exportValue: (r) => humanize((r.fiscal_status as string) ?? 'not_required') },
+        cell: ({ row: { original: r }, getValue }) => r.status !== 'posted' || getValue() === 'not_required' ? <span className="text-muted-foreground">—</span>
+          : getValue() === 'failed' ? <StatusBadge status="failed" label={t('Refused')} /> : <StatusBadge status={getValue() as string} />,
+      },
+      { id: 'net', accessorFn: (r) => num(r.total) - num(r.tax_total), header: ({ column }) => <ColumnHeader column={column} title={t('Without VAT')} />,
+        meta: { label: t('Without VAT'), align: 'right' }, cell: ({ getValue }) => <span className="tabular">{formatMoney(getValue() as number)}</span> },
+      { id: 'vat', accessorFn: (r) => num(r.tax_total), header: t('VAT'), meta: { label: t('VAT'), align: 'right' }, cell: ({ getValue }) => <span className="tabular text-muted-foreground">{formatMoney(getValue() as number)}</span> },
       totalCol(base),
       { accessorKey: 'amount_due', header: t('Still to pay (with VAT)'), meta: { label: t('Still to pay (with VAT)'), align: 'right' }, cell: ({ row: { original: r } }) => r.status === 'posted' ? formatMoney(r.amount_due as number) : '—' },
     ],
@@ -163,6 +186,14 @@ export function SalesListPage({ kind }: { kind: SalesKind }) {
           duplicate: kind === 'deliveries' ? undefined : ({ quotes: 'sales_quotes', orders: 'sales_orders', invoices: 'sales_invoices' } as const)[kind] })}
         facets={[{ columnId: 'status', title: t('Status'), options: cfg.statuses.map((s) => ({ label: humanize(s), value: s })) }, ...(cfg.extraFacets?.() ?? [])]}
         empty={{ title: t(cfg.emptyTitle), description: t(cfg.empty), action: newButton }}
+        initialHidden={kind === 'invoices' ? ['vat', 'order'] : undefined}
+        footer={cfg.footer ? (table) => {
+          const f = cfg.footer!(table.getFilteredRowModel().rows.map((r) => r.original))
+          if (!f) return null
+          return <TableFooter><TableRow className="font-semibold hover:bg-transparent"><LeadCell />
+            {table.getVisibleLeafColumns().map((c, i) => <TableCell key={c.id} className={cn(c.id in f.cells && 'text-right tabular')}>
+              {i === 0 ? tn(f.count, 'Total of {n} posted', 'Total of {n} posted') : f.cells[c.id] ?? ''}</TableCell>)}</TableRow></TableFooter>
+        } : undefined}
       />
     </>
   )

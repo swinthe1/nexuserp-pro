@@ -159,6 +159,7 @@ export const GUIDES_C: Record<string, Guide> = {
       { sq: 'Te "Afatet" sheh çdo deklaratë me afatin dhe statusin; të vonuarat dalin me të kuqe.', en: 'Under "Deadlines" you see each declaration with its due date and status; late ones are red.' },
       { sq: 'Kur mbaron muaji, kliko "Deklaratë e re".', en: 'When the month is over, click "New declaration".' },
       { sq: 'Nëse "Librat kundrejt kontabilitetit" tregon "Kontrolloni", kliko "Hap librat" dhe gjej diferencën.', en: 'If "Books against accounting" says "Check", click "Open the books" and find the difference.' },
+      { sq: 'Afatet tregojnë vetëm tatimet që i takojnë kompanisë: TVSH-në kur ka numër TVSH-je, tatimin e biznesit të vogël çdo tremujor kur s\'ka (Kosovë), tatimin në burim në muajt kur është mbajtur dhe këstin tremujor të tatimit në fitim. Kur kalon data e një tatimi që programi s\'e di a u dorëzua, shkruan "Afati kaloi: kontrolloni".', en: 'The deadlines list only the taxes the company files: VAT with a VAT number, the small business tax each quarter without one (Kosovo), withholding tax in months when tax was withheld, and the quarterly profit tax instalment. When the date of a tax the program cannot check has passed, it says "Date passed: check it was filed".' },
     ],
     mistakes: [{ sq: 'TVSH-ja e kuponëve në turne të hapura të arkës kalon në kontabilitet vetëm me Z-raportin: mbyll turnet para se të krahasosh.', en: 'Till VAT in open shifts reaches accounting only with the Z report: close the shifts before you compare.' }],
     related: [{ href: '/tax/declarations', label: { sq: 'Deklaratat e TVSH', en: 'VAT declarations' } }, { href: '/tax/fiscalization', label: { sq: 'Fiskalizimi', en: 'Fiscalization' } }],
@@ -330,6 +331,7 @@ export const GUIDES_C: Record<string, Guide> = {
       { sq: 'Te "Muajt kontabël" krijo vitin financiar dhe mbyll muajt e përfunduar me "Mbyll muajin".', en: 'Under "Accounting months" create the financial year and close finished months with "Close month".' },
       { sq: 'Te "Kategoritë e aktiveve" sheh jetëgjatësinë, mënyrën dhe kontot e amortizimit.', en: 'Under "Asset categories" you see the useful life, method and depreciation accounts.' },
       { sq: 'Te "Kufijtë e parave në dorë" cakto kufijtë për pagesat me para në dorë; te "Kushtet e pagesës" afatet e pagesës.', en: 'Under "Cash limits" set the limits for cash payments; under "Payment terms" the payment terms.' },
+      { sq: '"Kyç" e mbyll muajin përgjithmonë: programi pyet njëherë me emrin e muajit. Kyçeni vetëm pasi të jenë dorëzuar deklaratat dhe kontrolluar librat; për punën e zakonshme mjafton "Mbyll muajin".', en: '"Lock" closes the month for good: the program asks once with the month\'s name. Lock only after the declarations are filed and the books checked; for everyday work "Close month" is enough.' },
     ],
     mistakes: [
       { sq: 'Një rast pa konto te "Llogaritë e kontabilizimit" e ndalon kontabilizimin e dokumenteve që e përdorin.', en: 'A case with no account under "Posting accounts" stops the posting of the documents that use it.' },

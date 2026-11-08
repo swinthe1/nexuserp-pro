@@ -15,10 +15,10 @@ export default {
   "This is a training company: nothing is ever sent to ATK from it.": "Kjo është kompani trajnimi: prej saj nuk i dërgohet kurrë asgjë ATK-së.",
   "A till that is not registered on its device does not sell.": "Arka që nuk është regjistruar në pajisjen e saj nuk shet.",
   "Set the numbers and register the tills first, then turn it on. Until then the shop keeps its own fiscal device.":
-    "Vendosni më parë numrat dhe regjistroni arkat, pastaj ndizeni. Deri atëherë dyqani vazhdon me pajisjen e vet fiskale.",
+    "Vendosni më parë numrat dhe regjistroni arkat, pastaj ndizeni. Deri atëherë biznesi vazhdon me pajisjen e vet fiskale.",
   "These tills are not registered yet and will stop selling until they are: {names}. Go on?": "Këto arka ende nuk janë regjistruar dhe nuk do të shesin derisa të regjistrohen: {names}. Të vazhdojmë?",
   "From now on every receipt of this company is signed and sent to ATK. Go on?": "Që tani çdo kupon i kësaj kompanie nënshkruhet dhe i dërgohet ATK-së. Të vazhdojmë?",
-  "The tills stop signing receipts for ATK. Do this only if the shop goes back to its own fiscal device. Go on?": "Arkat nuk i nënshkruajnë më kuponët për ATK. Bëjeni këtë vetëm nëse dyqani kthehet te pajisja e vet fiskale. Të vazhdojmë?",
+  "The tills stop signing receipts for ATK. Do this only if the shop goes back to its own fiscal device. Go on?": "Arkat nuk i nënshkruajnë më kuponët për ATK. Bëjeni këtë vetëm nëse biznesi kthehet te pajisja e vet fiskale. Të vazhdojmë?",
   "The business at ATK": "Biznesi në ATK",
   "The fiscalization number comes from EDI (\"Kërkesë për Fiskalizim\"). The test environment is for ATK's checks before certification.":
     "Numri i fiskalizimit merret nga EDI (\"Kërkesë për Fiskalizim\"). Ambienti i testimit shërben për provat e ATK-së para certifikimit.",

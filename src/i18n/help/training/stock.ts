@@ -90,7 +90,7 @@ export const WAREHOUSE: Track = {
       title: { sq: 'Transferi nga një njësi në tjetrën', en: 'Moving goods between units' },
       href: '/inventory/transfers',
       minutes: 4,
-      why: { sq: 'Nga depoja në dyqan: stoku ndërron vend, vlera mbetet e njëjtë, dhe mungesat në rrugë nuk humbasin.', en: 'From the depot to the shop: the stock changes place, the value stays, and shortages on the way are not lost.' },
+      why: { sq: 'Nga depoja në pikën e shitjes: stoku ndërron vend, vlera mbetet e njëjtë, dhe mungesat në rrugë nuk humbasin.', en: 'From the depot to the shop: the stock changes place, the value stays, and shortages on the way are not lost.' },
       goal: { sq: 'Pas këtij mësimi di të nisësh një transferim, ta pranosh në njësinë tjetër dhe të shënosh mungesat.', en: 'After this lesson you can send a transfer, receive it at the other unit and record what is missing.' },
       steps: [
         { sq: 'Kliko "Transferim i ri" dhe zgjidh "Nga" dhe "Deri"; e njëjta njësi në të dyja anët do të thotë lëvizje mes rafteve.', en: 'Click "New transfer" and choose "From" and "To"; the same unit on both sides means moving between shelves.' },
@@ -101,7 +101,7 @@ export const WAREHOUSE: Track = {
       ],
       practice: { sq: 'Provo vetë: kliko "Transferim i ri", zgjidh dy njësi dhe shto një artikull, pastaj "Krijo skicë". Mos kliko "Dërgo": fshije me ⋯ (Më shumë) → "Fshi skicën".', en: 'Try it: click "New transfer", choose two units and add an item, then "Create draft". Do not click "Ship": delete it with ⋯ (More) → "Delete draft".' },
       check: {
-        q: { sq: 'Nga depoja u nisën 20 arka, në dyqan arritën 18. Çka bën dyqani?', en: 'The depot shipped 20 crates and 18 reached the shop. What does the shop do?' },
+        q: { sq: 'Nga depoja u nisën 20 arka, në pikën e shitjes arritën 18. Çka bën pika e shitjes?', en: 'The depot shipped 20 crates and 18 reached the shop. What does the shop do?' },
         options: [
           { sq: 'Pranon 20, që të mbyllet transferimi', en: 'Receive 20, so the transfer closes' },
           { sq: 'Fshin transferimin dhe bën një të ri me 18', en: 'Delete the transfer and make a new one with 18' },
@@ -168,7 +168,7 @@ export const WAREHOUSE: Track = {
       title: { sq: 'Numërimi i stokut', en: 'Counting the stock' },
       href: '/wms/counts',
       minutes: 6,
-      why: { sq: 'Numëro disa rafte çdo ditë pa mbyllur dyqanin; programi gjen diferencat dhe vlerën e tyre.', en: 'Count a few shelves every day without closing the shop; the program finds the differences and their value.' },
+      why: { sq: 'Numëro disa rafte çdo ditë pa mbyllur njësinë; programi gjen diferencat dhe vlerën e tyre.', en: 'Count a few shelves every day without closing the shop; the program finds the differences and their value.' },
       goal: { sq: 'Pas këtij mësimi di të nisësh një numërim, të numërosh me skaner ose me letër dhe ta çosh për shqyrtim.', en: 'After this lesson you can start a count, count with a scanner or on paper and send it for review.' },
       steps: [
         { sq: 'Kliko "Numërim i ri", zgjidh njësinë dhe raftet (ose "Vetëm kjo kategori"). "Numërim pa sasi të pritur" ia fsheh numëruesit sasinë. Kliko "Fillo numërimin".', en: 'Click "New count", choose the unit and the shelves (or "Only this category"). "Blind count" hides the expected quantity from the counter. Click "Start counting".' },

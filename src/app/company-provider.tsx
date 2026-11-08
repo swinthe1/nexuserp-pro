@@ -16,6 +16,8 @@ export interface CompanySummary {
   /** practice company: data comes live from the old program, nothing is fiscalized */
   is_training?: boolean
   business_type?: string
+  /** the company has a VAT number (files VAT returns); without one, the small business tax in Kosovo */
+  vat_registered?: boolean
   /** this person starts in the simple view (a few large buttons, no menus) */
   simple_view?: boolean
   /** the buttons this person put on their start screen (none: chosen by their roles) */

@@ -494,14 +494,14 @@ export const OWNER: Track = {
       ],
       practice: { sq: 'Provo vetë: kliko me radhë tri modelet dhe shiko pamjen paraprake. Ruaje vetëm nëse një model të duket më i qartë se ai që ke tani.', en: 'Try it: click the three layouts one by one and look at the preview. Save only if one looks clearer than the one you have now.' },
       check: {
-        q: { sq: 'Ke një dyqan të vogël dhe klientët duan vetëm çka blenë, sa dhe me çfarë çmimi. Cili model të shkon?', en: 'You have a small shop and customers only want what they bought, how much and at what price. Which layout fits?' },
+        q: { sq: 'Ke një market të vogël dhe klientët duan vetëm çka blenë, sa dhe me çfarë çmimi. Cili model të shkon?', en: 'You have a small shop and customers only want what they bought, how much and at what price. Which layout fits?' },
         options: [
           { sq: '"E detajuar"', en: '"Detailed"' },
           { sq: '"Standarde"', en: '"Standard"' },
           { sq: '"E thjeshtë"', en: '"Simple"' },
         ],
         answer: 2,
-        explain: { sq: '"E thjeshtë" tregon përshkrimin, sasinë, çmimin dhe totalin, për dyqane dhe shërbime. "E detajuar" vlen kur klienti do bazën dhe TVSH-në për çdo rresht.', en: '"Simple" shows description, quantity, price and total, for shops and services. "Detailed" is for customers who want the base and VAT on every line.' },
+        explain: { sq: '"E thjeshtë" tregon përshkrimin, sasinë, çmimin dhe totalin, për shitje me pakicë dhe shërbime. "E detajuar" vlen kur klienti do bazën dhe TVSH-në për çdo rresht.', en: '"Simple" shows description, quantity, price and total, for shops and services. "Detailed" is for customers who want the base and VAT on every line.' },
       },
     },
     {

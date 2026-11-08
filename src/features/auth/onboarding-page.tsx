@@ -106,7 +106,7 @@ export function OnboardingPage() {
         <Form {...form}>
           <form onSubmit={onSubmit} className="mt-6 grid gap-4" noValidate>
             <FormField control={form.control} name="name" render={({ field }) => (
-              <FormItem><FormLabel>{t('Trading name')}</FormLabel><FormControl><Input autoFocus placeholder="Dyqani Drita" {...field} /></FormControl><FormMessage /></FormItem> // i18n-ignore
+              <FormItem><FormLabel>{t('Trading name')}</FormLabel><FormControl><Input autoFocus placeholder="Market Drita" {...field} /></FormControl><FormMessage /></FormItem> // i18n-ignore
             )} />
             <FormField control={form.control} name="legalName" render={({ field }) => (
               <FormItem><FormLabel optional>{t('Legal name')}</FormLabel><FormControl><Input placeholder={form.watch('country') === 'XK' ? 'Drita L.L.C.' : 'Drita sh.p.k.'} {...field} /></FormControl><FormMessage /></FormItem> // i18n-ignore

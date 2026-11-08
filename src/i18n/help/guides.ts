@@ -13,7 +13,7 @@ import { GUIDES_E } from './guides-e'
 const BASE: Record<string, Guide> = {
   /* ------------------------------------------------------------------ the till */
   '/pos': {
-    what: { sq: 'Këtu janë arkat e dyqanit: hap një arkë për të shitur, shiko turnet dhe raportet Z të ditës. Te restoranti dhe kafeja, arka hap tavolinat dhe ekranin e kuzhinës.', en: 'The shop\'s tills: open one to sell, and see the shifts and the day\'s Z reports. In a restaurant or café the till opens the tables and the kitchen screen.' },
+    what: { sq: 'Këtu janë arkat e shitjes me pakicë: hap një arkë për të shitur, shiko turnet dhe raportet Z të ditës. Te restoranti dhe kafeja, arka hap tavolinat dhe ekranin e kuzhinës.', en: 'The shop\'s tills: open one to sell, and see the shifts and the day\'s Z reports. In a restaurant or café the till opens the tables and the kitchen screen.' },
     steps: [
       { sq: 'Te arka ku punon kliko "Hap arkën" (në mëngjes) ose "Shko te arka" (kur turni është i hapur).', en: 'On the till you work at, click "Open till" (in the morning) or "Go to till" (when the shift is open).' },
       { sq: 'Në fillim të ditës shkruaj sa para ka në sirtar: ato janë baza për numërimin në fund.', en: 'At the start of the day, type the cash in the drawer: it is the base for the count at the end.' },
@@ -38,6 +38,7 @@ const BASE: Record<string, Guide> = {
       { sq: 'Kliko "Paguaj", zgjidh para në dorë ose kartë dhe shkruaj sa të dha klienti: kusuri del vetë.', en: 'Click "Pay", choose cash or card and type what the customer gave: the change is shown.' },
       { sq: 'Kliko "Përfundo shitjen"; kuponi printohet dhe fillon shitja tjetër.', en: 'Click "Complete sale"; the receipt prints and the next sale starts.' },
       { sq: 'Lart: "Kthim" (F9) për mallin që kthehet; te butoni ⋯ janë "Para dhe pagesa", "Shit kupon dhurate", "Raporti X" dhe "Ndërro arkëtarin". "Kyçe" e mbyll ekranin kur largohesh; "Mbyll turnin" në fund të ditës.', en: 'On top: "Refund" (F9) for goods brought back; under the ⋯ button are "Cash and payments", "Sell a gift voucher", "X-report" and "Switch cashier". "Lock" locks the screen when you step away; "Close till" at the end of the day.' },
+      { sq: 'Klienti harroi diçka? Kliko "Në pritje" (F8): shitja ruhet mënjanë dhe nis shitjen tjetër. E merr sërish me një prekje te shiriti "Në pritje" mbi rreshtat; mund të mbash deri në 3.', en: 'The customer forgot something? Click "Hold" (F8): the sale is put aside and you serve the next one. Take it back with one tap on the "On hold" strip above the lines; up to 3 can wait.' },
     ],
     mistakes: [
       { sq: 'Kthimi bëhet me "Kthim", jo duke shitur me minus.', en: 'A return is done with "Refund", not by selling a negative quantity.' },
@@ -108,7 +109,7 @@ const BASE: Record<string, Guide> = {
     after: { sq: 'Malli hyn në stok me koston e rreshtit; transporti dhe dogana shtohen me "Shto koston e mbërritjes".', en: 'The goods enter stock at the line cost; freight and customs are added with "Add landed cost".' },
   },
   '/inventory/transfers/new': {
-    what: { sq: 'Kalimi i mallit nga një njësi në tjetrën (p.sh. nga depo në dyqan).', en: 'Moving goods from one unit to another (for example from the depot to the shop).' },
+    what: { sq: 'Kalimi i mallit nga një njësi në tjetrën (p.sh. nga depo në pikën e shitjes).', en: 'Moving goods from one unit to another (for example from the depot to the shop).' },
     steps: [
       { sq: 'Zgjidh nga ku dhe ku shkon malli.', en: 'Choose where the goods come from and where they go.' },
       { sq: 'Shto artikujt dhe sasitë.', en: 'Add the items and quantities.' },
@@ -126,7 +127,7 @@ const BASE: Record<string, Guide> = {
     mistakes: [{ sq: 'Për numërimin e gjithë raftit përdor "Inventarizimi": ai i llogarit diferencat vetë.', en: 'To count a whole shelf use "Stock count": it works out the differences itself.' }],
   },
   '/wms/counts': {
-    what: { sq: 'Numërimi i stokut (inventarizimi): numëron raftet dhe programi gjen diferencat. Dyqani nuk mbyllet: çdo rresht krahasohet me stokun në minutën kur u numërua, kështu shitjet gjatë numërimit nuk e prishin rezultatin.', en: 'Stock counting: count the shelves and the program finds the differences. The shop stays open: each line is compared with the stock at the minute it was counted, so sales during the count do not spoil the result.' },
+    what: { sq: 'Numërimi i stokut (inventarizimi): numëron raftet dhe programi gjen diferencat. Njësia nuk mbyllet: çdo rresht krahasohet me stokun në minutën kur u numërua, kështu shitjet gjatë numërimit nuk e prishin rezultatin.', en: 'Stock counting: count the shelves and the program finds the differences. The shop stays open: each line is compared with the stock at the minute it was counted, so sales during the count do not spoil the result.' },
     steps: [
       { sq: 'Kliko "Numërim i ri", zgjidh njësinë dhe raftet ose kategorinë.', en: 'Click "New count", choose the unit and the shelves or a category.' },
       { sq: 'Numëro me skaner, me dorë, ose printo fletën dhe fute nga Excel-i.', en: 'Count with a scanner, by hand, or print the sheet and bring it in from Excel.' },
@@ -207,6 +208,7 @@ const BASE: Record<string, Guide> = {
       { sq: 'Kliko "Faturë e re", zgjidh klientin dhe shto artikujt.', en: 'Click "New invoice", choose the customer and add the items.' },
       { sq: 'Filtro sipas statusit: "Papaguar" janë ato që duhen arkëtuar.', en: 'Filter by status: "Unpaid" are the ones still to collect.' },
       { sq: 'Për gabim në një faturë të kontabilizuar bëj "Notë krediti" (te butoni ⋯ i faturës), jo fshirje.', en: 'For a mistake on a posted invoice make a "Credit note" (under the invoice\'s ⋯ button), not a deletion.' },
+      { sq: 'Kolona "Fiskalizimi" tregon cilat fatura kaluan, cilat presin dhe cilat u refuzuan; filtroji me "Fiskalizimi". Poshtë listës, rreshti i totaleve jep pa TVSH, TVSH-në, me TVSH dhe ende për t\'u paguar për faturat e postuara që sheh.', en: 'The "Fiscalization" column shows which invoices went through, which wait and which were refused; filter them with "Fiscalization". Under the list, the totals row gives without VAT, VAT, with VAT and still to pay for the posted invoices you see.' },
     ],
     related: [{ href: '/finance/receivables', label: { sq: 'Borxhet', en: 'Debts' } }, { href: '/sales/recurring', label: { sq: 'Faturat mujore', en: 'Recurring invoices' } }],
   },
@@ -253,6 +255,7 @@ const BASE: Record<string, Guide> = {
       { sq: 'Shto partnerin me NUI-në: të dhënat nga ARBK plotësohen kur gjenden.', en: 'Add the partner with their NUI: the registry details fill in when found.' },
       { sq: 'Cakto kushtet e pagesës dhe kufirin e kredisë.', en: 'Set the payment terms and the credit limit.' },
       { sq: 'Te "Kartela" sheh çdo faturë dhe pagesë; te "Kujtesat" sheh kujtesat e dërguara.', en: 'Under "Card" see every invoice and payment; under "Reminders" the reminders sent.' },
+      { sq: 'Kolonat "Ka për të paguar" dhe "Me vonesë" tregojnë borxhin e secilit klient nga librat; me filtrin "Borxhi" sheh vetëm ata me vonesë. Te furnitorët kolona quhet "Detyrimi ynë".', en: 'The "Owes us" and "Overdue" columns show each customer\'s debt from the books; the "Debt" filter shows only those who are late. For vendors the column is "We owe".' },
     ],
   },
 
@@ -605,7 +608,7 @@ const BASE: Record<string, Guide> = {
   '/tasks/setup': {
     what: { sq: 'Detyrat që përsëriten vetë, modelet (shumë detyra me një klik) dhe detyrat që programi i krijon nga ajo që ndodh.', en: 'Tasks that repeat by themselves, templates (many tasks with one click) and tasks the program makes from what happens.' },
     steps: [
-      { sq: 'Te "Që përsëriten" shto p.sh. "Hapja e dyqanit" çdo ditë pune, me pikat e kontrollit një për rresht.', en: 'Under "Repeating" add e.g. "Opening the shop" every working day, with its steps one per line.' },
+      { sq: 'Te "Që përsëriten" shto p.sh. "Hapja e marketit" çdo ditë pune, me pikat e kontrollit një për rresht.', en: 'Under "Repeating" add e.g. "Opening the shop" every working day, with its steps one per line.' },
       { sq: 'Te "Modelet" bëj një grup detyrash (p.sh. "Punëtori i ri") dhe nise me "Fillo" kur të duhet.', en: 'Under "Templates" make a set of tasks (e.g. "New employee") and start it with "Start" when needed.' },
       { sq: 'Te "Automatik" ndiz rastet që do: faturat e vonuara, diferencat në arkë, stoku i ulët, lotet, kontratat, afatet tatimore, kontaktet e reja.', en: 'Under "Automatic" switch on what you want: late invoices, till differences, low stock, lots, contracts, tax deadlines, new contacts.' },
     ],
@@ -633,7 +636,7 @@ const BASE: Record<string, Guide> = {
     what: { sq: 'Klasifikimi ABC: cilët artikuj e mbajnë biznesin. A janë pak artikuj që bëjnë 80 % të vlerës që del nga stoku, B 15 % e radhës, C shumica e artikujve me pak vlerë.', en: 'ABC classification: which items carry the business. A are the few items making 80 % of the value that leaves the stock, B the next 15 %, C most items with little value.' },
     steps: [
       { sq: 'Kliko një klasë (A, B ose C) për të parë artikujt e saj, më të vlefshmit së pari.', en: 'Tap a class (A, B or C) to see its items, the most valuable first.' },
-      { sq: 'Zgjidh lart një njësi për ta parë klasifikimin vetëm të atij dyqani.', en: 'Pick a unit at the top to see the classification of that store alone.' },
+      { sq: 'Zgjidh lart një njësi për ta parë klasifikimin vetëm të asaj njësie.', en: 'Pick a unit at the top to see the classification of that store alone.' },
       { sq: 'Te "Në stok, por pa shitje" zgjidh periudhën (30, 60, 90, 180 ditë, një vit, ose që nga një datë) dhe shiko çka nuk është shitur dhe sa para rrinë në raft.', en: 'Under "In stock, but not sold" choose the period (30, 60, 90, 180 days, a year, or since a date) and see what has not sold and how much money stands on the shelf.' },
       { sq: 'Te "Rregullat" ndrysho pragjet (80/95 %), sa shpesh numërohet çdo klasë, dhe nëse do, ndiz XYZ (sa rregullisht shiten artikujt).', en: 'Under "Rules" change the limits (80/95 %), how often each class is counted and, if you want, switch on XYZ (how regularly items sell).' },
     ],
@@ -644,9 +647,9 @@ const BASE: Record<string, Guide> = {
     related: [{ href: '/wms/counts', label: { sq: 'Inventarizimi', en: 'Stock count' } }, { href: '/inventory/check', label: { sq: 'Kontrollo artikullin', en: 'Check item' } }],
   },
   '/inventory/check': {
-    what: { sq: 'Skano një artikull dhe shiko sa ka çdo dyqan dhe magazinë. Kur njësisë sate i mungon, programi të tregon nga cila njësi ta marrësh dhe sa.', en: 'Scan an item and see how much every store and warehouse has. When your unit is short, the program tells you which unit to take it from and how much.' },
+    what: { sq: 'Skano një artikull dhe shiko sa ka çdo njësi. Kur njësisë sate i mungon, programi të tregon nga cila njësi ta marrësh dhe sa.', en: 'Scan an item and see how much every store and warehouse has. When your unit is short, the program tells you which unit to take it from and how much.' },
     steps: [
-      { sq: 'Lart djathtas zgjidh "Njësia ime" (dyqani ku je). Programi e mban mend në këtë pajisje.', en: 'Top right, choose "My unit" (the store you are in). The device remembers it.' },
+      { sq: 'Lart djathtas zgjidh "Njësia ime" (njësia ku je). Programi e mban mend në këtë pajisje.', en: 'Top right, choose "My unit" (the store you are in). The device remembers it.' },
       { sq: 'Skano artikullin me Zebra, me kamerën e telefonit, ose shkruaj emrin e tij.', en: 'Scan the item with the Zebra, the phone camera, or type its name.' },
       { sq: 'Lexo sugjerimin: "Merr 36 nga Market Ulpiana". Ajo njësi jep vetëm atë që ka mbi minimumin e vet, që të mos mbetet vetë pa mall.', en: 'Read the suggestion: "Take 36 from Market Ulpiana". That unit gives only what it has above its own minimum, so it does not run short itself.' },
       { sq: 'Shtyp "Kërko nga …", kontrollo sasinë dhe dërgoje. Njerëzit e asaj njësie njoftohen menjëherë.', en: 'Press "Ask … for it", check the quantity and send it. The people of that unit are told right away.' },

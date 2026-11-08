@@ -6,7 +6,7 @@ const dict: Record<string, string> = {
   'How much every store has, and where to take it from': 'Sa ka çdo njësi dhe nga ku ta marrësh',
   'Scan the item or type its name': 'Skano artikullin ose shkruaj emrin',
   'Scan any item to see how much every store and warehouse has. When your unit is short, it tells you which unit to take it from.':
-    'Skano çdo artikull për të parë sa ka çdo dyqan dhe magazinë. Kur njësisë sate i mungon, të tregon nga cila njësi ta marrësh.',
+    'Skano çdo artikull për të parë sa ka çdo njësi. Kur njësisë sate i mungon, të tregon nga cila njësi ta marrësh.',
   '{n} items match “{q}”: tap one': '{n} artikuj përputhen me “{q}”: zgjidh njërin',
   'Back to the {n} matches': 'Kthehu te {n} artikujt e gjetur',
   'My unit': 'Njësia ime',
@@ -58,7 +58,7 @@ const dict: Record<string, string> = {
   'No unit has it yet.': 'Asnjë njësi nuk e ka ende.',
   'In every unit': 'Në çdo njësi',
   'How much each store and warehouse has, and where to take it from when one is short.':
-    'Sa ka çdo dyqan dhe magazinë, dhe nga ku ta marrësh kur njërës i mungon.',
+    'Sa ka çdo njësi, dhe nga ku ta marrësh kur njërës i mungon.',
 
   // till
   'no other unit has it': 'asnjë njësi tjetër nuk e ka',
@@ -67,6 +67,6 @@ const dict: Record<string, string> = {
   // replenishment
   'Take from other units before buying': 'Merr nga njësitë e tjera para se të blesh',
   'When another store or warehouse has more than its minimum, that is moved first and only the rest is bought.':
-    'Kur një dyqan ose magazinë tjetër ka më shumë se minimumi i vet, ajo transferohet së pari dhe blihet vetëm pjesa që mbetet.',
+    'Kur një njësi tjetër ka më shumë se minimumi i vet, ajo transferohet së pari dhe blihet vetëm pjesa që mbetet.',
 }
 export default dict

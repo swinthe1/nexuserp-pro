@@ -106,7 +106,14 @@ export function td(value: string | null | undefined): string {
   if (value === null || value === undefined) return ''
   const d = DICTS[current]
   if (!d) return value
-  return d[value] ?? d[`data:${value}`] ?? matchPattern(value) ?? value
+  const exact = d[value] ?? d[`data:${value}`]
+  if (exact) return exact
+  if (value.endsWith(' (observed)')) {           // a holiday moved off the weekend
+    const base = value.slice(0, -' (observed)'.length)
+    const b = d[base] ?? d[`data:${base}`]
+    if (b) return t('{name} (day off moved)', { name: b })
+  }
+  return matchPattern(value) ?? value
 }
 
 /** Enum values from the database (bank_transfer, in_transit…): translated label, or a readable English fallback. */

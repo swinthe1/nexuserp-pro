@@ -3,7 +3,7 @@ import { TillTasks } from '@/features/tasks/components/till-tasks'
 import { whereElsewhere } from '@/features/inventory/where'
 import {
   ArrowLeft, BadgePercent, Banknote, Camera, Check, CloudOff, CreditCard, Ellipsis, Landmark, ListOrdered, LogOut, Minus, NotebookPen, Plus, Printer, ReceiptText, RotateCcw, ScanLine, Search,
-  HandCoins, Lock, NotebookTabs, Pin, PinOff, ShieldCheck, Ticket, Trash2, UserRound, Users, Wallet, X,
+  HandCoins, Lock, NotebookTabs, Pause, Pin, PinOff, ShieldCheck, Ticket, Trash2, UserRound, Users, Wallet, X,
 } from 'lucide-react'
 import * as React from 'react'
 import { bestPromo } from '../promotions'
@@ -62,6 +62,13 @@ type Method = (typeof METHODS)[number]['id']
 type Line = { key: string; variant_id: string; name: string; sku: string; price: number; qty: number; discount: number; rate: number; barcode: string | null }
 type PricedLine = Line & { card?: boolean; promo?: { id: string; name: string } }
 export type Tender = { method: Method; amount: number; reference?: string | null }
+/** a sale put aside while the customer fetches something: kept on this device, for this shift */
+type Held = { id: string; at: string; lines: Line[]; customer: string | null; card: AppliedCard | null }
+const MAX_HELD = 3
+const heldKey = (session: string) => `pos.held.${session}`
+const readHeld = (session: string): Held[] => { try { return JSON.parse(localStorage.getItem(heldKey(session)) ?? '[]') as Held[] } catch { return [] } }
+const writeHeld = (session: string, h: Held[]) => { try { if (h.length) localStorage.setItem(heldKey(session), JSON.stringify(h)); else localStorage.removeItem(heldKey(session)) } catch { /* private window */ } }
+
 type AppliedCard = { id: string; number: string; holder: string; program: TillProgram; points: number; monthUsed: number }
 type Redeem = { points: number; amount: number; pct: Record<string, number> }
 
@@ -500,6 +507,35 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   const voidSale = () => requestVoid({ entries: lines.length ? [{ kind: 'void_sale', description: tn(lines.length, '{n} line', '{n} lines'), quantity: itemsCount,
     amount: r2(total) }] : [], apply: clearSale })
 
+  /* ---------- sales on hold: put aside without voiding, back with one tap (up to three) */
+  const [held, setHeldState] = React.useState<Held[]>(() => readHeld(session.id))
+  const setHeld = (h: Held[]) => { setHeldState(h); writeHeld(session.id, h) }
+  const heldTotal = (h: Held) => r2(h.lines.reduce((a, l) => a + lineTotal(l), 0))
+  const canHold = lines.length > 0 && !redeem && held.length < MAX_HELD
+  const holdSale = () => {
+    if (!lines.length) return
+    if (redeem) { setFlash({ tone: 'error', text: t('Points are being spent on this sale: finish it or undo the points first') }); return }
+    if (held.length >= MAX_HELD) { setFlash({ tone: 'error', text: t('Already {n} sales on hold: take one back first', { n: MAX_HELD }) }); return }
+    setHeld([...held, { id: crypto.randomUUID(), at: new Date().toISOString(), lines, customer, card }])
+    // not a void: the lines wait, nothing leaves the sale
+    setLines([]); setSelected(null); setCustomer(data.register.default_customer_id); setMultiplier(null); setCard(null); setRedeem(null)
+    setFlash({ tone: 'ok', text: t('Sale put on hold. Tap it above the lines to take it back.') })
+    focusSearch()
+  }
+  const recallSale = (id: string) => {
+    const h = held.find((x) => x.id === id)
+    if (!h) return
+    if (redeem) { setFlash({ tone: 'error', text: t('Points are being spent on this sale: finish it or undo the points first') }); return }
+    // the sale on screen takes its place on hold, so nothing is lost
+    const rest = held.filter((x) => x.id !== id)
+    setHeld(lines.length ? [...rest, { id: crypto.randomUUID(), at: new Date().toISOString(), lines, customer, card }] : rest)
+    setLines(h.lines); setCustomer(h.customer); setCard(h.card); setRedeem(null); setSelected(null); setFlash(null)
+    focusSearch()
+  }
+  /** a sale on hold the customer does not want after all: a void, like clearing it */
+  const dropHeld = (h: Held) => requestVoid({ entries: [{ kind: 'void_sale', description: tn(h.lines.length, '{n} line', '{n} lines'),
+    quantity: r2(h.lines.reduce((a, l) => a + l.qty, 0)), amount: heldTotal(h) }], apply: () => setHeld(held.filter((x) => x.id !== h.id)) })
+
   /* ---------- finishing a sale: queue first, then everything else */
   const [lastNumbers, setLastNumbers] = React.useState<Record<string, string>>({})
   useOnSynced(React.useCallback((it: QueuedSale) => { if (it.number) setLastNumbers((m) => ({ ...m, [it.client_uuid]: it.number! })) }, []))
@@ -638,6 +674,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       else if (e.key === 'F4') { e.preventDefault(); setDialog('customer') }
       else if (e.key === 'F3') { e.preventDefault(); setFlash(null); setDialog('card') }
       else if (e.key === 'F9') { e.preventDefault(); openRefund() }
+      else if (e.key === 'F8') { e.preventDefault(); if (lines.length) holdSale(); else if (held.length) recallSale(held[0]!.id) }
       else if ((e.key === 'F12' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) && lines.length) { e.preventDefault(); openPay() }
       else if (e.key === 'Escape') { if (query) setQuery(''); else if (multiplier) setMultiplier(null) }
       else if (query && document.activeElement === search.current && (e.key === 'ArrowDown' || e.key === 'ArrowUp') && visible.length) {
@@ -901,6 +938,22 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
               <Kbd>F3</Kbd>
             </button>
           ))}
+          {held.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 border-b bg-warning/10 px-3 py-2">
+              <span className="text-xs font-medium text-muted-foreground">{t('On hold|till')}</span>
+              {held.map((h) => (
+                <span key={h.id} className="inline-flex items-center rounded-md border bg-card text-xs shadow-xs">
+                  <button type="button" className="px-2 py-1.5 text-left hover:bg-muted/60" onClick={() => recallSale(h.id)}
+                    title={t('Take this sale back')}>
+                    <span className="font-medium tabular">{formatDateWith(new Date(h.at), { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="text-muted-foreground"> · {tn(h.lines.length, '{n} line', '{n} lines')} · </span>
+                    <span className="font-semibold tabular">{formatMoney(heldTotal(h))}</span>
+                  </button>
+                  <button type="button" className="border-l px-1.5 py-1.5 text-muted-foreground hover:text-destructive" aria-label={t('Drop this sale')} onClick={() => dropHeld(h)}><X className="size-3.5" /></button>
+                </span>
+              ))}
+            </div>
+          )}
           <div className="min-h-0 flex-1 overflow-y-auto" role="listbox" aria-label={t('Sale lines')}>
             {!lines.length ? (
               <div className="grid h-full place-items-center p-8 text-center">
@@ -937,8 +990,11 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
               <span className="text-sm font-medium">{t('Total with VAT|till')}</span>
               <span className="text-[34px] font-semibold leading-none tracking-[-0.02em] tabular">{formatMoney(total)} <span className="text-sm font-normal text-muted-foreground">{cur}</span></span>
             </div>
-            <div className="mt-3 grid grid-cols-[auto_1fr] gap-2">
+            <div className="mt-3 grid grid-cols-[auto_auto_1fr] gap-2">
               <Button variant="outline" size="lg" className="h-14" disabled={!lines.length} onClick={() => { if (lines.length < 3 || confirm(t('Clear this sale?'))) voidSale() }}><X /> {t('Clear')}</Button>
+              <Button variant="outline" size="lg" className="h-14" disabled={!canHold} onClick={holdSale}
+                title={held.length >= MAX_HELD ? t('Already {n} sales on hold: take one back first', { n: MAX_HELD }) : t('Put the sale aside while the customer fetches something (F8)')}>
+                <Pause /> {t('Hold|till')}</Button>
               <Button size="lg" className="h-14 text-lg" disabled={!lines.length || atkStop} onClick={openPay}>{t('Pay {amount}', { amount: formatMoney(total) })} <Kbd className="ml-2 border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground">F12</Kbd></Button>
             </div>
           </div>
@@ -973,7 +1029,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       {dialog === 'voucher' && <VoucherDialog data={data} sessionId={session.id} currency={cur} onClose={() => { setDialog(null); focusSearch() }} />}
       {dialog === 'cash' && <CashDialog data={data} sessionId={session.id} currency={cur} onClose={() => { setDialog(null); focusSearch() }} />}
       {handover && <WaiterHandoverDialog data={data} onClose={() => { setHandover(false); void waiters.refetch(); focusSearch() }} />}
-      {dialog === 'close' && <CloseDialog data={data} pending={pending.length} waitersOwing={waiters.required ? waiters.owing : []} onHandover={() => { setDialog(null); setHandover(true) }}
+      {dialog === 'close' && <CloseDialog data={data} pending={pending.length} held={held.length} waitersOwing={waiters.required ? waiters.owing : []} onHandover={() => { setDialog(null); setHandover(true) }}
         onClose={() => { setDialog(null); switchAfterClose.current = false; focusSearch() }}
         onClosed={async (sessionId) => {
           // switching cashier: the shift is closed, the next cashier signs in and opens hers
@@ -1669,7 +1725,7 @@ function CashDialog({ data, sessionId, currency, onClose }: { data: TillData; se
   )
 }
 
-function CloseDialog({ data, pending, onClose, onClosed, waitersOwing = [], onHandover }: { data: TillData; pending: number; onClose: () => void; onClosed: (sessionId: string) => Promise<void>
+function CloseDialog({ data, pending, held = 0, onClose, onClosed, waitersOwing = [], onHandover }: { data: TillData; pending: number; held?: number; onClose: () => void; onClosed: (sessionId: string) => Promise<void>
   /** the restaurant: waiters who have not handed over their takings yet (the shift waits for them) */
   waitersOwing?: WaiterOwes[]; onHandover?: () => void }) {
   const session = data.session!
@@ -1736,6 +1792,8 @@ function CloseDialog({ data, pending, onClose, onClosed, waitersOwing = [], onHa
         {waitersOwing.length > 0 && <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-warning/50 bg-warning/5 px-3 py-2 text-[13px]">
           <span className="flex-1">{t('The waiters hand over their takings first: {list}', { list: waitersOwing.map((w) => `${w.name} ${formatMoney(num(w.owed))}`).join(', ') })}</span>
           {onHandover && <Button size="sm" variant="outline" onClick={onHandover}><HandCoins /> {t('Take in the handovers')}</Button>}</div>}
+        {held > 0 && <div className="rounded-md border border-warning/50 bg-warning/5 px-3 py-2 text-[13px]">
+          {tn(held, '{n} sale is still on hold: finish it or drop it before closing, otherwise it is lost.', '{n} sales are still on hold: finish them or drop them before closing, otherwise they are lost.')}</div>}
         {pending > 0 && <div className="rounded-md border border-warning/50 bg-warning/5 px-3 py-2 text-[13px]">
           {tn(pending, '{n} sale from this device is still waiting to be sent.', '{n} sales from this device are still waiting to be sent.')} <button type="button" className="font-medium text-primary hover:underline" onClick={() => void syncNow()}>{t('Send now')}</button> {t('before closing, or they move to the next shift.')}</div>}
         <div className="grid gap-5 sm:grid-cols-2">

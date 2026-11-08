@@ -62,7 +62,7 @@ export default {
   'Repeats': 'Përsëritet',
   'Last date (optional)': 'Data e fundit (opsionale)',
   'Count it in the forecast': 'Llogarite në parashikim',
-  'e.g. Shop rent': 'p.sh. Qiraja e dyqanit',
+  'e.g. Shop rent': 'p.sh. Qiraja e lokalit',
 
   // propozimi i pagesave
   'Supplier bills that are still open, best first: overdue, then early-payment discounts, then by due date. Tick what to pay and pay it in one go: one payment per supplier.': 'Faturat e hapura të furnitorëve, më të rëndësishmet para: të vonuarat, pastaj ato me zbritje për pagesë të hershme, pastaj sipas afatit. Shëno çka do të paguash dhe paguaj me një klikim: një pagesë për çdo furnitor.',
@@ -91,7 +91,7 @@ export default {
   '{n} payments made, {amount} in total.': 'U bënë {n} pagesa, gjithsej {amount}.',
 
   // emra që ngatërroheshin
-  'Store|shop': 'Dyqani',
+  'Store|shop': 'Njësia',
   'Invitation refused': 'Ftesa u refuzua',
   'You are now in the company': 'Tani jeni pjesë e kompanisë',
   'invited you ({name}) as {roles}': 'ju ka ftuar ({name}) si {roles}',

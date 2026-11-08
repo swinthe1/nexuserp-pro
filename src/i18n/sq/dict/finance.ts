@@ -103,7 +103,7 @@ export default {
   "No cost center": "Pa qendër kostoje",
   "Company total": "Totali i kompanisë",
   "Edit {name}": "Ndrysho {name}",
-  "Tirana store": "Dyqani Tiranë",
+  "Tirana store": "Marketi Tiranë",
   "Nothing (top level)": "Asgjë (niveli i parë)",
   "Cost center saved": "Qendra e kostos u ruajt",
   "Accounting months": "Muajt kontabël",

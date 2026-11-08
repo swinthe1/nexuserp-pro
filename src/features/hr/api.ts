@@ -250,6 +250,12 @@ export function usePayrollRun(id: string | undefined) {
   return useQuery({ queryKey: [...key, 'run', id], enabled: !!companyId && !!id,
     queryFn: async () => unwrap(await supabase.from('payroll_runs').select('*').eq('id', id!).single()) })
 }
+/** How many others in the company may approve payroll: with none, the person who calculated it may approve it too. */
+export function usePayrollOtherApprovers() {
+  const { companyId, key } = useCo()
+  return useQuery({ queryKey: [...key, 'other-approvers'], enabled: !!companyId, staleTime: 60_000,
+    queryFn: async () => unwrap(await supabase.rpc('payroll_other_approvers', { p_company: companyId! })) as number })
+}
 export type PayslipRow = Tables<'payslips'> & {
   employee: { full_name: string; number: string; personal_number: string | null; iban: string | null; department: { name: string } | null; position: { title: string } | null } | null
   lines: Tables<'payslip_lines'>[]

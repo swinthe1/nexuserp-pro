@@ -1,5 +1,6 @@
 import { CalendarPlus, Lock, LockOpen } from 'lucide-react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Can, useCompany } from '@/app/company-provider'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
@@ -149,7 +150,11 @@ function Periods() {
                           {p.status === 'open' && <Button size="sm" variant="ghost" onClick={() => setStatus.mutate({ id: p.id, status: 'closed' }, { onSuccess: () => toast.success(t('{month} closed', { month: formatMonth(p.start_date) })) })}><Lock /> {t('Close month')}</Button>}
                           {p.status === 'closed' && <>
                             <Button size="sm" variant="ghost" onClick={() => setStatus.mutate({ id: p.id, status: 'open' }, { onSuccess: () => toast.success(t('{month} reopened', { month: formatMonth(p.start_date) })) })}><LockOpen /> {t('Reopen')}</Button>
-                            <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setStatus.mutate({ id: p.id, status: 'locked' }, { onSuccess: () => toast.success(t('{month} locked', { month: formatMonth(p.start_date) })) })}>{t('Lock')}</Button>
+                            <ConfirmDialog destructive title={t('Lock {month} for good?', { month: formatMonth(p.start_date) })}
+                              description={t('A locked month never opens again: nobody, not even the administrator, can add or change an entry dated in it. Lock it only after the declarations for it are filed and the books are checked.')}
+                              confirmLabel={t('Lock for good')}
+                              trigger={<Button size="sm" variant="ghost" className="text-destructive">{t('Lock')}</Button>}
+                              onConfirm={async () => { await setStatus.mutateAsync({ id: p.id, status: 'locked' }); toast.success(t('{month} locked', { month: formatMonth(p.start_date) })) }} />
                           </>}
                         </Can>
                       </TableCell>

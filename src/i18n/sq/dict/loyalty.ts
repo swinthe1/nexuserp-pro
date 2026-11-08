@@ -50,7 +50,7 @@ export default {
   'pts': 'pikë',
   'Points': 'Pikët',
   'No types of card yet': 'Ende pa lloje kartelash',
-  'A type says what the card gives. Most shops need one: a discount card or a points card.': 'Lloji tregon çfarë jep kartela. Shumicës së dyqaneve u mjafton një: kartelë me zbritje ose me pikë.',
+  'A type says what the card gives. Most shops need one: a discount card or a points card.': 'Lloji tregon çfarë jep kartela. Shumicës së bizneseve u mjafton një: kartelë me zbritje ose me pikë.',
   'Switched off': 'E fikur',
   'Not for {n} category': 'Jo për {n} kategori',
   'Not for {n} categories': 'Jo për {n} kategori',

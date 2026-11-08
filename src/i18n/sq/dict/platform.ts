@@ -124,7 +124,7 @@ export default {
   '{part} is hidden from the menu': '{part} u fsheh nga menuja',
   'Parts of the menu': 'Pjesët e menusë',
   "Switch off what this company does not use, for example Manufacturing in a shop. It disappears from everyone's menu; nothing is deleted and you can switch it back on at any time. Each person can also pin the pages they use most with the star.":
-    'Fikni atë që kjo kompani nuk e përdor, për shembull Prodhimin në një dyqan. Zhduket nga menuja e të gjithëve; nuk fshihet asgjë dhe mund ta ndizni përsëri kur të doni. Çdo person mund të mbajë lart edhe faqet që përdor më shumë, me yllin.',
+    'Fikni atë që kjo kompani nuk e përdor, për shembull Prodhimin në një market. Zhduket nga menuja e të gjithëve; nuk fshihet asgjë dhe mund ta ndizni përsëri kur të doni. Çdo person mund të mbajë lart edhe faqet që përdor më shumë, me yllin.',
 
   // sign-in pages
   'Invited by your company? {link}': 'Ju ka ftuar kompania? {link}',
@@ -132,7 +132,7 @@ export default {
     'Llogaritë hapen me ftesë. Përdorni emailin me të cilin ju ftoi kompania dhe hyni automatikisht në të.',
   "This email has no invitation. Ask your company's administrator to invite you, then try again.":
     'Ky email nuk ka ftesë. Kërkojini administratorit të kompanisë t’ju ftojë, pastaj provoni përsëri.',
-  'Shop or market': 'Dyqan ose market',
+  'Shop or market': 'Market ose shitje me pakicë',
   'Bar or café': 'Bar ose kafene',
   'Restaurant': 'Restorant',
   'Wholesale or distributor': 'Shumicë ose distributor',
@@ -141,8 +141,8 @@ export default {
   'Till, stock, purchasing and accounting. Without manufacturing and delivery planning.': 'Arka, stoku, blerjet dhe kontabiliteti. Pa prodhim dhe pa planifikim të dërgesave.',
   "Till, stock and purchasing. Without quotes and pipeline, warehouse floor, manufacturing and logistics.": "Arka, stoku dhe blerjet. Pa oferta dhe shitje me porosi, pa punë me skaner, prodhim dhe logjistikë.",
   'Like a café: till, stock and purchasing, without the parts a kitchen does not use.': 'Si kafeneja: arka, stoku dhe blerjet, pa pjesët që një kuzhinë nuk i përdor.',
-  "Sales orders, warehouse, deliveries and accounting. Without the shop till and manufacturing.": "Porositë e shitjes, stoku, dërgesat dhe kontabiliteti. Pa arkë dyqani dhe pa prodhim.",
-  'Everything except the shop till.': 'Gjithçka përveç arkës së dyqanit.',
+  "Sales orders, warehouse, deliveries and accounting. Without the shop till and manufacturing.": "Porositë e shitjes, stoku, dërgesat dhe kontabiliteti. Pa arkë dhe pa prodhim.",
+  'Everything except the shop till.': 'Gjithçka përveç arkës.',
   "Quotes, invoices, accounting and staff. Without stock, warehouse, till, manufacturing and logistics.": "Oferta, fatura, kontabiliteti dhe stafi. Pa stok, punë me skaner, arkë, prodhim dhe logjistikë.",
   'The whole menu. Hide what is not used under Company settings → Menu.': 'E gjithë menyja. Atë që nuk përdoret e fshihni te Cilësimet e kompanisë → Menyja.',
   'Type of business': 'Lloji i biznesit',

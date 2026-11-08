@@ -9,7 +9,7 @@ export const GUIDES_B: Record<string, Guide> = {
   '/inventory/alerts': {
     what: { sq: 'Artikujt që kanë rënë te pika e riporositjes ose më poshtë, me sasinë që duhet porositur.', en: 'Items at or below their reorder point, with the quantity to order.' },
     steps: [
-      { sq: 'Filtro sipas njësisë për të parë çka po mbaron në secilin dyqan ose depo.', en: 'Filter by unit to see what is running low in each shop or depot.' },
+      { sq: 'Filtro sipas njësisë për të parë çka po mbaron në secilën pikë shitjeje ose depo.', en: 'Filter by unit to see what is running low in each shop or depot.' },
       { sq: '"Porosia e sugjeruar" e mbush njësinë deri te maksimumi, pa atë që është tashmë "Në ardhje".', en: '"Suggested order" fills the unit up to its maximum, minus what is already "Incoming".' },
       { sq: 'Kliko "Shëno si të parë" kur e ke marrë parasysh sinjalizimin.', en: 'Click "Mark as seen" once you have dealt with the alert.' },
       { sq: 'Për ta porositur hap "Rifurnizim" poshtë tabelës; kur vjen malli, kliko "Prano mallin".', en: 'To order it, open "Replenishment" under the table; when the goods arrive, click "Receive goods".' },
@@ -67,7 +67,7 @@ export const GUIDES_B: Record<string, Guide> = {
     what: { sq: 'Transferet: malli që kalon nga një njësi në tjetrën, ose nga një raft në tjetrin.', en: 'Transfers: goods moving from one unit to another, or from one shelf to another.' },
     steps: [
       { sq: 'Kliko "Transferim i ri" dhe zgjidh nga ku dhe ku shkon malli.', en: 'Click "New transfer" and choose where the goods come from and where they go.' },
-      { sq: 'Te "Vëmendje" sheh kërkesat nga dyqanet, mallin "Në rrugë mbi një ditë" dhe ato "Pranuar me diferenca".', en: 'Under "Attention" see requests from shops, goods "On the road over a day" and those "Received with differences".' },
+      { sq: 'Te "Vëmendje" sheh kërkesat nga pikat e shitjes, mallin "Në rrugë mbi një ditë" dhe ato "Pranuar me diferenca".', en: 'Under "Attention" see requests from shops, goods "On the road over a day" and those "Received with differences".' },
       { sq: 'Kliko një transfer që është në rrugë për ta numëruar dhe pranuar te njësia pranuese.', en: 'Click a transfer on the road to count and receive it at the receiving unit.' },
     ],
     after: { sq: 'Vlera e stokut nuk ndryshon: malli vetëm ndërron vend. Edhe lëvizjet nga skaneri ("Lëviz mallin") dalin këtu.', en: 'The stock value does not change: the goods only change place. Moves from the scanner ("Move stock") show here too.' },
@@ -83,14 +83,14 @@ export const GUIDES_B: Record<string, Guide> = {
       { sq: 'Për çdo mungesë zgjidh "Humbur gjatë rrugës" ose "Kthehet te dërguesi".', en: 'For anything missing choose "Lost on the way" or "Back to the sender".' },
     ],
     mistakes: [
-      { sq: 'Kur dyqani e kërkon mallin, aktivizo "Kjo është kërkesë nga njësia pranuese": depoja e kontrollon dhe e dërgon.', en: 'When a shop asks for goods, switch on "This is a request from the receiving store": the depot checks and ships it.' },
+      { sq: 'Kur pika e shitjes e kërkon mallin, aktivizo "Kjo është kërkesë nga njësia pranuese": depoja e kontrollon dhe e dërgon.', en: 'When a shop asks for goods, switch on "This is a request from the receiving store": the depot checks and ships it.' },
       { sq: 'Pranimi me diferenca nuk zhbëhet: numëro me kujdes para se ta konfirmosh.', en: 'Receiving with differences cannot be undone: count carefully before you confirm.' },
     ],
     after: { sq: 'Vlera e stokut nuk ndryshon. Humbjet gjatë rrugës dalin nga stoku dhe regjistrohen në kontabilitet; tepricat shtohen në stok.', en: 'The stock value does not change. Losses on the way leave stock and are booked; extras are added to stock.' },
     tour: [
       { target: 'From', say: { sq: 'Njësia nga del malli.', en: 'The unit the goods leave from.' } },
       { target: 'To', say: { sq: 'Njësia ku shkon malli; e njëjta njësi = lëvizje mes rafteve.', en: 'The unit the goods go to; the same unit = moving between shelves.' } },
-      { target: 'This is a request from the receiving store', say: { sq: 'Aktivizoje kur dyqani e kërkon mallin nga depoja.', en: 'Switch it on when a shop asks the depot for goods.' } },
+      { target: 'This is a request from the receiving store', say: { sq: 'Aktivizoje kur pika e shitjes e kërkon mallin nga depoja.', en: 'Switch it on when a shop asks the depot for goods.' } },
     ],
   },
   '/inventory/adjustments': {
@@ -132,7 +132,7 @@ export const GUIDES_B: Record<string, Guide> = {
       { sq: 'Për një fletë A4 të përdorur pjesërisht, cakto "Fillo nga etiketa" që të mos humbasësh etiketat bosh.', en: 'For a partly used A4 sheet, set "Start at label" so the empty labels are not wasted.' },
       { sq: 'Nëse printimi del pak jashtë etiketave, rregulloje te "Rregullimi i printerit".', en: 'If the print lands a little off the labels, fix it under "Printer adjustment".' },
     ],
-    after: { sq: 'Artikujt pa barkod mund të marrin barkod të dyqanit me "Jepu barkod … artikujve që s’kanë".', en: 'Items without a barcode can get an in-store barcode with "Give barcodes to the … items without one".' },
+    after: { sq: 'Artikujt pa barkod mund të marrin barkod të brendshëm me "Jepu barkod … artikujve që s’kanë".', en: 'Items without a barcode can get an in-store barcode with "Give barcodes to the … items without one".' },
     related: [{ href: '/inventory/levelling', label: { sq: 'Nivelimi i çmimeve', en: 'Price levelling' } }],
     tour: [
       { target: 'Items', say: { sq: 'Zgjidh nga ku i merr artikujt.', en: 'Choose where to take the items from.' } },
@@ -141,7 +141,7 @@ export const GUIDES_B: Record<string, Guide> = {
     ],
   },
   '/inventory/warehouses': {
-    what: { sq: 'Njësitë (depo, dyqane) dhe raftet e tyre: çdo lëvizje stoku shkon nga një vend te tjetri.', en: 'Units (depots, shops) and their shelves: every stock movement goes from one place to another.' },
+    what: { sq: 'Njësitë (depo, pika shitjeje) dhe raftet e tyre: çdo lëvizje stoku shkon nga një vend te tjetri.', en: 'Units (depots, shops) and their shelves: every stock movement goes from one place to another.' },
     steps: [
       { sq: 'Kliko "Njësi e re", shkruaj kodin, emrin dhe llojin; krijohet vetë edhe një raft stoku.', en: 'Click "New warehouse", type the code, name and type; a stock shelf is created with it.' },
       { sq: 'Zgjidh njësinë majtas për të parë raftet dhe vlerën e stokut në to.', en: 'Choose a unit on the left to see its shelves and the stock value on them.' },

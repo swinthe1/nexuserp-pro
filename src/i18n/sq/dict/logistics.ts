@@ -135,7 +135,7 @@ export default {
   'Collect {amount} before handing over the goods.': 'Mblidhni {amount} para se të dorëzoni mallin.',
   'What happened': 'Çfarë ndodhi',
   'e.g. Customer not at home, phone off': 'p.sh. Klienti nuk ishte në shtëpi, telefoni i fikur',
-  'e.g. Signed by the shop manager': 'p.sh. Nënshkroi menaxheri i dyqanit',
+  'e.g. Signed by the shop manager': 'p.sh. Nënshkroi menaxheri i njësisë',
   'Why the stop is skipped': 'Pse po kapërcehet ndalesa',
   '{number} delivered': '{number} u dorëzua',
   '{number} marked as failed': '{number} u shënua si e padorëzuar',
