@@ -312,6 +312,4 @@ export default {
   "Internal moves": "Interna kretanja",
   "Administration|menu": "Administracija",
   "Dark look": "Tamni izgled",
-  "Switch to the light look": "Pređi na svetli izgled",
-  "Switch to the dark look": "Pređi na tamni izgled",
 } satisfies Dict
