@@ -1,8 +1,9 @@
-import { ChevronRight, PanelLeftClose, PanelLeftOpen, Search, Star } from 'lucide-react'
+import { ChevronRight, Moon, PanelLeftClose, PanelLeftOpen, Search, Star, Sun } from 'lucide-react'
 import { UnitPicker } from '@/components/layout/unit-picker'
 import * as React from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
+import { useTheme } from '@/app/theme-provider'
 import { moduleLook } from '@/app/modules'
 import { NAV, type NavItem } from '@/app/nav'
 import { menuEntries, type MenuEntry } from '@/components/layout/hubs'
@@ -96,6 +97,25 @@ function SectionFlyout({ label, title, items, activeHref, onNavigate }: { label:
         </div>
       </PopoverContent>
     </Popover>
+  )
+}
+
+/** light or dark, one click: the sun on the left, the moon on the right */
+function ThemeSwitch({ className }: { className?: string }) {
+  const { resolved, setTheme } = useTheme()
+  const dark = resolved === 'dark'
+  return (
+    <button type="button" role="switch" aria-checked={dark} aria-label={t('Dark look')} title={dark ? t('Switch to the light look') : t('Switch to the dark look')}
+      onClick={() => setTheme(dark ? 'light' : 'dark')}
+      className={cn('relative flex h-5 w-10 items-center justify-between rounded-full border border-sidebar-border px-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        dark ? 'bg-primary/25' : 'bg-muted', className)}>
+      <Sun className={cn('size-3', dark ? 'text-muted-foreground' : 'text-transparent')} />
+      <Moon className={cn('size-3', dark ? 'text-transparent' : 'text-muted-foreground')} />
+      <span aria-hidden className={cn('absolute top-1/2 flex size-4 -translate-y-1/2 items-center justify-center rounded-full bg-background shadow-sm transition-all',
+        dark ? 'left-[calc(100%-1.125rem)]' : 'left-0.5')}>
+        {dark ? <Moon className="size-2.5 text-primary" /> : <Sun className="size-2.5 text-warning" />}
+      </span>
+    </button>
   )
 }
 
@@ -240,8 +260,9 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
 
       {/* the start page and what waits for approval, then the pages starred, then the parts */}
       {sections.filter((x) => x.label === 'Overview').map((section) => (
-        <div key={section.label} className="flex flex-col gap-px">
+        <div key={section.label} className="relative flex flex-col gap-px">
           {menuEntries(section.items).map((e) => <Item key={e.key} item={entryItem(e)} collapsed={false} onNavigate={onNavigate} active={e.items.some((i) => i.href === activeHref)} />)}
+          <ThemeSwitch className="absolute right-1.5 top-1.5" />
         </div>
       ))}
       {quick.length > 0 && (

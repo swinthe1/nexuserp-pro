@@ -292,6 +292,9 @@
 }
 
 /* ---- tables that fit the screen (components/ui/table.tsx): steps 1–4 when a table is too wide ---- */
+/* the columns are told apart by a thin line between them, as in a ledger */
+.fit-table > thead > tr > th:not(:last-child) { border-right: 1px solid hsl(var(--border)); }
+.fit-table > tbody > tr > td:not(:last-child), .fit-table > tfoot > tr > td:not(:last-child) { border-right: 1px solid hsl(var(--border) / 0.6); }
 .fit-table[data-fit] th, .fit-table[data-fit] th :is(button, span, div) { white-space: normal !important; }
 .fit-table[data-fit] td:not(.text-right):not(.tabular):not([data-one]) { white-space: normal !important; overflow-wrap: break-word; }
 .fit-table:is([data-fit='3'], [data-fit='4'], [data-fit='5'], [data-fit='6']) td:not([data-one]) .whitespace-nowrap { white-space: normal !important; }

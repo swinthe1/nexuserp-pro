@@ -1322,4 +1322,7 @@ export default {
   "Internal moves|menu": "Lëvizje interne",
   "Internal moves": "Lëvizje interne",
   "Administration|menu": "Administrimi",
+  "Dark look": "Pamja e errët",
+  "Switch to the light look": "Kalo në pamjen e çelët",
+  "Switch to the dark look": "Kalo në pamjen e errët",
 } satisfies Dict
