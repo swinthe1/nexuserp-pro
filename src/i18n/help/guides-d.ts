@@ -104,6 +104,7 @@ export const GUIDES_D: Record<string, Guide> = {
       { sq: 'Kliko "Bëje përfundimtare dhe kontabilizo", pastaj "Paguaj pagat" dhe zgjidh llogarinë bankare.', en: 'Click "Make final and book", then "Pay salaries" and choose the bank account.' },
       { sq: 'Te "Lista për deklaratën" eksporto listën për deklaratën mujore të pagave.', en: 'Under "Declaration list" export the list for the monthly payroll declaration.' },
       { sq: 'Miraton dikush tjetër, jo ai që i llogariti pagat. Kur në kompani askush tjetër nuk ka të drejtë miratimi (pronari punon vetë), i njëjti person mund t\'i miratojë dhe listëpagesa e shënon këtë.', en: 'Someone other than the person who calculated it approves. When nobody else in the company may approve (the owner works alone), the same person may approve and the payroll records that.' },
+      { sq: '"Urdhërpagesat për bankën" jep Excel-in me punonjësin, IBAN-in dhe pagën neto, për ta futur në e-banking.', en: '"Transfers for the bank" gives the Excel with the employee, the IBAN and the net salary, to put into e-banking.' },
     ],
     mistakes: [
       { sq: 'Ai që e llogarit listëpagesën nuk mund ta miratojë vetë: duhet dikush tjetër me të drejtë miratimi.', en: 'The person who calculated the payroll cannot approve it: someone else with approval rights must.' },

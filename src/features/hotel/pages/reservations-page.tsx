@@ -62,7 +62,11 @@ export function ReservationsPage() {
                       <TableCell className="text-[13px]">{formatDate(r.check_in)}</TableCell>
                       <TableCell className="text-[13px]">{formatDate(r.check_out)}</TableCell>
                       <TableCell className="text-[13px]">{t(SOURCES[r.source])}</TableCell>
-                      <TableCell className="text-right tabular">{formatMoney(nights(r.check_in, r.check_out) * r.rate)}</TableCell>
+                      {/* the nights and the extras on the room, as the check-out invoice will have them */}
+                      <TableCell className="text-right tabular">{(() => {
+                        const extras = ((r as { charges?: { quantity: number; unit_price: number }[] }).charges ?? []).reduce((a, c) => a + Number(c.quantity) * Number(c.unit_price), 0)
+                        return <>{formatMoney(nights(r.check_in, r.check_out) * r.rate + extras)}{extras > 0 && <span className="block text-xs text-muted-foreground">{t('incl. extras {amount}', { amount: formatMoney(extras) })}</span>}</>
+                      })()}</TableCell>
                       <TableCell><StatusBadge status={r.status} label={t(STAY_STATUS[r.status])} />
                         {r.invoice_id && <Link to={`/sales/invoices/${r.invoice_id}`} className="ml-2 text-xs text-primary hover:underline" onClick={(e) => e.stopPropagation()}>{t('Invoice')}</Link>}</TableCell>
                     </TableRow>

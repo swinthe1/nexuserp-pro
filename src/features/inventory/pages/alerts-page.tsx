@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { BellOff, PackageCheck } from 'lucide-react'
+import { BellOff, PackageCheck, ShoppingCart } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Can, useCompany } from '@/app/company-provider'
@@ -69,7 +69,11 @@ export function AlertsPage() {
       <PageHeader
         title={t('Low stock|menu')}
         description={t('Items at or below their reorder point. The suggested order fills each warehouse up to its maximum, minus what is already ordered.')}
-        actions={<Can perm="wms.write"><Button variant="outline" asChild><Link to="/inventory/receipts/new"><PackageCheck /> {t('Receive goods')}</Link></Button></Can>}
+        actions={<>
+          <Can perm="wms.write"><Button variant="outline" asChild><Link to="/inventory/receipts/new"><PackageCheck /> {t('Receive goods')}</Link></Button></Can>
+          {/* what runs out is ordered: the replenishment page proposes the quantities and makes the orders */}
+          <Can perm="procurement.read"><Button asChild><Link to="/procurement/replenishment"><ShoppingCart /> {t('Order what runs out')}</Link></Button></Can>
+        </>}
       />
       <DataTable
         tableKey="inventory.low-stock"

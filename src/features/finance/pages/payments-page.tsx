@@ -133,6 +133,12 @@ function PaymentForm({ payment }: { payment?: PaymentDetail }) {
   const currency = payment?.currency_code ?? bank?.currency_code ?? base
 
   React.useEffect(() => { if (!bankId && banks.data?.length) setBankId(banks.data.find((b) => b.account_kind === 'bank')?.id ?? banks.data[0]!.id) }, [banks.data, bankId])
+  // the way of paying follows the account: a cash box is cash, a bank is a transfer (a card or cheque is still chosen by hand)
+  React.useEffect(() => {
+    if (payment || !bank) return
+    if (bank.account_kind === 'cash') setMethod('cash')
+    else if (method === 'cash') setMethod('bank_transfer')
+  }, [bank?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   // preselect the document we came from
   const fromDoc = params.get('doc')
   React.useEffect(() => {

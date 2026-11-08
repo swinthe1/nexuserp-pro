@@ -314,6 +314,7 @@ export const GUIDES_C: Record<string, Guide> = {
       { sq: 'Te "Para mbylljes" rregullo çdo gjë me të kuqe me "Hap"; e verdha vlen të kontrollohet, por nuk e ndalon mbylljen.', en: 'Under "Before closing" fix everything in red with "Open"; yellow is worth checking but does not stop the closing.' },
       { sq: 'Shiko rezultatin e vitit: të ardhurat, shpenzimet dhe fitimin ose humbjen.', en: 'Look at the result of the year: revenue, expenses and the profit or loss.' },
       { sq: 'Zgjidh nëse rezultati kalon te kontoja 108 më 1 janar, pastaj kliko "Mbyll vitin".', en: 'Choose whether the result is carried to account 108 on 1 January, then click "Close the year".' },
+      { sq: 'Para mbylljes kontrollohen edhe numërimi vjetor i stokut dhe saldot e hapura me partnerët (dërgoni IOS për konfirmim).', en: 'Before closing, the yearly stock count and the open balances with partners are checked too (send the IOS to confirm).' },
     ],
     mistakes: [
       { sq: 'Vitet mbyllen me radhë: mbyll më parë vitet e mëparshme që janë ende të hapura.', en: 'Years close in order: first close the earlier years that are still open.' },

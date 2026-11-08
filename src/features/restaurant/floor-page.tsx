@@ -101,7 +101,10 @@ function Restaurant({ data }: { data: TillData }) {
   const areas = floor.data?.areas ?? []
   const current = areas.find((a) => a.id === area) ?? areas[0]
   const phone = usePhone()
-  const takeaway = () => { const label = prompt(t('Name for the takeaway order (optional)')) ?? undefined; void open(null, label) }
+  // a takeaway order: an optional name in the app's own window (a browser prompt looks like an error on a tablet)
+  const [takeawayOpen, setTakeawayOpen] = React.useState(false)
+  const [takeawayName, setTakeawayName] = React.useState('')
+  const takeaway = () => { setTakeawayName(''); setTakeawayOpen(true) }
   const toggleTickets = () => setKitchenPrint((a) => { prefSet('pos.kitchenprint', a ? '0' : '1'); return !a })
   const areaNav = !tabId && areas.length > 1 && (
     <nav className={cn('flex gap-1 overflow-x-auto', phone ? 'shrink-0 border-b bg-card px-3 py-2' : 'ml-3')} aria-label={t('Areas')}>
@@ -167,6 +170,17 @@ function Restaurant({ data }: { data: TillData }) {
         : <FloorView floor={floor.data} loading={floor.isLoading || (!floor.data && floor.fetchStatus === 'paused')} areaId={current?.id} onOpen={(table) => void open(table)} onOpenTab={setTabId}
             onSetup={can('pos.approve') ? () => setSetup(true) : undefined} />}
       {setup && <RoomSetupDialog warehouseId={data.register.warehouse_id} onClose={() => setSetup(false)} />}
+      <Dialog open={takeawayOpen} onOpenChange={setTakeawayOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>{t('Takeaway')}</DialogTitle><DialogDescription>{t('Name for the takeaway order (optional)')}</DialogDescription></DialogHeader>
+          <Input autoFocus className="h-12 text-base" value={takeawayName} onChange={(e) => setTakeawayName(e.target.value)} placeholder={t('e.g. Arben')}
+            onKeyDown={(e) => { if (e.key === 'Enter') { setTakeawayOpen(false); void open(null, takeawayName.trim() || undefined) } }} />
+          <DialogFooter className="gap-2">
+            <Button variant="outline" size="lg" onClick={() => setTakeawayOpen(false)}>{t('Cancel')}</Button>
+            <Button size="lg" onClick={() => { setTakeawayOpen(false); void open(null, takeawayName.trim() || undefined) }}><ShoppingBag /> {t('Start the order')}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -160,7 +160,7 @@ export function AgingPage({ kind }: { kind: 'ar' | 'ap' }) {
         <StatCard label={isAR ? t('Total to collect (with VAT)') : t('Total to pay (with VAT)')} value={formatMoney(total)} loading={aging.isLoading} hint={[isAR ? tn(rows.length, '{n} customer', '{n} customers') : tn(rows.length, '{n} vendor', '{n} vendors'), company?.base_currency].filter(Boolean).join(' · ')} />
         <StatCard label={t('Overdue (with VAT)')} value={formatMoney(overdue)} loading={aging.isLoading} tone={overdue ? (isAR ? 'warning' : 'destructive') : 'default'} hint={total ? t('{pct}% of the balance', { pct: ((overdue / total) * 100).toFixed(0) }) : undefined} />
         <StatCard label={t('Over 90 days (with VAT)')} value={formatMoney(sum('d90_plus'))} loading={aging.isLoading} tone={sum('d90_plus') ? 'destructive' : 'default'} hint={isAR ? t('Send a reminder, or consider a provision') : t('Vendors may stop supplying')} />
-        <StatCard label={t('Not matched')} value={formatMoney(-sum('unapplied'))} loading={aging.isLoading} hint={isAR ? t('Receipts not matched to an invoice') : t('Payments not matched to a bill')} />
+        <StatCard label={t('Not matched')} value={formatMoney(sum('unapplied'))} loading={aging.isLoading} hint={isAR ? t('Receipts not matched to an invoice; taken off the debt') : t('Payments not matched to a bill; taken off the debt')} />
       </div>
       {/* the distribution bar makes the shape of the balance readable at a glance */}
       {total > 0 && (

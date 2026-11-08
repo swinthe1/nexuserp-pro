@@ -80,14 +80,14 @@ export function useWmsOverview(warehouseId: string | null) {
 
 /* ------------------------------------------------------------------ receiving */
 export type OpenReceipt = { id: string; number: string; receipt_date: string; vendor: { name: string } | null; po: { number: string } | null
-  warehouse: { code: string; name: string } | null; lines: { quantity: number }[]; vendor_delivery_note: string | null }
+  warehouse: { code: string; name: string } | null; lines: { quantity: number }[]; vendor_delivery_note: string | null; warehouse_id?: string | null }
 export function useOpenReceipts() {
   const { companyId } = useCompany()
   return useQuery({
     queryKey: [...wmsKeys.all(companyId), 'receipts-open'],
     enabled: !!companyId,
     queryFn: async () => unwrap(await supabase.from('goods_receipts')
-      .select('id, number, receipt_date, vendor_delivery_note, vendor:business_partners(name), po:purchase_orders(number), warehouse:warehouses(code, name), lines:goods_receipt_lines(quantity)')
+      .select('id, number, receipt_date, vendor_delivery_note, warehouse_id, vendor:business_partners(name), po:purchase_orders(number), warehouse:warehouses(code, name), lines:goods_receipt_lines(quantity)')
       .eq('company_id', companyId).eq('status', 'draft').is('deleted_at', null).order('receipt_date').returns<OpenReceipt[]>()),
   })
 }

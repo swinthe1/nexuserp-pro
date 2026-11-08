@@ -430,6 +430,7 @@ const BASE: Record<string, Guide> = {
       { sq: 'Kliko "Shto përbërës" për çdo lëndë, me sasinë për seri dhe "Firo %".', en: 'Click "Add component" for each material, with the quantity per batch and "Waste %".' },
       { sq: 'Kliko "Shto hap" për punën: qendra e punës dhe minutat për njësi. Puna dhe shpenzimet e përgjithshme llogariten nga qendra.', en: 'Click "Add step" for the work: the work center and minutes per unit. Labour and overhead come from the center.' },
       { sq: 'Kliko "Ruaj recetën" dhe shiko "Ndarja e kostos (pa TVSH)".', en: 'Click "Save recipe" and look at the "Cost breakdown (without VAT)".' },
+      { sq: 'Te "Kostoja" del edhe çmimi i shitjes me TVSH dhe sa përqind e çmimit është kostoja; mbi 35% del me të kuqe.', en: 'Under "Cost" you also see the selling price with VAT and what share of the price the cost is; above 35% it shows in red.' },
     ],
     mistakes: [
       { sq: 'Si "Set" përbërësit dalin nga stoku kur shitet produkti; si recetë prodhimi dalin vetëm me urdhër pune.', en: 'As a "Kit" the parts leave stock when the product is sold; as a production recipe they leave only with a work order.' },

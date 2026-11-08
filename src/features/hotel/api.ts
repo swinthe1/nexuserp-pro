@@ -79,7 +79,7 @@ export function useReservations(filter: { status?: string; search?: string }) {
   return useQuery({
     queryKey: key(companyId, 'reservations', filter), enabled: !!companyId,
     queryFn: async () => {
-      let q = supabase.from('hotel_reservations').select('id, number, status, room_id, guest_name, guest_phone, adults, children, check_in, check_out, rate, source, invoice_id')
+      let q = supabase.from('hotel_reservations').select('id, number, status, room_id, guest_name, guest_phone, adults, children, check_in, check_out, rate, source, invoice_id, charges:hotel_charges(quantity, unit_price)')
         .eq('company_id', companyId!).is('deleted_at', null).order('check_in', { ascending: false }).limit(300)
       if (filter.status && filter.status !== 'all') q = q.eq('status', filter.status)
       if (filter.search?.trim()) { const s = filter.search.trim().replace(/[%,()]/g, ' '); q = q.or(`guest_name.ilike.%${s}%,number.ilike.%${s}%,guest_phone.ilike.%${s}%`) }

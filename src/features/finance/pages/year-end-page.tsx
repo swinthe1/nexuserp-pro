@@ -29,6 +29,8 @@ type YearCheck = {
 
 /** what each check means, in words */
 const CHECKS: Record<string, { title: string; ok: string; todo: string }> = {
+  stock_count: { title: msg('Yearly stock count'), ok: msg('The stock was counted at the end of the year'), todo: msg('No stock count at the end of the year: count the goods, so the stock in the books is the real one') },
+  partner_balances: { title: msg('Balances with partners (IOS)'), ok: msg('No open balance with partners'), todo: msg('{n} partners have an open balance: send them the balance to confirm (IOS)') },
   draft_entries: { title: msg('Journal entries'), ok: msg('No unposted journal entries'), todo: msg('{n} journal entries are not posted; post or delete them') },
   draft_invoices: { title: msg('Sales invoices'), ok: msg('No sales invoice left as a draft'), todo: msg('{n} sales invoices are still drafts') },
   draft_bills: { title: msg('Purchase invoices'), ok: msg('No purchase invoice left as a draft'), todo: msg('{n} purchase invoices are still drafts') },

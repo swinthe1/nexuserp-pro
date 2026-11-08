@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog'
 import { ColumnHeader, DataTable, inFilter } from '@/components/data-table/data-table'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
+import { MoreMenu } from '@/components/more-menu'
 import { SearchSelect } from '@/components/search-select'
 import { StatCard } from '@/components/stat-card'
 import { StatusBadge } from '@/components/status-badge'
@@ -62,8 +63,10 @@ export function AssetsPage() {
     <>
       <PageHeader title={t('Fixed assets|menu')} description={t('Equipment, vehicles and furniture the company owns. Depreciation is recorded every month; each asset shows its schedule.')}
         actions={<Can perm="finance.write">
-          <Button variant="outline" onClick={() => setRunOpen(true)}><CalendarClock /> {t('Run depreciation')}</Button>
-          <Button variant="outline" asChild><Link to="/finance/asset-invoices"><Camera /> {t('From an invoice photo')}</Link></Button>
+          <MoreMenu items={[
+            { label: t('Run depreciation'), icon: CalendarClock, onSelect: () => setRunOpen(true) },
+            { label: t('From an invoice photo'), icon: Camera, to: '/finance/asset-invoices' },
+          ]} />
           <Button asChild><Link to="/finance/assets/new"><Plus /> {t('New asset')}</Link></Button>
         </Can>} />
       <div className="mb-4 grid gap-3 sm:grid-cols-3">

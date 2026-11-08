@@ -13,6 +13,7 @@ export const GUIDES_B: Record<string, Guide> = {
       { sq: '"Porosia e sugjeruar" e mbush njësinë deri te maksimumi, pa atë që është tashmë "Në ardhje".', en: '"Suggested order" fills the unit up to its maximum, minus what is already "Incoming".' },
       { sq: 'Kliko "Shëno si të parë" kur e ke marrë parasysh sinjalizimin.', en: 'Click "Mark as seen" once you have dealt with the alert.' },
       { sq: 'Për ta porositur hap "Rifurnizim" poshtë tabelës; kur vjen malli, kliko "Prano mallin".', en: 'To order it, open "Replenishment" under the table; when the goods arrive, click "Receive goods".' },
+      { sq: '"Porosit çka po mbaron" të çon te "Çka duhet porositur", ku programi propozon sasitë dhe bën porositë.', en: '"Order what runs out" takes you to the replenishment page, where the program proposes the quantities and makes the orders.' },
     ],
     mistakes: [{ sq: 'Artikulli del këtu vetëm nëse ka pikë riporositjeje: caktoje te artikulli me "Shto pikë riporositjeje".', en: 'An item shows here only if it has a reorder point: set one on the item with "Add reorder point".' }],
     after: { sq: 'Kur stoku i lirë ngrihet mbi pikën e riporositjes (p.sh. pas një pranimi), artikulli del nga lista.', en: 'When the available stock rises above the reorder point (for example after a receipt), the item leaves the list.' },

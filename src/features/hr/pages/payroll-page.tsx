@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { Banknote, Calculator, Check, Plus, Stamp, Trash2, Undo2, X } from 'lucide-react'
+import { Banknote, Calculator, Check, Landmark, Plus, Stamp, Trash2, Undo2, X } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import type { XlsxColumn } from '@/lib/export'
+import { exportXlsx, type XlsxColumn } from '@/lib/export'
 import { ErrorState } from '@/components/error-state'
 import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { t, td, tn } from '@/i18n'
@@ -263,6 +263,7 @@ function registerColumns(country: string): XlsxColumn<RegisterRow>[] {
     { header: t('Taxable salary'), value: (r) => num(r.taxable), format: 'money' },
     { header: t('Tax on salaries'), value: (r) => num(r.income_tax), format: 'money' },
     { header: t('Net salary'), value: (r) => num(r.net), format: 'money' },
+    { header: t('IBAN'), value: (r) => r.iban, format: 'text' },
   ]
   return [
     { header: t('No.|register'), value: (r) => r.line_no, format: 'int' },
@@ -296,8 +297,19 @@ function RegisterCard({ run }: { run: PayrollRun }) {
     <Card>
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 space-y-0 py-3">
         <div><CardTitle>{title}</CardTitle><CardDescription>{run.country_rules === 'XK' ? t('One line per employee, in the layout of the monthly ATK declaration.') : t('One line per employee, in the layout of the monthly tax and social insurance declaration.')}</CardDescription></div>
-        <ExportMenu rows={rows} columns={cols} filename={`${run.country_rules === 'XK' ? t('payroll-list|file') : t('payroll|file')}-${run.period_start.slice(0, 7)}`}
-          title={title} subtitle={`${company?.name ?? ''} · ${period} · ${run.number}`} xlsx={{ totals }} />
+        <div className="flex flex-wrap gap-2">
+          {/* the transfers for the bank: who, which account, how much (to upload or type into e-banking) */}
+          {rows.length > 0 && <Button variant="outline" size="sm" onClick={() => void exportXlsx(rows, [
+              { header: t('Employee'), value: (r) => `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim() },
+              { header: t('IBAN'), value: (r) => r.iban, format: 'text' },
+              { header: t('Net salary'), value: (r) => num(r.net), format: 'money' },
+              { header: t('Description'), value: () => t('Salary {period}', { period }) },
+            ] as XlsxColumn<RegisterRow>[], `${t('salary-transfers|file')}-${run.period_start.slice(0, 7)}`,
+            { totals: { [t('Employee')]: t('Total'), [t('Net salary')]: rows.reduce((a, r) => a + num(r.net), 0) } })}>
+            <Landmark /> {t('Transfers for the bank')}</Button>}
+          <ExportMenu rows={rows} columns={cols} filename={`${run.country_rules === 'XK' ? t('payroll-list|file') : t('payroll|file')}-${run.period_start.slice(0, 7)}`}
+            title={title} subtitle={`${company?.name ?? ''} · ${period} · ${run.number}`} xlsx={{ totals }} />
+        </div>
       </CardHeader>
       <CardContent className="overflow-x-auto p-0">
         {run.status === 'draft' ? <p className="px-4 pb-4 text-[13px] text-muted-foreground">{t('Calculate the payroll first.')}</p> : reg.isLoading ? <Skeleton className="m-4 h-32" /> : reg.isError ? <ErrorState compact error={reg.error} onRetry={() => void reg.refetch()} /> : (

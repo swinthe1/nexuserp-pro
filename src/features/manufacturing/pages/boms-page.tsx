@@ -1,6 +1,8 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import { ChevronRight, Factory, Layers, Plus, Trash2 } from 'lucide-react'
 import * as React from 'react'
+import { supabase } from '@/lib/supabase'
+import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Can, useCompany } from '@/app/company-provider'
@@ -269,6 +271,16 @@ function Structure({ bom, qty, setQty }: { bom: BomDetail; qty: string; setQty: 
 function CostView({ bom, qty, setQty }: { bom: BomDetail; qty: string; setQty: (v: string) => void }) {
   const cost = useBomCost(bom.id, num(qty))
   const c = cost.data
+  // what the dish or the product sells for: a café looks at the cost as a share of the price (food cost)
+  const price = useQuery({ queryKey: ['bom-price', bom.variant?.id], enabled: !!bom.variant?.id, staleTime: 60_000,
+    queryFn: async () => {
+      const { data } = await supabase.from('product_variants')
+        .select('sales_price_override, product:products(sales_price, tax:tax_codes!products_company_id_sales_tax_code_id_fkey(rate))').eq('id', bom.variant!.id).single()
+      const x = data as unknown as { sales_price_override: number | null; product: { sales_price: number | null; tax: { rate: number } | null } | null } | null
+      const net = num(x?.sales_price_override ?? x?.product?.sales_price)
+      return { net, gross: Math.round(net * (1 + num(x?.product?.tax?.rate) / 100) * 100) / 100 }
+    } })
+  const share = c && price.data?.net ? (num(c.unit) / price.data.net) * 100 : null
   const parts = c ? [{ k: t('Materials'), v: num(c.material) }, { k: t('Labour'), v: num(c.labor) }, { k: t('Overhead'), v: num(c.overhead) }] : []
   return (
     <div className="grid gap-4 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_340px]">
@@ -294,6 +306,15 @@ function CostView({ bom, qty, setQty }: { bom: BomDetail; qty: string; setQty: (
         <CardHeader className="pb-2"><CardTitle>{t('Cost per unit (without VAT)')}</CardTitle></CardHeader>
         <CardContent>
           <div className="text-3xl font-semibold tracking-[-0.02em] tabular">{c ? formatMoney(c.unit) : '—'}</div>
+          {price.data && price.data.net > 0 && (
+            <div className="mt-3 grid gap-1 rounded-md border px-3 py-2 text-[13px]">
+              <div className="flex justify-between gap-2"><span className="text-muted-foreground">{t('Sells for, with VAT')}</span><span className="tabular font-medium">{formatMoney(price.data.gross)}</span></div>
+              <div className="flex justify-between gap-2"><span className="text-muted-foreground">{t('Cost as a share of the price (without VAT)')}</span>
+                <span className={cn('tabular font-semibold', share != null && share > 35 ? 'text-destructive' : 'text-success')}>{share == null ? '—' : `${formatQty(Math.round(share * 10) / 10)}%`}</span></div>
+              <div className="flex justify-between gap-2"><span className="text-muted-foreground">{t('Earned per unit, without VAT')}</span><span className="tabular">{c ? formatMoney(price.data.net - num(c.unit)) : '—'}</span></div>
+              {share != null && share > 35 && <p className="text-xs text-destructive">{t('Above 35%: check the price or the quantities of the recipe.')}</p>}
+            </div>
+          )}
           <div className="mt-4 grid gap-1.5 text-[13px]">
             {(c?.operations ?? []).map((o) => (
               <div key={o.sequence} className="flex justify-between gap-2"><span><span className="tabular text-muted-foreground">{o.sequence}</span> {o.name} · {td(o.work_center)}</span>

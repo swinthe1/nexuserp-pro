@@ -1163,4 +1163,6 @@ export default {
   'Choose the till where the appointment is paid: the service and the client go on the sale by themselves.': 'Izaberite kasu na kojoj se termin plaća: usluga i klijent se sami stavljaju na prodaju.',
   'The appointment of {client} is on the sale: take the payment.': 'Termin klijenta {client} je na prodaji: naplatite.',
   'The sale is saved, but the appointment could not be marked done: mark it on the calendar.': 'Prodaja je sačuvana, ali termin nije označen kao završen: označite ga u kalendaru.',
+  'Start the order': 'Započni porudžbinu',
+  'e.g. Arben': 'npr. Arben',
 } satisfies Dict

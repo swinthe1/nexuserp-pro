@@ -1,6 +1,6 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import { useQuery } from '@tanstack/react-query'
-import { CheckCheck, ChefHat, History, CloudOff, MonitorSmartphone, Plus, Printer, RefreshCw, Store, UtensilsCrossed } from 'lucide-react'
+import { ChefHat, CloudOff, MonitorSmartphone, Plus, Printer, RefreshCw, Store, UtensilsCrossed } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -8,6 +8,7 @@ import { Can, useCompany } from '@/app/company-provider'
 import { ColumnHeader, DataTable, inFilter } from '@/components/data-table/data-table'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
+import { MoreMenu } from '@/components/more-menu'
 import { SearchSelect } from '@/components/search-select'
 import { StatCard } from '@/components/stat-card'
 import { StatusBadge } from '@/components/status-badge'
@@ -89,9 +90,7 @@ export function PosHomePage() {
   return (
     <>
       <PageHeader title={t('Point of sale')} description={t('Tills, open shifts and closed shifts with their Z-reports. Sales leave stock at once and reach accounting when the shift is closed.')}
-        actions={<><Button variant="outline" asChild><Link to="/pos/history"><History /> {t('Till history')}</Link></Button>
-          <Can perm="pos.approve"><Button variant="outline" asChild><Link to="/pos/review"><CheckCheck /> {t('Reconciling the tills')}</Link></Button>
-          <Button variant="outline" onClick={() => setEdit('new')}><Plus /> {t('Add till')}</Button></Can></>} />
+        actions={<Can perm="pos.approve"><MoreMenu items={[{ label: t('Add till'), icon: Plus, onSelect: () => setEdit('new') }]} /></Can>} />
 
       {appt && <div className="mb-3 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 text-[13px]">{t('Choose the till where the appointment is paid: the service and the client go on the sale by themselves.')}</div>}
       {(sync.items.length > 0 || !sync.online) && <SyncPanel />}

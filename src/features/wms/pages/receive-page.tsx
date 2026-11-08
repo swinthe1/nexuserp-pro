@@ -40,10 +40,12 @@ export function ReceiveListPage() {
   // the floor's own unit first (chosen on the floor's home)
   const myWh = (() => { try { return localStorage.getItem('drispro.wms.warehouse') } catch { return null } })()
   const transfers = (incoming.data ?? []).filter((x) => !myWh || x.to_wh?.id === myWh)
+  // the floor's own unit, as with the transfers
+  const mine = (receipts.data ?? []).filter((r) => !myWh || !r.warehouse_id || r.warehouse_id === myWh)
   const { status, error } = useScanStatus()
   const open = (code: string) => {
     const c = code.toUpperCase()
-    const hit = (receipts.data ?? []).find((r) => r.number.toUpperCase() === c || r.po?.number.toUpperCase() === c || r.vendor_delivery_note?.toUpperCase() === c)
+    const hit = mine.find((r) => r.number.toUpperCase() === c || r.po?.number.toUpperCase() === c || r.vendor_delivery_note?.toUpperCase() === c)
     if (hit) { scanFeedback('ok'); navigate(`/wms/receive/${hit.id}`) } else { scanFeedback('error'); error(t('No open receipt for “{code}”', { code })) }
   }
   const [starting, setStarting] = React.useState(false)
@@ -64,11 +66,11 @@ export function ReceiveListPage() {
           ))}
         </div>
       )}
-      {receipts.isError ? <ErrorState error={receipts.error} onRetry={() => void receipts.refetch()} /> : receipts.isLoading ? <Skeleton className="h-40" /> : !receipts.data?.length ? (
+      {receipts.isError ? <ErrorState error={receipts.error} onRetry={() => void receipts.refetch()} /> : receipts.isLoading ? <Skeleton className="h-40" /> : !mine.length ? (
         <EmptyState icon={PackageCheck} title={t('Nothing to receive')} description={t('Receipts appear here when a purchase order is ready to be received, or when someone starts a receipt in the office.')} />
       ) : (
         <div className="grid gap-2">
-          {receipts.data.map((r) => (
+          {mine.map((r) => (
             <Link key={r.id} to={`/wms/receive/${r.id}`} className="flex items-center justify-between gap-3 rounded-xl border bg-card p-4 hover:border-primary/50 focus-visible:ring-2 focus-visible:ring-ring">
               <div className="min-w-0">
                 <div className="font-semibold">{r.vendor?.name ?? t('No vendor')}</div>

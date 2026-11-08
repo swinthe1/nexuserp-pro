@@ -35,9 +35,10 @@ export function usualCards(businessType: string | undefined, sales: boolean, til
   const kind = (!businessType || businessType === 'general') && tills ? 'retail' : businessType
   switch (kind) {
     case 'retail':
-      return ['today_sales', 'cash_in_tills', 'margin_month', 'out_of_stock', 'expiring', 'till_diff', 'waiting_invoice', 'bills_due']
+      // today's sales are in the day's sentence above the cards: the basket instead
+      return ['basket', 'cash_in_tills', 'margin_month', 'out_of_stock', 'expiring', 'till_diff', 'waiting_invoice', 'bills_due']
     case 'cafe': case 'restaurant':
-      return ['today_sales', 'cash_in_tills', 'basket', 'margin_month', 'voids_today', 'till_diff', 'low_stock', 'bills_due']
+      return ['cash_in_tills', 'basket', 'margin_month', 'voids_today', 'till_diff', 'low_stock', 'bills_due', 'approvals']
     case 'hotel': case 'beauty': case 'clinic': case 'auto_service': case 'fitness':
       return ['today_sales', 'sales_month_all', 'cash_in_tills', 'overdue', 'customers_late', 'cash', 'bills_due', 'approvals']
     case 'services':

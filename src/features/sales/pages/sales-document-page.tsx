@@ -385,7 +385,8 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
           actions={<>{doc && <DocumentActions id={doc.id} kind={kind === 'quotes' ? 'sales_quote' : kind === 'orders' ? 'sales_order' : 'sales_invoice'}
             alt={kind === 'quotes' ? [{ kind: 'proforma_quote', label: t('pro forma') }] : kind === 'orders' ? [{ kind: 'proforma', label: t('pro forma') }] : undefined} />}
             {doc && <Can perm={cfg.writePerm}><DuplicateButton table={kind === 'quotes' ? 'sales_quotes' : kind === 'orders' ? 'sales_orders' : 'sales_invoices'} id={doc.id} /></Can>}
-            {doc && kind === 'invoices' && doc.status === 'posted' && !isCredit && !doc.sales_order_id && <ReopenButton kind="sales_invoice" id={doc.id} number={doc.number} />}<Can perm={kind === 'orders' ? 'sales.read' : cfg.writePerm}>
+            {/* a fiscalized invoice cannot change: it is corrected with a credit note, offered among the actions */}
+            {doc && kind === 'invoices' && doc.status === 'posted' && !isCredit && !doc.sales_order_id && !['pending', 'fiscalized'].includes(String(doc.fiscal_status)) && <ReopenButton kind="sales_invoice" id={doc.id} number={doc.number} />}<Can perm={kind === 'orders' ? 'sales.read' : cfg.writePerm}>
             {doc && editable && (
               <ConfirmDialog trigger={<Button variant="ghost" size="sm" className="text-destructive"><Trash2 /> {t('Delete')}</Button>} title={t('Delete draft {number}?', { number: doc.number })}
                 description={t('The draft disappears from the lists. Its number is not used again.')} confirmLabel={t('Delete draft')} destructive

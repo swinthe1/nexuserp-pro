@@ -29,6 +29,11 @@ const DOC_HREF: Record<string, string> = {
   sales_order: '/sales/orders/',
   vendor_payment: '/finance/payments/',
   customer_payment: '/finance/payments/',
+  stock_transfer: '/inventory/transfers/',
+  transfer_difference: '/inventory/transfers/',
+  sales_invoice: '/sales/invoices/',
+  vendor_bill: '/procurement/bills/',
+  leave_request: '/hr/leave?open=',
 }
 
 type Request = {

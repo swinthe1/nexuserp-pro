@@ -1,4 +1,5 @@
 import { Hint } from '@/components/help'
+import { useHiddenSections } from '@/components/layout/nav-prefs'
 import { CustomerReminders } from '@/features/finance/components/reminders'
 import { PartnerCards } from '@/features/finance/pages/cards-page'
 import { PortalLinks } from '@/features/portal/portal-links'
@@ -139,7 +140,9 @@ export function PartnerPage() {
 
 function PartnerView({ partner }: { partner?: PartnerDetail }) {
   const [params] = useSearchParams()
-  const { can } = useCompany()
+  const { can, pageAllowed } = useCompany()
+  const hidden = useHiddenSections()
+  const shows = (href: string) => pageAllowed(href) && !hidden.includes(href)
   if (!partner) {
     return (
       <div className="w-full">
@@ -156,9 +159,13 @@ function PartnerView({ partner }: { partner?: PartnerDetail }) {
         actions={<>
           <Can perm="partners.write"><AskDetailsButton partnerId={partner.id} /></Can>
           {partner.is_vendor && <Can perm="procurement.write"><Button variant={partner.is_customer ? 'outline' : 'default'} asChild><Link to={`/procurement/orders/new?vendor=${partner.id}`}><ShoppingCart /> {t('New purchase order')}</Link></Button></Can>}
+          {/* only the documents this business uses: a shop or a service bills straight away, a wholesaler quotes and takes orders */}
           {partner.is_customer && <Can perm="sales.write">
-            <Button variant="outline" asChild><Link to={`/sales/quotes/new?customer=${partner.id}`}><FileText /> {t('New quote')}</Link></Button>
-            <Button asChild><Link to={`/sales/orders/new?customer=${partner.id}`}><ShoppingCart /> {t('New order')}</Link></Button>
+            {shows('/sales/quotes') && <Button variant="outline" asChild><Link to={`/sales/quotes/new?customer=${partner.id}`}><FileText /> {t('New quote')}</Link></Button>}
+            {shows('/sales/orders') && <Button variant={shows('/sales/invoices') ? 'outline' : 'default'} asChild><Link to={`/sales/orders/new?customer=${partner.id}`}><ShoppingCart /> {t('New order')}</Link></Button>}
+          </Can>}
+          {partner.is_customer && shows('/sales/invoices') && <Can perm="invoicing.write">
+            <Button asChild><Link to={`/sales/invoices/new?customer=${partner.id}`}><FileText /> {t('New invoice')}</Link></Button>
           </Can>}
         </>} />
       <RegistryLine partnerId={partner.id} />
