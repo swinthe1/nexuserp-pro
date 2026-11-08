@@ -26,6 +26,7 @@ import { useCategories, useLocations, useWarehouses, type LocationRow } from '@/
 import { useCount, useCountItem, useCountReview, useCounts, useCreateCount, usePostCount, useResolveCode, useSubmitCount, wmsKeys, type CountLine } from '../api'
 import { QtyDialog, ScanShell, useScanStatus } from '../components/scan-shell'
 import { useCountPlan, useCreateCountDue } from '@/features/inventory/abc'
+import { DailyCountCard } from '@/features/inventory/daily-count'
 import { CountImportDialog, CountReviewPanel, printCountSheet } from '../components/count-tools'
 import { MoreMenu } from '@/components/more-menu'
 
@@ -42,6 +43,7 @@ export function CountsPage() {
   return (
     <ScanShell title={t('Stock counts')} back={{ href: '/wms', label: t('Warehouse floor') }} actions={<Can perm="wms.write"><Button onClick={() => setOpen(true)}><Plus /> {t('New count')}</Button></Can>}>
       <p className="text-[13px] text-muted-foreground">{t('Count a few shelves every day instead of closing for a full inventory. Counters do not see the expected quantity; a manager reviews the differences and confirms them as one adjustment.')}</p>
+      <DailyCountCard />
       <CountPlan />
       {counts.isError ? <ErrorState error={counts.error} onRetry={() => void counts.refetch()} /> : counts.isLoading ? <Skeleton className="h-40" /> : !counts.data?.length ? <EmptyState icon={ClipboardCheck} title={t('No counts yet')} description={t('Start with the shelves that move the most.')} action={<Can perm="wms.write"><Button onClick={() => setOpen(true)}><Plus /> {t('New count')}</Button></Can>} /> : (
         <div className="grid gap-2">
@@ -50,7 +52,7 @@ export function CountsPage() {
             return (
               <Link key={c.id} to={`/wms/counts/${c.id}`} className="flex items-center justify-between gap-3 rounded-xl border bg-card p-4 hover:border-primary/50">
                 <div><div className="flex items-center gap-2 font-semibold">{c.number} <StatusBadge status={c.status} />{c.blind_count && <EyeOff className="size-3.5 text-muted-foreground" aria-label={t('Blind count')} />}</div>
-                  <div className="text-[13px] text-muted-foreground">{td(c.warehouse?.name)} · {humanize(c.scope)} · {formatDate(c.count_date)}</div></div>
+                  <div className="text-[13px] text-muted-foreground">{td(c.warehouse?.name)} · {(c.scope === 'risk' ? t('Daily count') : humanize(c.scope))} · {formatDate(c.count_date)}</div></div>
                 <div className="text-right text-[13px] tabular">{t('{done} / {total} counted', { done: counted, total: c.lines.length })}</div>
               </Link>
             )

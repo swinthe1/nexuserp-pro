@@ -5,7 +5,7 @@ import {
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, Building, HandCoins, ListTree, Network, Settings2, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, 
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
   BedDouble, BookUser, CalendarRange, ConciergeBell, Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, Ticket, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, ReceiptText, IdCard, Settings, CreditCard, type LucideIcon, Activity, ArrowUpDown, BadgeEuro, BookOpen, CalendarPlus, CheckCheck, CircleDollarSign, Clock, Coins, Combine, FileScan, FolderTree, Gift, Handshake, LineChart, Map, Move, NotebookTabs, PieChart, ScanBarcode, Send, ListChecks, ChartSpline, PackageMinus, GraduationCap,
-  FileSignature, ListTodo, ScanSearch, Grid3x3, Gauge, Award, Gavel, Brain, FolderDown, MessageSquare, Trash2, Shuffle, Weight } from 'lucide-react'
+  FileSignature, ListTodo, ScanSearch, Grid3x3, Gauge, Award, Gavel, Brain, FolderDown, MessageSquare, Trash2, Shuffle, Weight, ShieldAlert } from 'lucide-react'
 import { msg } from '@/i18n'
 
 export interface NavItem {
@@ -64,6 +64,7 @@ export const NAV: NavSection[] = [
       { label: msg('Low stock|menu'), href: '/inventory/alerts', icon: TriangleAlert, perm: 'inventory.read', keywords: ['reorder', 'alerts', 'replenish'], hub: msg('Stock|menu') },
       { label: msg('Short dates|menu'), href: '/inventory/expiry', icon: CalendarClock, perm: 'inventory.read', keywords: ['afat', 'afati', 'skadenca', 'skadim', 'zbritje', 'expiry', 'short date', 'markdown', 'fefo'], hub: msg('Losses and expiry|menu') },
       { label: msg('Lot tracing|menu'), href: '/wms/lots', icon: Hourglass, perm: 'inventory.read', keywords: ['batch', 'serial', 'traceability', 'recall', 'fefo', 'expiry'], hub: msg('Losses and expiry|menu') },
+      { label: msg('Loss watch|menu'), href: '/inventory/loss-watch', icon: ShieldAlert, perm: 'pos.approve', keywords: ['detektori', 'detektori i humbjeve', 'humbje', 'vjedhje', 'anulime', 'kthime pa kupon', 'zbritje', 'mungesë në arkë', 'kamarier', 'loss prevention', 'theft', 'fraud'], hub: msg('Losses and expiry|menu') },
       { label: msg('Shrinkage|menu'), href: '/inventory/shrinkage', icon: PackageMinus, perm: 'inventory.read', keywords: ['humbje', 'firo', 'vjedhje', 'dëmtim', 'skadim', 'mungesa', 'shrinkage', 'loss', 'theft'], hub: msg('Losses and expiry|menu') },
       { label: msg('Stock outputs|menu'), href: '/inventory/outputs', icon: PackageMinus, perm: 'inventory.read', keywords: ['dalje', 'daljet', 'hedhje', 'hedhjet', 'pemë', 'perime', 'shpenzim i brendshëm', 'outputs', 'waste', 'write-off'], hub: msg('Losses and expiry|menu') },
       { label: msg('Fruit and vegetables thrown away|menu'), href: '/inventory/waste', icon: Trash2, perm: 'inventory.read', keywords: ['hedhje', 'hedhjet', 'pemë', 'perime', 'fruta', 'prishen', 'waste', 'shrink', '% e hedhjes'], hub: msg('Losses and expiry|menu') },

@@ -1,3 +1,4 @@
+import { RiskBadges } from '@/features/inventory/daily-count'
 import { Hint } from '@/components/help'
 import { FileSpreadsheet, RotateCcw, TrendingDown, TrendingUp } from 'lucide-react'
 import * as React from 'react'
@@ -145,6 +146,7 @@ export function CountReviewPanel({ countId }: { countId: string }) {
                   <div className="truncate font-medium">{l.name} {l.recount && <Badge variant="secondary" className="ml-1">{t('recounted')}</Badge>}</div>
                   <div className="truncate text-xs text-muted-foreground">{l.sku} · {l.location}{l.lot ? ` · ${l.lot}` : ''} · {t('expected {e}, counted {c}', { e: formatQty(l.expected), c: formatQty(l.counted) })}
                     {l.first_counted != null && ` · ${t('first count {n}', { n: formatQty(l.first_counted) })}`}</div>
+                  <RiskBadges reasons={l.reasons} className="mt-0.5" />
                 </div>
                 <span className={cn('w-20 shrink-0 text-right tabular', num(l.delta) < 0 ? 'text-destructive' : 'text-warning')}>{num(l.delta) > 0 ? '+' : ''}{formatQty(l.delta)}{l.pct != null && <span className="block text-2xs text-muted-foreground">{l.pct > 0 ? '+' : ''}{l.pct}%</span>}</span>
                 <span className={cn('w-24 shrink-0 text-right font-medium tabular', num(l.value) < 0 ? 'text-destructive' : 'text-success')}>{formatMoney(l.value, cur)}</span>

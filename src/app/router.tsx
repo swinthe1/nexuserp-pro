@@ -133,6 +133,7 @@ const CashForecastPage = lazy(() => import('@/features/finance/pages/cash-foreca
 const PaymentProposalPage = lazy(() => import('@/features/finance/pages/payment-proposal-page'), 'PaymentProposalPage')
 const YearEndPage = lazy(() => import('@/features/finance/pages/year-end-page'), 'YearEndPage')
 const ShrinkagePage = lazy(() => import('@/features/inventory/pages/shrinkage-page'), 'ShrinkagePage')
+const LossWatchPage = lazy(() => import('@/features/inventory/pages/loss-watch-page'), 'LossWatchPage')
 const ExpiryPage = lazy(() => import('@/features/inventory/pages/expiry-page'), 'ExpiryPage')
 const ItemCardPage = lazy(() => import('@/features/inventory/pages/item-card-page'), 'ItemCardPage')
 const StockReportPage = lazy(() => import('@/features/inventory/pages/stock-report-page'), 'StockReportPage')
@@ -226,6 +227,7 @@ const appRoutes: RouteObject[] = [
         { path: 'movements', element: <Navigate to="/inventory/item-card" replace /> },
         { path: 'item-card', element: <ItemCardPage /> },
         { path: 'shrinkage', element: <ShrinkagePage /> },
+        { path: 'loss-watch', element: <LossWatchPage /> },
         { path: 'outputs', element: <OutputsPage /> },
         { path: 'waste', element: <WasteReportPage /> },
         { path: 'balancing', element: <BalancingPage /> },

@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router-dom'
 import { Pencil, Play, Plus, Repeat, Rocket, Sparkles, Trash2, X } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
@@ -25,11 +26,12 @@ import { PersonSelect } from '../components/task-sheet'
 import { Avatar, PRIORITY_LABEL, todayISO } from '../components/task-bits'
 
 export function TasksSetupPage() {
+  const [params] = useSearchParams()
   return (
     <>
       <PageHeader title={t('Repeating and automatic tasks')} back={{ href: '/tasks', label: t('Tasks|menu') }}
         description={t('Tasks that come back on their own, sets of tasks you start with one click, and tasks the program makes from what happens.')} />
-      <Tabs defaultValue="repeat">
+      <Tabs defaultValue={params.get('tab') ?? 'repeat'}>
         <TabsList><TabsTrigger value="repeat">{t('Repeating')}</TabsTrigger><TabsTrigger value="templates">{t('Templates')}</TabsTrigger><TabsTrigger value="auto">{t('Automatic')}</TabsTrigger></TabsList>
         <TabsContent value="repeat"><Rules /></TabsContent>
         <TabsContent value="templates"><Templates /></TabsContent>
@@ -229,6 +231,8 @@ const AUTOS: { key: string; title: string; what: string; who: string; days?: { l
   { key: 'lot_expiry', title: msg('Lots about to expire'), what: msg('Lower the price or take off the shelf goods that expire soon.'), who: msg('The stock manager or the warehouse'), days: { label: msg('days before'), def: 14 } },
   { key: 'contract_end', title: msg('Contracts ending'), what: msg('Extend or close a fixed-term contract.'), who: msg('The HR manager'), days: { label: msg('days before'), def: 30 } },
   { key: 'tax_deadline', title: msg('Tax deadlines'), what: msg('Prepare the VAT return or the payroll declaration.'), who: msg('The accountant'), days: { label: msg('days before'), def: 5 } },
+  { key: 'daily_count', title: msg('Daily count of risky items'), what: msg('Every morning each person who works in a store gets a few items to count: those where the stock is most likely wrong. The shop stays open.'), who: msg('The people of each store who may count stock, else the store manager'), days: { label: msg('items per person'), def: 8 } },
+  { key: 'loss_watch', title: msg('Loss watch'), what: msg('On Mondays, when the loss watch found something in the past week (voids, refunds without a receipt, cash short, stock missing), look at it.'), who: msg('The owner, else the store manager') },
   { key: 'new_lead', title: msg('New contacts'), what: msg('Contact someone who came in as a lead a day ago and is still new.'), who: msg('The owner of the lead, else the sales manager') },
 ]
 function Automations() {

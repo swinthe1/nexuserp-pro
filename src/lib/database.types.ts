@@ -2997,6 +2997,7 @@ export type Database = {
           updated_by: string | null
           recount: boolean
           first_counted_qty: number | null
+          reasons: string[] | null
         }
         Insert: {
           id?: string
@@ -3016,6 +3017,7 @@ export type Database = {
           updated_by?: string | null
           recount?: boolean
           first_counted_qty?: number | null
+          reasons?: string[] | null
         }
         Update: {
           id?: string
@@ -3035,6 +3037,7 @@ export type Database = {
           updated_by?: string | null
           recount?: boolean
           first_counted_qty?: number | null
+          reasons?: string[] | null
         }
         Relationships: [
           { foreignKeyName: "cycle_count_lines_company_id_cycle_count_id_fkey"; columns: ["company_id", "cycle_count_id"]; isOneToOne: false; referencedRelation: "cycle_counts"; referencedColumns: ["company_id", "id"] },
@@ -17111,6 +17114,13 @@ export type Database = {
         }
         Returns: Json
       }
+      count_accuracy: {
+        Args: {
+          p_company: string
+          p_days?: number
+        }
+        Returns: Json
+      }
       count_import: {
         Args: {
           p_id: string
@@ -17148,6 +17158,13 @@ export type Database = {
       count_review: {
         Args: {
           p_id: string
+        }
+        Returns: Json
+      }
+      count_risk_list: {
+        Args: {
+          p_warehouse: string
+          p_limit?: number
         }
         Returns: Json
       }
@@ -17339,6 +17356,12 @@ export type Database = {
           p_ids: string[]
         }
         Returns: Json
+      }
+      daily_counts_now: {
+        Args: {
+          p_company: string
+        }
+        Returns: number
       }
       daily_summary: {
         Args: {
@@ -18094,6 +18117,14 @@ export type Database = {
           p_company: string
           p_from?: string
           p_to?: string
+        }
+        Returns: Json
+      }
+      loss_watch: {
+        Args: {
+          p_company: string
+          p_from: string
+          p_to: string
         }
         Returns: Json
       }

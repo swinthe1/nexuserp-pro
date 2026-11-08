@@ -400,7 +400,7 @@ export const DOC_HREF: Record<string, string> = {
 
 /* ------------------------------------------------------------------ before confirming a count: differences with their value */
 export type CountReviewLine = { id: string; variant_id: string; sku: string; name: string; location: string; lot: string | null; expected: number; counted: number
-  first_counted: number | null; recount: boolean; delta: number; pct: number | null; unit_cost: number; value: number }
+  first_counted: number | null; recount: boolean; delta: number; pct: number | null; unit_cost: number; value: number; reasons?: string[] | null }
 export type CountReview = { lines: CountReviewLine[]; counted: number; not_counted: number; differences: number; gains: number; losses: number; net: number; counted_value: number; gains_sale?: number; losses_sale?: number }
 export function useCountReview(id: string | undefined, enabled: boolean) {
   const { companyId } = useCompany()
