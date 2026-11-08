@@ -14,6 +14,8 @@ import { DOC_TABLE, useCancelDocument, useDeleteDocument, type DocKind } from '.
 import { AccountingTab } from '@/features/finance/components/t-accounts'
 import { msg, t } from '@/i18n'
 import { MoreMenu } from '@/components/more-menu'
+import { DocumentActions } from '@/components/document-actions'
+import type { DocKind as PrintKind } from '@/lib/documents/model'
 
 /** stock documents that post to the ledger (transfers move stock without changing its value) */
 const GL_SOURCE: Partial<Record<DocKind, string>> = { receipts: 'goods_receipt', adjustments: 'stock_adjustment', 'landed-costs': 'landed_cost' }
@@ -32,6 +34,8 @@ const LIST_HREF: Record<DocKind, { href: string; label: string }> = {
  * save/post/cancel/delete actions (permission-gated), the form body, an
  * optional summary column, and the activity timeline once the document exists.
  */
+const PRINT_KIND: Partial<Record<DocKind, PrintKind>> = { transfers: 'stock_transfer', adjustments: 'stock_adjustment' }
+
 export function DocumentShell({
   kind, doc, newTitle, writePerm, saving, posting, onSave, onPost, postLabel, postConfirm, summary, children, banner, lines,
   postableStatuses = ['draft'],
@@ -68,7 +72,10 @@ export function DocumentShell({
         title={doc ? doc.number : newTitle}
         meta={doc && <StatusBadge status={doc.status} />}
         description={doc?.created_at ? t('Created {date}', { date: formatDate(doc.created_at, true) }) : undefined}
-        actions={postable && (
+        actions={<>
+          {/* the transfer and the adjustment have their own sheet to print and sign */}
+          {doc && PRINT_KIND[kind] && <DocumentActions kind={PRINT_KIND[kind]!} id={doc.id} />}
+          {postable && (
           <Can perm={writePerm}>
             {doc && editable && <MoreMenu items={[
               { label: t('Cancel document'), icon: Ban, onSelect: () => cancel.mutateAsync(doc.id),
@@ -85,7 +92,7 @@ export function DocumentShell({
               onConfirm={onPost}
             />
           </Can>
-        )}
+        )}</>}
       />
       {banner}
       {(() => {

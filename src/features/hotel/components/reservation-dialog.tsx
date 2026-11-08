@@ -21,6 +21,7 @@ import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { formatDate, formatMoney, num, todayISO } from '@/lib/utils'
 import { useCustomers } from '@/features/sales/api'
+import { VariantPicker } from '@/features/inventory/components/pickers'
 import { type Reservation, SOURCES, STAY_STATUS, type Source, addDays, nights, useHotelAction, useReservation, useRoomTypes, useRooms } from '../api'
 
 export type NewStay = { room_id?: string; check_in?: string; check_out?: string }
@@ -177,8 +178,18 @@ export function ReservationDialog({ id, initial, open, onOpenChange }: { id?: st
 /** extras charged to the room: minibar, breakfast, laundry… They go on the invoice at check-out */
 function Charges({ reservation, editable }: { reservation: Reservation & { charges: { id: string; charge_date: string; description: string; quantity: number; unit_price: number }[] }; editable: boolean }) {
   const { companyId } = useCompany()
-  const [d, setD] = React.useState({ description: '', quantity: 1, unit_price: 0 })
-  const add = useHotelAction(async () => unwrap(await supabase.from('hotel_charges').insert({ company_id: companyId!, reservation_id: reservation.id, description: d.description.trim(), quantity: d.quantity, unit_price: d.unit_price })))
+  const [d, setD] = React.useState<{ description: string; quantity: number; unit_price: number; variant_id: string | null }>({ description: '', quantity: 1, unit_price: 0, variant_id: null })
+  const add = useHotelAction(async () => unwrap(await supabase.from('hotel_charges').insert({ company_id: companyId!, reservation_id: reservation.id, description: d.description.trim(), quantity: d.quantity, unit_price: d.unit_price, variant_id: d.variant_id })))
+  // an item from the stock (a minibar drink…): its name and its shelf price with VAT; it leaves the stock at check-out
+  const pickItem = async (id: string | null) => {
+    if (!id) { setD({ ...d, variant_id: null }); return }
+    const { data } = await supabase.from('product_variants')
+      .select('name, sales_price_override, product:products(name, sales_price, tax:tax_codes!products_company_id_sales_tax_code_id_fkey(rate))').eq('id', id).single()
+    const x = data as unknown as { name: string | null; sales_price_override: number | null; product: { name: string; sales_price: number | null; tax: { rate: number } | null } | null } | null
+    const net = num(x?.sales_price_override ?? x?.product?.sales_price)
+    const gross = Math.round(net * (1 + num(x?.product?.tax?.rate) / 100) * 100) / 100
+    setD({ ...d, variant_id: id, description: x?.name || x?.product?.name || d.description, unit_price: gross || d.unit_price })
+  }
   const del = useHotelAction(async (cid: string) => unwrap(await supabase.from('hotel_charges').delete().eq('id', cid)))
   const total = reservation.charges.reduce((s, c) => s + num(c.quantity) * num(c.unit_price), 0)
   if (!editable && !reservation.charges.length) return null
@@ -197,11 +208,12 @@ function Charges({ reservation, editable }: { reservation: Reservation & { charg
       ))}
       {editable && (
         <div className="flex flex-wrap items-end gap-2">
-          <Input className="h-8 min-w-[160px] flex-1" placeholder={t('e.g. Minibar, breakfast, laundry')} value={d.description} onChange={(e) => setD({ ...d, description: e.target.value })} aria-label={t('Description')} />
+          <div className="w-full sm:w-56"><VariantPicker value={d.variant_id} onChange={(id) => void pickItem(id)} /></div>
+          <Input className="h-8 min-w-[160px] flex-1" placeholder={t('or a service: laundry, transfer…')} value={d.description} onChange={(e) => setD({ ...d, description: e.target.value })} aria-label={t('Description')} />
           <Input className="h-8 w-16 tabular" type="number" min={1} value={d.quantity} onChange={(e) => setD({ ...d, quantity: Math.max(1, Number(e.target.value) || 1) })} aria-label={t('Quantity')} />
           <Input className="h-8 w-24 tabular" type="number" min={0} step="0.01" value={d.unit_price} onChange={(e) => setD({ ...d, unit_price: Number(e.target.value) || 0 })} aria-label={t('Price with VAT')} />
           <Button size="sm" variant="outline" disabled={!d.description.trim() || d.unit_price <= 0} loading={add.isPending}
-            onClick={() => void add.mutateAsync().then(() => setD({ description: '', quantity: 1, unit_price: 0 }), (e) => toast.error(describeError(e)))}><Plus />{t('Add')}</Button>
+            onClick={() => void add.mutateAsync().then(() => setD({ description: '', quantity: 1, unit_price: 0, variant_id: null }), (e) => toast.error(describeError(e)))}><Plus />{t('Add')}</Button>
         </div>
       )}
     </div>

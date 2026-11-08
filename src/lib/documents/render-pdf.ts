@@ -1,7 +1,7 @@
 /** The same document as a PDF (A4), for downloading and for email attachments. */
 import { getLocale, t, td } from '@/i18n'
 import { formatDate, formatMoney } from '@/lib/utils'
-import { BANK_KINDS, METHOD, amountInWords, docTitle, isVoucher, partnerLabel, type PrintDoc, settingsOf, showPrices, textKey, unitWithVat } from './model'
+import { BANK_KINDS, METHOD, amountInWords, costDoc, docTitle, isVoucher, partnerLabel, type PrintDoc, settingsOf, showPrices, signLabels, textKey, unitWithVat } from './model'
 
 const nf = (n: number | null | undefined, d = 2) => n == null ? '' : Number(n).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d })
 const qf = (n: number | null | undefined) => n == null ? '' : Number(n).toLocaleString('de-DE', { maximumFractionDigits: 4 })
@@ -168,7 +168,7 @@ export async function renderDocPdf(d: PrintDoc) {
     }
   } else {
     const codes = s.show_codes, disc = (tpl === 'detailed' || s.show_discount) && prices && d.lines.some((l) => Number(l.discount) > 0)
-    const vatCols = d.kind !== 'goods_receipt'
+    const vatCols = !costDoc(d)
     const lots = d.lines.some((l) => l.lot)
     let head: string[], body: string[][], firstNum: number
     const columnStyles: Record<number, { halign: 'right' | 'center' | 'left'; cellWidth?: number }> = {}
@@ -288,22 +288,26 @@ export async function renderDocPdf(d: PrintDoc) {
     const f = pdf.splitTextToSize(`NIVF: ${d.fiscal.iic} · NSLF: ${d.fiscal.fic}${d.fiscal.tcr ? ` · TCR: ${d.fiscal.tcr}` : ''}`, R - L)
     pdf.text(f, L, y); y += f.length * 3.4 + 2
   }
-  const stamp = s.show_stamp && d.company.stamp && !isVoucher(d) && d.kind !== 'goods_receipt' ? await logoPng(d.company.stamp) : null
+  const stamp = s.show_stamp && d.company.stamp && !isVoucher(d) && !costDoc(d) ? await logoPng(d.company.stamp) : null
   const sig = d.signature ? await alphaPng(d.signature.image) : null
   if (!s.show_signatures && stamp && !sig) {
     y += 6; if (y + 28 > 272) { pdf.addPage(); y = 20 }
     const h = 24, w = Math.min(50, (stamp.w / stamp.h) * h); pdf.addImage(stamp.data, 'JPEG', L, y, w, h, undefined, 'FAST'); y += h + 2
   }
   if (s.show_signatures || sig) {
-    const [sl, sr] = isVoucher(d) ? [d.kind === 'receipt_voucher' ? t('Received by') : t('Paid by'), d.kind === 'receipt_voucher' ? t('Paid by') : t('Received by')]
-      : d.kind === 'goods_receipt' ? [t('Delivered by'), t('Received by')] : [t('Issued by'), t('Received by')]
+    const [sl, ...rest] = signLabels(d)
+    const sr = rest[rest.length - 1] ?? ''
+    const mid = rest.length > 1 ? rest[0]! : null   // a transfer: the driver signs in the middle
     y = Math.max(y + (stamp || sig ? 30 : 14), 0); if (y > 268) { pdf.addPage(); y = 40 }
     if (stamp) { const h = 24, w = Math.min(50, (stamp.w / stamp.h) * h); pdf.addImage(stamp.data, 'JPEG', L + 35 - w / 2 + (sig ? 9 : 0), y - h + 4, w, h, undefined, 'FAST') }
     // the signature over the line, on top of the stamp, as a pen would
     if (sig) { const h = 17, w = Math.min(56, (sig.w / sig.h) * h); pdf.addImage(sig.data, 'PNG', L + 35 - w / 2 - 6, y - h + 2.5, w, h, undefined, 'FAST') }
     pdf.setDrawColor(138, 143, 156); pdf.setLineWidth(0.25)
-    pdf.line(L, y, L + 70, y); if (s.show_signatures) pdf.line(R - 70, y, R, y)
-    pdf.setFontSize(8.5); pdf.setTextColor(...gray); pdf.text(sl, L + 35, y + 4, { align: 'center' }); if (s.show_signatures) pdf.text(sr, R - 35, y + 4, { align: 'center' })
+    const W = mid ? 52 : 70
+    pdf.line(L, y, L + W, y); if (s.show_signatures) pdf.line(R - W, y, R, y)
+    if (mid && s.show_signatures) { const C = (L + R) / 2; pdf.line(C - W / 2, y, C + W / 2, y) }
+    pdf.setFontSize(8.5); pdf.setTextColor(...gray); pdf.text(sl, L + W / 2, y + 4, { align: 'center' }); if (s.show_signatures) pdf.text(sr, R - W / 2, y + 4, { align: 'center' })
+    if (mid && s.show_signatures) pdf.text(mid, (L + R) / 2, y + 4, { align: 'center' })
     if (d.signature) { pdf.setTextColor(31, 36, 48); pdf.text(`${d.signature.name}${d.signature.title ? `, ${d.signature.title}` : ''}`, L + 35, y + 8, { align: 'center' }) }
   }
   // footer on every page

@@ -2,7 +2,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { useQuery } from '@tanstack/react-query'
 import { CheckCheck, ChefHat, History, CloudOff, MonitorSmartphone, Plus, Printer, RefreshCw, Store, UtensilsCrossed } from 'lucide-react'
 import * as React from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Can, useCompany } from '@/app/company-provider'
 import { ColumnHeader, DataTable, inFilter } from '@/components/data-table/data-table'
@@ -57,6 +57,11 @@ export function PosHomePage() {
   useRealtimeInvalidate('pos_orders', companyId, [posKeys.all(companyId)])
   const sync = useSyncState()
   const [edit, setEdit] = React.useState<Register | 'new' | null>(null)
+  // an appointment paid at the till: one open till takes it at once, otherwise the person picks one
+  const [params] = useSearchParams()
+  const appt = params.get('appt')
+  const openTills = (registers.data ?? []).filter((r) => r.is_active && r.mode !== 'restaurant' && r.sessions[0])
+  React.useEffect(() => { if (appt && openTills.length === 1) navigate(`/pos/till/${openTills[0]!.id}?appt=${appt}`, { replace: true }) }, [appt, openTills.length]) // eslint-disable-line react-hooks/exhaustive-deps
   const today = todayISO()
   const todays = (sessions.data ?? []).filter((s) => s.opened_at.slice(0, 10) === today || s.status !== 'closed')
   const zToday = (sessions.data ?? []).flatMap((s) => (s.closed_at?.slice(0, 10) === today ? s.z : []))
@@ -88,6 +93,7 @@ export function PosHomePage() {
           <Can perm="pos.approve"><Button variant="outline" asChild><Link to="/pos/review"><CheckCheck /> {t('Reconciling the tills')}</Link></Button>
           <Button variant="outline" onClick={() => setEdit('new')}><Plus /> {t('Add till')}</Button></Can></>} />
 
+      {appt && <div className="mb-3 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 text-[13px]">{t('Choose the till where the appointment is paid: the service and the client go on the sale by themselves.')}</div>}
       {(sync.items.length > 0 || !sync.online) && <SyncPanel />}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -118,7 +124,7 @@ export function PosHomePage() {
                   {r.mode === 'restaurant' ? <>
                     <Can perm="pos.write"><Button disabled={!r.is_active} onClick={() => navigate(`/pos/floor/${r.id}`)}><UtensilsCrossed /> {s ? t('Go to the tables') : t('Open the tables')}</Button></Can>
                     <Button variant="outline" asChild><Link to={`/pos/kitchen/${r.warehouse_id}`}><ChefHat /> {t('Kitchen screen')}</Link></Button>
-                  </> : <Can perm="pos.write"><Button disabled={!r.is_active} onClick={() => navigate(`/pos/till/${r.id}`)}><MonitorSmartphone /> {s ? t('Go to till') : t('Open till')}</Button></Can>}
+                  </> : <Can perm="pos.write"><Button disabled={!r.is_active} onClick={() => navigate(`/pos/till/${r.id}${appt ? `?appt=${appt}` : ''}`)}><MonitorSmartphone /> {s ? t('Go to till') : t('Open till')}</Button></Can>}
                   {s && <Button variant="outline" asChild><Link to={`/pos/sessions/${s.id}`}>{t('Shift')}</Link></Button>}
                   <Can perm="pos.approve"><Button variant="ghost" onClick={() => setEdit(r)}>{t('Settings')}</Button></Can>
                 </div>

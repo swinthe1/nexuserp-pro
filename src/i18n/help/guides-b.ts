@@ -81,6 +81,7 @@ export const GUIDES_B: Record<string, Guide> = {
       { sq: 'Mes dy njësive kliko "Dërgo": malli del dhe është në rrugë. Brenda një njësie kliko "Lëviz mallin": zhvendoset menjëherë.', en: 'Between two units click "Ship": the goods leave and are on the road. Inside one unit click "Move stock": it moves at once.' },
       { sq: 'Kur arrin, njësia pranuese e numëron (me skaner ose me dorë) dhe kliko "Prano mallin".', en: 'When it arrives, the receiving unit counts it (scanning or typing) and clicks "Receive the goods".' },
       { sq: 'Për çdo mungesë zgjidh "Humbur gjatë rrugës" ose "Kthehet te dërguesi".', en: 'For anything missing choose "Lost on the way" or "Back to the sender".' },
+      { sq: 'Printo fletën e transferimit me butonin lart: njësia nga del dhe ku shkon, artikujt me vlerën me kosto, dhe vendet për nënshkrim "Dorëzoi", "Transportoi", "Pranoi".', en: 'Print the transfer note with the button on top: the unit it leaves and where it goes, the items with their value at cost, and lines to sign for "Delivered by", "Transported by", "Received by".' },
     ],
     mistakes: [
       { sq: 'Kur pika e shitjes e kërkon mallin, aktivizo "Kjo është kërkesë nga njësia pranuese": depoja e kontrollon dhe e dërgon.', en: 'When a shop asks for goods, switch on "This is a request from the receiving store": the depot checks and ships it.' },
@@ -111,6 +112,7 @@ export const GUIDES_B: Record<string, Guide> = {
       { sq: 'Shto rreshtat: te "Ndryshimi (±)" plus për mall të gjetur ose gjendje fillestare, minus për humbje dhe dëmtim.', en: 'Add the lines: in "Change (±)" plus for stock found or opening stock, minus for losses and damage.' },
       { sq: 'Kolona "Pas" tregon sa mbetet; e kuqe do të thotë se stoku del në minus.', en: 'The "After" column shows what is left; red means the stock goes below zero.' },
       { sq: 'Kliko "Dërgo dhe kryej". Nëse kërkon miratim, shkon te menaxheri; pasi miratohet, kliko "Kryej rregullimin".', en: 'Click "Send and complete". If it needs approval it goes to the manager; once approved, click "Complete adjustment".' },
+      { sq: 'Printo fletën e rregullimit me butonin lart: arsyeja, çka u shtua ose u hoq, vlera me kosto, dhe nënshkrimet "Përgatiti" e "Miratuar nga".', en: 'Print the adjustment note with the button on top: the reason, what went up or down, its value at cost, and signatures for "Prepared by" and "Approved by".' },
     ],
     mistakes: [{ sq: 'Te "Gjendja fillestare" shkruaj koston për njësi në çdo rresht: ajo bëhet kostoja mesatare e fillimit.', en: 'For "Opening stock" type each line\'s unit cost: it becomes the starting average cost.' }],
     after: { sq: 'Shtimet vlerësohen me koston që shkruan (ose koston mesatare), heqjet me koston mesatare. Malli i dëmtuar dhe i skaduar shkon te skartimi; regjistrimi del te "Kontabiliteti".', en: 'Increases are valued at the cost you type (or the average cost), decreases at the average cost. Damaged and expired goods go to scrap; the entry shows under "Accounting".' },

@@ -291,6 +291,7 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          pos_client_uuid: string | null
         }
         Insert: {
           id?: string
@@ -319,6 +320,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          pos_client_uuid?: string | null
         }
         Update: {
           id?: string
@@ -347,6 +349,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          pos_client_uuid?: string | null
         }
         Relationships: [
           { foreignKeyName: "appointments_company_id_card_id_fkey"; columns: ["company_id", "card_id"]; isOneToOne: false; referencedRelation: "client_cards"; referencedColumns: ["company_id", "id"] },
@@ -16310,11 +16313,24 @@ export type Database = {
         }
         Returns: Json
       }
+      appt_for_till: {
+        Args: {
+          p_id: string
+        }
+        Returns: Json
+      }
       appt_invoice: {
         Args: {
           p_id: string
         }
         Returns: string
+      }
+      appt_paid_at_till: {
+        Args: {
+          p_id: string
+          p_ref: string
+        }
+        Returns: undefined
       }
       appt_save: {
         Args: {

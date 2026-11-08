@@ -13,6 +13,8 @@ export type Appt = {
   id: string; number: string | null; status: ApptStatus; starts_at: string; ends_at: string; resource_id: string; service_id: string | null; service: string | null
   color: string; partner_id: string | null; client_name: string; client_phone: string | null; client_email: string | null; card_id: string | null; card: string | null
   card_kind: CardKind | null; price: number; notes: string | null; source: string; invoice_id: string | null; reminded_at: string | null
+  /** paid at the till: the sale's reference */
+  pos_client_uuid?: string | null
 }
 export type Board = { timezone: string; resources: Resource[]; services: Service[]; appointments: Appt[] }
 

@@ -1160,4 +1160,7 @@ export default {
   '{n} sale is still on hold: finish it or drop it before closing, otherwise it is lost.': '{n} prodaja je još na čekanju: završite je ili odbacite pre zatvaranja, inače se gubi.',
   '{n} sales are still on hold: finish them or drop them before closing, otherwise they are lost.': '{n} prodaja je još na čekanju: završite ih ili odbacite pre zatvaranja, inače se gube.',
   '{name} (day off moved)': '{name} (pomeren neradni dan)',
+  'Choose the till where the appointment is paid: the service and the client go on the sale by themselves.': 'Izaberite kasu na kojoj se termin plaća: usluga i klijent se sami stavljaju na prodaju.',
+  'The appointment of {client} is on the sale: take the payment.': 'Termin klijenta {client} je na prodaji: naplatite.',
+  'The sale is saved, but the appointment could not be marked done: mark it on the calendar.': 'Prodaja je sačuvana, ali termin nije označen kao završen: označite ga u kalendaru.',
 } satisfies Dict

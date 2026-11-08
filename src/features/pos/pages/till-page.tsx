@@ -9,7 +9,7 @@ import * as React from 'react'
 import { bestPromo } from '../promotions'
 import { openCashDrawer } from '@/lib/print'
 import { desktop } from '@/lib/desktop'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useAuth } from '@/app/auth-provider'
 import { useCompany } from '@/app/company-provider'
@@ -502,6 +502,25 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     requestVoid({ entries: [voidEntry(l, l.qty, 'void_line')], apply: () => { setLines((ls) => ls.filter((x) => x.key !== key)); setSelected(null) } })
   }
 
+  /* ---------- an appointment paid here: its service, price and client go on the sale */
+  const [params, setParams] = useSearchParams()
+  const apptRef = React.useRef<string | null>(null)
+  React.useEffect(() => {
+    const id = params.get('appt')
+    if (!id) return
+    setParams((p) => { p.delete('appt'); return p }, { replace: true })
+    void (async () => {
+      try {
+        const a = unwrap(await supabase.rpc('appt_for_till', { p_id: id })) as unknown as { variant_id: string; sku: string | null; name: string; price: number; tax_code_id: string | null; tax_rate: number; partner_id: string | null; client: string }
+        apptRef.current = id
+        if (a.partner_id) setCustomer(a.partner_id)
+        add({ variant_id: a.variant_id, sku: a.sku ?? '', name: a.name, category: null, barcodes: [], price: num(a.price), tax_code_id: a.tax_code_id, tax_rate: num(a.tax_rate),
+              tracking: 'none', on_hand: 0, product_type: 'service' }, 1, null, 1)
+        setFlash({ tone: 'ok', text: t('The appointment of {client} is on the sale: take the payment.', { client: a.client }) })
+      } catch (e) { setFlash({ tone: 'error', text: describeError(e) }) }
+    })()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   const clearSale = () => { setLines([]); setSelected(null); setCustomer(data.register.default_customer_id); setMultiplier(null); setFlash(null); setCard(null); setRedeem(null); setVoidApproval(null) }
   /** the cashier clears the whole sale: that is a void too */
   const voidSale = () => requestVoid({ entries: lines.length ? [{ kind: 'void_sale', description: tn(lines.length, '{n} line', '{n} lines'), quantity: itemsCount,
@@ -593,6 +612,13 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     // the copy of the card on this device follows the sale (points, this month's discount)
     if (usedCard) patch((d) => d.loyalty ? { ...d, loyalty: { ...d.loyalty, cards: d.loyalty.cards.map((r) => r[0] === usedCard.id
       ? [r[0], r[1], r[2], r[3], r[4], num(r[5]) - spent + earned, num(r[6]) + saved] as TillCardRow : r) } } : d)
+    // the appointment paid with this sale is done (when the server cannot be reached, it is marked by hand)
+    if (apptRef.current && !refund) {
+      const id = apptRef.current; apptRef.current = null
+      void supabase.rpc('appt_paid_at_till', { p_id: id, p_ref: client_uuid }).then(({ error }) => {
+        if (error) toast.error(t('The sale is saved, but the appointment could not be marked done: mark it on the calendar.'))
+      })
+    }
     doneUuid.current = client_uuid
     setDone({ ref: device_ref, number: null, total: r2(saleTotal), change: Math.max(change, 0), receipt, offline: isOffline })
     setDialog(null)

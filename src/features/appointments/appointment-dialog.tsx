@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Ban, CheckCircle2, FileText, Phone, UserCheck, UserX } from 'lucide-react'
+import { Ban, CheckCircle2, FileText, Phone, Store, UserCheck, UserX } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -30,7 +30,7 @@ type Form = { resource_id: string; service_id: string | null; day: string; time:
   client_email: string; card_id: string | null; price: number; notes: string; source: string }
 
 export function AppointmentDialog({ board, appt, initial, open, onOpenChange }: { board: Board; appt: Appt | null; initial: NewAppt | null; open: boolean; onOpenChange: (o: boolean) => void }) {
-  const { companyId, can } = useCompany()
+  const { companyId, can, hasFeature } = useCompany()
   const navigate = useNavigate()
   const customers = useCustomers()
   const [f, setF] = React.useState<Form | null>(null)
@@ -65,7 +65,7 @@ export function AppointmentDialog({ board, appt, initial, open, onOpenChange }: 
 
   if (!f) return null
   const set = (p: Partial<Form>) => setF((x) => (x ? { ...x, ...p } : x))
-  const locked = !!appt?.invoice_id || appt?.status === 'cancelled' || appt?.status === 'no_show'
+  const locked = !!appt?.invoice_id || !!appt?.pos_client_uuid || appt?.status === 'cancelled' || appt?.status === 'no_show'
   const editable = can('sales.write') && !locked
   const services = board.services.filter((s) => !s.resource_ids.length || s.resource_ids.includes(f.resource_id) || s.id === f.service_id)
   const doStatus = (s: string, msgOk: string) => status.mutate(s, { onSuccess: () => { toast.success(msgOk); onOpenChange(false) } })
@@ -130,10 +130,13 @@ export function AppointmentDialog({ board, appt, initial, open, onOpenChange }: 
                 { label: t('Cancel it'), icon: Ban, destructive: true, separate: true, onSelect: () => doStatus('cancelled', t('Appointment cancelled')) },
               ]} />
             </>}
+            {appt?.pos_client_uuid && <span className="inline-flex items-center gap-1.5 text-[13px] text-success"><Store className="size-4" /> {t('Paid at the till')}</span>}
             {appt?.invoice_id && <Button size="sm" variant="outline" asChild><Link to={`/sales/invoices/${appt.invoice_id}`}><FileText /> {t('Open the invoice')}</Link></Button>}
             {appt && (appt.status === 'cancelled' || appt.status === 'no_show') && can('sales.write') && <Button size="sm" variant="outline" onClick={() => doStatus('booked', t('Booked again'))}>{t('Book again')}</Button>}
           </div>
           <div className="flex gap-2">
+            {appt && !locked && !appt.pos_client_uuid && can('pos.write') && hasFeature('pos') && <Button variant="outline" onClick={() => { onOpenChange(false); navigate(`/pos?appt=${appt.id}`) }}>
+              <Store /> {t('Pay at the till')}</Button>}
             {appt && !locked && can('invoicing.write') && <Button variant="outline" loading={invoice.isPending}
               onClick={() => invoice.mutate(undefined, { onSuccess: (inv) => { toast.success(t('Done: the invoice is ready to check')); onOpenChange(false); navigate(`/sales/invoices/${inv}`) } })}>
               <CheckCircle2 /> {t('Done, to the invoice')}</Button>}

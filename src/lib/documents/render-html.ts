@@ -1,7 +1,7 @@
 /** A printed document as an A4 HTML page (printing goes through printHtml). */
 import { getLocale, t, td } from '@/i18n'
 import { formatDate, formatMoney } from '@/lib/utils'
-import { BANK_KINDS, METHOD, amountInWords, docTitle, isVoucher, partnerLabel, type PrintDoc, settingsOf, showPrices, textKey, unitWithVat } from './model'
+import { BANK_KINDS, METHOD, amountInWords, docTitle, isVoucher, partnerLabel, type PrintDoc, settingsOf, showPrices, textKey, unitWithVat, costDoc, signLabels } from './model'
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!))
 const nf = (n: number | null | undefined, d = 2) => n == null ? '' : Number(n).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d })
@@ -105,13 +105,12 @@ export function renderDocHtml(d: PrintDoc): { body: string; css: string } {
   const banks = s.show_banks && d.company.banks.length && BANK_KINDS.includes(d.kind)
     ? `<div class="banks"><b>${esc(t('Bank accounts'))}:</b>${s.banks_layout === 'row' ? ' ' : '<br>'}${d.company.banks.map((b) => esc(`${b.bank} · ${b.iban}${b.swift && s.show_swift ? ` · SWIFT ${b.swift}` : ''}${b.currency !== d.company.base_currency ? ` (${b.currency})` : ''}`)).join(s.banks_layout === 'row' ? ' &nbsp;|&nbsp; ' : '<br>')}</div>` : ''
   const fiscal = d.fiscal?.fic ? `<div class="fiscal">NIVF: ${esc(d.fiscal.iic)} · NSLF: ${esc(d.fiscal.fic)}${d.fiscal.tcr ? ` · TCR: ${esc(d.fiscal.tcr)}` : ''}${d.fiscal.business_unit ? ` · ${esc(t('Business unit'))}: ${esc(d.fiscal.business_unit)}` : ''}${d.fiscal.operator ? ` · ${esc(t('Operator'))}: ${esc(d.fiscal.operator)}` : ''}</div>` : ''
-  const [signL, signR] = isVoucher(d) ? [d.kind === 'receipt_voucher' ? t('Received by') : t('Paid by'), d.kind === 'receipt_voucher' ? t('Paid by') : t('Received by')]
-    : d.kind === 'goods_receipt' ? [t('Delivered by'), t('Received by')] : [t('Issued by'), t('Received by')]
-  const stamp = s.show_stamp && d.company.stamp && !isVoucher(d) && d.kind !== 'goods_receipt' ? `<img class="stamp" src="${esc(d.company.stamp)}" alt="">` : ''
+  const [signL, ...signRest] = signLabels(d)
+  const stamp = s.show_stamp && d.company.stamp && !isVoucher(d) && !costDoc(d) ? `<img class="stamp" src="${esc(d.company.stamp)}" alt="">` : ''
   const sig = d.signature ? `<img class="sigimg" src="${esc(d.signature.image)}" alt="">` : ''
   const signer = d.signature ? `<span class="signer">${esc(d.signature.name)}${d.signature.title ? `, ${esc(d.signature.title)}` : ''}</span>` : ''
   const sign = s.show_signatures || d.signature
-    ? `<div class="sign${stamp || sig ? ' has-stamp' : ''}${sig ? ' has-sig' : ''}"><div>${stamp}${sig}${esc(signL)}${signer}</div><div>${s.show_signatures ? esc(signR) : ''}</div></div>`
+    ? `<div class="sign${stamp || sig ? ' has-stamp' : ''}${sig ? ' has-sig' : ''}" style="grid-template-columns:repeat(${1 + signRest.length},1fr)"><div>${stamp}${sig}${esc(signL)}${signer}</div>${signRest.map((x) => `<div>${s.show_signatures ? esc(x) : ''}</div>`).join('')}</div>`
     : stamp ? `<div class="sign has-stamp"><div class="nostroke">${stamp}</div><div class="nostroke"></div></div>` : ''
   const foot = `<div class="foot"><span>${esc(d.company.footer || s.footer || '')}</span><span>${esc(t('Printed {date}', { date: formatDate(d.printed_at, true) }))}${d.printed_by ? ` · ${esc(d.printed_by)}` : ''}</span></div>`
 
@@ -132,7 +131,7 @@ export function renderDocHtml(d: PrintDoc): { body: string; css: string } {
   if (s.template === 'detailed') return { body: `<div class="t-d">${detailedBody(d, { words, notes, fiscal, sign, foot })}</div>`, css: docCss(s.accent) } // i18n-ignore
 
   const codes = s.show_codes, disc = s.show_discount && prices && d.lines.some((l) => Number(l.discount) > 0)
-  const vatCols = d.kind !== 'goods_receipt'   // a goods received note shows cost, without VAT
+  const vatCols = !costDoc(d)   // a goods received note shows cost, without VAT
   const lots = d.lines.some((l) => l.lot)
   const head = `<tr><th class="c" style="width:26px">#</th>${codes ? `<th>${esc(t('Code'))}</th>` : ''}<th>${esc(t('Description'))}</th>${lots ? `<th>${esc(t('Lot'))}</th>` : ''}
     <th>${esc(t('Unit'))}</th><th class="r">${esc(t('Qty'))}</th>
@@ -179,7 +178,7 @@ function simpleBody(d: PrintDoc, x: Parts) {
 /** every detail: the band, three boxes, base and VAT per line, how to pay with the bank accounts in a table */
 function detailedBody(d: PrintDoc, x: Parts) {
   const s = settingsOf(d), prices = showPrices(d), dec = d.company.decimals ?? 2, p = d.partner, c = d.company
-  const vatCols = d.kind !== 'goods_receipt'
+  const vatCols = !costDoc(d)
   const band = `<div class="band${s.logo_position === 'right' ? ' rev' : ''}" style="--logo-h:${s.logo_size === 's' ? 36 : s.logo_size === 'l' ? 64 : 48}px">
     <div class="co">${c.logo ? `<img src="${esc(c.logo)}" alt="">` : ''}<div><b>${esc(c.legal_name || c.name)}</b></div></div>
     <div class="title"><h1>${esc(docTitle(d))}</h1><div class="no">${esc(d.number)}</div><div class="dt">${esc(formatDate(d.date))}</div></div></div>`

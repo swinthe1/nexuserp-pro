@@ -6,7 +6,7 @@ import { msg, t } from '@/i18n'
 import { unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 
-export type DocKind = 'sales_invoice' | 'sales_quote' | 'proforma_quote' | 'sales_order' | 'proforma' | 'delivery' | 'payment' | 'purchase_order' | 'goods_receipt'
+export type DocKind = 'sales_invoice' | 'sales_quote' | 'proforma_quote' | 'sales_order' | 'proforma' | 'delivery' | 'payment' | 'purchase_order' | 'goods_receipt' | 'stock_transfer' | 'stock_adjustment'
 
 /** the layout of the printed documents, from the plainest to the one with every detail */
 export type PrintTemplate = 'simple' | 'standard' | 'detailed'
@@ -44,7 +44,7 @@ export type PrintLine = {
 }
 export type PrintParty = { name: string; legal_name?: string | null; code?: string | null; tax_number?: string | null; vat_number?: string | null; phone?: string | null; email?: string | null; address?: string | null }
 export type PrintDoc = {
-  kind: 'sales_invoice' | 'advance_invoice' | 'credit_note' | 'debit_note' | 'sales_quote' | 'proforma' | 'sales_order' | 'delivery' | 'receipt_voucher' | 'payment_voucher' | 'purchase_order' | 'goods_receipt'
+  kind: 'sales_invoice' | 'advance_invoice' | 'credit_note' | 'debit_note' | 'sales_quote' | 'proforma' | 'sales_order' | 'delivery' | 'receipt_voucher' | 'payment_voucher' | 'purchase_order' | 'goods_receipt' | 'stock_transfer' | 'stock_adjustment'
   number: string; date: string; due_date?: string | null; valid_until?: string | null; requested_date?: string | null; expected_date?: string | null
   currency: string; rate?: number; status?: string; notes?: string | null; terms?: string | null; reference?: string | null; payment_term?: string | null
   /** an invoice paid in parts */
@@ -74,10 +74,20 @@ const TITLE: Record<PrintDoc['kind'], string> = {
   sales_invoice: msg('Invoice'), advance_invoice: msg('Advance invoice'), credit_note: msg('Credit note'), debit_note: msg('Debit note'), sales_quote: msg('Offer'), proforma: msg('Pro forma invoice'),
   sales_order: msg('Order confirmation'), delivery: msg('Delivery note'), receipt_voucher: msg('Cash receipt'), payment_voucher: msg('Payment voucher'),
   purchase_order: msg('Purchase order'), goods_receipt: msg('Goods received note'),
+  stock_transfer: msg('Transfer note'), stock_adjustment: msg('Stock adjustment note'),
 }
 export const docTitle = (d: PrintDoc) => d.kind === 'receipt_voucher' && d.cash === false ? t('Payment received') : d.kind === 'payment_voucher' && d.cash === false ? t('Payment made') : t(TITLE[d.kind])
 export const partnerLabel = (d: PrintDoc) =>
+  d.kind === 'stock_transfer' ? t('To the unit') :
   ['purchase_order', 'goods_receipt', 'payment_voucher'].includes(d.kind) ? t('Supplier') : d.kind === 'receipt_voucher' ? t('Received from') : t('Customer')
+/** stock documents: valued at cost, without VAT and without the company stamp */
+export const costDoc = (d: PrintDoc) => d.kind === 'goods_receipt' || d.kind === 'stock_transfer' || d.kind === 'stock_adjustment'
+/** who signs, left to right */
+export const signLabels = (d: PrintDoc): string[] =>
+  isVoucher(d) ? (d.kind === 'receipt_voucher' ? [t('Received by'), t('Paid by')] : [t('Paid by'), t('Received by')])
+  : d.kind === 'stock_transfer' ? [t('Delivered by'), t('Transported by'), t('Received by')]
+  : d.kind === 'stock_adjustment' ? [t('Prepared by'), t('Approved by')]
+  : d.kind === 'goods_receipt' ? [t('Delivered by'), t('Received by')] : [t('Issued by'), t('Received by')]
 export const METHOD: Record<string, string> = {
   cash: msg('In cash'), card: msg('By card'), cheque: msg('By cheque'), bank_transfer: msg('By bank transfer'), offset: msg('By offset'), other: msg('Other way'),
 }
