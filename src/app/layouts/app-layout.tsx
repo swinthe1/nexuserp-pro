@@ -21,6 +21,7 @@ import { OfflineBanner } from '@/components/offline-banner'
 import { PageErrorBoundary } from '@/components/page-error-boundary'
 import { PlanLocked } from '@/components/plan-locked'
 import { GuardHost } from '@/components/guard'
+import { LoginSetupGate } from '@/features/auth/login-setup'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { BottomBar } from '@/components/layout/bottom-bar'
 import { WorkPanes, WorkTabBar, WorkTabsProvider } from '@/components/layout/work-tabs'
@@ -79,7 +80,7 @@ export function AppLayout() {
         <LicenseBanner />
         <main id="main" className="flex-1 px-3 py-3 sm:px-5">
           <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
-          <GuardHost /><ExportsRecorder />
+          <GuardHost /><LoginSetupGate /><ExportsRecorder />
         </main>
       </div>
     )
@@ -98,7 +99,7 @@ export function AppLayout() {
           <main id="main" className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
             <SectionTabs />
             <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
-            <GuardHost /><ExportsRecorder />
+            <GuardHost /><LoginSetupGate /><ExportsRecorder />
             <TourHost />
           </main>
         </div>
@@ -135,7 +136,7 @@ export function AppLayout() {
           <main id="main" className="flex-1 px-3 py-3 sm:px-4">
             <SectionTabs />
             <WorkPanes />
-            <GuardHost /><ExportsRecorder />
+            <GuardHost /><LoginSetupGate /><ExportsRecorder />
             <TourHost />
           </main>
         </ClassicShell>
@@ -166,7 +167,7 @@ export function AppLayout() {
           <main id="main" className="flex-1 px-4 py-5 pb-24 sm:px-6 md:pb-5 lg:px-8">
             <SectionTabs />
             <WorkPanes />
-            <GuardHost /><ExportsRecorder />
+            <GuardHost /><LoginSetupGate /><ExportsRecorder />
             <TourHost />
           </main>
         </div>

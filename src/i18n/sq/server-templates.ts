@@ -30,6 +30,7 @@ export const serverTemplates: [string, string][] = [
   ['% is a % product; only stockable products carry stock', '{0} është produkt i llojit “{1}”; stok mbajnë vetëm produktet e magazinueshme'],
   ['% is a return, nothing to pick', '{0} është kthim, nuk ka çfarë të mblidhet'],
   ['% is already a member', '{0} është tashmë anëtar'],
+  ['The user name % is taken: choose another', 'Përdoruesi {0} është i zënë: zgjidhni një tjetër'],
   ['% is lot-tracked and has no lot at all; receive it with a lot first', '{0} ndiqet me lot dhe nuk ka asnjë lot; pranojeni fillimisht me lot'],
   ['% is not an active customer', '{0} nuk është klient aktiv'],
   ['% is tracked by %: a lot/serial number is required', '{0} ndiqet me {1}: kërkohet numri i lotit/serisë'],

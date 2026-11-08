@@ -7,6 +7,7 @@ import { useTheme } from '@/app/theme-provider'
 import { setZoom, stepZoom, useZoom, ZOOMS } from '@/app/zoom'
 import { cn } from '@/lib/utils'
 import { readTabsOn, writeTabsOn } from '@/components/layout/work-tabs'
+import { MyLoginDialog, isPinOnlyEmail, useMyLogin } from '@/features/auth/login-setup'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem,
@@ -30,6 +31,8 @@ export function UserMenu() {
   const [pcOpen, setPcOpen] = React.useState(false)
   const [aiOpen, setAiOpen] = React.useState(false)
   const [meOpen, setMeOpen] = React.useState(false)
+  const [pinOpen, setPinOpen] = React.useState(false)
+  const myLogin = useMyLogin()
   const { theme, setTheme, look, setLook } = useTheme()
   const locale = useLocale()
   const { canInstall, install } = useInstallApp()
@@ -43,7 +46,7 @@ export function UserMenu() {
       <DropdownMenuContent data-tab-opener="" align="end" className="w-60">
         <DropdownMenuLabel className="font-normal">
           <div className="truncate text-sm font-medium text-foreground">{name}</div>
-          <div className="truncate text-xs">{user?.email}</div>
+          <div className="truncate text-xs">{myLogin.data ? `@${myLogin.data.username}` : isPinOnlyEmail(user?.email) ? '' : user?.email}</div>
           {company && <div className="mt-1 truncate text-xs">{company.roles.map((r) => td(r.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase()))).join(', ')}</div>}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -51,7 +54,9 @@ export function UserMenu() {
         <DropdownMenuItem asChild><Link to="/hr/me"><UserRound /> {t('My workplace')}</Link></DropdownMenuItem>
         <DropdownMenuItem asChild><Link to="/training"><GraduationCap /> {t('Training|menu')}</Link></DropdownMenuItem>
         <DropdownMenuItem asChild><Link to="/exports"><FolderDown /> {t('My exports')}</Link></DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => setPwOpen(true)}><KeyRound /> {t('Change password')}</DropdownMenuItem>
+        {isSuperAdmin && !myLogin.data
+          ? <DropdownMenuItem onSelect={() => setPwOpen(true)}><KeyRound /> {t('Change password')}</DropdownMenuItem>
+          : <DropdownMenuItem onSelect={() => setPinOpen(true)}><KeyRound /> {t('Change my PIN')}</DropdownMenuItem>}
         {company && (simple
           ? <DropdownMenuItem onSelect={() => setSimple(false)}><PanelLeft /> {t('Show all menus')}</DropdownMenuItem>
           : <DropdownMenuItem onSelect={() => setSimple(true)}><LayoutGrid /> {t('Simple view: large buttons')}</DropdownMenuItem>)}
@@ -92,6 +97,7 @@ export function UserMenu() {
       </DropdownMenuContent>
     </DropdownMenu>
     <ChangePasswordDialog open={pwOpen} onOpenChange={setPwOpen} />
+    {pinOpen && <MyLoginDialog onClose={() => setPinOpen(false)} />}
     <DesktopSettingsDialog open={pcOpen} onOpenChange={setPcOpen} />
     <AiConnectorDialog open={aiOpen} onOpenChange={setAiOpen} />
     {meOpen && user && <ProfileDialog userId={user.id} self onClose={() => setMeOpen(false)} />}

@@ -9,11 +9,11 @@ import { useAuth } from '@/app/auth-provider'
 import { Button } from '@/components/ui/button'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { t } from '@/i18n'
+import { t, tServer } from '@/i18n'
 import { describeError } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { getTill } from '@/lib/shared-till'
-import { PinLogin } from './pin-login'
+import { PinLogin, finishPinSignIn } from './pin-login'
 
 /** Sign-in errors from the auth service, in plain words. */
 function authError(e: unknown): string {
@@ -43,13 +43,69 @@ const loginSchema = z.object({
 
 export function LoginPage() {
   const [till] = React.useState(getTill)
-  const [withEmail, setWithEmail] = React.useState(false)
-  const toEmail = React.useCallback(() => setWithEmail(true), [])
-  if (till && !withEmail) return <PinLogin till={till} onEmail={toEmail} />
-  return <EmailLogin />
+  const [mode, setMode] = React.useState<'till' | 'user' | 'admin'>(() => (till ? 'till' : 'user'))
+  const toUser = React.useCallback(() => setMode('user'), [])
+  if (till && mode === 'till') return <PinLogin till={till} onEmail={toUser} />
+  if (mode === 'admin') return <EmailLogin onBack={toUser} />
+  return <UserPinLogin onTill={till ? () => setMode('till') : undefined} onAdmin={() => setMode('admin')} />
 }
 
-function EmailLogin() {
+/** everyone signs in with a user name and a PIN of 6 digits; the company's administrator gives them */
+function UserPinLogin({ onTill, onAdmin }: { onTill?: () => void; onAdmin: () => void }) {
+  const navigate = useNavigate()
+  const from = (useLocation().state as { from?: string } | null)?.from ?? '/'
+  const [username, setUsername] = React.useState(() => { try { return localStorage.getItem('drispro.last-username') ?? '' } catch { return '' } })
+  const [pin, setPin] = React.useState('')
+  const [show, setShow] = React.useState(false)
+  const [busy, setBusy] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+  const submit = async (e?: React.FormEvent) => {
+    e?.preventDefault()
+    if (!username.trim() || pin.length !== 6 || busy) return
+    setBusy(true); setError(null)
+    try {
+      const { data, error: err } = await supabase.rpc('login_with_pin', { p_username: username.trim(), p_pin: pin })
+      if (err) throw err
+      const r = data as unknown as { error?: string; request?: string; secret?: string }
+      if (r.error) { setError(tServer(r.error)); setPin(''); return }
+      await finishPinSignIn(r.request!, r.secret!)
+      try { localStorage.setItem('drispro.last-username', username.trim().toLowerCase()) } catch { /* private window */ }
+      navigate(from, { replace: true })
+    } catch (x) { setError(tServer(describeError(x))); setPin('') } finally { setBusy(false) }
+  }
+  return (
+    <>
+      <Heading title={t('Welcome back')} sub={t('Sign in with your user name and PIN. The administrator of your company gives them.')} />
+      <form onSubmit={(e) => void submit(e)} className="grid gap-4" noValidate>
+        <div className="grid gap-1.5">
+          <label htmlFor="li-user" className="text-sm font-medium">{t('User name')}</label>
+          <Input id="li-user" autoComplete="username" autoCapitalize="none" spellCheck={false} autoFocus={!username} className="h-11"
+            value={username} onChange={(e) => { setUsername(e.target.value.replace(/\s/g, '')); setError(null) }} placeholder={t('e.g. arben.krasniqi')} />
+        </div>
+        <div className="grid gap-1.5">
+          <label htmlFor="li-pin" className="text-sm font-medium">{t('PIN')}</label>
+          <div className="relative">
+            <Input id="li-pin" type={show ? 'text' : 'password'} inputMode="numeric" autoComplete="current-password" autoFocus={!!username}
+              className="h-11 pr-11 text-lg tracking-[0.4em]" value={pin} maxLength={6}
+              onChange={(e) => { setPin(e.target.value.replace(/\D/g, '').slice(0, 6)); setError(null) }} />
+            <button type="button" onClick={() => setShow((v) => !v)} aria-label={show ? t('Hide the PIN') : t('Show the PIN')} aria-pressed={show}
+              className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-r-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          </div>
+          <p className={error ? 'text-[13px] text-destructive' : 'text-xs text-muted-foreground'}>{error ?? t('6 digits. Forgot it? The administrator of your company gives a new one.')}</p>
+        </div>
+        <Button type="submit" size="lg" loading={busy} disabled={!username.trim() || pin.length !== 6} className="mt-1 h-11 w-full text-[15px]">{t('Sign in')}</Button>
+      </form>
+      <div className="mt-8 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+        {onTill ? <button type="button" onClick={onTill} className="hover:text-foreground hover:underline">{t('Pick my name on this till')}</button> : <span />}
+        <button type="button" onClick={onAdmin} className="hover:text-foreground hover:underline">{t('Platform administrator')}</button>
+      </div>
+    </>
+  )
+}
+
+function EmailLogin({ onBack }: { onBack: () => void }) {
   const { signIn } = useAuth()
   const navigate = useNavigate()
   const from = (useLocation().state as { from?: string } | null)?.from ?? '/'
@@ -67,7 +123,7 @@ function EmailLogin() {
 
   return (
     <>
-      <Heading title={t('Welcome back')} sub={t('Sign in with your work email. Accounts are made by the administrator of your company.')} />
+      <Heading title={t('Platform administrator')} sub={<button type="button" onClick={onBack} className="text-primary hover:underline">{t('Back to the sign-in with a user name')}</button>} />
       <Form {...form}>
         <form onSubmit={onSubmit} className="grid gap-4" noValidate>
           <FormField control={form.control} name="email" render={({ field }) => (

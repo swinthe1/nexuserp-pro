@@ -152,9 +152,9 @@ export const GUIDES_D: Record<string, Guide> = {
   '/settings/users': {
     what: { sq: 'Përdoruesit: kush hyn në këtë kompani dhe çfarë mund të bëjë secili, sipas roleve të tij.', en: 'Users: who can sign in to this company and what each person may do, by their roles.' },
     steps: [
-      { sq: 'Kliko "Fto një person", shkruaj email-in, zgjidh rolet dhe kliko "Dërgo ftesën".', en: 'Click "Invite a person", type the email, choose the roles and click "Send invitation".' },
-      { sq: 'Nëse personi ka llogari, i vjen ftesa dhe duhet të klikojë "Prano"; deri atëherë del si "I ftuar". Për dikë pa llogari, llogarinë e hap administratori i DrisPRO.', en: 'If the person has an account, they get the invitation and must click "Accept"; until then they show as "Invited". For someone without an account, the DrisPRO administrator makes one.' },
-      { sq: 'Te menyja "…" e çdo personi: "Ndrysho rolet", "Njësitë ku punon", PIN për arkën e përbashkët ose "Pezullo aksesin".', en: 'In each person\'s "…" menu: "Change roles", "Warehouses they work in", a PIN for the shared till, or "Suspend access".' },
+      { sq: 'Kliko "Shto një person", shkruaj emrin, përdoruesin, PIN-in me 6 shifra dhe zgjidh rolet. Nuk duhet email: personi hyn me përdoruesin dhe PIN-in nga çdo pajisje.', en: 'Click "Add a person", type the name, the user name and a 6-digit PIN, and choose the roles. No email is needed: the person signs in with the user name and PIN from any device.' },
+      { sq: 'Kush e harron PIN-in ose e gabon 5 herë bllokohet 10 minuta: te menyja "…" kliko "Përdoruesi dhe PIN i ri" dhe jepi një PIN të ri; e zhbllokon menjëherë.', en: 'Whoever forgets the PIN or gets it wrong 5 times is locked for 10 minutes: in the "…" menu click "User name and new PIN" and give a new one; it unlocks them at once.' },
+      { sq: 'Te menyja "…" e çdo personi: "Ndrysho rolet", "Njësitë ku punon" ose "Pezullo aksesin". Kush del "Ende pa përdorues" e krijon vetë herën e parë që hyn.', en: 'In each person\'s "…" menu: "Change roles", "Warehouses they work in", or "Suspend access". Whoever shows "No user name yet" makes theirs the first time they sign in.' },
       { sq: 'Fto kontabilistin te "Kontabilisti juaj, falas": nuk zë vend përdoruesi në licencë.', en: 'Invite your accountant under "Your accountant, free": they do not take a user place of your licence.' },
       { sq: 'Kolona "Trajnimi" tregon sa mësime ka kryer secili nga trajnimi për rolet e veta.', en: 'The "Training" column shows how many lessons each person has done of the training for their roles.' },
     ],
@@ -162,7 +162,7 @@ export const GUIDES_D: Record<string, Guide> = {
     after: { sq: 'Rolet e ndryshuara vlejnë herën tjetër që personi hap një faqe. Dokumentet që ka bërë mbeten me emrin e tij.', en: 'Changed roles apply the next time the person opens a page. Documents they made keep their name.' },
     related: [{ href: '/settings/roles', label: { sq: 'Rolet dhe të drejtat', en: 'Roles and permissions' } }, { href: '/hr/employees', label: { sq: 'Punonjësit', en: 'Employees' } }],
     tour: [
-      { target: 'Invite a person', say: { sq: 'Fto dikë me email dhe zgjidh rolet e tij.', en: 'Invite someone by email and choose their roles.' } },
+      { target: 'Add a person', say: { sq: 'Shto dikë me përdorues dhe PIN dhe zgjidh rolet e tij.', en: 'Add someone with a user name and PIN and choose their roles.' } },
       { target: 'Roles and permissions', say: { sq: 'Këtu sheh çfarë lejon çdo rol, dhe bën role të tua.', en: 'See what each role allows here, and make your own roles.' } },
     ],
   },

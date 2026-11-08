@@ -13,7 +13,7 @@ import { getTill, setTill } from '@/lib/shared-till'
 import { supabase } from '@/lib/supabase'
 import { formatDate } from '@/lib/utils'
 
-export type MemberExtra = { member_id: string; view_mode: 'auto' | 'simple' | 'full'; simple: boolean; has_pin: boolean; pin_locked: boolean }
+export type MemberExtra = { member_id: string; view_mode: 'auto' | 'simple' | 'full'; simple: boolean; has_pin: boolean; pin_locked: boolean; username: string | null; login_locked: boolean }
 
 export function useMemberExtras() {
   const { companyId } = useCompany()

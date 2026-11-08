@@ -16942,6 +16942,16 @@ export type Database = {
         }
         Returns: Json
       }
+      company_user_create: {
+        Args: {
+          p_company: string
+          p_name: string
+          p_username: string
+          p_pin: string
+          p_role_keys: string[]
+        }
+        Returns: string
+      }
       company_users: {
         Args: {
           p_company: string
@@ -18055,6 +18065,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      login_with_pin: {
+        Args: {
+          p_username: string
+          p_pin: string
+        }
+        Returns: Json
+      }
       logistics_overview: {
         Args: {
           p_company: string
@@ -18189,7 +18206,15 @@ export type Database = {
         Args: {
           p_company: string
         }
-        Returns: { member_id: string | null; view_mode: string | null; simple: boolean | null; has_pin: boolean | null; pin_locked: boolean | null }[]
+        Returns: { member_id: string | null; view_mode: string | null; simple: boolean | null; has_pin: boolean | null; pin_locked: boolean | null; username: string | null; login_locked: boolean | null }[]
+      }
+      member_login_set: {
+        Args: {
+          p_member: string
+          p_username?: string
+          p_pin?: string
+        }
+        Returns: undefined
       }
       member_profile_get: {
         Args: {
@@ -18319,6 +18344,18 @@ export type Database = {
       my_invitations: {
         Args: Record<PropertyKey, never>
         Returns: { member_id: string | null; company_id: string | null; company_name: string | null; invited_at: string | null; invited_by: string | null; roles: string[] | null }[]
+      }
+      my_login: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      my_login_set: {
+        Args: {
+          p_username: string
+          p_pin: string
+          p_old_pin?: string
+        }
+        Returns: undefined
       }
       my_payslip_periods: {
         Args: Record<PropertyKey, never>

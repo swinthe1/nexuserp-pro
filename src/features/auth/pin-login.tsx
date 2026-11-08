@@ -12,8 +12,24 @@ type People = { device: string; company: string; people: Person[] } | null
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
+/** after the PIN was accepted: the server makes a one-time code, and the code opens the session; the user's id */
+export async function finishPinSignIn(request: string, secret: string): Promise<string | null> {
+  let res: { status: string; email?: string; otp?: string; error?: string } = { status: 'queued' }
+  for (let i = 0; i < 60 && (res.status === 'queued' || res.status === 'running'); i++) {
+    await sleep(i < 10 ? 250 : 500)
+    const q = await supabase.rpc('pin_login_result', { p_request: request, p_secret: secret })
+    if (q.error) throw q.error
+    res = q.data as unknown as typeof res
+  }
+  if (res.status !== 'done' || !res.email || !res.otp) throw new Error(res.error ?? 'The sign-in did not answer in time; try again')
+  let v = await supabase.auth.verifyOtp({ email: res.email, token: res.otp, type: 'magiclink' })
+  if (v.error) v = await supabase.auth.verifyOtp({ email: res.email, token: res.otp, type: 'email' })
+  if (v.error) throw v.error
+  return v.data.user?.id ?? null
+}
+
 /** On a shared till: tap your name, type your PIN. */
-export function PinLogin({ till, onEmail }: { till: SharedTill; onEmail: () => void }) {
+export function PinLogin({ till, onEmail }: { till: SharedTill; /** to the sign-in with a user name */ onEmail: () => void }) {
   const navigate = useNavigate()
   const [people, setPeople] = React.useState<People | undefined>(undefined)
   const [who, setWho] = React.useState<Person | null>(null)
@@ -38,18 +54,7 @@ export function PinLogin({ till, onEmail }: { till: SharedTill; onEmail: () => v
       if (e) throw e
       const r = data as unknown as { error?: string; request?: string; secret?: string }
       if (r.error) { setError(tServer(r.error)); setPin(''); return }
-      let res: { status: string; email?: string; otp?: string; error?: string } = { status: 'queued' }
-      for (let i = 0; i < 60 && (res.status === 'queued' || res.status === 'running'); i++) {
-        await sleep(i < 10 ? 250 : 500)
-        const q = await supabase.rpc('pin_login_result', { p_request: r.request!, p_secret: r.secret! })
-        if (q.error) throw q.error
-        res = q.data as unknown as typeof res
-      }
-      if (res.status !== 'done' || !res.email || !res.otp) throw new Error(res.error ?? 'The sign-in did not answer in time; try again')
-      let v = await supabase.auth.verifyOtp({ email: res.email, token: res.otp, type: 'magiclink' })
-      if (v.error) v = await supabase.auth.verifyOtp({ email: res.email, token: res.otp, type: 'email' })
-      if (v.error) throw v.error
-      markPinSession(v.data.user?.id ?? null)
+      markPinSession(await finishPinSignIn(r.request!, r.secret!))
       navigate('/', { replace: true })
     } catch (e) { setError(describeError(e)); setPin('') } finally { setBusy(false) }
   }, [who, busy, till.token, navigate])
@@ -91,7 +96,7 @@ export function PinLogin({ till, onEmail }: { till: SharedTill; onEmail: () => v
             </button>
           ))}
         </div>
-        <button type="button" onClick={onEmail} className="mt-8 text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{t('Sign in with email and password')}</button>
+        <button type="button" onClick={onEmail} className="mt-8 text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{t('Sign in with your user name')}</button>
       </div>
     )
   }

@@ -405,10 +405,10 @@ export const OWNER: Track = {
       href: '/settings/users',
       minutes: 4,
       why: { sq: 'Kush hyn në program, çka lejohet të bëjë dhe sa e ka mësuar.', en: 'Who signs in, what they may do and how much they have learned.' },
-      goal: { sq: 'Pas këtij mësimi di të ftosh një person me rolet e duhura, t\'ia ndryshosh rolet dhe të shohësh sa mësime ka kryer.', en: 'After this lesson you can invite a person with the right roles, change their roles and see how many lessons they finished.' },
+      goal: { sq: 'Pas këtij mësimi di të shtosh një person me rolet e duhura, t\'ia ndryshosh rolet dhe të shohësh sa mësime ka kryer.', en: 'After this lesson you can invite a person with the right roles, change their roles and see how many lessons they finished.' },
       steps: [
-        { sq: 'Kliko "Fto një person", shkruaj email-in, zgjidh rolet dhe kliko "Dërgo ftesën".', en: 'Click "Invite a person", type the email, choose the roles and click "Send invitation".' },
-        { sq: 'Te butoni ⋯ në fund të rreshtit të personit janë "Ndrysho rolet", "Njësitë ku punon", PIN-i për arkën e përbashkët dhe "Pezullo aksesin".', en: 'The ⋯ button at the end of the person\'s row holds "Change roles", "Warehouses they work in", the PIN for the shared till and "Suspend access".' },
+        { sq: 'Kliko "Shto një person", shkruaj emrin, përdoruesin, PIN-in me 6 shifra, zgjidh rolet dhe kliko "Shto personin". Nuk duhet email.', en: 'Click "Add a person", type the name, the user name and a 6-digit PIN, choose the roles and click "Add the person". No email is needed.' },
+        { sq: 'Te butoni ⋯ në fund të rreshtit të personit janë "Ndrysho rolet", "Njësitë ku punon", "Përdoruesi dhe PIN i ri" dhe "Pezullo aksesin".', en: 'The ⋯ button at the end of the person\'s row holds "Change roles", "Warehouses they work in", "User name and new PIN" and "Suspend access".' },
         { sq: 'Kolona "Trajnimi" tregon sa mësime ka kryer secili nga ato të roleve të tij, p.sh. 3/7; "Gati" kur i ka kryer të gjitha.', en: 'The "Training" column shows how many of the lessons for their roles each person finished, e.g. 3/7; "Finished" when they did them all.' },
         { sq: 'Me "Rolet dhe të drejtat" sheh çka lejon çdo rol dhe bën role të tua.', en: 'With "Roles and permissions" see what each role allows and make your own roles.' },
         { sq: 'Kontabilistin e jashtëm e fton te "Kontabilisti juaj, falas": nuk zë vend përdoruesi në licencë.', en: 'Invite your outside accountant under "Your accountant, free": they do not take a user place of your licence.' },

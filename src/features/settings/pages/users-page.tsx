@@ -18,10 +18,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { t, td } from '@/i18n'
 import { cn, formatDate, initials } from '@/lib/utils'
-import { type CompanyUser, type RoleRow, useCompanyUsers, useInviteAccountant, useInviteMember, useRoles, useMemberWarehouses, useSetMemberRoles, useSetMemberStatus, useSetMemberWarehouses } from '../api'
+import { type CompanyUser, type RoleRow, useCompanyUsers, useInviteAccountant, useRoles, useMemberWarehouses, useSetMemberRoles, useSetMemberStatus, useSetMemberWarehouses } from '../api'
 import { useWarehouses } from '@/features/inventory/api'
 import { ProfileDialog } from '../components/profile-dialog'
-import { PinDialog, SharedTillCard, useMemberExtras, useSetView } from '../components/easy-access'
+import { SharedTillCard, useMemberExtras, useSetView } from '../components/easy-access'
+import { cleanPin, cleanUsername, isPinOnlyEmail, pinProblem, suggestUsername, usernameOk } from '@/features/auth/login-setup'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { describeError, unwrap } from '@/lib/errors'
+import { supabase } from '@/lib/supabase'
+import { tServer } from '@/i18n'
 
 export function UsersPage() {
   const { can, pageAllowed, hasFeature } = useCompany()
@@ -51,14 +56,14 @@ export function UsersPage() {
 
   const roleOptions = React.useMemo(() => (roles.data ?? []).filter((r) => r.is_assignable).map((r) => ({ value: r.name, label: td(r.name) })), [roles.data])
   const cols = React.useMemo<ColumnDef<CompanyUser>[]>(() => [
-    { id: 'person', accessorFn: (u) => `${u.full_name ?? ''} ${u.email}`, enableHiding: false, header: ({ column }) => <ColumnHeader column={column} title={t('Person')} />, meta: { label: t('Person'), exportValue: (u) => u.full_name ?? u.email },
+    { id: 'person', accessorFn: (u) => `${u.full_name ?? ''} ${extras.data?.get(u.member_id)?.username ?? ''} ${isPinOnlyEmail(u.email) ? '' : u.email}`, enableHiding: false, header: ({ column }) => <ColumnHeader column={column} title={t('Person')} />, meta: { label: t('Person'), exportValue: (u) => u.full_name ?? u.email },
       cell: ({ row: { original: u } }) => (
         <div className="flex items-center gap-2.5">
           <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-medium">{initials(u.full_name ?? u.email)}</span>
           <span className="min-w-0">
             <span className="block truncate font-medium">{u.full_name ?? u.email}{u.is_self && <span className="ml-1.5 text-xs font-normal text-muted-foreground">{t('(you)')}</span>}
               {u.external_accountant && <Badge variant="outline" className="ml-1.5 border-primary/40 text-primary">{t('Outside accountant · free')}</Badge>}</span>
-            <span className="block truncate text-xs text-muted-foreground">{u.email}</span>
+            <span className="block truncate text-xs text-muted-foreground">{extras.data?.get(u.member_id)?.username ? `@${extras.data.get(u.member_id)!.username}` : isPinOnlyEmail(u.email) ? '' : u.email}</span>
           </span>
         </div>
       ) },
@@ -76,7 +81,8 @@ export function UsersPage() {
         const x = extras.data?.get(u.member_id)
         if (!x) return null
         return <div className="flex flex-wrap gap-1">
-          {x.has_pin && <Badge variant="outline" className={x.pin_locked ? 'border-destructive/40 text-destructive' : ''}>{x.pin_locked ? t('PIN locked') : t('PIN')}</Badge>}
+          {x.username ? <Badge variant="outline" className={x.login_locked ? 'border-destructive/40 text-destructive' : ''}>{x.login_locked ? t('PIN locked') : t('User name and PIN')}</Badge>
+            : <Badge variant="outline" className="border-warning/50 text-warning">{t('No user name yet')}</Badge>}
           {x.simple && <Badge variant="outline" className="border-primary/40 text-primary">{t('Simple view')}</Badge>}
         </div>
       } },
@@ -97,7 +103,7 @@ export function UsersPage() {
             {u.user_id && <DropdownMenuItem onSelect={() => setProfileFor(u.user_id)}>{t('Change details')}</DropdownMenuItem>}
             <DropdownMenuItem onSelect={() => setEditing(u)}>{t('Change roles')}</DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setWhFor(u)}>{t('Warehouses they work in')}</DropdownMenuItem>
-            {u.user_id && u.status === 'active' && <DropdownMenuItem onSelect={() => setPinFor(u)}>{extras.data?.get(u.member_id)?.has_pin ? t('Change the PIN') : t('Give a PIN for the shared till')}</DropdownMenuItem>}
+            {u.user_id && u.status === 'active' && <DropdownMenuItem onSelect={() => setPinFor(u)}>{extras.data?.get(u.member_id)?.username ? t('User name and new PIN') : t('Give a user name and PIN')}</DropdownMenuItem>}
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{t('What they see')}</DropdownMenuLabel>
             <DropdownMenuRadioGroup value={extras.data?.get(u.member_id)?.view_mode ?? 'auto'} onValueChange={(v) => setView.mutate({ member: u.member_id, mode: v as 'auto' | 'simple' | 'full' })}>
@@ -124,19 +130,19 @@ export function UsersPage() {
       <PageHeader title={t('Users and roles')} description={t('Who can sign in to this company and what each person may do. A person may do everything their roles allow.')}
         actions={<>
           <Button variant="outline" asChild><Link to="/settings/roles"><ShieldCheck /> {t('Roles and permissions')}</Link></Button>
-          <Can perm="admin.write"><Button onClick={() => setInviteOpen(true)}><UserPlus /> {t('Invite a person')}</Button></Can>
+          <Can perm="admin.write"><Button onClick={() => setInviteOpen(true)}><UserPlus /> {t('Add a person')}</Button></Can>
         </>} />
       <SharedTillCard />
       <OutsideAccountantCard users={users.data ?? []} />
       <DataTable tableKey="settings.users" columns={cols} data={users.data} isLoading={users.isLoading} error={users.error} getRowId={(u) => u.member_id}
-        exportName={t('users')} searchPlaceholder={t('Name or email…')}
+        exportName={t('users')} searchPlaceholder={t('Name or user name…')}
         facets={[
           { columnId: 'status', title: t('Status'), options: [{ value: 'active', label: t('Active') }, { value: 'invited', label: t('Invited') }, { value: 'suspended', label: t('Suspended') }] },
           { columnId: 'roles', title: t('Role'), options: roleOptions },
         ]}
-        empty={{ title: t('Nobody else yet'), description: t('Invite colleagues by email. For people without an account, the DrisPRO administrator makes one.') }} />
-      <InviteDialog open={inviteOpen} onOpenChange={(o) => { setInviteOpen(o); if (!o && params.get('invite')) setParams({}, { replace: true }) }} roles={roles.data ?? []} />
-      {pinFor && <PinDialog member={pinFor.member_id} name={pinFor.full_name ?? pinFor.email} hasPin={!!extras.data?.get(pinFor.member_id)?.has_pin} onClose={() => setPinFor(null)} />}
+        empty={{ title: t('Nobody else yet'), description: t('Add the people who work with you: a user name, a PIN and their roles. They need no email.') }} />
+      {inviteOpen && <AddPersonDialog roles={roles.data ?? []} onClose={() => { setInviteOpen(false); if (params.get('invite')) setParams({}, { replace: true }) }} />}
+      {pinFor && <MemberLoginDialog member={pinFor.member_id} name={pinFor.full_name ?? pinFor.email} username={extras.data?.get(pinFor.member_id)?.username ?? null} onClose={() => setPinFor(null)} />}
       {whFor && <WarehousesDialog user={whFor} current={memberWh.data?.[whFor.member_id] ?? []} onClose={() => setWhFor(null)} />}
       {profileFor && <ProfileDialog userId={profileFor} onClose={() => setProfileFor(null)} />}
       {editing && <RolesDialog user={editing} roles={roles.data ?? []} onClose={() => setEditing(null)} />}
@@ -187,30 +193,88 @@ function RolePicker({ roles, value, onChange }: { roles: RoleRow[]; value: strin
   )
 }
 
-function InviteDialog({ open, onOpenChange, roles }: { open: boolean; onOpenChange: (o: boolean) => void; roles: RoleRow[] }) {
-  const invite = useInviteMember()
-  const [email, setEmail] = React.useState('')
+/** a new person of the company: name, user name, PIN and roles; no email */
+function AddPersonDialog({ roles, onClose }: { roles: RoleRow[]; onClose: () => void }) {
+  const { companyId } = useCompany()
+  const qc = useQueryClient()
+  const [name, setName] = React.useState('')
+  const [username, setUsername] = React.useState('')
+  const [touched, setTouched] = React.useState(false)
+  const [pin, setPin] = React.useState('')
   const [picked, setPicked] = React.useState<string[]>([])
-  React.useEffect(() => { if (open) { setEmail(''); setPicked([]) } }, [open])
-  const valid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim()) && picked.length > 0
+  const [error, setError] = React.useState<string | null>(null)
+  const create = useMutation({
+    mutationFn: async () => unwrap(await supabase.rpc('company_user_create', { p_company: companyId!, p_name: name.trim(), p_username: username, p_pin: pin, p_role_keys: picked })),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['admin'] }); void qc.invalidateQueries({ queryKey: ['member-extras'] })
+      toast.success(t('{name} signs in with {user} and the PIN you gave. Tell them the PIN in person.', { name: name.trim(), user: username }))
+      onClose()
+    },
+    onError: (e) => setError(tServer(describeError(e))),
+  })
+  const problem = pin.length === 6 ? pinProblem(pin) : null
+  const ok = name.trim().length > 1 && usernameOk(username) && !pinProblem(pin) && picked.length > 0
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{t('Invite a person')}</DialogTitle>
-          <DialogDescription>{t('If they already have an account they get an invitation to accept; otherwise the DrisPRO administrator makes their account and gives you the password.')}</DialogDescription>
+          <DialogTitle>{t('Add a person')}</DialogTitle>
+          <DialogDescription>{t('They sign in with the user name and the PIN, on any device. No email is needed.')}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
-          <div className="grid gap-1.5"><Label htmlFor="inv-email">{t('Email')}</Label>
-            <Input id="inv-email" type="email" autoFocus value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('name@company.al')} /></div>
+          <div className="grid gap-1.5"><Label htmlFor="np-name">{t('Name and surname')}</Label>
+            <Input id="np-name" autoFocus value={name} onChange={(e) => { setName(e.target.value); if (!touched) setUsername(suggestUsername(e.target.value)); setError(null) }} placeholder={t('e.g. Arbën Krasniqi')} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5"><Label htmlFor="np-user">{t('User name')}</Label>
+              <Input id="np-user" autoCapitalize="none" spellCheck={false} value={username} onChange={(e) => { setUsername(cleanUsername(e.target.value)); setTouched(true); setError(null) }} /></div>
+            <div className="grid gap-1.5"><Label htmlFor="np-pin">{t('PIN (6 digits)')}</Label>
+              <Input id="np-pin" inputMode="numeric" autoComplete="off" className="text-center tracking-[0.3em]" value={pin} onChange={(e) => { setPin(cleanPin(e.target.value)); setError(null) }} /></div>
+          </div>
+          {problem && <p className="-mt-2 text-xs text-destructive">{problem}</p>}
           <div className="grid gap-1.5"><Label>{t('Roles')}</Label><RolePicker roles={roles} value={picked} onChange={setPicked} /></div>
+          {error && <p className="text-[13px] text-destructive">{error}</p>}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>{t('Cancel')}</Button>
-          <Button disabled={!valid} loading={invite.isPending}
-            onClick={() => void invite.mutateAsync({ email: email.trim(), roles: picked }).then(() => { toast.success(t('Invitation sent to {email}', { email: email.trim() })); onOpenChange(false) })}>
-            {t('Send invitation')}
-          </Button>
+          <Button variant="outline" onClick={onClose}>{t('Cancel')}</Button>
+          <Button disabled={!ok} loading={create.isPending} onClick={() => create.mutate()}><UserPlus /> {t('Add the person')}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/** the owner gives a person a user name, or a new PIN (a forgotten one; it also unlocks them) */
+function MemberLoginDialog({ member, name, username: current, onClose }: { member: string; name: string; username: string | null; onClose: () => void }) {
+  const qc = useQueryClient()
+  const [username, setUsername] = React.useState(current ?? suggestUsername(name))
+  const [pin, setPin] = React.useState('')
+  const [error, setError] = React.useState<string | null>(null)
+  const save = useMutation({
+    mutationFn: async () => unwrap(await supabase.rpc('member_login_set', { p_member: member, p_username: username, p_pin: pin || undefined })),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['member-extras'] }); toast.success(t('Saved. Tell {name} the PIN in person.', { name })); onClose() },
+    onError: (e) => setError(tServer(describeError(e))),
+  })
+  const problem = pin.length === 6 ? pinProblem(pin) : null
+  // a new person needs a PIN; for one who has a name already, the PIN may stay
+  const ok = usernameOk(username) && (pin ? !pinProblem(pin) : !!current && username !== current)
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{t('User name and PIN of {name}', { name })}</DialogTitle>
+          <DialogDescription>{current ? t('A new PIN replaces the old one at once and unlocks the person if they typed it wrong too often.') : t('From now on they sign in with these, on any device and on the shared till.')}</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <div className="grid gap-1.5"><Label htmlFor="mp-user">{t('User name')}</Label>
+            <Input id="mp-user" autoCapitalize="none" spellCheck={false} value={username} onChange={(e) => { setUsername(cleanUsername(e.target.value)); setError(null) }} /></div>
+          <div className="grid gap-1.5"><Label htmlFor="mp-pin">{current ? t('New PIN (leave empty to keep it)') : t('PIN (6 digits)')}</Label>
+            <Input id="mp-pin" inputMode="numeric" autoComplete="off" autoFocus className="text-center text-xl tracking-[0.4em]" value={pin} onChange={(e) => { setPin(cleanPin(e.target.value)); setError(null) }} />
+            {problem && <p className="text-xs text-destructive">{problem}</p>}</div>
+          {error && <p className="text-[13px] text-destructive">{error}</p>}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>{t('Cancel')}</Button>
+          <Button disabled={!ok} loading={save.isPending} onClick={() => save.mutate()}>{t('Save')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
