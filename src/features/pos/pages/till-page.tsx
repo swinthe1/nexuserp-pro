@@ -65,7 +65,7 @@ type PricedLine = Line & { card?: boolean; promo?: { id: string; name: string } 
 export type Tender = { method: Method; amount: number; reference?: string | null }
 /** a sale put aside while the customer fetches something: kept on this device, for this shift */
 type Held = { id: string; at: string; lines: Line[]; customer: string | null; card: AppliedCard | null }
-const MAX_HELD = 3
+const MAX_HELD = 5
 const heldKey = (session: string) => `pos.held.${session}`
 const readHeld = (session: string): Held[] => { try { return JSON.parse(localStorage.getItem(heldKey(session)) ?? '[]') as Held[] } catch { return [] } }
 const writeHeld = (session: string, h: Held[]) => { try { if (h.length) localStorage.setItem(heldKey(session), JSON.stringify(h)); else localStorage.removeItem(heldKey(session)) } catch { /* private window */ } }
@@ -528,7 +528,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   const voidSale = () => requestVoid({ entries: lines.length ? [{ kind: 'void_sale', description: tn(lines.length, '{n} line', '{n} lines'), quantity: itemsCount,
     amount: r2(total) }] : [], apply: clearSale })
 
-  /* ---------- sales on hold: put aside without voiding, back with one tap (up to three) */
+  /* ---------- sales on hold: put aside without voiding, back with one tap (up to five) */
   const [held, setHeldState] = React.useState<Held[]>(() => readHeld(session.id))
   const setHeld = (h: Held[]) => { setHeldState(h); writeHeld(session.id, h) }
   const heldTotal = (h: Held) => r2(h.lines.reduce((a, l) => a + lineTotal(l), 0))

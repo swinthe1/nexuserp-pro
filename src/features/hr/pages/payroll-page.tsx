@@ -305,7 +305,7 @@ function RegisterCard({ run }: { run: PayrollRun }) {
               { header: t('Net salary'), value: (r) => num(r.net), format: 'money' },
               { header: t('Description'), value: () => t('Salary {period}', { period }) },
             ] as XlsxColumn<RegisterRow>[], `${t('salary-transfers|file')}-${run.period_start.slice(0, 7)}`,
-            { totals: { [t('Employee')]: t('Total'), [t('Net salary')]: rows.reduce((a, r) => a + num(r.net), 0) } })}>
+            { fileTitle: t('Transfers for the bank'), totals: { [t('Employee')]: t('Total'), [t('Net salary')]: rows.reduce((a, r) => a + num(r.net), 0) } })}>
             <Landmark /> {t('Transfers for the bank')}</Button>}
           <ExportMenu rows={rows} columns={cols} filename={`${run.country_rules === 'XK' ? t('payroll-list|file') : t('payroll|file')}-${run.period_start.slice(0, 7)}`}
             title={title} subtitle={`${company?.name ?? ''} · ${period} · ${run.number}`} xlsx={{ totals }} />

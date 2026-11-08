@@ -416,7 +416,7 @@ function ReportTable({ rows, filters, costs, title, subtitle, fileName, onOpen }
       rows: out, totals, marks, signatures: filters.report === 'sheet' ? (SIGNATURES[filters.sheet] ?? []).map((s) => t(s)) : undefined })
     else if (kind === 'xlsx') await exportXlsx(body, columns, fileName, { sheet: t('Stock report'), title: [title, subtitle] })
     else if (kind === 'pdf') await exportPdf(body, columns, fileName, title, subtitle)
-    else exportCsv(body, columns, fileName)
+    else exportCsv(body, columns, fileName, title)
   }
 
   const head = (c: Col) => (

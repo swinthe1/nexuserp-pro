@@ -29,7 +29,7 @@ export function ExportMenu<T>({ rows, columns, pdfColumns, filename, title, subt
           <FileSpreadsheet /> Excel
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => void exportPdf(rows, pdfColumns ?? columns, filename, title, subtitle, xlsx?.totals)}><FileText /> PDF</DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => exportCsv(rows, columns, filename)}><FileSpreadsheet /> CSV</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => exportCsv(rows, columns, filename, title)}><FileSpreadsheet /> CSV</DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => { const pc = pdfColumns ?? columns; printTable({ title, subtitle, columns: pc.map((c) => ({ header: c.header, format: c.format === 'int' || c.format === 'text' || c.format === 'money' ? c.format : undefined, nowrap: c.format === 'date' || c.format === 'int' })),
           rows: rows.map((r) => pc.map((c) => c.value(r))), totals: xlsx?.totals ? pc.map((c) => xlsx.totals![c.header] ?? null) : null }) }}><Printer /> {t('Print')}</DropdownMenuItem>
@@ -65,7 +65,7 @@ export function GridExportMenu({ name, title, subtitle, grid, disabled, label }:
     if (kind === 'print') printTable({ title, subtitle, columns: columns.map((c) => ({ header: c.header, format: c.format === 'int' ? 'int' : c.format === 'money' ? 'money' : undefined })), rows: body })
     else if (kind === 'xlsx') void exportXlsx(body, columns, name, { sheet: title, title: [title, ...(subtitle ? [subtitle] : [])] })
     else if (kind === 'pdf') void exportPdf(body, columns, name, title, subtitle)
-    else exportCsv(body, columns, name)
+    else exportCsv(body, columns, name, title)
   }
   return (
     <DropdownMenu>

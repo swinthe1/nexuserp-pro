@@ -31,14 +31,33 @@ function download(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
+/**
+ * The name of an exported file, in the reader's language: what was exported (the title the person
+ * sees: "Transferet", "Libri i shitjeve · nëntor 2026") and when it is for (the period in the code
+ * name, as 01.11.2026, otherwise today). The code names (sales-book-2026-11) only give the dates.
+ */
+const PERIOD = /(\d{4})-(\d{2})(?:-(\d{2}))?/g
+export function exportFileName(name: string, title?: string | null) {
+  const clean = (x: string) => x.replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s*[·•]\s*/g, ' - ').replace(/\s+/g, ' ').replace(/[\s.-]+$/, '').trim()
+  const dates = [...name.matchAll(PERIOD)].map((m) => (m[3] ? `${m[3]}.${m[2]}.${m[1]}` : `${m[2]}.${m[1]}`))
+  const human = title?.trim() ? clean(title) : ''
+  // without a title the name itself, made readable (a code name stays as it is, minus its dates)
+  const base = human || clean(name.replace(PERIOD, ' ').replace(/[-_]+/g, ' ')) || t('Export')
+  const d = new Date()
+  const today = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`
+  // a title that already says the year (a month, a period) needs no date after it
+  const when = /\b(19|20)\d{2}\b/.test(human) ? '' : dates.length ? dates.join(' - ') : today
+  return `${base}${when ? ` ${when}` : ''}`.slice(0, 150)
+}
+
 /** A table (first row the headings) as a CSV file Excel opens with ë and ç intact. */
 export function downloadCsv(name: string, rows: (string | number | null | undefined)[][]) {
   download(new Blob(['\ufeff' + rows.map((r) => r.map(escapeCsv).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' }), `${name}.csv`)
 }
 
-export function exportCsv<T>(rows: T[], columns: ExportColumn<T>[], filename: string) {
+export function exportCsv<T>(rows: T[], columns: ExportColumn<T>[], filename: string, title?: string) {
   pendingRows = rows.length
-  downloadCsv(filename, [columns.map((c) => c.header), ...rows.map((r) => columns.map((c) => c.value(r)))])
+  downloadCsv(exportFileName(filename, title), [columns.map((c) => c.header), ...rows.map((r) => columns.map((c) => c.value(r)))])
 }
 
 export async function exportPdf<T>(rows: T[], columns: ExportColumn<T>[], filename: string, title: string, subtitle?: string,
@@ -84,7 +103,7 @@ export async function exportPdf<T>(rows: T[], columns: ExportColumn<T>[], filena
     },
   })
   pendingRows = rows.length
-  download(doc.output('blob') as Blob, `${filename}.pdf`)
+  download(doc.output('blob') as Blob, `${exportFileName(filename, title)}.pdf`)
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -99,6 +118,8 @@ export interface XlsxOptions {
   sheet?: string
   /** lines written above the header (company, period, form name) */
   title?: string[]
+  /** the file's name when the sheet carries no title row (a file for the bank) */
+  fileTitle?: string
   /** a bold totals row under the data: column header → value */
   totals?: Record<string, number | string | null | undefined>
 }
@@ -158,5 +179,5 @@ export async function exportXlsx<T>(rows: T[], columns: XlsxColumn<T>[], filenam
     'xl/worksheets/sheet1.xml': strToU8(sheet),
   }
   pendingRows = count
-  download(new Blob([zipSync(files)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `${filename}.xlsx`)
+  download(new Blob([zipSync(files)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `${exportFileName(filename, opts.fileTitle ?? opts.title?.[0] ?? opts.sheet)}.xlsx`)
 }

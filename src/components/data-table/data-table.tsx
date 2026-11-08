@@ -367,10 +367,12 @@ export function DataTable<T>({
     const cols = exportColumnsFor(table)
     // the page heading is already in the reader's language; use it for the file and the PDF title
     const heading = typeof document !== 'undefined' ? document.querySelector('main h1')?.textContent?.trim() : undefined
-    const title = heading || (exportName ?? tableKey ?? t('Export'))
-    const name = exportName ?? (heading ? heading.replace(/[\\/:*?"<>|]+/g, ' ').trim() : tableKey ?? 'export')
+    // the open tab of the page says which list it is ("Borxhet · Furnitorët")
+    const tab = typeof document !== 'undefined' ? document.querySelector('main [role=tab][aria-selected=true]')?.textContent?.trim() : undefined
+    const title = [heading, tab && tab !== heading ? tab : null].filter(Boolean).join(' · ') || (exportName ?? tableKey ?? t('Export'))
+    const name = exportName ?? tableKey ?? 'export'
     if (kind === 'print') printTable({ title, subtitle: exportSubtitle, columns: cols.map((c) => ({ header: c.header })), rows: rows.map((r) => cols.map((c) => c.value(r))) })
-    else if (kind === 'csv') exportCsv(rows, cols, name)
+    else if (kind === 'csv') exportCsv(rows, cols, name, title)
     else if (kind === 'xlsx') await exportXlsx(rows, cols.map((c) => ({ ...c, format: 'qty' as const })), name, { sheet: title, title: exportSubtitle ? [title, exportSubtitle] : [title] })
     else await exportPdf(rows, cols, name, title, exportSubtitle)
   }

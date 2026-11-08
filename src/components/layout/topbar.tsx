@@ -9,6 +9,7 @@ import { useCommandPalette } from '@/components/layout/command-palette'
 import { Button } from '@/components/ui/button'
 import { AssistantButton } from '@/features/assistant/assistant'
 import { TillLockButton } from '@/components/layout/till-lock'
+import { CalculatorButton } from '@/components/layout/calculator'
 import { t } from '@/i18n'
 
 export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
@@ -33,6 +34,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
       <div className="ml-auto flex items-center gap-1">
         <LastExportButton />
         <TillLockButton />
+        <CalculatorButton />
         <AssistantButton />
         <ChatButton />
         <NotificationsButton />

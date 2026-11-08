@@ -219,7 +219,7 @@ export function Importer({ kind, cutover, source }: { kind: Kind; cutover?: stri
   }), [file, mapping, kind])
   const missing = kind.columns.filter((c) => c.required && (mapping[c.key] === null || mapping[c.key] === undefined))
 
-  const template = () => exportCsv([0, 1], kind.columns.map((c) => ({ header: t(c.label), value: (i: number) => c.example[i] })), `import-${kind.key}-template`)
+  const template = () => exportCsv([0, 1], kind.columns.map((c) => ({ header: t(c.label), value: (i: number) => c.example[i] })), `import-${kind.key}-template`, `${t('Import template')} · ${t(kind.title)}`)
   const doCheck = async () => { setDone(null); setCheck(await run.mutateAsync({ kind: kind.key, rows, dryRun: true, cutover, file: file?.name })) }
   const doImport = async () => {
     const r = await run.mutateAsync({ kind: kind.key, rows, dryRun: false, cutover, file: file?.name })
