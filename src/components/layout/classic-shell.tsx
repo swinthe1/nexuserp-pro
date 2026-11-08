@@ -99,7 +99,7 @@ function MenuBar() {
               <look.icon className="size-3.5" style={{ color: 'hsl(var(--mod) 38%)' }} strokeWidth={2} />
               {t(s.title ?? s.label)}
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" sideOffset={2} className="max-h-[70vh] min-w-60 overflow-y-auto rounded-[4px] p-1 shadow-lg">
+            <DropdownMenuContent data-tab-opener="" align="start" sideOffset={2} className="max-h-[70vh] min-w-60 overflow-y-auto rounded-[4px] p-1 shadow-lg">
               {/* the same groups as the menu of the modern look: a group opens its pages beside it, a lone page opens at once */}
               {menuEntries(s.items).map((e) => {
                 const on = e.items.some((i) => i.href === activeHref)
@@ -131,7 +131,7 @@ function MenuBar() {
       })}
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger className="rounded-[3px] px-2.5 outline-none hover:bg-[hsl(var(--accent))] data-[state=open]:bg-[hsl(var(--accent))]">{t('Help')}</DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={2} className="min-w-56 rounded-[4px] p-1 shadow-lg">
+        <DropdownMenuContent data-tab-opener="" align="start" sideOffset={2} className="min-w-56 rounded-[4px] p-1 shadow-lg">
           <DropdownMenuItem className="h-7 gap-2 rounded-[3px] py-0 text-[13px]" onSelect={() => palette.open()}><Search className="size-4 text-muted-foreground" />{t('Search or jump to…')}<span className="ml-auto text-2xs text-muted-foreground">Ctrl K{/* i18n-ignore */}</span></DropdownMenuItem>
           <DropdownMenuItem className="h-7 gap-2 rounded-[3px] py-0 text-[13px]" onSelect={() => window.dispatchEvent(new Event('drispro:assistant'))}><Bot className="size-4 text-muted-foreground" />{t('Assistant')}<span className="ml-auto text-2xs text-muted-foreground">Ctrl J{/* i18n-ignore */}</span></DropdownMenuItem>
           <DropdownMenuItem asChild className="h-7 gap-2 rounded-[3px] py-0 text-[13px]"><Link to="/training"><GraduationCap className="size-4 text-muted-foreground" />{t('Training')}</Link></DropdownMenuItem>
@@ -163,7 +163,7 @@ export function ClassicShell({ children, onOpenMobileNav }: { children: React.Re
 
   return (
     <div className="classic-shell flex min-h-dvh flex-col pb-[28px]">
-      <header className="sticky top-0 z-30 print:hidden">
+      <header data-tab-opener="" className="sticky top-0 z-30 print:hidden">
         {/* the title bar: the program, where you are, who you are */}
         <div className="classic-titlebar flex h-[34px] items-center gap-3 px-3 text-[13px] text-white">
           <button type="button" className="lg:hidden" onClick={onOpenMobileNav} aria-label={t('Open navigation')}><Menu className="size-4" /></button>
@@ -218,7 +218,7 @@ export function ClassicShell({ children, onOpenMobileNav }: { children: React.Re
       </header>
       <div className="flex min-w-0 flex-1">
         {/* the menu as a tree */}
-        <aside className="classic-tree sticky top-[145px] hidden h-[calc(100dvh-145px-28px)] w-[256px] shrink-0 flex-col border-r lg:flex print:!hidden"
+        <aside data-tab-opener="" className="classic-tree sticky top-[145px] hidden h-[calc(100dvh-145px-28px)] w-[256px] shrink-0 flex-col border-r lg:flex print:!hidden"
           style={{ '--mod': look.hue } as React.CSSProperties}>
           <div className="grid gap-1.5 border-b p-2"><CompanySwitcher /><UnitPicker /></div>
           <div className="flex-1 overflow-y-auto p-2"><SidebarNav /></div>

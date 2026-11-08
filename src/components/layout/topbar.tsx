@@ -16,7 +16,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
   const { open } = useCommandPalette()
   const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
   return (
-    <header className="sticky top-0 z-30 flex h-[52px] print:hidden items-center gap-2 border-b bg-card/90 px-3 backdrop-blur supports-[backdrop-filter]:bg-card/75 sm:px-5">
+    <header data-tab-opener="" className="sticky top-0 z-30 flex h-[52px] print:hidden items-center gap-2 border-b bg-card/90 px-3 backdrop-blur supports-[backdrop-filter]:bg-card/75 sm:px-5">
       <Button variant="ghost" size="icon-sm" className="lg:hidden" onClick={onOpenMobileNav} aria-label={t('Open navigation')}>
         <Menu />
       </Button>
@@ -34,7 +34,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
       <div className="ml-auto flex items-center gap-1">
         <LastExportButton />
         <TillLockButton />
-        <CalculatorButton />
+        <div className="max-sm:hidden"><CalculatorButton /></div>
         <AssistantButton />
         <ChatButton />
         <NotificationsButton />

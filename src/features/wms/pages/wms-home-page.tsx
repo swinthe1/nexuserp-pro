@@ -1,4 +1,5 @@
 import { ArrowLeftRight, ClipboardCheck, ScanSearch, Hourglass, PackageCheck, PackageOpen, ShoppingBasket, Trash2, Truck, type LucideIcon } from 'lucide-react'
+import { useTabActive } from '@/components/layout/work-tabs'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Can } from '@/app/company-provider'
@@ -35,7 +36,9 @@ export function WmsHomePage() {
     { key: '8', href: '/inventory/check', title: t('Check item'), icon: ScanSearch, hint: t('How much every store has, and where to take it from') },
     { key: '9', href: '/wms/waste', title: t('Thrown away|scanner'), icon: Trash2, hint: t('Fruit, vegetables, bread: scan, weigh, send') },
   ]
+  const front = useTabActive()
   React.useEffect(() => {
+    if (!front) return
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement
       if (e.metaKey || e.ctrlKey || e.altKey || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || document.querySelector('[role=dialog]')) return
@@ -44,7 +47,7 @@ export function WmsHomePage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [navigate])
+  }, [navigate, front])
   const receiving = (locations.data ?? []).filter((l) => l.location_type === 'receiving' && (!wh || l.warehouse_id === wh))
 
   return (

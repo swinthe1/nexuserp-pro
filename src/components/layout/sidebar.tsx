@@ -82,7 +82,7 @@ function SectionFlyout({ label, title, items, activeHref, onNavigate }: { label:
           <SectionIcon label={label} active={active} className="size-5" />
         </button>
       </PopoverTrigger>
-      <PopoverContent side="right" align="start" sideOffset={10} className="w-60 p-1.5" onMouseEnter={show} onMouseLeave={hide}
+      <PopoverContent data-tab-opener="" side="right" align="start" sideOffset={10} className="w-60 p-1.5" onMouseEnter={show} onMouseLeave={hide}
         onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
         <p className="px-2 pb-1 pt-1 text-xs font-medium text-muted-foreground">{t(title ?? label)}</p>
         <div className="flex flex-col gap-0.5">
@@ -334,7 +334,7 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
  */
 export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   return (
-    <aside
+    <aside data-tab-opener=""
       className={cn(
         'sidebar-mono sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-sidebar-border bg-[hsl(var(--sidebar-panel))] text-sidebar-foreground transition-[width] duration-200 lg:flex print:!hidden',
         collapsed ? 'w-[64px]' : 'w-[252px]',

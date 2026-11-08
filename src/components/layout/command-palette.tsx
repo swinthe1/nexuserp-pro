@@ -143,7 +143,7 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
     <CommandPaletteContext.Provider value={{ open: (m = 'all') => { setMode(m); setOpen(true) } }}>
       {children}
       <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQuery('') }}>
-        <DialogContent className="top-[18%] max-w-xl translate-y-0 gap-0 overflow-hidden p-0" hideClose>
+        <DialogContent data-tab-opener="" className="top-[18%] max-w-xl translate-y-0 gap-0 overflow-hidden p-0" hideClose>
           <DialogTitle className="sr-only">{t('Search and commands')}</DialogTitle>
           <Command shouldFilter={false} loop>
             <CommandInput value={query} onValueChange={setQuery} placeholder={mode === 'pages' ? t('Find a page…') : t('Search products, documents, customers, or type what you want to do…')} />

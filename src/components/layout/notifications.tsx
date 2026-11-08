@@ -73,7 +73,7 @@ export function NotificationsButton() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[22rem] p-0">
+      <PopoverContent data-tab-opener="" align="end" className="w-[22rem] p-0">
         <div className="flex items-center justify-between border-b px-3 py-2">
           <span className="text-sm font-semibold">{t('Notifications')}</span>
           <Button variant="ghost" size="xs" disabled={!unread} onClick={() => markRead.mutate(data.filter((n) => !n.read_at).map((n) => n.id))}>

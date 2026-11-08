@@ -1,4 +1,5 @@
 import { GridExportMenu } from '@/components/export-menu'
+import { activePage } from '@/components/layout/work-tabs'
 import { getLocale, t } from '@/i18n'
 
 type Cell = string | number | null
@@ -18,10 +19,10 @@ export function PageTableExport({ name, title, subtitle, within, label, disabled
   label?: string
   disabled?: boolean
 }) {
-  const heading = () => (typeof document !== 'undefined' ? document.querySelector('main h1')?.textContent?.trim() : undefined) ?? t('Export')
+  const heading = () => (typeof document !== 'undefined' ? activePage()?.querySelector('h1')?.textContent?.trim() : undefined) ?? t('Export')
   return (
     <GridExportMenu name={name ?? fileName(title ?? heading())} title={title ?? heading()} subtitle={subtitle} label={label} disabled={disabled}
-      grid={() => tableGrid(within?.current ?? document.querySelector('main'))} />
+      grid={() => tableGrid(within?.current ?? activePage())} />
   )
 }
 

@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
+import { createBrowserRouter, Navigate, RouterProvider, type RouteObject } from 'react-router-dom'
+import { registerTabRoutes } from '@/components/layout/work-tabs'
 import { AppLayout } from '@/app/layouts/app-layout'
 import { AuthLayout } from '@/app/layouts/auth-layout'
 import { PageErrorBoundary } from '@/components/page-error-boundary'
@@ -199,56 +200,8 @@ const PlatformDiary = lazyPage(() => import('@/features/platform/console/pages')
 const PlatformSettings = lazyPage(() => import('@/features/platform/console/pages'), 'ConsoleSettingsPage')
 const consolePage = (el: React.ReactNode) => <ErrorBoundary><React.Suspense fallback={<div className="h-64" />}>{el}</React.Suspense></ErrorBoundary>
 
-const router = createBrowserRouter([
-  {
-    element: <AuthLayout />,
-    children: [
-      { path: '/login', element: <LoginPage /> },
-      { path: '/signup', element: <Navigate to="/login" replace /> },
-      { path: '/forgot-password', element: <ForgotPasswordPage /> },
-    ],
-  },
-  { path: '/reset-password', element: <div className="mx-auto max-w-sm px-6 py-16"><ResetPasswordPage /></div> },
-  { path: '/onboarding', element: <OnboardingPage /> },
-  // public pages: the prices and the documentation for developers
-  // the public price page is off for now (the code stays in features/public/pricing-page.tsx)
-  { path: '/cmimet', element: <Navigate to="/login" replace /> },
-  { path: '/pricing', element: <Navigate to="/login" replace /> },
-  { path: '/api', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><DevelopersPage /></React.Suspense></ErrorBoundary> },
-  { path: '/te-dhenat/:token', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PartnerInfoPage /></React.Suspense></ErrorBoundary> },
-  { path: '/developers', element: <Navigate to="/api" replace /> },
-  { path: '/paketat', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PackagesPage /></React.Suspense></ErrorBoundary> },
-  { path: '/packages', element: <Navigate to="/paketat" replace /> },
-  // the customer's B2B portal: a private link, no account
-  { path: '/b2b', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PortalPage /></React.Suspense></ErrorBoundary> },
-  // the Super Admin's console: its own side menu and pages
-  {
-    path: '/platform', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PlatformLayout /></React.Suspense></ErrorBoundary>,
-    children: [
-      { index: true, element: consolePage(<PlatformOverview />) },
-      { path: 'clients', element: consolePage(<PlatformClients />) },
-      { path: 'clients/:id', element: consolePage(<PlatformClient />) },
-      { path: 'licences', element: consolePage(<PlatformLicences />) },
-      { path: 'devices', element: consolePage(<PlatformDevices />) },
-      { path: 'support/:session', element: consolePage(<PlatformSupport />) },
-      { path: 'server', element: consolePage(<PlatformServer />) },
-      { path: 'servers', element: consolePage(<PlatformServers />) },
-      { path: 'links', element: consolePage(<PlatformLinks />) },
-      { path: 'backups', element: consolePage(<PlatformBackups />) },
-      { path: 'releases', element: consolePage(<PlatformReleases />) },
-      { path: 'prices', element: consolePage(<PlatformPrices />) },
-      { path: 'diary', element: consolePage(<PlatformDiary />) },
-      { path: 'settings', element: consolePage(<PlatformSettings />) },
-      { path: '*', element: <Navigate to="/platform" replace /> },
-    ],
-  },
-  // the till runs full screen, outside the app shell, so it keeps working offline
-  { path: '/pos/till/:registerId', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><TillPage /></React.Suspense></ErrorBoundary> },
-  { path: '/pos/floor/:registerId', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><FloorPage /></React.Suspense></ErrorBoundary> },
-  { path: '/pos/kitchen/:warehouseId', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><KitchenPage /></React.Suspense></ErrorBoundary> },
-  {
-    element: <ErrorBoundary><AppLayout /></ErrorBoundary>,
-    children: [
+/** the app's pages, inside the menu and the top bar; the work tabs render them too, one set per tab */
+const appRoutes: RouteObject[] = [
       { element: <RequirePerm perm="core.read" />, children: [
         { index: true, element: <Home /> },
         { path: 'approvals', element: <ApprovalsPage /> },
@@ -458,7 +411,59 @@ const router = createBrowserRouter([
       { path: 'accountant', element: <RequirePerm perm="core.read" />, children: [{ index: true, element: <AccountantPage /> }] },
       { path: 'check', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <BooksCheckPage /> }] },
       { path: '*', element: <NotFoundPage /> },
+]
+registerTabRoutes(appRoutes)
+
+const router = createBrowserRouter([
+  {
+    element: <AuthLayout />,
+    children: [
+      { path: '/login', element: <LoginPage /> },
+      { path: '/signup', element: <Navigate to="/login" replace /> },
+      { path: '/forgot-password', element: <ForgotPasswordPage /> },
     ],
+  },
+  { path: '/reset-password', element: <div className="mx-auto max-w-sm px-6 py-16"><ResetPasswordPage /></div> },
+  { path: '/onboarding', element: <OnboardingPage /> },
+  // public pages: the prices and the documentation for developers
+  // the public price page is off for now (the code stays in features/public/pricing-page.tsx)
+  { path: '/cmimet', element: <Navigate to="/login" replace /> },
+  { path: '/pricing', element: <Navigate to="/login" replace /> },
+  { path: '/api', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><DevelopersPage /></React.Suspense></ErrorBoundary> },
+  { path: '/te-dhenat/:token', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PartnerInfoPage /></React.Suspense></ErrorBoundary> },
+  { path: '/developers', element: <Navigate to="/api" replace /> },
+  { path: '/paketat', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PackagesPage /></React.Suspense></ErrorBoundary> },
+  { path: '/packages', element: <Navigate to="/paketat" replace /> },
+  // the customer's B2B portal: a private link, no account
+  { path: '/b2b', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PortalPage /></React.Suspense></ErrorBoundary> },
+  // the Super Admin's console: its own side menu and pages
+  {
+    path: '/platform', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><PlatformLayout /></React.Suspense></ErrorBoundary>,
+    children: [
+      { index: true, element: consolePage(<PlatformOverview />) },
+      { path: 'clients', element: consolePage(<PlatformClients />) },
+      { path: 'clients/:id', element: consolePage(<PlatformClient />) },
+      { path: 'licences', element: consolePage(<PlatformLicences />) },
+      { path: 'devices', element: consolePage(<PlatformDevices />) },
+      { path: 'support/:session', element: consolePage(<PlatformSupport />) },
+      { path: 'server', element: consolePage(<PlatformServer />) },
+      { path: 'servers', element: consolePage(<PlatformServers />) },
+      { path: 'links', element: consolePage(<PlatformLinks />) },
+      { path: 'backups', element: consolePage(<PlatformBackups />) },
+      { path: 'releases', element: consolePage(<PlatformReleases />) },
+      { path: 'prices', element: consolePage(<PlatformPrices />) },
+      { path: 'diary', element: consolePage(<PlatformDiary />) },
+      { path: 'settings', element: consolePage(<PlatformSettings />) },
+      { path: '*', element: <Navigate to="/platform" replace /> },
+    ],
+  },
+  // the till runs full screen, outside the app shell, so it keeps working offline
+  { path: '/pos/till/:registerId', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><TillPage /></React.Suspense></ErrorBoundary> },
+  { path: '/pos/floor/:registerId', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><FloorPage /></React.Suspense></ErrorBoundary> },
+  { path: '/pos/kitchen/:warehouseId', element: <ErrorBoundary><React.Suspense fallback={<div className="h-dvh bg-background" />}><KitchenPage /></React.Suspense></ErrorBoundary> },
+  {
+    element: <ErrorBoundary><AppLayout /></ErrorBoundary>,
+    children: appRoutes,
   },
 ])
 

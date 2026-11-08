@@ -1,4 +1,4 @@
-import { Download, IdCard, KeyRound, Languages, LaptopMinimal, LayoutGrid, LogOut, Monitor, Moon, PanelLeft, BriefcaseBusiness, ServerCog, Smartphone, Sparkles, Sun, UserRound, GraduationCap, FolderDown, Minus, Plus, ZoomIn } from 'lucide-react'
+import { Download, IdCard, KeyRound, Languages, LaptopMinimal, LayoutGrid, LogOut, Monitor, Moon, PanelLeft, BriefcaseBusiness, ServerCog, Smartphone, Sparkles, Sun, UserRound, GraduationCap, FolderDown, Minus, Plus, ZoomIn, PanelTop } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/app/auth-provider'
@@ -6,6 +6,7 @@ import { useCompany } from '@/app/company-provider'
 import { useTheme } from '@/app/theme-provider'
 import { setZoom, stepZoom, useZoom, ZOOMS } from '@/app/zoom'
 import { cn } from '@/lib/utils'
+import { readTabsOn, writeTabsOn } from '@/components/layout/work-tabs'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem,
@@ -39,7 +40,7 @@ export function UserMenu() {
       <DropdownMenuTrigger className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring max-sm:p-1.5" aria-label={t('Account menu')}>
         <Avatar className="size-7"><AvatarFallback>{initials(name)}</AvatarFallback></Avatar>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-60">
+      <DropdownMenuContent data-tab-opener="" align="end" className="w-60">
         <DropdownMenuLabel className="font-normal">
           <div className="truncate text-sm font-medium text-foreground">{name}</div>
           <div className="truncate text-xs">{user?.email}</div>
@@ -83,6 +84,7 @@ export function UserMenu() {
           </DropdownMenuSubContent>
         </DropdownMenuSub>
         <ZoomRow />
+        <TabsRow />
         {isDesktop && <DropdownMenuItem onSelect={() => setPcOpen(true)}><LaptopMinimal /> {t('This computer: printers')}</DropdownMenuItem>}
         {!isDesktop && canInstall && <DropdownMenuItem onSelect={() => void install()}><Download /> {t('Install the app on this device')}</DropdownMenuItem>}
         <DropdownMenuSeparator />
@@ -116,5 +118,19 @@ function ZoomRow() {
         {setting === 'auto' ? t('Fits the screen by itself: on') : t('Fit the screen by itself')}
       </button>
     </div>
+  )
+}
+
+/** the work tabs above the page, on or off (on a phone there are none) */
+function TabsRow() {
+  const [on, setOn] = React.useState(readTabsOn)
+  React.useEffect(() => { const o = () => setOn(readTabsOn()); window.addEventListener('drispro-tabs', o); return () => window.removeEventListener('drispro-tabs', o) }, [])
+  return (
+    <DropdownMenuItem className="max-lg:hidden" onSelect={(e) => { e.preventDefault(); writeTabsOn(!on) }}>
+      <PanelTop /> <span className="flex-1">{t('Work tabs above the page')}</span>
+      <span className={cn('relative h-4 w-7 rounded-full transition-colors', on ? 'bg-primary' : 'bg-muted-foreground/30')}>
+        <span className={cn('absolute top-0.5 size-3 rounded-full bg-background transition-all', on ? 'left-3.5' : 'left-0.5')} />
+      </span>
+    </DropdownMenuItem>
   )
 }

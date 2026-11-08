@@ -50,7 +50,7 @@ export function NewMenu({ trigger }: { trigger?: React.ReactNode } = {}) {
       <DropdownMenuTrigger asChild>
         {trigger ?? <Button size="icon" className="size-9 shrink-0 rounded-full" aria-label={t('New|create')} title={t('New|create')}><Plus className="size-5" /></Button>}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-80 p-1.5">
+      <DropdownMenuContent data-tab-opener="" align="start" className="w-80 p-1.5">
         <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">{t('What happened?')}</DropdownMenuLabel>
         {items.map((c) => (
           <DropdownMenuItem key={c.href} onSelect={() => navigate(c.href)} className="items-start gap-3 py-2">

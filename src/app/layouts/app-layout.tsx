@@ -23,6 +23,7 @@ import { PlanLocked } from '@/components/plan-locked'
 import { GuardHost } from '@/components/guard'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { BottomBar } from '@/components/layout/bottom-bar'
+import { WorkPanes, WorkTabBar, WorkTabsProvider } from '@/components/layout/work-tabs'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useHotkey } from '@/hooks/use-hotkey'
 import { ExportsRecorder } from '@/features/exports/recorder'
@@ -120,6 +121,7 @@ export function AppLayout() {
   if (look === 'classic') {
     return (
       <CommandPaletteProvider>
+        <WorkTabsProvider>
         <ClassicShell onOpenMobileNav={() => setMobileOpen(true)}>
           {mobileNav}
           <OfflineBanner />
@@ -129,19 +131,22 @@ export function AppLayout() {
           <Invitations />
           <TrainingNudge />
           <LicenseBanner />
+          <WorkTabBar className="static" />
           <main id="main" className="flex-1 px-3 py-3 sm:px-4">
             <SectionTabs />
-            <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
+            <WorkPanes />
             <GuardHost /><ExportsRecorder />
             <TourHost />
           </main>
         </ClassicShell>
+        </WorkTabsProvider>
       </CommandPaletteProvider>
     )
   }
 
   return (
     <CommandPaletteProvider>
+      <WorkTabsProvider>
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-card focus:px-3 focus:py-2">
         {t('Skip to content')}
       </a>
@@ -150,6 +155,7 @@ export function AppLayout() {
         {mobileNav}
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar onOpenMobileNav={() => setMobileOpen(true)} />
+          <WorkTabBar />
           <OfflineBanner />
           <TrainingBanner />
           <LiveLinkBanner />
@@ -159,13 +165,14 @@ export function AppLayout() {
           <LicenseBanner />
           <main id="main" className="flex-1 px-4 py-5 pb-24 sm:px-6 md:pb-5 lg:px-8">
             <SectionTabs />
-            <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
+            <WorkPanes />
             <GuardHost /><ExportsRecorder />
             <TourHost />
           </main>
         </div>
       </div>
       <BottomBar onOpenMenu={() => setMobileOpen(true)} />
+      </WorkTabsProvider>
     </CommandPaletteProvider>
   )
 }

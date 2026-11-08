@@ -1,3 +1,4 @@
+import { activePage } from '@/components/layout/work-tabs'
 import {
   flexRender, getCoreRowModel, getFacetedRowModel, getFacetedUniqueValues, getFilteredRowModel, getPaginationRowModel,
   getSortedRowModel, useReactTable,
@@ -366,9 +367,9 @@ export function DataTable<T>({
     const rows: T[] = (selectedRows.length ? selectedRows : table.getPrePaginationRowModel().rows).map((r: Row<T>) => r.original)
     const cols = exportColumnsFor(table)
     // the page heading is already in the reader's language; use it for the file and the PDF title
-    const heading = typeof document !== 'undefined' ? document.querySelector('main h1')?.textContent?.trim() : undefined
+    const heading = typeof document !== 'undefined' ? activePage()?.querySelector('h1')?.textContent?.trim() : undefined
     // the open tab of the page says which list it is ("Borxhet · Furnitorët")
-    const tab = typeof document !== 'undefined' ? document.querySelector('main [role=tab][aria-selected=true]')?.textContent?.trim() : undefined
+    const tab = typeof document !== 'undefined' ? activePage()?.querySelector('[role=tab][aria-selected=true]')?.textContent?.trim() : undefined
     const title = [heading, tab && tab !== heading ? tab : null].filter(Boolean).join(' · ') || (exportName ?? tableKey ?? t('Export'))
     const name = exportName ?? tableKey ?? 'export'
     if (kind === 'print') printTable({ title, subtitle: exportSubtitle, columns: cols.map((c) => ({ header: c.header })), rows: rows.map((r) => cols.map((c) => c.value(r))) })

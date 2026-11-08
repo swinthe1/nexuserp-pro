@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
+import { activePage } from '@/components/layout/work-tabs'
 import * as React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -25,7 +26,7 @@ export function ExportsRecorder() {
       const safe = filename.replace(/[\\/:*?"<>|#%]+/g, '-').slice(0, 150) || `export.${kind}`
       const path = `${companyId}/${user.id}/${crypto.randomUUID()}/${safe}`
       const page = `${window.location.pathname}${window.location.search}`.slice(0, 300)
-      const title = (document.querySelector('main h1')?.textContent ?? document.title ?? '').trim().slice(0, 200) || null
+      const title = (activePage()?.querySelector('h1')?.textContent ?? document.title ?? '').trim().slice(0, 200) || null
       void (async () => {
         const up = await supabase.storage.from('my-exports').upload(path, blob, { contentType: blob.type || undefined, upsert: false })
         if (up.error) return
