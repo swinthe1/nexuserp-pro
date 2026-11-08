@@ -28,7 +28,7 @@ import { supabase } from '@/lib/supabase'
 import { formatDateWith, msg, t, td, tEnum, tn, tServer } from '@/i18n'
 import { cn, formatDate, formatMoney, formatQty, initials, num, todayISO } from '@/lib/utils'
 import { checkVoucher, lookupReceipt, posApprove, searchTill, xReport, sellVoucher, setQuickItems, sessionControls, useCustomerCredit, type VoucherInfo, useCashMove, useCloseSession, useOpenSession, usePayees, usePayOut, useSessionSummary, useTill, useVendorBills, type CatalogItem, type ReceiptLookup, type TillData } from '../api'
-import { enqueue, logTill, nextDeviceRef, syncNow, useOnSynced, useSyncState, type QueuedSale, type TillLogEntry } from '../offline'
+import { enqueue, logTill, nextDeviceRef, syncNow, useOnServerBack, useOnSynced, useSyncState, type QueuedSale, type TillLogEntry } from '../offline'
 import { ManagerDialog, ManagerPinFields, pinReady } from '../manager-pin'
 import { ChoosePinDialog, LockScreen, SwitchCashierDialog, useTillLock } from '../till-lock'
 import { CashCount, countedOf, countsToNotes, denomsOf } from '../cash-count'
@@ -101,6 +101,10 @@ export function TillPage() {
   const { registerId } = useParams()
   const { user, loading } = useAuth()
   const till = useTill(registerId)
+  // the server is back, or the sales that waited went through: the stock and the prices from the server again
+  useOnServerBack(till.refresh)
+  const afterSync = React.useRef<number | undefined>(undefined)
+  useOnSynced(React.useCallback(() => { window.clearTimeout(afterSync.current); afterSync.current = window.setTimeout(till.refresh, 2000) }, [till.refresh]))
   if (loading) return <TillSkeleton />
   if (!user) return <Navigate to="/login" replace state={{ from: `/pos/till/${registerId}` }} />
   if (till.loading && !till.data) return <TillSkeleton />

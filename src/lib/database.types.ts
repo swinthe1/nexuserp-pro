@@ -8178,6 +8178,23 @@ export type Database = {
           { foreignKeyName: "pos_cash_movements_company_id_session_id_fkey"; columns: ["company_id", "session_id"]; isOneToOne: false; referencedRelation: "pos_sessions"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      pos_catalog_pulse: {
+        Row: {
+          company_id: string
+          changed_at: string
+        }
+        Insert: {
+          company_id: string
+          changed_at?: string
+        }
+        Update: {
+          company_id?: string
+          changed_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "pos_catalog_pulse_company_id_fkey"; columns: ["company_id"]; isOneToOne: true; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
       pos_order_lines: {
         Row: {
           id: string
@@ -19101,6 +19118,10 @@ export type Database = {
           p_register: string
         }
         Returns: Json
+      }
+      pos_ping: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       pos_promotions: {
         Args: {

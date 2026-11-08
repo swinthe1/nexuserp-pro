@@ -7,7 +7,7 @@ import { useCompany } from '@/app/company-provider'
 import type { Tables } from '@/lib/database.types'
 import { describeError, unwrap } from '@/lib/errors'
 import { after, byName, fetchAll, fetchPages, supabase } from '@/lib/supabase'
-import { flushTillLog, itemsAll, itemsWrite, kvGet, kvSet } from './offline'
+import { flushTillLog, itemsAll, itemsWrite, kvGet, kvSet, pendingQty } from './offline'
 import { t } from '@/i18n'
 import { num } from '@/lib/utils'
 import type { TillLoyalty } from '@/features/loyalty/api'
@@ -295,13 +295,15 @@ export function useTill(registerId: string | undefined) {
           const { data: ch, error } = await supabase.rpc('pos_catalog_changes', { p_register: registerId, p_since: cached.pricesAt })
           const c = ch as unknown as CatalogChanges | null
           if (!error && c && !c.full) {
-            const changed = (c.items ?? []).map(toCatalogItem)
+            const waiting = pendingQty(registerId)
+            const changed = (c.items ?? []).map(toCatalogItem).map((i) => (waiting.has(i.variant_id) ? { ...i, on_hand: i.on_hand - waiting.get(i.variant_id)! } : i))
             return { items: withChanges(cached.catalog, changed, new Set(c.gone ?? [])), at: c.at, full: false }
           }
         }
         // a supermarket has thousands of items: read them all, 1 000 at a time (the server gives no more in one call)
         const rows = await fetchAll('variant_id', (a) => after(supabase.rpc('pos_catalog', { p_register: registerId }), 'variant_id', a).order('variant_id').limit(1000))
-        return { items: sortItems(rows.map(toCatalogItem)), full: true }
+        const waiting = pendingQty(registerId)
+        return { items: sortItems(rows.map(toCatalogItem).map((i) => (waiting.has(i.variant_id) ? { ...i, on_hand: i.on_hand - waiting.get(i.variant_id)! } : i))), full: true }
       }
       const [ses, cat, cus, co, loy, lim, promo, opt, atk, clock, shift, quick] = await Promise.all([
         supabase.from('pos_sessions').select('id, number, opened_at, opening_cash, opened_by, opener:profiles!pos_sessions_opened_by_profile_fkey(full_name, email)').eq('register_id', registerId).eq('status', 'open').maybeSingle(),
@@ -363,7 +365,9 @@ export function useTill(registerId: string | undefined) {
         const c = ch as unknown as CatalogChanges
         if (c.full) { await load({ full: true }); return }
         const promo = c.promotions ? await supabase.rpc('pos_promotions', { p_register: registerId }) : null
-        const items = (c.items ?? []).map(toCatalogItem)
+        // the sales still waiting on this till are taken off what the server says is in stock
+        const waiting = pendingQty(registerId)
+        const items = (c.items ?? []).map(toCatalogItem).map((i) => (waiting.has(i.variant_id) ? { ...i, on_hand: i.on_hand - waiting.get(i.variant_id)! } : i))
         const now = dataRef.current
         if (!now) return
         const old = new Map(now.catalog.map((i) => [i.variant_id, i.price]))
@@ -380,9 +384,24 @@ export function useTill(registerId: string | undefined) {
         if (prices > 0) toast.info(t('New prices on {n} items', { n: prices }))
       } finally { busy = false }
     }
-    const timer = window.setInterval(() => void look(), 3 * 60_000)
-    return () => window.clearInterval(timer)
+    lookRef.current = () => void look()
+    // the server tells the till in real time when an item, a price or the stock changed (a few seconds);
+    // the look every minute is only a safety net
+    const timer = window.setInterval(() => void look(), 60_000)
+    return () => { window.clearInterval(timer); lookRef.current = null }
   }, [registerId, load])
+  const lookRef = React.useRef<(() => void) | null>(null)
+  const companyId = state.data?.register.company_id
+  React.useEffect(() => {
+    if (!registerId || !companyId) return
+    let wait: number | undefined
+    // changes come in bursts (a sale moves the stock of several items): one look after the burst
+    const soon = () => { window.clearTimeout(wait); wait = window.setTimeout(() => lookRef.current?.(), 1500) }
+    const ch = supabase.channel(`pulse:${companyId}:${registerId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pos_catalog_pulse', filter: `company_id=eq.${companyId}` }, soon)
+      .subscribe()
+    return () => { window.clearTimeout(wait); void supabase.removeChannel(ch) }
+  }, [registerId, companyId])
   const patch = React.useCallback((fn: (d: TillData) => TillData) => {
     setState((s) => {
       if (!s.data) return s
@@ -391,7 +410,9 @@ export function useTill(registerId: string | undefined) {
       return { ...s, data: next }
     })
   }, [registerId])
-  return { ...state, reload: load, patch }
+  /** fetch what changed now (the server came back, the sales that waited went through) */
+  const refresh = React.useCallback(() => lookRef.current?.(), [])
+  return { ...state, reload: load, patch, refresh }
 }
 
 /* ------------------------------------------------------------------ the market's till: search, quick buttons, the lock */

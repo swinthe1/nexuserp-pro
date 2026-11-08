@@ -90,6 +90,17 @@ export async function enqueue(sale: QueuedSale) {
   await reload()
   void syncNow()
 }
+/** what this till sold and has not yet sent, per item: the stock the server reports does not count it yet */
+export function pendingQty(registerId: string): Map<string, number> {
+  const out = new Map<string, number>()
+  for (const it of snapshot.items) {
+    if (it.register_id !== registerId || it.status !== 'pending') continue
+    const p = it.payload as { is_refund?: boolean; lines?: { variant_id: string; quantity: number }[] }
+    const sign = p.is_refund ? -1 : 1
+    for (const l of p.lines ?? []) out.set(l.variant_id, (out.get(l.variant_id) ?? 0) + sign * Number(l.quantity || 0))
+  }
+  return out
+}
 export async function discard(clientUuid: string) { await tx('queue', 'readwrite', (s) => s.delete(clientUuid)); await reload() }
 export async function retry(clientUuid: string) {
   const it = snapshot.items.find((i) => i.client_uuid === clientUuid)
@@ -98,7 +109,7 @@ export async function retry(clientUuid: string) {
 
 const isNetworkError = (e: unknown) => {
   const m = String((e as { message?: string })?.message ?? e)
-  return !navigator.onLine || /Failed to fetch|NetworkError|Load failed|fetch failed|ERR_INTERNET|timeout/i.test(m)
+  return !navigator.onLine || /Failed to fetch|NetworkError|Load failed|fetch failed|ERR_INTERNET|timeout|abort/i.test(m)
 }
 
 let running: Promise<void> | null = null
@@ -110,7 +121,8 @@ export function syncNow(): Promise<void> {
       await reload()
       for (const it of snapshot.items.filter((i) => i.status === 'pending')) {
         try {
-          const { data, error } = await supabase.rpc('pos_submit_order', { p: it.payload as never })
+          // a server that went quiet is not waited for long: the sale stays in the queue and goes on the next round
+          const { data, error } = await supabase.rpc('pos_submit_order', { p: it.payload as never }).abortSignal(AbortSignal.timeout(20_000))
           if (error) throw error
           await tx('queue', 'readwrite', (s) => s.delete(it.client_uuid))
           emit({ online: true, lastSync: new Date().toISOString() })
@@ -187,6 +199,29 @@ export function flushTillLog(): Promise<void> {
   return flushing
 }
 
+/** the server answered again after a time without it: the till sends what waited and fetches what changed */
+const onBack = new Set<() => void>()
+export function useOnServerBack(fn: () => void) {
+  React.useEffect(() => { onBack.add(fn); return () => { onBack.delete(fn) } }, [fn])
+}
+
+/**
+ * Every 10 seconds the till asks the server whether it is there (a tiny call, given 3 seconds).
+ * So a server switched off or a cable pulled is known before the next sale, the sale is kept on the
+ * till at once and its coupon prints marked offline, without waiting for an answer that will not come.
+ */
+async function heartbeat() {
+  if (!navigator.onLine) { if (snapshot.online) emit({ online: false }); return }
+  let up = true
+  try {
+    const { error } = await supabase.rpc('pos_ping').abortSignal(AbortSignal.timeout(3000))
+    // any answer from the server counts (an older server without the call answers "not found")
+    if (error && isNetworkError(error)) up = false
+  } catch (e) { up = !isNetworkError(e) }
+  if (up && !snapshot.online) { emit({ online: true }); void syncNow(); onBack.forEach((f) => f()) }
+  else if (!up && snapshot.online) emit({ online: false })
+}
+
 const onSynced = new Set<(it: QueuedSale) => void>()
 export function useOnSynced(fn: (it: QueuedSale) => void) {
   React.useEffect(() => { onSynced.add(fn); return () => { onSynced.delete(fn) } }, [fn])
@@ -197,9 +232,12 @@ function start() {
   if (started || typeof window === 'undefined') return
   started = true
   void reload()
-  window.addEventListener('online', () => { emit({ online: true }); void syncNow() })
+  window.addEventListener('online', () => { void heartbeat() })
   window.addEventListener('offline', () => emit({ online: false }))
-  setInterval(() => { if (snapshot.items.some((i) => i.status === 'pending')) void syncNow(); else if (navigator.onLine) void flushTillLog().catch(() => undefined) }, 15_000)
+  void heartbeat()
+  setInterval(() => void heartbeat(), 10_000)
+  // what waits is sent every few seconds while the server answers
+  setInterval(() => { if (snapshot.items.some((i) => i.status === 'pending') && snapshot.online) void syncNow(); else if (snapshot.online) void flushTillLog().catch(() => undefined) }, 5_000)
 }
 
 export function useSyncState() {
