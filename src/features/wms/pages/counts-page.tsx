@@ -21,9 +21,9 @@ import { supabase } from '@/lib/supabase'
 import { ErrorState } from '@/components/error-state'
 import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { t, td, tn } from '@/i18n'
-import { cn, formatDate, formatQty, humanize } from '@/lib/utils'
+import { cn, formatDate, formatMoney, formatQty, humanize, num } from '@/lib/utils'
 import { useCategories, useLocations, useWarehouses, type LocationRow } from '@/features/inventory/api'
-import { useCount, useCountItem, useCounts, useCreateCount, usePostCount, useResolveCode, useSubmitCount, wmsKeys, type CountLine } from '../api'
+import { useCount, useCountItem, useCountReview, useCounts, useCreateCount, usePostCount, useResolveCode, useSubmitCount, wmsKeys, type CountLine } from '../api'
 import { QtyDialog, ScanShell, useScanStatus } from '../components/scan-shell'
 import { useCountPlan, useCreateCountDue } from '@/features/inventory/abc'
 import { CountImportDialog, CountReviewPanel, printCountSheet } from '../components/count-tools'
@@ -149,7 +149,9 @@ export function CountPage() {
   const post = usePostCount()
   const st = useScanStatus()
   const [bin, setBin] = React.useState<LocationRow | null>(null)
-  const [pendingLot, setPendingLot] = React.useState<{ variantId: string; sku: string; qty: number } | null>(null)
+  const locations = useLocations()
+  const review = useCountReview(id, count.data?.status === 'review')
+  const [pendingLot, setPendingLot] = React.useState<{ variantId: string; sku: string; qty: number; at: { id: string; code: string } } | null>(null)
   const [edit, setEdit] = React.useState<CountLine | null>(null)
   const [zero, setZero] = React.useState(false)
   useLiveCounts()
@@ -161,10 +163,19 @@ export function CountPage() {
   const showSystem = !c.blind_count || c.status !== 'in_progress'
   const counted = c.lines.filter((l) => l.counted_qty != null).length
 
-  const record = async (variantId: string, qty: number, lot: string | null, label: string, set = false) => {
+  // a market without shelf labels counts straight from the items: the one place of the unit, or where the item already is in this count
+  const places = (locations.data ?? []).filter((l) => l.warehouse_id === c.warehouse_id && l.is_active && l.location_type === 'internal')
+  const onlyPlace = places.length === 1 ? places[0]! : null
+  const placeFor = (variantId: string): { id: string; code: string } | null => {
+    if (bin) return bin
+    const line = c.lines.find((l) => l.variant_id === variantId && l.location_id)
+    if (line) return { id: line.location_id!, code: line.location?.code ?? '' }
+    return onlyPlace
+  }
+  const record = async (variantId: string, qty: number, lot: string | null, label: string, at: { id: string; code: string }, set = false) => {
     try {
-      const r = await countItem.mutateAsync({ count: c.id, variant: variantId, location: bin!.id, qty, lot, set })
-      scanFeedback('ok'); st.ok(t('{item} at {code}: {n}', { item: label, code: bin!.code, n: formatQty(r.counted_qty) }) + (r.offline ? ` · ${t('saved on this device')}` : ''))
+      const r = await countItem.mutateAsync({ count: c.id, variant: variantId, location: at.id, qty, lot, set })
+      scanFeedback('ok'); st.ok(t('{item} at {code}: {n}', { item: label, code: at.code, n: formatQty(r.counted_qty) }) + (r.offline ? ` · ${t('saved on this device')}` : ''))
     } catch (e) { scanFeedback('error'); st.error(describeError(e)) }
   }
   const onScan = async (code: string) => {
@@ -174,11 +185,12 @@ export function CountPage() {
       if (r.location.warehouse_id !== c.warehouse_id) { scanFeedback('error'); st.error(t('{code} is not in {warehouse}', { code: r.location.code, warehouse: td(c.warehouse?.name) })); return }
       setBin(r.location); scanFeedback('ok'); st.info(t('Counting {code} — scan every item', { code: r.location.code })); return
     }
-    if (!bin) { scanFeedback('error'); st.error(t('Scan the shelf label first')); return }
-    if (r.kind === 'lot') { await record(r.variantId, 1, r.lotId, r.lotNumber); return }
-    if (r.kind === 'variant') {
-      if (r.tracking !== 'none') { setPendingLot({ variantId: r.variantId, sku: r.sku, qty: r.qty }); scanFeedback('ok'); return }
-      await record(r.variantId, r.qty, null, r.sku); return
+    if (r.kind === 'lot' || r.kind === 'variant') {
+      const at = placeFor(r.variantId)
+      if (!at) { scanFeedback('error'); st.error(t('This unit has several shelves: scan the shelf label first')); return }
+      if (r.kind === 'lot') { await record(r.variantId, 1, r.lotId, r.lotNumber, at); return }
+      if (r.tracking !== 'none') { setPendingLot({ variantId: r.variantId, sku: r.sku, qty: r.qty, at }); scanFeedback('ok'); return }
+      await record(r.variantId, r.qty, null, r.sku, at); return
     }
     scanFeedback('error'); st.error(t('Unknown code “{code}”', { code }))
   }
@@ -199,7 +211,10 @@ export function CountPage() {
             <label className="flex items-center gap-2"><Checkbox checked={zero} onCheckedChange={(v) => setZero(!!v)} /> {t('Count the missing lines as zero (the shelf was checked and they are not there)')}</label></span>}
           confirmLabel={t('Send for review')} onConfirm={async () => { await submit.mutateAsync({ id: c.id, zero }); toast.success(t('Sent for review')) }} /></Can>}
         {c.status === 'review' && can('inventory.write') && <ConfirmDialog trigger={<Button>{t('Confirm differences')}</Button>} title={t('Confirm the count?')}
-          description={t('Differences against the current stock become one stock adjustment (reason: count). Large adjustments may need approval.')}
+          description={<span className="grid gap-2"><span>{t('Differences against the current stock become one stock adjustment (reason: count). Large adjustments may need approval.')}</span>
+            {review.data && <span className="font-medium text-foreground">{t('Missing {lost} and found {found} at cost; at the selling price with VAT: missing {lostSale}, found {foundSale}.', {
+              lost: formatMoney(Math.abs(num(review.data.losses))), found: formatMoney(review.data.gains),
+              lostSale: formatMoney(Math.abs(num(review.data.losses_sale))), foundSale: formatMoney(num(review.data.gains_sale)) })}</span>}</span>}
           confirmLabel={t('Confirm')} onConfirm={async () => {
             const r = await post.mutateAsync(c.id)
             toast.success(r.lines ? tn(r.lines, '{n} difference confirmed', '{n} differences confirmed') : t('No differences — the stock was right'), { description: r.adjustment_status === 'pending_approval' ? t('The adjustment is waiting for approval.') : undefined })
@@ -207,7 +222,8 @@ export function CountPage() {
         {c.adjustment_id && <Button variant="outline" asChild><Link to={`/inventory/adjustments/${c.adjustment_id}`}>{t('Open the adjustment')}</Link></Button>}
       </>}>
       {counting && <>
-        <ScanInput onScan={onScan} placeholder={bin ? t('Counting {code}: scan items, or another shelf', { code: bin.code }) : t('Scan a shelf label to start')} status={st.status} />
+        <ScanInput onScan={onScan} placeholder={bin ? t('Counting {code}: scan items, or another shelf', { code: bin.code })
+          : onlyPlace ? t('Scan the items one by one: no shelf label needed') : t('Scan a shelf label, or an item already on the list')} status={st.status} />
         {bin && <div className="flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 font-mono text-lg font-semibold"><MapPin className="size-5 text-primary" />{bin.code}</div>}
       </>}
       {c.status === 'review' && <CountReviewPanel countId={c.id} />}
@@ -234,7 +250,7 @@ export function CountPage() {
       </div>
       {importing && <CountImportDialog countId={c.id} onClose={() => setImporting(false)} />}
       {pendingLot && <LotPicker variantId={pendingLot.variantId} sku={pendingLot.sku} onClose={() => setPendingLot(null)}
-        onPick={async (lot, num) => { const p = pendingLot; setPendingLot(null); await record(p.variantId, p.qty, lot, `${p.sku} · ${num}`) }} />}
+        onPick={async (lot, num) => { const p = pendingLot; setPendingLot(null); await record(p.variantId, p.qty, lot, `${p.sku} · ${num}`, p.at) }} />}
       <QtyDialog open={!!edit} title={edit ? t('{sku} at {code}', { sku: edit.variant?.sku ?? '', code: edit.location?.code ?? '' }) : ''} description={t('Counted quantity')} initial={Number(edit?.counted_qty ?? 0)}
         onClose={() => setEdit(null)} onSubmit={async (q) => {
           const l = edit!; setEdit(null)

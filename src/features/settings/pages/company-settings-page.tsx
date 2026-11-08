@@ -19,7 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { NAV } from '@/app/nav'
 import { formatDateWith, t, td } from '@/i18n'
-import { cn, formatDate } from '@/lib/utils'
+import { cn, formatDate, formatMoney } from '@/lib/utils'
 import { type CompanyProfile, type CompanySettings, useCompanyProfile, useCompanySettings, useDirty, useLookups, useSaveCompanyProfile, useSaveCompanySettings } from '../api'
 import { Field, SaveBar, ToggleRow } from '../components/field'
 
@@ -133,7 +133,7 @@ function CompanyProfileForm() {
 }
 
 function RulesForm() {
-  const { can } = useCompany()
+  const { can, company } = useCompany()
   const settings = useCompanySettings()
   const lookups = useLookups()
   const save = useSaveCompanySettings()
@@ -142,7 +142,7 @@ function RulesForm() {
   if (settings.isLoading || !v || !lookups.data) return <Skeleton className="h-96" />
   const ro = !can('admin.write')
   const set = <K extends keyof CompanySettings>(k: K, val: CompanySettings[K]) => setV({ ...v, [k]: val })
-  const numberInput = (k: 'max_discount_pct' | 'match_qty_tolerance_pct' | 'match_price_tolerance_pct' | 'amount_decimals' | 'quantity_decimals', step = '0.01') => ({
+  const numberInput = (k: 'max_discount_pct' | 'match_qty_tolerance_pct' | 'match_price_tolerance_pct' | 'amount_decimals' | 'quantity_decimals' | 'cash_payment_limit', step = '0.01') => ({
     id: `st-${k}`, type: 'number', step, min: 0, disabled: ro, value: String(v[k] ?? ''), className: 'tabular',
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => set(k, (e.target.value === '' ? 0 : Number(e.target.value)) as never),
   })
@@ -160,7 +160,7 @@ function RulesForm() {
       default_warehouse_id: v.default_warehouse_id, default_sales_tax_code_id: v.default_sales_tax_code_id, default_purchase_tax_code_id: v.default_purchase_tax_code_id,
       allow_negative_stock: v.allow_negative_stock, max_discount_pct: v.max_discount_pct, credit_check_enabled: v.credit_check_enabled,
       match_qty_tolerance_pct: v.match_qty_tolerance_pct, match_price_tolerance_pct: v.match_price_tolerance_pct,
-      amount_decimals: v.amount_decimals, quantity_decimals: v.quantity_decimals, invoice_footer: v.invoice_footer,
+      amount_decimals: v.amount_decimals, quantity_decimals: v.quantity_decimals, invoice_footer: v.invoice_footer, cash_payment_limit: v.cash_payment_limit,
     })
     toast.success(t('Defaults and rules saved'))
   }
@@ -199,6 +199,10 @@ function RulesForm() {
             <Separator />
             <div className="grid gap-4 py-3 sm:grid-cols-3">
               <Field label={t('Highest discount, %')} htmlFor="st-max_discount_pct" hint={t('More than this needs a manager.')}><Input {...numberInput('max_discount_pct')} /></Field>
+              <Field label={t('Cash limit with a business')} htmlFor="st-cash_payment_limit"
+                hint={t('Larger payments with a business go through the bank; the books check lists the ones paid in cash. Empty: {amount}, the usual limit in the country.', { amount: formatMoney(company?.country_code === 'AL' ? 150000 : 300) })}>
+                <Input {...numberInput('cash_payment_limit')} value={v.cash_payment_limit == null ? '' : String(v.cash_payment_limit)}
+                  onChange={(e) => set('cash_payment_limit', e.target.value === '' ? null : Number(e.target.value))} /></Field>
               <Field label={t('Allowed quantity difference on bills, %')} htmlFor="st-match_qty_tolerance_pct"><Input {...numberInput('match_qty_tolerance_pct')} /></Field>
               <Field label={t('Allowed price difference on bills, %')} htmlFor="st-match_price_tolerance_pct" hint={t('Compared with the order and the goods received.')}><Input {...numberInput('match_price_tolerance_pct')} /></Field>
             </div>
@@ -254,7 +258,9 @@ function FiscalForm() {
               <Field label={t('Mode')} htmlFor="fs-env" hint={v.fiscal_environment === 'test' ? t('Test: the answer is simulated, nothing reaches the tax office.') : undefined}>
                 <Select value={v.fiscal_environment} onValueChange={(e) => set('fiscal_environment', e)} disabled={ro}>
                   <SelectTrigger id="fs-env"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="test">{t('Test')}</SelectItem><SelectItem value="production">{t('Live')}</SelectItem></SelectContent>
+                  <SelectContent><SelectItem value="test">{t('Test')}</SelectItem>
+                    {/* Albania: the link with the tax office (CIS) is not built yet, so live mode would refuse every document */}
+                    <SelectItem value="production" disabled={al && v.fiscal_environment !== 'production'}>{al ? t('Live (not yet for Albania)') : t('Live')}</SelectItem></SelectContent>
                 </Select>
               </Field>
               <Field label={al ? t('Business unit code') : t('Business unit')} htmlFor="fs-bu" hint={al ? t('From the self-care portal, e.g. xb123cd456.') : undefined}>

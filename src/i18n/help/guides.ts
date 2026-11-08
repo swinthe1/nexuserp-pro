@@ -146,6 +146,7 @@ const BASE: Record<string, Guide> = {
       { sq: 'Kur mbaron, "Përfundo numërimin" e dërgon për shqyrtim.', en: 'When done, "Finish counting" sends it for review.' },
       { sq: 'Te shqyrtimi shiko çka mungon dhe sa vlen; diferencat e mëdha ktheji për rinumërim.', en: 'In the review see what is missing and what it is worth; send big differences back to be counted again.' },
       { sq: '"Konfirmo diferencat" e korrigjon stokun.', en: '"Confirm differences" corrects the stock.' },
+      { sq: 'Pa etiketa raftesh: kur njësia ka vetëm një vend, skano artikujt drejtpërdrejt. Para konfirmimit sheh sa mungon dhe sa tepron, me kosto dhe me çmim shitjeje me TVSH.', en: 'Without shelf labels: when the unit has one place, scan the items straight away. Before confirming you see what is missing and what is extra, at cost and at the selling price with VAT.' },
     ],
     after: { sq: 'Diferencat bëhen një rregullim stoku me arsye "Numërim" dhe dalin te Humbjet dhe firot.', en: 'The differences become one stock adjustment (reason: count) and show in Shrinkage.' },
     tour: [

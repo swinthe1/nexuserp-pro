@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowRight, Cable, CheckCircle2, CircleDollarSign, DatabaseBackup, KeyRound, Server, ShieldAlert, ShieldCheck, Sparkles, UserPlus, Users, type LucideIcon } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Cable, CheckCircle2, CircleDollarSign, DatabaseBackup, Fingerprint, KeyRound, Server, ShieldAlert, ShieldCheck, Sparkles, TrendingDown, UserPlus, Users, type LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { ErrorState } from '@/components/error-state'
@@ -23,6 +23,8 @@ const ATTENTION: Record<Attention['kind'], { icon: LucideIcon; title: string; ac
   local_quiet: { icon: Server, title: msg('The local server has not been seen for a day'), action: msg('Look'), tone: 'warn', href: () => '/platform/servers' },
   pending_account: { icon: UserPlus, title: msg('An invited person has no account yet'), action: msg('Make the account'), tone: 'info', href: (a) => `/platform/clients/${a.company_id}?tab=people` },
   seats_full: { icon: Users, title: msg('All the licence’s users are taken'), action: msg('Add users'), tone: 'info', href: (a) => `/platform/clients/${a.company_id}?tab=licence` },
+  fiscal_failed: { icon: Fingerprint, title: msg('Fiscalization was refused'), action: msg('Look'), tone: 'danger', href: (a) => `/platform/clients/${a.company_id}` },
+  no_sales: { icon: TrendingDown, title: msg('No sales for a week'), action: msg('Call the client'), tone: 'warn', href: (a) => `/platform/clients/${a.company_id}` },
 }
 
 function attentionDetail(a: Attention) {
@@ -32,6 +34,8 @@ function attentionDetail(a: Attention) {
   if (a.kind === 'link_quiet' || a.kind === 'local_quiet') return a.at ? t('Last seen {date}', { date: formatDate(a.at, true) }) : t('Never seen')
   if (a.kind === 'pending_account') return a.detail ?? ''
   if (a.kind === 'seats_full') return t('{n} users', { n: a.detail ?? '' })
+  if (a.kind === 'fiscal_failed') return tn(Number(a.detail ?? 0), '{n} document in the last 7 days', '{n} documents in the last 7 days')
+  if (a.kind === 'no_sales') return t('Last sale {date}', { date: formatDate(a.at ?? '', true) })
   return ''
 }
 

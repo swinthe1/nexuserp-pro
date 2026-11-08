@@ -37,9 +37,12 @@ export function SalesOverviewPage() {
   const ov = useSalesOverview(from, to)
   const d = ov.data
   const margin = d && d.revenue > 0 ? ((d.revenue - d.cogs) / d.revenue) * 100 : null
+  // the tills sell too: without them a market would see sales near zero here
+  const till = num(d?.till_revenue)
+  const hasTill = till !== 0 || (d?.revenue_by_month ?? []).some((m) => num(m.till) !== 0)
   const winRate = d && d.won + d.lost > 0 ? (d.won / (d.won + d.lost)) * 100 : null
   const quoteConv = d && d.quotes_sent > 0 ? (d.quotes_converted / d.quotes_sent) * 100 : null
-  const months = (d?.revenue_by_month ?? []).map((m) => ({ month: formatDateWith(new Date(`${m.month}T00:00:00`), { month: 'short' }), revenue: num(m.revenue) }))
+  const months = (d?.revenue_by_month ?? []).map((m) => ({ month: formatDateWith(new Date(`${m.month}T00:00:00`), { month: 'short' }), revenue: num(m.revenue), till: num(m.till) }))
   const pipeline = d?.pipeline ?? []
   const pipeMax = Math.max(1, ...pipeline.map((p) => num(p.value)))
 
@@ -47,7 +50,8 @@ export function SalesOverviewPage() {
     <>
       <PageHeader
         title={t('Sales overview|menu')}
-        description={t('Sales are counted from posted invoices minus credit notes, in {currency} without VAT.', { currency: cur })}
+        description={hasTill ? t('Sales at the tills and on posted invoices minus credit notes, in {currency} without VAT.', { currency: cur })
+          : t('Sales are counted from posted invoices minus credit notes, in {currency} without VAT.', { currency: cur })}
         actions={<>
           <Select value={rangeKey} onValueChange={(v) => setRangeKey(v as RangeKey)}>
             <SelectTrigger className="w-[160px]" aria-label={t('Period')}><SelectValue /></SelectTrigger>
@@ -60,8 +64,11 @@ export function SalesOverviewPage() {
         </>}
       />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label={t('Sales (without VAT)')} value={formatMoney(d?.revenue)} loading={ov.isLoading} href="/sales/invoices" hint={tn(d?.invoice_count ?? 0, '{n} invoice', '{n} invoices')} />
-        <StatCard label={t('Gross margin')} value={margin == null ? '—' : `${pct(margin, 1)}%`} loading={ov.isLoading} hint={d ? t('{profit} after {cost} cost of goods, without VAT', { profit: formatMoney(d.revenue - d.cogs), cost: formatMoney(d.cogs) }) : undefined} tone={margin != null && margin < 15 ? 'warning' : 'default'} />
+        {hasTill
+          ? <StatCard label={t('Sales (without VAT)')} value={formatMoney(num(d?.revenue) + till)} loading={ov.isLoading} href="/reports/sales-detail"
+              hint={t('{till} at the tills ({n} receipts) · {inv} on invoices', { till: formatMoney(till), n: d?.till_receipts ?? 0, inv: formatMoney(d?.revenue) })} />
+          : <StatCard label={t('Sales (without VAT)')} value={formatMoney(d?.revenue)} loading={ov.isLoading} href="/sales/invoices" hint={tn(d?.invoice_count ?? 0, '{n} invoice', '{n} invoices')} />}
+        <StatCard label={hasTill ? t('Gross margin on invoices') : t('Gross margin')} value={margin == null ? '—' : `${pct(margin, 1)}%`} loading={ov.isLoading} hint={d ? t('{profit} after {cost} cost of goods, without VAT', { profit: formatMoney(d.revenue - d.cogs), cost: formatMoney(d.cogs) }) : undefined} tone={margin != null && margin < 15 ? 'warning' : 'default'} />
         <StatCard label={t('Orders taken (without VAT)')} value={formatMoney(d?.orders_value)} loading={ov.isLoading} href="/sales/orders" hint={tn(d?.orders_count ?? 0, '{n} confirmed order', '{n} confirmed orders')} />
         <StatCard label={t('Overdue invoices (with VAT)')} value={formatMoney(d?.overdue_amount)} loading={ov.isLoading} tone={d?.overdue_count ? 'destructive' : 'default'} href="/sales/invoices" hint={t('{n} past the due date', { n: d?.overdue_count ?? 0 })} />
       </div>
@@ -84,8 +91,10 @@ export function SalesOverviewPage() {
                     <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
                     <XAxis dataKey="month" tick={axisTick} tickLine={false} axisLine={false} />
                     <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatCompact(v)} width={52} />
-                    <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }} formatter={(v: number) => [formatMoney(v, cur), t('Sales (without VAT)')]} />
-                    <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
+                    <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }}
+                      formatter={(v: number, k: string) => [formatMoney(v, cur), k === 'till' ? t('At the tills') : hasTill ? t('On invoices') : t('Sales (without VAT)')]} />
+                    {hasTill && <Bar dataKey="till" stackId="s" fill="hsl(var(--primary) / 0.45)" />}
+                    <Bar dataKey="revenue" stackId="s" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

@@ -232,7 +232,7 @@ export function useBackupStatus() {
 
 export type PlatformEvent = { id: number; at: string; actor_email: string | null; company_id: string | null; company_name: string | null; kind: string
   details: Record<string, unknown>; company_exists?: boolean }
-export type Attention = { kind: 'licence_expired' | 'licence_ending' | 'link_error' | 'link_quiet' | 'local_quiet' | 'pending_account' | 'seats_full'
+export type Attention = { kind: 'licence_expired' | 'licence_ending' | 'link_error' | 'link_quiet' | 'local_quiet' | 'pending_account' | 'seats_full' | 'fiscal_failed' | 'no_sales'
   company_id: string; company_name: string; at?: string | null; days?: number; detail?: string | null; name?: string; version?: string | null; member_id?: string }
 export interface PlatformOverview {
   clients: number; active: number; ending: number; expired: number; suspended: number; training: number; users: number; seats: number

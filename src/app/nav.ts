@@ -86,7 +86,6 @@ export const NAV: NavSection[] = [
       { label: msg('Z reports'), href: '/finance/z-reports', icon: Printer, perm: 'invoicing.read', keywords: ['z raport', 'z-raporti', 'raporti z', 'arka fiskale', 'kasa', 'fiscal register', 'z report'], hub: msg('Till|menu') },
       { label: msg('Tills at ATK|menu'), href: '/pos/atk', icon: ShieldCheck, perm: 'pos.approve|tax.read', keywords: ['atk', 'fiskalizim', 'fiskal', 'kupon fiskal', 'certifikatë', 'certificate', 'qr', 'edi', 'kosova', 'softuer elektronik fiskal'], hub: msg('Till|menu') },
       { label: msg('Waiters'), href: '/pos/waiters', icon: UsersRound, perm: 'pos.read', keywords: ['kamarier', 'kamarierët', 'waiter', 'restaurant', 'tavolina', 'report'], hub: msg('Till|menu') },
-      { label: msg('Recipes'), href: '/manufacturing/boms', icon: Layers, perm: 'manufacturing.read', keywords: ['receta', 'recipe', 'kit', 'ingredients', 'përbërës', 'kafe', 'restorant'] },
     ],
   },
   {

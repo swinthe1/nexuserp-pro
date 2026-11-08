@@ -2397,6 +2397,7 @@ export type Database = {
           pos_blind_count: boolean
           pos_lock_minutes: number
           pos_waiter_handover: boolean
+          cash_payment_limit: number | null
         }
         Insert: {
           id?: string
@@ -2490,6 +2491,7 @@ export type Database = {
           pos_blind_count?: boolean
           pos_lock_minutes?: number
           pos_waiter_handover?: boolean
+          cash_payment_limit?: number | null
         }
         Update: {
           id?: string
@@ -2583,6 +2585,7 @@ export type Database = {
           pos_blind_count?: boolean
           pos_lock_minutes?: number
           pos_waiter_handover?: boolean
+          cash_payment_limit?: number | null
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },

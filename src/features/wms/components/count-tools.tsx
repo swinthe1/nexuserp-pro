@@ -128,8 +128,10 @@ export function CountReviewPanel({ countId }: { countId: string }) {
     <div className="grid gap-3 rounded-xl border bg-card p-3">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Tile label={t('Differences')} value={String(d.differences)} hint={t('of {n} lines counted', { n: d.counted })} />
-        <Tile label={t('Found more')} value={formatMoney(d.gains, cur)} tone="good" icon={TrendingUp} />
-        <Tile label={t('Missing')} value={formatMoney(d.losses, cur)} tone="bad" icon={TrendingDown} />
+        <Tile label={t('Found more')} value={formatMoney(d.gains, cur)} tone="good" icon={TrendingUp}
+          hint={d.gains_sale != null ? t('{amount} at the selling price with VAT', { amount: formatMoney(d.gains_sale, cur) }) : undefined} />
+        <Tile label={t('Missing')} value={formatMoney(d.losses, cur)} tone="bad" icon={TrendingDown}
+          hint={d.losses_sale != null ? t('{amount} at the selling price with VAT', { amount: formatMoney(d.losses_sale, cur) }) : undefined} />
         <Tile label={t('Net effect on stock value')} value={formatMoney(d.net, cur)} tone={num(d.net) < 0 ? 'bad' : 'good'} hint={t('Counted stock is worth {amount}', { amount: formatMoney(d.counted_value, cur) })} />
       </div>
       {!!d.lines.length && (

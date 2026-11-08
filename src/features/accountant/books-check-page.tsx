@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, Ban, CheckCircle2, FileQuestion, IdCard, PackageMinus, PackageX, ShieldAlert, TrendingDown, Users, type LucideIcon } from 'lucide-react'
+import { ArrowRight, Ban, Banknote, CheckCircle2, FileQuestion, Fingerprint, IdCard, Landmark, PackageMinus, PackageX, ShieldAlert, TrendingDown, Users, Wallet, type LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
 import { ErrorState } from '@/components/error-state'
@@ -13,10 +13,11 @@ import { supabase } from '@/lib/supabase'
 import { formatDate, formatMoney } from '@/lib/utils'
 
 type Item = { label: string; detail?: string | number | null; href?: string }
-export type Check = { code: string; count: number; items: Item[]; href?: string }
+export type Check = { code: string; count: number; items: Item[]; href?: string; limit?: number }
 
 /** what each check says: the title by count, why it matters, and how a detail reads */
-const LOOK: Record<string, { icon: LucideIcon; one: string; many: string; why: string; detail?: (d: string | number) => string; fix?: string }> = {
+type Look = { icon: LucideIcon; one: string; many: string; why: string; detail?: (d: string | number) => string; fix?: string }
+const LOOK: Record<string, Look> = {
   negative_stock: { icon: PackageMinus, one: msg('{n} item is below zero'), many: msg('{n} items are below zero'),
     why: msg('They were sold before the goods were received. Enter the receipt or the supplier’s invoice, so the stock and the cost are right.'),
     detail: (d) => String(d) },
@@ -34,9 +35,28 @@ const LOOK: Record<string, { icon: LucideIcon; one: string; many: string; why: s
   below_cost: { icon: TrendingDown, one: msg('{n} sale this week was under cost'), many: msg('{n} sales this week were under cost'),
     why: msg('Every piece sold under cost is a loss. Check the prices and discounts on these invoices.'),
     detail: (d) => t('Sold at {amount}, without VAT', { amount: formatMoney(Number(d)) }) },
+  cash_negative: { icon: Wallet, one: msg('{n} cash box is below zero'), many: msg('{n} cash boxes are below zero'),
+    why: msg('More money left the cash than came in: a takings or a payment is missing, or one went out of the wrong box. Find the day it went below zero in the cash book.'),
+    detail: (d) => formatMoney(Number(d)), fix: msg('Open the cash book') },
+  fiscal_failed: { icon: Fingerprint, one: msg('{n} document was refused at fiscalization'), many: msg('{n} documents were refused at fiscalization'),
+    why: msg('The tax office did not accept them, so they are not fiscalized. Read the reason, correct it and send them again.'),
+    detail: (d) => String(d), fix: msg('Send again') },
+  bank_unmatched_old: { icon: Landmark, one: msg('{n} bank line has been unmatched for over a month'), many: msg('{n} bank lines have been unmatched for over a month'),
+    why: msg('Money came in or went out of the bank and nothing in the books says why: the balance of the bank and of the partners is off.'),
+    detail: (d) => formatMoney(Number(d)), fix: msg('Match it') },
+  cash_over_limit: { icon: Banknote, one: msg('{n} cash payment with a business is above the limit'), many: msg('{n} cash payments with businesses are above the limit'),
+    why: msg('Payments between businesses above the cash limit must go through the bank; above it, the tax office may refuse the expense or fine it. The limit is set under Settings › Company › Defaults and rules.'),
+    detail: (d) => formatMoney(Number(d)) },
   guard_waved: { icon: ShieldAlert, one: msg('{n} warning was waved through this week'), many: msg('{n} warnings were waved through this week'),
     why: msg('Before posting, the guard warned and the person went on. Often that is right; when one person does it often, a few minutes together with them saves mistakes.'),
     detail: (d) => tn(Number(d), '{n} time', '{n} times') },
+}
+
+/** Albania says NIPT where Kosovo says NUI */
+const LOOK_AL: Record<string, Partial<Look>> = {
+  partners_no_nui: { one: msg('{n} business on this year’s invoices has no NIPT'), many: msg('{n} businesses on this year’s invoices have no NIPT'),
+    why: msg('The sales and purchase books need the NIPT of a business. Open the card and find it in the register by name.'), fix: msg('Add the NIPT') },
+  duplicate_nui: { one: msg('{n} NIPT belongs to two partners'), many: msg('{n} NIPTs belong to two partners'), detail: (d) => `NIPT ${d}` },
 }
 
 export function useBooksCheck() {
@@ -48,6 +68,8 @@ export function useBooksCheck() {
 /** Company › Books check: the mistakes that slipped through, each with the place to fix it. */
 export function BooksCheckPage() {
   const q = useBooksCheck()
+  const { company } = useCompany()
+  const lookOf = (code: string): Look => ({ ...LOOK[code]!, ...(company?.country_code === 'AL' ? LOOK_AL[code] : {}) })
   const list = (q.data ?? []).filter((c) => LOOK[c.code])
   return (
     <div className="mx-auto grid max-w-4xl gap-4">
@@ -59,7 +81,7 @@ export function BooksCheckPage() {
             <p className="font-medium">{t('Nothing to check. The books look clean.')}</p>
           </CardContent></Card>
         ) : list.map((c) => {
-          const look = LOOK[c.code]!
+          const look = lookOf(c.code)
           const Icon = look.icon
           return (
             <Card key={c.code}>
@@ -68,7 +90,7 @@ export function BooksCheckPage() {
                   <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-warning/10 text-warning"><Icon className="size-5" /></span>
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold">{tn(c.count, look.one, look.many)}</div>
-                    <p className="text-[13px] text-muted-foreground">{t(look.why)}</p>
+                    <p className="text-[13px] text-muted-foreground">{t(look.why)}{c.limit != null && <> {t('Limit now: {amount}.', { amount: formatMoney(c.limit) })}</>}</p>
                   </div>
                   {c.href && <Button variant="outline" size="sm" asChild className="shrink-0"><Link to={c.href}>{t('See all')} <ArrowRight /></Link></Button>}
                 </div>

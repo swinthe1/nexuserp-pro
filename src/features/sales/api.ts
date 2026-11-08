@@ -311,11 +311,11 @@ export function useOrderAvailability(orderId: string | undefined, enabled: boole
 
 /* ------------------------------------------------------------- overview */
 export interface SalesOverview {
-  revenue: number; invoice_count: number; cogs: number; orders_count: number; orders_value: number
+  revenue: number; invoice_count: number; till_revenue?: number; till_receipts?: number; cogs: number; orders_count: number; orders_value: number
   quotes_sent: number; quotes_converted: number; won: number; lost: number; backlog: number
   overdue_count: number; overdue_amount: number
   pipeline: { name: string; probability: number; count: number; value: number; weighted: number }[]
-  revenue_by_month: { month: string; revenue: number }[]
+  revenue_by_month: { month: string; revenue: number; till?: number }[]
   top_customers: { id: string; name: string; revenue: number }[]
   top_products: { sku: string; name: string; quantity: number; revenue: number }[]
   by_salesperson: { name: string; revenue: number; invoices: number }[]
