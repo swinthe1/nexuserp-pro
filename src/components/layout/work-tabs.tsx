@@ -65,6 +65,10 @@ const locationOf = (path: string, id: string): Location => {
   const u = new URL(path, 'http://x')
   return { pathname: u.pathname, search: u.search, hash: u.hash, state: null, key: `t-${id}` }
 }
+/** the dashboard is the home under the tabs, never a tab of its own */
+const HOME = 'home'
+const isHome = (pathname: string) => pathname === '/'
+const homeTab = (location?: Location): Tab => ({ id: HOME, location: location ?? locationOf('/', HOME), title: null, mounted: !!location, dirty: false, scroll: 0, used: 0 })
 let seq = 0
 const newId = () => `${Date.now().toString(36)}${(seq++).toString(36)}`
 
@@ -144,7 +148,15 @@ export function WorkTabsProvider({ children }: { children: React.ReactNode }) {
       return
     }
     if (active && pathOf(active.location) === path && active.location.key === location.key) return
-    if (fromMenu || !active) {
+    // the dashboard: back home, the tabs stay as they are
+    if (isHome(location.pathname)) {
+      saveScroll(active)
+      setTabs((ts) => (ts.some((x) => x.id === HOME) ? ts : [homeTab(), ...ts]).map((x) => (x.id === HOME ? { ...x, location, mounted: true, used: now } : x)))
+      setActiveId(HOME); restoreScroll(cur.find((x) => x.id === HOME)?.scroll ?? 0)
+      return
+    }
+    // a link on the dashboard opens a tab, so the dashboard stays the dashboard
+    if (fromMenu || !active || active.id === HOME) {
       const same = cur.find((x) => pathOf(x.location) === path)
       if (same) {
         saveScroll(active)
@@ -156,8 +168,8 @@ export function WorkTabsProvider({ children }: { children: React.ReactNode }) {
       const id = newId()
       let next = [...cur, { id, location, title: null, mounted: true, dirty: false, scroll: 0, used: now }]
       // too many: the one not used the longest (and without changes) gives way
-      if (next.length > MAX_TABS) {
-        const drop = next.filter((x) => x.id !== id && !x.dirty).sort((a, b) => a.used - b.used)[0]
+      if (next.filter((x) => x.id !== HOME).length > MAX_TABS) {
+        const drop = next.filter((x) => x.id !== id && x.id !== HOME && !x.dirty).sort((a, b) => a.used - b.used)[0]
         if (drop) next = next.filter((x) => x.id !== drop.id)
       }
       setTabs(next); setActiveId(id); window.scrollTo(0, 0)
@@ -169,7 +181,7 @@ export function WorkTabsProvider({ children }: { children: React.ReactNode }) {
 
   // remembered for the next visit (only the addresses and names)
   React.useEffect(() => {
-    try { localStorage.setItem(store, JSON.stringify({ tabs: tabs.map((x) => ({ id: x.id, path: pathOf(x.location), title: x.title })), active: activeId })) } catch { /* private window */ }
+    try { localStorage.setItem(store, JSON.stringify({ tabs: tabs.filter((x) => x.id !== HOME).map((x) => ({ id: x.id, path: pathOf(x.location), title: x.title })), active: activeId })) } catch { /* private window */ }
   }, [tabs, activeId, store])
 
   const activate = React.useCallback((id: string) => {
@@ -186,18 +198,15 @@ export function WorkTabsProvider({ children }: { children: React.ReactNode }) {
 
   const close = React.useCallback((id: string) => {
     const cur = tabsRef.current
-    const i = cur.findIndex((x) => x.id === id)
-    if (i < 0) return
+    if (!cur.some((x) => x.id === id)) return
+    if (id === HOME) return
     const rest = cur.filter((x) => x.id !== id)
     if (id !== activeRef.current) { setTabs(rest); return }
-    const next = rest[i] ?? rest[i - 1]
-    if (!next) {
-      // the last tab: the dashboard takes its place
-      const nid = newId()
-      setTabs([{ id: nid, location: locationOf('/', nid), title: null, mounted: true, dirty: false, scroll: 0, used: Date.now() }]); setActiveId(nid)
-      switching.current = '/'; navigate('/', { replace: true }); window.scrollTo(0, 0)
-      return
-    }
+    // the neighbour comes to the front; after the last tab, the dashboard
+    const idx = cur.filter((x) => x.id !== HOME).findIndex((x) => x.id === id)
+    const others = rest.filter((x) => x.id !== HOME)
+    const next = others[idx] ?? others[idx - 1] ?? rest.find((x) => x.id === HOME) ?? homeTab()
+    if (!rest.some((x) => x.id === next.id)) rest.unshift(next)
     setTabs(rest.map((x) => (x.id === next.id ? { ...x, mounted: true } : x))); setActiveId(next.id)
     switching.current = pathOf(next.location)
     navigate(pathOf(next.location), { replace: true, state: next.location.state })
@@ -205,11 +214,11 @@ export function WorkTabsProvider({ children }: { children: React.ReactNode }) {
   }, [navigate])
   const closeOthers = React.useCallback((id: string) => {
     if (id !== activeRef.current) activate(id)
-    setTabs((ts) => ts.filter((x) => x.id === id))
+    setTabs((ts) => ts.filter((x) => x.id === id || x.id === HOME))
   }, [activate])
   const closeAll = React.useCallback(() => {
-    const nid = newId()
-    setTabs([{ id: nid, location: locationOf('/', nid), title: null, mounted: true, dirty: false, scroll: 0, used: Date.now() }]); setActiveId(nid)
+    const home = tabsRef.current.find((x) => x.id === HOME) ?? homeTab()
+    setTabs([{ ...home, mounted: true }]); setActiveId(HOME)
     switching.current = '/'; navigate('/', { replace: true }); window.scrollTo(0, 0)
   }, [navigate])
   const setTitle = React.useCallback((id: string, title: string) => setTabs((ts) => ts.map((x) => (x.id === id && x.title !== title ? { ...x, title } : x))), [])
@@ -230,8 +239,8 @@ export function WorkTabsProvider({ children }: { children: React.ReactNode }) {
     const onKey = (e: KeyboardEvent) => {
       if (!e.altKey || e.ctrlKey || e.metaKey) return
       const n = Number(e.key)
-      if (n >= 1 && n <= 9) { const tab = tabsRef.current[n - 1]; if (tab) { e.preventDefault(); activate(tab.id) } return }
-      if (e.key.toLowerCase() === 'w' && activeRef.current) { e.preventDefault(); window.dispatchEvent(new CustomEvent('drispro-close-tab', { detail: activeRef.current })) }
+      if (n >= 1 && n <= 9) { const tab = tabsRef.current.filter((x) => x.id !== HOME)[n - 1]; if (tab) { e.preventDefault(); activate(tab.id) } return }
+      if (e.key.toLowerCase() === 'w' && activeRef.current && activeRef.current !== HOME) { e.preventDefault(); window.dispatchEvent(new CustomEvent('drispro-close-tab', { detail: activeRef.current })) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -246,12 +255,14 @@ function restore(store: string, location: Location): Tab[] {
   const now = Date.now()
   let saved: { tabs: { id: string; path: string; title: string | null }[]; active: string | null } | null = null
   try { saved = readTabsOn() ? JSON.parse(localStorage.getItem(store) ?? 'null') : null } catch { saved = null }
-  const list: Tab[] = (saved?.tabs ?? []).slice(0, MAX_TABS).map((x, i) => ({ id: x.id, location: locationOf(x.path, x.id), title: x.title, mounted: false, dirty: false, scroll: 0, used: now - 1000 + i }))
+  const list: Tab[] = (saved?.tabs ?? []).filter((x) => x.id !== HOME && !isHome(new URL(x.path, 'http://x').pathname)).slice(0, MAX_TABS)
+    .map((x, i) => ({ id: x.id, location: locationOf(x.path, x.id), title: x.title, mounted: false, dirty: false, scroll: 0, used: now - 1000 + i }))
+  if (isHome(location.pathname)) return [homeTab(location), ...list]
   const here = list.find((x) => pathOf(x.location) === pathOf(location))
-  if (here) return list.map((x) => (x.id === here.id ? { ...x, location, mounted: true, used: now } : x))
+  if (here) return [homeTab(), ...list.map((x) => (x.id === here.id ? { ...x, location, mounted: true, used: now } : x))]
   const id = newId()
   const next = [...list, { id, location, title: null, mounted: true, dirty: false, scroll: 0, used: now }]
-  return next.length > MAX_TABS ? next.slice(next.length - MAX_TABS) : next
+  return [homeTab(), ...(next.length > MAX_TABS ? next.slice(next.length - MAX_TABS) : next)]
 }
 function saveScroll(tab: Tab | undefined) { if (tab) tab.scroll = window.scrollY }
 function restoreScroll(y: number) { requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo(0, y))) }
@@ -326,11 +337,14 @@ export function WorkTabBar({ className }: { className?: string }) {
     strip.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }, [ctx?.activeId])
   if (!ctx?.on) return null
+  const visible = ctx.tabs.filter((x) => x.id !== HOME)
+  // only the dashboard open: no bar
+  if (!visible.length) return null
   const askingTab = ctx.tabs.find((x) => x.id === asking)
   return (
     <div className={cn('sticky top-[52px] z-20 flex h-9 items-end gap-1 border-b bg-muted/60 px-2 backdrop-blur print:hidden', className)}>
       <div ref={strip} role="tablist" aria-label={t('Open pages')} className="flex min-w-0 flex-1 items-end gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {ctx.tabs.map((tab, i) => {
+        {visible.map((tab, i) => {
           const active = tab.id === ctx.activeId
           const m = menuLabel(tab.location.pathname)
           const look = moduleLook(m.section)
@@ -372,13 +386,13 @@ export function WorkTabBar({ className }: { className?: string }) {
           <TooltipContent>{t('Tab options')}</TooltipContent>
         </Tooltip>
         <DropdownMenuContent align="end" className="w-64">
-          {ctx.tabs.map((tab) => {
+          {visible.map((tab) => {
             const m = menuLabel(tab.location.pathname)
             return <DropdownMenuItem key={tab.id} onSelect={() => ctx.activate(tab.id)} className={cn(tab.id === ctx.activeId && 'font-medium')}>
               <span className="truncate">{(m.exact ? m.label : null) ?? tab.title ?? m.label ?? t('Page')}</span></DropdownMenuItem>
           })}
           <DropdownMenuSeparator />
-          <DropdownMenuItem disabled={ctx.tabs.length < 2} onSelect={() => ctx.activeId && ctx.closeOthers(ctx.activeId)}>{t('Close the other tabs')}</DropdownMenuItem>
+          <DropdownMenuItem disabled={visible.length < 2} onSelect={() => ctx.activeId && ctx.closeOthers(ctx.activeId)}>{t('Close the other tabs')}</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => ctx.closeAll()}>{t('Close all tabs')}</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => writeTabsOn(false)}>{t('Work without tabs')}</DropdownMenuItem>
