@@ -24,11 +24,11 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
       <BackButton />
       <button
         onClick={() => open()}
-        className="flex h-9 min-w-[11rem] flex-[0_1_28rem] items-center gap-2 rounded-full border border-transparent bg-muted px-3.5 text-[13px] text-muted-foreground transition-colors hover:border-primary/30 hover:bg-card hover:text-foreground"
+        className="flex h-9 min-w-[8.5rem] flex-[0_1_15rem] items-center gap-2 rounded-full border border-transparent bg-muted px-3.5 text-[13px] text-muted-foreground transition-colors hover:border-primary/30 hover:bg-card hover:text-foreground"
       >
         <Search className="size-4" />
         <span className="flex-1 truncate text-left">{t('Search or jump to…')}</span>
-        <kbd className="hidden rounded-md border bg-card px-1.5 text-2xs font-semibold sm:inline">{isMac ? '⌘' : 'Ctrl'} K</kbd>{/* i18n-ignore */}
+        <kbd className="hidden rounded-md border bg-card px-1.5 text-2xs font-semibold 2xl:inline">{isMac ? '⌘' : 'Ctrl'} K</kbd>{/* i18n-ignore */}
       </button>
       {/* right next to the search: find something, or make something new */}
       <div className="max-md:hidden"><NewMenu /></div>

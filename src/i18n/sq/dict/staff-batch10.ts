@@ -1353,4 +1353,13 @@ export default {
   "Pick what you use most: a page or a new document. Up to {n}, in the order you want.": "Zgjidh çka përdor më shumë: një faqe ose një dokument të ri. Deri në {n}, në renditjen që do ti.",
   "Shortcuts": "Shkurtesat",
   "Shortcuts in the top bar": "Shkurtesat në shiritin lart",
+  "New customer or supplier": "Klient ose furnitor i ri",
+  "New document": "Dokument i ri",
+  "New expense": "Shpenzim i ri",
+  "New item": "Artikull i ri",
+  "New journal entry": "Regjistrim i ri kontabël",
+  "New payment from a customer": "Arkëtim i ri nga klienti",
+  "New payment to a supplier": "Pagesë e re te furnitori",
+  "New price levelling": "Nivelim i ri çmimesh",
+  "New sales invoice": "Faturë e re shitjeje",
 } satisfies Dict

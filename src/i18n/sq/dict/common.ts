@@ -263,7 +263,7 @@ export default {
   // shell
   'Language': 'Gjuha',
   'Open navigation': 'Hap menunë',
-  'Search or jump to…': 'Kërko ose shko te…',
+  'Search or jump to…': 'Kërko…',
   'No page matches “{q}”.': 'Asnjë faqe nuk përputhet me “{q}”.',
   'Account menu': 'Menuja e llogarisë',
   'My workplace': 'Vendi im i punës',
