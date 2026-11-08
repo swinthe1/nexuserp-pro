@@ -25,7 +25,7 @@ type Mailbox = { host: string; port: number; security: 'tls' | 'starttls' | 'non
 type Messaging = { summary_hour: number | null; summary_emails: string[]; summary_whatsapp: string[]; dunning_enabled: boolean; dunning_email: boolean
   dunning_whatsapp: boolean; dunning_steps: number[]; dunning_subject: string | null; dunning_text: string | null;
   reminder_before_enabled: boolean; reminder_before_days: number; reminder_before_text: string | null; po_email_auto: boolean; po_email_text: string | null
-  mailbox: Mailbox | null; whatsapp_ready: boolean; whatsapp_module?: boolean }
+  mailbox: Mailbox | null; whatsapp_ready: boolean; whatsapp_module?: boolean; appt_whatsapp?: boolean }
 type Msg = { id: string; channel: 'email' | 'whatsapp'; to_address: string; subject: string | null; purpose: string; status: string; attempts: number; last_error: string | null; sent_at: string | null; created_at: string }
 
 // sample texts shown in empty fields (the customer-facing texts are Albanian on purpose)
@@ -177,7 +177,7 @@ function WhatsAppOff() {
 
 /* ------------------------------------------------------------------ reminders for overdue invoices */
 function DunningCard({ d, writer }: { d: Messaging; writer: boolean }) {
-  const { companyId } = useCompany()
+  const { companyId, hasFeature } = useCompany()
   const save = useSaveMessaging()
   const [steps, setSteps] = React.useState(d.dunning_steps.join(', '))
   const [subject, setSubject] = React.useState(d.dunning_subject ?? '')
@@ -204,6 +204,9 @@ function DunningCard({ d, writer }: { d: Messaging; writer: boolean }) {
           {writer && <div className="flex justify-end"><Button size="sm" loading={save.isPending} onClick={() => save.mutate({ reminder_before_days: Number(beforeDays) || 3, reminder_before_text: beforeText })}>{t('Save')}</Button></div>}
         </>}
       </div>
+      {/* the day before an appointment, the client gets a WhatsApp too (template "drispro_termin") */}
+      {d.whatsapp_module && hasFeature('appointments') && <label className="flex items-center gap-2 text-sm">
+        <Switch checked={!!d.appt_whatsapp} disabled={!writer} onCheckedChange={(v) => save.mutate({ appt_whatsapp: v })} /> {t('Appointment reminders by WhatsApp, the day before')}</label>}
       {d.dunning_enabled && (
         <>
           <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end">

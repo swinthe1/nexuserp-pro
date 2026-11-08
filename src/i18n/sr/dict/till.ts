@@ -1165,4 +1165,7 @@ export default {
   'The sale is saved, but the appointment could not be marked done: mark it on the calendar.': 'Prodaja je sačuvana, ali termin nije označen kao završen: označite ga u kalendaru.',
   'Start the order': 'Započni porudžbinu',
   'e.g. Arben': 'npr. Arben',
+  'Losses and expiry|menu': 'Gubici i rokovi',
+  'Lot tracing|menu': 'Praćenje lota',
+  'Menu': 'Meni',
 } satisfies Dict

@@ -22,6 +22,7 @@ import { PageErrorBoundary } from '@/components/page-error-boundary'
 import { PlanLocked } from '@/components/plan-locked'
 import { GuardHost } from '@/components/guard'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { BottomBar } from '@/components/layout/bottom-bar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useHotkey } from '@/hooks/use-hotkey'
 import { ExportsRecorder } from '@/features/exports/recorder'
@@ -156,7 +157,7 @@ export function AppLayout() {
           <Invitations />
           <TrainingNudge />
           <LicenseBanner />
-          <main id="main" className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
+          <main id="main" className="flex-1 px-4 py-5 pb-24 sm:px-6 md:pb-5 lg:px-8">
             <SectionTabs />
             <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
             <GuardHost /><ExportsRecorder />
@@ -164,6 +165,7 @@ export function AppLayout() {
           </main>
         </div>
       </div>
+      <BottomBar onOpenMenu={() => setMobileOpen(true)} />
     </CommandPaletteProvider>
   )
 }

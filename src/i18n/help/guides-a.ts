@@ -121,6 +121,7 @@ export const GUIDES_A: Record<string, Guide> = {
     steps: [
       { sq: 'Kliko "Listë e re çmimesh", jepi emër (p.sh. Shumicë) dhe zgjidh monedhën.', en: 'Click "New price list", give it a name (e.g. Wholesale) and choose the currency.' },
       { sq: 'Kliko "Shto çmim", zgjidh artikullin dhe shkruaj çmimin; "Zbritja %" është me dëshirë.', en: 'Click "Add price", choose the item and type the price; "Discount %" is optional.' },
+      { sq: 'Për shumë artikuj njëherësh kliko "Çmimet me rregull": p.sh. çmimi i shitjes minus 10% për një kategori, ose kostoja plus 25%. Pastaj kliko "Ruaj".', en: 'For many items at once click "Prices by a rule": e.g. the sales price minus 10% for one category, or the cost plus 25%. Then click "Save".' },
       { sq: 'Për çmim më të lirë në sasi të madhe, shto të njëjtin artikull edhe një herë me "Nga sasia" më të madhe.', en: 'For a lower price on bigger quantities, add the same item again with a higher "From qty".' },
       { sq: 'Lidhe listën me klientin te kartela e tij; "Lista e parazgjedhur" vlen për klientët pa listë.', en: 'Give the list to the customer on their card; the "Default list" is for customers without one.' },
     ],

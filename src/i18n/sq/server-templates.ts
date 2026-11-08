@@ -316,6 +316,8 @@ export const serverTemplates: [string, string][] = [
   ['Purchase order · %', 'Porosi blerjeje · {0}'],
   ['Quote · %', 'Ofertë · {0}'],
   ['Sales order · %', 'Porosi shitjeje · {0}'],
+  ['Till receipt · % · %', 'Kupon arke · {0} · {1}'],
+  ['Till refund · % · %', 'Kthim në arkë · {0} · {1}'],
   ['Delivery · %', 'Dërgesë · {0}'],
   ['Credit note · %', 'Notë krediti · {0}'],
   ['Invoice · %', 'Faturë · {0}'],

@@ -29,7 +29,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
         <kbd className="hidden rounded-md border bg-card px-1.5 text-2xs font-semibold sm:inline">{isMac ? '⌘' : 'Ctrl'} K</kbd>{/* i18n-ignore */}
       </button>
       {/* right next to the search: find something, or make something new */}
-      <NewMenu />
+      <div className="max-md:hidden"><NewMenu /></div>
       <div className="ml-auto flex items-center gap-1">
         <LastExportButton />
         <TillLockButton />

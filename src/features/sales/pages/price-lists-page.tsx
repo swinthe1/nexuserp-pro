@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Plus, Star, Trash2 } from 'lucide-react'
+import { Percent, Plus, Star, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -15,7 +15,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
@@ -24,7 +26,7 @@ import type { Tables } from '@/lib/database.types'
 import { unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { cn, formatDate, formatMoney, num } from '@/lib/utils'
-import { useCurrencies, useVariantOptions } from '@/features/inventory/api'
+import { useCategories, useCurrencies, useVariantOptions } from '@/features/inventory/api'
 import { VariantPicker } from '@/features/inventory/components/pickers'
 import { useDeleteRecord, usePriceList, usePriceLists, useSavePriceList, useSellableVariants } from '../api'
 import { priceListSchema, type PriceListValues } from '../schemas'
@@ -96,6 +98,31 @@ function PriceListForm({ pl }: { pl?: Tables<'price_lists'> & { items: Tables<'p
     queryFn: async () => unwrap(await supabase.from('product_variants').select('id, products!inner(sales_tax_code:tax_codes!products_company_id_sales_tax_code_id_fkey(rate))')
       .eq('company_id', company!.id).is('deleted_at', null).limit(5000)) as unknown as { id: string; products: { sales_tax_code: { rate: number } | null } }[] })
   const rateOf = React.useCallback((id: string) => num(rates.data?.find((r) => r.id === id)?.products.sales_tax_code?.rate), [rates.data])
+  const [ruleOpen, setRuleOpen] = React.useState(false)
+  // a rule: every item (or one category's) priced from its sales price or its cost, plus or minus a percentage
+  const applyRule = (r: PriceRule) => {
+    const pool = (sellable.data ?? []).filter((v) => !r.category || v.category_id === r.category)
+    const step = r.round
+    const current = form.getValues('items')
+    let added = 0, changed = 0
+    for (const v of pool) {
+      const from = r.base === 'cost' ? num(cost.get(v.id)) : num(v.sales_price)
+      if (!(from > 0)) continue
+      let price = from * (1 + r.pct / 100) * (withTax ? 1 + rateOf(v.id) / 100 : 1)
+      price = step > 0 ? Math.round(price / step) * step : price
+      price = Math.round(price * 100) / 100
+      const at = current.findIndex((i) => i.variant_id === v.id && num(i.min_quantity) <= 1)
+      if (at >= 0) {
+        if (!r.overwrite) continue
+        form.setValue(`items.${at}.price`, price, { shouldDirty: true }); changed++
+      } else {
+        items.append({ variant_id: v.id, min_quantity: 1, price, discount_pct: 0, valid_from: '', valid_to: '' }); added++
+      }
+    }
+    setRuleOpen(false)
+    if (added + changed) toast.success(t('{added} prices added, {changed} changed. Save the list to keep them.', { added, changed }))
+    else toast.info(t('No item matched the rule.'))
+  }
 
   const submit = form.handleSubmit(async (v) => {
     const newId = await save.mutateAsync({
@@ -150,7 +177,10 @@ function PriceListForm({ pl }: { pl?: Tables<'price_lists'> & { items: Tables<'p
         <Card className="mt-4">
           <CardHeader className="flex-row items-center justify-between space-y-0 py-3">
             <CardTitle>{t('Prices')}</CardTitle>
-            {writable && <Button size="sm" variant="outline" onClick={() => items.append({ variant_id: undefined as unknown as string, min_quantity: 1, price: 0, discount_pct: 0, valid_from: '', valid_to: '' })}><Plus /> {t('Add price')}</Button>}
+            {writable && <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => setRuleOpen(true)}><Percent /> {t('Prices by a rule')}</Button>
+              <Button size="sm" variant="outline" onClick={() => items.append({ variant_id: undefined as unknown as string, min_quantity: 1, price: 0, discount_pct: 0, valid_from: '', valid_to: '' })}><Plus /> {t('Add price')}</Button>
+            </div>}
           </CardHeader>
           <CardContent className="overflow-x-auto p-0">
             {items.fields.length ? (
@@ -187,6 +217,59 @@ function PriceListForm({ pl }: { pl?: Tables<'price_lists'> & { items: Tables<'p
           <p className="px-4 py-3 text-xs text-muted-foreground">{t('For a lower price on bigger quantities, add the same product again with a higher “from qty”. The margin is calculated on the current average cost.')}</p>
         </Card>
       </div>
+      <PriceRuleDialog open={ruleOpen} onOpenChange={setRuleOpen} onApply={applyRule} />
     </Form>
+  )
+}
+
+type PriceRule = { base: 'sales' | 'cost'; pct: number; category: string; overwrite: boolean; round: number }
+
+/** "Retail price minus 10%" or "cost plus 25%" for every item, or for one category */
+function PriceRuleDialog({ open, onOpenChange, onApply }: { open: boolean; onOpenChange: (v: boolean) => void; onApply: (r: PriceRule) => void }) {
+  const cats = useCategories()
+  const [base, setBase] = React.useState<'sales' | 'cost'>('sales')
+  const [pct, setPct] = React.useState('-10')
+  const [category, setCategory] = React.useState('')
+  const [overwrite, setOverwrite] = React.useState(false)
+  const [round, setRound] = React.useState('0')
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t('Prices by a rule')}</DialogTitle>
+          <DialogDescription>{t('For example the retail price minus 10%, or the cost plus 25%. A minus number lowers the price.')}</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5"><Label>{t('Starting from')}</Label>
+              <Select value={base} onValueChange={(v) => setBase(v as 'sales' | 'cost')}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="sales">{t('The sales price')}</SelectItem><SelectItem value="cost">{t('The cost')}</SelectItem></SelectContent>
+              </Select></div>
+            <div className="grid gap-1.5"><Label>{t('Plus or minus %')}</Label>
+              <Input type="number" step="any" className="text-right tabular" value={pct} onChange={(e) => setPct(e.target.value)} /></div>
+          </div>
+          <div className="grid gap-1.5"><Label>{t('Category')}</Label>
+            <Select value={category || 'all'} onValueChange={(v) => setCategory(v === 'all' ? '' : v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="all">{t('All items')}</SelectItem>
+                {(cats.data ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{td(c.name)}</SelectItem>)}</SelectContent>
+            </Select></div>
+          <div className="grid gap-1.5"><Label>{t('Round to')}</Label>
+            <Select value={round} onValueChange={setRound}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{['0', '0.05', '0.1', '0.5', '1', '10'].map((r) => <SelectItem key={r} value={r}>{r === '0' ? t('Do not round') : formatNumberWith(Number(r), { minimumFractionDigits: 2 })}</SelectItem>)}</SelectContent>
+            </Select></div>
+          <label className="flex items-start gap-3 rounded-md border p-3">
+            <Switch checked={overwrite} onCheckedChange={setOverwrite} />
+            <span className="text-sm">{t('Also change the prices already on the list')}</span>
+          </label>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{t('Cancel')}</Button>
+          <Button disabled={!Number.isFinite(Number(pct)) || pct === ''} onClick={() => onApply({ base, pct: Number(pct), category, overwrite, round: Number(round) })}>{t('Fill the prices')}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
