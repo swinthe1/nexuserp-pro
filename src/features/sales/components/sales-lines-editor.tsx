@@ -9,13 +9,14 @@ import { SearchSelect } from '@/components/search-select'
 import { Button } from '@/components/ui/button'
 import { FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { cn, formatMoney, formatQty, num } from '@/lib/utils'
 import { useTaxCodes, lookupCode } from '@/features/inventory/api'
 import { fetchPrice, useSellableVariants } from '../api'
 import type { SalesDocValues } from '../schemas'
-import { t, td } from '@/i18n'
+import { formatNumberWith, t, td } from '@/i18n'
 import { describeError } from '@/lib/errors'
 import { packForScan, usePacks } from '@/lib/packs'
 
@@ -26,6 +27,60 @@ export function lineAmounts(l: { quantity: unknown; unit_price: unknown; discoun
   const sub = Math.round(num(l.quantity) * num(l.unit_price) * (1 - num(l.discount_pct) / 100) * 100) / 100
   const tax = Math.round(sub * rate) / 100
   return { gross: Math.round(num(l.quantity) * num(l.unit_price) * 100) / 100, sub, tax, total: sub + tax }
+}
+
+/** the price without VAT (4 decimals, as stored) whose line comes out at exactly this price with VAT,
+ *  when one exists; otherwise the nearest one */
+export function netFromGross(gross: number, quantity: number, discountPct: number, rate: number) {
+  const net0 = Math.round(gross / (1 + rate / 100) * 10000) / 10000
+  const q = quantity > 0 ? quantity : 1
+  const want = Math.round(q * gross * (1 - discountPct / 100) * 100) / 100
+  let best = net0, bestDiff = Infinity
+  for (let k = 0; k <= 60; k++) {
+    for (const sgn of k ? [1, -1] : [1]) {
+      const net = Math.round((net0 + sgn * k / 10000) * 10000) / 10000
+      if (net < 0) continue
+      const diff = Math.abs(lineAmounts({ quantity: q, unit_price: net, discount_pct: discountPct }, rate).total - want)
+      if (diff < bestDiff - 1e-9) { best = net; bestDiff = diff }
+      if (diff < 0.005) return net
+    }
+  }
+  return best
+}
+
+const GROSS_KEY = 'drispro.sales.priceWithVat'
+const readGross = () => { try { return localStorage.getItem(GROSS_KEY) === '1' } catch { return false } }
+
+/** the price typed with VAT; the line keeps the price without VAT */
+function GrossPriceInput({ net, rate, quantity, discountPct, manual, line, onNet }: {
+  net: number; rate: number; quantity: number; discountPct: number; manual: boolean; line: number; onNet: (net: number) => void
+}) {
+  const toGross = (n: number) => (n > 0 ? String(Math.round(n * (1 + rate / 100) * 100) / 100) : n === 0 ? '0' : '')
+  const [text, setText] = React.useState(() => toGross(net))
+  const mine = React.useRef(net)
+  // a price set from outside (the price list, a new quantity tier) shows again with VAT
+  React.useEffect(() => { if (Math.abs(net - mine.current) > 1e-9) { mine.current = net; setText(toGross(net)) } }, [net]) // eslint-disable-line react-hooks/exhaustive-deps
+  // a typed price follows a new quantity, discount or VAT rate so the line still adds up
+  const apply = React.useCallback((v: string) => {
+    const g = num(v.replace(',', '.'))
+    const n = g > 0 ? netFromGross(g, quantity, discountPct, rate) : 0
+    mine.current = n; onNet(n)
+  }, [quantity, discountPct, rate, onNet])
+  const mounted = React.useRef(false)
+  React.useEffect(() => {
+    if (!mounted.current) { mounted.current = true; return }
+    if (manual && text !== '') apply(text)
+  }, [quantity, discountPct, rate]) // eslint-disable-line react-hooks/exhaustive-deps
+  // with 4 decimals some totals cannot come out to the cent: say what the line really comes to
+  const g = num(text.replace(',', '.'))
+  const q = quantity > 0 ? quantity : 1
+  const real = lineAmounts({ quantity: q, unit_price: net, discount_pct: discountPct }, rate).total
+  const off = g > 0 && Math.abs(real - Math.round(q * g * (1 - discountPct / 100) * 100) / 100) > 0.004
+  return <>
+    <Input inputMode="decimal" className="h-9 min-w-[100px] text-right" aria-label={t('Unit price with VAT, line {n}', { n: line })}
+      value={text} onChange={(e) => { setText(e.target.value); apply(e.target.value) }} />
+    {off && <p className="mt-1 text-right text-2xs text-warning">{t('The line comes to {amount} with VAT', { amount: formatMoney(real) })}</p>}
+  </>
 }
 
 let keySeq = 0
@@ -43,6 +98,8 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
   const taxes = useTaxCodes()
   const packs = usePacks()
   const lines = useFieldArray({ control: form.control, name: 'lines' })
+  const [withVat, setWithVat] = React.useState(readGross)
+  const switchVat = (v: boolean) => { setWithVat(v); try { localStorage.setItem(GROSS_KEY, v ? '1' : '0') } catch { /* private window */ } }
   const watched = useWatch({ control: form.control, name: 'lines' })
   const [partnerId, priceListId, docDate, cur] = useWatch({ control: form.control, name: ['partner_id', 'price_list_id', 'doc_date', 'currency_code'] })
   const rateOf = React.useCallback((taxId?: string | null) => num(taxes.data?.find((t) => t.id === taxId)?.rate), [taxes.data])
@@ -99,7 +156,10 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
     <div className="mt-4 rounded-lg border bg-card">
       <div className="flex items-center justify-between px-4 py-3">
         <h3 className="text-sm font-semibold">{t('Lines')}</h3>
-        {editable && <Button type="button" size="sm" variant="outline" onClick={addLine}><Plus /> {t('Add line')}</Button>}
+        {editable && <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 text-[13px]"><Switch checked={withVat} onCheckedChange={switchVat} aria-label={t('Type prices with VAT')} /> {t('Type prices with VAT')}</label>
+          <Button type="button" size="sm" variant="outline" onClick={addLine}><Plus /> {t('Add line')}</Button>
+        </div>}
       </div>
       {lines.fields.length === 0 ? (
         <EmptyState compact title={t('No lines yet')} description={t("Add products or services. Prices come from the customer's price list automatically.")} action={editable && <Button size="sm" type="button" onClick={addLine}><Plus /> {t('Add line')}</Button>} />
@@ -147,7 +207,7 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
               <TableHead className="w-8">#</TableHead>
               <TableHead>{t('Item')}</TableHead>
               <TableHead className="w-32 text-right">{t('Qty')}</TableHead>
-              <TableHead className="w-32 text-right">{t('Unit price (without VAT)')}</TableHead>
+              <TableHead className="w-32 text-right">{withVat ? t('Unit price (with VAT)') : t('Unit price (without VAT)')}</TableHead>
               <TableHead className="w-24 text-right">{t('Disc. %')}</TableHead>
               <TableHead className="w-36">{t('VAT')}</TableHead>
               <TableHead className="w-32 text-right">{t('Amount (without VAT)')}</TableHead>
@@ -205,12 +265,17 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
                       {short && <p className="mt-1 text-right text-2xs text-warning">{t('only {qty} free', { qty: formatQty(v.available) })}</p>}
                     </TableCell>
                     <TableCell>
-                      <FormField control={form.control} name={`lines.${i}.unit_price`} render={({ field }) => (
+                      {withVat && l ? (
+                        <GrossPriceInput net={num(l.unit_price)} rate={rateOf(l.tax_code_id)} quantity={num(l.quantity)} discountPct={num(l.discount_pct)} manual={l.price_source === 'manual'} line={i + 1}
+                          onNet={(n) => { form.setValue(`lines.${i}.unit_price`, n, { shouldDirty: true, shouldValidate: true }); form.setValue(`lines.${i}.price_source`, 'manual') }} />
+                      ) : <FormField control={form.control} name={`lines.${i}.unit_price`} render={({ field }) => (
                         <FormItem><FormControl><Input type="number" step="any" min="0" className="h-9 min-w-[100px] text-right" aria-label={t('Unit price, line {n}', { n: i + 1 })}
                           {...field} onChange={(e) => { field.onChange(e); form.setValue(`lines.${i}.price_source`, 'manual') }} /></FormControl><FormMessage /></FormItem>
-                      )} />
+                      )} />}
                       {l?.price_source === 'auto' && l.variant_id && <p className="mt-1 text-right text-2xs text-muted-foreground">{t('automatic price')}</p>}
-                      {l && rateOf(l.tax_code_id) > 0 && num(l.unit_price) > 0 && <p className="mt-0.5 text-right text-2xs text-muted-foreground">{t('With VAT {amount}', { amount: formatMoney(num(l.unit_price) * (1 + rateOf(l.tax_code_id) / 100)) })}</p>}
+                      {l && rateOf(l.tax_code_id) > 0 && num(l.unit_price) > 0 && <p className="mt-0.5 text-right text-2xs text-muted-foreground">{withVat
+                        ? t('Without VAT {amount}', { amount: formatNumberWith(num(l.unit_price), { minimumFractionDigits: 2, maximumFractionDigits: 4 }) })
+                        : t('With VAT {amount}', { amount: formatMoney(num(l.unit_price) * (1 + rateOf(l.tax_code_id) / 100)) })}</p>}
                     </TableCell>
                     <TableCell>
                       <FormField control={form.control} name={`lines.${i}.discount_pct`} render={({ field }) => (

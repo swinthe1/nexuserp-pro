@@ -214,6 +214,7 @@ function RegisterDialog({ register, onClose }: { register: Register | null; onCl
     default_customer_id: register?.default_customer_id ?? null as string | null, paper_mm: register?.paper_mm ?? 80, receipt_header: register?.receipt_header ?? '', receipt_footer: register?.receipt_footer ?? 'Faleminderit! Thank you!',
     is_active: register?.is_active ?? true, mode: (register?.mode ?? (restaurantOk && (company?.business_type === 'cafe' || company?.business_type === 'restaurant') ? 'restaurant' : 'retail')) as string,
     screen: ((register as { screen?: string } | null)?.screen ?? 'auto') as string,
+    max_discount_pct: String((register as { max_discount_pct?: number } | null)?.max_discount_pct ?? 10),
   }))
   const set = <K extends keyof typeof v>(k: K) => (x: (typeof v)[K]) => setV((s) => ({ ...s, [k]: x }))
   React.useEffect(() => {
@@ -221,7 +222,8 @@ function RegisterDialog({ register, onClose }: { register: Register | null; onCl
     if (!v.cash_account_id && banks.data) set('cash_account_id')(banks.data.find((b) => b.account_kind === 'cash' && /drawer|pos|till/i.test(b.name))?.id ?? banks.data.find((b) => b.account_kind === 'cash')?.id ?? null)
   }, [journals.data, banks.data]) // eslint-disable-line react-hooks/exhaustive-deps
   const locs = (locations.data ?? []).filter((l) => l.warehouse_id === v.warehouse_id && l.location_type !== 'view' && l.is_active)
-  const valid = v.code.trim() && v.name.trim() && v.warehouse_id && v.location_id && v.cash_account_id
+  const maxDisc = Number(v.max_discount_pct)
+  const valid = v.code.trim() && v.name.trim() && v.warehouse_id && v.location_id && v.cash_account_id && v.max_discount_pct !== '' && maxDisc >= 0 && maxDisc <= 100
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-xl">
@@ -267,13 +269,17 @@ function RegisterDialog({ register, onClose }: { register: Register | null; onCl
           <div className="col-span-2 grid gap-1.5"><Label>{t('Receipt paper')}</Label>
             <Select value={String(v.paper_mm)} onValueChange={(x) => set('paper_mm')(Number(x))}><SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent><SelectItem value="80">{t('80 mm (most receipt printers)')}</SelectItem><SelectItem value="58">{t('58 mm (small and mobile printers)')}</SelectItem></SelectContent></Select></div>
+          <div className="col-span-2 grid gap-1.5"><Label htmlFor="rg-disc">{t('Largest discount without a manager (%)')}</Label>
+            <Input id="rg-disc" inputMode="decimal" className="w-32 text-right tabular" value={v.max_discount_pct} onChange={(e) => set('max_discount_pct')(e.target.value.replace(',', '.'))} />
+            <p className="text-xs text-muted-foreground">{t('Above it, a manager approves at the till.')}</p></div>
           <div className="col-span-2 flex items-center justify-between"><Label htmlFor="rg-active">{t('Till in use')}</Label><Switch id="rg-active" checked={v.is_active} onCheckedChange={set('is_active')} /></div>
         </div>
         <DialogFooter><Button variant="ghost" onClick={onClose}>{t('Cancel')}</Button>
           <Button disabled={!valid} loading={save.isPending} onClick={async () => {
             // the paper is sent only once the server knows it (a server not yet updated would refuse the whole save)
-            const { paper_mm, screen, ...rest } = v
+            const { paper_mm, screen, max_discount_pct, ...rest } = v
             await save.mutateAsync({ id: register?.id, ...rest, ...(register?.paper_mm !== undefined || paper_mm !== 80 ? { paper_mm } : {}),
+              ...((register as { max_discount_pct?: number } | null)?.max_discount_pct !== undefined || maxDisc !== 10 ? { max_discount_pct: maxDisc } : {}),
               ...((register as { screen?: string } | null)?.screen !== undefined || screen !== 'auto' ? { screen } : {}), code: v.code.trim(), name: v.name.trim(), receipt_header: v.receipt_header || null, receipt_footer: v.receipt_footer || null })
             toast.success(t('Till saved')); onClose()
           }}>{t('Save')}</Button></DialogFooter>

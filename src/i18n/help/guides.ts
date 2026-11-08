@@ -19,6 +19,7 @@ const BASE: Record<string, Guide> = {
       { sq: 'Në fillim të ditës shkruaj sa para ka në sirtar: ato janë baza për numërimin në fund.', en: 'At the start of the day, type the cash in the drawer: it is the base for the count at the end.' },
       { sq: 'Te restoranti kliko "Hap tavolinat" ose "Shko te tavolinat"; kuzhina hap "Ekrani i kuzhinës".', en: 'In a restaurant click "Open the tables" or "Go to the tables"; the kitchen opens "Kitchen screen".' },
       { sq: 'Në fund të ditës mbyll turnin: numëro paratë dhe printo raportin Z.', en: 'At the end of the day close the shift: count the cash and print the Z report.' },
+      { sq: 'Te cilësimet e arkës vendos "Zbritja më e madhe pa menaxher": mbi të, zbritjen në rresht e miraton menaxheri.', en: 'In the till\'s settings set "Largest discount without a manager": above it, a manager approves the line discount.' },
     ],
     mistakes: [{ sq: 'Mos e lër arkën të hapur natën: shitjet e ditës tjetër përzihen me të sotmet.', en: 'Do not leave the till open overnight: tomorrow\'s sales get mixed with today\'s.' }],
     after: { sq: 'Çdo turn i mbyllur bëhet raport Z dhe regjistrim në kontabilitet; diferenca e parave del te sefi.', en: 'Each closed shift becomes a Z report and a book entry; any cash difference shows at the safe.' },
@@ -208,6 +209,7 @@ const BASE: Record<string, Guide> = {
     what: { sq: 'Faturat e shitjes dhe notat e kreditit.', en: 'Sales invoices and credit notes.' },
     steps: [
       { sq: 'Kliko "Faturë e re", zgjidh klientin dhe shto artikujt.', en: 'Click "New invoice", choose the customer and add the items.' },
+      { sq: 'Te rreshtat ndiz "Shkruaj çmimet me TVSH" kur e di çmimin përfundimtar: programi e nxjerr vetë çmimin pa TVSH.', en: 'In the lines switch on "Type prices with VAT" when you know the final price: the program works out the price without VAT.' },
       { sq: 'Filtro sipas statusit: "Papaguar" janë ato që duhen arkëtuar.', en: 'Filter by status: "Unpaid" are the ones still to collect.' },
       { sq: 'Për gabim në një faturë të kontabilizuar bëj "Notë krediti" (te butoni ⋯ i faturës), jo fshirje.', en: 'For a mistake on a posted invoice make a "Credit note" (under the invoice\'s ⋯ button), not a deletion.' },
       { sq: 'Kolona "Fiskalizimi" tregon cilat fatura kaluan, cilat presin dhe cilat u refuzuan; filtroji me "Fiskalizimi". Poshtë listës, rreshti i totaleve jep pa TVSH, TVSH-në, me TVSH dhe ende për t\'u paguar për faturat e postuara që sheh.', en: 'The "Fiscalization" column shows which invoices went through, which wait and which were refused; filter them with "Fiscalization". Under the list, the totals row gives without VAT, VAT, with VAT and still to pay for the posted invoices you see.' },

@@ -881,4 +881,11 @@ export default {
   "Too many computers are waiting for approval; ask your DrisPRO supplier": "Shumë kompjuterë presin miratimin; pyesni furnitorin e DrisPRO",
   "Computer not found": "Kompjuteri nuk u gjet",
   "Unknown state": "Gjendje e panjohur",
+  "An invoice needs at least one line": "Fatura duhet të ketë të paktën një rresht",
+  "Every line needs a text": "Çdo rresht duhet të ketë tekst",
+  "The quantity must be more than 0": "Sasia duhet të jetë më e madhe se 0",
+  "The price cannot be below 0": "Çmimi nuk mund të jetë nën 0",
+  "The discount is from 0 to 100%": "Zbritja është nga 0 deri në 100%",
+  "VAT code not found": "Kodi i TVSH-së nuk u gjet",
+  "Open Recurring invoices and send them to the customers.": "Hapni Faturat e përsëritura dhe dërgojini te klientët.",
 } satisfies Dict

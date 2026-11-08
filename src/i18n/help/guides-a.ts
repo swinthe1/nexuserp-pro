@@ -91,9 +91,10 @@ export const GUIDES_A: Record<string, Guide> = {
       { sq: 'Zgjidh "Sa shpesh" (çdo muaj, çdo 2, 3, 6 muaj ose çdo vit) dhe "Në ditën" (1–28).', en: 'Choose "How often" (every month, every 2, 3, 6 months or every year) and "On day" (1–28).' },
       { sq: 'Ndiz "Postoji menjëherë" që të kontabilizohen vetë; përndryshe çdo faturë pret si skicë që ta kontrollosh.', en: 'Switch on "Post them straight away" to have them posted by themselves; otherwise each one waits as a draft for you to check.' },
       { sq: 'Këtu, me "Ndrysho" ndërron datën e radhës ose fundin; me butonin e pauzës e ndal përkohësisht.', en: 'Here, "Edit" changes the next date or the end; the pause button stops it for a while.' },
+      { sq: 'Ndiz "Dërgoja klientit me email": faturat e postuara presin në krye të faqes dhe me "Dërgo" shkojnë si PDF te emaili i klientit.', en: 'Switch on "Send them to the customer by email": the posted invoices wait at the top of the page and "Send" mails them as PDFs to the customer.' },
     ],
     mistakes: [
-      { sq: 'Rreshtat vijnë nga fatura e parë: për t\'i ndryshuar, bëj faturë të re, përsërite atë dhe hiq planin e vjetër.', en: 'The lines come from the first invoice: to change them, make a new invoice, repeat it and remove the old plan.' },
+      { sq: 'Te "Ndrysho" ndërron edhe rreshtat: tekstin, sasinë, çmimin, zbritjen dhe TVSH-në; ndryshimi vlen për faturat e ardhshme, jo për ato të bëra.', en: 'Under "Edit" you also change the lines: the text, quantity, price, discount and VAT; it counts for the next invoices, not the ones already made.' },
       { sq: 'Shkruaj {period} në tekstin e rreshtit, p.sh. "Qiraja {period}", që në çdo faturë të dalë muaji.', en: 'Write {period} in the line text, e.g. "Rent {period}", so each invoice shows its month.' },
     ],
     after: { sq: 'Çdo faturë e bërë del te Faturat; kur kontabilizohet, shkon te Borxhet dhe në librin e shitjeve. Nëse një faturë nuk bëhet dot, arsyeja del te kolona "Tjetra".', en: 'Each invoice made shows under Invoices; once posted it goes to Debts and the sales book. If one cannot be made, the reason shows in the "Next" column.' },

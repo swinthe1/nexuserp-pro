@@ -2401,6 +2401,7 @@ export type Database = {
           pos_lock_minutes: number
           pos_waiter_handover: boolean
           cash_payment_limit: number | null
+          appt_whatsapp: boolean
         }
         Insert: {
           id?: string
@@ -2495,6 +2496,7 @@ export type Database = {
           pos_lock_minutes?: number
           pos_waiter_handover?: boolean
           cash_payment_limit?: number | null
+          appt_whatsapp?: boolean
         }
         Update: {
           id?: string
@@ -2589,6 +2591,7 @@ export type Database = {
           pos_lock_minutes?: number
           pos_waiter_handover?: boolean
           cash_payment_limit?: number | null
+          appt_whatsapp?: boolean
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -8471,6 +8474,7 @@ export type Database = {
           paper_mm: number
           screen: string
           quick_items: string[]
+          max_discount_pct: number
         }
         Insert: {
           id?: string
@@ -8506,6 +8510,7 @@ export type Database = {
           paper_mm?: number
           screen?: string
           quick_items?: string[]
+          max_discount_pct?: number
         }
         Update: {
           id?: string
@@ -8541,6 +8546,7 @@ export type Database = {
           paper_mm?: number
           screen?: string
           quick_items?: string[]
+          max_discount_pct?: number
         }
         Relationships: [
           { foreignKeyName: "pos_registers_company_id_cash_account_id_fkey"; columns: ["company_id", "cash_account_id"]; isOneToOne: false; referencedRelation: "bank_accounts"; referencedColumns: ["company_id", "id"] },
@@ -10579,6 +10585,8 @@ export type Database = {
           created_by: string | null
           updated_at: string
           updated_by: string | null
+          email_customer: boolean
+          email_from: string | null
         }
         Insert: {
           id?: string
@@ -10606,6 +10614,8 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          email_customer?: boolean
+          email_from?: string | null
         }
         Update: {
           id?: string
@@ -10633,6 +10643,8 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          email_customer?: boolean
+          email_from?: string | null
         }
         Relationships: [
           { foreignKeyName: "recurring_invoices_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -19657,7 +19669,13 @@ export type Database = {
         Args: {
           p_company: string
         }
-        Returns: { id: string | null; name: string | null; partner_id: string | null; partner_name: string | null; every_months: number | null; day_of_month: number | null; next_date: string | null; end_date: string | null; post: boolean | null; is_active: boolean | null; currency_code: string | null; total: number | null; made_count: number | null; last_invoice_id: string | null; last_invoice_number: string | null; last_run_at: string | null; last_error: string | null; source_invoice_id: string | null }[]
+        Returns: { id: string | null; name: string | null; partner_id: string | null; partner_name: string | null; every_months: number | null; day_of_month: number | null; next_date: string | null; end_date: string | null; post: boolean | null; is_active: boolean | null; currency_code: string | null; total: number | null; made_count: number | null; last_invoice_id: string | null; last_invoice_number: string | null; last_run_at: string | null; last_error: string | null; source_invoice_id: string | null; email_customer: boolean | null; partner_email: string | null }[]
+      }
+      recurring_to_send: {
+        Args: {
+          p_company: string
+        }
+        Returns: { invoice_id: string | null; number: string | null; invoice_date: string | null; partner_name: string | null; email: string | null; plan_name: string | null }[]
       }
       recurring_update: {
         Args: {

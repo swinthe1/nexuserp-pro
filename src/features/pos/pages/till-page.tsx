@@ -47,6 +47,7 @@ import { phoneKey, quoteLoyalty, type TillCardRow, type TillProgram } from '@/fe
 /* ------------------------------------------------------------------ money helpers (same rounding as the database) */
 const r2 = (v: number) => Math.sign(v) * Math.round(Math.abs(v) * 100 + 1e-7) / 100
 const lineTotal = (l: { qty: number; price: number; discount: number }) => r2(l.qty * l.price * (1 - l.discount / 100))
+/** the cashier's discount limit when the till has none set (an older server) */
 const MAX_DISCOUNT = 10
 const NOTES = [100, 200, 500, 1000, 2000, 5000, 10000]
 const METHODS = [
@@ -191,6 +192,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   const [multiplier, setMultiplier] = React.useState<number | null>(null)
   const [category, setCategory] = React.useState<string>('__all')
   const [customer, setCustomer] = React.useState<string | null>(data.register.default_customer_id)
+  const maxDiscount = num((data.register as { max_discount_pct?: number | null }).max_discount_pct ?? MAX_DISCOUNT)
   const [flash, setFlash] = React.useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
   const [dialog, setDialog] = React.useState<null | 'pay' | 'customer' | 'card' | 'refund' | 'cash' | 'close' | 'line' | 'queue' | 'manager' | 'refund-manager' | 'voucher'>(null)
   const [done, setDone] = React.useState<Done | null>(null)
@@ -1038,7 +1040,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
           onCancel={() => { setPendingVoid(null); setDialog(null); focusSearch() }}
           onApproved={(a) => { setVoidApproval(a); commitVoid(pendingVoid, a.approval); setPendingVoid(null); setDialog(null); focusSearch() }} />
       )}
-      {dialog === 'line' && selectedLine && <LineDialog line={selectedLine} canDiscount={(d) => d <= MAX_DISCOUNT || can('pos.approve')}
+      {dialog === 'line' && selectedLine && <LineDialog line={selectedLine} maxDiscount={maxDiscount} canDiscount={(d) => d <= maxDiscount || can('pos.approve')}
         onClose={(p) => { if (p) updateLine(selectedLine.key, p); setDialog(null); focusSearch() }} onRemove={() => { removeLine(selectedLine.key); setDialog(null); focusSearch() }} />}
       {dialog === 'refund' && <RefundDialog data={data} currency={cur} onClose={() => { setDialog(null); focusSearch() }}
         onRefund={(of, ls, method, cancelReason, reason) => {
@@ -1335,7 +1337,7 @@ function CustomerDialog({ data, value, onClose }: { data: TillData; value: strin
   )
 }
 
-function LineDialog({ line, canDiscount, onClose, onRemove }: { line: Line; canDiscount: (d: number) => boolean; onClose: (p?: Partial<Line>) => void; onRemove: () => void }) {
+function LineDialog({ line, maxDiscount, canDiscount, onClose, onRemove }: { line: Line; maxDiscount: number; canDiscount: (d: number) => boolean; onClose: (p?: Partial<Line>) => void; onRemove: () => void }) {
   const [qty, setQty] = React.useState(String(line.qty))
   const [disc, setDisc] = React.useState(String(line.discount || ''))
   const d = num(disc)
@@ -1349,7 +1351,7 @@ function LineDialog({ line, canDiscount, onClose, onRemove }: { line: Line; canD
           <div className="grid gap-1.5"><Label htmlFor="ln-q">{t('Quantity')}</Label><Input id="ln-q" autoFocus inputMode="decimal" className="h-12 text-right text-lg tabular" value={qty} onChange={(e) => setQty(e.target.value.replace(',', '.'))} onFocus={(e) => e.target.select()} /></div>
           <div className="grid gap-1.5"><Label htmlFor="ln-d">{t('Discount %')}</Label><Input id="ln-d" inputMode="decimal" className="h-12 text-right text-lg tabular" value={disc} onChange={(e) => setDisc(e.target.value.replace(',', '.'))} placeholder="0" /></div>
           <div className="col-span-2 flex flex-wrap gap-1.5">{[5, 10, 15, 20].map((p) => <Button key={p} type="button" variant="outline" size="sm" onClick={() => setDisc(String(p))}>{p}%</Button>)}</div>
-          {!allowed && <p className="col-span-2 text-[13px] text-destructive">{t('Discounts above {pct}% need a manager.', { pct: MAX_DISCOUNT })}</p>}
+          {!allowed && <p className="col-span-2 text-[13px] text-destructive">{t('Discounts above {pct}% need a manager.', { pct: maxDiscount })}</p>}
           <div className="col-span-2 flex justify-between text-[13px]"><span className="text-muted-foreground">{t('Line total, with VAT')}</span><span className="font-semibold tabular">{formatMoney(lineTotal({ qty: num(qty), price: line.price, discount: d }))}</span></div>
           <div className="col-span-2 flex gap-2"><Button type="button" variant="ghost" className="text-destructive" onClick={onRemove}><Trash2 /> {t('Remove')}</Button><Button type="submit" className="ml-auto" disabled={!valid}>{t('Apply')}</Button></div>
         </form>

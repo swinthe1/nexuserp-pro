@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Pause, Play, Repeat, Trash2 } from 'lucide-react'
+import { Mail, Pause, Play, Plus, Repeat, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -13,16 +13,23 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { useTaxCodes } from '@/features/inventory/api'
+import { fetchPrintDoc, fileName, docTitle } from '@/lib/documents/model'
+import { pdfBase64 } from '@/lib/documents/render-pdf'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
-import { formatDate, formatMoney, todayISO } from '@/lib/utils'
-import { t, tn, tServer } from '@/i18n'
+import { formatDate, formatMoney, num, todayISO } from '@/lib/utils'
+import { t, td, tn, tServer } from '@/i18n'
 
 export type RecurringPlan = {
   id: string; name: string; partner_id: string; partner_name: string; every_months: number; day_of_month: number; next_date: string
   end_date: string | null; post: boolean; is_active: boolean; currency_code: string; total: number; made_count: number
   last_invoice_id: string | null; last_invoice_number: string | null; last_run_at: string | null; last_error: string | null; source_invoice_id: string | null
+  email_customer?: boolean; partner_email?: string | null
 }
+type PlanLine = { variant_id?: string | null; description: string; quantity: number; unit_price: number; discount_pct: number; tax_code_id?: string | null
+  account_id?: string | null; cost_center_id?: string | null; uom_id?: string | null }
 const EVERY = [1, 2, 3, 6, 12] as const
 const everyLabel = (n: number) => (n === 1 ? t('Every month') : n === 12 ? t('Every year') : t('Every {n} months', { n }))
 
@@ -42,6 +49,57 @@ function useRecurringChange() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['recurring', companyId] }),
     onError: (e) => toast.error(describeError(e)),
   })
+}
+
+type ToSend = { invoice_id: string; number: string; invoice_date: string; partner_name: string; email: string | null; plan_name: string }
+function useToSend() {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: ['recurring', companyId, 'to-send'],
+    enabled: !!companyId,
+    queryFn: async () => unwrap(await supabase.rpc('recurring_to_send', { p_company: companyId! })) as unknown as ToSend[],
+  })
+}
+
+/** the plans' posted invoices waiting to go to the customers: each one as its PDF, from the company mailbox */
+function ToSendBar({ rows }: { rows: ToSend[] }) {
+  const qc = useQueryClient()
+  const { companyId } = useCompany()
+  const [busy, setBusy] = React.useState(false)
+  const ready = rows.filter((r) => r.email)
+  const missing = rows.length - ready.length
+  const sendAll = async () => {
+    setBusy(true)
+    let sent = 0
+    try {
+      for (const r of ready) {
+        const doc = await fetchPrintDoc('sales_invoice', r.invoice_id)
+        const title = docTitle(doc)
+        const text = t('Hello,\n\nPlease find attached {what} {number} for {amount}.\n\nKind regards,\n{company}', {
+          what: title.toLowerCase(), number: doc.number, amount: formatMoney(doc.total, doc.currency), company: doc.company.name })
+        unwrap(await supabase.rpc('document_email', { p_kind: 'sales_invoice', p_id: r.invoice_id, p_to: r.email!, p_subject: `${title} ${doc.number} · ${doc.company.name}`,
+          p_message: text, p_pdf: await pdfBase64(doc), p_filename: fileName(doc) }))
+        sent++
+      }
+      toast.success(tn(sent, '{n} invoice sent. It goes out within a minute.', '{n} invoices sent. They go out within a minute.'))
+    } catch (e) {
+      toast.error(tServer(describeError(e)))
+    } finally {
+      setBusy(false)
+      void qc.invalidateQueries({ queryKey: ['recurring', companyId, 'to-send'] })
+    }
+  }
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
+      <Mail className="size-4 text-primary" />
+      <div className="min-w-0 flex-1">
+        <div className="font-medium">{tn(rows.length, '{n} invoice is waiting to go to the customer', '{n} invoices are waiting to go to the customers')}</div>
+        <div className="text-xs text-muted-foreground">{rows.slice(0, 4).map((r) => `${r.number} · ${r.partner_name}`).join(', ')}{rows.length > 4 ? ' …' : ''}
+          {missing > 0 && <span className="text-warning"> · {tn(missing, '{n} customer has no email on the card', '{n} customers have no email on the card')}</span>}</div>
+      </div>
+      {ready.length > 0 && <Button size="sm" loading={busy} onClick={() => void sendAll()}><Mail /> {tn(ready.length, 'Send {n}', 'Send {n}')}</Button>}
+    </div>
+  )
 }
 
 /* ------------------------------------------------------------------ from an invoice */
@@ -103,6 +161,7 @@ export function RecurringPage() {
   const navigate = useNavigate()
   const { can } = useCompany()
   const list = useRecurring()
+  const toSend = useToSend()
   const change = useRecurringChange()
   const [edit, setEdit] = React.useState<RecurringPlan | null>(null)
   const writer = can('invoicing.write')
@@ -119,7 +178,8 @@ export function RecurringPage() {
         ? <div><div>{formatDate(r.next_date)}</div>{r.last_error && <div className="max-w-[260px] text-xs text-destructive">{tServer(r.last_error)}</div>}</div>
         : <span className="text-muted-foreground">{t('Paused|recurring')}</span>,
     },
-    { id: 'post', accessorFn: (r) => r.post, header: t('Made as'), meta: { label: t('Made as') }, cell: ({ row: { original: r } }) => (r.post ? t('Posted') : t('Draft')) },
+    { id: 'post', accessorFn: (r) => r.post, header: t('Made as'), meta: { label: t('Made as') },
+      cell: ({ row: { original: r } }) => <>{r.post ? t('Posted') : t('Draft')}{r.email_customer && <span className="ml-1.5 inline-flex items-center gap-1 text-xs text-muted-foreground"><Mail className="size-3" /> {t('by email')}</span>}</> },
     {
       id: 'last', accessorFn: (r) => r.last_invoice_number ?? '', header: t('Last one'), meta: { label: t('Last one') },
       cell: ({ row: { original: r } }) => r.last_invoice_id
@@ -144,6 +204,7 @@ export function RecurringPage() {
     <>
       <PageHeader title={t('Recurring invoices')}
         description={t('Rent, subscriptions and maintenance: made by themselves every morning on their day. To start one, open an invoice and choose "Repeat".')} />
+      {writer && (toSend.data?.length ?? 0) > 0 && <ToSendBar rows={toSend.data!} />}
       <DataTable tableKey="sales.recurring" columns={columns} data={list.data} isLoading={list.isLoading} error={list.error} getRowId={(r) => r.id}
         searchPlaceholder={t('Name or customer')} exportName="recurring-invoices"
         onRowClick={(r) => r.source_invoice_id && navigate(`/sales/invoices/${r.source_invoice_id}`)}
@@ -162,12 +223,23 @@ function EditPlan({ plan, onClose }: { plan: RecurringPlan; onClose: () => void 
   const [next, setNext] = React.useState(plan.next_date)
   const [end, setEnd] = React.useState(plan.end_date ?? '')
   const [post, setPost] = React.useState(plan.post)
+  const [email, setEmail] = React.useState(!!plan.email_customer)
   const [confirmDel, setConfirmDel] = React.useState(false)
-  const save = () => change.mutate({ id: plan.id, patch: { name, every_months: Number(every), day_of_month: Number(day), next_date: next, end_date: end, post } },
+  const taxes = useTaxCodes()
+  const saved = useQuery({ queryKey: ['recurring', plan.id, 'lines'], staleTime: 0,
+    queryFn: async () => (unwrap(await supabase.from('recurring_invoices').select('lines').eq('id', plan.id).single()) as { lines: PlanLine[] }).lines })
+  const [lines, setLines] = React.useState<PlanLine[] | null>(null)
+  React.useEffect(() => { if (saved.data && !lines) setLines(saved.data.map((l) => ({ ...l, quantity: num(l.quantity), unit_price: num(l.unit_price), discount_pct: num(l.discount_pct) }))) }, [saved.data, lines])
+  const setLine = (i: number, p: Partial<PlanLine>) => setLines((ls) => ls!.map((l, j) => (j === i ? { ...l, ...p } : l)))
+  const rateOf = (id?: string | null) => num(taxes.data?.find((x) => x.id === id)?.rate)
+  const total = (lines ?? []).reduce((s, l) => { const sub = Math.round(num(l.quantity) * num(l.unit_price) * (1 - num(l.discount_pct) / 100) * 100) / 100; return s + sub + Math.round(sub * rateOf(l.tax_code_id)) / 100 }, 0)
+  const linesOk = !!lines && lines.length > 0 && lines.every((l) => l.description?.trim() && num(l.quantity) > 0 && num(l.unit_price) >= 0 && num(l.discount_pct) >= 0 && num(l.discount_pct) <= 100)
+  const save = () => change.mutate({ id: plan.id, patch: { name, every_months: Number(every), day_of_month: Number(day), next_date: next, end_date: end, post, email_customer: email, ...(lines ? { lines } : {}) } },
     { onSuccess: () => { toast.success(t('Saved')); onClose() } })
+  const salesTaxes = (taxes.data ?? []).filter((x) => x.scope !== 'purchase' && x.is_active)
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto">
         <DialogHeader><DialogTitle>{plan.name}</DialogTitle><DialogDescription>{plan.partner_name} · {tn(plan.made_count, '{n} invoice made', '{n} invoices made')}</DialogDescription></DialogHeader>
         <div className="grid gap-3">
           <div className="grid gap-1.5"><Label htmlFor="en">{t('Name')}</Label><Input id="en" value={name} onChange={(e) => setName(e.target.value)} /></div>
@@ -180,13 +252,47 @@ function EditPlan({ plan, onClose }: { plan: RecurringPlan; onClose: () => void 
             <div className="grid gap-1.5"><Label htmlFor="ee">{t('Until (optional)')}</Label><Input id="ee" type="date" value={end} onChange={(e) => setEnd(e.target.value)} /></div>
           </div>
           <label className="flex items-center justify-between gap-3 text-sm"><span>{t('Post them straight away')}</span><Switch checked={post} onCheckedChange={setPost} /></label>
-          <p className="text-xs text-muted-foreground">{t('The lines come from the invoice it started from. To change them, make a new invoice and repeat it, then remove this one.')}</p>
+          <label className="flex items-start justify-between gap-3 text-sm">
+            <span><span className="block">{t('Send them to the customer by email')}</span>
+              <span className="text-xs text-muted-foreground">{plan.partner_email
+                ? t('Once posted, each one waits here and goes as a PDF to {email} with one click.', { email: plan.partner_email })
+                : t('The customer has no email on the card yet: add it there first.')}</span></span>
+            <Switch checked={email} onCheckedChange={setEmail} /></label>
+          <div className="rounded-md border">
+            <div className="flex items-center justify-between px-3 py-2"><span className="text-sm font-medium">{t('Lines')}</span>
+              <Button type="button" size="xs" variant="outline" disabled={!lines} onClick={() => setLines((ls) => [...(ls ?? []), { description: '', quantity: 1, unit_price: 0, discount_pct: 0, tax_code_id: salesTaxes.find((x) => num(x.rate) > 0)?.id ?? null }])}><Plus /> {t('Add line')}</Button></div>
+            <div className="overflow-x-auto">
+              <Table className="min-w-[620px]">
+                <TableHeader><TableRow className="hover:bg-transparent">
+                  <TableHead>{t('Text on the invoice')}</TableHead><TableHead className="w-20 text-right">{t('Qty')}</TableHead>
+                  <TableHead className="w-28 text-right">{t('Unit price (without VAT)')}</TableHead><TableHead className="w-20 text-right">{t('Disc. %')}</TableHead>
+                  <TableHead className="w-32">{t('VAT')}</TableHead><TableHead className="w-8" />
+                </TableRow></TableHeader>
+                <TableBody>
+                  {(lines ?? []).map((l, i) => (
+                    <TableRow key={i} className="hover:bg-transparent">
+                      <TableCell><Input className="h-8 text-[13px]" value={l.description ?? ''} aria-label={t('Description, line {n}', { n: i + 1 })} onChange={(e) => setLine(i, { description: e.target.value })} /></TableCell>
+                      <TableCell><Input className="h-8 text-right tabular" inputMode="decimal" value={String(l.quantity)} aria-label={t('Quantity, line {n}', { n: i + 1 })} onChange={(e) => setLine(i, { quantity: e.target.value.replace(',', '.') as unknown as number })} /></TableCell>
+                      <TableCell><Input className="h-8 text-right tabular" inputMode="decimal" value={String(l.unit_price)} aria-label={t('Unit price, line {n}', { n: i + 1 })} onChange={(e) => setLine(i, { unit_price: e.target.value.replace(',', '.') as unknown as number })} /></TableCell>
+                      <TableCell><Input className="h-8 text-right tabular" inputMode="decimal" value={String(l.discount_pct)} aria-label={t('Discount, line {n}', { n: i + 1 })} onChange={(e) => setLine(i, { discount_pct: e.target.value.replace(',', '.') as unknown as number })} /></TableCell>
+                      <TableCell><Select value={l.tax_code_id ?? 'none'} onValueChange={(v) => setLine(i, { tax_code_id: v === 'none' ? null : v })}>
+                        <SelectTrigger className="h-8" aria-label={t('VAT, line {n}', { n: i + 1 })}><SelectValue /></SelectTrigger>
+                        <SelectContent><SelectItem value="none">{t('No VAT')}</SelectItem>{salesTaxes.map((x) => <SelectItem key={x.id} value={x.id}>{td(x.name)}</SelectItem>)}</SelectContent></Select></TableCell>
+                      <TableCell><Button type="button" variant="ghost" size="icon-sm" disabled={(lines ?? []).length < 2} aria-label={t('Remove line {n}', { n: i + 1 })} onClick={() => setLines((ls) => ls!.filter((_, j) => j !== i))}><Trash2 /></Button></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="flex justify-between border-t px-3 py-2 text-[13px]"><span className="text-muted-foreground">{t('Write {period} in a text to get the month.')}</span>
+              <span>{t('Each (with VAT)')}: <span className="font-semibold tabular">{formatMoney(total)} {plan.currency_code}</span></span></div>
+          </div>
         </div>
         <DialogFooter className="gap-2 sm:justify-between">
           {confirmDel
             ? <Button variant="destructive" loading={change.isPending} onClick={() => change.mutate({ id: plan.id, patch: { delete: true } }, { onSuccess: () => { toast.success(t('Removed')); onClose() } })}>{t('Remove it; the invoices stay')}</Button>
             : <Button variant="ghost" className="text-destructive" onClick={() => setConfirmDel(true)}><Trash2 /> {t('Remove')}</Button>}
-          <div className="flex gap-2"><Button variant="ghost" onClick={onClose}>{t('Cancel')}</Button><Button loading={change.isPending} onClick={save}>{t('Save')}</Button></div>
+          <div className="flex gap-2"><Button variant="ghost" onClick={onClose}>{t('Cancel')}</Button><Button loading={change.isPending} disabled={!linesOk} onClick={save}>{t('Save')}</Button></div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

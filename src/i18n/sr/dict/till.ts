@@ -1168,4 +1168,6 @@ export default {
   'Losses and expiry|menu': 'Gubici i rokovi',
   'Lot tracing|menu': 'Praćenje lota',
   'Menu': 'Meni',
+  'Largest discount without a manager (%)': 'Najveći popust bez menadžera (%)',
+  'Above it, a manager approves at the till.': 'Iznad toga popust odobrava menadžer na kasi.',
 } satisfies Dict
