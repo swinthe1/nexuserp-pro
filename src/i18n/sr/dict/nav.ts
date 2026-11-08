@@ -324,4 +324,13 @@ export default {
   "Tab options": "Opcije kartica",
   "Work tabs above the page": "Radne kartice iznad stranice",
   "Work without tabs": "Radi bez kartica",
+  "Add a shortcut": "Dodaj prečicu",
+  "Change the shortcuts": "Izmeni prečice",
+  "Find a page or a document…": "Nađi stranicu ili dokument…",
+  "In the top bar": "U gornjoj traci",
+  "Nothing yet: pick on the left.": "Još ništa: izaberite levo.",
+  "Pick what you use most: a page or a new document. Up to {n}, in the order you want.": "Izaberite ono što najviše koristite: stranicu ili novi dokument. Do {n}, redosledom koji želite.",
+  "Shortcuts": "Prečice",
+  "Shortcuts in the top bar": "Prečice u gornjoj traci",
+  "Remove {name}": "Ukloni {name}",
 } satisfies Dict

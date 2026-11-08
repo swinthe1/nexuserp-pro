@@ -78,6 +78,21 @@ export function useDashboardCards() {
   return { cards, set, loaded: prefs.isSuccess }
 }
 
+/** The shortcuts a person put in the top bar for this company, in their order (links of pages or of "+"). */
+export const MAX_SHORTCUTS = 10
+export function useTopShortcuts() {
+  const { companyId } = useCompany()
+  const prefs = useMyPrefs()
+  const save = useSavePref()
+  const all = (prefs.data?.top_shortcuts ?? {}) as Record<string, string[]>
+  const list = companyId ? all[companyId] ?? [] : []
+  const set = React.useCallback((next: string[]) => {
+    if (!companyId) return
+    save.mutate({ key: 'top_shortcuts', value: { ...all, [companyId]: next.slice(0, MAX_SHORTCUTS) } })
+  }, [all, companyId, save])
+  return { list, set, loaded: prefs.isSuccess }
+}
+
 /** Parts of the menu the company's admin switched off for everyone. */
 export function useHiddenSections() {
   const { companyId } = useCompany()

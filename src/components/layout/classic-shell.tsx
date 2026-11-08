@@ -12,7 +12,7 @@ import { NewMenu } from '@/components/layout/new-menu'
 import { NotificationsButton } from '@/components/layout/notifications'
 import { ChatButton } from '@/features/chat/chat-button'
 import { SidebarNav, useActiveHref, useMenuSections } from '@/components/layout/sidebar'
-import { useFavourites } from '@/components/layout/nav-prefs'
+import { useFavourites, useTopShortcuts } from '@/components/layout/nav-prefs'
 import { moduleLook } from '@/app/modules'
 import { TillLockButton } from '@/components/layout/till-lock'
 import { UserMenu } from '@/components/layout/user-menu'
@@ -74,12 +74,16 @@ const USUAL = ['/pos', '/sales/invoices', '/procurement/bills', '/inventory/stoc
 function useShortcuts() {
   const sections = useMenuSections()
   const { favourites } = useFavourites()
+  const mine = useTopShortcuts().list
   return React.useMemo(() => {
     const all = sections.flatMap((s) => s.items.map((i) => ({ ...i, section: s.label })))
     const by = new Map(all.map((i) => [i.href, i]))
+    // the person's own shortcuts first (the pages among them), then the starred pages, then the usual ones
+    const own = mine.map((h) => by.get(h)).filter((i): i is (typeof all)[number] => !!i && i.href !== '/')
+    if (own.length) return own.slice(0, 8)
     const pick = (favourites.length ? favourites : USUAL).map((h) => by.get(h)).filter((i): i is (typeof all)[number] => !!i && i.href !== '/')
     return pick.slice(0, 6)
-  }, [sections, favourites])
+  }, [sections, favourites, mine])
 }
 
 function MenuBar() {

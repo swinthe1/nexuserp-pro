@@ -1345,4 +1345,12 @@ export default {
   "Tab options": "Opsionet e skedave",
   "Work tabs above the page": "Skedat e punës lart",
   "Work without tabs": "Puno pa skeda",
+  "Add a shortcut": "Shto shkurtesë",
+  "Change the shortcuts": "Ndrysho shkurtesat",
+  "Find a page or a document…": "Gjej një faqe ose dokument…",
+  "In the top bar": "Në shiritin lart",
+  "Nothing yet: pick on the left.": "Ende asgjë: zgjidh në të majtë.",
+  "Pick what you use most: a page or a new document. Up to {n}, in the order you want.": "Zgjidh çka përdor më shumë: një faqe ose një dokument të ri. Deri në {n}, në renditjen që do ti.",
+  "Shortcuts": "Shkurtesat",
+  "Shortcuts in the top bar": "Shkurtesat në shiritin lart",
 } satisfies Dict

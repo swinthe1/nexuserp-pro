@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { msg, t } from '@/i18n'
 
-type Choice = { label: string; hint: string; href: string; icon: LucideIcon; perm: string; page?: string }
+export type Choice = { label: string; hint: string; href: string; icon: LucideIcon; perm: string; page?: string }
 
 /*
  * "+ New": what happened, in everyday words, straight to the right form.
@@ -32,18 +32,23 @@ const CHOICES = (photo: boolean): Choice[] => [
   { label: msg('A new item'), hint: msg('Something you sell or keep in stock'), href: '/inventory/products/new', icon: Boxes, perm: 'inventory.write', page: '/inventory/products' },
 ]
 
-/** trigger: the classic toolbar shows its own big "E re" button */
-export function NewMenu({ trigger }: { trigger?: React.ReactNode } = {}) {
+/** what this person may start from "+" (also offered as shortcuts) */
+export function useNewChoices() {
   const { can, pageAllowed, hasFeature } = useCompany()
   const hidden = useHiddenSections()
-  const navigate = useNavigate()
-  const items = CHOICES(hasFeature('ai_reads')).filter((c) => {
+  return CHOICES(hasFeature('ai_reads')).filter((c) => {
     const page = c.page ?? c.href.split('?')[0]!
     // the part of the menu it belongs to, when the company switched that part off
     const sec = NAV.find((s) => s.items.some((i) => i.href.split('?')[0] === page))
     const part = sec?.items.find((i) => i.href.split('?')[0] === page)?.part
     return can(c.perm) && pageAllowed(page) && !(sec && hidden.includes(sec.label)) && !(part && hidden.includes(part)) && !hidden.includes(page)
   })
+}
+
+/** trigger: the classic toolbar shows its own big "E re" button */
+export function NewMenu({ trigger }: { trigger?: React.ReactNode } = {}) {
+  const navigate = useNavigate()
+  const items = useNewChoices()
   if (!items.length) return null
   return (
     <DropdownMenu>

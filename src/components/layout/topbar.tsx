@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { AssistantButton } from '@/features/assistant/assistant'
 import { TillLockButton } from '@/components/layout/till-lock'
 import { CalculatorButton } from '@/components/layout/calculator'
+import { ShortcutBar } from '@/components/layout/shortcuts'
 import { t } from '@/i18n'
 
 export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
@@ -23,7 +24,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
       <BackButton />
       <button
         onClick={() => open()}
-        className="flex h-9 w-full min-w-0 max-w-md items-center gap-2 rounded-full border border-transparent bg-muted px-3.5 text-[13px] text-muted-foreground transition-colors hover:border-primary/30 hover:bg-card hover:text-foreground"
+        className="flex h-9 min-w-[11rem] flex-[0_1_28rem] items-center gap-2 rounded-full border border-transparent bg-muted px-3.5 text-[13px] text-muted-foreground transition-colors hover:border-primary/30 hover:bg-card hover:text-foreground"
       >
         <Search className="size-4" />
         <span className="flex-1 truncate text-left">{t('Search or jump to…')}</span>
@@ -31,7 +32,9 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
       </button>
       {/* right next to the search: find something, or make something new */}
       <div className="max-md:hidden"><NewMenu /></div>
-      <div className="ml-auto flex items-center gap-1">
+      {/* the person's own shortcuts: any page or new document, in their order */}
+      <div className="min-w-0 flex-1"><ShortcutBar /></div>
+      <div className="ml-auto flex shrink-0 items-center gap-1">
         <LastExportButton />
         <TillLockButton />
         <div className="max-sm:hidden"><CalculatorButton /></div>
