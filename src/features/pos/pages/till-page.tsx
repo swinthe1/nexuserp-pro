@@ -968,7 +968,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
             <div className="flex flex-wrap items-center gap-1.5 border-b bg-warning/10 px-3 py-2">
               <span className="text-xs font-medium text-muted-foreground">{t('On hold|till')}</span>
               {held.map((h) => (
-                <span key={h.id} className="inline-flex items-center rounded-md border bg-card text-xs shadow-xs">
+                <span key={h.id} className="inline-flex items-center rounded-md border bg-card text-xs shadow-sm">
                   <button type="button" className="px-2 py-1.5 text-left hover:bg-muted/60" onClick={() => recallSale(h.id)}
                     title={t('Take this sale back')}>
                     <span className="font-medium tabular">{formatDateWith(new Date(h.at), { hour: '2-digit', minute: '2-digit' })}</span>
