@@ -30,7 +30,9 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import type { Tables } from '@/lib/database.types'
-import { describeError } from '@/lib/errors'
+import { describeError, unwrap } from '@/lib/errors'
+import { supabase } from '@/lib/supabase'
+import { useMutation } from '@tanstack/react-query'
 import { formatDate, formatMoney, formatQty, humanize, num } from '@/lib/utils'
 import {
   useAttributes, useCategories, useCostHistory, usePriceChanges, useProduct, useProductStockLevels, useTaxCodes, useUnits, useUpdateProduct,
@@ -314,10 +316,14 @@ function EditProductSheet({ product }: { product: ProductDetail }) {
   const categories = useCategories()
   const taxes = useTaxCodes()
   const update = useUpdateProduct(product.id)
+  // the price is typed with VAT, as on the shelf; a change goes through a levelling (NIV-) with the old and the new price
+  const rateOf = (id: string | null) => num((taxes.data ?? []).find((x) => x.id === id)?.rate)
+  const grossNow = Math.round(num(product.sales_price) * (1 + rateOf(product.sales_tax_code_id) / 100) * 100) / 100
+  const level = useMutation({ mutationFn: async (a: { variant: string; price: number }) => unwrap(await supabase.rpc('price_level_quick', { p_variant: a.variant, p_price: a.price })) as unknown as { number: string } })
   const form = useForm<z.infer<typeof editSchema>>({
     resolver: zodResolver(editSchema),
     values: {
-      name: product.name, description: product.description ?? '', category_id: product.category_id, sales_price: product.sales_price,
+      name: product.name, description: product.description ?? '', category_id: product.category_id, sales_price: grossNow,
       sales_tax_code_id: product.sales_tax_code_id, purchase_tax_code_id: product.purchase_tax_code_id, is_sellable: product.is_sellable,
       is_purchasable: product.is_purchasable, is_active: product.is_active, brand: product.brand ?? '', manufacturer: (product as { manufacturer?: string | null }).manufacturer ?? '', hs_code: product.hs_code ?? '',
       weight_kg: product.weight_kg, volume_m3: product.volume_m3, max_temperature: product.max_temperature,
@@ -327,12 +333,22 @@ function EditProductSheet({ product }: { product: ProductDetail }) {
   })
   const onSubmit = form.handleSubmit(async (v) => {
     // the PLU goes only when it changed: a server not yet updated has no such column, and the rest still saves
-    const { scale_plu, min_shelf_days, ...rest } = v
+    const { scale_plu, min_shelf_days, sales_price: gross, ...rest } = v
+    const net = Math.round((num(gross) / (1 + rateOf(v.sales_tax_code_id) / 100)) * 1e6) / 1e6
+    const priceChanged = Math.abs(num(gross) - grossNow) >= 0.005 || (v.sales_tax_code_id !== product.sales_tax_code_id && Math.abs(net - num(product.sales_price)) >= 0.0001)
     const plu = scale_plu || null
     const pluChanged = plu !== ((product as { scale_plu?: string | null }).scale_plu ?? null)
     const shelfChanged = (min_shelf_days ?? null) !== ((product as { min_shelf_days?: number | null }).min_shelf_days ?? null)
     await update.mutateAsync({ ...rest, description: v.description || null, brand: v.brand || null, manufacturer: v.manufacturer || null, hs_code: v.hs_code || null, ...(pluChanged ? { scale_plu: plu } : {}),
       ...(shelfChanged ? { min_shelf_days: min_shelf_days ?? null } : {}) })
+    if (priceChanged) {
+      // the product's own price: a variant without a price of its own carries it
+      const variant = (product.product_variants ?? []).find((x) => x.sales_price_override == null && !x.deleted_at) ?? product.product_variants?.[0]
+      if (variant) {
+        const r = await level.mutateAsync({ variant: variant.id, price: net })
+        toast.success(t('New price saved with levelling {number}', { number: r.number }))
+      }
+    }
     setOpen(false)
   })
   return (
@@ -351,7 +367,8 @@ function EditProductSheet({ product }: { product: ProductDetail }) {
                 </FormControl></FormItem>
               )} />
               <div className="grid grid-cols-2 gap-3">
-                <FormField control={form.control} name="sales_price" render={({ field }) => (<FormItem><FormLabel>{t('Sales price')}</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="sales_price" render={({ field }) => (<FormItem><FormLabel>{t('Sales price with VAT')}</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                  <FormDescription>{t('A new price is saved with a levelling document.')}</FormDescription><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="sales_tax_code_id" render={({ field }) => (
                   <FormItem><FormLabel>{t('Sales VAT')}</FormLabel>
                     <Select value={field.value ?? ''} onValueChange={field.onChange}><FormControl><SelectTrigger><SelectValue placeholder={t('VAT')} /></SelectTrigger></FormControl>

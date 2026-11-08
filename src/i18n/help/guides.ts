@@ -168,6 +168,7 @@ const BASE: Record<string, Guide> = {
       { sq: 'Krijo një nivelim dhe shto artikujt me çmimin e ri.', en: 'Create a levelling and add the items with their new price.' },
       { sq: 'Kontabilizoje: çmimet e reja vlejnë nga ai moment, edhe në arkë.', en: 'Post it: the new prices apply from then on, at the till too.' },
       { sq: 'Printo etiketat e reja për raftet.', en: 'Print the new shelf labels.' },
+      { sq: 'Me "Vetëm në këtë njësi" çmimet e reja vlejnë vetëm në arkat e njësisë së zgjedhur (lista e saj e çmimeve); gjetiu çmimi mbetet. Edhe çmimi i ri te fatura e blerjes ose te kartela e artikullit bëhet vetë nivelim.', en: 'With "Only in this unit" the new prices hold only at the chosen unit’s tills (its own price list); elsewhere the price stays. A new price on the purchase invoice or on the item card is a levelling too, made by itself.' },
     ],
   },
 
@@ -474,6 +475,7 @@ const BASE: Record<string, Guide> = {
       { sq: 'Te "Variantet dhe barkodet" shto barkodin e prodhuesit ose "Krijo kod të brendshëm" për mallin pa barkod.', en: 'Under "Variants & barcodes" add the maker\'s barcode or "Generate in-store code" for goods without one.' },
       { sq: 'Te "Pikat e riporositjes" vendos kur bie poshtë sasia dhe deri sa të porositet; Rimbushja i propozon vetë.', en: 'Under "Reorder points" set when the quantity is too low and how much to order up to; Replenishment suggests them.' },
       { sq: 'Te "Kartela e artikullit" sheh çdo hyrje dhe dalje me dokumentin e saj.', en: 'Under "Item card" see every in and out with its document.' },
+      { sq: 'Te "Ndrysho" çmimi shkruhet me TVSH, si në raft. Kur ndryshon, ruhet me një dokument nivelimi (NIV-) me çmimin e vjetër dhe të ri.', en: 'Under "Edit" the price is typed with VAT, as on the shelf. A change is saved with a levelling document (NIV-) with the old and the new price.' },
     ],
     mistakes: [
       { sq: 'Njësia, lloji dhe gjurmimi me lot nuk ndryshohen pasi produkti ka lëvizje; krijo produkt të ri nëse duhet.', en: 'Unit, type and lot tracking cannot change once the product has movements; make a new product if needed.' },

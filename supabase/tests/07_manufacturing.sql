@@ -126,7 +126,7 @@ select public.produce(:'wo_r', 10, 'R-001', current_date + 180) as out_r \gset
 select id as lot_r from public.lots where lot_number = 'R-001' and variant_id = :'roast' \gset
 select t.ok((select (status, quantity_produced, output_value) = ('completed', 10.0000, 9000.0000) from public.work_orders where id = :'wo_r'),
             'the last output carries all the cost: 9,000 for 10 kg');
-select t.ok((select avg_cost from public.item_costs where variant_id = :'roast') = 900, 'roasted coffee enters stock at 900/kg');
+select t.ok((select avg_cost from t.item_costs where variant_id = :'roast') = 900, 'roasted coffee enters stock at 900/kg');
 select t.ok(pg_temp.bal(:'co', '331') = 0, 'WIP is empty once the output is booked');
 select t.ok((select (status) = 'done' from public.work_order_operations where id = :'op_r'), 'the operation is finished with the order');
 select t.ok((select quantity from public.lot_genealogy where parent_lot_id = :'g1' and child_lot_id = :'lot_r') = 12, 'genealogy: G-1 went into R-001');
@@ -176,7 +176,7 @@ select public.close_work_order(:'wo3') as cl3 \gset
 select t.ok(((:'cl3'::jsonb)->>'variance')::numeric > 0 and pg_temp.bal(:'co', '6012') = ((:'cl3'::jsonb)->>'variance')::numeric,
             'closing books what output did not absorb to production variance');
 select t.ok(pg_temp.bal(:'co', '331') = 0, 'WIP is clean after closing');
-select t.ok(pg_temp.bal(:'co', '311') = (select round(sum(total_value), 2) from public.item_costs where company_id = :'co'),
+select t.ok(pg_temp.bal(:'co', '311') = (select round(sum(total_value), 2) from t.item_costs where company_id = :'co'),
             'GL inventory equals the stock valuation after production');
 select t.ok((select count(*) from public.journal_entries where company_id = :'co' and source_doc_type = 'work_order' and total_debit <> total_credit) = 0,
             'every production entry balances');

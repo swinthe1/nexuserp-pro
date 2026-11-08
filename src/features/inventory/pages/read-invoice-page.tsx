@@ -137,7 +137,13 @@ function ReadReview({ id, onDone }: { id: string; onDone: () => void }) {
       <div className="flex flex-wrap items-center justify-end gap-3">
         {missing > 0 && <span className="text-[13px] text-warning">{tn(missing, 'Choose the item for {n} line, or untick it', 'Choose the item for {n} lines, or untick them')}</span>}
         <Button variant="ghost" onClick={onDone}>{t('Back')}</Button>
-        <Button size="lg" loading={make.isPending} disabled={!wh || missing > 0 || !lines.some((l) => l.use) || !!q.data.receipt_id} onClick={() => make.mutate()}>{t('Make the draft receipt')}</Button>
+        <Button size="lg" variant="outline" loading={make.isPending} disabled={!wh || missing > 0 || !lines.some((l) => l.use) || !!q.data.receipt_id} onClick={() => make.mutate()}>{t('Only the goods, the invoice later')}</Button>
+        {/* the usual way: the supplier's invoice itself, filled in from the photo; posting it also brings the goods in */}
+        <Button size="lg" disabled={!wh || missing > 0 || !lines.some((l) => l.use) || !!q.data.receipt_id} onClick={() => navigate('/procurement/invoice/new', { state: { fromPhoto: {
+          vendor_id: vendor, number, date, warehouse_id: wh,
+          lines: lines.filter((l) => l.use && l.variant_id).map((l) => ({ variant_id: l.variant_id!, sku: l.variant_sku ?? l.code ?? '', name: l.variant_name ?? l.name, qty: num(l.quantity),
+            price: num(l.unit_price), discount: num(l.discount_pct), vat_rate: l.vat_rate ?? null })),
+        } } })}>{t('Make the purchase invoice')}</Button>
       </div>
     </div>
   )

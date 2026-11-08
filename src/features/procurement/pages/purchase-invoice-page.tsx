@@ -3,7 +3,7 @@ import { useActiveUnit, useDefaultUnit } from '@/app/active-unit'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CheckCheck, ChevronDown, ChevronUp, Columns3, FileSpreadsheet, PackagePlus, Percent, Save, ScanBarcode, Sparkles, Trash2 } from 'lucide-react'
 import * as React from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useGuard } from '@/components/guard'
 import { useCompany } from '@/app/company-provider'
@@ -310,6 +310,17 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
     setRows((rs) => [...rs, ...ls.map((l): Row => ({ key: newKey(), variant_id: l.variant_id, sku: l.sku, name: l.name, qty: String(l.qty), price: String(l.price),
       d1: l.discount ? String(l.discount) : '', d2: '', tax: taxFor(l.vat_rate), gross: '', lot: '', expiry: '', pack: null, pq: null }))])
   }
+  // an invoice read from a photo: its supplier, number, date and lines come filled in (once the VAT codes are known)
+  const location = useLocation()
+  const fromPhoto = React.useRef(!doc ? (location.state as { fromPhoto?: { vendor_id: string | null; number: string; date: string; warehouse_id: string | null; lines: ImportedLine[] } } | null)?.fromPhoto : undefined)
+  React.useEffect(() => {
+    const f = fromPhoto.current
+    if (!f || !taxes.data) return
+    fromPhoto.current = undefined
+    setH((x) => ({ ...x, vendor_id: f.vendor_id ?? x.vendor_id, vendor_invoice_number: f.number || x.vendor_invoice_number, bill_date: f.date || x.bill_date, warehouse_id: f.warehouse_id ?? x.warehouse_id }))
+    addImported(f.lines)
+    navigate('.', { replace: true, state: null })
+  }, [taxes.data]) // eslint-disable-line react-hooks/exhaustive-deps
   const upd = (key: string, patch: Partial<Row>) => setRows((rs) => rs.map((r) => r.key === key ? { ...r, ...patch } : r))
   // keyboard: Enter goes to the next box of the row; at the end of the row back to the code box
   const next = (e: React.KeyboardEvent<HTMLInputElement>) => {

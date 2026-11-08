@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { t, td, tn } from '@/i18n'
@@ -31,7 +32,7 @@ import { cn, formatDate, formatMoney, formatQty, num, todayISO } from '@/lib/uti
 import { useCategories, usePriceRules, usePriceSuggestions, useWarehouses } from '../api'
 import { PriceSuggestions } from './prices-page'
 
-type Level = { id: string; number: string | null; status: string; level_date: string; warehouse_id: string | null; notes: string | null; value_change: number; posted_at: string | null
+type Level = { id: string; number: string | null; status: string; level_date: string; warehouse_id: string | null; only_here?: boolean; notes: string | null; value_change: number; posted_at: string | null
   source?: 'manual' | 'expiry' | 'expiry_end'; valid_until?: string | null
   warehouse: { name: string } | null; lines: { id: string; variant_id: string; line_no: number; old_price: number | null; new_price: number; quantity: number | null; value_change: number | null }[] }
 type Item = { variant_id: string; sku: string; name: string; price: number; vat_rate: number; cost: number; category: string | null; stock: number }
@@ -110,6 +111,8 @@ function Editor({ doc }: { doc?: Level }) {
   const [date, setDate] = React.useState(doc?.level_date ?? todayISO())
   const [wh, setWh] = React.useState<string>(doc?.warehouse_id ?? 'all')
   const [notes, setNotes] = React.useState(doc?.notes ?? '')
+  /** the new prices only for this unit's tills (its own price list), not for the whole company */
+  const [onlyHere, setOnlyHere] = React.useState(!!doc?.only_here)
   const [rows, setRows] = React.useState<Row[]>([])
   const [pct, setPct] = React.useState('')
   const [fixed, setFixed] = React.useState('')
@@ -187,7 +190,7 @@ function Editor({ doc }: { doc?: Level }) {
   const save = useMutation({
     mutationFn: async () => unwrap(await supabase.rpc('save_document', {
       p_table: 'price_levels',
-      p_header: { id: doc?.id, company_id: companyId, level_date: date, warehouse_id: wh === 'all' ? null : wh, notes: notes || null },
+      p_header: { id: doc?.id, company_id: companyId, level_date: date, warehouse_id: wh === 'all' ? null : wh, notes: notes || null, only_here: wh !== 'all' && onlyHere },
       p_children: { price_level_lines: calc.map((c, i) => ({ line_no: i + 1, variant_id: c.r.variant_id, new_price: c.newNet })) },
     })) as string,
     onError: (e) => toast.error(describeError(e)),
@@ -258,7 +261,10 @@ function Editor({ doc }: { doc?: Level }) {
           <Select value={wh} onValueChange={setWh} disabled={!editable || rows.length > 0}>
             <SelectTrigger aria-label={t('Stock of')}><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="all">{t('All warehouses')}</SelectItem>{(warehouses.data ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{td(w.name)}</SelectItem>)}</SelectContent>
-          </Select></div>
+          </Select>
+          {wh !== 'all' && <label className="mt-1 flex items-center gap-2 text-[13px]"><Switch checked={onlyHere} disabled={!editable} onCheckedChange={setOnlyHere} />
+            {t('Only in this unit')}</label>}
+          {wh !== 'all' && onlyHere && <p className="text-xs text-muted-foreground">{t('The new prices go to this unit’s tills only; elsewhere the price stays.')}</p>}</div>
         <div className="grid gap-1.5"><Label htmlFor="lv-notes">{t('Notes')}</Label><Textarea id="lv-notes" rows={1} disabled={!editable} value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
       </div>
 

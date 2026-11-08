@@ -170,7 +170,7 @@ update public.vendor_bill_lines set unit_price = 910 where bill_id = :'b1' and v
 select t.ok(public.match_vendor_bill(:'b1') ->> 'status' = 'matched', 'within the 2% price tolerance');
 select public.post_vendor_bill(:'b1') as post1 \gset
 select t.ok((:'post1'::jsonb ->> 'capitalized_variance')::numeric = 240, 'price difference (24 × 10) added to stock value');
-select t.ok((select avg_cost from public.item_costs where variant_id = :'cof') = round((24 * 910 + 150 * 800)::numeric / 174, 6),
+select t.ok((select avg_cost from t.item_costs where variant_id = :'cof') = round((24 * 910 + 150 * 800)::numeric / 174, 6),
             'average cost reflects the billed price');
 select t.ok((select (status, billing_status) = ('closed', 'billed') from public.purchase_orders where id = :'po1'), 'received + billed order closes');
 select t.ok((select qty_billed from public.purchase_order_lines where purchase_order_id = :'po1' and variant_id = :'cof') = 24, 'billed quantity tracked');

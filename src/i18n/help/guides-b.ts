@@ -182,6 +182,7 @@ export const GUIDES_B: Record<string, Guide> = {
       { sq: 'Skano çdo artikull; për artikujt me lot skano etiketën e lotit ose shkruaj numrin dhe datën e skadimit.', en: 'Scan each item; for items with lots scan the lot label or type the number and expiry date.' },
       { sq: 'Kliko një rresht për të shkruar sasinë me dorë; rreshti bëhet i gjelbër kur përputhet.', en: 'Click a line to type the quantity; the line turns green when it matches.' },
       { sq: 'Kliko "Prano … njësi" dhe konfirmo.', en: 'Click "Receive … units" and confirm.' },
+      { sq: 'Kamion pa porosi: "Kamion pa porosi", zgjidh furnitorin, shkruaj numrin e fletëdërgesës dhe skano çdo artikull. Kostoja merret përkohësisht nga çmimi i furnitorit ose blerja e fundit; fatura e furnitorit e korrigjon.', en: 'A truck without an order: "Truck without an order", choose the supplier, write the delivery note number and scan every item. The cost is taken for now from the supplier’s price or the last purchase; the supplier’s invoice corrects it.' },
     ],
     mistakes: [{ sq: 'Numërimi ruhet në pajisje edhe nëse fiket; "Fillo nga e para" e fshin dhe nis nga zero.', en: 'The count is kept on the device even if it switches off; "Start over" clears it and starts from zero.' }],
     after: { sq: 'Malli hyn në zonën e pranimit dhe krijohet vetë detyra për ta vendosur në raft. Porosia e blerjes mban hapur atë që mungon.', en: 'The goods go into the receiving area and a put-away task is created. The purchase order keeps open whatever is missing.' },

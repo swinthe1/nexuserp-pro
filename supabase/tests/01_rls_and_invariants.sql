@@ -18,6 +18,9 @@ grant usage on schema t to authenticated;
 create table t.results (n serial, label text, passed boolean);
 grant insert, select on t.results to authenticated;
 grant usage on sequence t.results_n_seq to authenticated;
+-- the tests check costs whoever is signed in; who may read them is tested on its own (122)
+create view t.item_costs as select * from public.item_costs;
+grant select on t.item_costs to authenticated;
 
 create function t.login(p_email text) returns void language plpgsql security definer as $$
 begin

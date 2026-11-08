@@ -22,11 +22,11 @@ select app.virtual_location(:'co', 'supplier') as sup, app.virtual_location(:'co
 -- sold before it was ever received: it leaves at the supplier's price, not at zero
 select app.post_stock_move(:'co', 'adjustment_out', :'var', :'stock', :'adj', 10) as m1 \gset
 select t.ok((select unit_cost = 4 from public.stock_movements where id = :'m1'), 'an item with no cost yet leaves at its best known cost (the supplier''s price)');
-select t.ok((select qty_on_hand = -10 and avg_cost = 4 and total_value = -40 from public.item_costs where variant_id = :'var'), 'the shortage is carried at that cost');
+select t.ok((select qty_on_hand = -10 and avg_cost = 4 and total_value = -40 from t.item_costs where variant_id = :'var'), 'the shortage is carried at that cost');
 
 -- the goods arrive at 5: the shortage is settled at the real cost; the difference corrects the cost of what was sold
 select app.post_stock_move(:'co', 'receipt', :'var', :'sup', :'stock', 10, 5) as m2 \gset
-select t.ok((select qty_on_hand = 0 and total_value = 0 from public.item_costs where variant_id = :'var'), 'settled: nothing in stock, nothing in value');
+select t.ok((select qty_on_hand = 0 and total_value = 0 from t.item_costs where variant_id = :'var'), 'settled: nothing in stock, nothing in value');
 select t.ok((select total_cost = -10 from public.stock_movements where variant_id = :'var' and movement_type = 'revaluation'), 'the difference (10 × 1) is recorded');
 select t.ok((select sum(cost) = 10 from app.sales_facts(:'co', current_date - 1, current_date + 1) where doc_type = 'cost_correction' and variant_id = :'var'),
   'the margin report charges the difference to the item');
@@ -34,9 +34,9 @@ select t.ok((select sum(cost) = 10 from app.sales_facts(:'co', current_date - 1,
 -- still below zero after a smaller delivery: the average follows the real cost
 select app.post_stock_move(:'co', 'adjustment_out', :'var', :'stock', :'adj', 10);
 select app.post_stock_move(:'co', 'receipt', :'var', :'sup', :'stock', 4, 6);
-select t.ok((select qty_on_hand = -6 and avg_cost = 6 and total_value = -36 from public.item_costs where variant_id = :'var'), 'what is still missing is valued at the latest real cost');
+select t.ok((select qty_on_hand = -6 and avg_cost = 6 and total_value = -36 from t.item_costs where variant_id = :'var'), 'what is still missing is valued at the latest real cost');
 select app.post_stock_move(:'co', 'receipt', :'var', :'sup', :'stock', 16, 6);
-select t.ok((select qty_on_hand = 10 and avg_cost = 6 and total_value = 60 from public.item_costs where variant_id = :'var'), 'and once in stock again the cost is exact: 10 × 6');
+select t.ok((select qty_on_hand = 10 and avg_cost = 6 and total_value = 60 from t.item_costs where variant_id = :'var'), 'and once in stock again the cost is exact: 10 × 6');
 
 -- the supplier's article number finds the item
 select t.ok((select matched_by = 'vendor_code' from public.find_variant_by_code(:'co', 'f-123') limit 1), 'the supplier''s article number finds the item');

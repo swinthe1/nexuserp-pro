@@ -28,13 +28,13 @@ select app.post_stock_move(:'co', 'receipt', :'ver', :'sup', :'stock', 10, 100, 
 select app.post_stock_move(:'co', 'receipt', :'ver', :'sup', :'stock', 10, 130, null, null, null, null, 'R2', now() - interval '1 day');
 select app.post_stock_move(:'co', 'adjustment_out', :'ver', :'stock', :'adj', 15) as mv \gset
 select t.ok((select total_cost from public.stock_movements where id = :'mv') = 4 * 90 + 10 * 100 + 1 * 130, 'the oldest layers leave first: 4 × 90 + 10 × 100 + 1 × 130');
-select t.ok((select total_value from public.item_costs where variant_id = :'ver') = 9 * 130, 'what is left is valued at the newest cost');
+select t.ok((select total_value from t.item_costs where variant_id = :'ver') = 9 * 130, 'what is left is valued at the newest cost');
 select t.ok((select sum(qty_left) from public.cost_layers where variant_id = :'ver') = 9, 'the layers hold what is in stock');
 -- a value change made elsewhere (landed costs) follows into the layers
 select app.post_value_adjustment(:'co', :'ver', :'stock', 90, null, null, null, 'LC');
 select t.ok((select unit_cost from public.cost_layers where variant_id = :'ver' and qty_left > 0) = 140, 'landed costs raise the layers still in stock');
 select app.post_stock_move(:'co', 'adjustment_out', :'ver', :'stock', :'adj', 9) as mv2 \gset
-select t.ok((select total_cost from public.stock_movements where id = :'mv2') = 1260 and (select total_value from public.item_costs where variant_id = :'ver') = 0,
+select t.ok((select total_cost from public.stock_movements where id = :'mv2') = 1260 and (select total_value from t.item_costs where variant_id = :'ver') = 0,
   'emptying the stock takes the exact value left');
 set role authenticated;
 select t.login('alice@alba.al');

@@ -14,7 +14,7 @@ set role authenticated;
 
 select t.login('drita@agjent.xk');
 insert into public.business_partners (company_id, code, name, is_vendor, is_customer) values (:'co', 'RH', 'Furnitori Rihapje', true, false) returning id as ven \gset
-select coalesce((select qty_on_hand from public.item_costs where variant_id = :'kac'), 0) as q0, coalesce((select total_value from public.item_costs where variant_id = :'kac'), 0) as v0 \gset
+select coalesce((select qty_on_hand from t.item_costs where variant_id = :'kac'), 0) as q0, coalesce((select total_value from t.item_costs where variant_id = :'kac'), 0) as v0 \gset
 
 -- ----------------------------------------------------------------------------- a purchase invoice with goods
 select public.save_document('vendor_bills', jsonb_build_object('company_id', :'co', 'document_type', 'vendor_bill', 'vendor_id', :'ven', 'vendor_invoice_number', 'RH-1',
@@ -34,7 +34,7 @@ select t.ok((select status = 'draft' and receipt_id is null and journal_entry_id
             and (select status from public.journal_entries where id = :'je') = 'reversed'
             and (:'ro'::jsonb ->> 'href') = '/procurement/invoice/' || :'bill',
             'reopened: a draft with its number, its receipt cancelled, its entry reversed');
-select t.ok((select qty_on_hand = :q0 and abs(total_value - :v0) < 0.01 from public.item_costs where variant_id = :'kac'),
+select t.ok((select qty_on_hand = :q0 and abs(total_value - :v0) < 0.01 from t.item_costs where variant_id = :'kac'),
             'the goods are out again and the stock value is what it was before the invoice');
 select t.ok(exists (select 1 from public.entity_activities where entity_id = :'bill' and metadata ->> 'kind' = 'reopened' and metadata ->> 'reason' = 'Çmimi ishte 2,40'),
             'the history says who reopened it and why');
@@ -44,7 +44,7 @@ update public.vendor_bill_lines set unit_price = 2.4 where bill_id = :'bill';
 select public.purchase_invoice_complete(:'bill');
 reset role;
 select t.ok((select status = 'posted' and total = 51.84 from public.vendor_bills where id = :'bill')
-            and (select qty_on_hand = :q0 + 20 and abs(total_value - (:v0 + 48)) < 0.01 from public.item_costs where variant_id = :'kac'),
+            and (select qty_on_hand = :q0 + 20 and abs(total_value - (:v0 + 48)) < 0.01 from t.item_costs where variant_id = :'kac'),
             'completed again: the corrected price is in the stock and the bill');
 
 -- ----------------------------------------------------------------------------- refused when it would do harm

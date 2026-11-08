@@ -277,7 +277,8 @@ export const GUIDES_A: Record<string, Guide> = {
       { sq: 'Kliko "Bëj një foto" ose "Zgjidh një skedar"; leximi zgjat rreth gjysmë minute.', en: 'Click "Take a photo" or "Choose a file"; reading takes about half a minute.' },
       { sq: 'Kontrollo furnitorin, numrin e faturës, datën dhe njësinë ku hyn malli.', en: 'Check the vendor, the invoice number, the date and the unit the goods go into.' },
       { sq: 'Në çdo rresht kontrollo artikullin që gjeti programi, sasinë dhe koston pa TVSH; rreshtit që s\'e pranon hiqja shenjën.', en: 'On each line check the item the program found, the quantity and the cost without VAT; untick a line you do not receive.' },
-      { sq: 'Kliko "Bëj pranimin skicë", pastaj kontrolloje dhe kontabilizoje pranimin.', en: 'Click "Make the draft receipt", then check the receipt and post it.' },
+      { sq: 'Kliko "Bëje faturë blerjeje" dhe kontrolloje faturën para postimit; ose "Vetëm mallin, fatura më vonë" për pranim pa faturë.', en: 'Click "Make the purchase invoice" and check it before posting; or "Only the goods, the invoice later" for a receipt without the invoice.' },
+      { sq: 'Pas leximit, "Bëje faturë blerjeje" e hap faturën e blerjes të plotësuar (furnitori, numri, data, rreshtat); kur e postoni, hyn edhe malli. "Vetëm mallin" bën vetëm pranimin, fatura vjen më vonë.', en: 'After reading, "Make the purchase invoice" opens the purchase invoice filled in (supplier, number, date, lines); posting it also brings the goods in. "Only the goods" makes just the receipt; the invoice comes later.' },
     ],
     mistakes: [
       { sq: 'Fotografo gjithë faqen, drejt dhe me dritë; PDF-ja nga furnitori lexohet më mirë.', en: 'Photograph the whole page, flat and with light; a PDF from the vendor reads best.' },
@@ -287,7 +288,7 @@ export const GUIDES_A: Record<string, Guide> = {
     related: [{ href: '/inventory/receipts', label: { sq: 'Pranimet', en: 'Goods receipts' } }, { href: '/procurement/invoice/new', label: { sq: 'Faturë blerje', en: 'Purchase invoice with goods' } }],
     tour: [
       { target: 'Take a photo', say: { sq: 'Fotografo faturën, ose zgjidh skedarin pranë.', en: 'Photograph the invoice, or choose the file next to it.' } },
-      { target: 'Make the draft receipt', say: { sq: 'Pasi kontrollon rreshtat, bëj pranimin.', en: 'Once the lines are checked, make the receipt.' } },
+      { target: 'Make the purchase invoice', say: { sq: 'Pasi kontrollon rreshtat, bëje faturën e blerjes.', en: 'Once the lines are checked, make the purchase invoice.' } },
     ],
   },
   '/inventory/landed-costs': {

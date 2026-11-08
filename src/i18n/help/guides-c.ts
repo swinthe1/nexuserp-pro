@@ -41,6 +41,7 @@ export const GUIDES_C: Record<string, Guide> = {
       { sq: 'Shiko "Kontrolli me kontabilitetin": TVSH-ja e librave duhet të përputhet me kontabilitetin.', en: 'Look at "Accounting check": the VAT in the books should match accounting.' },
       { sq: 'Nëse ke kredi dhe kërkon rimbursim, shkruaj shumën te "Rimbursimi që kërkohet" dhe kliko "Zbato".', en: 'If you have a credit and ask for a refund, type the amount under "Refund to request" and click "Apply".' },
       { sq: 'Deklaroje te ATK-ja (DPT në Shqipëri), pastaj kliko "Dorëzo deklaratën" dhe shkruaj numrin te "Referenca e dorëzimit".', en: 'File it with the ATK (DPT in Albania), then click "Submit declaration" and type the number under "Filing reference".' },
+      { sq: 'Një faturë erdhi vonë për një muaj të deklaruar? Te ⋯ zgjidh "Deklaratë korrigjuese": muaji pranon sërish dokumente, deklarata e re tregon diferencën dhe me dorëzimin kontabilizohet vetëm diferenca.', en: 'An invoice came late for a declared month? Under ⋯ choose "Corrective declaration": the month takes documents again, the new declaration shows the difference and submitting it books only the difference.' },
     ],
     mistakes: [
       { sq: '"Dorëzo deklaratën" nuk e dërgon deklaratën te ATK-ja: e regjistron në libra dhe e mbyll muajin. Deklarimi bëhet në portalin e tatimeve.', en: '"Submit declaration" does not send it to the ATK: it books it and closes the month. The filing itself is done on the tax office portal.' },

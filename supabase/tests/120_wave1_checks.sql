@@ -45,7 +45,7 @@ update public.company_members set warehouse_ids = '{}'
  where company_id = :'mini' and user_id = (select id from auth.users where email = 'pronari@arberi.xk');
 
 -- 4. a count review gives the selling price too
-select t.ok(position('losses_sale' in pg_get_functiondef('public.count_review(uuid)'::regprocedure)) > 0, 'the count review has the selling-price values');
+select t.ok(position('losses_sale' in pg_get_functiondef('app.count_review__all(uuid)'::regprocedure)) > 0, 'the count review has the selling-price values');
 
 -- 5. the platform owner sees refused fiscalization and clients that stopped selling
 set role authenticated;

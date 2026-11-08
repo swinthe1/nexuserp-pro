@@ -8,7 +8,7 @@ export default {
   'Purchasing': 'Blerjet',
   'Inventory|menu': 'Stoku',
   'Warehouse|menu': "Skaneri",
-  'Retail': 'Shitja me pakicë (arka)',
+  'Retail': 'Arkat (POS)',
   'Manufacturing': 'Prodhimi',
   'Logistics': 'Logjistika',
   'Finance': 'Financa',
@@ -456,5 +456,5 @@ export default {
   "Find it by NUI or name": "Gjeje me NUI ose emër",
   "A new item": "Artikull i ri",
   "Something you sell or keep in stock": "Diçka që shet ose mban në stok",
-  "Shop till|menu": "Shitja me pakicë",
+  "Shop till|menu": "Arkat (POS)",
 } satisfies Dict

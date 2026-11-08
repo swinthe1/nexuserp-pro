@@ -258,7 +258,7 @@ export default {
   "Ship": "Pošalji",
   "Shipment": "Pošiljka",
   "Shipments": "Pošiljke",
-  "Shop till|menu": "Maloprodaja",
+  "Shop till|menu": "Kase (POS)",
   "Short dates|menu": "Bliski rokovi",
   "Show all menus": "Prikaži sve menije",
   "Show the whole menu": "Prikaži ceo meni",

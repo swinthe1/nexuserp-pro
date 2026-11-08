@@ -208,7 +208,7 @@ select t.ok((public.pos_submit_order(jsonb_build_object('client_uuid', :'c1', 's
 -- ---------- invariants and permissions -----------------------------------------------------
 select t.login('alice@alba.al');
 select t.ok((select sum(total_debit) = sum(total_credit) from public.journal_entries where company_id = :'co' and status = 'posted'), 'every entry balances');
-select t.ok(pg_temp.bal(:'co', '311') = (select round(sum(total_value), 2) from public.item_costs where company_id = :'co'), 'GL inventory equals the stock valuation');
+select t.ok(pg_temp.bal(:'co', '311') = (select round(sum(total_value), 2) from t.item_costs where company_id = :'co'), 'GL inventory equals the stock valuation');
 select t.login('cora@wms.al');
 select t.throws(format($q$select public.create_pick_list(array[%L::uuid])$q$, :'dl'), 'wms.write', 'cashiers cannot pick');
 select t.throws(format($q$insert into public.pos_orders (company_id, client_uuid, session_id, register_id) values (%L, gen_random_uuid(), %L, %L)$q$, :'co', :'ses', :'reg'),

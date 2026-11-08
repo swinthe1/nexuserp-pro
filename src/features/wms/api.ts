@@ -136,6 +136,8 @@ export function useFinishReceipt() {
     }
     const untouched = lines.filter((l) => !used.has(l.id)).map((l) => l.id)
     if (untouched.length) unwrap(await supabase.from('goods_receipt_lines').delete().in('id', untouched))
+    // goods received without an order: a provisional cost until the supplier's invoice is entered
+    unwrap(await supabase.rpc('dock_receipt_costs', { p_receipt: receiptId }))
     return unwrap(await supabase.rpc('post_goods_receipt', { p_id: receiptId })) as unknown as { status: string; lines: number; total_value: number }
   })
 }
@@ -424,3 +426,7 @@ export function useShrinkage(from: string, to: string) {
     queryFn: async () => unwrap(await supabase.rpc('shrinkage_report', { p_company: companyId, p_from: from, p_to: to })) as unknown as ShrinkRow[],
   })
 }
+
+/** a truck without an order: the receipt is started at the door */
+export const useStartDockReceipt = () => useAction(async (a: { company: string; vendor: string; warehouse: string; note: string }) =>
+  unwrap(await supabase.rpc('dock_receipt_start', { p_company: a.company, p_vendor: a.vendor, p_warehouse: a.warehouse, p_note: a.note })) as string, true)

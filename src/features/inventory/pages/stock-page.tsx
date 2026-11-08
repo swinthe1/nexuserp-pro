@@ -24,7 +24,9 @@ export function StockPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const onlyWarehouse = params.get('warehouse')
-  const { company, companyId } = useCompany()
+  const { company, companyId, can } = useCompany()
+  // without "see what the goods cost" the values at cost are not shown
+  const costs = can('inventory.costs')
   const levels = useStockLevels()
   const [byUnit, setByUnit] = React.useState<string[] | null>(null)
   const overview = useInventoryOverview()
@@ -105,8 +107,8 @@ export function StockPage() {
     <>
       <PageHeader title={t('Stock levels')} description={t('How much of each item you have in every place and lot. Available is what is on hand minus what is reserved for orders.')} />
       <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label={t('Value at purchase price, without VAT')} value={formatMoney(overview.data?.stock_value, company?.base_currency)} loading={overview.isLoading}
-          hint={overview.data?.sales_value != null ? t('At selling price with VAT {amount}', { amount: formatMoney(overview.data.sales_value) }) : t('At average cost')} />
+        {costs && <StatCard label={t('Value at purchase price, without VAT')} value={formatMoney(overview.data?.stock_value, company?.base_currency)} loading={overview.isLoading}
+          hint={overview.data?.sales_value != null ? t('At selling price with VAT {amount}', { amount: formatMoney(overview.data.sales_value) }) : t('At average cost')} />}
         <StatCard label={t('Active items')} value={overview.data?.active_skus ?? 0} loading={overview.isLoading} href="/inventory/products" />
         <StatCard label={t('Low stock')} value={overview.data?.low_stock ?? 0} tone={overview.data?.low_stock ? 'warning' : 'default'} loading={overview.isLoading} href="/inventory/alerts" hint={t('At or below the reorder point')} />
         <StatCard label={t('Lines below zero')} value={overview.data?.negative_lines ?? 0} tone={overview.data?.negative_lines ? 'destructive' : 'default'} loading={overview.isLoading} hint={t('Only possible when selling without stock is allowed')} />
@@ -124,7 +126,7 @@ export function StockPage() {
       {pivot ? (
         <DataTable
           tableKey="inventory.stock-by-unit"
-          columns={pivotColumns}
+          columns={costs ? pivotColumns : pivotColumns.filter((c) => c.id !== 'value')}
           data={levels.data ? byItem : undefined}
           isLoading={levels.isLoading}
           error={levels.error}
@@ -153,7 +155,7 @@ export function StockPage() {
         key={onlyWarehouse ?? 'all'}
         tableKey="inventory.stock-levels"
         initialFilters={onlyWarehouse ? [{ id: 'warehouse', value: [onlyWarehouse] }] : undefined}
-        columns={columns}
+        columns={costs ? columns : columns.filter((c) => !['avg_cost', 'stock_value'].includes((c as { accessorKey?: string }).accessorKey ?? ''))}
         data={levels.data}
         isLoading={levels.isLoading}
         error={levels.error}

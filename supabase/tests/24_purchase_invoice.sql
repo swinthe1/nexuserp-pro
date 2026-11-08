@@ -39,7 +39,7 @@ select t.ok((public.purchase_item_info(:'co', :'ven', array[:'sux']::uuid[]) -> 
 select public.purchase_invoice_complete(:'bill') as r \gset
 select t.ok((:'r'::jsonb ->> 'status') = 'posted' and (:'r'::jsonb ->> 'lines_received')::int = 2, 'one step: received and posted');
 select t.ok((select sum(on_hand) from public.stock_levels where variant_id = :'sux' and warehouse_id = :'wh') = 10, 'the goods are in the warehouse');
-select t.ok((select avg_cost from public.item_costs where variant_id = :'sux') = 3.42, 'at the price after both discounts (4 × 0.855)');
+select t.ok((select avg_cost from t.item_costs where variant_id = :'sux') = 3.42, 'at the price after both discounts (4 × 0.855)');
 select t.ok(exists (select 1 from public.stock_levels sl join public.lots l on l.id = sl.lot_id where sl.variant_id = :'milk' and l.lot_number = 'L-2611' and l.expiry_date = current_date + 20),
   'with its lot and expiry date');
 select t.ok((select sales_price from public.products where id = :'p_sux') = 5.0847, 'the new selling price is set');

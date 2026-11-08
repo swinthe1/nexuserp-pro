@@ -12,9 +12,9 @@ select sl.company_id as co, l.warehouse_id as wh, sl.variant_id as v, sl.locatio
   join public.products p on p.id = v.product_id
  where sl.on_hand >= 10 and sl.lot_id is null and p.tracking = 'none' and l.location_type = 'internal'
    and (select count(*) from public.stock_levels x where x.variant_id = sl.variant_id and x.on_hand <> 0) = 1
-   and exists (select 1 from public.item_costs ic where ic.variant_id = sl.variant_id and ic.avg_cost > 0)
+   and exists (select 1 from t.item_costs ic where ic.variant_id = sl.variant_id and ic.avg_cost > 0)
  order by sl.on_hand desc limit 1 \gset
-select avg_cost as cost from public.item_costs where variant_id = :'v' \gset
+select avg_cost as cost from t.item_costs where variant_id = :'v' \gset
 set role authenticated;
 select t.login(:'boss');
 select public.create_cycle_count(:'wh', array[:'loc'::uuid], null, true) as cnt \gset

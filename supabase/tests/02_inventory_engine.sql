@@ -74,14 +74,14 @@ insert into public.goods_receipts (company_id, warehouse_id, receipt_date) value
 insert into public.goods_receipt_lines (company_id, receipt_id, variant_id, location_id, quantity, unit_cost) values (:'co', :'gr1', :'coffee', :'stock', 10, 100);
 select public.post_goods_receipt(:'gr1');
 select t.ok(:'gr1_no' = 'PRN-2026-00001', 'receipts are numbered');
-select t.ok((select (qty_on_hand, avg_cost, total_value) = (10.0000, 100.000000, 1000.0000) from public.item_costs where variant_id = :'coffee'),
+select t.ok((select (qty_on_hand, avg_cost, total_value) = (10.0000, 100.000000, 1000.0000) from t.item_costs where variant_id = :'coffee'),
             'first receipt sets average cost = 100');
 
 -- GR2: 10 @ 130 → avg 115
 insert into public.goods_receipts (company_id, warehouse_id, receipt_date) values (:'co', :'wh', '2026-10-02') returning id as gr2 \gset
 insert into public.goods_receipt_lines (company_id, receipt_id, variant_id, location_id, quantity, unit_cost) values (:'co', :'gr2', :'coffee', :'stock', 10, 130);
 select public.post_goods_receipt(:'gr2');
-select t.ok((select (qty_on_hand, avg_cost, total_value) = (20.0000, 115.000000, 2300.0000) from public.item_costs where variant_id = :'coffee'),
+select t.ok((select (qty_on_hand, avg_cost, total_value) = (20.0000, 115.000000, 2300.0000) from t.item_costs where variant_id = :'coffee'),
             'WAC: (10×100 + 10×130) / 20 = 115');
 select t.throws(format($q$select public.post_goods_receipt(%L)$q$, :'gr2'), 'only draft', 'a receipt cannot be posted twice');
 select t.throws(format($q$update public.goods_receipt_lines set quantity = 99 where receipt_id = %L$q$, :'gr2'), 'cannot be modified', 'posted receipt lines are frozen');
@@ -90,7 +90,7 @@ select t.throws(format($q$update public.goods_receipt_lines set quantity = 99 wh
 insert into public.stock_adjustments (company_id, warehouse_id, reason, adjustment_date) values (:'co', :'wh', 'correction', '2026-10-03') returning id as adj1 \gset
 insert into public.stock_adjustment_lines (company_id, adjustment_id, variant_id, location_id, quantity_change) values (:'co', :'adj1', :'coffee', :'stock', -5);
 select t.ok(public.post_stock_adjustment(:'adj1') = 'posted', 'adjustment without workflow posts directly');
-select t.ok((select (qty_on_hand, avg_cost, total_value) = (15.0000, 115.000000, 1725.0000) from public.item_costs where variant_id = :'coffee'),
+select t.ok((select (qty_on_hand, avg_cost, total_value) = (15.0000, 115.000000, 1725.0000) from t.item_costs where variant_id = :'coffee'),
             'issue at average: 2300 − 5×115 = 1725, average unchanged');
 select t.ok((select total_value from public.stock_adjustments where id = :'adj1') = -575.00, 'adjustment carries its signed value');
 
@@ -108,7 +108,7 @@ select t.ok((select (currency_code, vendor_id, clearance_status) = ('EUR', :'ven
             'import receipt inherits PO currency/vendor and awaits customs clearance');
 select public.post_goods_receipt(:'gr3');
 select t.ok((select unit_cost from public.goods_receipt_lines where receipt_id = :'gr3') = 147.000000, 'import valued at PO price × customs rate (1.5 × 98)');
-select t.ok((select (qty_on_hand, total_value, avg_cost) = (35.0000, 4665.0000, 133.285714) from public.item_costs where variant_id = :'coffee'),
+select t.ok((select (qty_on_hand, total_value, avg_cost) = (35.0000, 4665.0000, 133.285714) from t.item_costs where variant_id = :'coffee'),
             'WAC after import: (1725 + 20×147) / 35 = 133.285714');
 select t.ok((select (status, l.qty_received) = ('received', 20.0000) from public.purchase_orders o join public.purchase_order_lines l on l.purchase_order_id = o.id where o.id = :'po'),
             'PO received quantities and status updated');
@@ -137,7 +137,7 @@ select t.throws(format($q$select public.post_goods_receipt(%L)$q$, :'gr5'), 'ove
 insert into public.stock_adjustments (company_id, warehouse_id, reason) values (:'co', :'wh', 'correction') returning id as adj2 \gset
 insert into public.stock_adjustment_lines (company_id, adjustment_id, variant_id, location_id, quantity_change) values (:'co', :'adj2', :'coffee', :'stock', -25);
 select public.post_stock_adjustment(:'adj2');
-select t.ok((select (qty_on_hand, total_value) = (10.0000, 1332.8571) from public.item_costs where variant_id = :'coffee'),
+select t.ok((select (qty_on_hand, total_value) = (10.0000, 1332.8571) from t.item_costs where variant_id = :'coffee'),
             '25 issued at 133.285714 leaves 10 units worth 1332.8571');
 
 insert into public.landed_costs (company_id, allocation_method, landed_cost_date) values (:'co', 'quantity', '2026-10-08') returning id as lc, number as lc_no \gset
@@ -149,7 +149,7 @@ select t.ok((select total_amount from public.landed_costs where id = :'lc') = 70
 select public.post_landed_cost(:'lc') as lc_result \gset
 select t.ok((:'lc_result'::jsonb ->> 'capitalized')::numeric = 350 and (:'lc_result'::jsonb ->> 'expensed')::numeric = 350,
             'only the in-stock share (10 of 20) is capitalised; the sold half is expensed');
-select t.ok((select (qty_on_hand, total_value, avg_cost) = (10.0000, 1682.8571, 168.285710) from public.item_costs where variant_id = :'coffee'),
+select t.ok((select (qty_on_hand, total_value, avg_cost) = (10.0000, 1682.8571, 168.285710) from t.item_costs where variant_id = :'coffee'),
             'landed cost raises the average cost of remaining stock');
 select t.ok((select clearance_status from public.goods_receipts where id = :'gr3') = 'cleared', 'import receipt marked cleared');
 select t.ok((select landed_cost_amount from public.goods_receipt_lines where receipt_id = :'gr3') = 700, 'receipt line carries its landed cost');
@@ -167,11 +167,11 @@ select t.ok((select status from public.stock_adjustments where id = :'adj3') = '
 
 update public.company_settings set allow_negative_stock = true where company_id = :'co';
 select public.post_stock_adjustment(:'adj3');
-select t.ok((select qty_on_hand from public.item_costs where variant_id = :'coffee') = -90, 'negative stock allowed when enabled');
+select t.ok((select qty_on_hand from t.item_costs where variant_id = :'coffee') = -90, 'negative stock allowed when enabled');
 insert into public.goods_receipts (company_id, warehouse_id) values (:'co', :'wh') returning id as gr6 \gset
 insert into public.goods_receipt_lines (company_id, receipt_id, variant_id, location_id, quantity, unit_cost) values (:'co', :'gr6', :'coffee', :'stock', 100, 200);
 select public.post_goods_receipt(:'gr6');
-select t.ok((select (qty_on_hand, avg_cost, total_value) = (10.0000, 200.000000, 2000.0000) from public.item_costs where variant_id = :'coffee'),
+select t.ok((select (qty_on_hand, avg_cost, total_value) = (10.0000, 200.000000, 2000.0000) from t.item_costs where variant_id = :'coffee'),
             'receipt settling a deficit resets the average to the incoming cost');
 select t.ok(exists (select 1 from public.stock_movements where variant_id = :'coffee' and movement_type = 'revaluation'),
             'deficit settlement recorded as a revaluation movement');
@@ -202,7 +202,7 @@ select t.throws(format($q$select public.post_stock_adjustment(%L)$q$, :'adj1'), 
 select t.throws(format($q$insert into public.products (company_id, code, name, uom_id) values (%L, 'X', 'x', %L)$q$, :'co', :'pcs'),
                 'row-level security', 'warehouse operator cannot edit the product master');
 select t.login('alice@alba.al');
-select t.ok((select (qty_on_hand, avg_cost) = (10.0000, 200.000000) from public.item_costs where variant_id = :'coffee'), 'transfers do not change valuation');
+select t.ok((select (qty_on_hand, avg_cost) = (10.0000, 200.000000) from t.item_costs where variant_id = :'coffee'), 'transfers do not change valuation');
 
 -- ---------- two-step transfer: ship (on the road) → receive with differences ----------
 select t.login('wendy@store.al');
@@ -227,7 +227,7 @@ select t.ok((select string_agg(warehouse_code || '=' || trim_scale(on_hand), ','
             'the receiving store gets what arrived, the sender gets back what was returned');
 select t.ok((select status = 'done' and has_difference and receive_note = 'one bag torn' from public.stock_transfers where id = :'trf2'), 'the transfer closes with its difference noted');
 select t.login('alice@alba.al');
-select t.ok((select (qty_on_hand, avg_cost) = (10.0000, 200.000000) from public.item_costs where variant_id = :'coffee'), 'the loss and the extra unit balance out at the average cost');
+select t.ok((select (qty_on_hand, avg_cost) = (10.0000, 200.000000) from t.item_costs where variant_id = :'coffee'), 'the loss and the extra unit balance out at the average cost');
 select t.ok(not exists (select 1 from public.stock_movements where source_doc_id = :'trf2' and journal_entry_id is not null)
   and not exists (select 1 from public.journal_entries where source_doc_id = :'trf2'),
   'a loss and an extra unit of the same item cancel out: no journal entry');
@@ -272,33 +272,33 @@ select :'co', :'wf', 1, 'Inventory manager sign-off', id from public.roles where
 insert into public.stock_adjustments (company_id, warehouse_id, reason) values (:'co', :'wh', 'loss') returning id as adj5 \gset
 insert into public.stock_adjustment_lines (company_id, adjustment_id, variant_id, location_id, quantity_change) values (:'co', :'adj5', :'coffee', :'stock', -5);
 select t.ok(public.post_stock_adjustment(:'adj5') = 'pending_approval', 'write-off of 1,000 waits for approval');
-select t.ok((select qty_on_hand from public.item_costs where variant_id = :'coffee') = 10, 'nothing posted while pending');
+select t.ok((select qty_on_hand from t.item_costs where variant_id = :'coffee') = 10, 'nothing posted while pending');
 select t.login('ivan@store.al');
 select public.decide_approval((select id from public.approval_requests where document_id = :'adj5'), 'approved', 'Confirmed theft report');
 select t.login('alice@alba.al');
 select t.ok(public.post_stock_adjustment(:'adj5') = 'posted', 'approved adjustment posts');
-select t.ok((select qty_on_hand from public.item_costs where variant_id = :'coffee') = 5, 'write-off applied after approval');
+select t.ok((select qty_on_hand from t.item_costs where variant_id = :'coffee') = 5, 'write-off applied after approval');
 
 -- ---------- history, overview, invariants ------------------------------------------
 select t.ok((select count(*) from public.get_record_history('stock_adjustments', :'adj5') where kind in ('status_change','approval')) >= 3,
             'record history shows status changes and the approval');
-select t.ok((public.inventory_overview(:'co') ->> 'stock_value')::numeric = (select sum(total_value) from public.item_costs where company_id = :'co'),
+select t.ok((public.inventory_overview(:'co') ->> 'stock_value')::numeric = (select sum(total_value) from t.item_costs where company_id = :'co'),
             'overview stock value = Σ item valuation');
 reset role;
 
 select t.ok(not exists (
-  select 1 from public.item_costs ic
+  select 1 from t.item_costs ic
    where ic.company_id = :'co'
      and ic.qty_on_hand <> coalesce((select sum(on_hand) from public.stock_levels sl where sl.variant_id = ic.variant_id), 0)),
   'quantity conservation: item_costs = Σ stock_levels for every item');
 select t.ok(not exists (
-  select 1 from public.item_costs ic
+  select 1 from t.item_costs ic
    where ic.company_id = :'co'
      and ic.qty_on_hand <> coalesce((select sum(case direction when 'in' then quantity when 'out' then -quantity else 0 end)
                                         from public.v_stock_movements m where m.variant_id = ic.variant_id), 0)),
   'quantity conservation: item_costs = Σ signed movements');
 select t.ok(not exists (
-  select 1 from public.item_costs ic
+  select 1 from t.item_costs ic
    where ic.company_id = :'co'
      and ic.total_value <> coalesce((select sum(case direction when 'in' then total_cost when 'out' then -total_cost else 0 end)
                                         from public.v_stock_movements m where m.variant_id = ic.variant_id), 0)),

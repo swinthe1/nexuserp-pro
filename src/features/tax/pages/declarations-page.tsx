@@ -1,6 +1,6 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import { PageTableExport } from '@/components/page-table-export'
-import { Check, FileSpreadsheet, Plus, Printer, RefreshCw, RotateCcw, Send, X } from 'lucide-react'
+import { Check, FilePen, FileSpreadsheet, Plus, Printer, RefreshCw, RotateCcw, Send, X } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Can, useCompany } from '@/app/company-provider'
@@ -26,6 +26,10 @@ import {
 } from '../api'
 import { NewDeclarationDialog, TieOut } from '../components/tax-ui'
 import { MoreMenu } from '@/components/more-menu'
+import { useMutation } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { describeError, unwrap } from '@/lib/errors'
+import { supabase } from '@/lib/supabase'
 
 export function DeclarationsPage() {
   const navigate = useNavigate()
@@ -73,6 +77,12 @@ export function DeclarationPage() {
   const submit = useSubmitDeclaration()
   const decide = useDecideDeclaration()
   const reopen = useReopenDeclaration()
+  const navigate = useNavigate()
+  // a corrective declaration: what was filed for the month, to show the difference
+  const original = useDeclaration(((d.data as { corrects_id?: string | null } | undefined)?.corrects_id) ?? undefined)
+  const correct = useMutation({ mutationFn: async (id: string) => unwrap(await supabase.rpc('create_vat_correction', { p_id: id })) as string,
+    onSuccess: (nid) => { toast.success(t('Corrective declaration opened: the month takes documents again until you submit it')); navigate(`/tax/declarations/${nid}`) },
+    onError: (e) => toast.error(describeError(e)) })
   const [refund, setRefund] = React.useState('')
   const [submitOpen, setSubmitOpen] = React.useState(false)
   const [rejectOpen, setRejectOpen] = React.useState(false)
@@ -102,6 +112,8 @@ export function DeclarationPage() {
             { label: t('Books'), icon: FileSpreadsheet, to: `/tax/books?month=${ym}` },
             { label: t('Print'), icon: Printer, onSelect: () => window.print() },
             { label: t('Recalculate'), icon: RefreshCw, hidden: !(decl.status === 'draft' && can('tax.write')), onSelect: () => refresh.mutate({ id: decl.id }) },
+            { label: t('Corrective declaration'), icon: FilePen, hidden: !(['submitted', 'accepted'].includes(decl.status) && can('tax.write')), onSelect: () => correct.mutate(decl.id),
+              confirm: { title: t('Open a corrective declaration for {period}?', { period }), description: t('The month takes documents again (a late invoice, a correction) until the corrective declaration is submitted. Submitting it books only the difference with what was filed.') } },
             { label: t('Mark rejected'), icon: X, separate: true, hidden: !(decl.status === 'submitted' && can('tax.write')), onSelect: () => setRejectOpen(true) },
           ]} />
           <Can perm="tax.write">
@@ -113,6 +125,14 @@ export function DeclarationPage() {
           </Can>
         </>}</>} />
 
+      {original.data && (
+        <div className="mb-4 rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-[13px]">
+          {t('Corrects {number}. Difference against it: output VAT {out}, input VAT {inp}, to pay {net}.', { number: original.data.number ?? '',
+            out: formatMoney(num(decl.output_vat) - num(original.data.output_vat)), inp: formatMoney(num(decl.input_vat) - num(original.data.input_vat)),
+            net: formatMoney((num(decl.output_vat) - num(decl.input_vat)) - (num(original.data.output_vat) - num(original.data.input_vat))) })}
+          {' '}<Link className="font-medium text-primary hover:underline" to={`/tax/declarations/${original.data.id}`}>{t('Open the original')}</Link>
+        </div>
+      )}
       {decl.status === 'draft' && (
         <div className="mb-4 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-[13px] print:hidden">
           {t('Draft: the figures are taken again from the books when you press Recalculate or submit. Submitting books the declaration and closes {period} for VAT, so no invoice can be added to it afterwards.', { period })}

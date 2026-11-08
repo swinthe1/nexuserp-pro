@@ -1,4 +1,4 @@
-import { AlertTriangle, Check, PackageCheck, RotateCcw } from 'lucide-react'
+import { AlertTriangle, Check, PackageCheck, Plus, RotateCcw, Truck } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -17,8 +17,9 @@ import { supabase } from '@/lib/supabase'
 import { ErrorState } from '@/components/error-state'
 import { t, td, tn } from '@/i18n'
 import { cn, formatDate, formatQty, todayISO } from '@/lib/utils'
-import { useLocations } from '@/features/inventory/api'
-import { useEnsureLot, useFinishReceipt, useOpenReceipts, useReceiptForScan, useResolveCode, type DockCount, type ReceiptLine } from '../api'
+import { useLocations, useVendors, useWarehouses } from '@/features/inventory/api'
+import { SearchSelect } from '@/components/search-select'
+import { useEnsureLot, useFinishReceipt, useOpenReceipts, useStartDockReceipt, useReceiptForScan, useResolveCode, type DockCount, type ReceiptLine } from '../api'
 import { Progress, QtyDialog, ScanShell, useScanStatus } from '../components/scan-shell'
 
 /** transfers from another unit, shipped and on the way: received on the transfer's page */
@@ -45,9 +46,12 @@ export function ReceiveListPage() {
     const hit = (receipts.data ?? []).find((r) => r.number.toUpperCase() === c || r.po?.number.toUpperCase() === c || r.vendor_delivery_note?.toUpperCase() === c)
     if (hit) { scanFeedback('ok'); navigate(`/wms/receive/${hit.id}`) } else { scanFeedback('error'); error(t('No open receipt for “{code}”', { code })) }
   }
+  const [starting, setStarting] = React.useState(false)
   return (
-    <ScanShell title={t('Receive goods')} back={{ href: '/wms', label: t('Warehouse floor') }}>
+    <ScanShell title={t('Receive goods')} back={{ href: '/wms', label: t('Warehouse floor') }}
+      actions={<Can perm="wms.write"><Button onClick={() => setStarting(true)}><Plus /> {t('Truck without an order')}</Button></Can>}>
       <ScanInput onScan={open} placeholder={t('Scan the order, receipt or delivery note number')} status={status} />
+      {starting && <StartDockReceipt defaultWarehouse={myWh} onClose={() => setStarting(false)} onStarted={(id) => navigate(`/wms/receive/${id}`)} />}
       {transfers.length > 0 && (
         <div className="grid gap-2">
           <div className="text-[13px] font-medium text-muted-foreground">{t('Goods waiting to be received from other units')}</div>
@@ -77,6 +81,38 @@ export function ReceiveListPage() {
         </div>
       )}
     </ScanShell>
+  )
+}
+
+/** a truck that came without an order: the supplier, the delivery note and the unit, then scan the goods */
+function StartDockReceipt({ defaultWarehouse, onClose, onStarted }: { defaultWarehouse: string | null; onClose: () => void; onStarted: (id: string) => void }) {
+  const { companyId } = useCompany()
+  const vendors = useVendors()
+  const warehouses = useWarehouses()
+  const start = useStartDockReceipt()
+  const [vendor, setVendor] = React.useState<string | null>(null)
+  const [wh, setWh] = React.useState<string | null>(defaultWarehouse)
+  const [note, setNote] = React.useState('')
+  const whs = (warehouses.data ?? []).filter((w) => w.is_active)
+  React.useEffect(() => { if (!wh && whs.length === 1) setWh(whs[0]!.id) }, [whs.length]) // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader><DialogTitle className="flex items-center gap-2"><Truck className="size-5" /> {t('Truck without an order')}</DialogTitle>
+          <DialogDescription>{t('Choose the supplier and write the delivery note number; then scan every item. The office links it to the supplier’s invoice later.')}</DialogDescription></DialogHeader>
+        <div className="grid gap-3">
+          <div className="grid gap-1.5"><Label>{t('Supplier')}</Label>
+            <SearchSelect value={vendor} onChange={setVendor} placeholder={t('Choose the supplier')} options={(vendors.data ?? []).map((v) => ({ value: v.id, label: v.name }))} /></div>
+          <div className="grid gap-1.5"><Label htmlFor="dock-note">{t('Delivery note number')}</Label><Input id="dock-note" value={note} onChange={(e) => setNote(e.target.value)} /></div>
+          {whs.length > 1 && <div className="grid gap-1.5"><Label>{t('Unit|store')}</Label>
+            <SearchSelect value={wh} onChange={setWh} placeholder={t('Choose the unit')} options={whs.map((w) => ({ value: w.id, label: td(w.name) }))} /></div>}
+        </div>
+        <DialogFooter><Button variant="ghost" onClick={onClose}>{t('Cancel')}</Button>
+          <Button disabled={!vendor || !wh} loading={start.isPending} onClick={async () => {
+            try { onStarted(await start.mutateAsync({ company: companyId!, vendor: vendor!, warehouse: wh!, note })) } catch (e) { toast.error(describeError(e)) }
+          }}>{t('Start scanning')}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -133,7 +169,18 @@ export function ReceiveScanPage() {
     const r = await resolve(code)
     if (r.kind === 'variant' || r.kind === 'lot') {
       const variantId = r.variantId
-      const e = entries.find((x) => x.variantId === variantId)
+      let e = entries.find((x) => x.variantId === variantId)
+      if (!e && !receipt.data?.po && r.kind === 'variant') {
+        // a receipt without an order (a truck at the door): every item scanned goes on it
+        e = { key: `new:${variantId}`, lineId: null, variantId, poLineId: null, lotId: null, qty: 0, sku: r.sku, name: r.name, expected: 0,
+              lotNumber: null, expiry: null, tracking: r.tracking, trackExpiry: false, unitCost: null }
+        const fresh = e
+        setEntries((list) => (list ? [...list, fresh] : list))
+        if (r.tracking !== 'none') { scanFeedback('ok'); setLotFor({ variantId, qty: r.qty }); return }
+        scanFeedback('ok'); setLastKey(fresh.key)
+        setEntries((list) => (list ? list.map((x) => (x.key === fresh.key ? { ...x, qty: x.qty + r.qty } : x)) : list))
+        st.ok(`+${formatQty(r.qty)} ${r.sku} · ${r.name}`); return
+      }
       if (!e) { scanFeedback('error'); st.error(t('{code} is not on this receipt', { code: r.kind === 'variant' ? r.sku : r.lotNumber })); return }
       if (r.kind === 'lot') {
         scanFeedback('ok'); add(variantId, 1, { id: r.lotId, number: r.lotNumber, expiry: r.expiry }); st.ok(t('+1 {sku} · lot {lot}', { sku: e.sku, lot: r.lotNumber })); return
@@ -158,7 +205,8 @@ export function ReceiveScanPage() {
   const shorts = [...byVariant.values()].filter((v) => v.counted < v.expected).length
   const overs = [...byVariant.values()].filter((v) => v.counted > v.expected).length
   const missingLot = entries.some((e) => e.qty > 0 && e.tracking !== 'none' && !e.lotId)
-  const receivingLoc = rc.lines[0]?.location_id ?? (locations.data ?? []).find((l) => l.warehouse_id === rc.warehouse_id && l.location_type === 'receiving')?.id ?? ''
+  const receivingLoc = rc.lines[0]?.location_id ?? (locations.data ?? []).find((l) => l.warehouse_id === rc.warehouse_id && l.location_type === 'receiving')?.id
+    ?? (locations.data ?? []).find((l) => l.warehouse_id === rc.warehouse_id && l.location_type === 'internal' && l.is_active)?.id ?? ''
 
   const doFinish = async () => {
     try {

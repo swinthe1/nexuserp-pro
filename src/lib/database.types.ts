@@ -8978,6 +8978,7 @@ export type Database = {
           source: string
           valid_until: string | null
           markdown_id: string | null
+          only_here: boolean
         }
         Insert: {
           id?: string
@@ -8999,6 +9000,7 @@ export type Database = {
           source?: string
           valid_until?: string | null
           markdown_id?: string | null
+          only_here?: boolean
         }
         Update: {
           id?: string
@@ -9020,6 +9022,7 @@ export type Database = {
           source?: string
           valid_until?: string | null
           markdown_id?: string | null
+          only_here?: boolean
         }
         Relationships: [
           { foreignKeyName: "price_levels_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -14249,6 +14252,7 @@ export type Database = {
           payable: number
           decided_at: string | null
           decision_note: string | null
+          corrects_id: string | null
         }
         Insert: {
           id?: string
@@ -14280,6 +14284,7 @@ export type Database = {
           payable?: number
           decided_at?: string | null
           decision_note?: string | null
+          corrects_id?: string | null
         }
         Update: {
           id?: string
@@ -14311,10 +14316,12 @@ export type Database = {
           payable?: number
           decided_at?: string | null
           decision_note?: string | null
+          corrects_id?: string | null
         }
         Relationships: [
           { foreignKeyName: "vat_declarations_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
           { foreignKeyName: "vat_declarations_company_id_journal_entry_id_fkey"; columns: ["company_id", "journal_entry_id"]; isOneToOne: false; referencedRelation: "journal_entries"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "vat_declarations_corrects_id_fkey"; columns: ["corrects_id"]; isOneToOne: false; referencedRelation: "vat_declarations"; referencedColumns: ["id"] },
         ]
       }
       vehicles: {
@@ -17255,6 +17262,12 @@ export type Database = {
         }
         Returns: Json
       }
+      create_vat_correction: {
+        Args: {
+          p_id: string
+        }
+        Returns: string
+      }
       create_vat_declaration: {
         Args: {
           p_company: string
@@ -17474,6 +17487,21 @@ export type Database = {
           p_company: string
         }
         Returns: { id: string | null; file_name: string | null; status: string | null; error: string | null; vendor: string | null; number: string | null; total: number | null; receipt_id: string | null; created_at: string | null }[]
+      }
+      dock_receipt_costs: {
+        Args: {
+          p_receipt: string
+        }
+        Returns: number
+      }
+      dock_receipt_start: {
+        Args: {
+          p_company: string
+          p_vendor: string
+          p_warehouse: string
+          p_note: string
+        }
+        Returns: string
       }
       document_checks: {
         Args: {
@@ -19325,6 +19353,14 @@ export type Database = {
       price_level_print: {
         Args: {
           p_id: string
+        }
+        Returns: Json
+      }
+      price_level_quick: {
+        Args: {
+          p_variant: string
+          p_price: number
+          p_note?: string
         }
         Returns: Json
       }

@@ -30,24 +30,24 @@ insert into public.product_variants (company_id, product_id, sku, name, is_defau
 -- ---------- selling price from the cost ---------------------------------------------
 select public.price_rules_save(:'aco', 'markup', 0.05, false, 1, jsonb_build_array(jsonb_build_object('id', :'acat', 'pct', '30')));
 reset role;
-insert into public.item_costs (company_id, variant_id, avg_cost, qty_on_hand, total_value) values (:'aco', :'avar', 0.40, 10, 4);
+insert into t.item_costs (company_id, variant_id, avg_cost, qty_on_hand, total_value) values (:'aco', :'avar', 0.40, 10, 4);
 select t.ok((select gross_new = ceil(round(0.40 * 1.30 * (1 + :avat_rate / 100.0) / 0.05, 6)) * 0.05 and status = 'pending'
                from public.price_suggestions where variant_id = :'avar'),
   'goods at a new cost: the price that keeps 30% over cost, VAT included, rounded up to 0.05');
 select t.ok(exists (select 1 from public.notifications where company_id = :'aco' and link = '/inventory/prices' and read_at is null),
   'whoever may change prices is told');
-update public.item_costs set avg_cost = 0.45 where variant_id = :'avar';
-update public.item_costs set avg_cost = 0.46 where variant_id = :'avar';
+update t.item_costs set avg_cost = 0.45 where variant_id = :'avar';
+update t.item_costs set avg_cost = 0.46 where variant_id = :'avar';
 select t.ok((select count(*) from public.price_suggestions where variant_id = :'avar' and status = 'pending') = 1
             and (select count(*) from public.price_suggestions where variant_id = :'avar' and status = 'outdated') = 2,
   'a newer cost replaces the waiting suggestion');
 select t.ok((select count(*) from public.notifications where company_id = :'aco' and link = '/inventory/prices' and read_at is null)
             = (select count(distinct user_id) from public.notifications where company_id = :'aco' and link = '/inventory/prices'),
   'one waiting message per person, not one per item');
-update public.item_costs set avg_cost = 0.20 where variant_id = :'avar';
+update t.item_costs set avg_cost = 0.20 where variant_id = :'avar';
 select t.ok(not exists (select 1 from public.price_suggestions where variant_id = :'avar' and status = 'pending'),
   'a lower cost does not lower the price unless the shop wants that');
-update public.item_costs set avg_cost = 0.50 where variant_id = :'avar';
+update t.item_costs set avg_cost = 0.50 where variant_id = :'avar';
 select id as sug, gross_new as sug_gross from public.price_suggestions where variant_id = :'avar' and status = 'pending' \gset
 set role authenticated;
 select t.login('ana@auto.xk');
@@ -62,7 +62,7 @@ select t.ok((select l.status = 'posted' and l.number like 'NIV-%' and c.doc_numb
                join public.price_changes c on c.variant_id = pl.variant_id
               where pl.variant_id = :'avar' order by c.created_at desc limit 1),
   'as a posted price levelling, the same document as every other price change');
-update public.item_costs set avg_cost = 0.80 where variant_id = :'avar';
+update t.item_costs set avg_cost = 0.80 where variant_id = :'avar';
 select id as sug2 from public.price_suggestions where variant_id = :'avar' and status = 'pending' \gset
 set role authenticated;
 select t.login('ana@auto.xk');

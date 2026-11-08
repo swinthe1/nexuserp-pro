@@ -10,7 +10,7 @@ select id as co from public.companies where name = 'Market Demo X' \gset
 select il.variant_id as var, max(il.tax_code_id::text) as tax from public.sales_invoice_lines il join public.sales_invoices i on i.id = il.invoice_id
  where i.company_id = :'co' and i.status = 'posted' and il.variant_id is not null group by 1 having count(*) >= 3 order by count(*) desc limit 1 \gset
 select i.partner_id as cust from public.sales_invoices i where i.company_id = :'co' and i.status = 'posted' limit 1 \gset
-select avg_cost as cost from public.item_costs where company_id = :'co' and variant_id = :'var' \gset
+select avg_cost as cost from t.item_costs where company_id = :'co' and variant_id = :'var' \gset
 update public.business_partners set kind = 'company', tax_number = null where id = :'cust';
 
 set role authenticated;

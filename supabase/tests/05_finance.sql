@@ -214,7 +214,7 @@ select t.ok((select sum(closing) filter (where account_type = 'asset')
                from public.account_balances(:'co', '2000-01-01', current_date))
           = -(select sum(closing) filter (where account_type in ('liability','equity','revenue','expense'))
                from public.account_balances(:'co', '2000-01-01', current_date)), 'assets = liabilities + equity + current profit');
-select t.ok((select sum(total_value) from public.item_costs where company_id = :'co')
+select t.ok((select sum(total_value) from t.item_costs where company_id = :'co')
           = pg_temp.bal(:'co', '311') + pg_temp.bal(:'co', '331') - 6100, 'inventory account equals the stock valuation');
 select t.ok(not exists (select 1 from public.journal_entries where company_id = :'co' and status = 'posted' and total_debit <> total_credit),
             'every posted entry balances');

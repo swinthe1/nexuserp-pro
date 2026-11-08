@@ -128,7 +128,7 @@ select public.post_delivery(:'d1');
 select t.ok((select (status, total_cost) = ('done', 8000.00) from public.deliveries where id = :'d1'), 'delivery posted at average cost (COGS 10 × 800)');
 select t.ok((select status from public.sales_orders where id = :'so') = 'partially_delivered', 'order partially delivered');
 select t.ok((select sum(reserved) from public.stock_levels where variant_id = :'shirt') = 0, 'reservation consumed by the delivery');
-select t.ok((select qty_on_hand from public.item_costs where variant_id = :'shirt') = 0, 'stock left the warehouse');
+select t.ok((select qty_on_hand from t.item_costs where variant_id = :'shirt') = 0, 'stock left the warehouse');
 select t.throws(format($q$select public.post_delivery(%L)$q$, :'d1'), 'already done', 'deliveries post once');
 
 reset role;
@@ -187,7 +187,7 @@ reset role;
 
 -- quantity conservation still holds after deliveries
 select t.ok(not exists (
-  select 1 from public.item_costs ic where ic.company_id = :'co'
+  select 1 from t.item_costs ic where ic.company_id = :'co'
      and ic.qty_on_hand <> coalesce((select sum(on_hand) from public.stock_levels sl where sl.variant_id = ic.variant_id), 0)),
   'quantity conservation after sales deliveries');
 
