@@ -1,4 +1,4 @@
-import { ChevronRight, Moon, PanelLeftClose, PanelLeftOpen, Search, Star, Sun } from 'lucide-react'
+import { ChevronRight, Moon, PanelLeftClose, PanelLeftOpen, Star, Sun } from 'lucide-react'
 import { UnitPicker } from '@/components/layout/unit-picker'
 import * as React from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
@@ -7,7 +7,6 @@ import { useTheme } from '@/app/theme-provider'
 import { moduleLook } from '@/app/modules'
 import { NAV, type NavItem } from '@/app/nav'
 import { menuEntries, type MenuEntry } from '@/components/layout/hubs'
-import { useCommandPalette } from '@/components/layout/command-palette'
 import { CompanySwitcher } from '@/components/layout/company-switcher'
 import { recordVisit, useFavourites, useHiddenSections, useOpenSections } from '@/components/layout/nav-prefs'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -199,7 +198,6 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
   const hidden = useHiddenSections()
   const { favourites, toggle } = useFavourites()
   const { open, set: setOpen } = useOpenSections()
-  const palette = useCommandPalette()
   const [fullMenu, setFullMenu] = useFullMenu()
   const focused = !can('reports.read') && !can('finance.read') && !can('admin.read')
   const short = focused && !fullMenu
@@ -253,10 +251,7 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
 
   return (
     <nav className="flex flex-col gap-1" aria-label={t('Main menu')}>
-      <button type="button" onClick={() => palette.open('pages')}
-        className="mb-2 flex h-8 items-center gap-2 rounded-md border border-sidebar-border bg-background px-2 text-[13px] text-muted-foreground hover:text-foreground">
-        <Search className="size-4" /> <span className="flex-1 text-left">{t('Find a page…')}</span>
-      </button>
+      {/* one search only: the one in the top bar (Ctrl K) */}
 
       {/* the start page and what waits for approval, then the pages starred, then the parts */}
       {sections.filter((x) => x.label === 'Overview').map((section) => (

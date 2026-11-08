@@ -1396,4 +1396,7 @@ export default {
   "e.g. Arbën Krasniqi": "p.sh. Arbën Krasniqi",
   "e.g. arben.krasniqi": "p.sh. arben.krasniqi",
   "{name} signs in with {user} and the PIN you gave. Tell them the PIN in person.": "{name} hyn me {user} dhe PIN-in që i dhe. PIN-in tregoja personalisht.",
+  "Change|shortcuts": "Ndrysho",
+  "Hide the tree": "Fshih pemën",
+  "Show the tree": "Shfaq pemën",
 } satisfies Dict

@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useGoBack } from '@/components/layout/back-button'
 import { UnitPicker } from '@/components/layout/unit-picker'
-import { ArrowLeft, ArrowRight, Bot, Building2, CalendarDays, ChevronRight, Clock, GraduationCap, Keyboard, Menu, Plus, Printer, RefreshCw, Search, Server, UserRound } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Bot, Building2, CalendarDays, ChevronRight, Clock, GraduationCap, Keyboard, Menu, PanelLeftClose, PanelLeftOpen, Plus, Printer, RefreshCw, Search, Server, Settings2, UserRound } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/app/auth-provider'
@@ -12,7 +12,9 @@ import { NewMenu } from '@/components/layout/new-menu'
 import { NotificationsButton } from '@/components/layout/notifications'
 import { ChatButton } from '@/features/chat/chat-button'
 import { SidebarNav, useActiveHref, useMenuSections } from '@/components/layout/sidebar'
-import { useFavourites, useTopShortcuts } from '@/components/layout/nav-prefs'
+import { useFavourites } from '@/components/layout/nav-prefs'
+import { ShortcutsEditor, useChosenShortcuts } from '@/components/layout/shortcuts'
+import { CalculatorButton } from '@/components/layout/calculator'
 import { moduleLook } from '@/app/modules'
 import { TillLockButton } from '@/components/layout/till-lock'
 import { UserMenu } from '@/components/layout/user-menu'
@@ -46,12 +48,13 @@ function useOnline() {
 const hhmm = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 
 /** a command of the ribbon: a big one (the first of its group) or a small one beside it */
-function ToolButton({ icon: Icon, label, onClick, disabled, tone, big, ...rest }: { icon: typeof Plus; label: string; onClick?: () => void; disabled?: boolean; tone?: string; big?: boolean } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+function ToolButton({ icon: Icon, label, onClick, disabled, big, ...rest }: { icon: typeof Plus; label: string; onClick?: () => void; disabled?: boolean; big?: boolean } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button type="button" onClick={onClick} disabled={disabled} title={label} {...rest}
       className={cn('classic-cmd flex shrink-0 flex-col items-center justify-center gap-1 rounded-[4px] border border-transparent px-1 text-[12px] leading-tight text-foreground disabled:opacity-40',
         big ? 'h-[62px] w-[68px]' : 'h-[62px] w-[62px]')}>
-      <span className={cn('grid place-items-center rounded-[6px]', big ? 'size-8 text-white shadow-sm' : 'size-7')} style={big ? { background: `hsl(${tone ?? '158 82%'} 34%)` } : { color: `hsl(${tone ?? '213 56%'} 36%)` }}>
+      {/* black and white like the modern look; only the main action is green */}
+      <span className={cn('classic-cmd-icon grid place-items-center rounded-[6px]', big ? 'size-8 bg-primary text-primary-foreground shadow-sm' : 'size-7 text-foreground/80')}>
         <Icon className={big ? 'size-[18px]' : 'size-[20px]'} strokeWidth={big ? 2 : 1.7} />
       </span>
       <span className="line-clamp-2 max-w-full text-center">{label}</span>
@@ -69,21 +72,16 @@ function RibbonGroup({ label, children }: { label: string; children: React.React
   )
 }
 
-/** the pages one opens most: the ones starred, otherwise the usual ones of a shop */
+/** the pages one opens most: the person's own shortcuts (pages and new documents), else the starred pages, else the usual ones of a shop */
 const USUAL = ['/pos', '/sales/invoices', '/procurement/bills', '/inventory/stock', '/finance/payments', '/finance/cash-book']
-function useShortcuts() {
-  const sections = useMenuSections()
+function useShortcuts(): { id: string; label: string; icon: typeof Plus }[] {
+  const { shown, choices, by } = useChosenShortcuts()
   const { favourites } = useFavourites()
-  const mine = useTopShortcuts().list
   return React.useMemo(() => {
-    const all = sections.flatMap((s) => s.items.map((i) => ({ ...i, section: s.label })))
-    const by = new Map(all.map((i) => [i.href, i]))
-    // the person's own shortcuts first (the pages among them), then the starred pages, then the usual ones
-    const own = mine.map((h) => by.get(h)).filter((i): i is (typeof all)[number] => !!i && i.href !== '/')
-    if (own.length) return own.slice(0, 8)
-    const pick = (favourites.length ? favourites : USUAL).map((h) => by.get(h)).filter((i): i is (typeof all)[number] => !!i && i.href !== '/')
+    if (shown.length) return shown.slice(0, 10)
+    const pick = (favourites.length ? favourites : USUAL).map((h) => by.get(h)).filter((c): c is (typeof choices)[number] => !!c && c.id !== '/')
     return pick.slice(0, 6)
-  }, [sections, favourites, mine])
+  }, [shown, favourites, by, choices])
 }
 
 function MenuBar() {
@@ -98,9 +96,9 @@ function MenuBar() {
         const look = moduleLook(s.label)
         return (
           <DropdownMenu key={s.label} modal={false}>
-            <DropdownMenuTrigger data-here={s.label === here || undefined} style={{ '--mod': look.hue } as React.CSSProperties}
-              className="classic-menu-item relative flex items-center gap-1.5 rounded-[3px] px-2.5 outline-none hover:bg-[hsl(var(--accent))] focus-visible:bg-[hsl(var(--accent))] data-[state=open]:bg-[hsl(var(--accent))]">
-              <look.icon className="size-3.5" style={{ color: 'hsl(var(--mod) 38%)' }} strokeWidth={2} />
+            <DropdownMenuTrigger data-here={s.label === here || undefined}
+              className="classic-menu-item relative flex items-center gap-1.5 whitespace-nowrap rounded-[3px] px-2 outline-none focus-visible:bg-[hsl(var(--accent))] 2xl:px-2.5">
+              <look.icon className="size-3.5 text-muted-foreground max-[1535px]:hidden" strokeWidth={2} />
               {t(s.title ?? s.label)}
             </DropdownMenuTrigger>
             <DropdownMenuContent data-tab-opener="" align="start" sideOffset={2} className="max-h-[70vh] min-w-60 overflow-y-auto rounded-[4px] p-1 shadow-lg">
@@ -110,19 +108,19 @@ function MenuBar() {
                 const Icon = e.icon
                 if (e.items.length === 1) return (
                   <DropdownMenuItem key={e.key} className={cn('h-8 gap-2 rounded-[3px] py-0 text-[13px]', on && 'bg-[hsl(var(--accent))] font-semibold')} onSelect={() => navigate(e.href)}>
-                    <Icon className="size-4" style={{ color: `hsl(${look.hue} 38%)` }} />{t(e.label)}
+                    <Icon className="size-4 text-muted-foreground" />{t(e.label)}
                   </DropdownMenuItem>
                 )
                 return (
                   <DropdownMenuSub key={e.key}>
                     <DropdownMenuSubTrigger className={cn('h-8 gap-2 rounded-[3px] py-0 text-[13px]', on && 'bg-[hsl(var(--accent))] font-semibold')}
                       onClick={() => navigate(e.href)}>
-                      <Icon className="size-4" style={{ color: `hsl(${look.hue} 38%)` }} />{t(e.label)}
+                      <Icon className="size-4 text-muted-foreground" />{t(e.label)}
                     </DropdownMenuSubTrigger>
                     <DropdownMenuSubContent sideOffset={2} className="max-h-[70vh] min-w-56 overflow-y-auto rounded-[4px] p-1 shadow-lg">
                       {e.items.map((i) => (
                         <DropdownMenuItem key={i.href} className={cn('h-7 gap-2 rounded-[3px] py-0 text-[13px]', i.href === activeHref && 'bg-[hsl(var(--accent))] font-semibold')} onSelect={() => navigate(i.href)}>
-                          <i.icon className="size-4" style={{ color: `hsl(${look.hue} 38%)` }} />{t(i.label)}
+                          <i.icon className="size-4 text-muted-foreground" />{t(i.label)}
                         </DropdownMenuItem>
                       ))}
                     </DropdownMenuSubContent>
@@ -163,6 +161,10 @@ export function ClassicShell({ children, onOpenMobileNav }: { children: React.Re
   const here = sections.find((s) => s.items.some((i) => i.href === activeHref))
   const look = moduleLook(here?.label)
   const shortcuts = useShortcuts()
+  const [editing, setEditing] = React.useState(false)
+  // the tree on the left can be put away: the menu bar above already opens every page
+  const [tree, setTree] = React.useState(() => { try { return localStorage.getItem('drispro.classic.tree') !== '0' } catch { return true } })
+  const toggleTree = () => setTree((v) => { try { localStorage.setItem('drispro.classic.tree', v ? '0' : '1') } catch { /* private window */ }; return !v })
   const { go: goBack } = useGoBack()
 
   return (
@@ -172,12 +174,12 @@ export function ClassicShell({ children, onOpenMobileNav }: { children: React.Re
         <div className="classic-titlebar flex h-[34px] items-center gap-3 px-3 text-[13px] text-white">
           <button type="button" className="lg:hidden" onClick={onOpenMobileNav} aria-label={t('Open navigation')}><Menu className="size-4" /></button>
           <span className="flex items-center gap-2 font-semibold tracking-tight">
-            <span className="grid size-[20px] place-items-center rounded-[5px] bg-white/95 text-[11px] font-extrabold text-[hsl(213_56%_26%)]">D</span>DrisPRO
+            <span className="grid size-[20px] place-items-center rounded-[5px] bg-primary text-[11px] font-extrabold text-primary-foreground">D</span>DrisPRO
           </span>
           <span className="h-4 w-px bg-white/25" />
           <span className="flex min-w-0 items-center gap-1.5 truncate">
             <span className="truncate opacity-95">{company?.name}</span>
-            {here && <><ChevronRight className="size-3.5 shrink-0 opacity-60" /><look.icon className="size-3.5 shrink-0" style={{ color: `hsl(${look.hue} 72%)` }} /><span className="truncate opacity-95">{t(here.title ?? here.label)}</span></>}
+            {here && <><ChevronRight className="size-3.5 shrink-0 opacity-60" /><look.icon className="size-3.5 shrink-0 opacity-80" /><span className="truncate opacity-95">{t(here.title ?? here.label)}</span></>}
             {page && <><ChevronRight className="size-3.5 shrink-0 opacity-60" /><span className="truncate font-semibold">{t(page.label)}</span></>}
           </span>
           <span className="ml-auto hidden items-center gap-2 truncate opacity-90 sm:flex">
@@ -188,7 +190,7 @@ export function ClassicShell({ children, onOpenMobileNav }: { children: React.Re
         {/* the ribbon: the commands in groups, then the pages one opens most */}
         <div className="classic-ribbon flex h-[80px] items-stretch overflow-x-auto border-b px-1 pt-1">
           <RibbonGroup label={t('Document|ribbon')}>
-            <NewMenu trigger={<ToolButton big icon={Plus} label={t('New|ribbon')} tone="152 68%" />} />
+            <NewMenu trigger={<ToolButton big icon={Plus} label={t('New|ribbon')} />} />
             <ToolButton icon={Search} label={t('Search')} onClick={() => palette.open()} />
             <ToolButton icon={Printer} label={t('Print')} onClick={() => window.print()} />
           </RibbonGroup>
@@ -196,22 +198,22 @@ export function ClassicShell({ children, onOpenMobileNav }: { children: React.Re
             <ToolButton icon={ArrowLeft} label={t('Back')} onClick={goBack} />
             <ToolButton icon={ArrowRight} label={t('Forward')} onClick={() => navigate(1)} />
             <ToolButton icon={RefreshCw} label={t('Refresh')} onClick={refresh} className={spin ? '[&_svg]:animate-spin' : undefined} />
+            <ToolButton icon={tree ? PanelLeftClose : PanelLeftOpen} label={tree ? t('Hide the tree') : t('Show the tree')} onClick={toggleTree} aria-pressed={tree} />
           </RibbonGroup>
-          {shortcuts.length > 0 && (
-            <RibbonGroup label={t('Shortcuts|ribbon')}>
-              {shortcuts.map((i) => <ToolButton key={i.href} icon={i.icon} label={t(i.label)} tone={moduleLook(i.section).hue} onClick={() => navigate(i.href)}
-                aria-current={i.href === activeHref ? 'page' : undefined} />)}
-            </RibbonGroup>
-          )}
-          {hasFeature('ai_assistant') && (
-            <RibbonGroup label={t('Help')}>
-              <ToolButton icon={Bot} label={t('Assistant')} tone="262 60%" onClick={() => window.dispatchEvent(new Event('drispro:assistant'))} />
-              <ToolButton icon={GraduationCap} label={t('Training')} tone="32 90%" onClick={() => navigate('/training')} />
-            </RibbonGroup>
-          )}
+          {/* the person's own shortcuts (the same as in the modern top bar), and the way to change them */}
+          <RibbonGroup label={t('Shortcuts|ribbon')}>
+            {shortcuts.map((i) => <ToolButton key={i.id} icon={i.icon} label={i.label} onClick={() => navigate(i.id)}
+              aria-current={i.id === activeHref ? 'page' : undefined} />)}
+            <ToolButton icon={Settings2} label={t('Change|shortcuts')} onClick={() => setEditing(true)} />
+          </RibbonGroup>
+          <RibbonGroup label={t('Help')}>
+            {hasFeature('ai_assistant') && <ToolButton icon={Bot} label={t('Assistant')} onClick={() => window.dispatchEvent(new Event('drispro:assistant'))} />}
+            <ToolButton icon={GraduationCap} label={t('Training')} onClick={() => navigate('/training')} />
+          </RibbonGroup>
           <div className="ml-auto flex shrink-0 items-center gap-1 pl-2 pr-1">
             <LastExportButton />
             <TillLockButton />
+            <CalculatorButton />
             {/* the assistant's own panel (Ctrl+J) lives in its launcher */}
             <span className="hidden"><AssistantButton /></span>
             <ChatButton />
@@ -222,13 +224,13 @@ export function ClassicShell({ children, onOpenMobileNav }: { children: React.Re
       </header>
       <div className="flex min-w-0 flex-1">
         {/* the menu as a tree */}
-        <aside data-tab-opener="" className="classic-tree sticky top-[145px] hidden h-[calc(100dvh-145px-28px)] w-[256px] shrink-0 flex-col border-r lg:flex print:!hidden"
-          style={{ '--mod': look.hue } as React.CSSProperties}>
+        <aside data-tab-opener="" className={cn('classic-tree sticky top-[145px] hidden h-[calc(100dvh-145px-28px)] w-[256px] shrink-0 flex-col border-r print:!hidden', tree && 'lg:flex')}>
           <div className="grid gap-1.5 border-b p-2"><CompanySwitcher /><UnitPicker /></div>
           <div className="flex-1 overflow-y-auto p-2"><SidebarNav /></div>
         </aside>
         <div className="classic-page flex min-w-0 flex-1 flex-col">{children}</div>
       </div>
+      {editing && <ShortcutsEditor onClose={() => setEditing(false)} />}
       {/* the status bar */}
       <footer className="classic-titlebar classic-status fixed inset-x-0 bottom-0 z-30 flex h-[28px] items-center overflow-hidden whitespace-nowrap px-1 text-[12px] text-white print:hidden">
         <span className="flex items-center gap-1.5"><span className={cn('size-2 rounded-full', online ? 'bg-emerald-400 shadow-[0_0_6px] shadow-emerald-400' : 'bg-red-400')} />{online ? t('Connected to the server') : t('No connection: the till keeps selling')}</span>

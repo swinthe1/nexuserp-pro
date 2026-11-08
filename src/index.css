@@ -210,85 +210,101 @@
 }
 
 /* ------------------------------------------------------------------------------------------------
-   The classic look (Përdoruesi → Pamja → Klasike): a Windows program. Square corners, the system
-   font, navy bars, a light tree, gridded tables. The pages are the same; only how they look changes.
+   The classic look (Përdoruesi → Pamja → Klasike): a Windows program, in the same black and white as
+   the modern look. A dark title bar, a flat menu bar and ribbon, a tree on the left, gridded tables,
+   square corners and the system font. Colour only where it means something: the green of the main
+   action, the state badges, the warnings. Light and dark follow the person's choice.
    ------------------------------------------------------------------------------------------------ */
 @layer base {
-  html.classic { --radius: 0.1875rem; }
+  html.classic { --radius: 0.25rem; }
   html.classic:not(.dark) {
-    --background: 216 24% 94.5%;
-    --foreground: 216 32% 13%;
+    --background: 240 5% 95%;
     --card: 0 0% 100%;
-    --card-foreground: 216 32% 13%;
     --popover: 0 0% 100%;
-    --popover-foreground: 216 32% 13%;
-    --primary: 213 56% 30%;            /* navy, like the title bar */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 216 22% 89%;
-    --secondary-foreground: 216 32% 15%;
-    --muted: 220 16% 95%;
-    --muted-foreground: 215 12% 38%;
-    --accent: 212 70% 92%;
-    --accent-foreground: 213 56% 26%;
-    --border: 216 13% 77%;
-    --input: 216 13% 68%;
-    --ring: 211 75% 45%;
+    --secondary: 240 5% 91%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 38%;
+    --accent: 240 5% 92%;
+    --accent-foreground: 240 6% 10%;
+    --border: 240 5% 84%;
+    --input: 240 5% 74%;
     --shadow-card: none;
+    --classic-bar: 240 6% 10%;          /* the title bar and the status bar */
+    --classic-bar-2: 240 5% 15%;
+    --classic-face: 0 0% 100%;          /* the menu bar and the ribbon */
+    --classic-hover: 240 5% 92%;
+    --classic-press: 240 5% 87%;
+    --classic-head: 240 5% 94%;          /* table headings */
+    --classic-zebra: 240 5% 97.5%;
+  }
+  html.classic.dark {
+    --classic-bar: 0 0% 2%;
+    --classic-bar-2: 0 0% 5%;
+    --classic-face: 0 0% 7%;
+    --classic-hover: 0 0% 13%;
+    --classic-press: 0 0% 17%;
+    --classic-head: 0 0% 10%;
+    --classic-zebra: 0 0% 8.5%;
+    --border: 0 0% 17%;
   }
   html.classic body { font-family: 'Segoe UI Variable Text', 'Segoe UI', Tahoma, Manrope, ui-sans-serif, system-ui, sans-serif; }
-  /* the title bar and the status bar: deep navy, lit a little from the top */
-  html.classic .classic-titlebar { background: linear-gradient(180deg, hsl(213 52% 27%), hsl(214 56% 20%)); }
-  html.classic.dark .classic-titlebar { background: linear-gradient(180deg, hsl(213 40% 19%), hsl(214 45% 13%)); }
-  /* the menu bar: white; the part you are in carries its colour underneath */
-  html.classic .classic-menubar { background: hsl(var(--card)); }
-  html.classic .classic-menu-item[data-here] { font-weight: 600; color: hsl(var(--mod) 30%); }
-  html.classic.dark .classic-menu-item[data-here] { color: hsl(var(--mod) 72%); }
-  html.classic .classic-menu-item[data-here]::after { content: ''; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px; border-radius: 2px; background: hsl(var(--mod) 40%); }
-  /* the ribbon: a light face, groups with thin dividers, commands lit on hover */
-  html.classic .classic-ribbon { background: linear-gradient(180deg, hsl(0 0% 100%), hsl(216 33% 96%)); }
-  html.classic.dark .classic-ribbon { background: linear-gradient(180deg, hsl(var(--card)), hsl(var(--muted))); }
-  html.classic .classic-group { border-color: hsl(var(--border) / 0.7); }
-  html.classic .classic-cmd:hover:not(:disabled), html.classic .classic-cmd[data-state='open'] { background: hsl(212 80% 95%); border-color: hsl(212 60% 84%); }
-  html.classic.dark .classic-cmd:hover:not(:disabled), html.classic.dark .classic-cmd[data-state='open'] { background: hsl(var(--accent)); border-color: hsl(var(--border)); }
-  html.classic .classic-cmd:active:not(:disabled) { background: hsl(212 75% 90%); }
-  html.classic .classic-cmd[aria-current='page'] { background: hsl(212 80% 93%); border-color: hsl(212 60% 78%); font-weight: 600; }
-  /* the tree on the left: a quiet blue-grey pane, the open page marked by a bar in its part's colour */
-  html.classic:not(.dark) .classic-tree {
-    background: hsl(216 33% 97.5%);
-    --sidebar-foreground: 216 32% 16%;
-    --sidebar-border: 216 16% 86%;
-    --muted-foreground: 215 12% 40%;
-  }
-  html.classic.dark .classic-tree { background: hsl(var(--card)); }
-  html.classic .classic-tree .text-white { color: hsl(var(--primary)); }
-  html.classic .classic-tree [aria-current='page'] { position: relative; background: hsl(0 0% 100%); color: hsl(var(--accent-foreground)); font-weight: 600; box-shadow: 0 1px 2px hsl(216 30% 40% / 0.12), inset 0 0 0 1px hsl(216 20% 88%); }
-  html.classic.dark .classic-tree [aria-current='page'] { background: hsl(var(--accent)); box-shadow: none; }
-  html.classic .classic-tree [aria-current='page']::before { content: ''; position: absolute; left: 0; top: 5px; bottom: 5px; width: 3px; border-radius: 3px; background: hsl(var(--mod, 213 56%) 42%); }
+
+  /* the title bar and the status bar: black, lit a little from the top */
+  html.classic .classic-titlebar { background: linear-gradient(180deg, hsl(var(--classic-bar-2)), hsl(var(--classic-bar))); color: hsl(0 0% 96%); }
+  html.classic.dark .classic-titlebar { border-bottom: 1px solid hsl(var(--border)); }
+  html.classic.dark .classic-status { border-top: 1px solid hsl(var(--border)); border-bottom: 0; }
+
+  /* the menu bar: flat; the part of the page in use underlined in green */
+  html.classic .classic-menubar { background: hsl(var(--classic-face)); }
+  html.classic .classic-menu-item:hover, html.classic .classic-menu-item[data-state='open'] { background: hsl(var(--classic-hover)); }
+  html.classic .classic-menu-item[data-here] { font-weight: 600; }
+  html.classic .classic-menu-item[data-here]::after { content: ''; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px; border-radius: 2px; background: hsl(var(--primary)); }
+
+  /* the ribbon: flat, its groups apart by a thin line */
+  html.classic .classic-ribbon { background: hsl(var(--classic-face)); }
+  html.classic .classic-group { border-color: hsl(var(--border)); }
+  html.classic .classic-cmd:hover:not(:disabled), html.classic .classic-cmd[data-state='open'] { background: hsl(var(--classic-hover)); border-color: hsl(var(--border)); }
+  html.classic .classic-cmd:active:not(:disabled) { background: hsl(var(--classic-press)); }
+  html.classic .classic-cmd[aria-current='page'] { background: hsl(var(--classic-hover)); border-color: hsl(var(--border)); font-weight: 600; }
+  html.classic .classic-cmd[aria-current='page'] .classic-cmd-icon { color: hsl(var(--primary)); }
+
+  /* the tree on the left */
+  html.classic .classic-tree { background: hsl(var(--classic-face)); }
+  html.classic .classic-tree [aria-current='page'] { position: relative; background: hsl(var(--classic-hover)); color: hsl(var(--foreground)); font-weight: 600; box-shadow: none; }
+  html.classic .classic-tree [aria-current='page']::before { content: ''; position: absolute; left: 0; top: 5px; bottom: 5px; width: 3px; border-radius: 3px; background: hsl(var(--primary)); }
   html.classic .classic-tree a, html.classic .classic-tree button { border-radius: 4px; }
-  /* the status bar: its facts in segments */
-  html.classic .classic-status > span { display: flex; align-items: center; gap: 6px; height: 100%; padding: 0 10px; border-right: 1px solid hsl(0 0% 100% / 0.14); }
+
+  /* the status bar: its parts apart by a thin line */
+  html.classic .classic-status > span { display: flex; align-items: center; gap: 6px; height: 100%; padding: 0 10px; border-right: 1px solid hsl(0 0% 100% / 0.12); }
   html.classic .classic-status > span:last-child { border-right: 0; }
-  html.classic .classic-status > span.ml-auto { border-left: 1px solid hsl(0 0% 100% / 0.14); }
-  html.classic .classic-status svg { opacity: 0.8; }
-}
-@layer components {
-  /* small corners everywhere but on dots and avatars; panels lifted a hair from the page, as in Windows 11 */
+  html.classic .classic-status > span.ml-auto { border-left: 1px solid hsl(0 0% 100% / 0.12); }
+  html.classic .classic-status svg { opacity: 0.75; }
+
+  /* the work tabs: flat, like the tabs of a Windows document window */
+  html.classic [data-work-tabs] [role='tab'] { border-radius: 4px 4px 0 0; }
+  html.classic [data-work-tabs] [role='tab'] svg { color: currentColor !important; opacity: 0.8; }
+  html.classic [data-work-tabs] { background: hsl(var(--classic-face)); }
+  html.classic .classic-menubar { overflow-x: auto; scrollbar-width: none; }
+
+  /* corners and shadows: square and quiet */
   html.classic :is(.rounded-sm, .rounded, .rounded-md) { border-radius: 4px; }
   html.classic :is(.rounded-lg, .rounded-xl, .rounded-2xl) { border-radius: 6px; }
-  html.classic .shadow-sm, html.classic .shadow { box-shadow: 0 1px 2px hsl(216 30% 30% / 0.07); }
-  html.classic:not(.dark) .classic-page .rounded-xl.border.bg-card { box-shadow: 0 1px 2px hsl(216 30% 30% / 0.06), 0 2px 6px -2px hsl(216 30% 30% / 0.08); }
-  /* tables as in a desktop program: a grey header, lines between the columns, every second row tinted */
+  html.classic .shadow-sm, html.classic .shadow { box-shadow: 0 1px 2px hsl(240 6% 10% / 0.06); }
+  html.classic.dark .shadow-sm, html.classic.dark .shadow { box-shadow: none; }
+
+  /* tables: a grid, grey headings, every other row a shade darker */
   html.classic table { font-size: 13px; }
-  html.classic thead tr { background: linear-gradient(hsl(220 16% 97%), hsl(220 14% 91%)); }
-  html.classic.dark thead tr { background: hsl(var(--muted)); }
+  html.classic thead tr { background: hsl(var(--classic-head)); }
   html.classic th { height: 30px; font-weight: 600; color: hsl(var(--foreground)); border-right: 1px solid hsl(var(--border)); border-bottom: 1px solid hsl(var(--border)); }
-  html.classic td { padding-top: 5px; padding-bottom: 5px; border-right: 1px solid hsl(var(--border) / 0.55); }
+  html.classic td { padding-top: 5px; padding-bottom: 5px; border-right: 1px solid hsl(var(--border) / 0.6); }
   html.classic :is(th, td):last-child { border-right: 0; }
-  html.classic tbody tr:nth-child(even) { background: hsl(var(--muted) / 0.7); }
-  html.classic tbody tr:hover { background: hsl(var(--accent)); }
-  /* buttons: square, a light raised face for the plain ones */
-  html.classic button:is(.border, [class*='border-input']):not(.rounded-full) { background-image: linear-gradient(hsl(0 0% 100%), hsl(220 14% 95%)); }
-  html.classic.dark button:is(.border, [class*='border-input']):not(.rounded-full) { background-image: none; }
+  html.classic tbody tr:nth-child(even) { background: hsl(var(--classic-zebra)); }
+  html.classic tbody tr:hover { background: hsl(var(--classic-hover)); }
+
+  /* plain buttons: a flat face with a clear edge; pressed, a shade darker */
+  html.classic button:is(.border, [class*='border-input']):not(.rounded-full):not(.classic-cmd) { background-color: hsl(var(--classic-face)); }
+  html.classic button:is(.border, [class*='border-input']):not(.rounded-full):not(.classic-cmd):hover:not(:disabled) { background-color: hsl(var(--classic-hover)); }
+  html.classic button:is(.border, [class*='border-input']):not(.rounded-full):not(.classic-cmd):active:not(:disabled) { background-color: hsl(var(--classic-press)); }
 }
 
 /* ---- tables that fit the screen (components/ui/table.tsx): steps 1–4 when a table is too wide ---- */

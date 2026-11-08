@@ -67,6 +67,21 @@ export function useShortcutChoices(): ShortcutChoice[] {
 }
 
 /** the person's shortcuts, beside the "+" in the top bar; a click opens the page (in a tab of its own) */
+/** the shortcuts the person chose, as they can open them now; and a way to change them */
+export function useChosenShortcuts() {
+  const { list, set, loaded } = useTopShortcuts()
+  const choices = useShortcutChoices()
+  const by = React.useMemo(() => new Map(choices.map((c) => [c.id, c])), [choices])
+  const shown = React.useMemo(() => list.map((id) => by.get(id)).filter((c): c is ShortcutChoice => !!c), [list, by])
+  return { shown, list, set, loaded, choices, by }
+}
+
+/** the editor of the shortcuts, for the classic toolbar too */
+export function ShortcutsEditor({ onClose }: { onClose: () => void }) {
+  const { list, set, choices } = useChosenShortcuts()
+  return <ShortcutsDialog choices={choices} value={list} onClose={onClose} onSave={(next) => { set(next); onClose() }} />
+}
+
 export function ShortcutBar() {
   const { list, set, loaded } = useTopShortcuts()
   const choices = useShortcutChoices()

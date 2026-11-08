@@ -343,4 +343,7 @@ export default {
   "New price levelling": "Nova nivelacija cena",
   "New sales invoice": "Nova izlazna faktura",
   "New purchase invoice": "Nova ulazna faktura",
+  "Change|shortcuts": "Izmeni",
+  "Hide the tree": "Sakrij stablo",
+  "Show the tree": "Prikaži stablo",
 } satisfies Dict
