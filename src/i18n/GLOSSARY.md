@@ -47,7 +47,8 @@ Sentence case in both languages. Keep placeholders `{name}` exactly. Albanian us
 | Quote | Ofertë |
 | Sales order / Purchase order | Porosi shitjeje / Porosi blerjeje |
 | Delivery (goods leaving) | Dërgesë (Fletëdalje on printouts) |
-| Goods receipt | Pranim malli (Fletëhyrje on printouts) |
+| Goods receipt | Pranim malli (also on printouts) |
+| Purchase invoice (no VAT) | Fletëhyrje |
 | Transfer | Transferim |
 | Stock adjustment | Rregullim stoku |
 | Stock count / Cycle count | Inventarizim / Numërim i pjesshëm |

@@ -68,7 +68,7 @@ export default {
   'Delete this draft?': 'Ta fshij këtë skicë?',
   'Nothing was received or posted yet.': 'Ende nuk është pranuar as postuar asgjë.',
   'Transport, customs and other costs are added afterwards with': 'Transporti, dogana dhe shpenzime të tjera shtohen pas kësaj te',
-  'The goods came in with the receipt': 'Malli hyri me fletëhyrjen',
+  'The goods came in with the receipt': 'Malli hyri me pranimin e mallit',
 
   // serveri
   'Choose the warehouse the goods go into': 'Zgjidhni njësinë ku hyn malli',

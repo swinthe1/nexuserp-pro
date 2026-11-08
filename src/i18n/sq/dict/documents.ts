@@ -11,7 +11,7 @@ export default {
   'Payment voucher': 'Mandat pagese',
   'Payment received': 'Arkëtim',
   'Payment made': 'Pagesë',
-  'Goods received note': 'Fletëhyrje',
+  'Goods received note': 'Pranim malli',
   'Received from': 'Paguesi',
   'NIPT/NUI': 'NIPT/NUI',
   'VAT no.': 'Nr. TVSH',
@@ -62,7 +62,7 @@ export default {
   // cilësimet
   'Printed documents': 'Dokumentet e printuara',
   'Invoices, offers, pro formas, delivery notes, purchase orders, receipts and payment vouchers are printed, saved as PDF and emailed with this look.':
-    'Faturat, ofertat, proformat, fletëdaljet, porositë e blerjes, fletëhyrjet dhe mandatet printohen, ruhen si PDF dhe dërgohen me e-mail me këtë pamje.',
+    'Faturat, ofertat, proformat, fletëdaljet, porositë e blerjes, pranimet e mallit dhe mandatet printohen, ruhen si PDF dhe dërgohen me e-mail me këtë pamje.',
   'Logo': 'Logoja',
   'No logo': 'Pa logo',
   'Choose a picture': 'Zgjidh një foto',
