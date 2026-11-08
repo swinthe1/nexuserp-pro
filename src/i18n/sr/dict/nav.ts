@@ -307,4 +307,8 @@ export default {
   "close|verb": "zatvori",
   "move": "pomeri",
   "open|verb": "otvori",
+  "Stock and items|menu": "Zalihe / Artikli",
+  "Internal moves|menu": "Interna kretanja",
+  "Internal moves": "Interna kretanja",
+  "Administration|menu": "Administracija",
 } satisfies Dict

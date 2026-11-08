@@ -1,4 +1,4 @@
-import { BadgeDollarSign, BedDouble, BookOpenCheck, CalendarClock, Boxes, Building2, BarChart3, Factory, LayoutDashboard, type LucideIcon, Percent, ScanLine, ShoppingCart, Store, Truck, Users, Wallet } from 'lucide-react'
+import { ArrowLeftRight, BadgeDollarSign, BedDouble, BookOpenCheck, CalendarClock, Boxes, Building2, BarChart3, Factory, LayoutDashboard, type LucideIcon, Percent, ScanLine, ShoppingCart, Store, Truck, Users, Wallet } from 'lucide-react'
 import { NAV } from '@/app/nav'
 
 /**
@@ -19,6 +19,7 @@ export const MODULES: Record<string, ModuleLook> = {
   Accounting: { icon: BookOpenCheck, hue: '196 70%' },
   Appointments: { icon: CalendarClock, hue: '290 58%' },
   Hotel: { icon: BedDouble, hue: '42 88%' },
+  'Internal moves': { icon: ArrowLeftRight, hue: '120 45%' },
   Manufacturing: { icon: Factory, hue: '18 82%' },
   Logistics: { icon: Truck, hue: '188 78%' },
   'Warehouse|menu': { icon: ScanLine, hue: '32 90%' },

@@ -1318,4 +1318,8 @@ export default {
   "{n} invoices are waiting to go to the customers": "{n} fatura presin të dërgohen te klientët",
   "{n} invoice sent. It goes out within a minute.": "{n} faturë u dërgua. Del brenda një minute.",
   "{n} invoices sent. They go out within a minute.": "{n} fatura u dërguan. Dalin brenda një minute.",
+  "Stock and items|menu": "Stoku / Artikujt",
+  "Internal moves|menu": "Lëvizje interne",
+  "Internal moves": "Lëvizje interne",
+  "Administration|menu": "Administrimi",
 } satisfies Dict
