@@ -1399,4 +1399,8 @@ export default {
   "Change|shortcuts": "Ndrysho",
   "Hide the tree": "Fshih pemën",
   "Show the tree": "Shfaq pemën",
+  "No.|till": "Nr.",
+  "Last item|till": "Artikulli i fundit",
+  "Selected line": "Rreshti i zgjedhur",
+  "+ and − change the quantity, Delete removes the line, ↑ ↓ move between lines": "+ dhe − ndryshojnë sasinë, Delete fshin rreshtin, ↑ ↓ lëvizin nëpër rreshta",
 } satisfies Dict

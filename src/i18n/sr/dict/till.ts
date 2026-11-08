@@ -1190,4 +1190,9 @@ export default {
   "Sign in with your user name": "Prijava korisničkim imenom",
   "Your user name and PIN": "Vaše korisničko ime i PIN",
   "Save and continue": "Sačuvaj i nastavi",
+  "No.|till": "Br.",
+  "Last item|till": "Poslednji artikal",
+  "Selected line": "Izabrani red",
+  "+ and − change the quantity, Delete removes the line, ↑ ↓ move between lines": "+ i − menjaju količinu, Delete briše red, ↑ ↓ pomeraju između redova",
+  "Discount": "Popust",
 } satisfies Dict

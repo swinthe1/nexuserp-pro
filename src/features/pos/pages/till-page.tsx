@@ -192,6 +192,11 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   const [redeem, setRedeem] = React.useState<Redeem | null>(null)
   React.useEffect(() => { setRedeem(null) }, [lines])
   const [selected, setSelected] = React.useState<string | null>(null)
+  // the line in focus stays in sight in the coupon table, as a scan adds it at the bottom
+  const linesBox = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    if (selected) linesBox.current?.querySelector(`[data-line="${CSS.escape(selected)}"]`)?.scrollIntoView({ block: 'nearest' })
+  }, [selected, lines.length])
   const [query, setQuery] = React.useState('')
   const [multiplier, setMultiplier] = React.useState<number | null>(null)
   const [category, setCategory] = React.useState<string>('__all')
@@ -746,9 +751,93 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
 
   const selectedLine = lines.find((l) => l.key === selected) ?? null
   const pending = sync.items.filter((i) => i.register_id === data.register.id)
+  // searching: each item in detail, so the cashier picks the right one
+  const resultsList = dq && visible.length > 0 ? (
+            <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border bg-card">
+              {visible.slice(0, tiles ? 60 : RESULTS).map((c, i) => {
+                const promo = bestPromo(data.promotions, c.variant_id, c.price, 1, new Date(clock))
+                const packs = c.barcodes.filter((b) => num(b.qty) > 1)
+                const net = c.tax_rate ? c.price / (1 + num(c.tax_rate) / 100) : c.price
+                return (
+                  <div key={c.variant_id} className={cn('flex items-stretch border-b last:border-0', hi && hi.q === dq && i === hiIndex && 'bg-primary/10 ring-2 ring-inset ring-primary/40')}>
+                  <button type="button" onClick={() => add(c)} aria-current={hi && hi.q === dq && i === hiIndex ? 'true' : undefined}
+                    className="grid min-w-0 flex-1 grid-cols-[1fr_auto] items-center gap-3 px-3 py-2 text-left hover:bg-primary/5">
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-2"><span className="truncate text-[14px] font-medium">{c.name}</span>
+                        {promo && <span className="shrink-0 rounded bg-success/15 px-1.5 py-0.5 text-[11px] font-medium text-success">−{formatQty(promo.pct)}% {promo.name}</span>}</span>
+                      <span className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] text-muted-foreground">
+                        <span>{t('Code')}: <span className="tabular text-foreground/80">{c.sku}</span></span>
+                        {c.barcodes[0] && <span>{t('Barcode')}: <span className="tabular text-foreground/80">{c.barcodes.find((b) => num(b.qty) <= 1)?.code ?? c.barcodes[0].code}</span></span>}
+                        {c.uom && <span>{t('Unit')}: {td(c.uom)}</span>}
+                        {packs.map((b) => <span key={b.code}>{t('Pack of {n}', { n: formatQty(num(b.qty)) })}: <span className="tabular">{b.code}</span></span>)}
+                        {c.category && <span>{td(c.category)}</span>}
+                      </span>
+                    </span>
+                    <span className="text-right">
+                      <span className="block text-base font-semibold tabular" title={t('Price with VAT')}>{formatMoney(c.price)}</span>
+                      <span className="block text-[11px] text-muted-foreground tabular">{t('{amount} without VAT', { amount: formatMoney(Math.round(net * 100) / 100) })}</span>
+                      {c.product_type === 'stockable' && <span className={cn('block text-[11px] tabular', c.on_hand <= 0 ? 'font-medium text-destructive' : 'text-muted-foreground')}>{t('Here: {qty}', { qty: formatQty(num(c.on_hand)) })}</span>}
+                    </span>
+                  </button>
+                  {!tiles && can('pos.approve') && (
+                    <button type="button" onClick={() => void togglePin(c.variant_id)} className="grid w-10 shrink-0 place-items-center border-l text-muted-foreground hover:bg-muted hover:text-foreground"
+                      title={pinned.includes(c.variant_id) ? t('Take it off the quick buttons') : t('Add it to the quick buttons')} aria-label={pinned.includes(c.variant_id) ? t('Take it off the quick buttons') : t('Add it to the quick buttons')}>
+                      {pinned.includes(c.variant_id) ? <PinOff className="size-4" /> : <Pin className="size-4" />}
+                    </button>
+                  )}
+                  </div>
+                )
+              })}
+            </div>
+  ) : null
+  const market = !tiles && !phone
+  // the market's coupon, as a table: the cashier and the customer see every line at once
+  const focusLine = (priced.find((l) => l.key === selected) ?? priced[priced.length - 1]) as PricedLine | undefined
+  const cols = 'grid grid-cols-[2.5rem_minmax(0,1fr)_5.5rem_6rem_5rem_7rem] items-center gap-x-2 px-3 2xl:grid-cols-[3rem_minmax(0,1fr)_8rem_9rem_7rem_10rem] 2xl:gap-x-4 2xl:px-4'
+  const saleTable = (
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border bg-card">
+      <div className={cn(cols, 'shrink-0 border-b bg-muted/50 py-2 text-[12px] font-medium text-muted-foreground')}>
+        <span>{t('No.|till')}</span><span>{t('Item')}</span><span className="text-right">{t('Quantity')}</span>
+        <span className="text-right">{t('Price')}</span><span className="text-right">{t('Discount')}</span><span className="text-right">{t('Total')}</span>
+      </div>
+      <div ref={linesBox} className="min-h-0 flex-1 overflow-y-auto" role="listbox" aria-label={t('Sale lines')}>
+        {!lines.length ? (
+          <div className="grid h-full place-items-center p-8">
+            <div className="max-w-lg text-center">
+              <ScanLine className="mx-auto size-8 text-primary/60" />
+              <p className="mt-3 text-[15px] font-medium">{t('Scan the barcode, or type a name or code')}</p>
+              <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{t('The closest items come up as you type: ë and ç, typos and the order of the words do not matter. ↑ ↓ choose, Enter adds. 3* before a scan sells three. Enter on an empty field pays.')}</p>
+              {can('pos.approve') && !pinned.length && <p className="mt-3 text-[12px] text-muted-foreground">{t('To choose your own quick buttons, search an item and press the pin beside it.')}</p>}
+            </div>
+          </div>
+        ) : priced.map((l, i) => (
+          <div key={l.key} data-line={l.key} role="option" aria-selected={selected === l.key} onClick={() => setSelected(l.key)} onDoubleClick={() => { setSelected(l.key); setDialog('line') }}
+            className={cn(cols, 'cursor-pointer border-b py-2.5 text-[15px] 2xl:text-base', selected === l.key ? 'bg-primary/10 ring-1 ring-inset ring-primary/40' : i % 2 ? 'bg-muted/25 hover:bg-muted/50' : 'hover:bg-muted/50')}>
+            <span className="text-[13px] text-muted-foreground tabular">{i + 1}</span>
+            <span className="min-w-0"><span className="block truncate font-medium">{l.name}</span>
+              {l.sku && <span className="block truncate text-[11.5px] text-muted-foreground tabular">{l.sku}</span>}</span>
+            <span className="text-right font-semibold tabular">{formatQty(num(l.qty))}</span>
+            <span className="text-right tabular">{formatMoney(l.price)}</span>
+            <span className="text-right text-[13px] text-primary tabular">{l.discount ? `−${Math.round(l.discount * 100) / 100}%` : ''}</span>
+            <span className="text-right font-semibold tabular">{formatMoney(lineTotal(l))}</span>
+          </div>
+        ))}
+      </div>
+      {selectedLine && (
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-t bg-muted/30 px-3 py-2">
+          <Button size="icon" variant="outline" className="size-9" aria-label={t('One less')} onClick={() => updateLine(selectedLine.key, { qty: selectedLine.qty - 1 })}><Minus /></Button>
+          <span className="w-12 text-center text-sm font-semibold tabular">{formatQty(num(selectedLine.qty))}</span>
+          <Button size="icon" variant="outline" className="size-9" aria-label={t('One more')} onClick={() => updateLine(selectedLine.key, { qty: selectedLine.qty + 1 })}><Plus /></Button>
+          <Button size="sm" variant="ghost" className="ml-1" onClick={() => setDialog('line')}>{t('Quantity, discount…')}</Button>
+          <Button size="sm" variant="ghost" className="text-destructive" onClick={() => removeLine(selectedLine.key)}><Trash2 /> {t('Remove line')}</Button>
+          <span className="ml-auto text-[12px] text-muted-foreground max-xl:hidden">{t('+ and − change the quantity, Delete removes the line, ↑ ↓ move between lines')}</span>
+        </div>
+      )}
+    </div>
+  )
 
   return (
-    <div className="flex h-dvh flex-col bg-muted/30 text-foreground">
+    <div className="flex h-dvh flex-col overflow-hidden bg-muted/30 text-foreground">
       <TourHost />
       {/* ---------- top bar */}
       <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-card px-3">
@@ -865,45 +954,20 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
               </button>
             ))}
           </div>}
-          {dq && visible.length > 0 ? (
-            // searching: each item in detail, so the cashier picks the right one
-            <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border bg-card">
-              {visible.slice(0, tiles ? 60 : RESULTS).map((c, i) => {
-                const promo = bestPromo(data.promotions, c.variant_id, c.price, 1, new Date(clock))
-                const packs = c.barcodes.filter((b) => num(b.qty) > 1)
-                const net = c.tax_rate ? c.price / (1 + num(c.tax_rate) / 100) : c.price
-                return (
-                  <div key={c.variant_id} className={cn('flex items-stretch border-b last:border-0', hi && hi.q === dq && i === hiIndex && 'bg-primary/10 ring-2 ring-inset ring-primary/40')}>
-                  <button type="button" onClick={() => add(c)} aria-current={hi && hi.q === dq && i === hiIndex ? 'true' : undefined}
-                    className="grid min-w-0 flex-1 grid-cols-[1fr_auto] items-center gap-3 px-3 py-2 text-left hover:bg-primary/5">
-                    <span className="min-w-0">
-                      <span className="flex items-center gap-2"><span className="truncate text-[14px] font-medium">{c.name}</span>
-                        {promo && <span className="shrink-0 rounded bg-success/15 px-1.5 py-0.5 text-[11px] font-medium text-success">−{formatQty(promo.pct)}% {promo.name}</span>}</span>
-                      <span className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] text-muted-foreground">
-                        <span>{t('Code')}: <span className="tabular text-foreground/80">{c.sku}</span></span>
-                        {c.barcodes[0] && <span>{t('Barcode')}: <span className="tabular text-foreground/80">{c.barcodes.find((b) => num(b.qty) <= 1)?.code ?? c.barcodes[0].code}</span></span>}
-                        {c.uom && <span>{t('Unit')}: {td(c.uom)}</span>}
-                        {packs.map((b) => <span key={b.code}>{t('Pack of {n}', { n: formatQty(num(b.qty)) })}: <span className="tabular">{b.code}</span></span>)}
-                        {c.category && <span>{td(c.category)}</span>}
-                      </span>
-                    </span>
-                    <span className="text-right">
-                      <span className="block text-base font-semibold tabular" title={t('Price with VAT')}>{formatMoney(c.price)}</span>
-                      <span className="block text-[11px] text-muted-foreground tabular">{t('{amount} without VAT', { amount: formatMoney(Math.round(net * 100) / 100) })}</span>
-                      {c.product_type === 'stockable' && <span className={cn('block text-[11px] tabular', c.on_hand <= 0 ? 'font-medium text-destructive' : 'text-muted-foreground')}>{t('Here: {qty}', { qty: formatQty(num(c.on_hand)) })}</span>}
-                    </span>
-                  </button>
-                  {!tiles && can('pos.approve') && (
-                    <button type="button" onClick={() => void togglePin(c.variant_id)} className="grid w-10 shrink-0 place-items-center border-l text-muted-foreground hover:bg-muted hover:text-foreground"
-                      title={pinned.includes(c.variant_id) ? t('Take it off the quick buttons') : t('Add it to the quick buttons')} aria-label={pinned.includes(c.variant_id) ? t('Take it off the quick buttons') : t('Add it to the quick buttons')}>
-                      {pinned.includes(c.variant_id) ? <PinOff className="size-4" /> : <Pin className="size-4" />}
-                    </button>
-                  )}
-                  </div>
-                )
-              })}
+          {market ? (
+            // the market's till: the coupon is the big table; items show only while searching, over it
+            <div className="relative flex min-h-0 flex-1 flex-col gap-2">
+              {saleTable}
+              {pinned.length > 0 && !dq && (
+                <QuickStrip items={quick} edit={editQuick} canEdit={can('pos.approve')} onAdd={(c) => add(c)} onEdit={() => setEditQuick((v) => !v)} onUnpin={(id) => void togglePin(id)} />
+              )}
+              {dq && (
+                <div className="absolute inset-x-0 top-0 z-10 flex max-h-full flex-col rounded-lg shadow-xl">
+                  {resultsList ?? <div className="rounded-lg border bg-card py-10 text-center text-[13px] text-muted-foreground">{t('No product matches. Clear the search with Esc.')}</div>}
+                </div>
+              )}
             </div>
-          ) : !tiles ? (
+          ) : resultsList ? resultsList : !tiles ? (
             <QuickPanel items={quick} pinnedMode={pinned.length > 0} edit={editQuick} canEdit={can('pos.approve')} searching={!!dq} hint={!lines.length}
               onAdd={(c) => add(c)} onEdit={() => setEditQuick((v) => !v)} onUnpin={(id) => void togglePin(id)} />
           ) : (
@@ -933,7 +997,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
         </section>
 
         {/* ---------- right: the sale */}
-        <aside className={cn('flex shrink-0 flex-col bg-card', phone ? (pane === 'sale' ? 'w-full' : 'hidden') : 'w-[400px] border-l xl:w-[440px]')}>
+        <aside className={cn('flex shrink-0 flex-col bg-card', phone ? (pane === 'sale' ? 'w-full' : 'hidden') : (market ? 'w-[360px] border-l xl:w-[400px]' : 'w-[400px] border-l xl:w-[440px]'))}>
           {phone && (
             <div className="border-b px-3 py-2">
               <Button variant="outline" className="w-full" onClick={() => setPane('products')}><Plus /> {t('Add products')}</Button>
@@ -986,6 +1050,20 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
               ))}
             </div>
           )}
+          {market ? (
+            <div className="flex min-h-0 flex-1 flex-col justify-center px-5 py-4">
+              {focusLine ? (
+                <div aria-live="polite">
+                  <div className="text-[12px] font-medium text-muted-foreground">{focusLine.key === priced[priced.length - 1]?.key ? t('Last item|till') : t('Selected line')}</div>
+                  <div className="mt-1 line-clamp-2 text-xl font-semibold leading-snug">{focusLine.name}</div>
+                  <div className="mt-1 text-[15px] text-muted-foreground tabular">{formatQty(num(focusLine.qty))} × {formatMoney(focusLine.price)}{focusLine.discount ? <span className="text-primary"> · −{Math.round(focusLine.discount * 100) / 100}%{focusLine.promo ? ` ${focusLine.promo.name}` : ''}</span> : null}</div>
+                  <div className="mt-2 text-4xl font-semibold tracking-[-0.02em] tabular">{formatMoney(lineTotal(focusLine))}</div>
+                </div>
+              ) : (
+                <div className="text-center"><ReceiptText className="mx-auto size-8 text-muted-foreground/50" /><p className="mt-2 text-[13px] text-muted-foreground">{t('Scan an item or tap a product to start a sale.')}</p></div>
+              )}
+            </div>
+          ) : (
           <div className="min-h-0 flex-1 overflow-y-auto" role="listbox" aria-label={t('Sale lines')}>
             {!lines.length ? (
               <div className="grid h-full place-items-center p-8 text-center">
@@ -1011,6 +1089,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
               </div>
             ))}
           </div>
+          )}
           <div className="border-t px-4 py-3">
             {voidApproval && (
               <div className="mb-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
@@ -1022,12 +1101,12 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
               <span className="text-sm font-medium">{t('Total with VAT|till')}</span>
               <span className="text-[34px] font-semibold leading-none tracking-[-0.02em] tabular">{formatMoney(total)} <span className="text-sm font-normal text-muted-foreground">{cur}</span></span>
             </div>
-            <div className="mt-3 grid grid-cols-[auto_auto_1fr] gap-2">
-              <Button variant="outline" size="lg" className="h-14" disabled={!lines.length} onClick={() => { if (lines.length < 3 || confirm(t('Clear this sale?'))) voidSale() }}><X /> {t('Clear')}</Button>
-              <Button variant="outline" size="lg" className="h-14" disabled={!canHold} onClick={holdSale}
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Button variant="outline" size="lg" className="h-12 min-w-0" disabled={!lines.length} onClick={() => { if (lines.length < 3 || confirm(t('Clear this sale?'))) voidSale() }}><X /> {t('Clear')}</Button>
+              <Button variant="outline" size="lg" className="h-12 min-w-0" disabled={!canHold} onClick={holdSale}
                 title={held.length >= MAX_HELD ? t('Already {n} sales on hold: take one back first', { n: MAX_HELD }) : t('Put the sale aside while the customer fetches something (F8)')}>
                 <Pause /> {t('Hold|till')}</Button>
-              <Button size="lg" className="h-14 text-lg" disabled={!lines.length || atkStop} onClick={openPay}>{t('Pay {amount}', { amount: formatMoney(total) })} <Kbd className="ml-2 border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground">F12</Kbd></Button>
+              <Button size="lg" className="col-span-2 h-14 min-w-0 text-lg" disabled={!lines.length || atkStop} onClick={openPay}>{t('Pay {amount}', { amount: formatMoney(total) })} <Kbd className="ml-2 border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground">F12</Kbd></Button>
             </div>
           </div>
         </aside>
@@ -1874,7 +1953,27 @@ const Row = ({ k, v, strong }: { k: string; v: string; strong?: boolean }) => (
 )
 
 
-/* ================================================================== the market's till: quick buttons instead of tiles */
+/* ================================================================== the market's till: the manager's quick buttons, a slim row under the coupon */
+function QuickStrip({ items, edit, canEdit, onAdd, onEdit, onUnpin }: {
+  items: CatalogItem[]; edit: boolean; canEdit: boolean; onAdd: (c: CatalogItem) => void; onEdit: () => void; onUnpin: (id: string) => void
+}) {
+  return (
+    <section aria-label={t('Quick buttons')} className="flex shrink-0 items-start gap-2">
+      <div className="flex max-h-[100px] min-w-0 flex-1 flex-wrap gap-1.5 overflow-y-auto">
+        {items.map((c) => (
+          <button key={c.variant_id} type="button" onClick={() => (edit ? onUnpin(c.variant_id) : onAdd(c))}
+            className={cn('flex h-11 max-w-[220px] items-center gap-2 rounded-md border bg-card px-3 text-left text-[13px] hover:border-primary/50 active:scale-[0.98]', edit && 'border-dashed border-destructive/50')}>
+            <span className="truncate font-medium">{c.name}</span><span className="shrink-0 font-semibold tabular">{formatMoney(c.price)}</span>
+            {edit && <X className="size-3.5 shrink-0 text-destructive" />}
+          </button>
+        ))}
+      </div>
+      {canEdit && <Button size="sm" variant="ghost" className="h-11 shrink-0" onClick={onEdit}>{edit ? t('Done') : t('Change')}</Button>}
+    </section>
+  )
+}
+
+/* ================================================================== the market's till on a phone: quick buttons instead of tiles */
 function QuickPanel({ items, pinnedMode, edit, canEdit, searching, hint, onAdd, onEdit, onUnpin }: {
   items: CatalogItem[]; pinnedMode: boolean; edit: boolean; canEdit: boolean; searching: boolean; hint: boolean
   onAdd: (c: CatalogItem) => void; onEdit: () => void; onUnpin: (id: string) => void
