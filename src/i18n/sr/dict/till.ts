@@ -1207,4 +1207,11 @@ export default {
   "Count it there too, so nothing is left out.": "Prebrojte i tamo, da ništa ne ostane neprebrojano.",
   "A stock count is open in this unit ({name}).": "U ovoj jedinici je otvoren popis robe ({name}).",
   "Post the receipt and put the goods on the shelf at the same time. If you cannot, keep the goods aside until the count is closed, so they are not counted twice or missed.": "Proknjižite prijem i stavite robu na policu u isto vreme. Ako ne možete, držite robu po strani dok se popis ne zatvori, da se ne prebroji dva puta ili ne izostavi.",
+  "Who counts them again": "Ko ih ponovo broji",
+  "Someone else, not who counted them": "Neko drugi, ne onaj ko ih je brojao",
+  "Anyone, even who counted them": "Bilo ko, i onaj ko ih je brojao",
+  "Someone else counts it again, not you": "Ponovo broji neko drugi, ne vi",
+  "Counted again by {name}": "Ponovo broji {name}",
+  "You counted this line the first time: someone else counts it again": "Ovu stavku ste vi prebrojali prvi put: ponovo je broji neko drugi",
+  "This person may not count stock in this company": "Ova osoba nema pravo da broji robu u ovoj kompaniji",
 } satisfies Dict

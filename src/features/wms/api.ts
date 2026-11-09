@@ -298,6 +298,7 @@ export function useCounts() {
 }
 export type CountLine = { id: string; variant_id: string; location_id: string; lot_id: string | null; system_qty: number; counted_qty: number | null
   variance: number | null; counted_at: string | null; recount: boolean; first_counted_qty: number | null
+  recount_by: string | null; recount_not: string[] | null; recounter: { full_name: string | null } | null
   variant: { sku: string; name: string; product: { tracking: string } | null } | null; location: { code: string } | null; lot: { lot_number: string } | null }
 export function useCount(id: string | undefined) {
   const { companyId } = useCompany()
@@ -309,7 +310,7 @@ export function useCount(id: string | undefined) {
         .select('id, number, status, count_date, scope, blind_count, posted_at, adjustment_id, warehouse_id, session_id, assigned_to, warehouse:warehouses(code, name)')
         .eq('id', id!).single().returns<Omit<CountRow, 'lines'> & { warehouse_id: string; session_id: string | null; assigned_to: string | null }>())
       const lines = unwrap(await supabase.from('cycle_count_lines')
-        .select('id, variant_id, location_id, lot_id, system_qty, counted_qty, variance, counted_at, recount, first_counted_qty, variant:product_variants(sku, name, product:products(tracking)), location:warehouse_locations(code), lot:lots(lot_number)')
+        .select('id, variant_id, location_id, lot_id, system_qty, counted_qty, variance, counted_at, recount, first_counted_qty, recount_by, recount_not, recounter:profiles!cycle_count_lines_recount_by_fkey(full_name), variant:product_variants(sku, name, product:products(tracking)), location:warehouse_locations(code), lot:lots(lot_number)')
         .eq('cycle_count_id', id!).returns<CountLine[]>())
       lines.sort((a, b) => (a.location?.code ?? '').localeCompare(b.location?.code ?? '') || (a.variant?.sku ?? '').localeCompare(b.variant?.sku ?? ''))
       return { ...c, lines }
@@ -346,7 +347,7 @@ export function useCountItem() {
           }
           const it = itemOffline(companyId ?? '', a.variant)
           const loc = c.lines.find((l) => l.location_id === a.location)?.location ?? null
-          return { ...c, lines: [...c.lines, { id: op, variant_id: a.variant, location_id: a.location, lot_id: a.lot ?? null, system_qty: 0, counted_qty: Math.max(0, a.qty), variance: null, recount: false, first_counted_qty: null,
+          return { ...c, lines: [...c.lines, { id: op, variant_id: a.variant, location_id: a.location, lot_id: a.lot ?? null, system_qty: 0, counted_qty: Math.max(0, a.qty), variance: null, recount: false, first_counted_qty: null, recount_by: null, recount_not: null, recounter: null,
             counted_at: new Date().toISOString(), variant: it ? { sku: it.sku, name: it.name, product: { tracking: it.tracking } } : null, location: loc, lot: null }] }
         })
         return out
@@ -417,7 +418,7 @@ export function useCountEntry() {
           const it = itemOffline(companyId ?? '', a.variant)
           const loc = c.lines.find((l) => l.location_id === a.location)?.location ?? null
           return { ...c, lines: [...c.lines, { id, variant_id: a.variant, location_id: a.location, lot_id: a.lot ?? null, system_qty: 0, counted_qty: a.qty, variance: null, recount: false,
-            first_counted_qty: null, counted_at: at, variant: it ? { sku: it.sku, name: it.name, product: { tracking: it.tracking } } : null, location: loc, lot: null }] }
+            first_counted_qty: null, recount_by: null, recount_not: null, recounter: null, counted_at: at, variant: it ? { sku: it.sku, name: it.name, product: { tracking: it.tracking } } : null, location: loc, lot: null }] }
         })
         return out
       },
@@ -517,8 +518,17 @@ export function useCountReview(id: string | undefined, enabled: boolean) {
     queryFn: async () => unwrap(await supabase.rpc('count_review', { p_id: id! })) as unknown as CountReview,
   })
 }
-export const useCountRecount = () => useAction(async (a: { id: string; minValue?: number | null; minPct?: number | null; lines?: string[] }) =>
-  unwrap(await supabase.rpc('count_recount', { p_id: a.id, p_min_value: a.minValue ?? undefined, p_min_pct: a.minPct ?? undefined, p_lines: a.lines ?? undefined })) as number)
+/** Lines sent back to be counted again: by anyone, by anyone but who counted them ('other'), or by a named person. */
+export const useCountRecount = () => useAction(async (a: { id: string; minValue?: number | null; minPct?: number | null; lines?: string[]; person?: string | null; other?: boolean }) =>
+  unwrap(await supabase.rpc('count_recount', { p_id: a.id, p_min_value: a.minValue ?? undefined, p_min_pct: a.minPct ?? undefined, p_lines: a.lines ?? undefined,
+    p_person: a.person ?? undefined, p_other: a.other ?? false })) as number)
+export function useCountPeople(count: string | undefined, enabled: boolean) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...wmsKeys.all(companyId), 'count-people', count], enabled: !!count && enabled, staleTime: 5 * 60_000,
+    queryFn: async () => (unwrap(await supabase.rpc('count_people', { p_count: count! })) ?? []) as unknown as { id: string; name: string }[],
+  })
+}
 export type CountImportResult = { rows: number; ok: number; errors: { row: number; code: string | null; reason: string }[] }
 export const useCountImport = () => useAction(async (a: { id: string; rows: { code: string; location?: string; qty: string; lot?: string }[]; add: boolean }) =>
   unwrap(await supabase.rpc('count_import', { p_id: a.id, p_rows: a.rows as never, p_add: a.add })) as unknown as CountImportResult)

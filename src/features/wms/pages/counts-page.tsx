@@ -4,6 +4,7 @@ import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Can, useCompany } from '@/app/company-provider'
+import { useAuth } from '@/app/auth-provider'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState } from '@/components/empty-state'
 import { ScanInput, scanFeedback } from '@/components/scan-input'
@@ -145,6 +146,7 @@ function NewCountDialog({ onClose }: { onClose: () => void }) {
 export function CountPage() {
   const { id } = useParams()
   const { can, company } = useCompany()
+  const { user } = useAuth()
   const count = useCount(id)
   const [importing, setImporting] = React.useState(false)
   const resolve = useResolveCode()
@@ -281,7 +283,10 @@ export function CountPage() {
               return (
                 <button key={l.id} type="button" disabled={!counting} onClick={() => { setBin((b) => b ?? null); if (together) setEntriesFor({ line: l.id, title: `${l.variant?.sku ?? ''} · ${l.variant?.name ?? ''}`, variant: l.variant_id, location: l.location_id, lot: l.lot_id }); else setEdit(l) }}
                   className="grid w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 border-b px-3 py-2 text-left text-[13px] last:border-0 enabled:hover:bg-muted/50">
-                  <span className="min-w-0"><span className="block truncate font-medium">{l.variant?.name}</span><span className="text-muted-foreground">{l.variant?.sku}{l.lot ? ` · ${l.lot.lot_number}` : ''}</span>{l.recount && <span className="ml-2 rounded bg-warning/15 px-1.5 py-0.5 text-2xs font-medium text-warning">{t('count again')}</span>}</span>
+                  <span className="min-w-0"><span className="block truncate font-medium">{l.variant?.name}</span><span className="text-muted-foreground">{l.variant?.sku}{l.lot ? ` · ${l.lot.lot_number}` : ''}</span>{l.recount && <span className="ml-2 rounded bg-warning/15 px-1.5 py-0.5 text-2xs font-medium text-warning">{t('count again')}</span>}
+                    {l.recount && l.counted_qty == null && (user && l.recount_not?.includes(user.id)
+                      ? <span className="block text-2xs text-muted-foreground">{t('Someone else counts it again, not you')}</span>
+                      : l.recounter?.full_name ? <span className="block text-2xs text-muted-foreground">{t('Counted again by {name}', { name: l.recounter.full_name })}</span> : null)}</span>
                   {showSystem ? <span className="text-right text-muted-foreground tabular">{t('expected {n}', { n: formatQty(l.system_qty) })}</span> : <span />}
                   <span className={cn('min-w-16 text-right text-lg font-semibold tabular', l.counted_qty == null && 'text-muted-foreground/50',
                     showSystem && v != null && v !== 0 && (v < 0 ? 'text-destructive' : 'text-warning'))}>

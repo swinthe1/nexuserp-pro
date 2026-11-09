@@ -1533,4 +1533,9 @@ export default {
   "Count it there too, so nothing is left out.": "Numëroje edhe aty, që të mos mbetet gjë pa u numëruar.",
   "A stock count is open in this unit ({name}).": "Në këtë njësi është hapur numërimi i mallit ({name}).",
   "Post the receipt and put the goods on the shelf at the same time. If you cannot, keep the goods aside until the count is closed, so they are not counted twice or missed.": "Postojeni pranimin dhe vendoseni mallin në raft njëherësh. Nëse nuk mundeni, mbajeni mallin anash derisa të mbyllet numërimi, që të mos numërohet dy herë ose të mos mbetet jashtë.",
+  "Who counts them again": "Kush i numëron sërish",
+  "Someone else, not who counted them": "Dikush tjetër, jo ai që i numëroi",
+  "Anyone, even who counted them": "Kushdo, edhe ai që i numëroi",
+  "Someone else counts it again, not you": "E rinumëron dikush tjetër, jo ju",
+  "Counted again by {name}": "E rinumëron {name}",
 } satisfies Dict

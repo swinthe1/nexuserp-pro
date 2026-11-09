@@ -560,4 +560,6 @@ export const serverTemplates: [string, string][] = [
   ["The client already has % units; keep the limit at least that high", "Klienti ka tashmë {0} njësi; mbajeni kufirin të paktën aq"],
   ["The client already has % tills; keep the limit at least that high", "Klienti ka tashmë {0} arka; mbajeni kufirin të paktën aq"],
   ["Your licence allows % till(s); ask your provider for more", "Licenca juaj lejon {0} arka; kërkojini ofruesit më shumë"],
+  ["% counted these lines the first time: choose someone else to count them again", "{0} i numëroi këto rreshta herën e parë: zgjidhni dikë tjetër për t'i rinumëruar"],
+  ["This line is counted again by %", "Këtë rresht e rinumëron {0}"],
 ]

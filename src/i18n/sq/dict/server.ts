@@ -907,4 +907,6 @@ export default {
   "This person also works for another company: they change their own PIN": "Ky person punon edhe në një kompani tjetër: PIN-in e ndryshon vetë",
   "The present PIN is not right": "PIN-i i tanishëm nuk është i saktë",
   "This computer is no longer a shared till; sign in with your user name": "Ky kompjuter nuk është më arkë e përbashkët; hyni me përdoruesin tuaj",
+  "You counted this line the first time: someone else counts it again": "Këtë rresht e numëruat ju herën e parë: e rinumëron dikush tjetër",
+  "This person may not count stock in this company": "Ky person nuk ka të drejtë të numërojë mallin në këtë kompani",
 } satisfies Dict

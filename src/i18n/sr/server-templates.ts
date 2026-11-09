@@ -24,4 +24,6 @@ export const serverTemplatesSr: [string, string][] = [
   ['ATK registers each till number once, and number % of this store is taken: give this till number %', 'PAK registruje svaki broj kase samo jednom, a broj {0} ove jedinice je zauzet: dajte ovoj kasi broj {1}'],
   ["WAITERS_OWE: the waiters have not handed over their takings yet: %", "Konobari još nisu predali pazar: {0}"],
   ["Your licence allows % till(s); ask your provider for more", "Vaša licenca dozvoljava {0} kase; zatražite više od dobavljača"],
+  ["% counted these lines the first time: choose someone else to count them again", "{0} je prebrojao ove stavke prvi put: izaberite nekog drugog da ih ponovo prebroji"],
+  ["This line is counted again by %", "Ovu stavku ponovo broji {0}"],
 ]

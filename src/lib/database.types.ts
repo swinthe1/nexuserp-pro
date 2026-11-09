@@ -3102,6 +3102,8 @@ export type Database = {
           recount: boolean
           first_counted_qty: number | null
           reasons: string[] | null
+          recount_by: string | null
+          recount_not: string[] | null
         }
         Insert: {
           id?: string
@@ -3122,6 +3124,8 @@ export type Database = {
           recount?: boolean
           first_counted_qty?: number | null
           reasons?: string[] | null
+          recount_by?: string | null
+          recount_not?: string[] | null
         }
         Update: {
           id?: string
@@ -3142,12 +3146,15 @@ export type Database = {
           recount?: boolean
           first_counted_qty?: number | null
           reasons?: string[] | null
+          recount_by?: string | null
+          recount_not?: string[] | null
         }
         Relationships: [
           { foreignKeyName: "cycle_count_lines_company_id_cycle_count_id_fkey"; columns: ["company_id", "cycle_count_id"]; isOneToOne: false; referencedRelation: "cycle_counts"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "cycle_count_lines_company_id_location_id_fkey"; columns: ["company_id", "location_id"]; isOneToOne: false; referencedRelation: "warehouse_locations"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "cycle_count_lines_company_id_lot_id_fkey"; columns: ["company_id", "lot_id"]; isOneToOne: false; referencedRelation: "lots"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "cycle_count_lines_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "cycle_count_lines_recount_by_fkey"; columns: ["recount_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
         ]
       }
       cycle_counts: {
@@ -17287,6 +17294,12 @@ export type Database = {
         }
         Returns: Json
       }
+      count_people: {
+        Args: {
+          p_count: string
+        }
+        Returns: Json
+      }
       count_plan: {
         Args: {
           p_company: string
@@ -17299,6 +17312,8 @@ export type Database = {
           p_min_value?: number
           p_min_pct?: number
           p_lines?: string[]
+          p_person?: string
+          p_other?: boolean
         }
         Returns: number
       }

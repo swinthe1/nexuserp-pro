@@ -10,13 +10,14 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { msg, t, td, tn } from '@/i18n'
 import { printHtml } from '@/lib/print'
 import { cn, formatDate, formatMoney, formatQty, num } from '@/lib/utils'
 import { parseCsv, parseFile } from '@/features/settings/lib/parse-file'
-import { useCountImport, useCountRecount, useCountReview, type CountImportResult, type CountLine } from '../api'
+import { useCountImport, useCountPeople, useCountRecount, useCountReview, type CountImportResult, type CountLine } from '../api'
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!))
 
@@ -116,12 +117,15 @@ export function CountReviewPanel({ countId }: { countId: string }) {
   const [minValue, setMinValue] = React.useState('20')
   const [minPct, setMinPct] = React.useState('10')
   const [picked, setPicked] = React.useState<string[]>([])
+  // who counts again: anyone but who counted it (the default), anyone, or a named person
+  const [who, setWho] = React.useState('other')
+  const people = useCountPeople(countId, true)
   if (q.isLoading) return <Skeleton className="h-40" />
   const d = q.data
   if (!d) return null
   const cur = company?.base_currency
   const send = async (a: { minValue?: number | null; minPct?: number | null; lines?: string[] }) => {
-    const n = await recount.mutateAsync({ id: countId, ...a })
+    const n = await recount.mutateAsync({ id: countId, ...a, other: who === 'other', person: who === 'other' || who === 'any' ? null : who })
     toast.success(n ? t('{n} lines go back to be counted again', { n }) : t('No line is that big'))
     setPicked([])
   }
@@ -158,6 +162,15 @@ export function CountReviewPanel({ countId }: { countId: string }) {
           </ul>
           <Can perm="wms.write">
             <div className="flex flex-wrap items-end gap-2 text-[13px]">
+              <span className="flex w-full flex-wrap items-center gap-2"><span className="text-muted-foreground">{t('Who counts them again')}</span>
+                <Select value={who} onValueChange={setWho}>
+                  <SelectTrigger className="h-8 w-auto min-w-48"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="other">{t('Someone else, not who counted them')}</SelectItem>
+                    <SelectItem value="any">{t('Anyone, even who counted them')}</SelectItem>
+                    {(people.data ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  </SelectContent>
+                </Select></span>
               <span className="self-center text-muted-foreground">{t('Count again the lines over')}<Hint id="recount" /></span>
               <Input inputMode="decimal" className="h-8 w-20 text-right" value={minValue} aria-label={t('Value')} onChange={(e) => setMinValue(e.target.value)} /><span className="self-center">{cur}</span>
               <span className="self-center text-muted-foreground">{t('or')}</span>
