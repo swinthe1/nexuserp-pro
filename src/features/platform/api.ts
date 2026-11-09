@@ -61,8 +61,10 @@ export interface NewClient {
   country: 'XK' | 'AL'
   tax_number?: string
   owner_name?: string
-  owner_email: string
-  owner_password: string
+  owner_email?: string
+  /** the administrator signs in with a user name and a PIN, as everyone in the company */
+  owner_username: string
+  owner_pin: string
   plan: string
   max_users: number
   valid_from: string
@@ -156,6 +158,19 @@ export function useSetSelfService() {
 }
 
 /** A password that is easy to read aloud or type: no look-alike letters, always with digits. */
+/** a PIN of 6 digits that is not too easy (not all the same, not a straight run) */
+export function generatePin() {
+  for (;;) {
+    const p = Array.from(crypto.getRandomValues(new Uint32Array(6)), (n) => String(n % 10)).join('')
+    if (!/^(\d)\1{5}$/.test(p) && !'0123456789'.includes(p) && !'9876543210'.includes(p)) return p
+  }
+}
+export function usePlatformOwnerLogin() {
+  return useMutation({
+    mutationFn: async (company: string) => unwrap(await supabase.rpc('platform_owner_login', { p_company: company })) as unknown as { username: string; set_now: boolean } | null,
+  })
+}
+
 export function generatePassword() {
   const letters = 'abcdefghjkmnpqrstuvwxyz'
   const digits = '23456789'

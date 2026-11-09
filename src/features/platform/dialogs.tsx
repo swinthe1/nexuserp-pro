@@ -18,12 +18,13 @@ import { msg, t, td, tEnum, tn } from '@/i18n'
 import { describeError } from '@/lib/errors'
 import { daysUntil, LICENSE_WARNING_DAYS } from '@/lib/license'
 import { cn, formatDate, formatQty as formatInt, todayISO } from '@/lib/utils'
-import { generatePassword, type PlatformClient, type SyncConnection, useCreateClient, useCreateSyncKey, useSaveLicense, useSetPassword, useSetSyncActive, useSetTraining, useSetBusinessType, useSetMultiUnit, useDeleteClient, useCreateAccount } from './api'
+import { generatePassword, generatePin, usePlatformOwnerLogin, type PlatformClient, type SyncConnection, useCreateClient, useCreateSyncKey, useSaveLicense, useSetPassword, useSetSyncActive, useSetTraining, useSetBusinessType, useSetMultiUnit, useDeleteClient, useCreateAccount } from './api'
 import { Checkbox } from '@/components/ui/checkbox'
 import { BUSINESS_TYPES, businessTypeLabel } from './business-types'
 import { Label } from '@/components/ui/label'
 import { FEATURES, PAID_MODULES, PLAN_FEATURES, PLAN_STORES, packageOf, type Feature, type PackageKey } from '@/lib/plans'
 import { PackagePicker, packageDefaults, packageLimits, type PackageValue } from './package-fields'
+import { cleanPin, cleanUsername, pinProblem, suggestUsername } from '@/features/auth/login-setup'
 
 export const PLANS = [
   { value: 'basic', label: msg('Basic') },
@@ -91,8 +92,9 @@ const clientSchema = z.object({
   tax_number: z.string().trim().regex(/^$|^[A-Z][0-9]{8}[A-Z]$|^[0-9]{9}$/, 'NIPT looks like L91234567A; NUI is 9 digits').optional(),
   business_type: z.string().min(1),
   owner_name: z.string().trim().optional(),
-  owner_email: z.string().trim().email('Enter a valid email address'),
-  owner_password: z.string().min(8, 'Use at least 8 characters'),
+  owner_email: z.string().trim().email('Enter a valid email address').or(z.literal('')),
+  owner_username: z.string().trim().regex(/^[a-z0-9][a-z0-9._-]{2,29}$/, msg('3 to 30 small letters or digits; a dot, a dash or _ also')),
+  owner_pin: z.string().refine((v) => !pinProblem(v), (v) => ({ message: pinProblem(v) ?? '' })),
   plan: z.string().min(1),
   max_users: z.coerce.number().int('Enter a whole number').min(1, 'At least 1 user'),
   valid_from: z.string().min(1, 'Choose a date'),
@@ -107,9 +109,11 @@ type ClientValues = z.infer<typeof clientSchema>
 
 export function NewClientDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const create = useCreateClient()
-  const [done, setDone] = React.useState<ClientValues | null>(null)
+  const ownerLogin = usePlatformOwnerLogin()
+  const [done, setDone] = React.useState<(ClientValues & { kept?: string }) | null>(null)
+  const userTouched = React.useRef(false)
   const defaults = React.useCallback((): ClientValues => ({
-    name: '', legal_name: '', country: 'XK', tax_number: '', business_type: 'retail', owner_name: '', owner_email: '', owner_password: generatePassword(),
+    name: '', legal_name: '', country: 'XK', tax_number: '', business_type: 'retail', owner_name: '', owner_email: '', owner_username: '', owner_pin: generatePin(),
     plan: 'standard', max_users: 5, valid_from: todayISO(), valid_until: addMonths(todayISO(), 12), notes: '',
     multi_unit: false, unit_kind: 'store', units: [{ code: 'N1', name: '', kind: 'store', city: '' }, { code: 'N2', name: '', kind: 'store', city: '' }],
   }), [])
@@ -128,21 +132,24 @@ export function NewClientDialog({ open, onOpenChange }: { open: boolean; onOpenC
       if (!p) { form.setError('name', { message: t('Choose the package') }); return }
       const lim = packageLimits(pkg)
       if (lim.max_stores != null && (units?.length ?? 1) > lim.max_stores) { form.setError('units', { message: t('The package allows {n} units: raise the limit, or write fewer units', { n: lim.max_stores }) }); return }
-      await create.mutateAsync({ ...v, owner_email: v.owner_email.toLowerCase(), units, plan: 'package', business_type: p.businessType, package: p.key,
+      const id = await create.mutateAsync({ ...v, owner_email: v.owner_email.toLowerCase() || undefined, units, plan: 'package', business_type: p.businessType, package: p.key,
         modules: pkg.modules, max_stores: lim.max_stores, max_tills: lim.max_tills, max_users: lim.max_users })
-      setDone(v)
+      // an owner who signs in already (a second business) keeps the user name and PIN he has
+      const login = await ownerLogin.mutateAsync(id).catch(() => null)
+      setDone({ ...v, kept: login && !login.set_now ? login.username : undefined })
     } catch (e) {
       const m = describeError(e)
-      form.setError(/tax|NIPT|NUI/i.test(m) ? 'tax_number' : /password|fjalëkalim/i.test(m) ? 'owner_password' : /email/i.test(m) ? 'owner_email' : 'name', { message: m })
+      form.setError(/tax|NIPT|NUI/i.test(m) ? 'tax_number' : /PIN/.test(m) ? 'owner_pin' : /user name|përdorues/i.test(m) ? 'owner_username' : /email/i.test(m) ? 'owner_email' : 'name', { message: m })
     }
   })
 
   const welcome = done ? [
     t('Your DrisPRO account is ready.'),
     `${t('Address')}: ${window.location.origin}`,
-    `${t('Email')}: ${done.owner_email.toLowerCase()}`,
-    `${t('Password')}: ${done.owner_password}`,
-    t('Change the password after the first sign-in: click your initials at the top right, then Change password.'),
+    ...(done.kept
+      ? [`${t('User name')}: ${done.kept}`, t('Sign in with the user name and PIN you already have.')]
+      : [`${t('User name')}: ${done.owner_username}`, `${t('PIN')}: ${done.owner_pin}`,
+         t('Change the PIN after the first sign-in: click your initials at the top right, then Change my PIN.')]),
   ].join('\n') : ''
 
   return (
@@ -152,7 +159,7 @@ export function NewClientDialog({ open, onOpenChange }: { open: boolean; onOpenC
           <>
             <DialogHeader>
               <DialogTitle>{t('{name} is ready', { name: done.name })}</DialogTitle>
-              <DialogDescription>{t('Send these sign-in details to the client. The password is shown only now.')}</DialogDescription>
+              <DialogDescription>{t('Send these sign-in details to the client. The PIN is shown only now.')}</DialogDescription>
             </DialogHeader>
             <pre className="whitespace-pre-wrap rounded-md border bg-muted/40 p-3 font-sans text-sm">{welcome}</pre>
             <DialogFooter>
@@ -243,19 +250,29 @@ export function NewClientDialog({ open, onOpenChange }: { open: boolean; onOpenC
 
                 <p className="col-span-2 mt-2 text-xs font-medium text-muted-foreground">{t('Administrator of the client')}</p>
                 <FormField control={form.control} name="owner_name" render={({ field }) => (
-                  <FormItem className="col-span-2 sm:col-span-1"><FormLabel optional>{t('Full name')}</FormLabel><FormControl><Input autoComplete="off" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem className="col-span-2 sm:col-span-1"><FormLabel optional>{t('Full name')}</FormLabel>
+                    <FormControl><Input autoComplete="off" {...field} onChange={(e) => {
+                      field.onChange(e)
+                      if (!userTouched.current) form.setValue('owner_username', suggestUsername(e.target.value), { shouldValidate: !!e.target.value })
+                    }} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="owner_username" render={({ field }) => (
+                  <FormItem className="col-span-2 sm:col-span-1"><FormLabel>{t('User name')}</FormLabel>
+                    <FormControl><Input autoComplete="off" autoCapitalize="none" spellCheck={false} className="font-mono" {...field}
+                      onChange={(e) => { userTouched.current = true; field.onChange(cleanUsername(e.target.value)) }} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="owner_email" render={({ field }) => (
-                  <FormItem className="col-span-2 sm:col-span-1"><FormLabel>{t('Email')}</FormLabel><FormControl><Input type="email" autoComplete="off" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem className="col-span-2 sm:col-span-1"><FormLabel optional>{t('Email')}</FormLabel><FormControl><Input type="email" autoComplete="off" {...field} /></FormControl>
+                    <FormDescription>{t('For contact only: the administrator signs in with the user name and the PIN.')}</FormDescription><FormMessage /></FormItem>
                 )} />
-                <FormField control={form.control} name="owner_password" render={({ field }) => (
-                  <FormItem className="col-span-2">
-                    <FormLabel>{t('Password')}</FormLabel>
+                <FormField control={form.control} name="owner_pin" render={({ field }) => (
+                  <FormItem className="col-span-2 sm:col-span-1">
+                    <FormLabel>{t('PIN (6 digits)')}</FormLabel>
                     <div className="flex gap-2">
-                      <FormControl><Input autoComplete="new-password" className="font-mono" {...field} /></FormControl>
-                      <Button type="button" variant="outline" onClick={() => form.setValue('owner_password', generatePassword(), { shouldValidate: true })}>{t('New password')}</Button>
+                      <FormControl><Input inputMode="numeric" autoComplete="off" className="font-mono tracking-[0.3em]" {...field} onChange={(e) => field.onChange(cleanPin(e.target.value))} /></FormControl>
+                      <Button type="button" variant="outline" onClick={() => form.setValue('owner_pin', generatePin(), { shouldValidate: true })}>{t('New PIN')}</Button>
                     </div>
-                    <FormDescription>{t('If this email already has an account, it keeps its current password.')}</FormDescription>
+                    <FormDescription>{t('An owner who already signs in to DrisPRO keeps the user name and PIN he has.')}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )} />

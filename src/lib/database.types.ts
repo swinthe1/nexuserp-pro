@@ -18833,6 +18833,12 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      platform_owner_login: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       platform_pricing_save: {
         Args: {
           p: Json

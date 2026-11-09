@@ -504,6 +504,7 @@ export default {
   "Only the platform administrator can create companies": "Kompani të reja krijon vetëm administratori i platformës",
   "Only the platform administrator can do this": "Këtë mund ta bëjë vetëm administratori i platformës",
   "Enter the email of the client's administrator": "Shkruani emailin e administratorit të klientit",
+  "Enter the user name of the client's administrator": "Shkruani përdoruesin e administratorit të klientit",
   "Country must be Albania or Kosovo": "Shteti duhet të jetë Shqipëri ose Kosovë",
   "The password needs at least 8 characters": "Fjalëkalimi duhet të ketë të paktën 8 shenja",
   // migration centre

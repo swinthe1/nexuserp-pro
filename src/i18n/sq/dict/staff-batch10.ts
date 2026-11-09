@@ -1468,4 +1468,9 @@ export default {
   "items per person": "artikuj për person",
   "On Mondays, when the loss watch found something in the past week (voids, refunds without a receipt, cash short, stock missing), look at it.": "Të hënave, kur detektori i humbjeve ka gjetur diçka javën e kaluar (anulime, kthime pa kupon, mungesë në arkë, mall që mungon), shikojeni.",
   "The owner, else the store manager": "Pronari, përndryshe menaxheri i dyqanit",
+  "Sign in with the user name and PIN you already have.": "Hyni me përdoruesin dhe PIN-in që keni tashmë.",
+  "Change the PIN after the first sign-in: click your initials at the top right, then Change my PIN.": "Ndryshojeni PIN-in pas hyrjes së parë: klikoni inicialet lart djathtas, pastaj Ndrysho PIN-in tim.",
+  "Send these sign-in details to the client. The PIN is shown only now.": "Dërgojani klientit këto të dhëna hyrjeje. PIN-i shfaqet vetëm tani.",
+  "For contact only: the administrator signs in with the user name and the PIN.": "Vetëm për kontakt: administratori hyn me përdoruesin dhe PIN-in.",
+  "An owner who already signs in to DrisPRO keeps the user name and PIN he has.": "Pronari që hyn tashmë në DrisPRO mban përdoruesin dhe PIN-in që ka.",
 } satisfies Dict
