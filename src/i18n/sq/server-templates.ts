@@ -532,6 +532,7 @@ export const serverTemplates: [string, string][] = [
   ['Quantity %, %, %, cashier %, without a manager', 'Sasia {0}, {1}, {2}, kasieri {3}, pa menaxher'],
   ['ATK answered %', 'ATK-ja u përgjigj {0}'],
   ['ATK refused a receipt: %', 'ATK-ja refuzoi një kupon: {0}'],
+  ['ATK does not know till number % of store %: it is registered already, or the NUI or the fiscalization number is not the one in EDI. Check them, or give this till number %', 'ATK-ja nuk e njeh arkën nr. {0} të njësisë {1}: ose është regjistruar tashmë, ose NUI-ja apo numri i fiskalizimit nuk është ai në EDI. Kontrollojini, ose jepini kësaj arke numrin {2}'],
   ['ATK registers each till number once, and number % of this store is taken: give this till number %', 'ATK-ja e regjistron çdo numër arke vetëm një herë, dhe numri {0} i kësaj njësie është zënë: jepini kësaj arke numrin {1}'],
   ['Goods receipt % from % has waited % days for its invoice', 'Pranimi {0} nga {1} pret {2} ditë për faturën'],
   ['You cannot give rights you do not have yourself: %', 'Nuk mund të jepni të drejta që nuk i keni vetë: {0}'],

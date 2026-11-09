@@ -20,6 +20,7 @@ export const serverTemplatesSr: [string, string][] = [
   ['Not ready for ATK yet: %', 'Još nije spremno za PAK: {0}'],
   ['ATK answered %', 'PAK je odgovorila {0}'],
   ['ATK refused a receipt: %', 'PAK je odbila kupon: {0}'],
+  ['ATK does not know till number % of store %: it is registered already, or the NUI or the fiscalization number is not the one in EDI. Check them, or give this till number %', 'PAK ne poznaje kasu br. {0} jedinice {1}: ili je već registrovana, ili NUI ili fiskalni broj nisu oni iz EDI. Proverite ih, ili dajte ovoj kasi broj {2}'],
   ['ATK registers each till number once, and number % of this store is taken: give this till number %', 'PAK registruje svaki broj kase samo jednom, a broj {0} ove jedinice je zauzet: dajte ovoj kasi broj {1}'],
   ["WAITERS_OWE: the waiters have not handed over their takings yet: %", "Konobari još nisu predali pazar: {0}"],
   ["Your licence allows % till(s); ask your provider for more", "Vaša licenca dozvoljava {0} kase; zatražite više od dobavljača"],
