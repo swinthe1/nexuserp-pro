@@ -25,6 +25,7 @@ import { useWarehouses } from '@/features/inventory/api'
 import { useChangeEntry, useCloseSession, useCountSession, useCountSessions, useJoinSession, useLineEntries, usePostSession, useSessionPeople, useStartSession, useAssignShelves, useSessionChecks, useCheckCompare, useStartCheck, useCountRecount, type CheckLine, type CountSessionView, type ElsewhereRow, type ListExtra } from '../api'
 import { ScanShell } from './scan-shell'
 import { CountRecordDialog } from './count-record'
+import { formatQtyOf } from '@/lib/units'
 
 const time = (iso: string) => new Date(iso).toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
 
@@ -357,8 +358,8 @@ export function ExtrasList({ rows, onOpen }: { rows: ListExtra[]; onOpen: (r: Li
         <button key={r.line_id} type="button" onClick={() => onOpen(r)} className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b px-3 py-2 text-left text-[13px] last:border-0 hover:bg-muted/50">
           <span className="min-w-0"><span className="block truncate font-medium">{r.name}</span>
             <span className="text-muted-foreground">{r.sku} · {t('on the list of {name}', { name: r.owner ?? '—' })}</span></span>
-          <span className={cn('text-right tabular')}><span className="block text-lg font-semibold">{formatQty(r.counted_qty)}</span>
-            <span className="text-[11.5px] text-muted-foreground">{t('yours {n}', { n: formatQty(r.mine_qty) })}</span></span>
+          <span className={cn('text-right tabular')}><span className="block text-lg font-semibold">{formatQtyOf(r.counted_qty, r.variant_id)}</span>
+            <span className="text-[11.5px] text-muted-foreground">{t('yours {n}', { n: formatQtyOf(r.mine_qty, r.variant_id) })}</span></span>
         </button>
       ))}
     </div>

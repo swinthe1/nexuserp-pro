@@ -22,7 +22,7 @@ import { supabase } from '@/lib/supabase'
 import { ErrorState } from '@/components/error-state'
 import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { t, td, tn } from '@/i18n'
-import { cn, formatDate, formatMoney, formatQty, humanize, num } from '@/lib/utils'
+import { cn, formatDate, formatMoney, humanize, num } from '@/lib/utils'
 import { useCategories, useLocations, useWarehouses, type LocationRow } from '@/features/inventory/api'
 import { fetchItemElsewhere, useCount, useCountEntry, useCountSession, useShelfDone, useCountItem, useCountReview, useCounts, useCreateCount, useListExtras, usePostCount, useResolveCode, useSubmitCount, wmsKeys, type CountLine, type ElsewhereRow, type EntryAnswer } from '../api'
 import { ElsewhereCard, EntriesDialog, ExtrasList, SessionsCard } from '../components/count-together'
@@ -32,6 +32,7 @@ import { DailyCountCard } from '@/features/inventory/daily-count'
 import { CountImportDialog, CountReviewPanel, printCountSheet } from '../components/count-tools'
 import { CountRecordDialog } from '../components/count-record'
 import { MoreMenu } from '@/components/more-menu'
+import { formatQtyOf } from '@/lib/units'
 
 /** Count lists and screens refresh when someone else counts, submits or posts */
 function useLiveCounts() {
@@ -206,17 +207,17 @@ export function CountPage() {
         const r = await countEntry.mutateAsync({ count: c.id, variant: variantId, location: at.id, qty, lot })
         scanFeedback('ok')
         lookElsewhere(c.id, variantId, at.id, label)
-        if (r.mine) { setLastOther(null); st.ok(t('{item} at {code}: {n}', { item: label, code: at.code, n: formatQty(r.counted_qty) }) + (r.offline ? ` · ${t('saved on this device')}` : '')) }
+        if (r.mine) { setLastOther(null); st.ok(t('{item} at {code}: {n}', { item: label, code: at.code, n: formatQtyOf(r.counted_qty, variantId) }) + (r.offline ? ` · ${t('saved on this device')}` : '')) }
         else {
           setLastOther({ ...r, title: label, variant: variantId, location: at.id, lot })
-          st.ok(t('{item}: on the list of {name}. {a} + {b} = {c}', { item: label, name: r.owner ?? '—', a: formatQty(r.before), b: formatQty(r.added), c: formatQty(r.counted_qty) }))
+          st.ok(t('{item}: on the list of {name}. {a} + {b} = {c}', { item: label, name: r.owner ?? '—', a: formatQtyOf(r.before, variantId), b: formatQtyOf(r.added, variantId), c: formatQtyOf(r.counted_qty, variantId) }))
         }
       } catch (e) { scanFeedback('error'); st.error(describeError(e)) }
       return
     }
     try {
       const r = await countItem.mutateAsync({ count: c.id, variant: variantId, location: at.id, qty, lot, set })
-      scanFeedback('ok'); st.ok(t('{item} at {code}: {n}', { item: label, code: at.code, n: formatQty(r.counted_qty) }) + (r.offline ? ` · ${t('saved on this device')}` : ''))
+      scanFeedback('ok'); st.ok(t('{item} at {code}: {n}', { item: label, code: at.code, n: formatQtyOf(r.counted_qty, variantId) }) + (r.offline ? ` · ${t('saved on this device')}` : ''))
       lookElsewhere(c.id, variantId, at.id, label)
     } catch (e) { scanFeedback('error'); st.error(describeError(e)) }
   }
@@ -303,7 +304,7 @@ export function CountPage() {
         {lastOther && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2">
             <span className="min-w-0 flex-1 text-[13px]"><span className="block font-medium">{lastOther.title}</span>
-              <span>{t('On the list of {name}: {a} + {b} = {c}', { name: lastOther.owner ?? '—', a: formatQty(lastOther.before), b: formatQty(lastOther.added), c: formatQty(lastOther.counted_qty) })}</span></span>
+              <span>{t('On the list of {name}: {a} + {b} = {c}', { name: lastOther.owner ?? '—', a: formatQtyOf(lastOther.before, lastOther.variant), b: formatQtyOf(lastOther.added, lastOther.variant), c: formatQtyOf(lastOther.counted_qty, lastOther.variant) })}</span></span>
             <Button size="sm" variant="outline" onClick={() => setEntriesFor({ line: lastOther.line_id, title: lastOther.title, variant: lastOther.variant, location: lastOther.location, lot: lastOther.lot })}>{t('Write the quantity')}</Button>
           </div>
         )}
@@ -323,10 +324,10 @@ export function CountPage() {
                     {l.recount && l.counted_qty == null && (user && l.recount_not?.includes(user.id)
                       ? <span className="block text-2xs text-muted-foreground">{t('Someone else counts it again, not you')}</span>
                       : l.recounter?.full_name ? <span className="block text-2xs text-muted-foreground">{t('Counted again by {name}', { name: l.recounter.full_name })}</span> : null)}</span>
-                  {showSystem ? <span className="text-right text-muted-foreground tabular">{t('expected {n}', { n: formatQty(l.system_qty) })}</span> : <span />}
+                  {showSystem ? <span className="text-right text-muted-foreground tabular">{t('expected {n}', { n: formatQtyOf(l.system_qty, l.variant_id) })}</span> : <span />}
                   <span className={cn('min-w-16 text-right text-lg font-semibold tabular', l.counted_qty == null && 'text-muted-foreground/50',
                     showSystem && v != null && v !== 0 && (v < 0 ? 'text-destructive' : 'text-warning'))}>
-                    {l.counted_qty == null ? '—' : formatQty(l.counted_qty)}{showSystem && v ? <span className="ml-1 text-xs">({v > 0 ? '+' : ''}{formatQty(v)})</span> : null}</span>
+                    {l.counted_qty == null ? '—' : formatQtyOf(l.counted_qty, l.variant_id)}{showSystem && v ? <span className="ml-1 text-xs">({v > 0 ? '+' : ''}{formatQtyOf(v, l.variant_id)})</span> : null}</span>
                 </button>
               )
             })}

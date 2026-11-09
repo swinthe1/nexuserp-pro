@@ -28,6 +28,7 @@ import { supabase } from '@/lib/supabase'
 import { cn, formatDate, formatMoney, formatQty, num } from '@/lib/utils'
 import { useCategories, usePriceRules, useVariantOptions, useWarehouses } from '../api'
 import { MultiPick } from '@/components/multi-pick'
+import { formatQtyOf } from '@/lib/units'
 
 type Lot = { lot_id: string | null; lot_number: string; from_invoice?: boolean; variant_id: string; sku: string; name: string; warehouse_id: string; warehouse: string; expiry_date: string
   days_left: number; on_hand: number; value: number; price: number | null; markdown: { id: string; status: 'proposed' | 'approved'; discount_pct: number } | null
@@ -163,7 +164,7 @@ export function ExpiryPage() {
                     <TableCell><div className="font-medium">{m.name}</div><div className="text-xs text-muted-foreground">{m.sku}{m.lot_number ? ` · ${t('lot {n}', { n: m.lot_number })}` : ''}{m.note ? ` · ${m.note}` : ''}</div></TableCell>
                     <TableCell>{td(m.warehouse)}</TableCell>
                     <TableCell className="whitespace-nowrap"><div className="tabular">{formatDate(m.expiry_date)}</div><DaysBadge d={m.days_left} /></TableCell>
-                    <TableCell className="text-right tabular">{formatQty(m.quantity)}</TableCell>
+                    <TableCell className="text-right tabular">{formatQtyOf(m.quantity, m.variant_id)}</TableCell>
                     <TableCell className="text-right tabular"><div className="font-medium">−{num(m.discount_pct)}%</div>
                       {m.price != null && <div className="text-xs text-muted-foreground">{t('{a} → {b} without VAT', { a: formatMoney(m.price), b: formatMoney(num(m.price) * (1 - num(m.discount_pct) / 100)) })}</div>}</TableCell>
                     <TableCell className="text-[13px]"><div>{t(STATUS[m.status])}</div>
@@ -194,7 +195,7 @@ export function ExpiryPage() {
                       <TableCell><div className="font-medium">{m.name}</div><div className="text-xs text-muted-foreground">{m.sku}</div></TableCell>
                       <TableCell>{td(m.warehouse)}</TableCell>
                       <TableCell className="whitespace-nowrap"><div className="tabular">{formatDate(m.expiry_date)}</div><DaysBadge d={m.days_left} /></TableCell>
-                      <TableCell className="text-right tabular">{formatQty(m.quantity)}</TableCell>
+                      <TableCell className="text-right tabular">{formatQtyOf(m.quantity, m.variant_id)}</TableCell>
                       <TableCell className="text-right">{o.can.propose && <Button size="sm" variant="outline" onClick={() => setWriteOff({ markdown: m })}><PackageX /> {t('Take off the shelf')}</Button>}</TableCell>
                     </TableRow>
                   ))}</TableBody>
@@ -224,7 +225,7 @@ function LotTable({ rows, onPropose, onWriteOff }: { rows: Lot[]; onPropose?: (l
           <TableCell><div className="font-medium">{l.name}</div><div className="text-xs text-muted-foreground">{l.sku} · {l.from_invoice ? t('invoice {n}', { n: l.lot_number }) : t('lot {n}', { n: l.lot_number })}</div></TableCell>
           <TableCell>{td(l.warehouse)}</TableCell>
           <TableCell className="whitespace-nowrap"><div className="tabular">{formatDate(l.expiry_date)}</div><DaysBadge d={l.days_left} /></TableCell>
-          <TableCell className="text-right tabular">{formatQty(l.on_hand)}</TableCell>
+          <TableCell className="text-right tabular">{formatQtyOf(l.on_hand, l.variant_id)}</TableCell>
           <TableCell className="text-right tabular">{formatMoney(l.value)}</TableCell>
           <TableCell className="whitespace-nowrap text-right">
             {l.markdown ? <Badge variant="secondary">{l.markdown.status === 'approved' ? t('−{pct}% at the till', { pct: num(l.markdown.discount_pct) }) : t('Proposed −{pct}%', { pct: num(l.markdown.discount_pct) })}</Badge>

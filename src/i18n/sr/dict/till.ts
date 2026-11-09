@@ -1342,4 +1342,13 @@ export default {
   "Both units need a shelf where goods are kept": "Obe jedinice moraju imati policu gde se drži roba",
   "This item is not on the transfer: put it aside and tell the manager": "Ovaj artikal nije na prenosu: ostavite ga po strani i obavestite menadžera",
   "This transfer waits for the manager: it was counted twice with differences": "Ovaj prenos čeka menadžera: brojan je dva puta sa razlikama",
+  "pc|qty": "kom",
+  "pcs|qty": "kom",
+  "box|qty": "kutija",
+  "boxes|qty": "kutije",
+  "dozen|qty": "tuce",
+  "dozens|qty": "tuceta",
+  "pack|qty": "pak.",
+  "packs|qty": "pak.",
+  "h|qty": "h",
 } satisfies Dict

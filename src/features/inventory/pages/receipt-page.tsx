@@ -33,6 +33,7 @@ import { t, tEnum, tr } from '@/i18n'
 import { ErrorState } from '@/components/error-state'
 import { isOfflineId } from '@/lib/offline/step'
 import { OpenCountBanner } from '@/features/wms/components/count-together'
+import { formatQtyOf } from '@/lib/units'
 
 type ReceiptDoc = Tables<'goods_receipts'> & {
   lines: Tables<'goods_receipt_lines'>[]
@@ -228,7 +229,7 @@ function ReceiptForm({ doc }: { doc?: ReceiptDoc }) {
                           <FormField control={form.control} name={`lines.${i}.variant_id`} render={({ field }) => (
                             <FormItem><FormControl><VariantPicker value={field.value} onChange={(v) => field.onChange(v ?? '')} disabled={field.disabled || !!l?.po_line_id} /></FormControl><FormMessage /></FormItem>
                           )} />
-                          {pl && <p className="mt-1 text-xs text-muted-foreground">{t('Order line {n}: {qty} still to receive', { n: pl.line_no, qty: formatQty(num(pl.quantity) - num(pl.qty_received)) })}</p>}
+                          {pl && <p className="mt-1 text-xs text-muted-foreground">{t('Order line {n}: {qty} still to receive', { n: pl.line_no, qty: formatQtyOf(num(pl.quantity) - num(pl.qty_received), l?.variant_id) })}</p>}
                         </TableCell>
                         <TableCell>
                           <FormField control={form.control} name={`lines.${i}.location_id`} render={({ field }) => (

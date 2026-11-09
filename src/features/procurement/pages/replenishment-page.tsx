@@ -24,10 +24,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ErrorState } from '@/components/error-state'
 import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { msg, t, td, tn } from '@/i18n'
-import { cn, formatDate, formatMoney, formatQty, num } from '@/lib/utils'
+import { cn, formatDate, formatMoney, num } from '@/lib/utils'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { useWarehouses } from '@/features/inventory/api'
+import { formatQtyOf } from '@/lib/units'
 import {
   procKeys, useActiveVendors, useAutomationSettings, useCreateTransfers, useCreateWorkOrders, useGenerateReplenishment, useOrderSuggestions, useReplenishmentRuns, useRunReplenishment,
   useSaveAutomation, useSuggestions, useUpdateSuggestion, type RunAction, type RunResult, type SuggestionRow,
@@ -169,7 +170,7 @@ export function ReplenishmentPage() {
             <ul className="divide-y">
               {recent.map((s) => (
                 <li key={s.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-4 py-2 text-[13px]">
-                  <span><span className="font-medium">{s.variant?.sku}</span> <span className="text-muted-foreground">· {t('{qty} for {warehouse}', { qty: formatQty(s.suggested_qty), warehouse: td(s.warehouse?.name) })}</span></span>
+                  <span><span className="font-medium">{s.variant?.sku}</span> <span className="text-muted-foreground">· {t('{qty} for {warehouse}', { qty: formatQtyOf(s.suggested_qty, s.variant_id), warehouse: td(s.warehouse?.name) })}</span></span>
                   {s.purchase_order_id && <Link className="text-primary hover:underline" to={`/procurement/orders/${s.purchase_order_id}`}>{s.order?.number}</Link>}
                   {s.transfer_id && <Link className="text-primary hover:underline" to={`/inventory/transfers/${s.transfer_id}`}>{s.transfer?.number}</Link>}
                   {s.work_order_id && <Link className="text-primary hover:underline" to={`/manufacturing/orders/${s.work_order_id}`}>{t('Work order')}</Link>}
@@ -196,13 +197,13 @@ function SuggestionLine({ s, selected, onToggle, onChange, vendors, writable }: 
       <TableCell><Checkbox aria-label={t('Select {number}', { number: s.variant?.sku })} checked={selected} onCheckedChange={onToggle} /></TableCell>
       <TableCell><div className="font-medium">{s.variant?.sku}</div><div className="text-xs text-muted-foreground">{s.variant?.name}</div></TableCell>
       <TableCell className="text-[13px]">{td(s.warehouse?.name)}</TableCell>
-      <TableCell className="text-right tabular">{formatQty(s.on_hand)}</TableCell>
-      <TableCell className="text-right tabular">{num(s.reserved) ? formatQty(s.reserved) : '—'}</TableCell>
-      <TableCell className="text-right tabular">{num(s.demand) ? formatQty(s.demand) : '—'}</TableCell>
-      <TableCell className="text-right tabular">{num(s.incoming) ? formatQty(s.incoming) : '—'}</TableCell>
+      <TableCell className="text-right tabular">{formatQtyOf(s.on_hand, s.variant_id)}</TableCell>
+      <TableCell className="text-right tabular">{num(s.reserved) ? formatQtyOf(s.reserved, s.variant_id) : '—'}</TableCell>
+      <TableCell className="text-right tabular">{num(s.demand) ? formatQtyOf(s.demand, s.variant_id) : '—'}</TableCell>
+      <TableCell className="text-right tabular">{num(s.incoming) ? formatQtyOf(s.incoming, s.variant_id) : '—'}</TableCell>
       <TableCell className="text-right tabular font-medium text-warning"
-        title={`${formatQty(s.on_hand)} − ${formatQty(s.reserved)} − ${formatQty(s.demand)} + ${formatQty(s.incoming)}`}>{formatQty(s.projected)}</TableCell>
-      <TableCell className="text-right tabular text-muted-foreground">{s.rule ? `${formatQty(s.rule.min_qty)} / ${formatQty(s.rule.max_qty)}` : '—'}</TableCell>
+        title={`${formatQtyOf(s.on_hand, s.variant_id)} − ${formatQtyOf(s.reserved, s.variant_id)} − ${formatQtyOf(s.demand, s.variant_id)} + ${formatQtyOf(s.incoming, s.variant_id)}`}>{formatQtyOf(s.projected, s.variant_id)}</TableCell>
+      <TableCell className="text-right tabular text-muted-foreground">{s.rule ? `${formatQtyOf(s.rule.min_qty, s.variant_id)} / ${formatQtyOf(s.rule.max_qty, s.variant_id)}` : '—'}</TableCell>
       <TableCell>
         <Input type="number" step="any" className="h-8 text-right tabular" value={qty} disabled={!writable} aria-label={t('Quantity for {sku}', { sku: s.variant?.sku })}
           onChange={(e) => setQty(e.target.value)}
@@ -418,10 +419,10 @@ function FromSalesDialog({ warehouses, initial, onClose }: { warehouses: { id: s
               <TableBody>{rows.map((r) => (
                 <TableRow key={r.variant_id}>
                   <TableCell><div className="font-medium">{r.name}</div><div className="text-xs text-muted-foreground">{r.sku} · {tn(r.lead, '{n} delivery day', '{n} delivery days')}</div></TableCell>
-                  <TableCell className="text-right tabular">{formatQty(r.sold)}</TableCell>
-                  <TableCell className="text-right tabular">{formatQty(Math.round(num(r.per_day) * 10) / 10)}</TableCell>
-                  <TableCell className="text-right tabular text-muted-foreground">{r.has_rule ? `${formatQty(num(r.cur_min))} / ${formatQty(num(r.cur_max))}` : '—'}</TableCell>
-                  <TableCell className="text-right font-medium tabular">{formatQty(r.new_min)} / {formatQty(r.new_max)}</TableCell>
+                  <TableCell className="text-right tabular">{formatQtyOf(r.sold, r.variant_id)}</TableCell>
+                  <TableCell className="text-right tabular">{formatQtyOf(Math.round(num(r.per_day) * 10) / 10, r.variant_id)}</TableCell>
+                  <TableCell className="text-right tabular text-muted-foreground">{r.has_rule ? `${formatQtyOf(num(r.cur_min), r.variant_id)} / ${formatQtyOf(num(r.cur_max), r.variant_id)}` : '—'}</TableCell>
+                  <TableCell className="text-right font-medium tabular">{formatQtyOf(r.new_min, r.variant_id)} / {formatQtyOf(r.new_max, r.variant_id)}</TableCell>
                 </TableRow>))}</TableBody>
             </Table>
           </div>

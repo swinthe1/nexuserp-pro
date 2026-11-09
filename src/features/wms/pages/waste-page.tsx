@@ -14,6 +14,7 @@ import { cn, formatQty, num } from '@/lib/utils'
 import { useWarehouses } from '@/features/inventory/api'
 import { useResolveCode } from '../api'
 import { QtyDialog, ScanShell, useScanStatus } from '../components/scan-shell'
+import { formatQtyOf } from '@/lib/units'
 
 const WH_KEY = 'drispro.wms.warehouse'
 type Reason = 'waste' | 'damage' | 'expiry' | 'internal_use'
@@ -102,7 +103,7 @@ export function WastePage() {
             {shown.map((f) => (
               <button key={f.variant_id} type="button" onClick={() => pick(f)} className="rounded-lg border bg-card px-3 py-2 text-left hover:border-primary/50">
                 <div className="truncate text-[13px] font-medium">{f.name}</div>
-                <div className="text-xs text-muted-foreground">{[f.plu && `PLU ${f.plu}`, `${formatQty(num(f.on_hand))} ${td(f.uom ?? '')}`].filter(Boolean).join(' · ')}</div>
+                <div className="text-xs text-muted-foreground">{[f.plu && `PLU ${f.plu}`, formatQty(num(f.on_hand), f.uom)].filter(Boolean).join(' · ')}</div>
               </button>
             ))}
           </div>
@@ -115,7 +116,7 @@ export function WastePage() {
               <button type="button" className="min-w-0 text-left" onClick={() => setAsk({ line: l, initial: l.qty })}>
                 <div className="truncate font-medium">{l.name}</div><div className="text-xs text-muted-foreground">{l.sku}</div></button>
               <div className="flex items-center gap-2">
-                <button type="button" className="text-xl font-semibold tabular" onClick={() => setAsk({ line: l, initial: l.qty })}>{formatQty(l.qty)}</button>
+                <button type="button" className="text-xl font-semibold tabular" onClick={() => setAsk({ line: l, initial: l.qty })}>{formatQtyOf(l.qty, l.variantId)}</button>
                 <Button variant="ghost" size="icon" className="size-8" aria-label={t('Remove {sku}', { sku: l.sku || l.name })} onClick={() => setLines((x) => x.filter((y) => y.key !== l.key))}><Trash2 /></Button>
               </div>
             </div>
@@ -130,7 +131,7 @@ export function WastePage() {
         onSubmit={(q) => {
           const l = ask!.line
           setLines((x) => q <= 0 ? x.filter((y) => y.key !== l.key) : x.some((y) => y.key === l.key) ? x.map((y) => (y.key === l.key ? { ...y, qty: q } : y)) : [...x, { ...l, qty: q }])
-          if (q > 0) st.ok(`${l.name}: ${formatQty(q)}`)
+          if (q > 0) st.ok(`${l.name}: ${formatQtyOf(q, l.variantId)}`)
           setAsk(null)
         }} />
     </ScanShell>

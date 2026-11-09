@@ -75,7 +75,7 @@ export function ItemCardView({ variantId }: { variantId: string }) {
             </TableRow></TableHeader>
             <TableBody>
               <TableRow className="bg-muted/40 font-medium"><TableCell>{formatDate(c.from)}</TableCell><TableCell colSpan={6}>{t('Opening balance')}</TableCell>
-                <TableCell className="text-right tabular-nums">{formatQty(c.opening_qty)}</TableCell><TableCell className="text-right tabular-nums">{formatMoney(c.opening_value)}</TableCell></TableRow>
+                <TableCell className="text-right tabular-nums">{formatQty(c.opening_qty, c.uom)}</TableCell><TableCell className="text-right tabular-nums">{formatMoney(c.opening_value)}</TableCell></TableRow>
               {c.rows.length === 0 && <TableRow><TableCell colSpan={9} className="py-8 text-center text-muted-foreground">{t('Nothing in this period.')}</TableCell></TableRow>}
               {c.rows.map((r) => {
                 const href = r.source_type && r.source_id && HREF[r.source_type] ? HREF[r.source_type] + r.source_id : null
@@ -85,10 +85,10 @@ export function ItemCardView({ variantId }: { variantId: string }) {
                     <TableCell>{t(MOVEMENT[r.type] ?? r.type)}</TableCell>
                     <TableCell className="whitespace-nowrap">{href && r.source_type !== 'pos_order' ? <Link className="text-primary hover:underline" to={href}>{r.reference}</Link> : r.reference}</TableCell>
                     <TableCell className="text-muted-foreground">{r.partner ?? (r.warehouse ? td(r.warehouse) : '')}{r.lot ? ` · ${r.lot}` : ''}</TableCell>
-                    <TableCell className="text-right tabular-nums">{r.qty_in ? formatQty(r.qty_in) : ''}</TableCell>
-                    <TableCell className="text-right tabular-nums">{r.qty_out ? formatQty(r.qty_out) : ''}</TableCell>
+                    <TableCell className="text-right tabular-nums">{r.qty_in ? formatQty(r.qty_in, c.uom) : ''}</TableCell>
+                    <TableCell className="text-right tabular-nums">{r.qty_out ? formatQty(r.qty_out, c.uom) : ''}</TableCell>
                     <TableCell className="text-right tabular-nums text-muted-foreground">{formatMoney(r.unit_cost, undefined, 4)}</TableCell>
-                    <TableCell className="text-right font-medium tabular-nums">{formatQty(r.qty)}</TableCell>
+                    <TableCell className="text-right font-medium tabular-nums">{formatQty(r.qty, c.uom)}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatMoney(r.value)}</TableCell>
                   </TableRow>
                 )
@@ -96,7 +96,7 @@ export function ItemCardView({ variantId }: { variantId: string }) {
             </TableBody>
             <TableFooter><TableRow>
               <TableCell colSpan={7}>{t('Closing balance')} · {formatDate(c.to)}</TableCell>
-              <TableCell className="text-right tabular-nums">{formatQty(c.closing_qty)} {c.uom}</TableCell>
+              <TableCell className="text-right tabular-nums">{formatQty(c.closing_qty, c.uom)}</TableCell>
               <TableCell className="text-right tabular-nums">{formatMoney(c.closing_value, c.currency)}</TableCell>
             </TableRow></TableFooter>
           </Table>

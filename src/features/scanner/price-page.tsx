@@ -15,6 +15,7 @@ import { formatMoney, formatQty } from '@/lib/utils'
 import { ScanShell, useScanStatus } from '@/features/wms/components/scan-shell'
 import { useFindWhere } from '@/features/inventory/where'
 import { scannerUnit } from './scanner-home'
+import { formatQtyOf } from '@/lib/units'
 
 type Item = { variant_id: string; sku: string; name: string; price: number; vat_rate: number; cost: number; category: string | null; stock: number }
 const r2 = (n: number) => Math.round(n * 100) / 100
@@ -72,7 +73,7 @@ export function ScannerPricePage() {
           <div className="grid grid-cols-2 gap-3">
             <div><div className="text-xs text-muted-foreground">{t('Price with VAT')}</div><div className="text-3xl font-semibold tabular">{formatMoney(gross)}</div></div>
             <div><div className="text-xs text-muted-foreground">{t('Without VAT ({rate} %)', { rate: item.vat_rate })}</div><div className="text-xl tabular">{formatMoney(r2(item.price))}</div></div>
-            <div><div className="text-xs text-muted-foreground">{unit ? t('In stock here') : t('In stock')}</div><div className="text-xl tabular">{formatQty(item.stock)}</div></div>
+            <div><div className="text-xs text-muted-foreground">{unit ? t('In stock here') : t('In stock')}</div><div className="text-xl tabular">{formatQtyOf(item.stock, item.variant_id)}</div></div>
             {canChange && <div><div className="text-xs text-muted-foreground">{t('Margin on the cost')}</div>
               <div className="text-xl tabular">{margin(item.price) == null ? '—' : `${formatQty(Math.round(margin(item.price)! * 10) / 10)} %`}</div></div>}
           </div>

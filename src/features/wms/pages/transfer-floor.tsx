@@ -18,6 +18,7 @@ import { cn, formatDate, formatQty, num } from '@/lib/utils'
 import { useShipTransfer, useWarehouses } from '@/features/inventory/api'
 import { useResolveCode } from '../api'
 import { QtyDialog, ScanShell, useScanStatus } from '../components/scan-shell'
+import { formatQtyOf } from '@/lib/units'
 
 /*
  * Transfers between units on the floor. The sending unit packs on the scanner and ships; the receiving unit
@@ -112,7 +113,7 @@ export function PackPage() {
   const add = async (variant: string, qty: number, lot: string | null, set = false) => {
     try {
       const r = unwrap(await supabase.rpc('transfer_pack_add', { p_transfer: id!, p_variant: variant, p_qty: qty, p_lot: (lot ?? null) as unknown as string, p_set: set })) as unknown as { quantity: number; name: string }
-      scanFeedback('ok'); st.ok(t('{item}: {n}', { item: r.name, n: formatQty(r.quantity) }))
+      scanFeedback('ok'); st.ok(t('{item}: {n}', { item: r.name, n: formatQtyOf(r.quantity, variant) }))
       void qc.invalidateQueries({ queryKey: KEY(companyId) })
     } catch (e) { scanFeedback('error'); st.error(describeError(e)) }
   }
@@ -140,7 +141,7 @@ export function PackPage() {
             <button key={l.id} type="button" onClick={() => setEdit(l)} className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-[13px] hover:bg-muted/50">
               <span className="min-w-0"><span className="block truncate font-medium">{l.variant?.name}</span>
                 <span className="text-muted-foreground">{l.variant?.sku}{l.lot ? ` · ${l.lot.lot_number}` : ''}</span></span>
-              <span className="text-lg font-semibold tabular">{formatQty(l.quantity)}</span>
+              <span className="text-lg font-semibold tabular">{formatQtyOf(l.quantity, l.variant_id)}</span>
             </button>
           ))}
         </div>
@@ -172,7 +173,7 @@ export function BlindReceivePage() {
   const count = async (variant: string, qty: number, lot: string | null, set = false) => {
     try {
       const r = unwrap(await supabase.rpc('transfer_count_add', { p_transfer: id!, p_variant: variant, p_qty: qty, p_lot: (lot ?? null) as unknown as string, p_set: set })) as unknown as { name: string; counted: number }
-      scanFeedback('ok'); st.ok(t('{item}: {n}', { item: r.name, n: formatQty(r.counted) })); refresh()
+      scanFeedback('ok'); st.ok(t('{item}: {n}', { item: r.name, n: formatQtyOf(r.counted, variant) })); refresh()
     } catch (e) { scanFeedback('error'); st.error(describeError(e)) }
   }
   const finish = useMutation({
@@ -231,7 +232,7 @@ export function BlindReceivePage() {
             <span className="min-w-0"><span className="block truncate font-medium">{x.name}</span>
               <span className="text-muted-foreground">{x.sku}</span>
               {x.recount && x.counted == null && <span className="ml-2 rounded bg-destructive/10 px-1.5 py-0.5 text-2xs font-medium text-destructive">{t('count again')}</span>}</span>
-            <span className={cn('text-lg font-semibold tabular', x.counted == null && 'text-muted-foreground/50')}>{x.counted == null ? '—' : formatQty(x.counted)}</span>
+            <span className={cn('text-lg font-semibold tabular', x.counted == null && 'text-muted-foreground/50')}>{x.counted == null ? '—' : formatQtyOf(x.counted, x.variant_id)}</span>
           </button>
         ))}
       </div>

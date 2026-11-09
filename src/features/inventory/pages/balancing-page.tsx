@@ -108,9 +108,9 @@ export function BalancingPage() {
                   <tr key={key(r)} className={cn('border-b last:border-0', on && 'bg-primary/5')}>
                     <td className="px-2 py-1.5 text-center"><input type="checkbox" className="size-4 accent-primary" checked={on} onChange={() => toggle(r)} aria-label={r.name} /></td>
                     <td className="px-2 py-1.5"><span className="font-medium">{r.name}</span><span className="block text-[12px] text-muted-foreground">{r.sku}{r.group ? ` · ${td(r.group)}` : ''}</span></td>
-                    <td className="px-2 py-1.5">{td(r.from)}<span className="block text-[12px] text-muted-foreground">{t('{qty} in stock · lasts {days}', { qty: formatQty(num(r.from_on_hand)), days: r.from_days == null ? t('not sold there') : daysText(r.from_days) })}</span></td>
+                    <td className="px-2 py-1.5">{td(r.from)}<span className="block text-[12px] text-muted-foreground">{t('{qty} in stock · lasts {days}', { qty: formatQty(num(r.from_on_hand), r.uom), days: r.from_days == null ? t('not sold there') : daysText(r.from_days) })}</span></td>
                     <td className="px-2 py-1.5">{td(r.to)}<span className={cn('block text-[12px]', num(r.to_on_hand) <= 0 ? 'font-medium text-destructive' : 'text-muted-foreground')}>
-                      {t('{qty} in stock · lasts {days}', { qty: formatQty(num(r.to_on_hand)), days: daysText(r.to_days) })}</span></td>
+                      {t('{qty} in stock · lasts {days}', { qty: formatQty(num(r.to_on_hand), r.uom), days: daysText(r.to_days) })}</span></td>
                     <td className="px-2 py-1.5 text-right tabular">{formatQty(num(r.to_daily))}</td>
                     <td className="px-2 py-1.5 text-right">
                       <span className="inline-flex items-center gap-1"><Input inputMode="decimal" className="h-8 w-20 text-right tabular" value={on ? String(picked[key(r)]) : String(num(r.quantity))}

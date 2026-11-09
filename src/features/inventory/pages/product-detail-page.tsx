@@ -48,6 +48,7 @@ import { msg, t, td, tn } from '@/i18n'
 import { ErrorState } from '@/components/error-state'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { useBulkProducts } from '../api'
+import { formatQtyOf, unitOfVariant } from '@/lib/units'
 
 export function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -71,6 +72,7 @@ export function ProductView({ id, inDialog, onDeleted }: { id: string | undefine
   }
   if (product.isError) return <ErrorState error={product.error} onRetry={() => void product.refetch()} />
   if (!p) return <EmptyState title={t('Product not found')} description={t('It may have been deleted, or it belongs to another company.')} />
+  const uomCode = units.data?.find((u) => u.id === p.uom_id)?.code ?? null
 
   const rows = levels.data ?? []
   const onHand = rows.reduce((s, r) => s + num(r.on_hand), 0)
@@ -109,8 +111,8 @@ export function ProductView({ id, inDialog, onDeleted }: { id: string | undefine
 
       {p.product_type === 'stockable' && (
         <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <StatCard label={t('On hand')} value={formatQty(onHand)} hint={t('{qty} reserved', { qty: formatQty(reserved) })} loading={levels.isLoading} />
-          <StatCard label={t('Available')} value={formatQty(onHand - reserved)} tone={onHand - reserved < 0 ? 'destructive' : lowVariants ? 'warning' : 'default'}
+          <StatCard label={t('On hand')} value={formatQty(onHand, uomCode)} hint={t('{qty} reserved', { qty: formatQty(reserved, uomCode) })} loading={levels.isLoading} />
+          <StatCard label={t('Available')} value={formatQty(onHand - reserved, uomCode)} tone={onHand - reserved < 0 ? 'destructive' : lowVariants ? 'warning' : 'default'}
             hint={lowVariants ? tn(lowVariants, '{n} variant at or below the reorder point', '{n} variants at or below the reorder point') : t('All variants are above the reorder point')} loading={levels.isLoading} />
           <StatCard label={t('Average cost, without VAT')} value={formatMoney(avg)} hint={t('With VAT {amount} · weighted, updated on every receipt', { amount: formatMoney(avg * buyVat) })} loading={levels.isLoading} />
           <StatCard label={t('Value at purchase price, without VAT')} value={formatMoney(value, company?.base_currency)} hint={t('With VAT {amount}', { amount: formatMoney(value * buyVat) })} loading={levels.isLoading} />
@@ -152,7 +154,7 @@ export function ProductView({ id, inDialog, onDeleted }: { id: string | undefine
                   </TableBody>
                   <TableFooter><TableRow className="hover:bg-transparent">
                     <TableCell colSpan={3}>{t('Total')}</TableCell>
-                    <TableCell className="tabular">{t('{available} available of {total}', { available: formatQty(onHand - reserved), total: formatQty(onHand) })}</TableCell>
+                    <TableCell className="tabular">{t('{available} available of {total}', { available: formatQty(onHand - reserved, uomCode), total: formatQty(onHand, uomCode) })}</TableCell>
                     <TableCell className="text-right tabular">{formatMoney(value)}</TableCell>
                   </TableRow></TableFooter>
                 </Table>
@@ -260,7 +262,7 @@ function PriceHistoryCard({ productId, variants }: { productId: string; variants
                     <TableCell className="text-right tabular text-[13px] font-medium">{formatMoney(newP)}</TableCell>
                     <TableCell className={`text-right tabular text-[13px] ${pct == null ? '' : pct > 0 ? 'text-success' : pct < 0 ? 'text-destructive' : ''}`}>
                       {pct == null ? '—' : `${pct > 0 ? '+' : ''}${pct.toFixed(1)}%`}</TableCell>
-                    <TableCell className="text-right tabular text-[13px]">{r.quantity == null ? '—' : formatQty(r.quantity)}</TableCell>
+                    <TableCell className="text-right tabular text-[13px]">{r.quantity == null ? '—' : formatQtyOf(r.quantity, r.variant_id)}</TableCell>
                     <TableCell className="text-right tabular text-[13px]">{r.value_change == null ? '—' : formatMoney(r.value_change)}</TableCell>
                     <TableCell className="text-[13px]">{r.source === 'logmicro'
                       ? <>{r.doc_number ?? '—'} <span className="text-xs text-muted-foreground">· {t('old program')}</span></>
@@ -572,9 +574,9 @@ function ReorderTab({ product }: { product: ProductDetail }) {
               <TableRow key={r.id}>
                 <TableCell className="font-medium">{r.sku}</TableCell>
                 <TableCell>{whName.get(r.warehouse_id) ?? '—'}</TableCell>
-                <TableCell className="text-right tabular">{formatQty(r.min_qty)}</TableCell>
-                <TableCell className="text-right tabular">{formatQty(r.max_qty)}</TableCell>
-                <TableCell className="text-right tabular">{formatQty(r.multiple_qty)}</TableCell>
+                <TableCell className="text-right tabular">{formatQty(r.min_qty, unitOfVariant(product.product_variants[0]?.id))}</TableCell>
+                <TableCell className="text-right tabular">{formatQty(r.max_qty, unitOfVariant(product.product_variants[0]?.id))}</TableCell>
+                <TableCell className="text-right tabular">{formatQty(r.multiple_qty, unitOfVariant(product.product_variants[0]?.id))}</TableCell>
                 <TableCell>{r.preferred_vendor_id ? vendorName.get(r.preferred_vendor_id) : '—'}</TableCell>
                 <TableCell className="whitespace-nowrap text-right">
                   {editable && <>

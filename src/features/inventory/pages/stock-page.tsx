@@ -60,11 +60,11 @@ export function StockPage() {
       header: ({ column }) => <ColumnHeader column={column} title={td(w.name)} />, meta: { label: td(w.name), align: 'right', exportValue: (r) => r.qty[w.id] ?? 0 },
       cell: ({ row: { original: r } }) => {
         const q = r.qty[w.id]
-        return q == null ? <span className="text-muted-foreground">—</span> : <span className={cn('tabular', q < 0 && 'text-destructive')}>{formatQty(q)}</span>
+        return q == null ? <span className="text-muted-foreground">—</span> : <span className={cn('tabular', q < 0 && 'text-destructive')}>{formatQty(q, r.uom)}</span>
       },
     })),
     { id: 'total', accessorFn: (r) => r.total, header: ({ column }) => <ColumnHeader column={column} title={t('All units')} />, meta: { label: t('All units'), align: 'right' },
-      cell: ({ row: { original: r } }) => <span className="font-medium tabular">{formatQty(r.total)} <span className="font-normal text-muted-foreground">{td(r.uom)}</span></span> },
+      cell: ({ row: { original: r } }) => <span className="font-medium tabular">{formatQty(r.total, r.uom)}</span> },
     { id: 'value', accessorFn: (r) => r.value, header: ({ column }) => <ColumnHeader column={column} title={t('Value at cost')} />, meta: { label: t('Value at cost'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
   ], [unitCols])
   const today = todayISO()
@@ -92,8 +92,8 @@ export function StockPage() {
         ? <span className={cn(r.expiry_date && r.expiry_date < today && 'text-destructive')}>{r.lot_number}{r.expiry_date && <span className="ml-1 text-xs text-muted-foreground">{t('expires {date}', { date: formatDate(r.expiry_date) })}</span>}</span>
         : '—',
     },
-    { accessorKey: 'on_hand', header: ({ column }) => <ColumnHeader column={column} title={t('On hand')} />, meta: { label: t('On hand'), align: 'right' }, cell: ({ row: { original: r } }) => <>{formatQty(r.on_hand)} <span className="text-muted-foreground">{td(r.uom_code)}</span></> },
-    { accessorKey: 'reserved', header: ({ column }) => <ColumnHeader column={column} title={t('Reserved')} />, meta: { label: t('Reserved'), align: 'right' }, cell: ({ getValue }) => formatQty(getValue() as number) },
+    { accessorKey: 'on_hand', header: ({ column }) => <ColumnHeader column={column} title={t('On hand')} />, meta: { label: t('On hand'), align: 'right' }, cell: ({ row: { original: r } }) => <>{formatQty(r.on_hand, r.uom_code)}</> },
+    { accessorKey: 'reserved', header: ({ column }) => <ColumnHeader column={column} title={t('Reserved')} />, meta: { label: t('Reserved'), align: 'right' }, cell: ({ row: { original: r } }) => formatQty(r.reserved, r.uom_code) },
     {
       accessorKey: 'available', header: ({ column }) => <ColumnHeader column={column} title={t('Available')} />, meta: { label: t('Available') },
       cell: ({ row: { original: r } }) => <StockBar onHand={r.on_hand} reserved={r.reserved} className="max-w-[200px]" />,

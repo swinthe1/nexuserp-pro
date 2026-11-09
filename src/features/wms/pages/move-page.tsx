@@ -5,10 +5,11 @@ import { ScanInput, scanFeedback } from '@/components/scan-input'
 import { Button } from '@/components/ui/button'
 import { describeError } from '@/lib/errors'
 import { msg, t, tn } from '@/i18n'
-import { cn, formatDate, formatQty } from '@/lib/utils'
+import { cn, formatDate } from '@/lib/utils'
 import type { LocationRow } from '@/features/inventory/api'
 import { useBinStock, useMoveStock, useResolveCode, type BinStock } from '../api'
 import { QtyDialog, ScanShell, useScanStatus } from '../components/scan-shell'
+import { formatQtyOf } from '@/lib/units'
 
 type Item = { key: string; variantId: string; lotId: string | null; sku: string; name: string; lot: string | null; qty: number; free: number }
 
@@ -31,10 +32,10 @@ export function MovePage() {
     const key = `${variantId}:${row.lot_id ?? ''}`
     const cur = items.find((i) => i.key === key)
     const next = (cur?.qty ?? 0) + inc
-    if (next > free(row)) { scanFeedback('error'); st.error(t('Only {n} free at {code}', { n: formatQty(free(row)), code: from!.code })); return }
+    if (next > free(row)) { scanFeedback('error'); st.error(t('Only {n} free at {code}', { n: formatQtyOf(free(row), variantId), code: from!.code })); return }
     setItems((l) => cur ? l.map((i) => (i.key === key ? { ...i, qty: next } : i))
       : [...l, { key, variantId, lotId: row.lot_id, sku: row.variant?.sku ?? '', name: row.variant?.name ?? '', lot: row.lot?.lot_number ?? null, qty: next, free: free(row) }])
-    scanFeedback('ok'); st.ok(`${row.variant?.sku}: ${formatQty(next)}`)
+    scanFeedback('ok'); st.ok(`${row.variant?.sku}: ${formatQtyOf(next, variantId)}`)
   }
 
   const onScan = async (code: string) => {
@@ -74,8 +75,8 @@ export function MovePage() {
             {items.map((i) => (
               <div key={i.key} className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2">
                 <button type="button" className="min-w-0 text-left" onClick={() => setEdit(i)}><div className="truncate font-medium">{i.name}</div>
-                  <div className="text-xs text-muted-foreground">{i.sku}{i.lot ? ` · ${t('Lot {lot}', { lot: i.lot })}` : ''} · {t('{n} free', { n: formatQty(i.free) })}</div></button>
-                <div className="flex items-center gap-2"><button type="button" className="text-xl font-semibold tabular" onClick={() => setEdit(i)}>{formatQty(i.qty)}</button>
+                  <div className="text-xs text-muted-foreground">{i.sku}{i.lot ? ` · ${t('Lot {lot}', { lot: i.lot })}` : ''} · {t('{n} free', { n: formatQtyOf(i.free, i.variantId) })}</div></button>
+                <div className="flex items-center gap-2"><button type="button" className="text-xl font-semibold tabular" onClick={() => setEdit(i)}>{formatQtyOf(i.qty, i.variantId)}</button>
                   <Button variant="ghost" size="icon" className="size-8" aria-label={t('Remove {sku}', { sku: i.sku })} onClick={() => setItems((l) => l.filter((x) => x.key !== i.key))}><Trash2 /></Button></div>
               </div>
             ))}
@@ -86,7 +87,7 @@ export function MovePage() {
             {(bin.data ?? []).map((s) => (
               <button key={s.id} type="button" className="flex justify-between rounded px-2 py-1 text-left hover:bg-muted" disabled={free(s) <= 0} onClick={() => addItem(s.variant_id, s.lot_id, 1)}>
                 <span>{s.variant?.sku} · {s.variant?.name}{s.lot ? ` · ${s.lot.lot_number}${s.lot.expiry_date ? ` (${formatDate(s.lot.expiry_date)})` : ''}` : ''}</span>
-                <span className="tabular">{formatQty(s.on_hand)}{Number(s.reserved) ? ` · ${t('{n} reserved', { n: formatQty(s.reserved) })}` : ''}</span>
+                <span className="tabular">{formatQtyOf(s.on_hand, s.variant_id)}{Number(s.reserved) ? ` · ${t('{n} reserved', { n: formatQtyOf(s.reserved, s.variant_id) })}` : ''}</span>
               </button>
             ))}
             {!bin.isLoading && !bin.data?.length && <div className="text-muted-foreground">{t('Empty')}</div>}

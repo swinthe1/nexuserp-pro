@@ -113,8 +113,8 @@ export function printCountRecord(r: CountRecord, annex: boolean) {
   const ids = [r.company.business_number && `${t('Business no.')} ${r.company.business_number}`, r.company.vat_number && `${t('VAT no.')} ${r.company.vat_number}`]
     .filter(Boolean).join(' · ')
   const lineRow = (l: RecordLine, i: number, withDiff: boolean) => `<tr><td class="n">${i + 1}</td><td class="mono">${esc(l.sku)}</td><td>${esc(l.name)}${l.lot ? ` <span class="muted">· ${esc(l.lot)}</span>` : ''}</td>
-    <td>${esc(l.unit ?? '')}</td><td class="mono">${esc(l.location)}</td><td class="r">${esc(formatQty(l.expected))}</td><td class="r">${esc(formatQty(l.counted))}</td>
-    ${withDiff ? `<td class="r b ${num(l.delta) < 0 ? 'neg' : 'pos'}">${num(l.delta) > 0 ? '+' : ''}${esc(formatQty(l.delta))}</td><td class="r">${esc(money(l.value, cur))}</td><td class="r">${esc(money(l.sale_value, cur))}</td>`
+    <td class="mono">${esc(l.location)}</td><td class="r">${esc(formatQty(l.expected, l.unit))}</td><td class="r">${esc(formatQty(l.counted, l.unit))}</td>
+    ${withDiff ? `<td class="r b ${num(l.delta) < 0 ? 'neg' : 'pos'}">${num(l.delta) > 0 ? '+' : ''}${esc(formatQty(l.delta, l.unit))}</td><td class="r">${esc(money(l.value, cur))}</td><td class="r">${esc(money(l.sale_value, cur))}</td>`
                 : `<td class="r">${esc(money(l.counted_value, cur))}</td>`}</tr>`
   const method = [
     r.kind === 'session' ? t('The goods were counted with the shop open, without stopping sales. Each item was compared with the stock the program had at the second it was counted; sales and receipts after that second do not change the result.') : '',
@@ -144,7 +144,7 @@ export function printCountRecord(r: CountRecord, annex: boolean) {
       <tr class="tot"><td>${esc(t('Net effect'))}</td><td class="r">${r.totals.differences}</td><td class="r">${esc(money(r.totals.net, cur))}</td><td class="r">${esc(money(num(r.totals.shortage_sale) + num(r.totals.surplus_sale), cur))}</td></tr>
     </tbody></table>
     <h2>${esc(t('Differences'))}</h2>
-    ${diffs.length ? `<table class="lines"><thead><tr><th class="n">#</th><th>${esc(t('Code'))}</th><th>${esc(t('Item'))}</th><th>${esc(t('Unit of measure'))}</th><th>${esc(t('Shelf'))}</th>
+    ${diffs.length ? `<table class="lines"><thead><tr><th class="n">#</th><th>${esc(t('Code'))}</th><th>${esc(t('Item'))}</th><th>${esc(t('Shelf'))}</th>
       <th class="r">${esc(t('In the program'))}</th><th class="r">${esc(t('Counted'))}</th><th class="r">${esc(t('Difference'))}</th><th class="r">${esc(t('At cost'))}</th><th class="r">${esc(t('At the selling price with VAT'))}</th></tr></thead>
       <tbody>${diffs.map((l, i) => lineRow(l, i, true)).join('')}</tbody></table>` : `<p>${esc(t('No differences: the stock in the program was right.'))}</p>`}
     ${r.record.notes ? `<h2>${esc(t('Notes of the commission'))}</h2><p class="pre">${esc(r.record.notes)}</p>` : ''}
@@ -154,7 +154,7 @@ export function printCountRecord(r: CountRecord, annex: boolean) {
       `<br><span class="muted">${esc(t('Approved by (director)'))}</span>`].map((s) => `<div>${s}</div>`).join('')}</div>
     <p class="foot muted">${esc(t('Made by DrisPRO on {date} by {name}', { date: formatDate(r.made_at, true), name: r.made_by ?? '' }))}</p>
     ${annex ? `<div class="annex"><h2>${esc(t('Annex: the counted items'))}</h2>
-      <table class="lines"><thead><tr><th class="n">#</th><th>${esc(t('Code'))}</th><th>${esc(t('Item'))}</th><th>${esc(t('Unit of measure'))}</th><th>${esc(t('Shelf'))}</th>
+      <table class="lines"><thead><tr><th class="n">#</th><th>${esc(t('Code'))}</th><th>${esc(t('Item'))}</th><th>${esc(t('Shelf'))}</th>
       <th class="r">${esc(t('In the program'))}</th><th class="r">${esc(t('Counted'))}</th><th class="r">${esc(t('Value at cost'))}</th></tr></thead>
       <tbody>${r.lines.map((l, i) => lineRow(l, i, false)).join('')}</tbody></table></div>` : ''}`
   const css = `@page { size: A4; margin: 14mm } body { font: 10.5px/1.4 system-ui, sans-serif; color: #111 } h1 { font-size: 17px; margin: 10px 0 8px; text-align: center }

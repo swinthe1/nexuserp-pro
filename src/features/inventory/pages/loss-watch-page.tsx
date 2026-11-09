@@ -15,6 +15,7 @@ import { t, td } from '@/i18n'
 import { unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { cn, formatMoney, formatQty, num, todayISO } from '@/lib/utils'
+import { formatQtyOf } from '@/lib/units'
 
 type Signal = { kind: string; level: number; user_id?: string; name?: string; sku?: string; warehouse?: string; warehouse_id?: string; n?: number; value?: number; pct?: number; peer?: number }
 type Cashier = { user_id: string; name: string; receipts: number; sales: number; voids: number; void_amount: number; void_pct: number | null; cleared: number
@@ -202,7 +203,7 @@ export function LossWatchPage() {
                       <TableRow key={`${r.variant_id}-${r.warehouse}`} className="hover:bg-transparent">
                         <TableCell><Link to={`/inventory/item-card?v=${r.variant_id}`} className="font-medium hover:underline">{r.name}</Link><span className="block text-xs text-muted-foreground">{r.sku}</span></TableCell>
                         <TableCell>{td(r.warehouse)}</TableCell>
-                        <TableCell className="text-right tabular">{formatQty(num(r.qty_lost))}</TableCell>
+                        <TableCell className="text-right tabular">{formatQtyOf(num(r.qty_lost), r.variant_id)}</TableCell>
                         <TableCell className="text-right font-medium text-destructive tabular">{formatMoney(r.value_lost)}</TableCell>
                       </TableRow>
                     ))}

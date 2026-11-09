@@ -60,8 +60,8 @@ function UnitFigures({ f, className }: { f: Figures | undefined; className?: str
       <span><span className="block text-muted-foreground">{f.basis === 'markup' ? t('Average margin on the cost') : t('Average margin on the price')}</span>
         <span className={cn('text-[13px] font-medium tabular', f.margin != null && f.margin < 0 && 'text-destructive')}>{f.margin == null ? '—' : `${formatQty(Number(f.margin))} %`}</span></span>
       <span><span className="block text-muted-foreground">{t('Items in stock')}</span><span className="text-[13px] tabular">{formatQty(Number(f.items))}</span></span>
-      <span className="col-span-2"><span className="text-muted-foreground">{t('Quantity')}: </span><span className="tabular">{t('{n} pieces', { n: formatQty(Number(f.pcs)) })}</span>
-        {other.map(([u, q]) => <span key={u} className="tabular"> · {formatQty(Number(q))} {td(u)}</span>)}</span>
+      <span className="col-span-2"><span className="text-muted-foreground">{t('Quantity')}: </span><span className="tabular">{formatQty(Number(f.pcs), 'pcs')}</span>
+        {other.map(([u, q]) => <span key={u} className="tabular"> · {formatQty(Number(q), u)}</span>)}</span>
     </span>
   )
 }

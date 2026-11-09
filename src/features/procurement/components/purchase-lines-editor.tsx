@@ -19,6 +19,7 @@ import { useTaxCodes, lookupCode } from '@/features/inventory/api'
 import { fetchPurchasePrice, usePurchasableVariants, type MatchLine, type PurchasePrice } from '../api'
 import type { PurchaseLineValues } from '../schemas'
 import { LinesSheet } from './lines-sheet'
+import { formatQtyOf } from '@/lib/units'
 
 type LinesForm = { vendor_id: string; doc_date: string; currency_code: string; lines: PurchaseLineValues[] }
 export interface PurchaseProgress { ordered: number; received: number; billed: number; isService: boolean }
@@ -65,7 +66,7 @@ export function PurchaseLinesEditor({ form: anyForm, editable, currency, progres
   const vmap = React.useMemo(() => new Map((variants.data ?? []).map((v) => [v.id, v])), [variants.data])
   const options = React.useMemo(() => (variants.data ?? []).map((v) => ({
     value: v.id, label: v.sku,
-    hint: v.product_type === 'service' ? v.name : `${v.name} · ${t('{qty} on hand', { qty: formatQty(v.on_hand) })}`,
+    hint: v.product_type === 'service' ? v.name : `${v.name} · ${t('{qty} on hand', { qty: formatQtyOf(v.on_hand, v.id) })}`,
     // the name, every barcode and each supplier's article number find it
     keywords: [v.name, ...(v.codes ? v.codes.split(' ') : [])],
   })), [variants.data])
@@ -194,7 +195,7 @@ export function PurchaseLinesEditor({ form: anyForm, editable, currency, progres
                         )} />
                         {v && v.product_type !== 'service' && (
                           <p className="text-2xs text-muted-foreground">
-                            {t('{qty} on hand', { qty: formatQty(v.on_hand) })} · {t('{qty} on order', { qty: formatQty(v.incoming) })}{v.reorder_min != null && ` · ${t('reorder at {qty}', { qty: formatQty(v.reorder_min) })}`}
+                            {t('{qty} on hand', { qty: formatQtyOf(v.on_hand, v.id) })} · {t('{qty} on order', { qty: formatQtyOf(v.incoming, v.id) })}{v.reorder_min != null && ` · ${t('reorder at {qty}', { qty: formatQtyOf(v.reorder_min, v.id) })}`}
                             {h?.vendor_sku && ` · ${t('vendor code {code}', { code: h.vendor_sku })}`}{num(h?.lead_time_days) > 0 && ` · ${t('{n} days delivery time', { n: h!.lead_time_days })}`}
                           </p>
                         )}

@@ -16,6 +16,7 @@ import type { Tables } from '@/lib/database.types'
 import { cn, formatDate, formatQty, num } from '@/lib/utils'
 import { t, tn } from '@/i18n'
 import { useBarcodesOf, useReceiveTransfer, useVariantOptions } from '../api'
+import { formatQtyOf } from '@/lib/units'
 
 type Line = Tables<'stock_transfer_lines'>
 type Doc = Tables<'stock_transfers'> & { lines: Line[] }
@@ -134,15 +135,15 @@ export function ReceiveTransferCard({ doc }: { doc: Doc }) {
                     <div className="font-medium">{v?.name ?? '—'}</div>
                     <div className="text-xs text-muted-foreground">{v?.sku}</div>
                   </TableCell>
-                  <TableCell className="text-right tabular">{formatQty(shipped(l))}</TableCell>
-                  {counted && <TableCell className="text-right tabular text-muted-foreground">{l.quantity_counted == null ? '—' : formatQty(l.quantity_counted)}</TableCell>}
+                  <TableCell className="text-right tabular">{formatQtyOf(shipped(l), l.variant_id)}</TableCell>
+                  {counted && <TableCell className="text-right tabular text-muted-foreground">{l.quantity_counted == null ? '—' : formatQtyOf(l.quantity_counted, l.variant_id)}</TableCell>}
                   <TableCell className="text-right">
                     {receiving
                       ? <Input type="number" min="0" step="any" value={got[l.id] ?? ''} onChange={(e) => setGot((g) => ({ ...g, [l.id]: e.target.value }))}
                           className="ml-auto h-9 w-28 text-right" aria-label={t('Received quantity of {item}', { item: v?.name ?? '' })} />
-                      : <span className="tabular">{formatQty(received(l))}</span>}
+                      : <span className="tabular">{formatQtyOf(received(l), l.variant_id)}</span>}
                   </TableCell>
-                  <TableCell className={cn('text-right tabular', d < 0 && 'text-destructive', d > 0 && 'text-warning')}>{d === 0 ? '—' : (d > 0 ? '+' : '') + formatQty(d)}</TableCell>
+                  <TableCell className={cn('text-right tabular', d < 0 && 'text-destructive', d > 0 && 'text-warning')}>{d === 0 ? '—' : (d > 0 ? '+' : '') + formatQtyOf(d, l.variant_id)}</TableCell>
                   <TableCell>
                     {d < 0 && receiving && (
                       <Select value={action[l.id] ?? 'loss'} onValueChange={(x) => setAction((a) => ({ ...a, [l.id]: x as 'loss' | 'return' }))}>

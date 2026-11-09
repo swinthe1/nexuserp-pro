@@ -1652,4 +1652,13 @@ export default {
   "{number} is on its way": "{number} është nisur",
   "{n} item is not counted: it counts as not arrived.": "{n} artikull nuk është numëruar: llogaritet si i paardhur.",
   "{n} items are not counted: they count as not arrived.": "{n} artikuj nuk janë numëruar: llogariten si të paardhur.",
+  "pc|qty": "copë",
+  "pcs|qty": "copë",
+  "box|qty": "kuti",
+  "boxes|qty": "kuti",
+  "dozen|qty": "duzinë",
+  "dozens|qty": "duzina",
+  "pack|qty": "pako",
+  "packs|qty": "pako",
+  "h|qty": "orë",
 } satisfies Dict

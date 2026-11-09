@@ -29,7 +29,7 @@ const COLS: Col[] = [
   { key: 'no', label: () => '#', fixed: true, cell: (l) => <span className="text-muted-foreground">{l.no}</span> },
   { key: 'item', label: () => t(msg('Item name')), fixed: true, cell: (l) => <><span className="font-medium">{l.name}</span>{l.code && <span className="ml-1.5 text-[11px] text-muted-foreground">{l.code}</span>}</> },
   { key: 'barcode', label: () => t(msg('Barcode')), cell: (l) => <span className="tabular">{l.barcode ?? ''}</span> },
-  { key: 'qty', label: () => t(msg('Quantity')), right: true, cell: (l) => <>{formatQty(l.qty)}{l.uom && <span className="ml-1 text-[11px] text-muted-foreground">{l.uom}</span>}</> },
+  { key: 'qty', label: () => t(msg('Quantity')), right: true, cell: (l) => <>{formatQty(l.qty, l.uom)}</> },
   { key: 'price', label: () => t(msg('Price without VAT')), right: true, cell: (l) => formatMoney(l.price) },
   { key: 'disc', label: () => t(msg('Discount')), right: true, cell: (l) => (l.discount ? `${formatQty(l.discount)}%` : '—') },
   { key: 'price_vat', label: () => t(msg('Price with VAT')), right: true, cell: (l) => formatMoney(unitNet(l) * (1 + l.vatRate / 100)) },

@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import { getLocale, tEnum } from '@/i18n'
+import { getLocale, msg, t, tEnum } from '@/i18n'
 import { formatDateWith, formatNumberWith } from '@/i18n/format'
 
 export function cn(...inputs: ClassValue[]) {
@@ -54,11 +54,46 @@ export function formatMoneyCompact(value: number | null | undefined, currency?: 
   return cur ? `${s} ${currencyLabel(cur)}` : s
 }
 
-/** Quantities: up to 4 decimals, trailing zeros trimmed */
-export function formatQty(value: number | string | null | undefined) {
+/*
+ * Units of measure after quantities: "22 copë", "3 pako", "1,250 kg", "500 g", "0,75 l" → "750 ml".
+ * A unit can be given by its code (pcs, kg…) or its name (Piece, Kilogram…); an unknown unit is written as it is.
+ */
+const UNIT_ALIAS: Record<string, string> = {
+  pcs: 'pcs', pc: 'pcs', piece: 'pcs', pieces: 'pcs', copë: 'pcs', cope: 'pcs', kom: 'pcs', unit: 'pcs', units: 'pcs', ea: 'pcs',
+  kg: 'kg', kilogram: 'kg', kilograms: 'kg', g: 'g', gr: 'g', gram: 'g', grams: 'g',
+  l: 'l', lt: 'l', litre: 'l', liter: 'l', litres: 'l', liters: 'l', ml: 'ml', millilitre: 'ml', milliliter: 'ml',
+  m: 'm', metre: 'm', meter: 'm', metres: 'm', meters: 'm', cm: 'cm', centimetre: 'cm', centimeter: 'cm', mm: 'mm', millimetre: 'mm', millimeter: 'mm',
+  box: 'box', kuti: 'box', dz: 'dz', dozen: 'dz', pack: 'pack', pkg: 'pack', pako: 'pack', h: 'h', hour: 'h', hours: 'h', orë: 'h',
+}
+const UNIT_WORDS: Record<string, [string, string]> = {
+  pcs: [msg('pc|qty'), msg('pcs|qty')], box: [msg('box|qty'), msg('boxes|qty')], dz: [msg('dozen|qty'), msg('dozens|qty')],
+  pack: [msg('pack|qty'), msg('packs|qty')], h: [msg('h|qty'), msg('h|qty')],
+}
+export function unitCode(unit: string | null | undefined) {
+  if (!unit) return null
+  const k = unit.trim().toLowerCase()
+  return UNIT_ALIAS[k] ?? unit.trim()
+}
+/** The unit as it is written after a quantity, in the current language */
+export function unitLabel(unit: string | null | undefined, n = 2) {
+  const c = unitCode(unit)
+  if (!c) return ''
+  const w = UNIT_WORDS[c]
+  return w ? t(Math.abs(n) === 1 ? w[0] : w[1]) : c
+}
+
+/**
+ * Quantities: up to 4 decimals, trailing zeros trimmed. With a unit the unit follows ("22 copë"); weights and
+ * volumes under 1 kg or 1 l are shown in g or ml ("500 g"), and over it with three decimals ("1,250 kg").
+ */
+export function formatQty(value: number | string | null | undefined, unit?: string | null) {
   if (value === null || value === undefined || value === '') return '—'
-  const n = typeof value === 'string' ? Number(value) : value
-  return nf('q', { maximumFractionDigits: 4 }).format(n)
+  let n = typeof value === 'string' ? Number(value) : value
+  let c = unitCode(unit)
+  if ((c === 'kg' || c === 'l') && n !== 0 && Math.abs(n) < 1) { n = Math.round(n * 1000 * 10) / 10; c = c === 'kg' ? 'g' : 'ml' }
+  const decimals = (c === 'kg' || c === 'l' || c === 'm') && !Number.isInteger(n) ? 3 : null
+  const s = decimals ? nf('q3', { minimumFractionDigits: 3, maximumFractionDigits: 3 }).format(n) : nf('q', { maximumFractionDigits: 4 }).format(n)
+  return c ? `${s} ${unitLabel(c, n)}` : s
 }
 
 export function formatCompact(value: number | null | undefined) {

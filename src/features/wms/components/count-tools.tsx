@@ -15,9 +15,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { msg, t, td, tn } from '@/i18n'
 import { printHtml } from '@/lib/print'
-import { cn, formatDate, formatMoney, formatQty, num } from '@/lib/utils'
+import { cn, formatDate, formatMoney, num } from '@/lib/utils'
 import { parseCsv, parseFile } from '@/features/settings/lib/parse-file'
 import { useCountImport, useCountPeople, useCountRecount, useCountReview, type CountImportResult, type CountLine } from '../api'
+import { formatQtyOf } from '@/lib/units'
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!))
 
@@ -29,7 +30,7 @@ export function printCountSheet(c: { number: string; count_date: string; blind_c
   const rows = [...groups.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([code, lines]) => `
     <tr class="shelf"><td colspan="${showExpected ? 6 : 5}">${esc(t('Shelf'))} ${esc(code)}</td></tr>
     ${lines.map((l, i) => `<tr><td class="n">${i + 1}</td><td class="mono">${esc(l.variant?.sku)}</td><td>${esc(l.variant?.name)}${l.lot ? ` <span class="muted">· ${esc(l.lot.lot_number)}</span>` : ''}</td>
-      ${showExpected ? `<td class="r">${esc(formatQty(l.system_qty))}</td>` : ''}<td class="box"></td><td class="box note"></td></tr>`).join('')}`).join('')
+      ${showExpected ? `<td class="r">${esc(formatQtyOf(l.system_qty, l.variant_id))}</td>` : ''}<td class="box"></td><td class="box note"></td></tr>`).join('')}`).join('')
   const body = `
     <header><div><h1>${esc(t('Stock count sheet'))} ${esc(c.number)}</h1>
       <div class="muted">${esc(company)} · ${esc(td(c.warehouse?.name ?? ''))} · ${esc(formatDate(c.count_date))}${c.blind_count ? ` · ${esc(t('blind count: the quantities in the system are not shown'))}` : ''}</div></div></header>
@@ -149,13 +150,13 @@ export function CountReviewPanel({ countId }: { countId: string }) {
                   onCheckedChange={(v) => setPicked((p) => v === true ? [...p, l.id] : p.filter((x) => x !== l.id))} /></Can>
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium">{l.name} {l.recount && <Badge variant="secondary" className="ml-1">{t('recounted')}</Badge>}</div>
-                  <div className="truncate text-xs text-muted-foreground">{l.sku} · {l.location}{l.lot ? ` · ${l.lot}` : ''} · {t('expected {e}, counted {c}', { e: formatQty(l.expected), c: formatQty(l.counted) })}
-                    {l.first_counted != null && ` · ${t('first count {n}', { n: formatQty(l.first_counted) })}`}</div>
+                  <div className="truncate text-xs text-muted-foreground">{l.sku} · {l.location}{l.lot ? ` · ${l.lot}` : ''} · {t('expected {e}, counted {c}', { e: formatQtyOf(l.expected, l.variant_id), c: formatQtyOf(l.counted, l.variant_id) })}
+                    {l.first_counted != null && ` · ${t('first count {n}', { n: formatQtyOf(l.first_counted, l.variant_id) })}`}</div>
                   <RiskBadges reasons={l.reasons} className="mt-0.5" />
-                  {l.entries && l.entries.length > 1 && <div className="truncate text-xs text-muted-foreground">{l.entries.map((e) => `${e.name ?? '—'} ${formatQty(e.qty)}${e.location ? ` (${e.location})` : ''}`).join(' + ')}</div>}
-                  {num(l.in_carts) > 0 && <span className="mt-0.5 inline-block rounded bg-warning/15 px-1.5 py-0.5 text-[11px] font-medium text-warning">{t('{n} sold right after the count: may have been in a cart', { n: formatQty(num(l.in_carts)) })}</span>}
+                  {l.entries && l.entries.length > 1 && <div className="truncate text-xs text-muted-foreground">{l.entries.map((e) => `${e.name ?? '—'} ${formatQtyOf(e.qty, l.variant_id)}${e.location ? ` (${e.location})` : ''}`).join(' + ')}</div>}
+                  {num(l.in_carts) > 0 && <span className="mt-0.5 inline-block rounded bg-warning/15 px-1.5 py-0.5 text-[11px] font-medium text-warning">{t('{n} sold right after the count: may have been in a cart', { n: formatQtyOf(num(l.in_carts), l.variant_id) })}</span>}
                 </div>
-                <span className={cn('w-20 shrink-0 text-right tabular', num(l.delta) < 0 ? 'text-destructive' : 'text-warning')}>{num(l.delta) > 0 ? '+' : ''}{formatQty(l.delta)}{l.pct != null && <span className="block text-2xs text-muted-foreground">{l.pct > 0 ? '+' : ''}{l.pct}%</span>}</span>
+                <span className={cn('w-20 shrink-0 text-right tabular', num(l.delta) < 0 ? 'text-destructive' : 'text-warning')}>{num(l.delta) > 0 ? '+' : ''}{formatQtyOf(l.delta, l.variant_id)}{l.pct != null && <span className="block text-2xs text-muted-foreground">{l.pct > 0 ? '+' : ''}{l.pct}%</span>}</span>
                 <span className={cn('w-24 shrink-0 text-right font-medium tabular', num(l.value) < 0 ? 'text-destructive' : 'text-success')}>{formatMoney(l.value, cur)}</span>
               </li>
             ))}

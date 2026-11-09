@@ -20,6 +20,7 @@ import { msg, t, td } from '@/i18n'
 import { cn, formatDate, formatMoney, formatQty, todayISO } from '@/lib/utils'
 import { useWarehouses } from '../api'
 import { useAbcItems, useAbcRun, useAbcSettingsSave, useAbcSummary, useStockNotSold, type Abc, type AbcRow, type AbcSettings, type AbcSummary, type Xyz } from '../abc'
+import { formatQtyOf } from '@/lib/units'
 
 const ROWS: Abc[] = ['A', 'B', 'C']
 const COLS: Xyz[] = ['X', 'Y', 'Z']
@@ -147,7 +148,7 @@ export function AbcPage() {
                     {deadRows.map((r) => (
                       <TableRow key={r.variant_id}>
                         <TableCell className="text-[13px]"><Link to={`/inventory/products/${r.product_id}`} className="font-medium hover:underline">{r.name}</Link><span className="ml-2 font-mono text-xs text-muted-foreground">{r.sku}</span></TableCell>
-                        <TableCell className="text-right tabular">{formatQty(r.on_hand)}</TableCell>
+                        <TableCell className="text-right tabular">{formatQtyOf(r.on_hand, r.variant_id)}</TableCell>
                         <TableCell className="text-right tabular">{formatMoney(r.stock_value)}</TableCell>
                         <TableCell className="text-[13px]">{r.last_sold ? formatDate(r.last_sold) : <span className="text-warning">{t('Never')}</span>}</TableCell>
                         <TableCell className="text-[13px] text-muted-foreground">{r.first_in ? formatDate(r.first_in) : '—'}</TableCell>
@@ -170,12 +171,12 @@ export function AbcPage() {
                         <TableCell className="text-[13px]"><Link to={`/inventory/products/${r.variant?.product_id}`} className="font-medium hover:underline">{r.variant?.name}</Link>
                           <span className="ml-2 font-mono text-xs text-muted-foreground">{r.variant?.sku}</span></TableCell>
                         <TableCell><Badge variant={r.abc === 'A' ? 'success' : r.abc === 'B' ? 'secondary' : 'outline'} className="font-mono">{r.abc}{xyz ? r.xyz : ''}</Badge></TableCell>
-                        <TableCell className="text-right tabular">{byQty ? formatQty(r.qty) : formatMoney(r.value)}</TableCell>
+                        <TableCell className="text-right tabular">{byQty ? formatQtyOf(r.qty, r.variant_id) : formatMoney(r.value)}</TableCell>
                         <TableCell className="text-right tabular">{formatQty(Math.round(r.share * 100) / 100)} %</TableCell>
                         <TableCell className="text-right tabular text-muted-foreground">{pct(r.cum_share)} %</TableCell>
                         <TableCell className="text-right tabular">{r.months_sold}</TableCell>
                         {xyz && <TableCell className="text-right tabular">{r.cv == null ? '—' : `${formatQty(Math.round(r.cv * 100))} %`}</TableCell>}
-                        <TableCell className="text-right tabular">{formatQty(r.on_hand)}</TableCell>
+                        <TableCell className="text-right tabular">{formatQtyOf(r.on_hand, r.variant_id)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

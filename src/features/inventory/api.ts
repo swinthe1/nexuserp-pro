@@ -5,6 +5,7 @@ import { useCompany } from '@/app/company-provider'
 import type { Json, Tables, TablesUpdate, Views } from '@/lib/database.types'
 import { describeError, unwrap } from '@/lib/errors'
 import { after, byName, fetchAll, fetchPages, supabase } from '@/lib/supabase'
+import { rememberUnits } from '@/lib/units'
 import { t, tn } from '@/i18n'
 import { isNetError, postReceiptOffline, saveDocumentOffline } from '@/lib/offline/step'
 
@@ -92,7 +93,7 @@ export const useVariantOptions = () =>
   useLookup<VariantOption[]>('variant-options', async (c) => ({ error: null, data: await fetchAll('sku', (x) => after(supabase.from('v_variant_options')
     .select('id, sku, name, product_id, tracking, avg_cost, uom_code, codes')
     .eq('company_id', c).eq('product_type', 'stockable').eq('is_active', true), 'sku', x).order('sku').limit(1000)
-    .returns<VariantOption[]>()) }))
+    .returns<VariantOption[]>()).then((rows) => { rememberUnits(rows); return rows }) }))
 
 export const useLots = (variantId?: string) => {
   const { companyId } = useCompany()

@@ -40,26 +40,25 @@ export function UnitsList({ units, unit, className }: { units: UnitStock[]; unit
               </div>
               <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                 <span className={st.cls}>{t(st.label)}</span>
-                {u.reserved > 0 && <span>{t('{n} reserved', { n: formatQty(u.reserved) })}</span>}
-                {u.min_qty != null && <span>{t('keeps {min}–{max}', { min: formatQty(u.min_qty), max: formatQty(u.max_qty ?? u.min_qty) })}</span>}
-                {u.outgoing > 0 && <span>{t('{n} promised to another unit', { n: formatQty(u.outgoing) })}</span>}
-                {u.incoming > 0 && <span className="text-primary">{t('+{n} on the way', { n: formatQty(u.incoming) })}</span>}
-                {u.sold_30 > 0 && <span>{t('{n} sold in 30 days', { n: formatQty(u.sold_30) })}</span>}
+                {u.reserved > 0 && <span>{t('{n} reserved', { n: formatQty(u.reserved, unit) })}</span>}
+                {u.min_qty != null && <span>{t('keeps {min}–{max}', { min: formatQty(u.min_qty, unit), max: formatQty(u.max_qty ?? u.min_qty, unit) })}</span>}
+                {u.outgoing > 0 && <span>{t('{n} promised to another unit', { n: formatQty(u.outgoing, unit) })}</span>}
+                {u.incoming > 0 && <span className="text-primary">{t('+{n} on the way', { n: formatQty(u.incoming, unit) })}</span>}
+                {u.sold_30 > 0 && <span>{t('{n} sold in 30 days', { n: formatQty(u.sold_30, unit) })}</span>}
               </div>
               {u.docs.length > 0 && (
                 <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs">
                   {u.docs.slice(0, 3).map((d) => (
                     <Link key={d.id} to={`/inventory/transfers/${d.id}`} className="text-primary hover:underline">
-                      {d.number} · {d.status === 'in_transit' ? t('on the road') : d.is_request ? t('asked for') : t('draft|transfer')} · {formatQty(d.qty)} {t('from {unit}', { unit: td(d.from) })}
+                      {d.number} · {d.status === 'in_transit' ? t('on the road') : d.is_request ? t('asked for') : t('draft|transfer')} · {formatQty(d.qty, unit)} {t('from {unit}', { unit: td(d.from) })}
                     </Link>))}
                 </div>
               )}
             </div>
             <div className="text-right">
               <div className={cn('text-xl font-semibold tabular leading-none', u.available <= 0 && u.status !== 'none' ? 'text-destructive' : u.status === 'low' ? 'text-warning' : u.status === 'none' ? 'text-muted-foreground' : '')}>
-                {formatQty(u.available)}
+                {formatQty(u.available, unit)}
               </div>
-              {unit && <div className="mt-0.5 text-[11px] text-muted-foreground">{td(unit)}</div>}
             </div>
           </li>
         )
@@ -79,7 +78,7 @@ export function SuggestionCard({ s, data }: { s: WhereSuggestion; data: WhereRes
       <div className="flex gap-3 rounded-lg border border-primary/30 bg-primary/[0.04] p-3">
         <Truck className="mt-0.5 size-5 shrink-0 text-primary" />
         <div className="text-[13px]">
-          <div className="font-medium">{t('{unit}: {n} already on the way', { unit: td(s.to_name), n: formatQty(s.incoming) })}</div>
+          <div className="font-medium">{t('{unit}: {n} already on the way', { unit: td(s.to_name), n: formatQty(s.incoming, data.item?.unit) })}</div>
           <div className="text-muted-foreground">{t('That is enough for now; nothing more to ask for.')}</div>
         </div>
       </div>
@@ -93,14 +92,14 @@ export function SuggestionCard({ s, data }: { s: WhereSuggestion; data: WhereRes
           <div className="font-medium">{t('{unit}: no other unit can spare it', { unit: td(s.to_name) })}</div>
           <div className="text-muted-foreground">
             {s.qty ? t('Order {n} {unit} from the supplier', { n: formatQty(s.qty), unit }) : t('Order it from the supplier')}
-            {s.vendor_name ? ` (${td(s.vendor_name)})` : ''}{s.incoming > 0 ? ` · ${t('{n} already on the way', { n: formatQty(s.incoming) })}` : ''}.
+            {s.vendor_name ? ` (${td(s.vendor_name)})` : ''}{s.incoming > 0 ? ` · ${t('{n} already on the way', { n: formatQty(s.incoming, data.item?.unit) })}` : ''}.
           </div>
           <Link to="/procurement/replenishment" className="text-primary hover:underline">{t('Open replenishment')}</Link>
         </div>
       </div>
     )
   }
-  const why = s.basis === 'rule' ? t('This fills {unit} up to its maximum of {max}.', { unit: td(s.to_name), max: formatQty(to?.max_qty ?? 0) })
+  const why = s.basis === 'rule' ? t('This fills {unit} up to its maximum of {max}.', { unit: td(s.to_name), max: formatQty(to?.max_qty ?? 0, data.item?.unit) })
     : s.basis === 'sales' ? t('About two weeks of sales.')
     : t('Half of what {unit} can spare.', { unit: td(s.from_name ?? '') })
   return (
@@ -115,8 +114,8 @@ export function SuggestionCard({ s, data }: { s: WhereSuggestion; data: WhereRes
           <p className="mt-1 text-muted-foreground">
             {t(from?.min_qty != null ? '{to} has {n}. {from} has {has} and can give {spare} without going under its own minimum.'
               : from?.type === 'warehouse' ? '{to} has {n}. {from} has {spare} free.' : '{to} has {n}. {from} has {has} and keeps half for itself.', {
-              to: td(s.to_name), n: formatQty(to?.available ?? 0), from: td(s.from_name ?? ''), has: formatQty(s.from_available ?? 0), spare: formatQty(s.from_spare ?? 0) })} {why}
-            {(s.rest ?? 0) > 0 && <> {t('The other {n} have to be bought.', { n: formatQty(s.rest ?? 0) })}</>}
+              to: td(s.to_name), n: formatQty(to?.available ?? 0, data.item?.unit), from: td(s.from_name ?? ''), has: formatQty(s.from_available ?? 0, data.item?.unit), spare: formatQty(s.from_spare ?? 0, data.item?.unit) })} {why}
+            {(s.rest ?? 0) > 0 && <> {t('The other {n} have to be bought.', { n: formatQty(s.rest ?? 0, data.item?.unit) })}</>}
           </p>
         </div>
       </div>
@@ -145,14 +144,14 @@ function AskDialog({ variantId, name, unit, s, onClose }: { variantId: string; n
           try {
             const r = await req.mutateAsync({ variant: variantId, from: s.from!, to: s.to, qty: n, note })
             toast.success(r.merged ? t('Added to request {number}', { number: r.number }) : t('Request {number} sent to {unit}', { number: r.number, unit: td(s.from_name ?? '') }),
-              { description: `${formatQty(n)} × ${name}`, action: { label: t('Open'), onClick: () => window.location.assign(`/inventory/transfers/${r.id}`) } })
+              { description: `${formatQty(n, unit)} × ${name}`, action: { label: t('Open'), onClick: () => window.location.assign(`/inventory/transfers/${r.id}`) } })
             onClose()
           } catch (err) { toast.error(describeError(err)) }
         }}>
           <div className="grid gap-1.5">
             <Label htmlFor="ask-qty">{t('Quantity')} {unit && <span className="text-muted-foreground">({unit})</span>}</Label>
             <Input id="ask-qty" autoFocus inputMode="decimal" className="h-12 text-center text-xl font-semibold tabular" value={qty} onChange={(e) => setQty(e.target.value)} onFocus={(e) => e.target.select()} />
-            {over && <p className="text-xs text-warning">{t('{unit} has only {n} free.', { unit: td(s.from_name ?? ''), n: formatQty(s.from_available ?? 0) })}</p>}
+            {over && <p className="text-xs text-warning">{t('{unit} has only {n} free.', { unit: td(s.from_name ?? ''), n: formatQty(s.from_available ?? 0, unit) })}</p>}
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="ask-note">{t('Note (optional)')}</Label>
@@ -176,13 +175,13 @@ export function WhereView({ data, compact }: { data: WhereResult; compact?: bool
     <div className="grid gap-3">
       {!compact && (
         <p className="text-[13px] text-muted-foreground">
-          {t('{n} free in all, in {units} of {all} units', { n: formatQty(total), units: carrying.filter((u) => u.available > 0).length, all: units.length })}
+          {t('{n} free in all, in {units} of {all} units', { n: formatQty(total, data.item?.unit), units: carrying.filter((u) => u.available > 0).length, all: units.length })}
         </p>
       )}
       {sugg.map((s, i) => <SuggestionCard key={`${s.to}-${i}`} s={s} data={data} />)}
       {here && !sugg.length && here.status === 'ok' && (
         <div className="flex items-center gap-2 rounded-lg border border-success/40 bg-success/[0.06] p-3 text-[13px]">
-          <Check className="size-4 text-success" /> {t('{unit} has enough: {n}', { unit: td(here.name), n: formatQty(here.available) })}
+          <Check className="size-4 text-success" /> {t('{unit} has enough: {n}', { unit: td(here.name), n: formatQty(here.available, data.item?.unit) })}
         </div>
       )}
       {!here && !sugg.length && units.some((u) => u.status !== 'none') && (

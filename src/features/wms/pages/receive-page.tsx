@@ -22,6 +22,7 @@ import { SearchSelect } from '@/components/search-select'
 import { useEnsureLot, useFinishReceipt, useOpenReceipts, useStartDockReceipt, useReceiptForScan, useResolveCode, type DockCount, type ReceiptLine } from '../api'
 import { Progress, QtyDialog, ScanShell, useScanStatus } from '../components/scan-shell'
 import { OpenCountBanner } from '../components/count-together'
+import { formatQtyOf } from '@/lib/units'
 
 /** transfers from another unit, shipped and on the way: received on the transfer's page */
 function useIncomingTransfers() {
@@ -183,14 +184,14 @@ export function ReceiveScanPage() {
         if (r.tracking !== 'none') { scanFeedback('ok'); setLotFor({ variantId, qty: r.qty }); return }
         scanFeedback('ok'); setLastKey(fresh.key)
         setEntries((list) => (list ? list.map((x) => (x.key === fresh.key ? { ...x, qty: x.qty + r.qty } : x)) : list))
-        st.ok(`+${formatQty(r.qty)} ${r.sku} · ${r.name}`); return
+        st.ok(`+${formatQtyOf(r.qty, variantId)} ${r.sku} · ${r.name}`); return
       }
       if (!e) { scanFeedback('error'); st.error(t('{code} is not on this receipt', { code: r.kind === 'variant' ? r.sku : r.lotNumber })); return }
       if (r.kind === 'lot') {
         scanFeedback('ok'); add(variantId, 1, { id: r.lotId, number: r.lotNumber, expiry: r.expiry }); st.ok(t('+1 {sku} · lot {lot}', { sku: e.sku, lot: r.lotNumber })); return
       }
       if (e.tracking !== 'none') { scanFeedback('ok'); setLotFor({ variantId, qty: r.qty }); return }
-      scanFeedback('ok'); add(variantId, r.qty); st.ok(`+${formatQty(r.qty)} ${e.sku} · ${e.name}`)
+      scanFeedback('ok'); add(variantId, r.qty); st.ok(`+${formatQtyOf(r.qty, variantId)} ${e.sku} · ${e.name}`)
       return
     }
     scanFeedback('error'); st.error(r.kind === 'location' ? t('{code} is a shelf — scan the product', { code: r.location.code }) : t('Unknown code “{code}”', { code }))
@@ -246,8 +247,8 @@ export function ReceiveScanPage() {
                   {e.lotId ? (e.expiry ? t('Lot {lot} · expires {date}', { lot: e.lotNumber, date: formatDate(e.expiry) }) : t('Lot {lot}', { lot: e.lotNumber })) : t('Lot needed — scan the item to enter it')}</div>}
               </div>
               <div className="text-right">
-                <div className="text-2xl font-semibold tabular">{formatQty(e.qty)}</div>
-                {firstOfVariant && <div className={cn('text-xs tabular', state === 'short' ? 'text-warning' : 'text-muted-foreground')}>{t('of {n}', { n: formatQty(v.expected) })}</div>}
+                <div className="text-2xl font-semibold tabular">{formatQtyOf(e.qty, e.variantId)}</div>
+                {firstOfVariant && <div className={cn('text-xs tabular', state === 'short' ? 'text-warning' : 'text-muted-foreground')}>{t('of {n}', { n: formatQtyOf(v.expected, e.variantId) })}</div>}
               </div>
             </button>
           )
@@ -270,7 +271,7 @@ export function ReceiveScanPage() {
           try {
             const lotId = await ensureLot.mutateAsync({ variant: lotFor.variantId, lot: number, expiry, vendor: rc.vendor_id })
             add(lotFor.variantId, lotFor.qty, { id: lotId, number, expiry })
-            st.ok(t('+{n} · lot {lot}', { n: formatQty(lotFor.qty), lot: number })); setLotFor(null)
+            st.ok(t('+{n} · lot {lot}', { n: formatQtyOf(lotFor.qty, lotFor.variantId), lot: number })); setLotFor(null)
           } catch (e) { scanFeedback('error'); st.error(describeError(e)) }
         }} />}
       <QtyDialog open={!!qtyFor} title={qtyFor ? `${qtyFor.sku} · ${qtyFor.name}` : ''} description={qtyFor?.lotNumber ? t('Lot {lot}', { lot: qtyFor.lotNumber }) : t('Counted quantity')}

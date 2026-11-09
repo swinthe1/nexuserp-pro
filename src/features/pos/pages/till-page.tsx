@@ -43,6 +43,7 @@ import { logSef, watchSef } from '../sef-log'
 import { fuzzyFind } from '@/lib/fuzzy'
 import { SyncPanel } from './pos-home-page'
 import { phoneKey, quoteLoyalty, type TillCardRow, type TillProgram } from '@/features/loyalty/api'
+import { formatQtyOf } from '@/lib/units'
 
 /* ------------------------------------------------------------------ money helpers (same rounding as the database) */
 const r2 = (v: number) => Math.sign(v) * Math.round(Math.abs(v) * 100 + 1e-7) / 100
@@ -776,7 +777,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
                     <span className="text-right">
                       <span className="block text-base font-semibold tabular" title={t('Price with VAT')}>{formatMoney(c.price)}</span>
                       <span className="block text-[11px] text-muted-foreground tabular">{t('{amount} without VAT', { amount: formatMoney(Math.round(net * 100) / 100) })}</span>
-                      {c.product_type === 'stockable' && <span className={cn('block text-[11px] tabular', c.on_hand <= 0 ? 'font-medium text-destructive' : 'text-muted-foreground')}>{t('Here: {qty}', { qty: formatQty(num(c.on_hand)) })}</span>}
+                      {c.product_type === 'stockable' && <span className={cn('block text-[11px] tabular', c.on_hand <= 0 ? 'font-medium text-destructive' : 'text-muted-foreground')}>{t('Here: {qty}', { qty: formatQtyOf(num(c.on_hand), c.variant_id) })}</span>}
                     </span>
                   </button>
                   {!tiles && can('pos.approve') && (
@@ -816,7 +817,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
             <span className="text-[13px] text-muted-foreground tabular">{i + 1}</span>
             <span className="min-w-0"><span className="block truncate font-medium">{l.name}</span>
               {l.sku && <span className="block truncate text-[11.5px] text-muted-foreground tabular">{l.sku}</span>}</span>
-            <span className="text-right font-semibold tabular">{formatQty(num(l.qty))}</span>
+            <span className="text-right font-semibold tabular">{formatQtyOf(num(l.qty), l.variant_id)}</span>
             <span className="text-right tabular">{formatMoney(l.price)}</span>
             <span className="text-right text-[13px] text-primary tabular">{l.discount ? `−${Math.round(l.discount * 100) / 100}%` : ''}</span>
             <span className="text-right font-semibold tabular">{formatMoney(lineTotal(l))}</span>
@@ -826,7 +827,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       {selectedLine && (
         <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-t bg-muted/30 px-3 py-2">
           <Button size="icon" variant="outline" className="size-9" aria-label={t('One less')} onClick={() => updateLine(selectedLine.key, { qty: selectedLine.qty - 1 })}><Minus /></Button>
-          <span className="w-12 text-center text-sm font-semibold tabular">{formatQty(num(selectedLine.qty))}</span>
+          <span className="w-12 text-center text-sm font-semibold tabular">{formatQtyOf(num(selectedLine.qty), selectedLine.variant_id)}</span>
           <Button size="icon" variant="outline" className="size-9" aria-label={t('One more')} onClick={() => updateLine(selectedLine.key, { qty: selectedLine.qty + 1 })}><Plus /></Button>
           <Button size="sm" variant="ghost" className="ml-1" onClick={() => setDialog('line')}>{t('Quantity, discount…')}</Button>
           <Button size="sm" variant="ghost" className="text-destructive" onClick={() => removeLine(selectedLine.key)}><Trash2 /> {t('Remove line')}</Button>
@@ -1056,7 +1057,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
                 <div aria-live="polite">
                   <div className="text-[12px] font-medium text-muted-foreground">{focusLine.key === priced[priced.length - 1]?.key ? t('Last item|till') : t('Selected line')}</div>
                   <div className="mt-1 line-clamp-2 text-xl font-semibold leading-snug">{focusLine.name}</div>
-                  <div className="mt-1 text-[15px] text-muted-foreground tabular">{formatQty(num(focusLine.qty))} × {formatMoney(focusLine.price)}{focusLine.discount ? <span className="text-primary"> · −{Math.round(focusLine.discount * 100) / 100}%{focusLine.promo ? ` ${focusLine.promo.name}` : ''}</span> : null}</div>
+                  <div className="mt-1 text-[15px] text-muted-foreground tabular">{formatQtyOf(num(focusLine.qty), focusLine.variant_id)} × {formatMoney(focusLine.price)}{focusLine.discount ? <span className="text-primary"> · −{Math.round(focusLine.discount * 100) / 100}%{focusLine.promo ? ` ${focusLine.promo.name}` : ''}</span> : null}</div>
                   <div className="mt-2 text-4xl font-semibold tracking-[-0.02em] tabular">{formatMoney(lineTotal(focusLine))}</div>
                 </div>
               ) : (

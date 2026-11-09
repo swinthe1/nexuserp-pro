@@ -19,6 +19,7 @@ import type { SalesDocValues } from '../schemas'
 import { formatNumberWith, t, td } from '@/i18n'
 import { describeError } from '@/lib/errors'
 import { packForScan, usePacks } from '@/lib/packs'
+import { formatQtyOf } from '@/lib/units'
 
 export interface LineProgress { ordered?: number; delivered?: number; invoiced?: number; reserved?: number }
 
@@ -105,7 +106,7 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
   const rateOf = React.useCallback((taxId?: string | null) => num(taxes.data?.find((t) => t.id === taxId)?.rate), [taxes.data])
   const variantOptions = React.useMemo(() => (variants.data ?? []).map((v) => ({
     value: v.id, label: v.sku,
-    hint: v.product_type === 'stockable' ? t('{name} · {qty} available', { name: v.name, qty: formatQty(v.available) }) : v.name,
+    hint: v.product_type === 'stockable' ? t('{name} · {qty} available', { name: v.name, qty: formatQtyOf(v.available, v.id) }) : v.name,
     // the name, every barcode and each supplier's article number find it
     keywords: [v.name, ...(v.codes ? v.codes.split(' ') : [])],
   })), [variants.data])
@@ -184,7 +185,7 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
                   <TableRow key={l.key ?? i} className="hover:bg-transparent">
                     <TableCell className="text-[13px] text-muted-foreground">{i + 1}</TableCell>
                     <TableCell><div className="font-medium">{v?.sku ?? l.description}</div>{v && <div className="text-xs text-muted-foreground">{l.description}</div>}</TableCell>
-                    <TableCell className="text-right tabular">{formatQty(l.quantity)} <span className="text-xs text-muted-foreground">{td(v?.uom_code)}</span>
+                    <TableCell className="text-right tabular">{formatQty(l.quantity, v?.uom_code)}
                       {l.pack_id && <PackQty editable={false} packs={l.variant_id ? packs.byVariant.get(l.variant_id) : undefined} packId={l.pack_id} packQty={l.pack_qty} quantity={l.quantity} line={i + 1} onChange={() => undefined} />}</TableCell>
                     <TableCell className="text-right tabular">{formatMoney(l.unit_price, currency)}
                       {rateOf(l.tax_code_id) > 0 && <div className="text-2xs text-muted-foreground">{t('With VAT {amount}', { amount: formatMoney(num(l.unit_price) * (1 + rateOf(l.tax_code_id) / 100), currency) })}</div>}</TableCell>
@@ -262,7 +263,7 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
                       )} />
                       <PackQty packs={l?.variant_id ? packs.byVariant.get(l.variant_id) : undefined} packId={l?.pack_id} packQty={l?.pack_qty} quantity={l?.quantity}
                         uom={v?.uom_code} line={i + 1} onChange={(c) => { setPack(i, c); if (c.quantity && l?.variant_id && l.price_source === 'auto') void applyPrice(i, l.variant_id, c.quantity, false) }} />
-                      {short && <p className="mt-1 text-right text-2xs text-warning">{t('only {qty} free', { qty: formatQty(v.available) })}</p>}
+                      {short && <p className="mt-1 text-right text-2xs text-warning">{t('only {qty} free', { qty: formatQty(v.available, v?.uom_code) })}</p>}
                     </TableCell>
                     <TableCell>
                       {withVat && l ? (

@@ -28,6 +28,7 @@ import { WorkPanes, WorkTabBar, WorkTabsProvider } from '@/components/layout/wor
 import { Skeleton } from '@/components/ui/skeleton'
 import { useHotkey } from '@/hooks/use-hotkey'
 import { ExportsRecorder } from '@/features/exports/recorder'
+import { useVariantOptions } from '@/features/inventory/api'
 import { t } from '@/i18n'
 
 const KEY = 'drispro.sidebar.collapsed'
@@ -46,6 +47,13 @@ function FullPageSkeleton() {
     </div>
   )
 }
+
+/** Loads the items once, so every quantity on any page can be written with its unit ("22 copë") */
+function ItemUnits() {
+  const { can } = useCompany()
+  return can('inventory.read') || can('wms.read') || can('pos.read') || can('sales.read') || can('procurement.read') ? <ItemUnitsLoad /> : null
+}
+function ItemUnitsLoad() { useVariantOptions(); return null }
 
 export function AppLayout() {
   const { user, loading } = useAuth()
@@ -80,7 +88,7 @@ export function AppLayout() {
         <LicenseBanner />
         <main id="main" className="flex-1 px-3 py-3 sm:px-5">
           <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
-          <GuardHost /><LoginSetupGate /><ExportsRecorder />
+          <GuardHost /><LoginSetupGate /><ExportsRecorder /><ItemUnits />
         </main>
       </div>
     )
@@ -99,7 +107,7 @@ export function AppLayout() {
           <main id="main" className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
             <SectionTabs />
             <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
-            <GuardHost /><LoginSetupGate /><ExportsRecorder />
+            <GuardHost /><LoginSetupGate /><ExportsRecorder /><ItemUnits />
             <TourHost />
           </main>
         </div>
@@ -136,7 +144,7 @@ export function AppLayout() {
           <main id="main" className="flex-1 px-3 py-3 sm:px-4">
             <SectionTabs />
             <WorkPanes />
-            <GuardHost /><LoginSetupGate /><ExportsRecorder />
+            <GuardHost /><LoginSetupGate /><ExportsRecorder /><ItemUnits />
             <TourHost />
           </main>
         </ClassicShell>
@@ -167,7 +175,7 @@ export function AppLayout() {
           <main id="main" className="flex-1 px-4 py-5 pb-24 sm:px-6 md:pb-5 lg:px-8">
             <SectionTabs />
             <WorkPanes />
-            <GuardHost /><LoginSetupGate /><ExportsRecorder />
+            <GuardHost /><LoginSetupGate /><ExportsRecorder /><ItemUnits />
             <TourHost />
           </main>
         </div>

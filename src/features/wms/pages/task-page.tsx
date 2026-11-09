@@ -13,9 +13,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { describeError } from '@/lib/errors'
 import { ErrorState } from '@/components/error-state'
 import { t, tEnum, tn, tServer } from '@/i18n'
-import { cn, formatDate, formatQty } from '@/lib/utils'
+import { cn, formatDate } from '@/lib/utils'
 import { useCancelTask, useCompletePickList, useConfirmPick, useConfirmTaskLine, useResolveCode, useSuggestPutaway, useTask, type TaskDetail, type TaskLine } from '../api'
 import { Progress, QtyDialog, ScanShell, useScanStatus } from '../components/scan-shell'
+import { formatQtyOf } from '@/lib/units'
 
 export function TaskPage() {
   const { id } = useParams()
@@ -51,10 +52,10 @@ function PutawayScreen({ task }: { task: TaskDetail }) {
   const putTo = async (locationId: string, code: string) => {
     if (!current) return
     const q = Number(qty)
-    if (!(q > 0) || q > remaining) { scanFeedback('error'); st.error(t('Enter a quantity up to {n}', { n: formatQty(remaining) })); return }
+    if (!(q > 0) || q > remaining) { scanFeedback('error'); st.error(t('Enter a quantity up to {n}', { n: formatQtyOf(remaining, current.variant_id) })); return }
     try {
       const r = await confirm.mutateAsync({ line: current.id, qty: q, to: locationId })
-      scanFeedback('ok'); st.ok(`${formatQty(q)} × ${current.variant?.sku} → ${code}`)
+      scanFeedback('ok'); st.ok(`${formatQtyOf(q, current.variant_id)} × ${current.variant?.sku} → ${code}`)
       if (r.task_status === 'done') { toast.success(t('{number} finished', { number: task.number })); navigate('/wms/putaway') }
     } catch (e) { scanFeedback('error'); st.error(describeError(e)) }
   }
@@ -92,13 +93,13 @@ function PutawayScreen({ task }: { task: TaskDetail }) {
           <div className="flex items-center gap-3">
             <label className="text-[13px] text-muted-foreground" htmlFor="pa-qty">{t('Quantity')}</label>
             <Input id="pa-qty" inputMode="decimal" className="h-11 w-28 text-center text-lg font-semibold tabular" value={qty} onChange={(e) => setQty(e.target.value.replace(',', '.'))} />
-            <span className="text-[13px] text-muted-foreground">{t('of {n} left', { n: formatQty(remaining) })}</span>
+            <span className="text-[13px] text-muted-foreground">{t('of {n} left', { n: formatQtyOf(remaining, current.variant_id) })}</span>
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
             {(suggestions.data ?? []).map((s, i) => (
               <Button key={s.location_id} variant={i === 0 ? 'default' : 'outline'} className="h-auto justify-between gap-3 py-3 text-left" onClick={() => putTo(s.location_id!, s.code ?? "")} loading={confirm.isPending && i === 0}>
                 <span><span className="flex items-center gap-1.5 font-mono text-base font-semibold"><MapPin className="size-4" />{s.code}</span>
-                  <span className={cn('block text-xs font-normal', i === 0 ? 'text-primary-foreground/80' : 'text-muted-foreground')}>{tServer(s.reason)}{s.on_hand ? ` · ${t('{n} there', { n: formatQty(s.on_hand) })}` : ''}</span></span>
+                  <span className={cn('block text-xs font-normal', i === 0 ? 'text-primary-foreground/80' : 'text-muted-foreground')}>{tServer(s.reason)}{s.on_hand ? ` · ${t('{n} there', { n: formatQtyOf(s.on_hand, current.variant_id) })}` : ''}</span></span>
                 <ArrowRight className="size-4" />
               </Button>
             ))}
@@ -126,7 +127,7 @@ function TaskLines({ lines, currentId, onPick, kind, picked }: { lines: TaskLine
             <span className="w-16 font-mono font-medium">{kind === 'pick' ? (l.done_loc ?? l.from)?.code : l.from?.code}</span>
             <span className="min-w-0"><span className="block truncate font-medium">{l.variant?.name}</span>
               <span className="text-muted-foreground">{l.variant?.sku}{l.lot ? ` · ${l.lot.lot_number}` : ''}{kind === 'putaway' && (l.done_loc ?? l.to) ? ` → ${(l.done_loc ?? l.to)!.code}` : ''}</span></span>
-            <span className="flex items-center gap-1.5 tabular">{finished && <Check className={cn('size-4', doneQty < l.quantity ? 'text-warning' : 'text-success')} />}{formatQty(doneQty)} / {formatQty(l.quantity)}</span>
+            <span className="flex items-center gap-1.5 tabular">{finished && <Check className={cn('size-4', doneQty < l.quantity ? 'text-warning' : 'text-success')} />}{formatQtyOf(doneQty, l.variant_id)} / {formatQtyOf(l.quantity, l.variant_id)}</span>
           </button>
         )
       })}
@@ -157,7 +158,7 @@ function PickScreen({ task }: { task: TaskDetail }) {
     try {
       const o = override[line.id]
       await confirmPick.mutateAsync({ line: line.id, qty, location: o?.location, lot: o?.lot })
-      scanFeedback('ok'); st.ok(qty < line.quantity ? t('{sku}: {done} of {total} picked (short)', { sku: line.variant?.sku ?? '', done: formatQty(qty), total: formatQty(line.quantity) }) : t('{sku} picked', { sku: line.variant?.sku ?? '' }))
+      scanFeedback('ok'); st.ok(qty < line.quantity ? t('{sku}: {done} of {total} picked (short)', { sku: line.variant?.sku ?? '', done: formatQtyOf(qty, line.variant_id), total: formatQtyOf(line.quantity, line.variant_id) }) : t('{sku} picked', { sku: line.variant?.sku ?? '' }))
       setCurrentId(null)
     } catch (e) { scanFeedback('error'); st.error(describeError(e)) }
   }
@@ -178,10 +179,10 @@ function PickScreen({ task }: { task: TaskDetail }) {
       if (r.kind === 'lot' && r.lotId !== line.lot_id) setOverride((o) => ({ ...o, [line.id]: { ...o[line.id], lot: r.lotId } }))
       const inc = r.kind === 'variant' ? r.qty : 1
       const next = (picked[line.id] ?? 0) + inc
-      if (next > line.quantity) { scanFeedback('error'); st.error(t('Only {n} × {sku} needed', { n: formatQty(line.quantity), sku: line.variant?.sku ?? '' })); return }
+      if (next > line.quantity) { scanFeedback('error'); st.error(t('Only {n} × {sku} needed', { n: formatQtyOf(line.quantity, line.variant_id), sku: line.variant?.sku ?? '' })); return }
       setPicked((p) => ({ ...p, [line.id]: next }))
       if (next === Number(line.quantity)) await confirmLine(line, next)
-      else { scanFeedback('ok'); st.ok(t('{sku}: {done} of {total}', { sku: line.variant?.sku ?? '', done: formatQty(next), total: formatQty(line.quantity) })) }
+      else { scanFeedback('ok'); st.ok(t('{sku}: {done} of {total}', { sku: line.variant?.sku ?? '', done: formatQtyOf(next, line.variant_id), total: formatQtyOf(line.quantity, line.variant_id) })) }
       return
     }
     scanFeedback('error'); st.error(t('Unknown code “{code}”', { code }))
@@ -197,14 +198,14 @@ function PickScreen({ task }: { task: TaskDetail }) {
         <div className="grid gap-3 rounded-xl border-2 border-primary/40 bg-card p-4">
           <div className="flex items-center justify-between gap-3">
             <div><div className="text-xs text-muted-foreground">{t('Go to')}</div><div className="flex items-center gap-2 font-mono text-3xl font-bold tracking-tight"><MapPin className="size-6 text-primary" />{loc}</div></div>
-            <div className="text-right"><div className="text-xs text-muted-foreground">{t('Pick')}</div><div className="text-3xl font-bold tabular">{formatQty(picked[current.id] ?? 0)}<span className="text-lg font-medium text-muted-foreground"> / {formatQty(current.quantity)}</span></div></div>
+            <div className="text-right"><div className="text-xs text-muted-foreground">{t('Pick')}</div><div className="text-3xl font-bold tabular">{formatQtyOf(picked[current.id] ?? 0, current.variant_id)}<span className="text-lg font-medium text-muted-foreground"> / {formatQtyOf(current.quantity, current.variant_id)}</span></div></div>
           </div>
           <div><div className="font-mono text-[13px] text-muted-foreground">{current.variant?.sku}</div><div className="text-lg font-semibold">{current.variant?.name}</div>
             {current.lot && <div className="text-[13px] text-muted-foreground">{t('Lot {lot}', { lot: current.lot.lot_number })}{current.lot.expiry_date ? ` · ${t('expires {date}', { date: formatDate(current.lot.expiry_date) })}` : ''}{override[current.id]?.lot ? ` ${t('(a different lot was scanned)')}` : ''}</div>}</div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setQtyOpen(true)}>{t('Enter quantity')}</Button>
             <Button variant="outline" className="text-warning" loading={confirmPick.isPending} onClick={() => confirmLine(current, picked[current.id] ?? 0)}>
-              {t('Short — {n} found', { n: formatQty(picked[current.id] ?? 0) })}</Button>
+              {t('Short — {n} found', { n: formatQtyOf(picked[current.id] ?? 0, current.variant_id) })}</Button>
             {todo.length > 1 && <Button variant="ghost" onClick={() => setCurrentId(todo[(todo.indexOf(current) + 1) % todo.length]!.id)}>{t('Skip for now')}</Button>}
           </div>
         </div>

@@ -22,6 +22,7 @@ import { LocationPicker, LotPicker, VariantPicker, WarehousePicker } from '../co
 import { adjustmentSchema, type AdjustmentFormValues } from '../schemas'
 import { msg, t } from '@/i18n'
 import { ErrorState } from '@/components/error-state'
+import { formatQtyOf } from '@/lib/units'
 
 type AdjustmentDoc = Tables<'stock_adjustments'> & { lines: Tables<'stock_adjustment_lines'>[] }
 
@@ -146,13 +147,13 @@ function AdjustmentForm({ doc }: { doc?: AdjustmentDoc }) {
                         <TableCell>{v && v.tracking !== 'none'
                           ? <FormField control={form.control} name={`lines.${i}.lot_id`} render={({ field }) => (<LotPicker variantId={l?.variant_id} value={field.value} onChange={field.onChange} disabled={field.disabled} allowCreate={num(l?.quantity_change) > 0} />)} />
                           : <span className="text-xs text-muted-foreground">{t('Not tracked')}</span>}</TableCell>
-                        <TableCell className="pt-4 text-right tabular text-[13px] text-muted-foreground">{doc?.status === 'posted' ? '—' : formatQty(oh)}</TableCell>
+                        <TableCell className="pt-4 text-right tabular text-[13px] text-muted-foreground">{doc?.status === 'posted' ? '—' : formatQtyOf(oh, l?.variant_id)}</TableCell>
                         <TableCell><FormField control={form.control} name={`lines.${i}.quantity_change`} render={({ field }) => (
                           <FormItem><FormControl><Input type="number" step="any" className={cn('h-9 min-w-[88px] text-right', num(field.value) < 0 ? 'text-destructive' : 'text-success')} {...field} /></FormControl><FormMessage /></FormItem>)} /></TableCell>
                         <TableCell><FormField control={form.control} name={`lines.${i}.unit_cost`} render={({ field }) => (
                           <FormItem><FormControl><Input type="number" step="any" min="0" className="h-9 min-w-[88px] text-right" value={field.value ?? ''} onChange={field.onChange}
                             disabled={field.disabled || num(l?.quantity_change) < 0} placeholder={num(l?.quantity_change) < 0 ? t('Average') : formatMoney(v?.avg_cost ?? 0)} /></FormControl><FormMessage /></FormItem>)} /></TableCell>
-                        <TableCell className={cn('pt-4 text-right tabular text-[13px]', after < 0 && doc?.status !== 'posted' && 'font-medium text-destructive')}>{doc?.status === 'posted' ? '—' : formatQty(after)}</TableCell>
+                        <TableCell className={cn('pt-4 text-right tabular text-[13px]', after < 0 && doc?.status !== 'posted' && 'font-medium text-destructive')}>{doc?.status === 'posted' ? '—' : formatQtyOf(after, l?.variant_id)}</TableCell>
                         <TableCell>{editable && <Button type="button" variant="ghost" size="icon-sm" onClick={() => lines.remove(i)} aria-label={t('Remove line {n}', { n: i + 1 })}><Trash2 /></Button>}</TableCell>
                       </TableRow>
                     )

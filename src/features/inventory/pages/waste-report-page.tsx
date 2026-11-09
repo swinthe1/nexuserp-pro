@@ -66,7 +66,7 @@ export function WasteReportPage() {
 
   const qtyLabel = base === 'sold' ? t('Sold, quantity') : t('Came in, quantity')
   const valLabel = base === 'sold' ? t('Sold, without VAT') : t('Came in, at cost')
-  const qtyCell = (v: number, r: Row) => <span className="tabular">{r.comparable ? formatQty(num(v)) : '—'}{r.comparable && r.unit_of_qty && <span className="ml-1 text-[11px] text-muted-foreground">{td(r.unit_of_qty)}</span>}</span>
+  const qtyCell = (v: number, r: Row) => <span className="tabular">{r.comparable ? formatQty(num(v), r.unit_of_qty) : '—'}</span>
   const cols = React.useMemo<ColumnDef<Row>[]>(() => [
     { id: 'label', accessorFn: (r) => r.label ?? t('No group'), header: ({ column }) => <ColumnHeader column={column} title={t(NAME[by])} />,
       meta: { label: t(NAME[by]) },
@@ -111,7 +111,7 @@ export function WasteReportPage() {
           : t('No group is marked "goes off quickly" yet: mark fruit and vegetables under Stock → Setup → Categories, or choose the groups above.')}</p>
       )}
       <div className="mb-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label={t('Thrown away, kg')} value={formatQty(Math.round(num(tot?.waste_kg) * 1000) / 1000)}
+        <StatCard label={t('Thrown away, kg')} value={formatQty(Math.round(num(tot?.waste_kg) * 1000) / 1000, 'kg')}
           hint={base === 'sold' ? t('of {kg} kg sold', { kg: formatQty(Math.round(num(tot?.sold_kg))) }) : t('of {kg} kg that came in', { kg: formatQty(Math.round(num(tot?.in_kg))) })} />
         <StatCard label={t('% in quantity')} value={pctText(pq)} tone={num(pq) >= 5 ? 'destructive' : 'default'} />
         <StatCard label={t('Thrown away, at the selling price')} value={formatMoney(num(tot?.waste_sale), cur)} hint={t('{amount} at cost', { amount: formatMoney(num(tot?.waste_cost), cur) })} />
@@ -124,7 +124,7 @@ export function WasteReportPage() {
         footer={(table) => {
           if (!tot || rows.length < 2) return null
           const cells: Record<string, React.ReactNode> = {
-            label: t('Total'), base_qty: `${formatQty(Math.round(num(base === 'sold' ? tot.sold_kg : tot.in_kg)))} kg`, waste_qty: `${formatQty(Math.round(num(tot.waste_kg) * 1000) / 1000)} kg`,
+            label: t('Total'), base_qty: formatQty(Math.round(num(base === 'sold' ? tot.sold_kg : tot.in_kg)), 'kg'), waste_qty: formatQty(Math.round(num(tot.waste_kg) * 1000) / 1000, 'kg'),
             pct_qty: <span className={pctTone(pq)}>{pctText(pq)}</span>, base_value: formatMoney(num(base === 'sold' ? tot.sold_net : tot.in_cost)),
             waste_sale: formatMoney(num(tot.waste_sale)), waste_cost: formatMoney(num(tot.waste_cost)), pct_value: <span className={pctTone(pv)}>{pctText(pv)}</span> }
           return <TableFooter><TableRow className="font-semibold hover:bg-transparent"><LeadCell />
