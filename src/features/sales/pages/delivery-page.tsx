@@ -150,7 +150,7 @@ function DeliveryForm({ doc }: { doc: Delivery }) {
                   <Row k={t('Order|sales')}>{doc.order ? <Link className="text-primary hover:underline" to={`/sales/orders/${doc.order.id}`}>{doc.order.number}</Link> : '—'}</Row>
                   <Row k={t('Lines')}>{lines.fields.length}</Row>
                   <Row k={t('Units')}>{formatQty(units)}</Row>
-                  {doc.status === 'done' && <><Row k={t('Shipped')}>{formatDate(doc.done_at, true)}</Row><Row k={t('Cost of goods (without VAT)')}>{formatMoney(doc.total_cost)} {company?.base_currency}</Row></>}
+                  {doc.status === 'done' && <><Row k={t('Shipped')}>{formatDate(doc.done_at, true)}</Row><Row k={t('Cost of goods (without VAT)')}>{formatMoney(doc.total_cost, company?.base_currency)}</Row></>}
                 </CardContent>
               </Card>
             </div>

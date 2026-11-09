@@ -210,7 +210,7 @@ function PartnerOverview({ partner }: { partner: PartnerDetail }) {
     for (const i of rows) m.set(i.currency_code ?? base, (m.get(i.currency_code ?? base) ?? 0) + f(i))
     return m
   }
-  const show = (m: Map<string, number>) => [...m].filter(([, v]) => Math.abs(v) >= 0.005).map(([c, v]) => `${formatMoney(v)} ${c}`).join(' + ') || `${formatMoney(0)} ${base}`
+  const show = (m: Map<string, number>) => [...m].filter(([, v]) => Math.abs(v) >= 0.005).map(([c, v]) => `${formatMoney(v, c)}`).join(' + ') || `${formatMoney(0, base)}`
   const openBy = perCurrency(posted, (i) => sign(i) * num(i.amount_due))
   const open = openBy.get(base) ?? 0
   const overdueBy = perCurrency(posted.filter((i) => i.document_type !== 'credit_note' && i.payment_status !== 'paid' && i.due_date < todayISO()), (i) => num(i.amount_due))
@@ -222,7 +222,7 @@ function PartnerOverview({ partner }: { partner: PartnerDetail }) {
       <div className="grid gap-3 sm:grid-cols-3">
         <Metric label={t('Still to pay (with VAT)')} value={show(openBy)} hint={overdue > 0 ? <span className="text-destructive">{t('{amount} overdue', { amount: show(overdueBy) })}</span> : t('Nothing overdue')} />
         <Metric label={t('Open orders')} value={openOrders.length} hint={t('{amount} with VAT, not fully invoiced yet', { amount: formatMoney(openOrders.reduce((s, o) => s + num(o.total), 0)) })} />
-        <Metric label={t('Credit limit (with VAT)')} value={limit == null ? t('No limit') : `${formatMoney(limit)} ${base}`}
+        <Metric label={t('Credit limit (with VAT)')} value={limit == null ? t('No limit') : `${formatMoney(limit, base)}`}
           hint={limit != null ? t('{amount} still available', { amount: formatMoney(Math.max(0, limit - open - openOrders.reduce((s, o) => s + num(o.total), 0))) }) : t('Orders are never blocked for credit')} />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
@@ -494,7 +494,7 @@ function SpecialPrices({ partner }: { partner: PartnerDetail }) {
                 <TableRow key={p.id}>
                   <TableCell><div className="font-medium">{p.variant.sku}</div><div className="text-xs text-muted-foreground">{p.variant.name}</div></TableCell>
                   <TableCell className="text-right tabular">{num(p.min_quantity)}</TableCell>
-                  <TableCell className="text-right tabular">{p.price == null ? <span className="text-muted-foreground">{t('List price')}</span> : `${formatMoney(p.price)} ${company?.base_currency}`}</TableCell>
+                  <TableCell className="text-right tabular">{p.price == null ? <span className="text-muted-foreground">{t('List price')}</span> : `${formatMoney(p.price, company?.base_currency)}`}</TableCell>
                   <TableCell className="text-right tabular">{num(p.discount_pct) ? `${num(p.discount_pct)}%` : '—'}</TableCell>
                   <TableCell className="text-[13px] text-muted-foreground">{p.valid_from || p.valid_to ? `${p.valid_from ? formatDate(p.valid_from) : '…'} – ${p.valid_to ? formatDate(p.valid_to) : '…'}` : t('Always')}</TableCell>
                   <TableCell>{writable && <div className="flex justify-end"><Button size="icon" variant="ghost" aria-label={t('Edit price')} onClick={() => setEdit(p)}><Pencil /></Button>

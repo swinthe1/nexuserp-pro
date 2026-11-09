@@ -375,9 +375,9 @@ function PoSidePanel({ doc, currency, base }: { doc?: PoDoc; currency: string; b
       <Card>
         <CardHeader><CardTitle>{t('Summary')}</CardTitle></CardHeader>
         <CardContent className="grid gap-2 text-[13px]">
-          <Row k={t('Amount without VAT')}>{formatMoney(doc.subtotal)} {currency}</Row>
-          <Row k={t('VAT')}>{formatMoney(doc.tax_total)} {currency}</Row>
-          <Row k={t('Total (with VAT)')}><span className="text-base">{formatMoney(doc.total)} {currency}</span></Row>
+          <Row k={t('Amount without VAT')}>{formatMoney(doc.subtotal, currency)}</Row>
+          <Row k={t('VAT')}>{formatMoney(doc.tax_total, currency)}</Row>
+          <Row k={t('Total (with VAT)')}><span className="text-base">{formatMoney(doc.total, currency)}</span></Row>
           {currency !== base && <Row k={t('Total with VAT ({currency})', { currency: base })}>{formatMoney(doc.total_base)}</Row>}
           {doc.status !== 'draft' && <>
             <div className="mt-1 border-t pt-2" />
@@ -520,7 +520,7 @@ function BillForm({ doc }: { doc?: BillDoc }) {
   const doPost = async (reason?: string) => {
     const r = await post.mutateAsync({ id: doc!.id, overrideReason: reason }).catch((e) => { void qcPrice.invalidateQueries({ queryKey: [PRICE_KEY, doc!.id] }); throw e })
     toast.success(isCredit ? t('Credit note posted') : t('Bill posted'), {
-      description: num(r.capitalized_variance) !== 0 ? t('{amount} price difference added to stock value', { amount: `${formatMoney(r.capitalized_variance)} ${base}` }) : undefined,
+      description: num(r.capitalized_variance) !== 0 ? t('{amount} price difference added to stock value', { amount: `${formatMoney(r.capitalized_variance, base)}` }) : undefined,
     })
   }
 
@@ -692,16 +692,16 @@ function BillSidePanel({ doc, currency, base, matchStatus, vendorId }: { doc?: B
     <Card>
       <CardHeader><CardTitle>{t('Summary')}</CardTitle></CardHeader>
       <CardContent className="grid gap-2 text-[13px]">
-        <Row k={t('Amount without VAT')}>{formatMoney(doc.subtotal)} {currency}</Row>
-        <Row k={t('VAT')}>{formatMoney(doc.tax_total)} {currency}</Row>
-        <Row k={t('Total (with VAT)')}><span className="text-base">{formatMoney(doc.total)} {currency}</span></Row>
+        <Row k={t('Amount without VAT')}>{formatMoney(doc.subtotal, currency)}</Row>
+        <Row k={t('VAT')}>{formatMoney(doc.tax_total, currency)}</Row>
+        <Row k={t('Total (with VAT)')}><span className="text-base">{formatMoney(doc.total, currency)}</span></Row>
         {currency !== base && <Row k={t('Total with VAT ({currency})', { currency: base })}>{formatMoney(doc.total_base)}</Row>}
         <Row k={t('Due date')}>{formatDate(doc.due_date)}</Row>
-        {doc.status === 'posted' && <Row k={t('Still to pay (with VAT)')}>{formatMoney(doc.amount_due)} {currency}</Row>}
+        {doc.status === 'posted' && <Row k={t('Still to pay (with VAT)')}>{formatMoney(doc.amount_due, currency)}</Row>}
         {doc.document_type !== 'vendor_credit' && matchStatus && <Row k={t('Check against order')}><MatchBadge status={matchStatus} /></Row>}
         {(capitalized !== 0 || expensed !== 0) && <>
-          <Row k={t('Added to stock value (without VAT)')}>{formatMoney(capitalized)} {base}</Row>
-          {expensed !== 0 && <Row k={t('On goods already sold (without VAT)')}>{formatMoney(expensed)} {base}</Row>}
+          <Row k={t('Added to stock value (without VAT)')}>{formatMoney(capitalized, base)}</Row>
+          {expensed !== 0 && <Row k={t('On goods already sold (without VAT)')}>{formatMoney(expensed, base)}</Row>}
         </>}
         {(doc.order || doc.original || doc.receipt_id || (doc.credits?.length ?? 0) > 0) && (
           <div className="mt-1 grid gap-1.5 border-t pt-2">

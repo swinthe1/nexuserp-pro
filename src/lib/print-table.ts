@@ -9,8 +9,9 @@ export type PrintColumn = { header: string; format?: 'money' | 'qty' | 'int' | '
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 const fmt = (v: Cell, f?: PrintColumn['format']) => {
   if (v === null || v === undefined || v === '') return ''
-  if (typeof v === 'number' && (f === 'money' || f === 'qty')) return formatMoney(v)
+  if (typeof v === 'number' && f === 'money') return formatMoney(v)
   if (typeof v === 'number' && f === 'int') return formatQty(Math.round(v))
+  if (typeof v === 'number') return formatQty(v)
   return String(v)
 }
 

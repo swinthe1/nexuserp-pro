@@ -1099,7 +1099,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
             <div className="flex justify-between text-[13px] text-muted-foreground"><span>{t('{a} lines · {b} items', { a: lines.length, b: num(itemsCount) })}</span><span className="tabular">{t('incl. VAT {amount}', { amount: formatMoney(vat) })}</span></div>
             <div className="mt-1 flex items-baseline justify-between">
               <span className="text-sm font-medium">{t('Total with VAT|till')}</span>
-              <span className="text-[34px] font-semibold leading-none tracking-[-0.02em] tabular">{formatMoney(total)} <span className="text-sm font-normal text-muted-foreground">{cur}</span></span>
+              <span className="text-[34px] font-semibold leading-none tracking-[-0.02em] tabular">{formatMoney(total, cur)}</span>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <Button variant="outline" size="lg" className="h-12 min-w-0" disabled={!lines.length} onClick={() => { if (lines.length < 3 || confirm(t('Clear this sale?'))) voidSale() }}><X /> {t('Clear')}</Button>
@@ -1269,7 +1269,7 @@ export function PayDialog({ total, currency, cashLimit, onCancel, onPaid, regist
         <DialogHeader>
           <DialogTitle className="flex items-baseline justify-between gap-3 pr-6">
             <span>{t('Payment')}</span>
-            <span className="text-3xl font-semibold tabular">{formatMoney(total)} <span className="text-sm font-normal text-muted-foreground">{currency}</span></span>
+            <span className="text-3xl font-semibold tabular">{formatMoney(total, currency)}</span>
           </DialogTitle>
           <DialogDescription>{remaining > 0 ? <>{t('Still to pay')} <b className="tabular text-foreground">{formatMoney(remaining)}</b>. {t('Pick a method (F5–F8), enter what the customer gives, press Enter.')}</> : <>{t('Paid in full')}{change > 0 ? <> · {t('change')} <b className="tabular text-foreground">{formatMoney(change)}</b></> : ''}.</>}</DialogDescription>
         </DialogHeader>
@@ -1353,7 +1353,7 @@ function DoneOverlay({ done, currency, onNext, onPrint }: { done: Done; currency
     <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-6 backdrop-blur-sm" role="dialog" aria-label={t('Sale complete')}>
       <div className="w-full max-w-md rounded-2xl border bg-card p-8 text-center shadow-lg">
         <div className="mx-auto grid size-12 place-items-center rounded-full bg-success/15 text-success"><Check className="size-6" /></div>
-        <div className="mt-4 text-[13px] text-muted-foreground">{done.cancel ? t('Cancellation|coupon') : done.receipt.isRefund ? t('Refund') : t('Sale')} {done.number ?? done.ref} · {formatMoney(done.total)} {currency}</div>
+        <div className="mt-4 text-[13px] text-muted-foreground">{done.cancel ? t('Cancellation|coupon') : done.receipt.isRefund ? t('Refund') : t('Sale')} {done.number ?? done.ref} · {formatMoney(done.total, currency)}</div>
         {done.change > 0 ? (
           <><div className="mt-4 text-sm font-medium text-muted-foreground">{t('Change to give')}</div>
             <div className="text-6xl font-semibold tracking-[-0.03em] tabular">{formatMoney(done.change)}</div></>
@@ -1520,7 +1520,7 @@ function RefundDialog({ data, currency, onClose, onRefund }: { data: TillData; c
           </form>
         ) : (
           <div className="grid gap-3">
-            <div className="text-[13px] text-muted-foreground">{found.number} · {formatDateWith(new Date(found.order_at), { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })} · {formatMoney(found.total)} {currency}</div>
+            <div className="text-[13px] text-muted-foreground">{found.number} · {formatDateWith(new Date(found.order_at), { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })} · {formatMoney(found.total, currency)}</div>
             <div className="max-h-64 overflow-y-auto rounded-md border">
               {found.lines.map((l, i) => {
                 const max = left(found, l.variant_id, num(l.quantity))
@@ -1587,7 +1587,7 @@ function VoucherDialog({ data, sessionId, currency, onClose }: { data: TillData;
         {sold ? (
           <div className="grid gap-3 text-center">
             <div className="text-[13px] text-muted-foreground">{t('Voucher sold')}</div>
-            <div className="text-3xl font-semibold tabular">{formatMoney(sold.amount)} <span className="text-sm font-normal text-muted-foreground">{currency}</span></div>
+            <div className="text-3xl font-semibold tabular">{formatMoney(sold.amount, currency)}</div>
             <div className="font-mono text-lg tracking-wider">{sold.code}</div>
             <div className="text-xs text-muted-foreground">{t('Valid until {date}', { date: formatDate(sold.valid_until) })}</div>
             <DialogFooter><Button variant="outline" onClick={() => print(sold)}><Printer /> {t('Print again')}</Button><Button onClick={onClose}>{t('Done')}</Button></DialogFooter>
@@ -1663,7 +1663,7 @@ function NoReceiptRefund({ data, currency, onBack, onClose, onRefund }: { data: 
           <div className="grid gap-1.5"><Label htmlFor="nr-why">{t('Why there is no receipt')}</Label>
             <Textarea id="nr-why" rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('e.g. the customer lost it; a gift')} /></div>
           <div className="flex gap-2">{METHODS.slice(0, 2).map((m) => <Button key={m.id} type="button" variant={method === m.id ? 'default' : 'outline'} onClick={() => setMethod(m.id)}><m.icon /> {m.id === 'cash' ? t('Give back in cash') : t('Give back to the card')}</Button>)}</div>
-          <div className="flex items-baseline justify-between"><span className="text-sm">{t('To give back')}</span><span className="text-2xl font-semibold tabular">{formatMoney(total)} <span className="text-sm font-normal text-muted-foreground">{currency}</span></span></div>
+          <div className="flex items-baseline justify-between"><span className="text-sm">{t('To give back')}</span><span className="text-2xl font-semibold tabular">{formatMoney(total, currency)}</span></div>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onBack} disabled={busy}>{t('Back')}</Button>

@@ -23,7 +23,7 @@ import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { formatDateWith, formatNumberWith, t, td, tn } from '@/i18n'
 import { unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
-import { cn, formatCompact, formatDate, formatMoney, formatQty, humanize, num, todayISO } from '@/lib/utils'
+import { cn, formatMoneyCompact, formatDate, formatMoney, formatQty, humanize, num, todayISO } from '@/lib/utils'
 import { useSalesOverview } from '@/features/sales/api'
 import { useProcurementOverview } from '@/features/procurement/api'
 import { useInventoryOverview, useLowStock } from '@/features/inventory/api'
@@ -262,7 +262,7 @@ export function DashboardPage() {
                   <BarChart data={flow} margin={{ left: -8, right: 4 }} barGap={1}>
                     <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
                     <XAxis dataKey="day" tick={axisTick} tickLine={false} axisLine={false} interval={4} />
-                    <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatCompact(v)} width={52} />
+                    <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatMoneyCompact(v)} width={70} />
                     <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }} formatter={(v: number, n: string) => [formatMoney(v, cur), n === 'in' ? t('Received') : t('Sent out')]} />
                     <Bar dataKey="in" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
                     <Bar dataKey="out" fill="hsl(var(--foreground) / 0.35)" radius={[3, 3, 0, 0]} />

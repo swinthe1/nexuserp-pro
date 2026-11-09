@@ -23,7 +23,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
-import { cn, formatCompact, formatDate, formatMoney, humanize, initials, todayISO } from '@/lib/utils'
+import { cn, formatMoneyCompact, formatDate, formatMoney, humanize, initials, todayISO } from '@/lib/utils'
 import { useCustomers, useMembers, useMoveOpportunity, useOpportunities, useSaveRecord, useStages, type OpportunityRow } from '../api'
 import { opportunitySchema, type OpportunityValues } from '../schemas'
 import { ErrorState } from '@/components/error-state'
@@ -120,7 +120,7 @@ function Board({ stages, rows, onOpen }: { stages: Stage[]; rows: OpportunityRow
                   {td(stage.name)}
                   <span className="font-normal text-muted-foreground">{cards.length}</span>
                 </h2>
-                <span className="tabular text-xs text-muted-foreground">{formatCompact(value)}{!stage.is_won && !stage.is_lost && ` · ${Number(stage.probability)}%`}</span>
+                <span className="tabular text-xs text-muted-foreground">{formatMoneyCompact(value)}{!stage.is_won && !stage.is_lost && ` · ${Number(stage.probability)}%`}</span>
               </header>
               <ol className="flex min-h-24 flex-col gap-2 px-2 pb-2">
                 {cards.map((o) => (

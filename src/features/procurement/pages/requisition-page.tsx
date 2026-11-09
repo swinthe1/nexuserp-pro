@@ -164,7 +164,7 @@ function RequisitionForm({ doc }: { doc?: ReqDoc }) {
                 <CardHeader><CardTitle>{t('Summary')}</CardTitle></CardHeader>
                 <CardContent className="grid gap-2 text-[13px]">
                   <div className="flex justify-between"><span className="text-muted-foreground">{t('Items')}</span><span className="tabular font-medium">{watched?.length ?? 0}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">{t('Estimated cost (without VAT)')}</span><span className="tabular font-medium">{formatMoney(total)} {base}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{t('Estimated cost (without VAT)')}</span><span className="tabular font-medium">{formatMoney(total, base)}</span></div>
                   {(doc?.orders.length ?? 0) > 0 && (
                     <div className="mt-1 grid gap-1.5 border-t pt-2">
                       {doc!.orders.map((o) => (

@@ -53,7 +53,7 @@ export function PaymentsPage() {
     },
     { id: 'partner', accessorFn: (r) => r.partner?.name ?? '', header: ({ column }) => <ColumnHeader column={column} title={t('Partner')} />, meta: { label: t('Partner') } },
     { accessorKey: 'amount', header: ({ column }) => <ColumnHeader column={column} title={t('Amount')} />, meta: { label: t('Amount'), align: 'right' },
-      cell: ({ row: { original: r } }) => <span className="tabular">{formatMoney(r.amount)} <span className="text-muted-foreground">{r.currency_code !== company?.base_currency ? r.currency_code : ''}</span></span> },
+      cell: ({ row: { original: r } }) => <span className="tabular">{formatMoney(r.amount, r.currency_code)}</span> },
     { id: 'bank', accessorFn: (r) => td(r.bank?.name ?? ''), filterFn: inFilter, header: t('Bank or cash'), meta: { label: t('Bank or cash account') } },
     { accessorKey: 'method', filterFn: inFilter, header: t('Method'), meta: { label: t('Method') }, cell: ({ getValue }) => tEnum(getValue() as string) },
     { accessorKey: 'status', filterFn: inFilter, header: t('Status'), meta: { label: t('Status') }, cell: ({ getValue }) => <StatusBadge status={getValue() as string} /> },

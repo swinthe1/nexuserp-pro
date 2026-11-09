@@ -40,9 +40,9 @@ const vendorCol = (): ColumnDef<Row> => ({
   id: 'vendor', accessorFn: (r) => nm(r.vendor), filterFn: inFilter, header: ({ column }) => <ColumnHeader column={column} title={t('Vendor')} />, meta: { label: t('Vendor') },
   cell: ({ getValue }) => <span className="block max-w-[240px] truncate">{(getValue() as string) || '—'}</span>,
 })
-const totalCol = (base: string): ColumnDef<Row> => ({
+const totalCol = (_base: string): ColumnDef<Row> => ({
   accessorKey: 'total', header: ({ column }) => <ColumnHeader column={column} title={t('Total (with VAT)')} />, meta: { label: t('Total (with VAT)'), align: 'right', exportValue: (r) => num(r.total) },
-  cell: ({ row: { original: r } }) => <span className="tabular">{formatMoney(r.total as number)} <span className="text-muted-foreground">{r.currency_code !== base ? r.currency_code : ''}</span></span>,
+  cell: ({ row: { original: r } }) => <span className="tabular">{formatMoney(r.total as number, r.currency_code)}</span>,
 })
 
 interface Cfg {
@@ -237,7 +237,7 @@ function BookTabs({ rows, base, value, loading, onChange }: { rows: Row[]; base:
             className={cn('grid gap-0.5 rounded-lg border px-3 py-2 text-left transition-colors', on ? 'border-primary bg-primary/5 ring-1 ring-primary/30' : 'bg-card hover:bg-secondary/60')}>
             <span className="flex items-center gap-1.5 text-[13px] font-medium">{x.dot && <span className={cn('size-2 rounded-full', x.dot)} />}{x.label}
               <span className="ml-auto rounded-full bg-secondary px-1.5 text-[11.5px] tabular text-muted-foreground">{loading ? '…' : s.n}</span></span>
-            <span className="tabular text-[12.5px] text-muted-foreground">{loading ? '' : `${formatMoney(s.total)} ${base}`}</span>
+            <span className="tabular text-[12.5px] text-muted-foreground">{loading ? '' : `${formatMoney(s.total, base)}`}</span>
           </button>
         )
       })}

@@ -186,14 +186,14 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
                     <TableCell><div className="font-medium">{v?.sku ?? l.description}</div>{v && <div className="text-xs text-muted-foreground">{l.description}</div>}</TableCell>
                     <TableCell className="text-right tabular">{formatQty(l.quantity)} <span className="text-xs text-muted-foreground">{td(v?.uom_code)}</span>
                       {l.pack_id && <PackQty editable={false} packs={l.variant_id ? packs.byVariant.get(l.variant_id) : undefined} packId={l.pack_id} packQty={l.pack_qty} quantity={l.quantity} line={i + 1} onChange={() => undefined} />}</TableCell>
-                    <TableCell className="text-right tabular">{formatMoney(l.unit_price)}
-                      {rateOf(l.tax_code_id) > 0 && <div className="text-2xs text-muted-foreground">{t('With VAT {amount}', { amount: formatMoney(num(l.unit_price) * (1 + rateOf(l.tax_code_id) / 100)) })}</div>}</TableCell>
+                    <TableCell className="text-right tabular">{formatMoney(l.unit_price, currency)}
+                      {rateOf(l.tax_code_id) > 0 && <div className="text-2xs text-muted-foreground">{t('With VAT {amount}', { amount: formatMoney(num(l.unit_price) * (1 + rateOf(l.tax_code_id) / 100), currency) })}</div>}</TableCell>
                     <TableCell className="text-right tabular">{num(l.discount_pct) ? `${num(l.discount_pct)}%` : '—'}</TableCell>
                     <TableCell className="text-[13px]">{taxName(l.tax_code_id)}</TableCell>
                     {showProgress && (
                       <TableCell>{pr && v?.product_type !== 'service' ? <ProgressBar p={pr} /> : pr ? <span className="text-xs text-muted-foreground">{t('Service · invoiced {done}/{total}', { done: formatQty(pr.invoiced), total: formatQty(pr.ordered) })}</span> : null}</TableCell>
                     )}
-                    <TableCell className="text-right tabular font-medium">{formatMoney(lineAmounts(l, rateOf(l.tax_code_id)).sub)}</TableCell>
+                    <TableCell className="text-right tabular font-medium">{formatMoney(lineAmounts(l, rateOf(l.tax_code_id)).sub, currency)}</TableCell>
                   </TableRow>
                 )
               })}
@@ -224,7 +224,7 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
                     <TableCell className="text-[13px] text-muted-foreground">{i + 1}</TableCell>
                     <TableCell colSpan={4} className="text-[13px]"><span className="font-medium">{t('Advance deducted')}</span> · {l.description}</TableCell>
                     <TableCell className="text-[13px]">{taxName(l.tax_code_id)}</TableCell>
-                    <TableCell className="text-right tabular text-[13px] font-medium">{formatMoney(amt.sub)}</TableCell>
+                    <TableCell className="text-right tabular text-[13px] font-medium">{formatMoney(amt.sub, currency)}</TableCell>
                     <TableCell><Button type="button" variant="ghost" size="icon-sm" onClick={() => lines.remove(i)} aria-label={t('Remove line {n}', { n: i + 1 })}><Trash2 /></Button></TableCell>
                   </TableRow>
                 )
@@ -275,7 +275,7 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
                       {l?.price_source === 'auto' && l.variant_id && <p className="mt-1 text-right text-2xs text-muted-foreground">{t('automatic price')}</p>}
                       {l && rateOf(l.tax_code_id) > 0 && num(l.unit_price) > 0 && <p className="mt-0.5 text-right text-2xs text-muted-foreground">{withVat
                         ? t('Without VAT {amount}', { amount: formatNumberWith(num(l.unit_price), { minimumFractionDigits: 2, maximumFractionDigits: 4 }) })
-                        : t('With VAT {amount}', { amount: formatMoney(num(l.unit_price) * (1 + rateOf(l.tax_code_id) / 100)) })}</p>}
+                        : t('With VAT {amount}', { amount: formatMoney(num(l.unit_price) * (1 + rateOf(l.tax_code_id) / 100), currency) })}</p>}
                     </TableCell>
                     <TableCell>
                       <FormField control={form.control} name={`lines.${i}.discount_pct`} render={({ field }) => (
@@ -290,7 +290,7 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
                         </Select>
                       )} />
                     </TableCell>
-                    <TableCell className="pt-4 text-right tabular text-[13px] font-medium">{formatMoney(amt.sub)}</TableCell>
+                    <TableCell className="pt-4 text-right tabular text-[13px] font-medium">{formatMoney(amt.sub, currency)}</TableCell>
                     <TableCell><Button type="button" variant="ghost" size="icon-sm" onClick={() => lines.remove(i)} aria-label={t('Remove line {n}', { n: i + 1 })}><Trash2 /></Button></TableCell>
                   </TableRow>
                 )
@@ -301,11 +301,11 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
       )}
       {lines.fields.length > 0 && (
         <dl className="ml-auto grid w-full max-w-xs grid-cols-[1fr_auto] gap-x-6 gap-y-1 border-t px-4 py-3 text-[13px]">
-          {discount > 0 && <><dt className="text-muted-foreground">{t('Before discount, without VAT')}</dt><dd className="text-right tabular">{formatMoney(totals.gross)}</dd>
-            <dt className="text-muted-foreground">{t('Discount')}</dt><dd className="text-right tabular text-success">−{formatMoney(discount)}</dd></>}
-          <dt className="text-muted-foreground">{t('Amount without VAT')}</dt><dd className="text-right tabular">{formatMoney(totals.sub)}</dd>
-          <dt className="text-muted-foreground">{t('VAT')}</dt><dd className="text-right tabular">{formatMoney(totals.tax)}</dd>
-          <dt className="mt-1 border-t pt-2 font-semibold">{t('Total with VAT')}</dt><dd className="mt-1 border-t pt-2 text-right tabular text-base font-semibold">{formatMoney(totals.total)} <span className="text-xs font-normal text-muted-foreground">{currency}</span></dd>
+          {discount > 0 && <><dt className="text-muted-foreground">{t('Before discount, without VAT')}</dt><dd className="text-right tabular">{formatMoney(totals.gross, currency)}</dd>
+            <dt className="text-muted-foreground">{t('Discount')}</dt><dd className="text-right tabular text-success">−{formatMoney(discount, currency)}</dd></>}
+          <dt className="text-muted-foreground">{t('Amount without VAT')}</dt><dd className="text-right tabular">{formatMoney(totals.sub, currency)}</dd>
+          <dt className="text-muted-foreground">{t('VAT')}</dt><dd className="text-right tabular">{formatMoney(totals.tax, currency)}</dd>
+          <dt className="mt-1 border-t pt-2 font-semibold">{t('Total with VAT')}</dt><dd className="mt-1 border-t pt-2 text-right tabular text-base font-semibold">{formatMoney(totals.total, currency)}</dd>
         </dl>
       )}
       {form.formState.errors.lines?.message && <p className="px-4 pb-3 text-xs font-medium text-destructive">{t(form.formState.errors.lines.message)}</p>}

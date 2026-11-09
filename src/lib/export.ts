@@ -1,5 +1,5 @@
 import { formatDateWith, t } from '@/i18n'
-import { formatMoney, formatQty } from '@/lib/utils'
+import { formatAmount, formatMoney, formatQty } from '@/lib/utils'
 export interface ExportColumn<T> {
   header: string
   value: (row: T) => string | number | null | undefined
@@ -76,9 +76,10 @@ export async function exportPdf<T>(rows: T[], columns: ExportColumn<T>[], filena
   const cell = (c: ExportColumn<T>, v: unknown) => {
     if (v === null || v === undefined || v === '') return ''
     const f = fmtOf(c)
-    if (typeof v === 'number' && (f === 'money' || f === 'qty')) return formatMoney(v)
+    if (typeof v === 'number' && f === 'money') return formatMoney(v)
+    if (typeof v === 'number' && f === 'qty') return formatQty(v)
     if (typeof v === 'number' && f === 'int') return formatQty(Math.round(v))
-    if (typeof v === 'number' && !Number.isInteger(v)) return formatMoney(v)
+    if (typeof v === 'number' && !Number.isInteger(v)) return formatAmount(v)
     return String(v)
   }
   const numeric = columns.map((c, i) => ['money', 'qty', 'int'].includes(fmtOf(c) ?? '') || (fmtOf(c) !== 'text' && rows.length > 0 && rows.every((r) => { const v = columns[i]!.value(r); return v == null || v === '' || typeof v === 'number' })))

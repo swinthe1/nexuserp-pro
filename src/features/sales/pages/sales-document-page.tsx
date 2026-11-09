@@ -438,12 +438,12 @@ function SidePanel({ kind, doc, availability, currency, base }: {
     )
   }
   const rows: [React.ReactNode, React.ReactNode][] = [
-    [t('Amount without VAT'), `${formatMoney(doc.subtotal)} ${currency}`],
-    [t('VAT'), `${formatMoney(doc.tax_total)} ${currency}`],
-    [t('Total with VAT'), <span className="text-base">{formatMoney(doc.total)} {currency}</span>],
+    [t('Amount without VAT'), `${formatMoney(doc.subtotal, currency)}`],
+    [t('VAT'), `${formatMoney(doc.tax_total, currency)}`],
+    [t('Total with VAT'), <span className="text-base">{formatMoney(doc.total, currency)}</span>],
   ]
   if (currency !== base) rows.push([t('Total with VAT ({currency})', { currency: base }), formatMoney(doc.total_base)])
-  if (kind === 'invoices' && doc.status === 'posted') rows.push([t('Still to pay (with VAT)'), `${formatMoney(doc.amount_due as number)} ${currency}`])
+  if (kind === 'invoices' && doc.status === 'posted') rows.push([t('Still to pay (with VAT)'), `${formatMoney(doc.amount_due as number, currency)}`])
 
   const links: { label: string; href: string; status?: string }[] = []
   if (kind === 'quotes') {

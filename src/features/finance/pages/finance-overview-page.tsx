@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/error-state'
 import { formatDateWith, formatNumberWith, msg, t, tn } from '@/i18n'
-import { cn, formatCompact, formatMoney, num } from '@/lib/utils'
+import { cn, formatMoneyCompact, formatMoney, num } from '@/lib/utils'
 import { useFinanceOverview } from '../api'
 
 export const tooltipStyle = { background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }
@@ -78,8 +78,8 @@ export function FinanceOverviewPage() {
                 <ComposedChart data={months} margin={{ left: -8, right: 4 }}>
                   <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
                   <XAxis dataKey="month" tick={axisTick} tickLine={false} axisLine={false} />
-                  <YAxis yAxisId="cash" tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatCompact(v)} width={56} />
-                  <YAxis yAxisId="profit" orientation="right" tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatCompact(v)} width={52} />
+                  <YAxis yAxisId="cash" tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatMoneyCompact(v)} width={70} />
+                  <YAxis yAxisId="profit" orientation="right" tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatMoneyCompact(v)} width={70} />
                   <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }}
                     formatter={(v: number, n: string) => [formatMoney(v, cur), n === 'cash' ? t('Cash and bank') : t('Net profit (without VAT)')]} />
                   <Bar yAxisId="cash" dataKey="cash" fill="hsl(var(--primary) / 0.35)" radius={[3, 3, 0, 0]} />

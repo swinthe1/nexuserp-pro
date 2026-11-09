@@ -66,12 +66,12 @@ export function PricingPage() {
                 <p className="mt-1 min-h-10 text-[13px] text-muted-foreground">{t(NAMES[p.plan]!.who)}</p>
                 <div className="mt-5 min-h-16">
                   {price != null ? <>
-                    <span className="text-4xl font-bold tabular tracking-tight">{formatMoney(price)}</span> <span className="text-muted-foreground">{cur} / {t('month')}</span>
-                    <div className="text-xs text-muted-foreground">{yearly && p.price_year != null ? t('{amount} {cur} a year', { amount: formatMoney(p.price_year), cur }) : t('without VAT')}</div>
+                    <span className="text-4xl font-bold tabular tracking-tight">{formatMoney(price, null)}</span> <span className="text-muted-foreground">{cur} / {t('month')}</span>
+                    <div className="text-xs text-muted-foreground">{yearly && p.price_year != null ? t('{amount} {cur} a year', { amount: formatMoney(p.price_year, null), cur }) : t('without VAT')}</div>
                   </> : <span className="text-2xl font-semibold">{t('On offer')}</span>}
                 </div>
                 <ul className="mt-4 grid gap-2 text-sm">
-                  <li className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-primary" />{tn(p.users, '{n} user included', '{n} users included')}{p.per_user != null ? ` · ${t('+{amount} {cur} each one more', { amount: formatMoney(num(p.per_user)), cur })}` : ''}</li>
+                  <li className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-primary" />{tn(p.users, '{n} user included', '{n} users included')}{p.per_user != null ? ` · ${t('+{amount} {cur} each one more', { amount: formatMoney(num(p.per_user), null), cur })}` : ''}</li>
                   <li className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-primary" />{p.stores == null ? t('Stores and warehouses without limit') : tn(p.stores, '{n} store or warehouse', 'Up to {n} stores or warehouses')}</li>
                   {prev && <li className="pt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('Everything in {plan}, and', { plan: t(NAMES[prev]!.name) })}</li>}
                   {added.map((f) => <li key={f.key} className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-primary" />{t(f.label)}</li>)}

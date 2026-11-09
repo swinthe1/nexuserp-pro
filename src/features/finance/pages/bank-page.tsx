@@ -112,9 +112,9 @@ export function BankPage() {
                 </div>
                 {b.account_kind === 'owner' ? <>
                   {/* the owner's money: what the company owes him for what he paid (the account is a debt, so its balance is a credit) */}
-                  <div className="tabular text-2xl font-semibold tracking-[-0.02em]">{formatMoney(-(glBal.get(b.account_id) ?? 0))} <span className="text-sm font-normal text-muted-foreground">{company?.base_currency}</span></div>
+                  <div className="tabular text-2xl font-semibold tracking-[-0.02em]">{formatMoney(-(glBal.get(b.account_id) ?? 0), company?.base_currency)}</div>
                   <div className="-mt-1 text-xs text-muted-foreground">{t('What the company owes the owner for what he paid from his own money')}</div>
-                </> : <div className="tabular text-2xl font-semibold tracking-[-0.02em]">{formatMoney(glBal.get(b.account_id))} <span className="text-sm font-normal text-muted-foreground">{company?.base_currency}</span></div>}
+                </> : <div className="tabular text-2xl font-semibold tracking-[-0.02em]">{formatMoney(glBal.get(b.account_id), company?.base_currency)}</div>}
                 {b.currency_code !== company?.base_currency && <div className="-mt-1 text-xs text-muted-foreground">{t('Value of the {cur} balance in the accounts, at the rates it was recorded', { cur: b.currency_code })}</div>}
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                   <Link className="hover:underline" to={`/finance/accounts/${b.account_id}`}>{t('Account {code}', { code: b.account?.code ?? '' })}</Link>
@@ -332,10 +332,10 @@ export function StatementPage() {
           }}><BookCheck /> {t('Finish statement')}</Button>
         </Can>}</>} />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Fact label={t('Opening + lines')} value={formatMoney(num(s.opening_balance) + sum)} hint={balanced ? t('Equals the closing balance {amount}', { amount: formatMoney(s.closing_balance) }) : t('The closing balance says {amount}', { amount: formatMoney(s.closing_balance) })} bad={!balanced} />
+        <Fact label={t('Opening + lines')} value={formatMoney(num(s.opening_balance) + sum, s.bank?.currency_code)} hint={balanced ? t('Equals the closing balance {amount}', { amount: formatMoney(s.closing_balance, s.bank?.currency_code) }) : t('The closing balance says {amount}', { amount: formatMoney(s.closing_balance, s.bank?.currency_code) })} bad={!balanced} />
         <Fact label={t('Matched|payment')} value={t('{done} of {total}', { done: matched, total: s.lines.length })} hint={unmatched ? tn(unmatched, '{n} line still to match, record or ignore', '{n} lines still to match, record or ignore') : t('Every line is accounted for')} bad={false} />
         <Fact label={t('Balance in the accounts on {date}', { date: formatDate(s.statement_date) })} value={formatMoney(gl)} hint={t('Account of {name} in the chart of accounts', { name: td(s.bank?.name) })} bad={false} />
-        <Fact label={t('Statement vs accounts')} value={formatMoney(diff)} hint={diff ? t('Items not yet recorded, or timing differences') : t('Bank and accounts agree')} bad={!!diff} />
+        <Fact label={t('Statement vs accounts')} value={formatMoney(diff, s.bank?.currency_code)} hint={diff ? t('Items not yet recorded, or timing differences') : t('Bank and accounts agree')} bad={!!diff} />
       </div>
       <Card className="mt-4">
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 space-y-0 py-3">
@@ -356,7 +356,7 @@ export function StatementPage() {
                 <TableRow key={l.id} className="hover:bg-transparent">
                   <TableCell className="whitespace-nowrap text-[13px]">{formatDate(l.transaction_date)}</TableCell>
                   <TableCell><div>{tServer(l.description)}</div><div className="text-xs text-muted-foreground">{[l.reference, l.counterparty_name].filter(Boolean).join(' · ')}</div></TableCell>
-                  <TableCell className={cn('text-right tabular', num(l.amount) > 0 && 'text-success')}>{formatMoney(l.amount)}</TableCell>
+                  <TableCell className={cn('text-right tabular', num(l.amount) > 0 && 'text-success')}>{formatMoney(l.amount, s.bank?.currency_code)}</TableCell>
                   <TableCell className="text-[13px]">
                     {l.match_status === 'matched' ? (
                       l.matched_payment_id ? <Link className="inline-flex items-center gap-1 text-primary hover:underline" to={`/finance/payments/${l.matched_payment_id}`}><Check className="size-3.5" />{l.payment?.number} · {l.payment?.partner?.name}</Link>
@@ -450,7 +450,7 @@ function MatchDialog({ line, bankId, currency, onClose }: { line: StatementLine;
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl">
         <DialogHeader><DialogTitle>{t('Match to a payment')}</DialogTitle>
-          <DialogDescription>{formatDate(line.transaction_date)} · {tServer(line.description)} · <span className="tabular">{formatMoney(line.amount)} {currency}</span>. {t('Payments with the same amount are listed first.')}</DialogDescription></DialogHeader>
+          <DialogDescription>{formatDate(line.transaction_date)} · {tServer(line.description)} · <span className="tabular">{formatMoney(line.amount, currency)}</span>. {t('Payments with the same amount are listed first.')}</DialogDescription></DialogHeader>
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Search number, partner, reference')} aria-label={t('Search payments')} />
         <div className="max-h-80 overflow-y-auto rounded-md border">
           {cands.isLoading ? <Skeleton className="m-3 h-24" /> : cands.isError ? <ErrorState compact error={cands.error} onRetry={() => void cands.refetch()} /> : !list.length ? <p className="p-4 text-[13px] text-muted-foreground">{t('No posted payments on this account. Record the payment first, or record the line to an account directly.')}</p> : list.map((p) => {
@@ -462,7 +462,7 @@ function MatchDialog({ line, bankId, currency, onClose }: { line: StatementLine;
                   await update.mutateAsync({ id: line.id, match_status: 'matched', matched_payment_id: p.id }); toast.success(t('Matched to {doc}', { doc: p.number })); onClose()
                 }}>
                 <span><span className="font-medium">{p.number}</span> <span className="text-muted-foreground">{p.partner?.name} · {formatDate(p.payment_date)}{p.reference ? ` · ${p.reference}` : ''}</span></span>
-                <span className={cn('tabular', exact ? 'font-semibold text-success' : 'text-muted-foreground')}>{formatMoney(signed(p))} {p.currency_code !== currency ? company?.base_currency : ''}</span>
+                <span className={cn('tabular', exact ? 'font-semibold text-success' : 'text-muted-foreground')}>{formatMoney(signed(p), p.currency_code === currency ? currency : company?.base_currency)}</span>
               </button>
             )
           })}

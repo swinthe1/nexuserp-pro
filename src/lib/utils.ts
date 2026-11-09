@@ -19,12 +19,39 @@ export function currencyLabel(code: string) {
 }
 
 /** Money in the current language's format with the currency after it: "12 340,00 lekë" (sq), "12,340.00 ALL" (en), "1 250,00 €" */
-export function formatMoney(value: number | string | null | undefined, currency?: string, decimals = 2) {
+/**
+ * The company's own currency: every amount shows it after the number, unless another currency is given.
+ * Set by the company provider when the company is chosen.
+ */
+let moneyCurrency: string | null = null
+export function setMoneyCurrency(code: string | null | undefined) { moneyCurrency = code || null }
+
+/**
+ * Money, always with its currency after the number ("1 250,50 €"). Without a currency the company's own is
+ * used; pass null only where the currency is written next to it by hand (a price table, a template).
+ * For numbers that go into an input or a spreadsheet, use formatAmount.
+ */
+export function formatMoney(value: number | string | null | undefined, currency?: string | null, decimals = 2) {
   if (value === null || value === undefined || value === '') return '—'
+  const s = formatAmount(value, decimals)
+  const cur = currency === undefined ? moneyCurrency : currency
+  return cur ? `${s} ${currencyLabel(cur)}` : s
+}
+
+/** An amount without its currency: for inputs and spreadsheets only */
+export function formatAmount(value: number | string | null | undefined, decimals = 2) {
+  if (value === null || value === undefined || value === '') return ''
   let n = typeof value === 'string' ? Number(value) : value
   if (Math.abs(n) < 0.5 / 10 ** decimals) n = 0   // never "-0,00"
-  const s = nf(`m${decimals}`, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(n)
-  return currency ? `${s} ${currencyLabel(currency)}` : s
+  return nf(`m${decimals}`, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(n)
+}
+
+/** Money in a short form for charts and tiles ("12,3 mijë €") */
+export function formatMoneyCompact(value: number | null | undefined, currency?: string | null) {
+  if (value === null || value === undefined) return '—'
+  const cur = currency === undefined ? moneyCurrency : currency
+  const s = nf('c', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
+  return cur ? `${s} ${currencyLabel(cur)}` : s
 }
 
 /** Quantities: up to 4 decimals, trailing zeros trimmed */

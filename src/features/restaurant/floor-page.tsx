@@ -447,7 +447,7 @@ function TabScreen({ data, tabId, floor, kitchenPrint, onClose, onMoved, cashier
           {paidSum > 0 && <div className="flex justify-between text-[13px] text-muted-foreground"><span>{t('Paid already')}</span><span className="tabular">{formatMoney(paidSum)}</span></div>}
           <div className="mt-1 flex items-baseline justify-between">
             <span className="text-sm font-medium">{t('To pay, with VAT')}</span>
-            <span className="text-[30px] font-semibold leading-none tracking-[-0.02em] tabular">{formatMoney(due)} <span className="text-sm font-normal text-muted-foreground">{cur}</span></span>
+            <span className="text-[30px] font-semibold leading-none tracking-[-0.02em] tabular">{formatMoney(due, cur)}</span>
           </div>
           {o.guests > 1 && due > 0 && <div className="text-right text-xs text-muted-foreground">{t('Per guest {amount}', { amount: formatMoney(due / o.guests) })}</div>}
           <div className="mt-3 grid grid-cols-3 gap-2">

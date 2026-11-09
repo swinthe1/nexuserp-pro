@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ErrorState } from '@/components/error-state'
 import { formatDateWith, msg, t, tn } from '@/i18n'
-import { cn, formatCompact, formatMoney, formatQty, num } from '@/lib/utils'
+import { cn, formatMoneyCompact, formatMoney, formatQty, num } from '@/lib/utils'
 import { useProcurementOverview } from '../api'
 
 const tooltipStyle = { background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }
@@ -79,7 +79,7 @@ export function ProcurementOverviewPage() {
                   <BarChart data={months} margin={{ left: -8, right: 4 }}>
                     <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
                     <XAxis dataKey="month" tick={axisTick} tickLine={false} axisLine={false} />
-                    <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatCompact(v)} width={52} />
+                    <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatMoneyCompact(v)} width={70} />
                     <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }} formatter={(v: number) => [formatMoney(v, cur), t('Spend (without VAT)')]} />
                     <Bar dataKey="spend" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
                   </BarChart>

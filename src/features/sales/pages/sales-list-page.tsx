@@ -31,9 +31,9 @@ const salespersonCol = (): ColumnDef<Row> => ({
   id: 'salesperson', accessorFn: (r) => nm(r.salesperson, 'full_name'), filterFn: inFilter, header: t('Salesperson'), meta: { label: t('Salesperson') },
   cell: ({ getValue }) => (getValue() as string) || <span className="text-muted-foreground">—</span>,
 })
-const totalCol = (base: string): ColumnDef<Row> => ({
+const totalCol = (_base: string): ColumnDef<Row> => ({
   accessorKey: 'total', header: ({ column }) => <ColumnHeader column={column} title={t('Total with VAT')} />, meta: { label: t('Total with VAT'), align: 'right', exportValue: (r) => num(r.total) },
-  cell: ({ row: { original: r } }) => <span className="tabular">{formatMoney(r.total as number)} <span className="text-muted-foreground">{r.currency_code !== base ? r.currency_code : ''}</span></span>,
+  cell: ({ row: { original: r } }) => <span className="tabular">{formatMoney(r.total as number, r.currency_code)}</span>,
 })
 
 /** a sum row under the list: the posted documents among those shown, in the company's currency */

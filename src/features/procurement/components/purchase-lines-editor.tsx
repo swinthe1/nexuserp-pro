@@ -122,8 +122,8 @@ export function PurchaseLinesEditor({ form: anyForm, editable, currency, progres
       <div className="mt-1 flex flex-col items-end gap-0.5">
         <Badge variant={MATCH_TONE[m.status] ?? 'secondary'}>{MATCH_LABEL[m.status] ? t(MATCH_LABEL[m.status]!) : humanize(m.status)}</Badge>
         {m.status === 'qty_variance' && m.qty_variance != null && <span className="text-2xs text-destructive">{t('+{qty} over what was received', { qty: formatQty(m.qty_variance) })}{m.expected_qty != null && ` (${formatQty(m.expected_qty)})`}</span>}
-        {m.status === 'price_variance' && m.price_variance != null && <span className="text-2xs text-destructive">{t('+{amount} per unit over the order', { amount: formatMoney(m.price_variance) })}{m.po_net_price != null && ` (${formatMoney(m.po_net_price)})`}</span>}
-        {m.status === 'matched' && num(m.price_variance) !== 0 && m.price_variance != null && <span className="text-2xs text-muted-foreground">{t('{amount} per unit, within tolerance', { amount: `${num(m.price_variance) > 0 ? '+' : ''}${formatMoney(m.price_variance)}` })}</span>}
+        {m.status === 'price_variance' && m.price_variance != null && <span className="text-2xs text-destructive">{t('+{amount} per unit over the order', { amount: formatMoney(m.price_variance, currency) })}{m.po_net_price != null && ` (${formatMoney(m.po_net_price, currency)})`}</span>}
+        {m.status === 'matched' && num(m.price_variance) !== 0 && m.price_variance != null && <span className="text-2xs text-muted-foreground">{t('{amount} per unit, within tolerance', { amount: `${num(m.price_variance) > 0 ? '+' : ''}${formatMoney(m.price_variance, currency)}` })}</span>}
       </div>
     )
   }
@@ -230,7 +230,7 @@ export function PurchaseLinesEditor({ form: anyForm, editable, currency, progres
                         </Select>
                       )} />
                     </TableCell>
-                    <TableCell className="pt-4 text-right tabular text-[13px] font-medium">{formatMoney(amt.sub)}{matchCell(i + 1)}</TableCell>
+                    <TableCell className="pt-4 text-right tabular text-[13px] font-medium">{formatMoney(amt.sub, currency)}{matchCell(i + 1)}</TableCell>
                     <TableCell><Button type="button" variant="ghost" size="icon-sm" onClick={() => lines.remove(i)} aria-label={t('Remove line {n}', { n: i + 1 })}><Trash2 /></Button></TableCell>
                   </TableRow>
                 )
@@ -241,11 +241,11 @@ export function PurchaseLinesEditor({ form: anyForm, editable, currency, progres
       )}
       {lines.fields.length > 0 && (
         <dl className="ml-auto grid w-full max-w-xs grid-cols-[1fr_auto] gap-x-6 gap-y-1 border-t px-4 py-3 text-[13px]">
-          {discount > 0 && <><dt className="text-muted-foreground">{t('Before discount (without VAT)')}</dt><dd className="text-right tabular">{formatMoney(totals.gross)}</dd>
-            <dt className="text-muted-foreground">{t('Discount')}</dt><dd className="text-right tabular text-success">−{formatMoney(discount)}</dd></>}
-          <dt className="text-muted-foreground">{t('Amount without VAT')}</dt><dd className="text-right tabular">{formatMoney(totals.sub)}</dd>
-          <dt className="text-muted-foreground">{t('VAT')}</dt><dd className="text-right tabular">{formatMoney(totals.tax)}</dd>
-          <dt className="mt-1 border-t pt-2 font-semibold">{t('Total (with VAT)')}</dt><dd className="mt-1 border-t pt-2 text-right tabular text-base font-semibold">{formatMoney(totals.total)} <span className="text-xs font-normal text-muted-foreground">{currency}</span></dd>
+          {discount > 0 && <><dt className="text-muted-foreground">{t('Before discount (without VAT)')}</dt><dd className="text-right tabular">{formatMoney(totals.gross, currency)}</dd>
+            <dt className="text-muted-foreground">{t('Discount')}</dt><dd className="text-right tabular text-success">−{formatMoney(discount, currency)}</dd></>}
+          <dt className="text-muted-foreground">{t('Amount without VAT')}</dt><dd className="text-right tabular">{formatMoney(totals.sub, currency)}</dd>
+          <dt className="text-muted-foreground">{t('VAT')}</dt><dd className="text-right tabular">{formatMoney(totals.tax, currency)}</dd>
+          <dt className="mt-1 border-t pt-2 font-semibold">{t('Total (with VAT)')}</dt><dd className="mt-1 border-t pt-2 text-right tabular text-base font-semibold">{formatMoney(totals.total, currency)}</dd>
         </dl>
       )}
       {form.formState.errors.lines?.message && <p className="px-4 pb-3 text-xs font-medium text-destructive">{t(form.formState.errors.lines.message)}</p>}

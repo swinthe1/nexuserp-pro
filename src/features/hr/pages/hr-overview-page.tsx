@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/error-state'
 import { t, td, tServer } from '@/i18n'
 import { formatDateWith } from '@/i18n/format'
-import { formatCompact, formatDate, formatMoney, num } from '@/lib/utils'
+import { formatMoneyCompact, formatDate, formatMoney, num } from '@/lib/utils'
 import { useHrOverview } from '../api'
 
 const tooltipStyle = { background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }
@@ -52,7 +52,7 @@ export function HrOverviewPage() {
               <div className="h-56"><ResponsiveContainer><ComposedChart data={trend} margin={{ left: -6, right: 6 }}>
                 <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
                 <XAxis dataKey="label" tick={axisTick} tickLine={false} axisLine={false} />
-                <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatCompact(v)} width={52} />
+                <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatMoneyCompact(v)} width={70} />
                 <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }}
                   formatter={(v: number, k: string) => [formatMoney(v), k === 'employer_cost' ? t('Employer cost') : k === 'net' ? t('Net pay') : t('Gross')]} />
                 <Bar dataKey="employer_cost" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} isAnimationActive={false} maxBarSize={44} />

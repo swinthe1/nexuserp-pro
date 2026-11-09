@@ -307,8 +307,8 @@ function ReceiptForm({ doc }: { doc?: ReceiptDoc }) {
             rows={[
               [t('Lines'), (watchedLines ?? []).length],
               [t('Units'), formatQty((watchedLines ?? []).reduce((s, l) => s + num(l.quantity), 0))],
-              [t('Value without VAT ({currency})', { currency: currency ?? base ?? '' }), formatMoney(total)],
-              ...(foreign ? [[t('Value without VAT ({currency})', { currency: base ?? '' }), formatMoney(total * num(rate))] as [string, string]] : []),
+              [t('Value without VAT ({currency})', { currency: currency ?? base ?? '' }), formatMoney(total, currency ?? base)],
+              ...(foreign ? [[t('Value without VAT ({currency})', { currency: base ?? '' }), formatMoney(total * num(rate), base)] as [string, string]] : []),
               ...(posted ? [[t('Recorded value at purchase price (without VAT)'), formatMoney(doc.total_value, base)] as [string, string]] : []),
               ...(doc?.purchase_order_id && doc.purchase_order
                 ? [[t('Purchase order'), <Link key="po" className="text-primary hover:underline" to={`/procurement/orders/${doc.purchase_order_id}`}>{doc.purchase_order.number}</Link>] as [string, React.ReactNode]]

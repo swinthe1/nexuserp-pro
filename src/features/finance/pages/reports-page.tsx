@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ErrorState } from '@/components/error-state'
 import { formatDateWith, msg, t, td } from '@/i18n'
-import { cn, formatCompact, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
+import { cn, formatMoneyCompact, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
 import { fetchBalances, finKeys, useCostCenters, useFiscalStartMonth, type BalanceRow, type Ledger } from '../api'
 import { GridExportMenu } from '@/components/export-menu'
 import { axisTick, iso, tooltipStyle } from './finance-overview-page'
@@ -341,7 +341,7 @@ export function ReportsPage() {
                 <BarChart data={chartData} margin={{ left: -8, right: 4 }} barGap={2}>
                   <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
                   <XAxis dataKey="label" tick={axisTick} tickLine={false} axisLine={false} />
-                  <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatCompact(v)} width={56} />
+                  <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatMoneyCompact(v)} width={70} />
                   <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }} formatter={(v: number) => formatMoney(v, cur)} />
                   <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} />
                   <Bar isAnimationActive={false} dataKey="revenue" name={t('Revenue')} fill="hsl(var(--primary) / 0.3)" radius={[3, 3, 0, 0]} />

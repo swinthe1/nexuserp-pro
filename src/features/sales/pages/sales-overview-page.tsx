@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { formatCompact, formatMoney, formatQty, num } from '@/lib/utils'
+import { formatMoneyCompact, formatMoney, formatQty, num } from '@/lib/utils'
 import { useSalesOverview } from '../api'
 import { ErrorState } from '@/components/error-state'
 import { formatDateWith, formatNumberWith, msg, t, td, tn } from '@/i18n'
@@ -90,7 +90,7 @@ export function SalesOverviewPage() {
                   <BarChart data={months} margin={{ left: -8, right: 4 }}>
                     <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
                     <XAxis dataKey="month" tick={axisTick} tickLine={false} axisLine={false} />
-                    <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatCompact(v)} width={52} />
+                    <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatMoneyCompact(v)} width={70} />
                     <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }}
                       formatter={(v: number, k: string) => [formatMoney(v, cur), k === 'till' ? t('At the tills') : hasTill ? t('On invoices') : t('Sales (without VAT)')]} />
                     {hasTill && <Bar dataKey="till" stackId="s" fill="hsl(var(--primary) / 0.45)" />}

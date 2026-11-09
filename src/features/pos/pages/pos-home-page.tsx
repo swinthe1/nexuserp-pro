@@ -28,7 +28,7 @@ import { supabase } from '@/lib/supabase'
 import { ErrorState } from '@/components/error-state'
 import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { t, td, tEnum, tn } from '@/i18n'
-import { cn, formatDate, formatMoney, humanize, num, todayISO } from '@/lib/utils'
+import { cn, currencyLabel, formatDate, formatMoney, humanize, num, todayISO } from '@/lib/utils'
 import { useBankAccounts, useJournals } from '@/features/finance/api'
 import { AccountingTab } from '@/features/finance/components/t-accounts'
 import { useLocations, useWarehouses } from '@/features/inventory/api'
@@ -117,7 +117,7 @@ export function PosHomePage() {
                   </div>
                 )}
                 <div className="text-[13px] text-muted-foreground">
-                  {s ? t('Shift {number} · open for {time} · opening cash {amount} {currency}', { number: s.number, time: since(s.opened_at), amount: formatMoney(s.opening_cash), currency: company?.base_currency ?? '' }) : t('No open shift. Opening the till asks how much cash is in the drawer.')}
+                  {s ? t('Shift {number} · open for {time} · opening cash {amount} {currency}', { number: s.number, time: since(s.opened_at), amount: formatMoney(s.opening_cash, null), currency: currencyLabel(company?.base_currency ?? '') }) : t('No open shift. Opening the till asks how much cash is in the drawer.')}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {r.mode === 'restaurant' ? <>

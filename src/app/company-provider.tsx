@@ -3,6 +3,7 @@ import * as React from 'react'
 import { useAuth } from '@/app/auth-provider'
 import { moduleAllowed, pageFeatures } from '@/lib/plans'
 import { supabase } from '@/lib/supabase'
+import { setMoneyCurrency } from '@/lib/utils'
 
 export interface CompanySummary {
   id: string
@@ -102,6 +103,8 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     companies.find((c) => c.id === ctxQuery.data?.last_company_id) ??
     companies[0] ??
     null
+  // every amount on screen shows the company's currency after it (set before the pages render)
+  setMoneyCurrency(company?.base_currency)
 
   const switchCompany = React.useCallback(async (id: string) => {
     setSelected(id)

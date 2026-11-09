@@ -29,7 +29,7 @@ export function VendorPurchasing({ vendorId }: { vendorId: string }) {
       <div className="grid gap-3 sm:grid-cols-3">
         <Metric label={t('Open orders')} value={open.length} hint={late.length ? <span className="text-destructive">{tn(late.length, '{n} late', '{n} late')}</span> : t('None late')} />
         <Metric label={t('On order (with VAT)')} value={`${formatMoney(open.reduce((s, o) => s + num(o.total), 0))}`} hint={t('Order totals with VAT, in the order currency')} />
-        {can('invoicing.read') && <Metric label={t('We owe (with VAT)')} value={`${formatMoney(owed)} ${base}`} hint={overdue > 0 ? <span className="text-destructive">{t('{amount} overdue', { amount: formatMoney(overdue) })}</span> : t('Nothing overdue')} />}
+        {can('invoicing.read') && <Metric label={t('We owe (with VAT)')} value={`${formatMoney(owed, base)}`} hint={overdue > 0 ? <span className="text-destructive">{t('{amount} overdue', { amount: formatMoney(overdue) })}</span> : t('Nothing overdue')} />}
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <List title={t('Purchase orders')} empty={t('No purchase orders yet.')} rows={orders.map((o) => ({
