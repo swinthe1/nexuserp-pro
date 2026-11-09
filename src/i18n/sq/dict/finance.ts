@@ -13,7 +13,7 @@ export default {
   'Entry lines': 'Rreshtat e regjistrimit',
   'Open {doc}': 'Hap {doc}',
   // source documents
-  'Invoice': 'Faturë',
+  'Invoice': "Faturë shitjeje",
   'Delivery': 'Dërgesë',
   'Goods receipt': 'Pranim malli',
   'Adjustment': 'Rregullim stoku',

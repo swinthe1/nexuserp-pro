@@ -74,7 +74,7 @@ export default {
   "Create": "Napravi",
   "Create a company": "Napravi preduzeće",
   "Customer invoice": "Izlazna faktura",
-  "Customer invoices": "Fakture",
+  "Customer invoices": "Izlazne fakture",
   "Customer or vendor": "Kupac ili dobavljač",
   "Customers": "Kupci",
   "Customers and prices": "Kupci",

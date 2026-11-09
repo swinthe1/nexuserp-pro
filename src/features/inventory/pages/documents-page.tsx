@@ -51,7 +51,7 @@ const CONFIG: Record<DocKind, KindConfig> = {
         cell: ({ row: { original: r } }) => r.is_import ? <span className="inline-flex items-center gap-1.5"><Globe2 className="size-3.5 text-muted-foreground" /><StatusBadge status={r.clearance_status as string} /></span> : <span className="text-muted-foreground">{t('Domestic')}</span>,
       },
       // the supplier's tax invoice: waiting, received, outside the VAT book (from the meeting with the staff, #4)
-      { id: 'fiscal', accessorFn: (r) => (r.fiscal_status as string | null) ?? '', filterFn: inFilter, header: t('Invoice'), meta: { label: t('Invoice'), exportValue: (r) => r.fiscal_status ? t(FISCAL_STATUS[r.fiscal_status as FiscalStatus]) : '' },
+      { id: 'fiscal', accessorFn: (r) => (r.fiscal_status as string | null) ?? '', filterFn: inFilter, header: t('Bill'), meta: { label: t('Bill'), exportValue: (r) => r.fiscal_status ? t(FISCAL_STATUS[r.fiscal_status as FiscalStatus]) : '' },
         cell: ({ row: { original: r } }) => r.status === 'done' ? <FiscalBadge status={r.fiscal_status as string} /> : null },
       { id: 'lines', accessorFn: (r) => count(r.lines), header: t('Lines'), meta: { label: t('Lines'), align: 'right' } },
       { accessorKey: 'total_value', header: ({ column }) => <ColumnHeader column={column} title={t('Value at cost')} />, meta: { label: t('Value at cost ({currency})', { currency: cur }), align: 'right' }, cell: ({ row: { original: r } }) => r.status === 'done' ? formatMoney(r.total_value as number) : '—' },
@@ -149,7 +149,7 @@ export function DocumentsPage({ kind }: { kind: DocKind }) {
           : kind === 'adjustments' ? { lines: adjustmentLines(r.id as string), id: r.id as string, duplicate: 'stock_adjustments' } : null}
         facets={[
           { columnId: 'status', title: t('Status'), options: cfg.statuses.map((s) => ({ label: tEnum(s), value: s })) },
-          ...(kind === 'receipts' ? [{ columnId: 'fiscal', title: t('Invoice'), options: (Object.keys(FISCAL_STATUS) as FiscalStatus[]).map((k) => ({ label: t(FISCAL_STATUS[k]), value: k })) }] : []),
+          ...(kind === 'receipts' ? [{ columnId: 'fiscal', title: t('Bill'), options: (Object.keys(FISCAL_STATUS) as FiscalStatus[]).map((k) => ({ label: t(FISCAL_STATUS[k]), value: k })) }] : []),
           ...(kind === 'receipts' ? [{ columnId: 'import', title: t('Customs'), options: [{ label: t('Waiting for customs'), value: 'pending' }, { label: t('Cleared'), value: 'cleared' }, { label: t('Domestic'), value: 'not_required' }] }] : []),
           ...(kind === 'transfers' ? [{ columnId: 'flag', title: t('Attention'), options: [{ label: t('Request'), value: 'request' }, { label: t('On the road over a day'), value: 'late' }, { label: t('Received with differences'), value: 'difference' }] }] : []),
           ...(kind === 'adjustments' ? [{ columnId: 'reason', title: t('Reason'), options: Object.entries(ADJUSTMENT_REASONS).map(([value, label]) => ({ label: t(label), value })) }] : []),

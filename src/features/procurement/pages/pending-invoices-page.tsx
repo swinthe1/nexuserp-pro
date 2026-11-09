@@ -60,7 +60,7 @@ export function PendingInvoicesPage() {
       cell: ({ getValue }) => <span className="tabular">{formatMoney(num(getValue()))}</span> },
     { accessorKey: 'pending_value', header: ({ column }) => <ColumnHeader column={column} title={t('Not invoiced')} />, meta: { label: t('Not invoiced ({currency})', { currency: cur }), align: 'right' },
       cell: ({ row: { original: r } }) => <span className="tabular font-medium">{formatMoney(num(r.pending_value))}{r.billed_pct != null && r.billed_pct > 0 && r.billed_pct < 100 && <span className="ml-1 text-[11.5px] font-normal text-muted-foreground">({r.billed_pct}% {t('invoiced')})</span>}</span> },
-    { id: 'status', accessorFn: (r) => r.fiscal_status, filterFn: inFilter, header: t('Invoice'), meta: { label: t('Invoice'), exportValue: (r) => t(FISCAL_STATUS[r.fiscal_status]) },
+    { id: 'status', accessorFn: (r) => r.fiscal_status, filterFn: inFilter, header: t('Bill'), meta: { label: t('Bill'), exportValue: (r) => t(FISCAL_STATUS[r.fiscal_status]) },
       cell: ({ row: { original: r } }) => <span className="inline-flex flex-wrap items-center gap-1.5"><FiscalBadge status={r.fiscal_status} />
         {r.bills.map((b) => <Link key={b.id} to={`/procurement/bills/${b.id}`} onClick={(e) => e.stopPropagation()} className="text-[12px] text-primary hover:underline">{b.ref || b.number}</Link>)}</span> },
     { id: 'act', enableHiding: false, header: '', meta: { label: '' }, cell: ({ row: { original: r } }) => r.fiscal_status !== 'pending_invoice' ? null : (
@@ -90,7 +90,7 @@ export function PendingInvoicesPage() {
         facets={[
           { columnId: 'vendor', title: t('Vendor'), options: [...new Set(rows.map((r) => r.vendor))].map((v) => ({ value: v, label: td(v) })) },
           { columnId: 'unit', unit: true, title: t('Unit|store'), options: [...new Set(rows.map((r) => td(r.warehouse)))].map((v) => ({ value: v, label: v })) },
-          ...(all ? [{ columnId: 'status', title: t('Invoice'), options: (Object.keys(FISCAL_STATUS) as FiscalStatus[]).filter((k) => k !== 'internal_movement').map((k) => ({ value: k, label: t(FISCAL_STATUS[k]) })) }] : []),
+          ...(all ? [{ columnId: 'status', title: t('Bill'), options: (Object.keys(FISCAL_STATUS) as FiscalStatus[]).filter((k) => k !== 'internal_movement').map((k) => ({ value: k, label: t(FISCAL_STATUS[k]) })) }] : []),
         ]}
         empty={{ title: t('Every receipt has its invoice'), description: t('Goods received without the supplier\'s tax invoice show here until the invoice is entered.') }} />
     </>

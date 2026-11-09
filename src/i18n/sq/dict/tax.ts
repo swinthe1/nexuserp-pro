@@ -58,7 +58,7 @@ export default {
   "From farmers": "Nga fermerët",
   "IIC": "NSLF",
   "IIC (NSLF)": "NSLF",
-  "Invoice": "Faturë",
+  "Invoice": "Faturë shitjeje",
   "Invoices and receipts registered with the ATK through the fiscal devices. Failed ones are sent again when you process the queue.": "Faturat dhe kuponat e regjistruar në ATK përmes pajisjeve fiskale. Ato që dështojnë dërgohen sërish kur përpunoni radhën.",
   "Issued offline": "Lëshuar pa internet",
   "It is filled from the month's sales and purchase books, and stays a draft until you submit it.": "Plotësohet nga librat e shitjeve dhe blerjeve të muajit dhe mbetet skicë derisa ta dorëzoni.",

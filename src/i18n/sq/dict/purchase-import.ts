@@ -5,7 +5,7 @@ export default {
   "Paste the lines from Excel, or choose the supplier’s file": "Ngjit rreshtat nga Excel-i, ose zgjidh skedarin e furnitorit",
   "Scan the barcode, or type the code or the name": "Skano barkodin, ose shkruaj shifrën ose emrin",
   "Barcode, code or name": "Barkodi, shifra ose emri",
-  "New invoice|purchase": "Faturë e re",
+  "New invoice|purchase": "Faturë blerjeje e re",
   "Goods into the warehouse": "Mall në magazinë",
   "The goods come into stock at their cost; you set the selling prices. From Excel too.": "Malli hyn në stok me koston e vet; vendos çmimet e shitjes. Edhe nga Excel-i.",
   "An expense, without goods": "Shpenzim, pa mall",

@@ -107,15 +107,25 @@ export function useHiddenSections() {
     },
   })
   const { company } = useCompany()
+  // the waiters, the tables and the kitchen belong to a till that serves tables: without one they stay out of the menu
+  const tables = useQuery({
+    queryKey: ['nav', companyId, 'table-tills'], enabled: !!companyId, staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { count } = await supabase.from('pos_registers').select('id', { count: 'exact', head: true })
+        .eq('company_id', companyId!).eq('mode', 'restaurant').is('deleted_at', null)
+      return (count ?? 0) > 0
+    },
+  })
   const saved = (q.data?.hidden_menu_sections ?? []) as string[]
+  const noTables = tables.data === false
   return React.useMemo(() => {
     // only the tax regime that applies: VAT returns with a VAT number, the small business tax (Kosovo) without one;
     // the Kosovo small business rules are not Albania's, so that page is not shown there
     const regime = company?.vat_registered === undefined ? []
       : company.vat_registered ? ['/tax/small-business']
       : company.country_code === 'XK' ? ['/tax/declarations'] : ['/tax/small-business', '/tax/declarations']
-    return [...saved, ...regime]
-  }, [saved, company?.vat_registered, company?.country_code])
+    return [...saved, ...regime, ...(noTables ? ['/pos/waiters', '/pos/floor', '/pos/kitchen'] : [])]
+  }, [saved, company?.vat_registered, company?.country_code, noTables])
 }
 
 /* ---------------------------------------------- pages used most on this device */

@@ -21,14 +21,13 @@ export default {
   'Invoices from vendors, checked against the purchase order and the goods received before they are posted.': 'Faturat e furnitorëve, të kontrolluara me porosinë dhe mallin e pranuar para se të kontabilizohen.',
   'Open a purchase order and choose “Enter bill”, or enter a bill without an order here.': 'Hapni një porosi blerjeje dhe zgjidhni “Regjistro faturën”, ose regjistroni këtu një faturë pa porosi.',
   'No vendor bills yet': 'Ende pa fatura blerjeje',
-  'Bill': 'Faturë',
+  'Bill': "Faturë blerjeje",
   "Vendor's no.": 'Nr. i furnitorit',
   'Vendor invoice no.': 'Nr. i faturës së furnitorit',
   'Order': 'Porosia',
   'Number, vendor, vendor invoice no.…': 'Numri, furnitori, nr. i faturës…',
   'Number, vendor…': 'Numri, furnitori…',
-  'New bill': 'Faturë e re',
-
+  'New bill': "Faturë blerjeje e re",
   // overview
   'Spend counts recorded vendor bills, less credit notes, in {currency} without VAT.': 'Shpenzimi llogarit faturat e regjistruara të furnitorëve, minus notat e kreditit, në {currency} pa TVSH.',
   'Spend': 'Shpenzimi',

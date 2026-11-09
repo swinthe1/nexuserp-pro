@@ -2,8 +2,7 @@ import { Wordmark } from '@/components/wordmark'
 import { BackButton } from '@/components/layout/back-button'
 import { MonitorSmartphone,
   ArrowRight, Boxes, Cable, Cpu, CircleDollarSign, DatabaseBackup, LayoutDashboard, LogOut, Menu, MonitorDown, Plus, ScrollText,
-  Search, Server, Settings2, ShieldCheck, Store, Users, type LucideIcon,
-} from 'lucide-react'
+  Search, Server, Settings2, ShieldCheck, Store, Users, FileSignature, type LucideIcon } from 'lucide-react'
 import * as React from 'react'
 import { Navigate, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/app/auth-provider'
@@ -24,6 +23,7 @@ const NAV: { title?: string; items: Item[] }[] = [
   { items: [{ label: msg('Overview'), href: '/platform', icon: LayoutDashboard, end: true, badge: 'attention' }] },
   { title: msg('Clients'), items: [
     { label: msg('Clients'), href: '/platform/clients', icon: Users },
+    { label: msg('Contracts'), href: '/platform/contracts', icon: FileSignature },
     { label: msg('Licences'), href: '/platform/licences', icon: ShieldCheck, badge: 'ending' },
     { label: msg('Computers'), href: '/platform/devices', icon: MonitorSmartphone, badge: 'devices' },
   ] },

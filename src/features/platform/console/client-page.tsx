@@ -28,8 +28,9 @@ import { CloudCopies, DeleteClientDialog, LicenseDialog, licenseState, LiveLinkD
 import { ClientActions, useOpenCompany, useRenew } from './client-actions'
 import { EventRow } from './events'
 import { PeopleTab } from './people-tab'
+import { ClientContracts } from './contracts'
 
-const TABS = ['summary', 'licence', 'devices', 'people', 'links', 'diary', 'danger'] as const
+const TABS = ['summary', 'contracts', 'licence', 'devices', 'people', 'links', 'diary', 'danger'] as const
 type Tab = (typeof TABS)[number]
 
 function Field({ label, value, mono }: { label: string; value: React.ReactNode; mono?: boolean }) {
@@ -85,6 +86,7 @@ export function ClientPage() {
       <Tabs value={tab} onValueChange={(v) => setParams(v === 'summary' ? {} : { tab: v }, { replace: true })} className="mb-4">
         <TabsList className="max-w-full overflow-x-auto">
           <TabsTrigger value="summary">{t('Summary')}</TabsTrigger>
+          <TabsTrigger value="contracts">{t('Contracts')}</TabsTrigger>
           <TabsTrigger value="licence">{t('Licence')}</TabsTrigger>
           <TabsTrigger value="devices">{t('Computers')}{c.devices?.pending ? <span className="ml-1 rounded-full bg-warning px-1.5 text-[11px] font-semibold text-warning-foreground">{c.devices.pending}</span> : null}</TabsTrigger>
           <TabsTrigger value="people">{t('People')} <span className="ml-1 text-xs text-muted-foreground">{d.members.length}</span></TabsTrigger>
@@ -95,6 +97,7 @@ export function ClientPage() {
       </Tabs>
 
       {tab === 'summary' && <Summary d={d} />}
+      {tab === 'contracts' && <ClientContracts companyId={c.id} />}
       {tab === 'licence' && <LicenceTab d={d} c={c} />}
       {tab === 'people' && <PeopleTab d={d} />}
       {tab === 'devices' && <ClientDevicesTab company={c.id} />}

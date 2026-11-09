@@ -33,7 +33,7 @@ type InvoiceRow = { id: string; number: string; kind: Kind; reference: string | 
 type ItemRow = { variant_id: string | null; sku: string | null; name: string; uom: string | null; qty: number; net: number; avg_price: number | null; documents: number; last: string }
 type BalanceRow = { id: string; name: string; code: string | null; tax_number: string | null; groups: string[]; balance: number; late: number; credit_limit: number | null; kinds?: string[] }
 
-const kindLabel = (k: Kind) => (k === 'credit_note' ? t('Credit note') : k === 'debit_note' ? t('Debit note') : t('Invoice'))
+const kindLabel = (k: Kind, side?: Side) => (k === 'credit_note' ? t('Credit note') : k === 'debit_note' ? t('Debit note') : side === 'vendor' ? t('Bill') : t('Invoice'))
 const docHref = (side: Side, id: string) => (side === 'vendor' ? `/procurement/bills/${id}` : `/sales/invoices/${id}`)
 
 function Period({ from, to, onFrom, onTo, id }: { from: string; to: string; onFrom: (v: string) => void; onTo: (v: string) => void; id: string }) {
@@ -62,7 +62,7 @@ export function InvoicesTab({ partnerId, side }: { partnerId: string; side: Side
         <Period id="ic" from={from} to={to} onFrom={setFrom} onTo={setTo} />
         <label className="flex h-9 items-center gap-2 text-[13px]"><input type="checkbox" className="size-4" checked={onlyOpen} onChange={(e) => setOnlyOpen(e.target.checked)} /> {t('Only those still open')}</label>
         <div className="ml-auto"><ExportMenu rows={rows} filename={t('Card by invoice')} title={t('Card by invoice')} columns={[
-          { header: t('Document'), value: (r) => kindLabel(r.kind) }, { header: t('Number'), value: (r) => r.number, format: 'text' }, { header: t('Their number'), value: (r) => r.reference ?? '' },
+          { header: t('Document'), value: (r) => kindLabel(r.kind, side) }, { header: t('Number'), value: (r) => r.number, format: 'text' }, { header: t('Their number'), value: (r) => r.reference ?? '' },
           { header: t('Date'), value: (r) => r.date, format: 'date' }, { header: t('Due'), value: (r) => r.due ?? '', format: 'date' }, { header: t('Amount with VAT'), value: (r) => r.total, format: 'money' },
           { header: t('Paid'), value: (r) => r.paid, format: 'money' }, { header: t('Credit notes'), value: (r) => r.credited, format: 'money' }, { header: t('Open, with VAT'), value: (r) => r.open, format: 'money' },
           { header: t('Payments'), value: (r) => r.payments.map((p) => `${p.number} ${p.date} ${p.amount}`).join('; ') }]} /></div>
@@ -85,7 +85,7 @@ export function InvoicesTab({ partnerId, side }: { partnerId: string; side: Side
                     <React.Fragment key={r.id}>
                       <TableRow className={cn(more && 'cursor-pointer')} onClick={() => more && toggle(r.id)}>
                         <TableCell className="w-8 px-2">{more && (isOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />)}</TableCell>
-                        <TableCell>{r.kind === 'invoice' ? kindLabel(r.kind) : <Badge variant="outline">{kindLabel(r.kind)}</Badge>}</TableCell>
+                        <TableCell>{r.kind === 'invoice' ? kindLabel(r.kind, side) : <Badge variant="outline">{kindLabel(r.kind, side)}</Badge>}</TableCell>
                         <TableCell className="whitespace-nowrap"><Link className="text-primary hover:underline" to={docHref(side, r.id)} onClick={(e) => e.stopPropagation()}>{r.number}</Link></TableCell>
                         {side === 'vendor' && <TableCell className="text-muted-foreground">{r.reference}</TableCell>}
                         <TableCell className="whitespace-nowrap">{formatDate(r.date)}</TableCell>
@@ -96,7 +96,7 @@ export function InvoicesTab({ partnerId, side }: { partnerId: string; side: Side
                         <TableCell className={cn('text-right font-medium tabular-nums', r.late && 'text-destructive')}>{formatMoney(r.open)}</TableCell>
                       </TableRow>
                       {isOpen && [...r.payments.map((p) => ({ key: `p${p.id}`, label: t('Payment'), number: p.number, href: `/finance/payments/${p.id}`, date: p.date, amount: -p.amount })),
-                        ...r.notes.map((n) => ({ key: `n${n.id}`, label: kindLabel(n.kind), number: n.number, href: docHref(side, n.id), date: n.date, amount: n.kind === 'credit_note' ? -n.total : n.total }))]
+                        ...r.notes.map((n) => ({ key: `n${n.id}`, label: kindLabel(n.kind, side), number: n.number, href: docHref(side, n.id), date: n.date, amount: n.kind === 'credit_note' ? -n.total : n.total }))]
                         .sort((a, b) => a.date.localeCompare(b.date)).map((x) => (
                           <TableRow key={x.key} className="bg-muted/30 text-[13px]">
                             <TableCell /><TableCell className="pl-6 text-muted-foreground">↳ {x.label}</TableCell>

@@ -49,7 +49,7 @@ export function ReadInvoicePage() {
             : t('{used} of {limit} invoices read this month', { used: usage.data.used, limit: usage.data.limit })}</div>} />
       {id ? <ReadReview key={id} id={id} onDone={() => setParams({})} /> : <ReadsList bookedLabel={t('Receipt made')} doneLabel={t('Read')} showWaiting={false} onOpen={(x) => setParams({ id: x })}
         items={(list.data ?? []).map((r) => ({ ...r, date: null, booked: !!r.receipt_id, extra: r.total != null ? t('{amount} with VAT', { amount: formatMoney(r.total) }) : null, total: null,
-          title: <>{r.vendor ?? r.file_name ?? t('Invoice')}{r.number ? ` · ${r.number}` : ''}</> }))} />}
+          title: <>{r.vendor ?? r.file_name ?? t('Bill')}{r.number ? ` · ${r.number}` : ''}</> }))} />}
     </div>
   )
 }

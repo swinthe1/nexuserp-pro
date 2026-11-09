@@ -198,6 +198,8 @@ const PlatformSupport = lazyPage(() => import('@/features/platform/console/suppo
 const PlatformServer = lazyPage(() => import('@/features/platform/console/server-page'), 'ServerPage')
 const PlatformServers = lazyPage(() => import('@/features/platform/console/pages'), 'ServersPage')
 const PlatformLinks = lazyPage(() => import('@/features/platform/console/pages'), 'LinksPage')
+const PlatformContracts = lazyPage(() => import('@/features/platform/console/contracts'), 'ContractsPage')
+const PlatformContract = lazyPage(() => import('@/features/platform/console/contracts'), 'ContractPage')
 const PlatformBackups = lazyPage(() => import('@/features/platform/console/pages'), 'BackupsPage')
 const PlatformReleases = lazyPage(() => import('@/features/platform/console/pages'), 'ReleasesPage')
 const PlatformPrices = lazyPage(() => import('@/features/platform/console/pages'), 'PricesPage')
@@ -454,6 +456,8 @@ const router = createBrowserRouter([
       { path: 'clients', element: consolePage(<PlatformClients />) },
       { path: 'clients/:id', element: consolePage(<PlatformClient />) },
       { path: 'licences', element: consolePage(<PlatformLicences />) },
+      { path: 'contracts', element: consolePage(<PlatformContracts />) },
+      { path: 'contracts/:id', element: consolePage(<PlatformContract />) },
       { path: 'devices', element: consolePage(<PlatformDevices />) },
       { path: 'support/:session', element: consolePage(<PlatformSupport />) },
       { path: 'server', element: consolePage(<PlatformServer />) },

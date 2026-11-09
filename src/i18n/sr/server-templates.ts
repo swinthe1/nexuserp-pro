@@ -26,4 +26,5 @@ export const serverTemplatesSr: [string, string][] = [
   ["Your licence allows % till(s); ask your provider for more", "Vaša licenca dozvoljava {0} kase; zatražite više od dobavljača"],
   ["% counted these lines the first time: choose someone else to count them again", "{0} je prebrojao ove stavke prvi put: izaberite nekog drugog da ih ponovo prebroji"],
   ["This line is counted again by %", "Ovu stavku ponovo broji {0}"],
+  ["The billing company has no tax code %", "Kompanija za fakturisanje nema poresku šifru {0}"],
 ]

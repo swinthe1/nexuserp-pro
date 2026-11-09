@@ -562,4 +562,5 @@ export const serverTemplates: [string, string][] = [
   ["Your licence allows % till(s); ask your provider for more", "Licenca juaj lejon {0} arka; kërkojini ofruesit më shumë"],
   ["% counted these lines the first time: choose someone else to count them again", "{0} i numëroi këto rreshta herën e parë: zgjidhni dikë tjetër për t'i rinumëruar"],
   ["This line is counted again by %", "Këtë rresht e rinumëron {0}"],
+  ["The billing company has no tax code %", "Kompania e faturimit nuk ka kodin e tatimit {0}"],
 ]

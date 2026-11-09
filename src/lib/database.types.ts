@@ -8161,6 +8161,11 @@ export type Database = {
           updated_at: string
           atk_application_id_test: number | null
           atk_application_id_prod: number | null
+          billing_company_id: string | null
+          billing_tax_code: string
+          billing_post: boolean
+          billing_email: boolean
+          billing_grace_days: number
         }
         Insert: {
           id?: boolean
@@ -8168,6 +8173,11 @@ export type Database = {
           updated_at?: string
           atk_application_id_test?: number | null
           atk_application_id_prod?: number | null
+          billing_company_id?: string | null
+          billing_tax_code?: string
+          billing_post?: boolean
+          billing_email?: boolean
+          billing_grace_days?: number
         }
         Update: {
           id?: boolean
@@ -8175,8 +8185,15 @@ export type Database = {
           updated_at?: string
           atk_application_id_test?: number | null
           atk_application_id_prod?: number | null
+          billing_company_id?: string | null
+          billing_tax_code?: string
+          billing_post?: boolean
+          billing_email?: boolean
+          billing_grace_days?: number
         }
-        Relationships: []
+        Relationships: [
+          { foreignKeyName: "platform_settings_billing_company_id_fkey"; columns: ["billing_company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
       }
       portal_links: {
         Row: {
@@ -19022,6 +19039,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      platform_billing_save: {
+        Args: {
+          p: Json
+        }
+        Returns: undefined
+      }
+      platform_billing_settings: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       platform_client_detail: {
         Args: {
           p_company: string
@@ -19041,6 +19068,45 @@ export type Database = {
       platform_company_roles: {
         Args: {
           p_company: string
+        }
+        Returns: Json
+      }
+      platform_contract_activate: {
+        Args: {
+          p_id: string
+        }
+        Returns: Json
+      }
+      platform_contract_end: {
+        Args: {
+          p_id: string
+          p_reason: string
+          p_on?: string
+        }
+        Returns: undefined
+      }
+      platform_contract_get: {
+        Args: {
+          p_id: string
+        }
+        Returns: Json
+      }
+      platform_contract_renew: {
+        Args: {
+          p_id: string
+          p_price_pct?: number
+        }
+        Returns: undefined
+      }
+      platform_contract_save: {
+        Args: {
+          p: Json
+        }
+        Returns: string
+      }
+      platform_contracts: {
+        Args: {
+          p_company?: string
         }
         Returns: Json
       }

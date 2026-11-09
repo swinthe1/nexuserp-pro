@@ -31,7 +31,7 @@ export default {
   'Quotes': "Ofertat",
   'Sales orders': "Porositë",
   'Deliveries': "Dërgesat",
-  'Customer invoices': "Faturat",
+  'Customer invoices': "Faturat e shitjes",
   'Price lists': "Listat e çmimeve",
   'Customers': 'Klientët',
   'Purchasing overview': 'Pasqyra e blerjeve',
