@@ -29,6 +29,7 @@ export type CountRecord = {
   totals: { lines: number; items: number; differences: number; shortages: number; surpluses: number; counted_value: number | null
     shortage_value: number | null; surplus_value: number | null; net: number | null; shortage_sale: number; surplus_sale: number }
   lines: RecordLine[]; made_at: string; made_by: string | null
+  checks?: { number: string; person: string | null; locations: string[] | null; compared: number; agree: number; differ: number }[]
 }
 type Target = { session?: string; count?: string }
 
@@ -119,6 +120,8 @@ export function printCountRecord(r: CountRecord, annex: boolean) {
     r.kind === 'session' ? t('The goods were counted with the shop open, without stopping sales. Each item was compared with the stock the program had at the second it was counted; sales and receipts after that second do not change the result.') : '',
     r.blind ? t('The counting was blind: the counters did not see the quantity the program expected.') : '',
     r.cart_minutes ? t('Shortages of goods sold within {n} minutes after the shelf was counted were marked for checking (they may have been in a shopping cart).', { n: r.cart_minutes }) : '',
+    ...(r.checks ?? []).map((k) => t('{name} counted {shelves} a second time, blind: {agree} of {compared} lines the same as the first count.',
+      { name: k.person ?? '—', shelves: (k.locations ?? []).join(', '), agree: k.agree, compared: k.compared })),
   ].filter(Boolean)
   const body = `
     ${r.posted ? '' : `<div class="draft">${esc(t('DRAFT: the differences are not confirmed yet'))}</div>`}

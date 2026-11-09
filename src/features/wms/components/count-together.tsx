@@ -22,7 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { t, td, tn } from '@/i18n'
 import { cn, formatDate, formatQty, num } from '@/lib/utils'
 import { useWarehouses } from '@/features/inventory/api'
-import { useChangeEntry, useCloseSession, useCountSession, useCountSessions, useJoinSession, useLineEntries, usePostSession, useSessionPeople, useStartSession, useAssignShelves, type CountSessionView, type ElsewhereRow, type ListExtra } from '../api'
+import { useChangeEntry, useCloseSession, useCountSession, useCountSessions, useJoinSession, useLineEntries, usePostSession, useSessionPeople, useStartSession, useAssignShelves, useSessionChecks, useCheckCompare, useStartCheck, useCountRecount, type CheckLine, type CountSessionView, type ElsewhereRow, type ListExtra } from '../api'
 import { ScanShell } from './scan-shell'
 import { CountRecordDialog } from './count-record'
 
@@ -143,6 +143,7 @@ export function CountSessionPage() {
       {pct != null && <div className="h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} /></div>}
       {record && <CountRecordDialog target={{ session: s.id }} onClose={() => setRecord(false)} />}
       {!!s.shelves?.length && <ShelvesCard s={s} manage={open && can('inventory.write')} />}
+      {can('inventory.write') && <ChecksCard session={s.id} closed={!open} />}
       {!s.lists.length ? <EmptyState compact icon={Users} title={t('Nobody has joined yet')} description={t('Each person opens Stock counts on the phone and presses Count.')} /> : (
         <div className="grid gap-1.5">
           {s.lists.map((l) => (
@@ -158,10 +159,85 @@ export function CountSessionPage() {
     </ScanShell>
   )
 }
+/* ------------------------------------------------------------------ the blind checks: a second person, compared */
+function ChecksCard({ session, closed }: { session: string; closed: boolean }) {
+  const q = useSessionChecks(session, true)
+  const [open, setOpen] = React.useState<string | null>(null)
+  if (!q.data?.length) return null
+  return (
+    <div className="grid gap-2 rounded-xl border bg-card p-3">
+      <span className="font-medium">{t('Check counts')}</span>
+      <p className="text-[12.5px] text-muted-foreground">{t('A second person counted these shelves blind. The two counts are compared by their difference to the stock at the second each was made, so sales between them do not matter.')}</p>
+      {q.data.map((k) => (
+        <button key={k.id} type="button" onClick={() => setOpen(k.id)} className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border px-3 py-2 text-left text-[13px] hover:border-primary/50">
+          <span className="min-w-[9rem] flex-1"><span className="block font-medium">{k.person ?? '—'}</span>
+            <span className="text-[12px] text-muted-foreground">{k.number} · {(k.locations ?? []).join(', ')}</span></span>
+          <StatusBadge status={k.status} />
+          <span className="tabular"><span className="text-success">{tn(k.agree, '{n} the same', '{n} the same')}</span>
+            {k.differ > 0 && <span className="ml-2 font-medium text-destructive">{tn(k.differ, '{n} different', '{n} different')}</span>}
+            {k.only_one > 0 && <span className="ml-2 text-muted-foreground">{tn(k.only_one, '{n} counted by one only', '{n} counted by one only')}</span>}</span>
+        </button>
+      ))}
+      {open && <CheckDialog id={open} closed={closed} onClose={() => setOpen(null)} />}
+    </div>
+  )
+}
+function CheckDialog({ id, closed, onClose }: { id: string; closed: boolean; onClose: () => void }) {
+  const q = useCheckCompare(id)
+  const recount = useCountRecount()
+  const lines = q.data?.lines ?? []
+  const back = lines.filter((l) => l.agree === false && l.line_id && l.count_id && l.count_status === 'review')
+  const send = async () => {
+    const byCount = new Map<string, string[]>()
+    for (const l of back) byCount.set(l.count_id!, [...(byCount.get(l.count_id!) ?? []), l.line_id!])
+    let n = 0
+    for (const [count, ids] of byCount) n += await recount.mutateAsync({ id: count, lines: ids, other: true })
+    toast.success(tn(n, '{n} line goes back to be counted again', '{n} lines go back to be counted again'))
+    onClose()
+  }
+  const verdict = (l: CheckLine) => l.agree === true ? <span className="text-success">{t('the same')}</span>
+    : l.agree === false ? <span className="font-medium text-destructive">{t('different')}</span>
+    : <span className="text-muted-foreground">{l.main_counted == null ? t('only the check found it') : t('the check did not count it')}</span>
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader><DialogTitle>{t('Check count')} {q.data?.number ?? ''}</DialogTitle>
+          <DialogDescription>{q.data ? t('{name} counted {shelves} again, blind.', { name: q.data.person ?? '—', shelves: (q.data.locations ?? []).join(', ') }) : ''}</DialogDescription></DialogHeader>
+        {q.isLoading ? <Skeleton className="h-40" /> : (
+          <div className="max-h-[60vh] overflow-y-auto rounded-md border">
+            <table className="w-full text-[13px]">
+              <thead className="sticky top-0 bg-muted/60 text-left text-[11.5px] text-muted-foreground"><tr>
+                <th className="px-2 py-1.5">{t('Item')}</th><th className="px-2 py-1.5">{t('Shelf')}</th>
+                <th className="px-2 py-1.5 text-right">{t('Counted together')}</th><th className="px-2 py-1.5 text-right">{t('Check|column')}</th><th className="px-2 py-1.5">{t('Result')}</th></tr></thead>
+              <tbody className="divide-y">
+                {lines.map((l, i) => (
+                  <tr key={i}>
+                    <td className="px-2 py-1.5"><span className="block font-medium">{l.name}</span><span className="text-[12px] text-muted-foreground">{l.sku}{l.lot ? ` · ${l.lot}` : ''}</span></td>
+                    <td className="px-2 py-1.5 font-mono text-[12px]">{l.location}</td>
+                    <td className="px-2 py-1.5 text-right tabular">{l.main_counted == null ? '—' : formatQty(l.main_counted)}{l.main_by && <span className="block text-[11px] text-muted-foreground">{l.main_by}</span>}</td>
+                    <td className="px-2 py-1.5 text-right tabular">{l.check_counted == null ? '—' : formatQty(l.check_counted)}</td>
+                    <td className="px-2 py-1.5">{verdict(l)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <DialogFooter className="items-center gap-2">
+          {!closed && lines.some((l) => l.agree === false) && <span className="mr-auto text-[12.5px] text-muted-foreground">{t('Close the counting to send the different lines back.')}</span>}
+          <Button variant="outline" onClick={onClose}>{t('Close')}</Button>
+          {closed && back.length > 0 && <Button loading={recount.isPending} onClick={() => void send()}>{tn(back.length, 'Count the {n} different line again', 'Count the {n} different lines again')}</Button>}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 /* ------------------------------------------------------------------ the unit shelf by shelf: whose, how far, done */
 function ShelvesCard({ s, manage }: { s: CountSessionView; manage: boolean }) {
   const people = useSessionPeople(s.id, manage)
   const assign = useAssignShelves()
+  const startCheck = useStartCheck()
   const [picked, setPicked] = React.useState<string[]>([])
   const [person, setPerson] = React.useState('')
   const shelves = s.shelves ?? []
@@ -200,6 +276,11 @@ function ShelvesCard({ s, manage }: { s: CountSessionView; manage: boolean }) {
           </Select>
           <Button size="sm" disabled={!picked.length || !person} loading={assign.isPending} onClick={() => void give(person)}>{t('Give')}</Button>
           {!!picked.length && <Button size="sm" variant="ghost" onClick={() => void give(null)}>{t('Take back')}</Button>}
+          <Button size="sm" variant="outline" disabled={!picked.length || !person} loading={startCheck.isPending} title={t('Another person counts the chosen shelves again, blind; the two counts are compared')}
+            onClick={async () => {
+              await startCheck.mutateAsync({ session: s.id, locations: picked, person })
+              toast.success(t('Check count given to {name}', { name: people.data?.find((p) => p.id === person)?.name ?? '' })); setPicked([])
+            }}>{t('Check count')}</Button>
         </div>
       )}
     </div>

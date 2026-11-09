@@ -3231,6 +3231,7 @@ export type Database = {
           notes: string | null
           session_id: string | null
           record: Json
+          check_session: string | null
         }
         Insert: {
           id?: string
@@ -3254,6 +3255,7 @@ export type Database = {
           notes?: string | null
           session_id?: string | null
           record?: Json
+          check_session?: string | null
         }
         Update: {
           id?: string
@@ -3277,8 +3279,10 @@ export type Database = {
           notes?: string | null
           session_id?: string | null
           record?: Json
+          check_session?: string | null
         }
         Relationships: [
+          { foreignKeyName: "cycle_counts_check_session_fkey"; columns: ["company_id", "check_session"]; isOneToOne: false; referencedRelation: "count_sessions"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "cycle_counts_company_id_adjustment_id_fkey"; columns: ["company_id", "adjustment_id"]; isOneToOne: false; referencedRelation: "stock_adjustments"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "cycle_counts_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
           { foreignKeyName: "cycle_counts_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
@@ -17290,6 +17294,20 @@ export type Database = {
         }
         Returns: Json
       }
+      count_check_compare: {
+        Args: {
+          p_check: string
+        }
+        Returns: Json
+      }
+      count_check_start: {
+        Args: {
+          p_session: string
+          p_locations: string[]
+          p_person: string
+        }
+        Returns: string
+      }
       count_entry_add: {
         Args: {
           p_id: string
@@ -17406,6 +17424,12 @@ export type Database = {
           p_person: string
         }
         Returns: number
+      }
+      count_session_checks: {
+        Args: {
+          p_session: string
+        }
+        Returns: Json
       }
       count_session_close: {
         Args: {

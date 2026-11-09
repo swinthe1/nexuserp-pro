@@ -909,4 +909,11 @@ export default {
   "This computer is no longer a shared till; sign in with your user name": "Ky kompjuter nuk është më arkë e përbashkët; hyni me përdoruesin tuaj",
   "You counted this line the first time: someone else counts it again": "Këtë rresht e numëruat ju herën e parë: e rinumëron dikush tjetër",
   "This person may not count stock in this company": "Ky person nuk ka të drejtë të numërojë mallin në këtë kompani",
+  "A check count is only compared with the other count; it does not change the stock": "Numërimi i kontrollit vetëm krahasohet me numërimin tjetër; nuk e ndryshon stokun",
+  "The check is made by someone who did not count these shelves": "Kontrollin e bën dikush që nuk i ka numëruar këto rafte",
+  "Choose the shelves to check": "Zgjidhni raftet për kontroll",
+  "Only shelves of the counted unit can be given": "Mund të jepen vetëm raftet e njësisë që numërohet",
+  "Shelves are marked done only when counting together": "Raftet shënohen si të mbaruara vetëm në numërimin e përbashkët",
+  "At most 12 people in the commission": "Komisioni ka më së shumti 12 veta",
+  "Give a counting session or a count": "Jepni një numërim të përbashkët ose një numërim",
 } satisfies Dict

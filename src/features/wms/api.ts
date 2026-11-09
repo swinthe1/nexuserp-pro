@@ -397,6 +397,27 @@ export function useSessionPeople(session: string | undefined, enabled: boolean) 
 }
 export const useAssignShelves = () => useAction(async (a: { session: string; locations: string[]; person: string | null }) =>
   unwrap(await supabase.rpc('count_session_assign', { p_session: a.session, p_locations: a.locations, p_person: a.person as unknown as string })) as number)
+/** The blind check: a second person counts some shelves on a list of their own; the two counts are compared. */
+export type CheckLine = { sku: string; name: string; location: string; lot: string | null; main_counted: number | null; main_by: string | null; main_diff: number | null
+  check_counted: number | null; check_diff: number | null; agree: boolean | null; line_id: string | null; count_id: string | null; count_status: string | null }
+export type CheckSummary = { id: string; number: string; status: string; person: string | null; locations: string[] | null
+  compared: number; agree: number; differ: number; only_one: number; lines?: CheckLine[] }
+export function useSessionChecks(session: string | undefined, enabled: boolean) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...wmsKeys.all(companyId), 'session-checks', session], enabled: !!session && enabled, refetchInterval: 20_000,
+    queryFn: async () => (unwrap(await supabase.rpc('count_session_checks', { p_session: session! })) ?? []) as unknown as CheckSummary[],
+  })
+}
+export function useCheckCompare(id: string | null) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...wmsKeys.all(companyId), 'check-compare', id], enabled: !!id,
+    queryFn: async () => unwrap(await supabase.rpc('count_check_compare', { p_check: id! })) as unknown as CheckSummary & { lines: CheckLine[] },
+  })
+}
+export const useStartCheck = () => useAction(async (a: { session: string; locations: string[]; person: string }) =>
+  unwrap(await supabase.rpc('count_check_start', { p_session: a.session, p_locations: a.locations, p_person: a.person })) as string)
 export const useShelfDone = () => useAction(async (a: { count: string; location: string; done: boolean }) =>
   unwrap(await supabase.rpc('count_shelf_done', { p_count: a.count, p_location: a.location, p_done: a.done })) as unknown as { location_id: string; code: string; done: boolean })
 export const usePostSession = () => useAction(async (session: string) =>
