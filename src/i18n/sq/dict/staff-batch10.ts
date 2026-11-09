@@ -1526,4 +1526,11 @@ export default {
   "{n} shortages may come from goods in a cart: they sold right after the shelf was counted. Count them again before confirming.": "{n} mungesa mund të vijnë nga malli në shportë: u shitën menjëherë pasi u numërua rafti. Numërojini përsëri para se t'i konfirmoni.",
   "{n} sold right after the count: may have been in a cart": "{n} u shitën menjëherë pas numërimit: mund të kenë qenë në shportë",
   "{pct}% of the items with stock": "{pct}% e artikujve me stok",
+  "This item is also kept at:": "Ky artikull mbahet edhe te:",
+  "not counted yet": "pa u numëruar ende",
+  "counted by {name}: {n}": "numëruar nga {name}: {n}",
+  "counted: {n}": "numëruar: {n}",
+  "Count it there too, so nothing is left out.": "Numëroje edhe aty, që të mos mbetet gjë pa u numëruar.",
+  "A stock count is open in this unit ({name}).": "Në këtë njësi është hapur numërimi i mallit ({name}).",
+  "Post the receipt and put the goods on the shelf at the same time. If you cannot, keep the goods aside until the count is closed, so they are not counted twice or missed.": "Postojeni pranimin dhe vendoseni mallin në raft njëherësh. Nëse nuk mundeni, mbajeni mallin anash derisa të mbyllet numërimi, që të mos numërohet dy herë ose të mos mbetet jashtë.",
 } satisfies Dict

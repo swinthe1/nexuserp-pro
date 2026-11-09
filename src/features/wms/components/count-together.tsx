@@ -3,7 +3,7 @@
  * The first list that counts an item owns it; the others ADD to it, and every entry is kept: who, how many,
  * where, when. Each person corrects their own entries; a manager any.
  */
-import { ClipboardList, Pencil, Play, Trash2, Users } from 'lucide-react'
+import { ClipboardList, MapPin, Pencil, Play, Trash2, Users, X } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -22,7 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { t, td, tn } from '@/i18n'
 import { cn, formatDate, formatQty, num } from '@/lib/utils'
 import { useWarehouses } from '@/features/inventory/api'
-import { useChangeEntry, useCloseSession, useCountSession, useCountSessions, useJoinSession, useLineEntries, usePostSession, useStartSession, type ListExtra } from '../api'
+import { useChangeEntry, useCloseSession, useCountSession, useCountSessions, useJoinSession, useLineEntries, usePostSession, useStartSession, type ElsewhereRow, type ListExtra } from '../api'
 import { ScanShell } from './scan-shell'
 
 const time = (iso: string) => new Date(iso).toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
@@ -222,6 +222,48 @@ export function ExtrasList({ rows, onOpen }: { rows: ListExtra[]; onOpen: (r: Li
             <span className="text-[11.5px] text-muted-foreground">{t('yours {n}', { n: formatQty(r.mine_qty) })}</span></span>
         </button>
       ))}
+    </div>
+  )
+}
+
+/** After an item is counted: the other shelves of the unit where it is kept, and whether each was counted (no expected quantity). */
+export function ElsewhereCard({ title, rows, onClose }: { title: string; rows: ElsewhereRow[]; onClose: () => void }) {
+  const open = rows.filter((r) => !r.counted).length
+  return (
+    <div className={cn('rounded-lg border px-3 py-2', open ? 'border-primary/40 bg-primary/5' : 'bg-muted/40')}>
+      <div className="flex items-start gap-2">
+        <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
+        <div className="min-w-0 flex-1 text-[13px]">
+          <div className="font-medium">{title}</div>
+          <div className="text-muted-foreground">{t('This item is also kept at:')}</div>
+          <ul className="mt-1 grid gap-0.5">
+            {rows.map((r) => (
+              <li key={r.location_id} className="flex flex-wrap items-baseline gap-x-2">
+                <span className="font-mono font-semibold">{r.code}</span>
+                <span className={r.counted ? 'text-muted-foreground' : 'font-medium text-primary'}>
+                  {!r.counted ? t('not counted yet') : r.by ? t('counted by {name}: {n}', { name: r.by, n: formatQty(r.counted_qty) }) : t('counted: {n}', { n: formatQty(r.counted_qty) })}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {open > 0 && <div className="mt-1 text-muted-foreground">{t('Count it there too, so nothing is left out.')}</div>}
+        </div>
+        <Button size="icon" variant="ghost" className="size-7 shrink-0" onClick={onClose} aria-label={t('Close')}><X className="size-4" /></Button>
+      </div>
+    </div>
+  )
+}
+
+/** On a goods receipt: a count is open in this unit, so the goods must reach the shelf together with the receipt. */
+export function OpenCountBanner({ warehouseId, className }: { warehouseId: string | null | undefined; className?: string }) {
+  const sessions = useCountSessions()
+  const open = (sessions.data ?? []).find((s) => s.status === 'open' && !!warehouseId && s.warehouse_id === warehouseId)
+  if (!open) return null
+  return (
+    <div role="status" className={cn('flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-[13px]', className)}>
+      <ClipboardList className="mt-0.5 size-4 shrink-0" />
+      <span><span className="block font-medium">{t('A stock count is open in this unit ({name}).', { name: open.name })}</span>
+        {t('Post the receipt and put the goods on the shelf at the same time. If you cannot, keep the goods aside until the count is closed, so they are not counted twice or missed.')}</span>
     </div>
   )
 }

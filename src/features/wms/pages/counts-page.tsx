@@ -23,8 +23,8 @@ import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { t, td, tn } from '@/i18n'
 import { cn, formatDate, formatMoney, formatQty, humanize, num } from '@/lib/utils'
 import { useCategories, useLocations, useWarehouses, type LocationRow } from '@/features/inventory/api'
-import { useCount, useCountEntry, useCountItem, useCountReview, useCounts, useCreateCount, useListExtras, usePostCount, useResolveCode, useSubmitCount, wmsKeys, type CountLine, type EntryAnswer } from '../api'
-import { EntriesDialog, ExtrasList, SessionsCard } from '../components/count-together'
+import { fetchItemElsewhere, useCount, useCountEntry, useCountItem, useCountReview, useCounts, useCreateCount, useListExtras, usePostCount, useResolveCode, useSubmitCount, wmsKeys, type CountLine, type ElsewhereRow, type EntryAnswer } from '../api'
+import { ElsewhereCard, EntriesDialog, ExtrasList, SessionsCard } from '../components/count-together'
 import { QtyDialog, ScanShell, useScanStatus } from '../components/scan-shell'
 import { useCountPlan, useCreateCountDue } from '@/features/inventory/abc'
 import { DailyCountCard } from '@/features/inventory/daily-count'
@@ -164,6 +164,17 @@ export function CountPage() {
   const extras = useListExtras(id, together && count.data?.status === 'in_progress')
   const [entriesFor, setEntriesFor] = React.useState<{ line: string; title: string; variant: string; location: string; lot: string | null } | null>(null)
   const [lastOther, setLastOther] = React.useState<(EntryAnswer & { title: string; variant: string; location: string; lot: string | null }) | null>(null)
+  // the item is also kept on another shelf of the unit: say so, so that place is counted too
+  const [elsewhere, setElsewhere] = React.useState<{ key: string; title: string; rows: ElsewhereRow[] } | null>(null)
+  const askedRef = React.useRef('')
+  const lookElsewhere = (countId: string, variantId: string, locationId: string, title: string) => {
+    const key = `${variantId}|${locationId}`
+    if (askedRef.current === key || (typeof navigator !== 'undefined' && !navigator.onLine)) return
+    askedRef.current = key
+    fetchItemElsewhere(countId, variantId, locationId)
+      .then((rows) => setElsewhere(rows.length ? { key, title, rows } : null))
+      .catch(() => { askedRef.current = '' })
+  }
   useLiveCounts()
   if (count.isError) return <ErrorState error={count.error} onRetry={() => void count.refetch()} />
   if (count.isLoading) return <Skeleton className="mx-auto h-96 max-w-3xl" />
@@ -187,6 +198,7 @@ export function CountPage() {
       try {
         const r = await countEntry.mutateAsync({ count: c.id, variant: variantId, location: at.id, qty, lot })
         scanFeedback('ok')
+        lookElsewhere(c.id, variantId, at.id, label)
         if (r.mine) { setLastOther(null); st.ok(t('{item} at {code}: {n}', { item: label, code: at.code, n: formatQty(r.counted_qty) }) + (r.offline ? ` · ${t('saved on this device')}` : '')) }
         else {
           setLastOther({ ...r, title: label, variant: variantId, location: at.id, lot })
@@ -198,6 +210,7 @@ export function CountPage() {
     try {
       const r = await countItem.mutateAsync({ count: c.id, variant: variantId, location: at.id, qty, lot, set })
       scanFeedback('ok'); st.ok(t('{item} at {code}: {n}', { item: label, code: at.code, n: formatQty(r.counted_qty) }) + (r.offline ? ` · ${t('saved on this device')}` : ''))
+      lookElsewhere(c.id, variantId, at.id, label)
     } catch (e) { scanFeedback('error'); st.error(describeError(e)) }
   }
   const onScan = async (code: string) => {
@@ -256,6 +269,7 @@ export function CountPage() {
             <Button size="sm" variant="outline" onClick={() => setEntriesFor({ line: lastOther.line_id, title: lastOther.title, variant: lastOther.variant, location: lastOther.location, lot: lastOther.lot })}>{t('Write the quantity')}</Button>
           </div>
         )}
+        {elsewhere && <ElsewhereCard title={elsewhere.title} rows={elsewhere.rows} onClose={() => setElsewhere(null)} />}
       </>}
       {c.status === 'review' && <CountReviewPanel countId={c.id} />}
       <div className="grid gap-3">

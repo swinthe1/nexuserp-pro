@@ -17267,6 +17267,14 @@ export type Database = {
         }
         Returns: Json
       }
+      count_item_elsewhere: {
+        Args: {
+          p_count: string
+          p_variant: string
+          p_location: string
+        }
+        Returns: Json
+      }
       count_line_entries: {
         Args: {
           p_line: string

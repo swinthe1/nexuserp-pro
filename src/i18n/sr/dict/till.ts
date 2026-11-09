@@ -1200,4 +1200,11 @@ export default {
   "Coupon cancelled": "Račun je storniran",
   "Reason: {reason}": "Razlog: {reason}",
   "Scan the QR code of the coupon, or type its number (the long number above the date, or KUP-…). Items come back into the till's stock at the cost they left with.": "Skenirajte QR kod računa, ili upišite njegov broj (dugi broj iznad datuma, ili KUP-…). Artikli se vraćaju u zalihu kase po ceni po kojoj su izašli.",
+  "This item is also kept at:": "Ovaj artikal se drži i na:",
+  "not counted yet": "još nije prebrojano",
+  "counted by {name}: {n}": "prebrojao {name}: {n}",
+  "counted: {n}": "prebrojano: {n}",
+  "Count it there too, so nothing is left out.": "Prebrojte i tamo, da ništa ne ostane neprebrojano.",
+  "A stock count is open in this unit ({name}).": "U ovoj jedinici je otvoren popis robe ({name}).",
+  "Post the receipt and put the goods on the shelf at the same time. If you cannot, keep the goods aside until the count is closed, so they are not counted twice or missed.": "Proknjižite prijem i stavite robu na policu u isto vreme. Ako ne možete, držite robu po strani dok se popis ne zatvori, da se ne prebroji dva puta ili ne izostavi.",
 } satisfies Dict

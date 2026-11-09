@@ -32,6 +32,7 @@ import { receiptSchema, type ReceiptFormValues } from '../schemas'
 import { t, tEnum, tr } from '@/i18n'
 import { ErrorState } from '@/components/error-state'
 import { isOfflineId } from '@/lib/offline/step'
+import { OpenCountBanner } from '@/features/wms/components/count-together'
 
 type ReceiptDoc = Tables<'goods_receipts'> & {
   lines: Tables<'goods_receipt_lines'>[]
@@ -321,6 +322,7 @@ function ReceiptForm({ doc }: { doc?: ReceiptDoc }) {
       >
         <Card>
           <CardContent className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
+            {editable && <OpenCountBanner warehouseId={warehouseId} className="sm:col-span-2 lg:col-span-3" />}
             <FormField control={form.control} name="receipt_type" render={({ field }) => (
               <FormItem><FormLabel>{t('Receipt type')}</FormLabel>
                 <Select value={field.value} onValueChange={field.onChange} disabled={field.disabled}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>

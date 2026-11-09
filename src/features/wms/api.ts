@@ -453,6 +453,12 @@ export function useListExtras(count: string | undefined, enabled: boolean) {
   })
 }
 
+// where else in the unit the item is kept, and whether it was counted there (never how many the program expects)
+export type ElsewhereRow = { location_id: string; code: string; name: string; counted: boolean; counted_qty: number | null; by: string | null }
+export async function fetchItemElsewhere(count: string, variant: string, location: string): Promise<ElsewhereRow[]> {
+  return (unwrap(await supabase.rpc('count_item_elsewhere', { p_count: count, p_variant: variant, p_location: location })) ?? []) as unknown as ElsewhereRow[]
+}
+
 export const useSubmitCount = () => useAction(async (a: { id: string; zero: boolean }) => unwrap(await supabase.rpc('submit_cycle_count', { p_id: a.id, p_zero_uncounted: a.zero })))
 export const usePostCount = () => useAction(async (id: string) =>
   unwrap(await supabase.rpc('post_cycle_count', { p_id: id })) as unknown as { adjustment_id: string | null; adjustment_status: string; lines: number; value: number | null })

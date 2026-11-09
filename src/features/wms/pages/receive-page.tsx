@@ -21,6 +21,7 @@ import { useLocations, useVendors, useWarehouses } from '@/features/inventory/ap
 import { SearchSelect } from '@/components/search-select'
 import { useEnsureLot, useFinishReceipt, useOpenReceipts, useStartDockReceipt, useReceiptForScan, useResolveCode, type DockCount, type ReceiptLine } from '../api'
 import { Progress, QtyDialog, ScanShell, useScanStatus } from '../components/scan-shell'
+import { OpenCountBanner } from '../components/count-together'
 
 /** transfers from another unit, shipped and on the way: received on the transfer's page */
 function useIncomingTransfers() {
@@ -225,6 +226,7 @@ export function ReceiveScanPage() {
       meta={<span className="text-[13px] text-muted-foreground">{[rc.number, rc.po?.number, rc.vendor_delivery_note].filter(Boolean).join(' · ')}</span>}
       actions={<Button variant="ghost" size="sm" onClick={() => { try { localStorage.removeItem(storeKey) } catch { /* ignore */ } setEntries(null) }}><RotateCcw /> {t('Start over')}</Button>}>
       <ScanInput onScan={onScan} placeholder={t('Scan each item (or its lot label)')} status={st.status} />
+      <OpenCountBanner warehouseId={rc.warehouse_id} />
       <Progress done={counted} total={expected} />
       <div className="grid gap-2">
         {entries.map((e) => {
