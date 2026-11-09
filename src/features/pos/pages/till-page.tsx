@@ -1509,13 +1509,13 @@ function RefundDialog({ data, currency, onClose, onRefund }: { data: TillData; c
   return (
     <Dialog open onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent className="max-w-lg">
-        <DialogHeader><DialogTitle>{t('Refund')}</DialogTitle><DialogDescription>{t('Scan or type the receipt number. Items come back into the till\'s stock at the cost they left with.')}</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle>{t('Refund')}</DialogTitle><DialogDescription>{t('Scan the QR code of the coupon, or type its number (the long number above the date, or KUP-…). Items come back into the till\'s stock at the cost they left with.')}</DialogDescription></DialogHeader>
         {!found && (fiscal
           ? <p className="text-xs text-muted-foreground">{t('Without the receipt there is no refund here: ATK takes a return only against the original coupon.')}</p>
           : <button type="button" className="justify-self-start text-[13px] font-medium text-primary hover:underline" onClick={() => setNoReceipt(true)}>{t('The customer has no receipt')}</button>)}
         {!found ? (
           <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); if (code.trim()) void look() }}>
-            <Input autoFocus className="h-12 font-mono" value={code} onChange={(e) => setCode(e.target.value)} placeholder={t('{a} or {b}', { a: 'POS-2026-00012', b: 'T1-261024-0007' })} />
+            <Input autoFocus className="h-12 font-mono" value={code} onChange={(e) => setCode(e.target.value)} placeholder={t('{a} or {b}', { a: '104000000003', b: 'KUP-2026-00012' })} />
             <Button type="submit" className="h-12" loading={busy}>{t('Find')}</Button>
           </form>
         ) : (

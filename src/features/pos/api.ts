@@ -444,12 +444,24 @@ export type ReceiptLookup = { id: string; number: string; device_ref: string | n
   atk_coupon: string | null
   lines: { variant_id: string; description: string; quantity: number; unit_price: number; discount_pct: number; line_total: number; tax_rate: number }[]
   refunds: { lines: { variant_id: string; quantity: number }[] }[] }
+/**
+ * The sale behind what the customer brings back. Anything printed on the coupon finds it: DrisPRO's number
+ * (KUP-…), the till's reference, ATK's coupon number (printed with leading zeros), the NUIKF, or the QR code
+ * read by a scanner.
+ */
 export async function lookupReceipt(companyId: string, code: string): Promise<ReceiptLookup | null> {
-  const c = code.trim().replace(/[,()]/g, '')
-  const rows = unwrap(await supabase.from('pos_orders')
-    .select('id, number, device_ref, order_at, total, is_refund, atk_coupon:atk->>coupon_id, lines:pos_order_lines(variant_id, description, quantity, unit_price, discount_pct, line_total, tax_rate)')
-    .eq('company_id', companyId).or(`number.eq.${c},device_ref.eq.${c}`).eq('status', 'paid').limit(1))
-  const o = rows[0]
+  const raw = code.trim()
+  const fields = 'id, number, device_ref, order_at, total, is_refund, atk_coupon:atk->>coupon_id, lines:pos_order_lines(variant_id, description, quantity, unit_price, discount_pct, line_total, tax_rate)'
+  const base = () => supabase.from('pos_orders').select(fields).eq('company_id', companyId).eq('status', 'paid').limit(1)
+  let rows: unknown[]
+  if (raw.includes('|')) rows = unwrap(await base().eq('atk->>qr', raw))
+  else {
+    const c = raw.replace(/[,()"\s]/g, '')
+    const digits = /^\d{6,19}$/.test(c)
+    const atkNo = digits ? c.replace(/^0+(?=\d)/, '') : null
+    rows = unwrap(await base().or([`number.eq.${c}`, `device_ref.eq.${c}`, ...(digits ? [`atk->>coupon_id.eq.${atkNo}`, `atk->>verification_no.eq.${c}`] : [])].join(',')))
+  }
+  const o = rows[0] as { id: string } | undefined
   if (!o) return null
   // earlier refunds of this receipt (fetched separately: the self-reference cannot be embedded)
   const refunds = unwrap(await supabase.from('pos_orders').select('lines:pos_order_lines(variant_id, quantity)')

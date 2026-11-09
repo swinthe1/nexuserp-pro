@@ -1199,4 +1199,5 @@ export default {
   "Cancellation|coupon": "Storno",
   "Coupon cancelled": "Račun je storniran",
   "Reason: {reason}": "Razlog: {reason}",
+  "Scan the QR code of the coupon, or type its number (the long number above the date, or KUP-…). Items come back into the till's stock at the cost they left with.": "Skenirajte QR kod računa, ili upišite njegov broj (dugi broj iznad datuma, ili KUP-…). Artikli se vraćaju u zalihu kase po ceni po kojoj su izašli.",
 } satisfies Dict

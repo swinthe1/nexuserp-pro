@@ -1476,4 +1476,5 @@ export default {
   "Cancellation|coupon": "Anulim",
   "Coupon cancelled": "Kuponi u anulua",
   "Reason: {reason}": "Arsyeja: {reason}",
+  "Scan the QR code of the coupon, or type its number (the long number above the date, or KUP-…). Items come back into the till's stock at the cost they left with.": "Skanoni kodin QR të kuponit, ose shkruani numrin e tij (numri i gjatë mbi datën, ose KUP-…). Artikujt kthehen në stokun e arkës me koston me të cilën dolën.",
 } satisfies Dict
