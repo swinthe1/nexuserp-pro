@@ -1473,4 +1473,7 @@ export default {
   "Send these sign-in details to the client. The PIN is shown only now.": "Dërgojani klientit këto të dhëna hyrjeje. PIN-i shfaqet vetëm tani.",
   "For contact only: the administrator signs in with the user name and the PIN.": "Vetëm për kontakt: administratori hyn me përdoruesin dhe PIN-in.",
   "An owner who already signs in to DrisPRO keeps the user name and PIN he has.": "Pronari që hyn tashmë në DrisPRO mban përdoruesin dhe PIN-in që ka.",
+  "Cancellation|coupon": "Anulim",
+  "Coupon cancelled": "Kuponi u anulua",
+  "Reason: {reason}": "Arsyeja: {reason}",
 } satisfies Dict

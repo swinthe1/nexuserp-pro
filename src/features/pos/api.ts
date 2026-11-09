@@ -70,9 +70,11 @@ export function useSessionDetail(id: string | undefined) {
       const z = unwrap(await supabase.from('z_reports')
         .select('*, register:pos_registers(code, name, receipt_header), session:pos_sessions(number, opened_at, closed_at, journal_entry_id, cash_journal_entry_id)')
         .eq('session_id', id!).maybeSingle().returns<ZReport | null>())
-      const orders = unwrap(await supabase.from('pos_orders').select('id, number, device_ref, order_at, total, is_refund, offline_created, status, partner:business_partners(name), payments:pos_payments(method, amount)')
+      const orders = unwrap(await supabase.from('pos_orders').select('id, number, device_ref, order_at, total, is_refund, offline_created, status, coupon_type:atk->>type, cancel_reason:atk->>reason, partner:business_partners(name), payments:pos_payments(method, amount)')
         .eq('session_id', id!).order('order_at', { ascending: false })
         .returns<{ id: string; number: string; device_ref: string | null; order_at: string; total: number; is_refund: boolean; offline_created: boolean; status: string
+          /** ATK's coupon type: 0 sale, 1 return, 2 cancellation (with its reason) */
+          coupon_type: string | null; cancel_reason: string | null
           partner: { name: string } | null; payments: { method: string; amount: number }[] }[]>())
       return { session: s, z, orders }
     },

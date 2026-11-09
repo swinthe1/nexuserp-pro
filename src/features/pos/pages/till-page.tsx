@@ -81,7 +81,7 @@ function toApplied(row: TillCardRow, programs: TillProgram[]): AppliedCard | nul
   const program = programs.find((p) => p.id === row[4])
   return program ? { id: row[0], number: row[1], holder: row[3], program, points: num(row[5]), monthUsed: num(row[6]) } : null
 }
-type Done = { ref: string; number: string | null; total: number; change: number; receipt: ReceiptData; offline: boolean; printed?: number }
+type Done = { ref: string; number: string | null; total: number; change: number; receipt: ReceiptData; offline: boolean; printed?: number; cancel?: boolean }
 /** a step that takes something off the sale (it waits for the manager when a confirmation is needed) */
 type VoidStep = { entries: Omit<TillLogEntry, 'id' | 'session_id' | 'at' | 'approval' | 'offline'>[]; apply: () => void }
 
@@ -631,7 +631,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       })
     }
     doneUuid.current = client_uuid
-    setDone({ ref: device_ref, number: null, total: r2(saleTotal), change: Math.max(change, 0), receipt, offline: isOffline })
+    setDone({ ref: device_ref, number: null, total: r2(saleTotal), change: Math.max(change, 0), receipt, offline: isOffline, cancel: !!refund?.cancelReason })
     setDialog(null)
     clearSale()
     // the drawer opens for a sale paid (partly) in cash (Windows program with a network receipt printer)
@@ -1353,11 +1353,11 @@ function DoneOverlay({ done, currency, onNext, onPrint }: { done: Done; currency
     <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-6 backdrop-blur-sm" role="dialog" aria-label={t('Sale complete')}>
       <div className="w-full max-w-md rounded-2xl border bg-card p-8 text-center shadow-lg">
         <div className="mx-auto grid size-12 place-items-center rounded-full bg-success/15 text-success"><Check className="size-6" /></div>
-        <div className="mt-4 text-[13px] text-muted-foreground">{done.receipt.isRefund ? t('Refund') : t('Sale')} {done.number ?? done.ref} · {formatMoney(done.total)} {currency}</div>
+        <div className="mt-4 text-[13px] text-muted-foreground">{done.cancel ? t('Cancellation|coupon') : done.receipt.isRefund ? t('Refund') : t('Sale')} {done.number ?? done.ref} · {formatMoney(done.total)} {currency}</div>
         {done.change > 0 ? (
           <><div className="mt-4 text-sm font-medium text-muted-foreground">{t('Change to give')}</div>
             <div className="text-6xl font-semibold tracking-[-0.03em] tabular">{formatMoney(done.change)}</div></>
-        ) : <div className="mt-4 text-3xl font-semibold">{done.receipt.isRefund ? t('Refund recorded') : t('Paid')}</div>}
+        ) : <div className="mt-4 text-3xl font-semibold">{done.cancel ? t('Coupon cancelled') : done.receipt.isRefund ? t('Refund recorded') : t('Paid')}</div>}
         {done.offline && <p className="mt-3 text-[13px] text-warning">{t('Saved on this device. It reaches the books when the till is back online.')}</p>}
         {done.receipt.fiscal && (
           // the coupon on screen: the customer can scan its QR code without a printout (Kërkesat, neni 25.18)

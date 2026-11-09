@@ -460,12 +460,15 @@ export function PosSessionPage() {
               <TableBody>
                 {orders.map((o) => (
                   <TableRow key={o.id} className="hover:bg-transparent">
-                    <TableCell><span className="font-medium">{o.number}</span> {o.is_refund && <Badge variant="destructive" className="ml-1">{t('Refund')}</Badge>} {o.offline_created && <Badge variant="secondary" className="ml-1">{t('Offline')}</Badge>}
-                      {o.device_ref && <div className="text-xs text-muted-foreground">{t('Till ref {ref}', { ref: o.device_ref })}</div>}</TableCell>
+                    <TableCell><span className="font-medium">{o.number}</span> {o.coupon_type === '2'
+                      ? <Badge variant="destructive" className="ml-1" title={o.cancel_reason ?? undefined}>{t('Cancellation|coupon')}</Badge>
+                      : o.is_refund && <Badge variant="destructive" className="ml-1">{t('Refund')}</Badge>} {o.offline_created && <Badge variant="secondary" className="ml-1">{t('Offline')}</Badge>}
+                      {o.device_ref && <div className="text-xs text-muted-foreground">{t('Till ref {ref}', { ref: o.device_ref })}</div>}
+                      {o.coupon_type === '2' && o.cancel_reason && <div className="text-xs text-muted-foreground">{t('Reason: {reason}', { reason: o.cancel_reason })}</div>}</TableCell>
                     <TableCell className="whitespace-nowrap text-[13px]">{formatDate(o.order_at, true)}</TableCell>
                     <TableCell className="whitespace-nowrap text-[13px]">{o.partner?.name ?? t('Walk-in customer')}</TableCell>
                     <TableCell className="whitespace-nowrap text-[13px] text-muted-foreground">{o.payments.map((p) => humanize(p.method)).join(', ')}</TableCell>
-                    <TableCell className={cn('whitespace-nowrap text-right tabular', o.is_refund && 'text-destructive')}>{formatMoney(o.total)}</TableCell>
+                    <TableCell className={cn('whitespace-nowrap text-right tabular', (o.is_refund || o.coupon_type === '2') && 'text-destructive')}>{formatMoney(o.total)}</TableCell>
                     <TableCell className="whitespace-nowrap"><Button size="sm" variant="ghost" onClick={() => void reprint(o.id)}><Printer /> {t('Reprint')}</Button></TableCell>
                   </TableRow>
                 ))}

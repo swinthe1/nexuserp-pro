@@ -1196,4 +1196,7 @@ export default {
   "+ and − change the quantity, Delete removes the line, ↑ ↓ move between lines": "+ i − menjaju količinu, Delete briše red, ↑ ↓ pomeraju između redova",
   "Discount": "Popust",
   "Loss watch|menu": "Detektor gubitaka",
+  "Cancellation|coupon": "Storno",
+  "Coupon cancelled": "Račun je storniran",
+  "Reason: {reason}": "Razlog: {reason}",
 } satisfies Dict
