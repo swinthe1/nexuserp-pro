@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
-import { msg, t, td } from '@/i18n'
+import { msg, t, td, tn } from '@/i18n'
 import { printHtml } from '@/lib/print'
 import { cn, formatDate, formatMoney, formatQty, num } from '@/lib/utils'
 import { parseCsv, parseFile } from '@/features/settings/lib/parse-file'
@@ -135,6 +135,7 @@ export function CountReviewPanel({ countId }: { countId: string }) {
           hint={d.losses_sale != null ? t('{amount} at the selling price with VAT', { amount: formatMoney(d.losses_sale, cur) }) : undefined} />
         <Tile label={t('Net effect on stock value')} value={formatMoney(d.net, cur)} tone={num(d.net) < 0 ? 'bad' : 'good'} hint={t('Counted stock is worth {amount}', { amount: formatMoney(d.counted_value, cur) })} />
       </div>
+      {num(d.in_carts) > 0 && <p className="rounded-md bg-warning/10 px-3 py-2 text-[12.5px] text-warning">{tn(num(d.in_carts), '{n} shortage may come from goods in a cart: they sold right after the shelf was counted. Count them again before confirming.', '{n} shortages may come from goods in a cart: they sold right after the shelf was counted. Count them again before confirming.')}</p>}
       {!!d.lines.length && (
         <>
           <ul className="max-h-80 divide-y overflow-y-auto rounded-md border text-[13px]">
@@ -147,6 +148,8 @@ export function CountReviewPanel({ countId }: { countId: string }) {
                   <div className="truncate text-xs text-muted-foreground">{l.sku} · {l.location}{l.lot ? ` · ${l.lot}` : ''} · {t('expected {e}, counted {c}', { e: formatQty(l.expected), c: formatQty(l.counted) })}
                     {l.first_counted != null && ` · ${t('first count {n}', { n: formatQty(l.first_counted) })}`}</div>
                   <RiskBadges reasons={l.reasons} className="mt-0.5" />
+                  {l.entries && l.entries.length > 1 && <div className="truncate text-xs text-muted-foreground">{l.entries.map((e) => `${e.name ?? '—'} ${formatQty(e.qty)}${e.location ? ` (${e.location})` : ''}`).join(' + ')}</div>}
+                  {num(l.in_carts) > 0 && <span className="mt-0.5 inline-block rounded bg-warning/15 px-1.5 py-0.5 text-[11px] font-medium text-warning">{t('{n} sold right after the count: may have been in a cart', { n: formatQty(num(l.in_carts)) })}</span>}
                 </div>
                 <span className={cn('w-20 shrink-0 text-right tabular', num(l.delta) < 0 ? 'text-destructive' : 'text-warning')}>{num(l.delta) > 0 ? '+' : ''}{formatQty(l.delta)}{l.pct != null && <span className="block text-2xs text-muted-foreground">{l.pct > 0 ? '+' : ''}{l.pct}%</span>}</span>
                 <span className={cn('w-24 shrink-0 text-right font-medium tabular', num(l.value) < 0 ? 'text-destructive' : 'text-success')}>{formatMoney(l.value, cur)}</span>

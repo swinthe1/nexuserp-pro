@@ -2904,6 +2904,60 @@ export type Database = {
           { foreignKeyName: "cost_layers_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      count_sessions: {
+        Row: {
+          id: string
+          company_id: string
+          warehouse_id: string
+          name: string
+          status: string
+          cart_minutes: number
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          warehouse_id: string
+          name: string
+          status?: string
+          cart_minutes?: number
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          warehouse_id?: string
+          name?: string
+          status?: string
+          cart_minutes?: number
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "count_sessions_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "count_sessions_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
+        ]
+      }
       crm_pipeline_stages: {
         Row: {
           id: string
@@ -2977,6 +3031,56 @@ export type Database = {
           is_active?: boolean
         }
         Relationships: []
+      }
+      cycle_count_entries: {
+        Row: {
+          id: string
+          company_id: string
+          line_id: string
+          count_id: string
+          user_id: string
+          quantity: number
+          location_id: string | null
+          counted_at: string
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id: string
+          company_id: string
+          line_id: string
+          count_id: string
+          user_id: string
+          quantity: number
+          location_id?: string | null
+          counted_at: string
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          line_id?: string
+          count_id?: string
+          user_id?: string
+          quantity?: number
+          location_id?: string | null
+          counted_at?: string
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "cycle_count_entries_company_id_count_id_fkey"; columns: ["company_id", "count_id"]; isOneToOne: false; referencedRelation: "cycle_counts"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "cycle_count_entries_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "cycle_count_entries_company_id_line_id_fkey"; columns: ["company_id", "line_id"]; isOneToOne: false; referencedRelation: "cycle_count_lines"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "cycle_count_entries_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
       }
       cycle_count_lines: {
         Row: {
@@ -3067,6 +3171,7 @@ export type Database = {
           deleted_by: string | null
           posted_at: string | null
           notes: string | null
+          session_id: string | null
         }
         Insert: {
           id?: string
@@ -3088,6 +3193,7 @@ export type Database = {
           deleted_by?: string | null
           posted_at?: string | null
           notes?: string | null
+          session_id?: string | null
         }
         Update: {
           id?: string
@@ -3109,11 +3215,13 @@ export type Database = {
           deleted_by?: string | null
           posted_at?: string | null
           notes?: string | null
+          session_id?: string | null
         }
         Relationships: [
           { foreignKeyName: "cycle_counts_company_id_adjustment_id_fkey"; columns: ["company_id", "adjustment_id"]; isOneToOne: false; referencedRelation: "stock_adjustments"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "cycle_counts_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
           { foreignKeyName: "cycle_counts_company_id_warehouse_id_fkey"; columns: ["company_id", "warehouse_id"]; isOneToOne: false; referencedRelation: "warehouses"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "cycle_counts_session_fkey"; columns: ["company_id", "session_id"]; isOneToOne: false; referencedRelation: "count_sessions"; referencedColumns: ["company_id", "id"] },
         ]
       }
       data_table_views: {
@@ -17121,6 +17229,25 @@ export type Database = {
         }
         Returns: Json
       }
+      count_entry_add: {
+        Args: {
+          p_id: string
+          p_count: string
+          p_variant: string
+          p_location: string
+          p_qty: number
+          p_lot?: string
+          p_at?: string
+        }
+        Returns: Json
+      }
+      count_entry_change: {
+        Args: {
+          p_entry: string
+          p_qty: number
+        }
+        Returns: Json
+      }
       count_import: {
         Args: {
           p_id: string
@@ -17137,6 +17264,18 @@ export type Database = {
           p_qty: number
           p_lot?: string
           p_set?: boolean
+        }
+        Returns: Json
+      }
+      count_line_entries: {
+        Args: {
+          p_line: string
+        }
+        Returns: Json
+      }
+      count_list_extras: {
+        Args: {
+          p_count: string
         }
         Returns: Json
       }
@@ -17165,6 +17304,39 @@ export type Database = {
         Args: {
           p_warehouse: string
           p_limit?: number
+        }
+        Returns: Json
+      }
+      count_session_close: {
+        Args: {
+          p_session: string
+          p_zero_uncounted?: boolean
+        }
+        Returns: Json
+      }
+      count_session_join: {
+        Args: {
+          p_session: string
+        }
+        Returns: string
+      }
+      count_session_post: {
+        Args: {
+          p_session: string
+        }
+        Returns: Json
+      }
+      count_session_start: {
+        Args: {
+          p_warehouse: string
+          p_name?: string
+          p_cart_minutes?: number
+        }
+        Returns: string
+      }
+      count_session_view: {
+        Args: {
+          p_session: string
         }
         Returns: Json
       }

@@ -23,7 +23,8 @@ import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { t, td, tn } from '@/i18n'
 import { cn, formatDate, formatMoney, formatQty, humanize, num } from '@/lib/utils'
 import { useCategories, useLocations, useWarehouses, type LocationRow } from '@/features/inventory/api'
-import { useCount, useCountItem, useCountReview, useCounts, useCreateCount, usePostCount, useResolveCode, useSubmitCount, wmsKeys, type CountLine } from '../api'
+import { useCount, useCountEntry, useCountItem, useCountReview, useCounts, useCreateCount, useListExtras, usePostCount, useResolveCode, useSubmitCount, wmsKeys, type CountLine, type EntryAnswer } from '../api'
+import { EntriesDialog, ExtrasList, SessionsCard } from '../components/count-together'
 import { QtyDialog, ScanShell, useScanStatus } from '../components/scan-shell'
 import { useCountPlan, useCreateCountDue } from '@/features/inventory/abc'
 import { DailyCountCard } from '@/features/inventory/daily-count'
@@ -43,6 +44,7 @@ export function CountsPage() {
   return (
     <ScanShell title={t('Stock counts')} back={{ href: '/wms', label: t('Warehouse floor') }} actions={<Can perm="wms.write"><Button onClick={() => setOpen(true)}><Plus /> {t('New count')}</Button></Can>}>
       <p className="text-[13px] text-muted-foreground">{t('Count a few shelves every day instead of closing for a full inventory. Counters do not see the expected quantity; a manager reviews the differences and confirms them as one adjustment.')}</p>
+      <SessionsCard />
       <DailyCountCard />
       <CountPlan />
       {counts.isError ? <ErrorState error={counts.error} onRetry={() => void counts.refetch()} /> : counts.isLoading ? <Skeleton className="h-40" /> : !counts.data?.length ? <EmptyState icon={ClipboardCheck} title={t('No counts yet')} description={t('Start with the shelves that move the most.')} action={<Can perm="wms.write"><Button onClick={() => setOpen(true)}><Plus /> {t('New count')}</Button></Can>} /> : (
@@ -156,6 +158,12 @@ export function CountPage() {
   const [pendingLot, setPendingLot] = React.useState<{ variantId: string; sku: string; qty: number; at: { id: string; code: string } } | null>(null)
   const [edit, setEdit] = React.useState<CountLine | null>(null)
   const [zero, setZero] = React.useState(false)
+  // counting together: entries add to the list that counted the item first
+  const countEntry = useCountEntry()
+  const together = !!count.data?.session_id
+  const extras = useListExtras(id, together && count.data?.status === 'in_progress')
+  const [entriesFor, setEntriesFor] = React.useState<{ line: string; title: string; variant: string; location: string; lot: string | null } | null>(null)
+  const [lastOther, setLastOther] = React.useState<(EntryAnswer & { title: string; variant: string; location: string; lot: string | null }) | null>(null)
   useLiveCounts()
   if (count.isError) return <ErrorState error={count.error} onRetry={() => void count.refetch()} />
   if (count.isLoading) return <Skeleton className="mx-auto h-96 max-w-3xl" />
@@ -175,6 +183,18 @@ export function CountPage() {
     return onlyPlace
   }
   const record = async (variantId: string, qty: number, lot: string | null, label: string, at: { id: string; code: string }, set = false) => {
+    if (together) {
+      try {
+        const r = await countEntry.mutateAsync({ count: c.id, variant: variantId, location: at.id, qty, lot })
+        scanFeedback('ok')
+        if (r.mine) { setLastOther(null); st.ok(t('{item} at {code}: {n}', { item: label, code: at.code, n: formatQty(r.counted_qty) }) + (r.offline ? ` · ${t('saved on this device')}` : '')) }
+        else {
+          setLastOther({ ...r, title: label, variant: variantId, location: at.id, lot })
+          st.ok(t('{item}: on the list of {name}. {a} + {b} = {c}', { item: label, name: r.owner ?? '—', a: formatQty(r.before), b: formatQty(r.added), c: formatQty(r.counted_qty) }))
+        }
+      } catch (e) { scanFeedback('error'); st.error(describeError(e)) }
+      return
+    }
     try {
       const r = await countItem.mutateAsync({ count: c.id, variant: variantId, location: at.id, qty, lot, set })
       scanFeedback('ok'); st.ok(t('{item} at {code}: {n}', { item: label, code: at.code, n: formatQty(r.counted_qty) }) + (r.offline ? ` · ${t('saved on this device')}` : ''))
@@ -208,7 +228,8 @@ export function CountPage() {
           { label: t('Print the count sheet'), icon: Printer, onSelect: () => printCountSheet(c, company?.name ?? '') },
           { label: t('From Excel'), icon: FileSpreadsheet, hidden: !(counting && can('wms.write')), onSelect: () => setImporting(true) },
         ]} />
-        {counting && <Can perm="wms.write"><ConfirmDialog trigger={<Button>{t('Finish counting')}</Button>} title={t('Finish counting?')}
+        {counting && together && <Button variant="outline" asChild><Link to={`/wms/sessions/${c.session_id}`}>{t('I am done')}</Link></Button>}
+        {counting && !together && <Can perm="wms.write"><ConfirmDialog trigger={<Button>{t('Finish counting')}</Button>} title={t('Finish counting?')}
           description={<span className="grid gap-3"><span>{tn(c.lines.length - counted, '{n} line is not counted.', '{n} lines are not counted.')}</span>
             <label className="flex items-center gap-2"><Checkbox checked={zero} onCheckedChange={(v) => setZero(!!v)} /> {t('Count the missing lines as zero (the shelf was checked and they are not there)')}</label></span>}
           confirmLabel={t('Send for review')} onConfirm={async () => { await submit.mutateAsync({ id: c.id, zero }); toast.success(t('Sent for review')) }} /></Can>}
@@ -227,6 +248,14 @@ export function CountPage() {
         <ScanInput onScan={onScan} placeholder={bin ? t('Counting {code}: scan items, or another shelf', { code: bin.code })
           : onlyPlace ? t('Scan the items one by one: no shelf label needed') : t('Scan a shelf label, or an item already on the list')} status={st.status} />
         {bin && <div className="flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 font-mono text-lg font-semibold"><MapPin className="size-5 text-primary" />{bin.code}</div>}
+        {together && <p className="text-[12.5px] text-muted-foreground">{t('Each scan adds one piece (a pack adds its pieces). To write a quantity, tap the item. An item someone counted before you goes onto their list, and your quantity is added to it.')}</p>}
+        {lastOther && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2">
+            <span className="min-w-0 flex-1 text-[13px]"><span className="block font-medium">{lastOther.title}</span>
+              <span>{t('On the list of {name}: {a} + {b} = {c}', { name: lastOther.owner ?? '—', a: formatQty(lastOther.before), b: formatQty(lastOther.added), c: formatQty(lastOther.counted_qty) })}</span></span>
+            <Button size="sm" variant="outline" onClick={() => setEntriesFor({ line: lastOther.line_id, title: lastOther.title, variant: lastOther.variant, location: lastOther.location, lot: lastOther.lot })}>{t('Write the quantity')}</Button>
+          </div>
+        )}
       </>}
       {c.status === 'review' && <CountReviewPanel countId={c.id} />}
       <div className="grid gap-3">
@@ -236,7 +265,7 @@ export function CountPage() {
             {lines.map((l) => {
               const v = l.counted_qty == null ? null : Number(l.counted_qty) - Number(l.system_qty)
               return (
-                <button key={l.id} type="button" disabled={!counting} onClick={() => { setBin((b) => b ?? null); setEdit(l) }}
+                <button key={l.id} type="button" disabled={!counting} onClick={() => { setBin((b) => b ?? null); if (together) setEntriesFor({ line: l.id, title: `${l.variant?.sku ?? ''} · ${l.variant?.name ?? ''}`, variant: l.variant_id, location: l.location_id, lot: l.lot_id }); else setEdit(l) }}
                   className="grid w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 border-b px-3 py-2 text-left text-[13px] last:border-0 enabled:hover:bg-muted/50">
                   <span className="min-w-0"><span className="block truncate font-medium">{l.variant?.name}</span><span className="text-muted-foreground">{l.variant?.sku}{l.lot ? ` · ${l.lot.lot_number}` : ''}</span>{l.recount && <span className="ml-2 rounded bg-warning/15 px-1.5 py-0.5 text-2xs font-medium text-warning">{t('count again')}</span>}</span>
                   {showSystem ? <span className="text-right text-muted-foreground tabular">{t('expected {n}', { n: formatQty(l.system_qty) })}</span> : <span />}
@@ -249,7 +278,13 @@ export function CountPage() {
           </div>
         ))}
         {!c.lines.length && <EmptyState title={t('No lines yet')} description={t('Scan a shelf and the items on it.')} compact />}
+        {together && <ExtrasList rows={extras.data ?? []} onOpen={(r) => setEntriesFor({ line: r.line_id, title: `${r.sku} · ${r.name}`, variant: r.variant_id, location: r.location_id, lot: r.lot_id })} />}
       </div>
+      {entriesFor && <EntriesDialog line={entriesFor.line} title={entriesFor.title} onClose={() => setEntriesFor(null)} canAdd={counting && !!entriesFor.variant}
+        onAdd={async (q) => {
+          const at = places.find((p) => p.id === entriesFor.location)
+          await record(entriesFor.variant, q, entriesFor.lot, entriesFor.title, { id: entriesFor.location, code: at?.code ?? '' })
+        }} />}
       {importing && <CountImportDialog countId={c.id} onClose={() => setImporting(false)} />}
       {pendingLot && <LotPicker variantId={pendingLot.variantId} sku={pendingLot.sku} onClose={() => setPendingLot(null)}
         onPick={async (lot, num) => { const p = pendingLot; setPendingLot(null); await record(p.variantId, p.qty, lot, `${p.sku} · ${num}`, p.at) }} />}

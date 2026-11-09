@@ -105,6 +105,7 @@ const ManagementCostsPage = lazy(() => import('@/features/finance/pages/manageme
 const PendingInvoicesPage = lazy(() => import('@/features/procurement/pages/pending-invoices-page'), 'PendingInvoicesPage')
 const CountsPage = lazy(() => import('@/features/wms/pages/counts-page'), 'CountsPage')
 const CountPage = lazy(() => import('@/features/wms/pages/counts-page'), 'CountPage')
+const CountSessionPage = lazy(() => import('@/features/wms/components/count-together'), 'CountSessionPage')
 const LotsPage = lazy(() => import('@/features/wms/pages/lots-page'), 'LotsPage')
 const LotTracePage = lazy(() => import('@/features/wms/pages/lots-page'), 'LotTracePage')
 
@@ -383,6 +384,7 @@ const appRoutes: RouteObject[] = [
         { path: 'waste', element: <WastePage /> },
         { path: 'counts', element: <CountsPage /> },
         { path: 'counts/:id', element: <CountPage /> },
+        { path: 'sessions/:id', element: <CountSessionPage /> },
         { path: 'lots', element: <LotsPage /> },
         { path: 'lots/:id', element: <LotTracePage /> },
       ] },

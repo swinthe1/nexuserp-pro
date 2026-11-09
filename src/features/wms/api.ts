@@ -306,8 +306,8 @@ export function useCount(id: string | undefined) {
     enabled: !!companyId && !!id,
     queryFn: async () => {
       const c = unwrap(await supabase.from('cycle_counts')
-        .select('id, number, status, count_date, scope, blind_count, posted_at, adjustment_id, warehouse_id, warehouse:warehouses(code, name)')
-        .eq('id', id!).single().returns<Omit<CountRow, 'lines'> & { warehouse_id: string }>())
+        .select('id, number, status, count_date, scope, blind_count, posted_at, adjustment_id, warehouse_id, session_id, assigned_to, warehouse:warehouses(code, name)')
+        .eq('id', id!).single().returns<Omit<CountRow, 'lines'> & { warehouse_id: string; session_id: string | null; assigned_to: string | null }>())
       const lines = unwrap(await supabase.from('cycle_count_lines')
         .select('id, variant_id, location_id, lot_id, system_qty, counted_qty, variance, counted_at, recount, first_counted_qty, variant:product_variants(sku, name, product:products(tracking)), location:warehouse_locations(code), lot:lots(lot_number)')
         .eq('cycle_count_id', id!).returns<CountLine[]>())
@@ -354,6 +354,105 @@ export function useCountItem() {
     }
   }, { quiet: true })
 }
+/* ------------------------------------------------------------------ counting together (a session, a list each) */
+export type CountSessionRow = { id: string; name: string; status: string; warehouse_id: string; created_at: string; warehouse: { name: string } | null }
+export function useCountSessions() {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...wmsKeys.all(companyId), 'sessions'],
+    enabled: !!companyId,
+    refetchInterval: 30_000,
+    queryFn: async () => unwrap(await supabase.from('count_sessions').select('id, name, status, warehouse_id, created_at, warehouse:warehouses(name)')
+      .eq('company_id', companyId!).is('deleted_at', null).order('created_at', { ascending: false }).limit(12).returns<CountSessionRow[]>()),
+  })
+}
+export type CountSessionView = { id: string; name: string; status: string; warehouse_id: string; warehouse: string; cart_minutes: number; started_at: string
+  closed_at: string | null; mine: string | null; items: number; in_stock: number
+  lists: { id: string; number: string; status: string; person: string | null; items: number; entries: number; last_at: string | null }[] }
+export function useCountSession(id: string | undefined) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...wmsKeys.all(companyId), 'session', id],
+    enabled: !!id,
+    refetchInterval: 10_000,
+    queryFn: async () => unwrap(await supabase.rpc('count_session_view', { p_session: id! })) as unknown as CountSessionView,
+  })
+}
+export const useStartSession = () => useAction(async (a: { warehouse: string; name?: string; cart?: number }) =>
+  unwrap(await supabase.rpc('count_session_start', { p_warehouse: a.warehouse, p_name: a.name || undefined, p_cart_minutes: a.cart ?? 20 })) as string)
+export const useJoinSession = () => useAction(async (session: string) => unwrap(await supabase.rpc('count_session_join', { p_session: session })) as string)
+export const useCloseSession = () => useAction(async (a: { session: string; zero: boolean }) =>
+  unwrap(await supabase.rpc('count_session_close', { p_session: a.session, p_zero_uncounted: a.zero })) as unknown as { lists: number; zero_lines: number })
+export const usePostSession = () => useAction(async (session: string) =>
+  unwrap(await supabase.rpc('count_session_post', { p_session: session })) as unknown as { posted: number })
+
+export type EntryAnswer = { line_id: string; count_id: string; mine: boolean; owner: string | null; counted_qty: number; before: number; added: number; entries: number; offline?: boolean }
+/** One person's count of an item: on their own list, or ADDED to the list that counted it first. Without internet it waits on the device. */
+export function useCountEntry() {
+  const qc = useQueryClient()
+  const { companyId } = useCompany()
+  return useOfflineStep((a: { count: string; variant: string; location: string; qty: number; lot?: string | null }) => {
+    const id = newId()
+    const at = new Date().toISOString()
+    const countKey = [...wmsKeys.all(companyId), 'count', a.count]
+    return {
+      chain: `count:${a.count}`, fn: 'offline_call',
+      args: { p_op: newId(), p_fn: 'count_entry_add', p_args: { p_id: id, p_count: a.count, p_variant: a.variant, p_location: a.location, p_qty: a.qty, p_lot: a.lot ?? null, p_at: at } },
+      label: t('Count: {item} {qty}', { item: itemOffline(companyId ?? '', a.variant)?.sku ?? '', qty: `+${a.qty}` }),
+      invalidate: [[...wmsKeys.all(companyId)]],
+      online: (d) => d as EntryAnswer,
+      local: () => {
+        // without internet: it shows on one's own list; the server puts it where it belongs when it is sent
+        let out: EntryAnswer = { line_id: id, count_id: a.count, mine: true, owner: null, counted_qty: a.qty, before: 0, added: a.qty, entries: 1, offline: true }
+        qc.setQueryData<{ lines: CountLine[] } & Record<string, unknown>>(countKey, (c) => {
+          if (!c) return c
+          const i = c.lines.findIndex((l) => l.variant_id === a.variant && l.location_id === a.location && (l.lot_id ?? null) === (a.lot ?? null))
+          if (i >= 0) {
+            const l = c.lines[i]!
+            const q = Number(l.counted_qty ?? 0) + a.qty
+            out = { ...out, line_id: l.id, counted_qty: q, before: Number(l.counted_qty ?? 0) }
+            const lines = [...c.lines]; lines[i] = { ...l, counted_qty: q, counted_at: l.counted_at ?? at }
+            return { ...c, lines }
+          }
+          const it = itemOffline(companyId ?? '', a.variant)
+          const loc = c.lines.find((l) => l.location_id === a.location)?.location ?? null
+          return { ...c, lines: [...c.lines, { id, variant_id: a.variant, location_id: a.location, lot_id: a.lot ?? null, system_qty: 0, counted_qty: a.qty, variance: null, recount: false,
+            first_counted_qty: null, counted_at: at, variant: it ? { sku: it.sku, name: it.name, product: { tracking: it.tracking } } : null, location: loc, lot: null }] }
+        })
+        return out
+      },
+    }
+  }, { quiet: true })
+}
+export type LineEntries = { line_id: string; count_id: string; counted_qty: number | null; owner: string | null
+  entries: { id: string; name: string | null; qty: number; at: string; location: string | null; mine: boolean }[] }
+export function useLineEntries(line: string | null) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...wmsKeys.all(companyId), 'line-entries', line],
+    enabled: !!line,
+    queryFn: async () => unwrap(await supabase.rpc('count_line_entries', { p_line: line! })) as unknown as LineEntries,
+  })
+}
+export const useChangeEntry = () => {
+  const qc = useQueryClient()
+  const { companyId } = useCompany()
+  return useMutation({
+    mutationFn: async (a: { entry: string; qty: number | null }) => unwrap(await supabase.rpc('count_entry_change', { p_entry: a.entry, p_qty: a.qty as unknown as number })),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: [...wmsKeys.all(companyId)] }) },
+    onError: (e) => toast.error(describeError(e)),
+  })
+}
+export type ListExtra = { line_id: string; variant_id: string; location_id: string; lot_id: string | null; sku: string; name: string; location: string; owner: string | null; counted_qty: number; mine_qty: number }
+export function useListExtras(count: string | undefined, enabled: boolean) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...wmsKeys.all(companyId), 'list-extras', count],
+    enabled: !!count && enabled,
+    queryFn: async () => (unwrap(await supabase.rpc('count_list_extras', { p_count: count! })) ?? []) as unknown as ListExtra[],
+  })
+}
+
 export const useSubmitCount = () => useAction(async (a: { id: string; zero: boolean }) => unwrap(await supabase.rpc('submit_cycle_count', { p_id: a.id, p_zero_uncounted: a.zero })))
 export const usePostCount = () => useAction(async (id: string) =>
   unwrap(await supabase.rpc('post_cycle_count', { p_id: id })) as unknown as { adjustment_id: string | null; adjustment_status: string; lines: number; value: number | null })
@@ -400,8 +499,10 @@ export const DOC_HREF: Record<string, string> = {
 
 /* ------------------------------------------------------------------ before confirming a count: differences with their value */
 export type CountReviewLine = { id: string; variant_id: string; sku: string; name: string; location: string; lot: string | null; expected: number; counted: number
-  first_counted: number | null; recount: boolean; delta: number; pct: number | null; unit_cost: number; value: number; reasons?: string[] | null }
-export type CountReview = { lines: CountReviewLine[]; counted: number; not_counted: number; differences: number; gains: number; losses: number; net: number; counted_value: number; gains_sale?: number; losses_sale?: number }
+  first_counted: number | null; recount: boolean; delta: number; pct: number | null; unit_cost: number; value: number; reasons?: string[] | null
+  /** sold within the cart minutes after it was counted, up to the shortage */
+  in_carts?: number | null; entries?: { name: string | null; qty: number; at: string; location: string | null }[] | null }
+export type CountReview = { lines: CountReviewLine[]; in_carts?: number; counted: number; not_counted: number; differences: number; gains: number; losses: number; net: number; counted_value: number; gains_sale?: number; losses_sale?: number }
 export function useCountReview(id: string | undefined, enabled: boolean) {
   const { companyId } = useCompany()
   return useQuery({
