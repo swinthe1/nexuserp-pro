@@ -920,4 +920,6 @@ export default {
   "Both units need a shelf where goods are kept": "Të dyja njësitë duhet të kenë një raft ku mbahet malli",
   "This item is not on the transfer: put it aside and tell the manager": "Ky artikull nuk është në transfer: lëreni mënjanë dhe njoftoni menaxherin",
   "This transfer waits for the manager: it was counted twice with differences": "Ky transfer pret menaxherin: u numërua dy herë me dallime",
+  "This store has no free till number at ATK left (1–99)": "Kjo njësi nuk ka më numër të lirë arke te ATK (1–99)",
+  "Give the till a name": "Jepini arkës një emër",
 } satisfies Dict

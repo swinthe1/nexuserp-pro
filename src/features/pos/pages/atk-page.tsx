@@ -3,9 +3,9 @@
  * the key is made here, ATK signs its certificate, and from then on that device signs every receipt.
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, Download, Laptop, Loader2, ShieldCheck, ShieldOff, Store } from 'lucide-react'
+import { CheckCircle2, CircleAlert, Download, Laptop, Loader2, MonitorCheck, Plus, ShieldCheck, ShieldOff, Store } from 'lucide-react'
 import * as React from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
 import { PageHeader } from '@/components/page-header'
@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatDateWith, formatNumberWith, msg, t, tServer } from '@/i18n'
 import { getTillKey, makeCsr, newTillKey, saveCertificate, removeTillKey, type AtkEnv } from '@/lib/atk/keys'
 import { toBase64 } from '@/lib/atk/proto'
@@ -25,6 +26,7 @@ import { describeError, unwrap } from '@/lib/errors'
 import { downloadCsv } from '@/lib/export'
 import { supabase } from '@/lib/supabase'
 import { cn, formatDate, todayISO } from '@/lib/utils'
+import { useWarehouses } from '@/features/inventory/api'
 
 type Till = { id: string; code: string; name: string; warehouse_id: string; atk_pos_id: number | null; certified: boolean; cert_env: AtkEnv | null
   cert_at: string | null; cert_by: string | null; device: string | null; public_key: string | null; missing: string[]
@@ -84,7 +86,7 @@ export function AtkPage() {
   const [params] = useSearchParams()
   const focus = params.get('till')
   const device = useDeviceKeys(s?.tills, s?.env)
-  const [registering, setRegistering] = React.useState<Till | null>(null)
+  const [wizard, setWizard] = React.useState<{ till: Till | null } | null>(null)
 
   if (company && company.country_code !== 'XK') {
     return (
@@ -97,16 +99,31 @@ export function AtkPage() {
   return (
     <div className="mx-auto grid max-w-4xl gap-4">
       <PageHeader title={t('Tills at ATK')}
-        description={t('DrisPRO as the fiscal software: each till signs its own receipts with its key and prints the QR code, also without internet. The server sends every coupon to ATK.')}
+        description={t('Make a computer a till in a few steps: choose the till, check, register. The numbers ATK needs are set by the program.')}
         actions={<Button variant="outline" asChild><Link to="/tax/fiscalization">{t('Sent to ATK')}</Link></Button>} />
-      {s && <SwitchCard s={s} />}
-      {s && <BusinessCard s={s} />}
-      {s && <TillsCard s={s} keys={device.keys} focus={focus} onRegister={setRegistering} onForgotten={() => { device.refresh(); void q.refetch() }} />}
-      {s && <CodesCard canEdit={s.can_setup} />}
-      {s && <QueueCard s={s} />}
-      {s && <LogCard />}
-      {registering && s && (
-        <RegisterDialog s={s} till={registering} onClose={(ok) => { setRegistering(null); if (ok) { device.refresh(); void q.refetch() } }} />
+      {s && (
+        <Tabs defaultValue="tills">
+          <TabsList>
+            <TabsTrigger value="tills">{t('Tills|atk')}</TabsTrigger>
+            <TabsTrigger value="settings">{t('Settings')}</TabsTrigger>
+            <TabsTrigger value="codes">{t('Codes|atk')}</TabsTrigger>
+            <TabsTrigger value="sent">{t('Sending|atk')}{s.queue.failed > 0 && <span className="ml-1.5 rounded-full bg-destructive px-1.5 text-[11px] text-destructive-foreground">{s.queue.failed}</span>}</TabsTrigger>
+          </TabsList>
+          <TabsContent value="tills" className="grid gap-4">
+            <ThisDeviceCard s={s} keys={device.keys} onStart={(r) => setWizard({ till: r ?? null })} />
+            <TillsOverview s={s} keys={device.keys} focus={focus} onRegister={(r) => setWizard({ till: r })} />
+            <SwitchCard s={s} />
+          </TabsContent>
+          <TabsContent value="settings" className="grid gap-4">
+            <BusinessCard s={s} />
+            <TillsCard s={s} keys={device.keys} focus={focus} onRegister={(r) => setWizard({ till: r })} onForgotten={() => { device.refresh(); void q.refetch() }} />
+          </TabsContent>
+          <TabsContent value="codes" className="grid gap-4"><CodesCard canEdit={s.can_setup} /></TabsContent>
+          <TabsContent value="sent" className="grid gap-4"><QueueCard s={s} /><LogCard /></TabsContent>
+        </Tabs>
+      )}
+      {wizard && s && (
+        <SetupWizard s={s} keys={device.keys} start={wizard.till} onClose={(ok) => { setWizard(null); if (ok) device.refresh(); void q.refetch() }} />
       )}
     </div>
   )
@@ -501,57 +518,232 @@ function LogCard() {
 }
 
 type Step = 'verify' | 'key' | 'sign' | 'done'
-function RegisterDialog({ s, till, onClose }: { s: Setup; till: Till; onClose: (ok: boolean) => void }) {
-  const [step, setStep] = React.useState<Step | null>(null)
+/* ------------------------------------------------------------------ the easy way: this computer, and the wizard */
+const hereOf = (r: Till, keys: Record<string, string | null>) => !!keys[r.id] && keys[r.id] === r.public_key && r.certified
+
+function ThisDeviceCard({ s, keys, onStart }: { s: Setup; keys: Record<string, string | null>; onStart: (r?: Till) => void }) {
+  const mine = s.tills.filter((r) => hereOf(r, keys))
+  const store = (id: string) => s.stores.find((w) => w.id === id)
+  return (
+    <Card className={cn(mine.length ? 'border-success/40' : 'border-primary/40')}>
+      <CardContent className="flex flex-wrap items-center gap-4 p-5">
+        <span className={cn('flex size-12 shrink-0 items-center justify-center rounded-full', mine.length ? 'bg-success/10 text-success' : 'bg-primary/10 text-primary')}>
+          {mine.length ? <MonitorCheck className="size-6" /> : <Laptop className="size-6" />}</span>
+        <div className="min-w-[14rem] flex-1">
+          <div className="text-base font-semibold">{mine.length ? t('This computer is a till') : t('This computer is not a till yet')}</div>
+          <div className="text-[13px] text-muted-foreground">
+            {mine.length ? mine.map((r) => t('{till} of {store} · ATK number {b}/{p}', { till: r.name, store: store(r.warehouse_id)?.name ?? '', b: store(r.warehouse_id)?.atk_branch_id ?? '–', p: r.atk_pos_id ?? '–' })).join(' · ')
+              : t('Do this on the computer the till sells on. It takes a minute: choose the till, check, register.')}
+          </div>
+        </div>
+        {mine.length ? <Button asChild><Link to={`/pos/till/${mine[0]!.id}`}>{t('Open the till')}</Link></Button>
+          : s.can_register && <Button size="lg" onClick={() => onStart()}><MonitorCheck /> {t('Make this computer a till')}</Button>}
+      </CardContent>
+    </Card>
+  )
+}
+
+function TillsOverview({ s, keys, focus, onRegister }: { s: Setup; keys: Record<string, string | null>; focus: string | null; onRegister: (r: Till) => void }) {
+  return (
+    <Card>
+      <CardHeader><CardTitle>{t('The company\'s tills')}</CardTitle>
+        <CardDescription>{t('Each till is registered on the computer it sells on. A green one is ready; the others are registered from their own computer.')}</CardDescription></CardHeader>
+      <CardContent className="grid gap-2">
+        {!s.tills.length && <p className="text-[13px] text-muted-foreground">{t('No till yet. "Make this computer a till" adds one.')}</p>}
+        {s.tills.map((r) => {
+          const here = hereOf(r, keys)
+          const store = s.stores.find((w) => w.id === r.warehouse_id)
+          const state = here ? 'here' : r.certified && r.cert_env === s.env ? 'other' : 'none'
+          return (
+            <div key={r.id} className={cn('flex flex-wrap items-center gap-3 rounded-lg border px-3 py-2.5', focus === r.id && 'border-primary/50 bg-primary/5')}>
+              <span className={cn('size-2.5 shrink-0 rounded-full', state === 'none' ? 'bg-muted-foreground/40' : 'bg-success')} aria-hidden />
+              <span className="min-w-[10rem] flex-1"><span className="block font-medium">{r.name}</span>
+                <span className="text-[12.5px] text-muted-foreground">{store?.name ?? ''}{r.atk_pos_id ? ` · ${t('ATK number {b}/{p}', { b: store?.atk_branch_id ?? '–', p: r.atk_pos_id })}` : ''}</span></span>
+              <span className="text-[12.5px]">
+                {state === 'here' ? <span className="inline-flex items-center gap-1 font-medium text-success"><CheckCircle2 className="size-3.5" />{t('On this computer')}</span>
+                  : state === 'other' ? <span className="inline-flex items-center gap-1 text-success"><Laptop className="size-3.5" />{t('On {device}', { device: r.device ?? t('another computer') })}</span>
+                  : <span className="text-muted-foreground">{t('Not registered')}</span>}
+              </span>
+              {s.can_register && state !== 'here' && (
+                <Button size="sm" variant={state === 'none' ? 'default' : 'outline'} onClick={() => onRegister(r)}>
+                  {state === 'other' ? t('Move to this computer') : t('Register here')}</Button>
+              )}
+            </div>
+          )
+        })}
+      </CardContent>
+    </Card>
+  )
+}
+
+type Prep = { branch: number; pos: number; env: AtkEnv; replaced: number | null; missing: string[] }
+
+/** Choose the till (or add one) → check what ATK needs → register this computer → done */
+function SetupWizard({ s, keys, start, onClose }: { s: Setup; keys: Record<string, string | null>; start: Till | null; onClose: (ok: boolean) => void }) {
+  const { companyId } = useCompany()
+  const navigate = useNavigate()
+  const warehouses = useWarehouses()
+  const stores = (warehouses.data ?? []).filter((w) => w.is_active && w.warehouse_type !== 'transit')
+  const [page, setPage] = React.useState<'pick' | 'check' | 'run' | 'done'>(start ? 'check' : 'pick')
+  const [tillId, setTillId] = React.useState<string>(start?.id ?? s.tills.find((r) => !hereOf(r, keys) && !r.certified)?.id ?? '')
+  const [adding, setAdding] = React.useState(!s.tills.length)
+  const [newName, setNewName] = React.useState(t('Till {n}', { n: s.tills.length + 1 }))
+  const [newStore, setNewStore] = React.useState('')
+  const [prep, setPrep] = React.useState<Prep | null>(null)
+  const [fiscalNo, setFiscalNo] = React.useState(s.fiscalization_no ?? '')
+  const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
-  const store = s.stores.find((w) => w.id === till.warehouse_id)
-  const run = async () => {
-    setError(null)
+  const [step, setStep] = React.useState<Step | null>(null)
+  const [note, setNote] = React.useState<string | null>(null)
+  const till = s.tills.find((r) => r.id === tillId)
+  const [tillName, setTillName] = React.useState(start?.name ?? '')
+
+  const prepare = async (id: string) => {
+    const p = unwrap(await supabase.rpc('atk_till_prepare', { p_register: id })) as unknown as Prep
+    setPrep(p)
+    if (p.replaced) setNote(t('Number {old} had been used at ATK before; this till takes number {new}.', { old: p.replaced, new: p.pos }))
+    return p
+  }
+  const next = async () => {
+    setError(null); setBusy(true)
     try {
+      let id = tillId
+      if (adding) {
+        const w = newStore || stores[0]?.id
+        if (!w) throw new Error(t('Add a store first'))
+        id = unwrap(await supabase.rpc('atk_till_new', { p_warehouse: w, p_name: newName })) as unknown as string
+        setTillId(id); setTillName(newName); setAdding(false)
+      } else setTillName(till?.name ?? '')
+      if (!id) throw new Error(t('Choose a till'))
+      await prepare(id)
+      setPage('check')
+    } catch (e) { setError(describeError(e)) } finally { setBusy(false) }
+  }
+  React.useEffect(() => { if (start) { setBusy(true); prepare(start.id).catch((e) => setError(describeError(e))).finally(() => setBusy(false)) } }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const saveFiscal = async () => {
+    setError(null); setBusy(true)
+    try {
+      unwrap(await supabase.rpc('atk_settings_save', { p_company: companyId!, p_fiscalization_no: fiscalNo, p_env: s.env }))
+      await prepare(tillId)
+    } catch (e) { setError(describeError(e)) } finally { setBusy(false) }
+  }
+
+  const register = async (again = false): Promise<void> => {
+    setError(null); setPage('run')
+    try {
+      const p = again ? await prepare(tillId) : prep!
+      const storeNo = String(p.branch)
       setStep('verify')
-      const v = unwrap(await supabase.rpc('atk_onboard_verify', { p_register: till.id })) as unknown as string
+      const v = unwrap(await supabase.rpc('atk_onboard_verify', { p_register: tillId })) as unknown as string
       const r1 = await waitJob(v)
       setStep('key')
-      const key = await newTillKey(till.id, s.env, { nui: s.nui ?? '', posId: String(till.atk_pos_id), branchId: String(store?.atk_branch_id), businessName: r1.business_name ?? s.business })
+      const key = await newTillKey(tillId, s.env, { nui: s.nui ?? '', posId: String(p.pos), branchId: storeNo, businessName: r1.business_name ?? s.business })
       const csr = await makeCsr(key)
       setStep('sign')
       const c = unwrap(await supabase.rpc('atk_onboard_csr', { p_verify: v, p_csr: csr, p_public_key: toBase64(key.publicKey), p_device: deviceLabel() })) as unknown as string
       const r2 = await waitJob(c)
       await saveCertificate(key, r2.certificate ?? '')
-      setStep('done')
-    } catch (e) { setError(describeError(e)); setStep(null) }
+      setStep('done'); setPage('done')
+    } catch (e) {
+      // ATK took this till number before: the program gives the next free one and tries once more by itself
+      const msgText = describeError(e)
+      if (!again && /taken|already|give this till number|zënë|jepni kësaj arke/i.test(msgText)) { await register(true); return }
+      setError(msgText); setStep(null)
+    }
   }
+
+  const missing = prep?.missing ?? []
+  const rows: { ok: boolean; label: string; value: React.ReactNode }[] = prep ? [
+    { ok: !missing.includes('country'), label: t('The company is in Kosovo'), value: missing.includes('country') ? t('No') : t('Yes') },
+    { ok: !missing.includes('nui'), label: t('NUI'), value: s.nui || <Link className="text-primary hover:underline" to="/settings/company">{t('Set it in the company settings')}</Link> },
+    { ok: !missing.includes('fiscalization_no'), label: t('Fiscalization number (EDI)'), value: !missing.includes('fiscalization_no') ? (s.fiscalization_no ?? fiscalNo) : s.can_setup ? (
+        <span className="flex gap-2"><Input className="h-8 w-36" value={fiscalNo} onChange={(e) => setFiscalNo(e.target.value.trim())} placeholder={t('e.g. {v}', { v: '81234567' })} />
+          <Button size="sm" disabled={!fiscalNo} loading={busy} onClick={() => void saveFiscal()}>{t('Save')}</Button></span>) : t('Ask the manager to set it') },
+    { ok: !missing.includes('application_id'), label: t('DrisPRO registered at ATK'), value: missing.includes('application_id') ? t('Set by DrisPRO: ask DrisPRO support') : t('Set') },
+    { ok: true, label: t('ATK numbers of this till'), value: t('store {b}, till {p} (given by the program)', { b: prep.branch, p: prep.pos }) },
+    { ok: true, label: t('Environment'), value: s.env === 'production' ? t('Live (fiskalizimi.atk-ks.org)') : t('Test (fiskalizimi-test.atk-ks.org)') },
+  ] : []
   const steps: { id: Step; label: string }[] = [
     { id: 'verify', label: t('ATK checks the business and the numbers') },
     { id: 'key', label: t('This device makes the till\'s key (it never leaves the device)') },
     { id: 'sign', label: t('ATK signs the till\'s certificate') },
   ]
   const at = step ? ['verify', 'key', 'sign', 'done'].indexOf(step) : -1
+  const free = s.tills.filter((r) => !hereOf(r, keys))
   return (
-    <Dialog open onOpenChange={(o) => { if (!o && (step === null || step === 'done')) onClose(step === 'done') }}>
-      <DialogContent className="max-w-md">
+    <Dialog open onOpenChange={(o) => { if (!o && page !== 'run') onClose(page === 'done') }}>
+      <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{t('Register {name} on this device', { name: till.name })}</DialogTitle>
-          <DialogDescription>{t('Do this on the computer, tablet or phone this till sells on. Afterwards only this device signs its receipts.')}
-            {s.env === 'test' ? ` ${t('ATK test environment.')}` : ` ${t('ATK live environment.')}`}</DialogDescription>
+          <DialogTitle>{page === 'done' ? t('Done') : t('Make this computer a till')}</DialogTitle>
+          <DialogDescription>{page === 'pick' ? t('Step 1 of 3: which till is this computer?') : page === 'check' ? t('Step 2 of 3: what ATK needs') : page === 'run' ? t('Step 3 of 3: registering with ATK') : ''}</DialogDescription>
         </DialogHeader>
-        <ol className="grid gap-2 text-[13px]">
-          {steps.map((x, i) => (
-            <li key={x.id} className={cn('flex items-center gap-2', i > at && 'text-muted-foreground')}>
-              {i < at || step === 'done' ? <CheckCircle2 className="size-4 text-success" /> : i === at ? <Loader2 className="size-4 animate-spin text-primary" /> : <span className="size-4 rounded-full border" />}
-              {x.label}
-            </li>
-          ))}
-        </ol>
+
+        {page === 'pick' && (
+          <div className="grid gap-2">
+            {free.map((r) => (
+              <label key={r.id} className={cn('flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5', !adding && tillId === r.id && 'border-primary bg-primary/5')}>
+                <input type="radio" name="till" className="size-4 accent-[hsl(var(--primary))]" checked={!adding && tillId === r.id} onChange={() => { setAdding(false); setTillId(r.id) }} />
+                <span className="flex-1"><span className="block font-medium">{r.name}</span>
+                  <span className="text-[12.5px] text-muted-foreground">{s.stores.find((w) => w.id === r.warehouse_id)?.name ?? ''}{r.certified ? ` · ${t('registered on {device}: it moves to this computer', { device: r.device ?? t('another computer') })}` : ''}</span></span>
+              </label>
+            ))}
+            <label className={cn('grid cursor-pointer gap-2 rounded-lg border px-3 py-2.5', adding && 'border-primary bg-primary/5')}>
+              <span className="flex items-center gap-3"><input type="radio" name="till" className="size-4" checked={adding} onChange={() => setAdding(true)} />
+                <span className="flex items-center gap-1.5 font-medium"><Plus className="size-4" />{t('A new till')}</span></span>
+              {adding && (
+                <span className="grid gap-2 pl-7 sm:grid-cols-2">
+                  <Input value={newName} onChange={(e) => setNewName(e.target.value)} aria-label={t('Name of the till')} placeholder={t('Name of the till')} />
+                  <Select value={newStore || stores[0]?.id || ''} onValueChange={setNewStore}>
+                    <SelectTrigger aria-label={t('Store')}><SelectValue placeholder={t('Store')} /></SelectTrigger>
+                    <SelectContent>{stores.map((w) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </span>
+              )}
+            </label>
+          </div>
+        )}
+
+        {page === 'check' && (
+          prep ? (
+            <div className="grid gap-2">
+              <div className="text-[13px]">{t('Till: {name}', { name: tillName || till?.name || '' })}</div>
+              <ul className="divide-y rounded-lg border">
+                {rows.map((x) => (
+                  <li key={x.label} className="flex items-center gap-3 px-3 py-2 text-[13px]">
+                    {x.ok ? <CheckCircle2 className="size-4 shrink-0 text-success" /> : <CircleAlert className="size-4 shrink-0 text-destructive" />}
+                    <span className="min-w-0 flex-1 text-muted-foreground">{x.label}</span><span className="max-w-[60%] text-right font-medium">{x.value}</span>
+                  </li>
+                ))}
+              </ul>
+              {note && <p className="rounded-md bg-muted px-3 py-2 text-[12.5px]">{note}</p>}
+            </div>
+          ) : <div className="flex items-center gap-2 text-[13px] text-muted-foreground"><Loader2 className="size-4 animate-spin" />{t('Checking…')}</div>
+        )}
+
+        {(page === 'run' || page === 'done') && (
+          <ol className="grid gap-2 text-[13px]">
+            {steps.map((x, i) => (
+              <li key={x.id} className={cn('flex items-center gap-2', i > at && 'text-muted-foreground')}>
+                {i < at || step === 'done' ? <CheckCircle2 className="size-4 text-success" /> : i === at ? <Loader2 className="size-4 animate-spin text-primary" /> : <span className="size-4 rounded-full border" />}
+                {x.label}
+              </li>
+            ))}
+          </ol>
+        )}
+        {page === 'done' && <p className="rounded-md bg-success/10 px-3 py-2 text-[13px] text-success">{t('{name} is registered with ATK. Its receipts are signed on this computer from now on.', { name: tillName || till?.name || '' })}</p>}
+        {note && page !== 'check' && <p className="text-[12.5px] text-muted-foreground">{note}</p>}
         {error && <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-[13px] text-destructive">{error}</p>}
-        {step === 'done' && <p className="rounded-md bg-success/10 px-3 py-2 text-[13px] text-success">{t('{name} is registered with ATK. Its receipts are signed on this device from now on.', { name: till.name })}</p>}
+
         <DialogFooter>
-          {step === 'done' ? <Button onClick={() => onClose(true)}>{t('Done')}</Button> : (
-            <>
-              <Button variant="outline" disabled={step !== null} onClick={() => onClose(false)}>{t('Cancel')}</Button>
-              <Button loading={step !== null} onClick={() => void run()}>{error ? t('Try again') : t('Register')}</Button>
-            </>
-          )}
+          {page === 'pick' && <><Button variant="outline" onClick={() => onClose(false)}>{t('Cancel')}</Button>
+            <Button loading={busy} disabled={!adding && !tillId} onClick={() => void next()}>{t('Next')}</Button></>}
+          {page === 'check' && <><Button variant="outline" onClick={() => (start ? onClose(false) : setPage('pick'))}>{start ? t('Cancel') : t('Back')}</Button>
+            <Button disabled={!prep || missing.length > 0} onClick={() => void register()}><ShieldCheck /> {t('Register this computer')}</Button></>}
+          {page === 'run' && <><Button variant="outline" disabled={!!step} onClick={() => setPage('check')}>{t('Back')}</Button>
+            <Button loading={!!step} disabled={!!step} onClick={() => void register()}>{t('Try again')}</Button></>}
+          {page === 'done' && <><Button variant="outline" onClick={() => onClose(true)}>{t('Close')}</Button>
+            <Button onClick={() => { onClose(true); navigate(`/pos/till/${tillId}`) }}>{t('Open the till')}</Button></>}
         </DialogFooter>
       </DialogContent>
     </Dialog>

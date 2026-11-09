@@ -16820,6 +16820,19 @@ export type Database = {
         }
         Returns: undefined
       }
+      atk_till_new: {
+        Args: {
+          p_warehouse: string
+          p_name: string
+        }
+        Returns: string
+      }
+      atk_till_prepare: {
+        Args: {
+          p_register: string
+        }
+        Returns: Json
+      }
       atk_wait: {
         Args: {
           p_wait_ms?: number
