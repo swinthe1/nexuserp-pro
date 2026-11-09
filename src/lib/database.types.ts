@@ -2968,6 +2968,7 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          record: Json
         }
         Insert: {
           id?: string
@@ -2984,6 +2985,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          record?: Json
         }
         Update: {
           id?: string
@@ -3000,6 +3002,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          record?: Json
         }
         Relationships: [
           { foreignKeyName: "count_sessions_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -3227,6 +3230,7 @@ export type Database = {
           posted_at: string | null
           notes: string | null
           session_id: string | null
+          record: Json
         }
         Insert: {
           id?: string
@@ -3249,6 +3253,7 @@ export type Database = {
           posted_at?: string | null
           notes?: string | null
           session_id?: string | null
+          record?: Json
         }
         Update: {
           id?: string
@@ -3271,6 +3276,7 @@ export type Database = {
           posted_at?: string | null
           notes?: string | null
           session_id?: string | null
+          record?: Json
         }
         Relationships: [
           { foreignKeyName: "cycle_counts_company_id_adjustment_id_fkey"; columns: ["company_id", "adjustment_id"]; isOneToOne: false; referencedRelation: "stock_adjustments"; referencedColumns: ["company_id", "id"] },
@@ -17351,6 +17357,21 @@ export type Database = {
       count_plan: {
         Args: {
           p_company: string
+        }
+        Returns: Json
+      }
+      count_record: {
+        Args: {
+          p_session?: string
+          p_count?: string
+        }
+        Returns: Json
+      }
+      count_record_save: {
+        Args: {
+          p_session: string
+          p_count: string
+          p_record: Json
         }
         Returns: Json
       }

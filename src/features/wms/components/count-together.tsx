@@ -3,7 +3,7 @@
  * The first list that counts an item owns it; the others ADD to it, and every entry is kept: who, how many,
  * where, when. Each person corrects their own entries; a manager any.
  */
-import { Check, ClipboardList, MapPin, Pencil, Play, Trash2, Users, X } from 'lucide-react'
+import { Check, ClipboardList, FileText, MapPin, Pencil, Play, Trash2, Users, X } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -24,6 +24,7 @@ import { cn, formatDate, formatQty, num } from '@/lib/utils'
 import { useWarehouses } from '@/features/inventory/api'
 import { useChangeEntry, useCloseSession, useCountSession, useCountSessions, useJoinSession, useLineEntries, usePostSession, useSessionPeople, useStartSession, useAssignShelves, type CountSessionView, type ElsewhereRow, type ListExtra } from '../api'
 import { ScanShell } from './scan-shell'
+import { CountRecordDialog } from './count-record'
 
 const time = (iso: string) => new Date(iso).toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
 
@@ -104,6 +105,7 @@ export function CountSessionPage() {
   const navigate = useNavigate()
   const [zero, setZero] = React.useState(false)
   const [doneOnly, setDoneOnly] = React.useState(true)
+  const [record, setRecord] = React.useState(false)
   if (q.isError) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />
   if (q.isLoading || !q.data) return <Skeleton className="mx-auto h-96 max-w-3xl" />
   const s = q.data
@@ -128,6 +130,7 @@ export function CountSessionPage() {
             toast.success(tn(r.lists, '{n} list goes to review', '{n} lists go to review'), { description: [r.zero_lines ? tn(r.zero_lines, '{n} item counted as zero', '{n} items counted as zero') : '',
               r.shelves_not_done ? tn(r.shelves_not_done, '{n} shelf with stock was not marked done', '{n} shelves with stock were not marked done') : ''].filter(Boolean).join(' · ') || undefined })
           }} />}
+        {!open && s.status !== 'cancelled' && can('inventory.write') && <Button variant="outline" onClick={() => setRecord(true)}><FileText /> {t('Count record')}</Button>}
         {!open && review > 0 && can('inventory.write') && <ConfirmDialog trigger={<Button>{t('Confirm all differences')}</Button>} title={t('Confirm all differences?')}
           description={t('Each list becomes its stock adjustment (reason: count). Look at the lists first: the shortages that may have been in a cart are marked.')}
           confirmLabel={t('Confirm')} onConfirm={async () => { const r = await post.mutateAsync(s.id); toast.success(tn(r.posted, '{n} list confirmed', '{n} lists confirmed')) }} />}
@@ -138,6 +141,7 @@ export function CountSessionPage() {
         <Stat label={t('Cart time')} value={t('{n} min', { n: s.cart_minutes })} />
       </div>
       {pct != null && <div className="h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} /></div>}
+      {record && <CountRecordDialog target={{ session: s.id }} onClose={() => setRecord(false)} />}
       {!!s.shelves?.length && <ShelvesCard s={s} manage={open && can('inventory.write')} />}
       {!s.lists.length ? <EmptyState compact icon={Users} title={t('Nobody has joined yet')} description={t('Each person opens Stock counts on the phone and presses Count.')} /> : (
         <div className="grid gap-1.5">

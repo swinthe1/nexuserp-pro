@@ -1,5 +1,5 @@
 import { Hint } from '@/components/help'
-import { Check, ClipboardCheck, EyeOff, FileSpreadsheet, MapPin, Plus, Printer } from 'lucide-react'
+import { Check, ClipboardCheck, EyeOff, FileSpreadsheet, FileText, MapPin, Plus, Printer } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -30,6 +30,7 @@ import { QtyDialog, ScanShell, useScanStatus } from '../components/scan-shell'
 import { useCountPlan, useCreateCountDue } from '@/features/inventory/abc'
 import { DailyCountCard } from '@/features/inventory/daily-count'
 import { CountImportDialog, CountReviewPanel, printCountSheet } from '../components/count-tools'
+import { CountRecordDialog } from '../components/count-record'
 import { MoreMenu } from '@/components/more-menu'
 
 /** Count lists and screens refresh when someone else counts, submits or posts */
@@ -167,6 +168,7 @@ export function CountPage() {
   // counting together: the shelves given to me, and "this shelf is done"
   const session = useCountSession(count.data?.session_id ?? undefined)
   const shelfDone = useShelfDone()
+  const [recordOpen, setRecordOpen] = React.useState(false)
   const [entriesFor, setEntriesFor] = React.useState<{ line: string; title: string; variant: string; location: string; lot: string | null } | null>(null)
   const [lastOther, setLastOther] = React.useState<(EntryAnswer & { title: string; variant: string; location: string; lot: string | null }) | null>(null)
   // the item is also kept on another shelf of the unit: say so, so that place is counted too
@@ -245,6 +247,8 @@ export function CountPage() {
         <MoreMenu items={[
           { label: t('Print the count sheet'), icon: Printer, onSelect: () => printCountSheet(c, company?.name ?? '') },
           { label: t('From Excel'), icon: FileSpreadsheet, hidden: !(counting && can('wms.write')), onSelect: () => setImporting(true) },
+          { label: t('Count record'), icon: FileText, hidden: !(can('inventory.write') && (c.status === 'review' || c.status === 'posted')),
+            onSelect: () => setRecordOpen(true) },
         ]} />
         {counting && together && <Button variant="outline" asChild><Link to={`/wms/sessions/${c.session_id}`}>{t('I am done')}</Link></Button>}
         {counting && !together && <Can perm="wms.write"><ConfirmDialog trigger={<Button>{t('Finish counting')}</Button>} title={t('Finish counting?')}
@@ -331,6 +335,7 @@ export function CountPage() {
         {!c.lines.length && <EmptyState title={t('No lines yet')} description={t('Scan a shelf and the items on it.')} compact />}
         {together && <ExtrasList rows={extras.data ?? []} onOpen={(r) => setEntriesFor({ line: r.line_id, title: `${r.sku} · ${r.name}`, variant: r.variant_id, location: r.location_id, lot: r.lot_id })} />}
       </div>
+      {recordOpen && <CountRecordDialog target={c.session_id ? { session: c.session_id } : { count: c.id }} onClose={() => setRecordOpen(false)} />}
       {entriesFor && <EntriesDialog line={entriesFor.line} title={entriesFor.title} onClose={() => setEntriesFor(null)} canAdd={counting && !!entriesFor.variant}
         onAdd={async (q) => {
           const at = places.find((p) => p.id === entriesFor.location)
