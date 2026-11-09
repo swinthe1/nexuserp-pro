@@ -97,6 +97,9 @@ const PickingPage = lazy(() => import('@/features/wms/pages/flow-pages'), 'Picki
 const ShippingPage = lazy(() => import('@/features/wms/pages/flow-pages'), 'ShippingPage')
 const MovePage = lazy(() => import('@/features/wms/pages/move-page'), 'MovePage')
 const WastePage = lazy(() => import('@/features/wms/pages/waste-page'), 'WastePage')
+const SendListPage = lazy(() => import('@/features/wms/pages/transfer-floor'), 'SendListPage')
+const PackPage = lazy(() => import('@/features/wms/pages/transfer-floor'), 'PackPage')
+const BlindReceivePage = lazy(() => import('@/features/wms/pages/transfer-floor'), 'BlindReceivePage')
 const OutputsPage = lazy(() => import('@/features/inventory/pages/outputs-page'), 'OutputsPage')
 const WasteReportPage = lazy(() => import('@/features/inventory/pages/waste-report-page'), 'WasteReportPage')
 const BalancingPage = lazy(() => import('@/features/inventory/pages/balancing-page'), 'BalancingPage')
@@ -382,6 +385,9 @@ const appRoutes: RouteObject[] = [
         { path: 'tasks/:id', element: <TaskPage /> },
         { path: 'move', element: <MovePage /> },
         { path: 'waste', element: <WastePage /> },
+        { path: 'send', element: <SendListPage /> },
+        { path: 'send/:id', element: <PackPage /> },
+        { path: 'transfer-in/:id', element: <BlindReceivePage /> },
         { path: 'counts', element: <CountsPage /> },
         { path: 'counts/:id', element: <CountPage /> },
         { path: 'sessions/:id', element: <CountSessionPage /> },

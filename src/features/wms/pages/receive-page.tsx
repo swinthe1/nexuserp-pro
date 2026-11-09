@@ -28,9 +28,9 @@ function useIncomingTransfers() {
   const { companyId } = useCompany()
   return useQuery({
     queryKey: ['inv', companyId, 'incoming-transfers'], enabled: !!companyId,
-    queryFn: async () => unwrap(await supabase.from('stock_transfers').select('id, number, shipped_at, from_wh:warehouses!stock_transfers_company_id_from_warehouse_id_fkey(name), to_wh:warehouses!stock_transfers_company_id_to_warehouse_id_fkey(id, name), lines:stock_transfer_lines(quantity_done)')
+    queryFn: async () => unwrap(await supabase.from('stock_transfers').select('id, number, shipped_at, from_wh:warehouses!stock_transfers_company_id_from_warehouse_id_fkey(name), to_wh:warehouses!stock_transfers_company_id_to_warehouse_id_fkey(id, name), lines:stock_transfer_lines(id)')
       .eq('company_id', companyId!).eq('status', 'in_transit').is('deleted_at', null).order('shipped_at').limit(100)) as unknown as
-      { id: string; number: string; shipped_at: string | null; from_wh: { name: string } | null; to_wh: { id: string; name: string } | null; lines: { quantity_done: number }[] }[],
+      { id: string; number: string; shipped_at: string | null; from_wh: { name: string } | null; to_wh: { id: string; name: string } | null; lines: { id: string }[] }[],
   })
 }
 
@@ -59,10 +59,11 @@ export function ReceiveListPage() {
         <div className="grid gap-2">
           <div className="text-[13px] font-medium text-muted-foreground">{t('Goods waiting to be received from other units')}</div>
           {transfers.map((x) => (
-            <Link key={x.id} to={`/inventory/transfers/${x.id}`} className="flex items-center justify-between gap-3 rounded-xl border border-primary/40 bg-primary/5 p-4 hover:border-primary">
+            <Link key={x.id} to={`/wms/transfer-in/${x.id}`} className="flex items-center justify-between gap-3 rounded-xl border border-primary/40 bg-primary/5 p-4 hover:border-primary">
               <div className="min-w-0"><div className="font-semibold">{td(x.from_wh?.name ?? '')} → {td(x.to_wh?.name ?? '')}</div>
                 <div className="text-[13px] text-muted-foreground">{x.number}{x.shipped_at ? ` · ${t('shipped {date}', { date: formatDate(x.shipped_at, true) })}` : ''}</div></div>
-              <div className="text-right text-[13px] font-medium tabular">{t('{n} units', { n: formatQty(x.lines.reduce((a, l) => a + Number(l.quantity_done), 0)) })}</div>
+              {/* the receiver counts blind: the number of items, never the quantities sent */}
+              <div className="text-right text-[13px] font-medium tabular">{tn(x.lines.length, '{n} item', '{n} items')}</div>
             </Link>
           ))}
         </div>

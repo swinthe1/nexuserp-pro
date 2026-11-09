@@ -1,4 +1,4 @@
-import { ArrowLeftRight, ClipboardCheck, ScanSearch, Hourglass, PackageCheck, PackageOpen, ShoppingBasket, Trash2, Truck, type LucideIcon } from 'lucide-react'
+import { ArrowLeftRight, ClipboardCheck, ScanSearch, Hourglass, PackageCheck, PackageOpen, Send, ShoppingBasket, Trash2, Truck, type LucideIcon } from 'lucide-react'
 import { useTabActive } from '@/components/layout/work-tabs'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -35,6 +35,7 @@ export function WmsHomePage() {
       hint: d?.expired ? tn(d.expired, '{n} expired lot still in stock', '{n} expired lots still in stock') : t('{n} expiring within 30 days', { n: d?.expiring_30 ?? 0 }), tone: d?.expired ? 'bad' : d?.expiring_30 ? 'warn' : undefined },
     { key: '8', href: '/inventory/check', title: t('Check item'), icon: ScanSearch, hint: t('How much every store has, and where to take it from') },
     { key: '9', href: '/wms/waste', title: t('Thrown away|scanner'), icon: Trash2, hint: t('Fruit, vegetables, bread: scan, weigh, send') },
+    { key: '0', href: '/wms/send', title: t('Send goods'), icon: Send, hint: t('To another unit: scan, then ship') },
   ]
   const front = useTabActive()
   React.useEffect(() => {
@@ -42,7 +43,7 @@ export function WmsHomePage() {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement
       if (e.metaKey || e.ctrlKey || e.altKey || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || document.querySelector('[role=dialog]')) return
-      const href = ['/wms/receive', '/wms/putaway', '/wms/picking', '/wms/shipping', '/wms/move', '/wms/counts', '/wms/lots', '/inventory/check', '/wms/waste'][Number(e.key) - 1]
+      const href = e.key === '0' ? '/wms/send' : ['/wms/receive', '/wms/putaway', '/wms/picking', '/wms/shipping', '/wms/move', '/wms/counts', '/wms/lots', '/inventory/check', '/wms/waste'][Number(e.key) - 1]
       if (href) { e.preventDefault(); navigate(href) }
     }
     window.addEventListener('keydown', onKey)
@@ -52,7 +53,7 @@ export function WmsHomePage() {
 
   return (
     <>
-      <PageHeader title={t('Warehouse floor')} description={t('Scanning screens for the warehouse. Keys 1–9 open a screen; each works with a scanner, a phone camera or the keyboard.')}
+      <PageHeader title={t('Warehouse floor')} description={t('Scanning screens for the warehouse. Keys 0–9 open a screen; each works with a scanner, a phone camera or the keyboard.')}
         actions={<Select value={wh ?? 'all'} onValueChange={(v) => { const x = v === 'all' ? null : v; setWh(x); try { if (x) localStorage.setItem(WH_KEY, x); else localStorage.removeItem(WH_KEY) } catch { /* ignore */ } }}>
           <SelectTrigger className="w-[220px]" aria-label={t('Warehouse')}><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="all">{t('All warehouses')}</SelectItem>{(warehouses.data ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{td(w.name)}</SelectItem>)}</SelectContent>

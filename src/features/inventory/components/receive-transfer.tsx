@@ -1,7 +1,8 @@
 import { PackageCheck, ScanLine, Truck } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
-import { Can } from '@/app/company-provider'
+import { Can, useCompany } from '@/app/company-provider'
+import { Link } from 'react-router-dom'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -28,7 +29,10 @@ export function ReceiveTransferCard({ doc }: { doc: Doc }) {
   const variants = useVariantOptions()
   const barcodes = useBarcodesOf(doc.lines.map((l) => l.variant_id))
   const receive = useReceiveTransfer()
-  const [got, setGot] = React.useState<Record<string, string>>(() => Object.fromEntries(doc.lines.map((l) => [l.id, String(num(l.quantity_done))])))
+  const { can } = useCompany()
+  // what the receiving unit counted blind, when it did: the manager starts from that
+  const counted = doc.lines.some((l) => l.quantity_counted != null)
+  const [got, setGot] = React.useState<Record<string, string>>(() => Object.fromEntries(doc.lines.map((l) => [l.id, String(num(counted ? l.quantity_counted : l.quantity_done))])))
   const [action, setAction] = React.useState<Record<string, 'loss' | 'return'>>({})
   const [note, setNote] = React.useState('')
   const [scan, setScan] = React.useState('')
@@ -69,6 +73,16 @@ export function ReceiveTransferCard({ doc }: { doc: Doc }) {
     else toast.success(t('Received in full'))
   }
 
+  // the floor receives blind, on the scanner; the manager decides here
+  if (receiving && !can('inventory.write')) {
+    return (
+      <Card className="mt-4">
+        <CardHeader><CardTitle className="flex items-center gap-2"><Truck className="size-4 text-muted-foreground" />{t('On the road — count what arrived')}</CardTitle>
+          <CardDescription>{t('Count the goods on the scanner, without the quantities sent; when everything agrees they are received at once.')}</CardDescription></CardHeader>
+        <CardContent><Button asChild><Link to={`/wms/transfer-in/${doc.id}`}><ScanLine /> {t('Count on the scanner')}</Link></Button></CardContent>
+      </Card>
+    )
+  }
   return (
     <Card className="mt-4">
       <CardHeader className="flex-row flex-wrap items-start justify-between gap-4 space-y-0">
@@ -96,10 +110,16 @@ export function ReceiveTransferCard({ doc }: { doc: Doc }) {
         )}
       </CardHeader>
       <CardContent className="grid gap-4">
+        {receiving && doc.receive_state === 'differences' && (
+          <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-[13px]">
+            {t('The receiving unit counted twice, blind, and found differences. Its count is filled in below: check the lines that differ and say what happens to the missing units.')}
+          </div>
+        )}
         <Table>
           <TableHeader><TableRow className="hover:bg-transparent">
             <TableHead className="min-w-[220px]">{t('Product')}</TableHead>
             <TableHead className="w-28 text-right">{t('Shipped')}</TableHead>
+            {counted && <TableHead className="w-28 text-right">{t('Counted on arrival')}</TableHead>}
             <TableHead className="w-32 text-right">{t('Received|transfer')}</TableHead>
             <TableHead className="w-28 text-right">{t('Difference')}</TableHead>
             <TableHead className="min-w-[200px]">{t('Missing units')}</TableHead>
@@ -115,6 +135,7 @@ export function ReceiveTransferCard({ doc }: { doc: Doc }) {
                     <div className="text-xs text-muted-foreground">{v?.sku}</div>
                   </TableCell>
                   <TableCell className="text-right tabular">{formatQty(shipped(l))}</TableCell>
+                  {counted && <TableCell className="text-right tabular text-muted-foreground">{l.quantity_counted == null ? '—' : formatQty(l.quantity_counted)}</TableCell>}
                   <TableCell className="text-right">
                     {receiving
                       ? <Input type="number" min="0" step="any" value={got[l.id] ?? ''} onChange={(e) => setGot((g) => ({ ...g, [l.id]: e.target.value }))}

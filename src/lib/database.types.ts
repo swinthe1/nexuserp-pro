@@ -13162,6 +13162,10 @@ export type Database = {
           updated_by: string | null
           quantity_received: number | null
           difference_action: string | null
+          quantity_counted: number | null
+          counted_by: string | null
+          counted_at: string | null
+          recount: boolean
         }
         Insert: {
           id?: string
@@ -13179,6 +13183,10 @@ export type Database = {
           updated_by?: string | null
           quantity_received?: number | null
           difference_action?: string | null
+          quantity_counted?: number | null
+          counted_by?: string | null
+          counted_at?: string | null
+          recount?: boolean
         }
         Update: {
           id?: string
@@ -13196,6 +13204,10 @@ export type Database = {
           updated_by?: string | null
           quantity_received?: number | null
           difference_action?: string | null
+          quantity_counted?: number | null
+          counted_by?: string | null
+          counted_at?: string | null
+          recount?: boolean
         }
         Relationships: [
           { foreignKeyName: "stock_transfer_lines_company_id_from_location_id_fkey"; columns: ["company_id", "from_location_id"]; isOneToOne: false; referencedRelation: "warehouse_locations"; referencedColumns: ["company_id", "id"] },
@@ -13203,6 +13215,7 @@ export type Database = {
           { foreignKeyName: "stock_transfer_lines_company_id_to_location_id_fkey"; columns: ["company_id", "to_location_id"]; isOneToOne: false; referencedRelation: "warehouse_locations"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "stock_transfer_lines_company_id_transfer_id_fkey"; columns: ["company_id", "transfer_id"]; isOneToOne: false; referencedRelation: "stock_transfers"; referencedColumns: ["company_id", "id"] },
           { foreignKeyName: "stock_transfer_lines_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "stock_transfer_lines_counted_by_fkey"; columns: ["counted_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
         ]
       }
       stock_transfers: {
@@ -13230,6 +13243,8 @@ export type Database = {
           has_difference: boolean
           receive_note: string | null
           picked_at: string | null
+          receive_rounds: number
+          receive_state: string | null
         }
         Insert: {
           id?: string
@@ -13255,6 +13270,8 @@ export type Database = {
           has_difference?: boolean
           receive_note?: string | null
           picked_at?: string | null
+          receive_rounds?: number
+          receive_state?: string | null
         }
         Update: {
           id?: string
@@ -13280,6 +13297,8 @@ export type Database = {
           has_difference?: boolean
           receive_note?: string | null
           picked_at?: string | null
+          receive_rounds?: number
+          receive_state?: string | null
         }
         Relationships: [
           { foreignKeyName: "stock_transfers_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -21178,6 +21197,40 @@ export type Database = {
           p_company: string
         }
         Returns: { user_id: string | null; lessons: string[] | null; last_at: string | null }[]
+      }
+      transfer_count_add: {
+        Args: {
+          p_transfer: string
+          p_variant: string
+          p_qty: number
+          p_lot?: string
+          p_set?: boolean
+        }
+        Returns: Json
+      }
+      transfer_pack_add: {
+        Args: {
+          p_transfer: string
+          p_variant: string
+          p_qty: number
+          p_lot?: string
+          p_set?: boolean
+        }
+        Returns: Json
+      }
+      transfer_pack_start: {
+        Args: {
+          p_from: string
+          p_to: string
+          p_note?: string
+        }
+        Returns: string
+      }
+      transfer_receive_blind: {
+        Args: {
+          p_transfer: string
+        }
+        Returns: Json
       }
       transfers_on_the_road: {
         Args: {

@@ -916,4 +916,8 @@ export default {
   "Shelves are marked done only when counting together": "Raftet shënohen si të mbaruara vetëm në numërimin e përbashkët",
   "At most 12 people in the commission": "Komisioni ka më së shumti 12 veta",
   "Give a counting session or a count": "Jepni një numërim të përbashkët ose një numërim",
+  "Choose another unit to send to": "Zgjidhni një njësi tjetër ku të dërgohet",
+  "Both units need a shelf where goods are kept": "Të dyja njësitë duhet të kenë një raft ku mbahet malli",
+  "This item is not on the transfer: put it aside and tell the manager": "Ky artikull nuk është në transfer: lëreni mënjanë dhe njoftoni menaxherin",
+  "This transfer waits for the manager: it was counted twice with differences": "Ky transfer pret menaxherin: u numërua dy herë me dallime",
 } satisfies Dict
