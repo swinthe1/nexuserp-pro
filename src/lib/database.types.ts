@@ -2904,6 +2904,54 @@ export type Database = {
           { foreignKeyName: "cost_layers_company_id_variant_id_fkey"; columns: ["company_id", "variant_id"]; isOneToOne: false; referencedRelation: "product_variants"; referencedColumns: ["company_id", "id"] },
         ]
       }
+      count_session_shelves: {
+        Row: {
+          id: string
+          company_id: string
+          session_id: string
+          location_id: string
+          assigned_to: string | null
+          done_at: string | null
+          done_by: string | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          session_id: string
+          location_id: string
+          assigned_to?: string | null
+          done_at?: string | null
+          done_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          session_id?: string
+          location_id?: string
+          assigned_to?: string | null
+          done_at?: string | null
+          done_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "count_session_shelves_assigned_to_fkey"; columns: ["assigned_to"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "count_session_shelves_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "count_session_shelves_company_id_location_id_fkey"; columns: ["company_id", "location_id"]; isOneToOne: false; referencedRelation: "warehouse_locations"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "count_session_shelves_company_id_session_id_fkey"; columns: ["company_id", "session_id"]; isOneToOne: false; referencedRelation: "count_sessions"; referencedColumns: ["company_id", "id"] },
+          { foreignKeyName: "count_session_shelves_done_by_fkey"; columns: ["done_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
       count_sessions: {
         Row: {
           id: string
@@ -17330,10 +17378,19 @@ export type Database = {
         }
         Returns: Json
       }
+      count_session_assign: {
+        Args: {
+          p_session: string
+          p_locations: string[]
+          p_person: string
+        }
+        Returns: number
+      }
       count_session_close: {
         Args: {
           p_session: string
           p_zero_uncounted?: boolean
+          p_zero_done_only?: boolean
         }
         Returns: Json
       }
@@ -17342,6 +17399,12 @@ export type Database = {
           p_session: string
         }
         Returns: string
+      }
+      count_session_people: {
+        Args: {
+          p_session: string
+        }
+        Returns: Json
       }
       count_session_post: {
         Args: {
@@ -17360,6 +17423,14 @@ export type Database = {
       count_session_view: {
         Args: {
           p_session: string
+        }
+        Returns: Json
+      }
+      count_shelf_done: {
+        Args: {
+          p_count: string
+          p_location: string
+          p_done?: boolean
         }
         Returns: Json
       }

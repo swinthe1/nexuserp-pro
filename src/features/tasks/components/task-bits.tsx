@@ -71,6 +71,7 @@ export function entityHref(type: string | null, id: string | null, label: string
     case 'hotel_reservations': return '/hotel/reservations'
     case 'cycle_counts': return id ? `/wms/counts/${id}` : '/wms/counts'
     case 'loss_watch': return '/inventory/loss-watch'
+    case 'count_sessions': return id ? `/wms/sessions/${id}` : '/wms/counts'
     default: return null
   }
 }
@@ -78,5 +79,5 @@ export const ENTITY_LABEL: Record<string, string> = {
   sales_invoices: msg('Invoice'), business_partners: msg('Customer or vendor'), pos_sessions: msg('Till shift'), employment_contracts: msg('Contract'),
   employees: msg('Employee'), lots: msg('Lot'), leads: msg('Lead'), products: msg('Product'), product_variants: msg('Product'),
   purchase_orders: msg('Purchase order'), vendor_bills: msg('Vendor bill'), sales_orders: msg('Sales order'),
-  sales_quotes: msg('Quote'), goods_receipts: msg('Goods receipt'), approval_requests: msg('Approval'), hotel_reservations: msg('Reservation'), cycle_counts: msg('Stock count'), loss_watch: msg('Loss watch'),
+  sales_quotes: msg('Quote'), goods_receipts: msg('Goods receipt'), approval_requests: msg('Approval'), hotel_reservations: msg('Reservation'), cycle_counts: msg('Stock count'), loss_watch: msg('Loss watch'), count_sessions: msg('Counting together'),
 }

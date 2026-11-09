@@ -1,5 +1,5 @@
 import { Hint } from '@/components/help'
-import { ClipboardCheck, EyeOff, FileSpreadsheet, MapPin, Plus, Printer } from 'lucide-react'
+import { Check, ClipboardCheck, EyeOff, FileSpreadsheet, MapPin, Plus, Printer } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -24,7 +24,7 @@ import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { t, td, tn } from '@/i18n'
 import { cn, formatDate, formatMoney, formatQty, humanize, num } from '@/lib/utils'
 import { useCategories, useLocations, useWarehouses, type LocationRow } from '@/features/inventory/api'
-import { fetchItemElsewhere, useCount, useCountEntry, useCountItem, useCountReview, useCounts, useCreateCount, useListExtras, usePostCount, useResolveCode, useSubmitCount, wmsKeys, type CountLine, type ElsewhereRow, type EntryAnswer } from '../api'
+import { fetchItemElsewhere, useCount, useCountEntry, useCountSession, useShelfDone, useCountItem, useCountReview, useCounts, useCreateCount, useListExtras, usePostCount, useResolveCode, useSubmitCount, wmsKeys, type CountLine, type ElsewhereRow, type EntryAnswer } from '../api'
 import { ElsewhereCard, EntriesDialog, ExtrasList, SessionsCard } from '../components/count-together'
 import { QtyDialog, ScanShell, useScanStatus } from '../components/scan-shell'
 import { useCountPlan, useCreateCountDue } from '@/features/inventory/abc'
@@ -164,6 +164,9 @@ export function CountPage() {
   const countEntry = useCountEntry()
   const together = !!count.data?.session_id
   const extras = useListExtras(id, together && count.data?.status === 'in_progress')
+  // counting together: the shelves given to me, and "this shelf is done"
+  const session = useCountSession(count.data?.session_id ?? undefined)
+  const shelfDone = useShelfDone()
   const [entriesFor, setEntriesFor] = React.useState<{ line: string; title: string; variant: string; location: string; lot: string | null } | null>(null)
   const [lastOther, setLastOther] = React.useState<(EntryAnswer & { title: string; variant: string; location: string; lot: string | null }) | null>(null)
   // the item is also kept on another shelf of the unit: say so, so that place is counted too
@@ -262,7 +265,36 @@ export function CountPage() {
       {counting && <>
         <ScanInput onScan={onScan} placeholder={bin ? t('Counting {code}: scan items, or another shelf', { code: bin.code })
           : onlyPlace ? t('Scan the items one by one: no shelf label needed') : t('Scan a shelf label, or an item already on the list')} status={st.status} />
-        {bin && <div className="flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 font-mono text-lg font-semibold"><MapPin className="size-5 text-primary" />{bin.code}</div>}
+        {bin && (() => {
+          const shelf = together ? session.data?.shelves?.find((x) => x.location_id === bin.id) : undefined
+          return (
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2">
+              <span className="flex flex-1 items-center gap-2 font-mono text-lg font-semibold"><MapPin className="size-5 text-primary" />{bin.code}</span>
+              {together && (shelf?.done
+                ? <><span className="flex items-center gap-1 text-[13px] font-medium text-success"><Check className="size-4" />{t('Shelf done')}</span>
+                    <Button size="sm" variant="ghost" loading={shelfDone.isPending} onClick={() => void shelfDone.mutateAsync({ count: c.id, location: bin.id, done: false })}>{t('Not done after all')}</Button></>
+                : <Button size="sm" loading={shelfDone.isPending} onClick={async () => {
+                    await shelfDone.mutateAsync({ count: c.id, location: bin.id, done: true })
+                    st.ok(t('{code} is done: scan the next shelf', { code: bin.code })); setBin(null)
+                  }}><Check /> {t('Shelf done')}</Button>)}
+            </div>
+          )
+        })()}
+        {together && (() => {
+          const mine = (session.data?.shelves ?? []).filter((x) => x.person_id === user?.id)
+          if (!mine.length) return null
+          return (
+            <div className="flex flex-wrap items-center gap-1.5 text-[13px]">
+              <span className="text-muted-foreground">{t('Your shelves:')}</span>
+              {mine.map((x) => (
+                <button key={x.location_id} type="button" onClick={() => { const l = places.find((p) => p.id === x.location_id); if (l) setBin(l) }}
+                  className={cn('flex items-center gap-1 rounded-md border px-2 py-0.5 font-mono text-[12.5px]', x.done ? 'border-success/40 bg-success/10 text-success' : 'hover:border-primary/50', bin?.id === x.location_id && 'ring-2 ring-primary/40')}>
+                  {x.done && <Check className="size-3.5" />}{x.code}
+                </button>
+              ))}
+            </div>
+          )
+        })()}
         {together && <p className="text-[12.5px] text-muted-foreground">{t('Each scan adds one piece (a pack adds its pieces). To write a quantity, tap the item. An item someone counted before you goes onto their list, and your quantity is added to it.')}</p>}
         {lastOther && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2">

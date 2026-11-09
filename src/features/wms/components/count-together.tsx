@@ -3,7 +3,7 @@
  * The first list that counts an item owns it; the others ADD to it, and every entry is kept: who, how many,
  * where, when. Each person corrects their own entries; a manager any.
  */
-import { ClipboardList, MapPin, Pencil, Play, Trash2, Users, X } from 'lucide-react'
+import { Check, ClipboardList, MapPin, Pencil, Play, Trash2, Users, X } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -22,7 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { t, td, tn } from '@/i18n'
 import { cn, formatDate, formatQty, num } from '@/lib/utils'
 import { useWarehouses } from '@/features/inventory/api'
-import { useChangeEntry, useCloseSession, useCountSession, useCountSessions, useJoinSession, useLineEntries, usePostSession, useStartSession, type ElsewhereRow, type ListExtra } from '../api'
+import { useChangeEntry, useCloseSession, useCountSession, useCountSessions, useJoinSession, useLineEntries, usePostSession, useSessionPeople, useStartSession, useAssignShelves, type CountSessionView, type ElsewhereRow, type ListExtra } from '../api'
 import { ScanShell } from './scan-shell'
 
 const time = (iso: string) => new Date(iso).toLocaleTimeString('sq-AL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
@@ -103,12 +103,14 @@ export function CountSessionPage() {
   const post = usePostSession()
   const navigate = useNavigate()
   const [zero, setZero] = React.useState(false)
+  const [doneOnly, setDoneOnly] = React.useState(true)
   if (q.isError) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />
   if (q.isLoading || !q.data) return <Skeleton className="mx-auto h-96 max-w-3xl" />
   const s = q.data
   const open = s.status === 'open'
   const review = s.lists.filter((l) => l.status === 'review').length
   const pct = s.in_stock ? Math.min(100, Math.round((s.items / s.in_stock) * 100)) : null
+  const doneShelves = (s.shelves ?? []).filter((x) => x.done).length
   return (
     <ScanShell title={s.name} back={{ href: '/wms/counts', label: t('Stock counts') }}
       meta={<><StatusBadge status={s.status} /><span className="text-[13px] text-muted-foreground">{td(s.warehouse)} · {t('since {time}', { time: formatDate(s.started_at, true) })}</span></>}
@@ -118,10 +120,13 @@ export function CountSessionPage() {
         {open && can('inventory.write') && <ConfirmDialog trigger={<Button>{t('Close the counting')}</Button>} title={t('Close the counting?')}
           description={<span className="grid gap-3"><span>{t('Nobody can add after this. Every list goes to review, where the differences are confirmed.')}</span>
             <label className="flex items-start gap-2"><Checkbox className="mt-0.5" checked={zero} onCheckedChange={(v) => setZero(!!v)} />
-              <span>{t('Count as zero the items with stock that nobody found (the whole unit was counted)')}</span></label></span>}
+              <span>{t('Count as zero the items with stock that nobody found')}</span></label>
+            {zero && <label className="ml-6 flex items-start gap-2"><Checkbox className="mt-0.5" checked={doneOnly} onCheckedChange={(v) => setDoneOnly(!!v)} />
+              <span>{doneShelves ? tn(doneShelves, 'Only on the {n} shelf marked done', 'Only on the {n} shelves marked done') : t('Only on the shelves marked done (none is marked yet)')}</span></label>}</span>}
           confirmLabel={t('Close')} onConfirm={async () => {
-            const r = await close.mutateAsync({ session: s.id, zero })
-            toast.success(tn(r.lists, '{n} list goes to review', '{n} lists go to review'), { description: r.zero_lines ? tn(r.zero_lines, '{n} item counted as zero', '{n} items counted as zero') : undefined })
+            const r = await close.mutateAsync({ session: s.id, zero, doneOnly: zero && doneOnly })
+            toast.success(tn(r.lists, '{n} list goes to review', '{n} lists go to review'), { description: [r.zero_lines ? tn(r.zero_lines, '{n} item counted as zero', '{n} items counted as zero') : '',
+              r.shelves_not_done ? tn(r.shelves_not_done, '{n} shelf with stock was not marked done', '{n} shelves with stock were not marked done') : ''].filter(Boolean).join(' · ') || undefined })
           }} />}
         {!open && review > 0 && can('inventory.write') && <ConfirmDialog trigger={<Button>{t('Confirm all differences')}</Button>} title={t('Confirm all differences?')}
           description={t('Each list becomes its stock adjustment (reason: count). Look at the lists first: the shortages that may have been in a cart are marked.')}
@@ -133,6 +138,7 @@ export function CountSessionPage() {
         <Stat label={t('Cart time')} value={t('{n} min', { n: s.cart_minutes })} />
       </div>
       {pct != null && <div className="h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} /></div>}
+      {!!s.shelves?.length && <ShelvesCard s={s} manage={open && can('inventory.write')} />}
       {!s.lists.length ? <EmptyState compact icon={Users} title={t('Nobody has joined yet')} description={t('Each person opens Stock counts on the phone and presses Count.')} /> : (
         <div className="grid gap-1.5">
           {s.lists.map((l) => (
@@ -148,6 +154,54 @@ export function CountSessionPage() {
     </ScanShell>
   )
 }
+/* ------------------------------------------------------------------ the unit shelf by shelf: whose, how far, done */
+function ShelvesCard({ s, manage }: { s: CountSessionView; manage: boolean }) {
+  const people = useSessionPeople(s.id, manage)
+  const assign = useAssignShelves()
+  const [picked, setPicked] = React.useState<string[]>([])
+  const [person, setPerson] = React.useState('')
+  const shelves = s.shelves ?? []
+  const done = shelves.filter((x) => x.done).length
+  const give = async (to: string | null) => {
+    const n = await assign.mutateAsync({ session: s.id, locations: picked, person: to })
+    toast.success(to ? tn(n, '{n} shelf given', '{n} shelves given') : tn(n, '{n} shelf taken back', '{n} shelves taken back'))
+    setPicked([])
+  }
+  return (
+    <div className="grid gap-2 rounded-xl border bg-card p-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <span className="font-medium">{t('Shelves')}</span>
+        <span className="text-[12.5px] text-muted-foreground">{t('{done} of {total} done', { done, total: shelves.length })}</span>
+      </div>
+      <ul className="max-h-72 divide-y overflow-y-auto rounded-md border text-[13px]">
+        {shelves.map((x) => (
+          <li key={x.location_id}><label className={cn('flex items-center gap-2 px-2.5 py-1.5', manage && 'cursor-pointer hover:bg-muted/40')}>
+            {manage && <Checkbox checked={picked.includes(x.location_id)} aria-label={x.code}
+              onCheckedChange={(v) => setPicked((p) => v === true ? [...p, x.location_id] : p.filter((y) => y !== x.location_id))} />}
+            <span className="w-28 shrink-0 font-mono font-semibold">{x.code}</span>
+            <span className="min-w-0 flex-1 truncate text-muted-foreground">{x.person ?? t('nobody yet')}</span>
+            <span className="shrink-0 tabular text-muted-foreground">{x.with_stock != null ? `${x.counted}/${x.with_stock}` : tn(x.counted, '{n} item', '{n} items')}</span>
+            <span className={cn('flex w-24 shrink-0 items-center justify-end gap-1 text-[12px]', x.done ? 'font-medium text-success' : 'text-muted-foreground')}
+              title={x.done && x.done_by ? t('Done by {name}', { name: x.done_by }) : undefined}>
+              {x.done ? <><Check className="size-3.5" />{t('done')}</> : t('not done')}</span>
+          </label></li>
+        ))}
+      </ul>
+      {manage && (
+        <div className="flex flex-wrap items-center gap-2 text-[13px]">
+          <span className="text-muted-foreground">{picked.length ? tn(picked.length, '{n} shelf chosen: give it to', '{n} shelves chosen: give them to') : t('Choose shelves to give them to a person')}</span>
+          <Select value={person} onValueChange={setPerson} disabled={!picked.length}>
+            <SelectTrigger className="h-8 w-auto min-w-44"><SelectValue placeholder={t('Choose a person')} /></SelectTrigger>
+            <SelectContent>{(people.data ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+          </Select>
+          <Button size="sm" disabled={!picked.length || !person} loading={assign.isPending} onClick={() => void give(person)}>{t('Give')}</Button>
+          {!!picked.length && <Button size="sm" variant="ghost" onClick={() => void give(null)}>{t('Take back')}</Button>}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return <div className="rounded-xl border bg-card p-3"><div className="text-[12px] text-muted-foreground">{label}</div><div className="text-xl font-semibold tabular">{value}</div>{hint && <div className="text-[11.5px] text-muted-foreground">{hint}</div>}</div>
 }

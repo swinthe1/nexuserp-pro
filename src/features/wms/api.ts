@@ -369,7 +369,11 @@ export function useCountSessions() {
 }
 export type CountSessionView = { id: string; name: string; status: string; warehouse_id: string; warehouse: string; cart_minutes: number; started_at: string
   closed_at: string | null; mine: string | null; items: number; in_stock: number
-  lists: { id: string; number: string; status: string; person: string | null; items: number; entries: number; last_at: string | null }[] }
+  lists: { id: string; number: string; status: string; person: string | null; items: number; entries: number; last_at: string | null }[]
+  shelves: SessionShelf[] }
+/** A shelf of the unit in a counting session: whose it is, how many items were counted there, whether it is done. with_stock: managers only. */
+export type SessionShelf = { location_id: string; code: string; name: string; person_id: string | null; person: string | null
+  done: boolean; done_at: string | null; done_by: string | null; counted: number; with_stock: number | null }
 export function useCountSession(id: string | undefined) {
   const { companyId } = useCompany()
   return useQuery({
@@ -382,8 +386,19 @@ export function useCountSession(id: string | undefined) {
 export const useStartSession = () => useAction(async (a: { warehouse: string; name?: string; cart?: number }) =>
   unwrap(await supabase.rpc('count_session_start', { p_warehouse: a.warehouse, p_name: a.name || undefined, p_cart_minutes: a.cart ?? 20 })) as string)
 export const useJoinSession = () => useAction(async (session: string) => unwrap(await supabase.rpc('count_session_join', { p_session: session })) as string)
-export const useCloseSession = () => useAction(async (a: { session: string; zero: boolean }) =>
-  unwrap(await supabase.rpc('count_session_close', { p_session: a.session, p_zero_uncounted: a.zero })) as unknown as { lists: number; zero_lines: number })
+export const useCloseSession = () => useAction(async (a: { session: string; zero: boolean; doneOnly?: boolean }) =>
+  unwrap(await supabase.rpc('count_session_close', { p_session: a.session, p_zero_uncounted: a.zero, p_zero_done_only: a.doneOnly ?? false })) as unknown as { lists: number; zero_lines: number; shelves_not_done: number })
+export function useSessionPeople(session: string | undefined, enabled: boolean) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...wmsKeys.all(companyId), 'session-people', session], enabled: !!session && enabled, staleTime: 5 * 60_000,
+    queryFn: async () => (unwrap(await supabase.rpc('count_session_people', { p_session: session! })) ?? []) as unknown as { id: string; name: string }[],
+  })
+}
+export const useAssignShelves = () => useAction(async (a: { session: string; locations: string[]; person: string | null }) =>
+  unwrap(await supabase.rpc('count_session_assign', { p_session: a.session, p_locations: a.locations, p_person: a.person as unknown as string })) as number)
+export const useShelfDone = () => useAction(async (a: { count: string; location: string; done: boolean }) =>
+  unwrap(await supabase.rpc('count_shelf_done', { p_count: a.count, p_location: a.location, p_done: a.done })) as unknown as { location_id: string; code: string; done: boolean })
 export const usePostSession = () => useAction(async (session: string) =>
   unwrap(await supabase.rpc('count_session_post', { p_session: session })) as unknown as { posted: number })
 
