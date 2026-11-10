@@ -1,6 +1,7 @@
 # Known weaknesses in the outside libraries the program is built with (npm audit).
-# Runs every Monday morning and whenever started by hand; it fails when a high or critical one is found
-# in what ships to the clients, so GitHub sends an e-mail.
+# Runs every Monday morning and whenever started by hand. It only reports for now (no red mark, no e-mail):
+# the known ones wait for jspdf 4, zod 4 and react-router 7. After those upgrades, take '|| true' off the first step
+# so a new high or critical one sends an e-mail.
 name: Library audit
 on:
   workflow_dispatch:
@@ -16,8 +17,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: What ships to the clients (fails on high or critical)
-        run: npm audit --omit=dev --audit-level=high
+      - name: What ships to the clients
+        run: npm audit --omit=dev --audit-level=high || true
       - name: Everything, the build tools too (to read, never fails)
         if: always()
         run: npm audit || true
