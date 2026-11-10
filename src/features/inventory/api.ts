@@ -88,10 +88,10 @@ export const useAttributes = () =>
     .returns<AttributeWithValues[]>())
 
 /** Variants for pickers (sku + name + tracking) */
-export type VariantOption = { id: string; sku: string; name: string; product_id: string; tracking: string; avg_cost: number | null; uom_code: string | null; codes?: string | null }
+export type VariantOption = { id: string; sku: string; name: string; product_id: string; tracking: string; avg_cost: number | null; uom_code: string | null; codes?: string | null; item_no?: number | null; barcode?: string | null }
 export const useVariantOptions = () =>
   useLookup<VariantOption[]>('variant-options', async (c) => ({ error: null, data: await fetchAll('sku', (x) => after(supabase.from('v_variant_options')
-    .select('id, sku, name, product_id, tracking, avg_cost, uom_code, codes')
+    .select('id, sku, name, product_id, tracking, avg_cost, uom_code, codes, item_no')
     .eq('company_id', c).eq('product_type', 'stockable').eq('is_active', true), 'sku', x).order('sku').limit(1000)
     .returns<VariantOption[]>()).then((rows) => { rememberUnits(rows); return rows }) }))
 

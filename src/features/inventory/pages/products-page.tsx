@@ -56,7 +56,7 @@ export function ProductsPage() {
     selectColumn<ProductStockRow>(),
     {
       id: 'product',
-      accessorFn: (r) => `${r.variant_name} ${r.sku} ${r.barcode ?? ''} ${r.codes ?? ''}`,
+      accessorFn: (r) => `${r.variant_name} ${r.sku} ${r.item_no ?? ''} ${r.barcode ?? ''} ${r.codes ?? ''}`,
       header: ({ column }) => <ColumnHeader column={column} title={t('Product')} />,
       meta: { label: t('Product'), exportValue: (r) => r.variant_name },
       sortingFn: (a, b) => (a.original.variant_name ?? '').localeCompare(b.original.variant_name ?? ''),
@@ -70,8 +70,10 @@ export function ProductsPage() {
         </div>
       ),
     },
-    { accessorKey: 'sku', header: t('SKU'), meta: { label: t('SKU') } },
+    { accessorKey: 'item_no', header: ({ column }) => <ColumnHeader column={column} title={t('No.|item')} />, meta: { label: t('No.|item'), align: 'right' },
+      cell: ({ getValue }) => <span className="tabular font-medium">{(getValue() as number | null) ?? '—'}</span> },
     { accessorKey: 'barcode', header: t('Barcode'), meta: { label: t('Barcode') }, cell: ({ getValue }) => <span className="tabular text-[13px]">{(getValue() as string) ?? '—'}</span> },
+    { accessorKey: 'sku', header: t('SKU'), meta: { label: t('SKU') } },
     ...categoryColumns<ProductStockRow>((r) => r.category_id ?? r.category_name, parts),
     {
       accessorKey: 'product_type', id: 'type', filterFn: inFilter,
@@ -133,7 +135,7 @@ export function ProductsPage() {
         error={products.error}
         getRowId={(r) => r.variant_id!}
         searchPlaceholder={t('Name, code, barcode or supplier code')}
-        initialHidden={['sku', 'barcode', 'on_hand', 'reserved', 'incoming', 'last_received', 'activity']}
+        initialHidden={['sku', 'on_hand', 'reserved', 'incoming', 'last_received', 'activity']}
         initialSorting={[{ id: 'product', desc: false }]}
         onRowClick={(r) => r.product_id && openItem(r.product_id)}
         exportName="products"

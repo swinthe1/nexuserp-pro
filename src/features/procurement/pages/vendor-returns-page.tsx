@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
-import { AlertTriangle, ArrowLeft, Plus, Printer, Undo2 } from 'lucide-react'
+import { AlertTriangle, Plus, Printer, Undo2 } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -11,20 +11,27 @@ import { SearchSelect } from '@/components/search-select'
 import { StatCard } from '@/components/stat-card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { msg, t, tn } from '@/i18n'
+import { msg, t, td, tn } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
-import { formatDate, formatMoney, num } from '@/lib/utils'
-import { ReturnDialog } from '@/features/inventory/components/receipt-after'
+import { cn, formatDate, formatMoney, formatQty, num } from '@/lib/utils'
+import { useActiveUnit } from '@/app/active-unit'
+import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { useWarehouses } from '@/features/inventory/api'
+import { itemCodes } from '@/lib/item-codes'
 import { useActiveVendors } from '../api'
 import { printVendorReturn } from '../vendor-return-print'
 
 type Ret = { id: string; number: string; return_date: string; reason: string; total_cost: number; vendor_id: string | null; vendor: string | null
-  receipt_id: string; receipt_number: string | null; warehouse: string | null; vendor_credit_id: string | null; credit_number: string | null
+  receipt_id: string | null; receipt_number: string | null; warehouse: string | null; vendor_credit_id: string | null; credit_number: string | null
   credit_state: 'none' | 'draft' | 'posted'; days_waiting: number | null; lines: number }
-type Source = { id: string; number: string; receipt_date: string; vendor_delivery_note: string | null; warehouse: string | null; total_value: number | null; bills: string | null; lines_left: number }
+type Item = { variant_id: string; name: string; sku: string; item_no: number | null; barcode: string | null; uom: string | null
+  returnable: number; on_hand: number; nearest_expiry: string | null; last_received: string | null }
 
 const LATE = 15
 const STATE: Record<Ret['credit_state'], string> = { none: msg('Waiting for the credit note'), draft: msg('Credit note in draft'), posted: msg('Credit note booked') }
@@ -60,7 +67,8 @@ export function VendorReturnsPage() {
       cell: ({ row: { original: r } }) => r.vendor_id ? <Link to={`/partners/${r.vendor_id}`} className="hover:underline" onClick={(e) => e.stopPropagation()}>{r.vendor}</Link> : '—' },
     { accessorKey: 'reason', header: t('Why'), meta: { label: t('Why') }, cell: ({ getValue }) => <span className="text-muted-foreground">{getValue() as string}</span> },
     { id: 'receipt', accessorFn: (r) => r.receipt_number ?? '', header: t('From the goods receipt'), meta: { label: t('From the goods receipt') },
-      cell: ({ row: { original: r } }) => <Link to={`/inventory/receipts/${r.receipt_id}`} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>{r.receipt_number}</Link> },
+      cell: ({ row: { original: r } }) => r.receipt_id ? <Link to={`/inventory/receipts/${r.receipt_id}`} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>{r.receipt_number}</Link>
+        : <span className="text-[12.5px] text-muted-foreground">{r.receipt_number ?? '—'}</span> },
     { id: 'warehouse', accessorFn: (r) => r.warehouse ?? '', filterFn: inFilter, header: t('Unit|store'), meta: { label: t('Unit|store') } },
     { accessorKey: 'total_cost', header: ({ column }) => <ColumnHeader column={column} title={t('At cost, without VAT')} />, meta: { label: t('At cost, without VAT'), align: 'right' },
       cell: ({ getValue }) => formatMoney(num(getValue())) },
@@ -99,7 +107,7 @@ export function VendorReturnsPage() {
         </p>
       )}
       <DataTable tableKey="procurement.vendor-returns" columns={cols} data={list.data} isLoading={list.isLoading} error={list.error} getRowId={(r) => r.id}
-        searchPlaceholder={t('Number, supplier, why…')} exportName="vendor-returns" onRowClick={(r) => navigate(`/inventory/receipts/${r.receipt_id}`)}
+        searchPlaceholder={t('Number, supplier, why…')} exportName="vendor-returns" onRowClick={(r) => (r.receipt_id ? navigate(`/inventory/receipts/${r.receipt_id}`) : void printVendorReturn(r.id))}
         facets={[
           { columnId: 'credit_state', title: t('Credit note'), options: (['none', 'draft', 'posted'] as const).map((v) => ({ value: v, label: t(STATE[v]) })) },
           { columnId: 'vendor', title: t('Supplier'), options: [...new Set(rows.map((r) => r.vendor ?? '').filter(Boolean))].sort().map((v) => ({ value: v, label: v })) },
@@ -111,66 +119,121 @@ export function VendorReturnsPage() {
   )
 }
 
-/** A new return: the supplier, then one of the goods receipts it delivered, then the quantities */
+/** A new return: the supplier and the unit, then the items that go back and how many (whatever receipts they came on) */
 export function NewReturnDialog({ vendor: start, onClose }: { vendor: string | null; onClose: () => void }) {
   const { companyId } = useCompany()
+  const qc = useQueryClient()
+  const { unit } = useActiveUnit()
   const vendors = useActiveVendors()
+  const whs = useWarehouses()
   const [vendor, setVendor] = React.useState<string | null>(start)
-  const [receipt, setReceipt] = React.useState<Source | null>(null)
-  const sources = useQuery({
-    queryKey: ['vendor-returns', 'sources', companyId, vendor], enabled: !!companyId && !!vendor,
-    queryFn: async () => unwrap(await supabase.rpc('vendor_return_sources', { p_company: companyId!, p_vendor: vendor! })) as unknown as Source[],
+  const [wh, setWh] = React.useState<string | null>(unit?.id ?? null)
+  React.useEffect(() => { if (!wh && whs.data?.length === 1) setWh(whs.data[0]!.id) }, [whs.data, wh])
+  const [qty, setQty] = React.useState<Record<string, string>>({})
+  const [find, setFind] = React.useState('')
+  const [soon, setSoon] = React.useState(false)
+  const [reason, setReason] = React.useState('')
+  const [error, setError] = React.useState<string | null>(null)
+  const { can } = useCompany()
+  // the return lowers the stock, and with its credit note booked at once also the debt to the supplier and the VAT
+  const [book, setBook] = React.useState(true)
+  const items = useQuery({
+    queryKey: ['vendor-returns', 'items', companyId, vendor, wh], enabled: !!companyId && !!vendor && !!wh,
+    queryFn: async () => unwrap(await supabase.rpc('vendor_returnable_items', { p_company: companyId!, p_vendor: vendor!, p_warehouse: wh! })) as unknown as Item[],
   })
-  const doc = useQuery({
-    queryKey: ['vendor-returns', 'receipt', receipt?.id], enabled: !!receipt,
-    queryFn: async () => {
-      const lines = unwrap(await supabase.from('goods_receipt_lines').select('id, variant_id, quantity, unit_cost').eq('receipt_id', receipt!.id).order('created_at')) as unknown as { id: string; variant_id: string; quantity: number; unit_cost: number | null }[]
-      const back = unwrap(await supabase.from('vendor_return_lines').select('receipt_line_id, quantity').in('receipt_line_id', lines.map((l) => l.id).length ? lines.map((l) => l.id) : ['00000000-0000-0000-0000-000000000000'])) as unknown as { receipt_line_id: string; quantity: number }[]
-      const vs = unwrap(await supabase.from('product_variants').select('id, sku, name').in('id', [...new Set(lines.map((l) => l.variant_id))])) as unknown as { id: string; sku: string; name: string }[]
-      const returned = new Map<string, number>()
-      for (const b of back) returned.set(b.receipt_line_id, (returned.get(b.receipt_line_id) ?? 0) + num(b.quantity))
-      return { lines, returned, names: new Map(vs.map((v) => [v.id, `${v.sku} · ${v.name}`])) }
+  const today = new Date().toISOString().slice(0, 10)
+  const in30 = (() => { const d = new Date(); d.setDate(d.getDate() + 30); return d.toISOString().slice(0, 10) })()
+  const f = find.trim().toLowerCase()
+  const shown = (items.data ?? []).filter((i) => (!soon || (i.nearest_expiry && i.nearest_expiry <= in30))
+    && (!f || `${i.name} ${i.sku} ${i.item_no ?? ''} ${i.barcode ?? ''}`.toLowerCase().includes(f)))
+  const chosen = Object.entries(qty).filter(([, v]) => num(v) > 0)
+  const send = useMutation({
+    mutationFn: async () => unwrap(await supabase.rpc('return_items_to_vendor', { p_company: companyId!, p_vendor: vendor!, p_warehouse: wh!, p_reason: reason.trim(),
+      p_lines: chosen.map(([id, v]) => ({ variant_id: id, quantity: num(v) })) as never })) as unknown as string,
+    onSuccess: async (id) => {
+      void qc.invalidateQueries({ queryKey: ['inv'] })
+      if (book && can('invoicing.write')) {
+        try {
+          const cn = unwrap(await supabase.rpc('vendor_credit_from_return', { p_return: id })) as string
+          unwrap(await supabase.rpc('post_vendor_bill', { p_id: cn }))
+          toast.success(t('Returned: the stock, the debt to the supplier and the VAT book are lowered.'))
+        } catch (e) {
+          toast.warning(t('Returned and out of the stock; the credit note stayed in draft: {why}', { why: describeError(e) }))
+        }
+      } else toast.success(t('The goods left the stock. Create the credit note when the vendor confirms it.'))
+      void qc.invalidateQueries({ queryKey: ['vendor-returns'] }); void qc.invalidateQueries({ queryKey: ['proc'] })
+      onClose(); void printVendorReturn(id)
     },
+    onError: (e) => setError(describeError(e)),
   })
-  if (receipt && doc.data) {
-    return <ReturnDialog doc={{ id: receipt.id, lines: doc.data.lines }} nameOf={(v) => doc.data!.names.get(v) ?? v} returned={doc.data.returned}
-      onClose={onClose} onDone={(id) => { void printVendorReturn(id) }} />
-  }
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>{t('New return to the supplier')}</DialogTitle>
-          <DialogDescription>{t('Choose the supplier and the goods receipt the goods came with; then how much goes back and why.')}</DialogDescription>
+          <DialogDescription>{t('Only the items that go back, e.g. those near or past their date, from whatever deliveries they came. Each leaves the stock at the cost it came in at.')}</DialogDescription>
         </DialogHeader>
-        <div className="grid gap-1.5"><Label>{t('Supplier')}</Label>
-          <SearchSelect value={vendor} onChange={(v) => { setVendor(v); setReceipt(null) }} placeholder={t('Choose the supplier')}
-            options={(vendors.data ?? []).map((v) => ({ value: v.id, label: v.name, hint: v.tax_number ?? undefined }))} /></div>
-        {vendor && (
-          <div className="grid gap-1.5">
-            <Label>{t('Goods receipt')}</Label>
-            {sources.isLoading ? <p className="text-[13px] text-muted-foreground">{t('Loading…')}</p>
-              : !sources.data?.length ? <p className="text-[13px] text-muted-foreground">{t('This supplier has no goods receipt with goods left to return in the last year.')}</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-1.5"><Label>{t('Supplier')}</Label>
+            <SearchSelect value={vendor} onChange={(v) => { setVendor(v); setQty({}) }} placeholder={t('Choose the supplier')}
+              options={(vendors.data ?? []).map((v) => ({ value: v.id, label: v.name, hint: v.tax_number ?? undefined }))} /></div>
+          <div className="grid gap-1.5"><Label>{t('From the unit')}</Label>
+            <SearchSelect value={wh} onChange={(v) => { setWh(v); setQty({}) }} placeholder={t('Choose the unit')}
+              options={(whs.data ?? []).map((w) => ({ value: w.id, label: td(w.name), hint: w.code }))} /></div>
+        </div>
+        {vendor && wh && (
+          <>
+            <div className="flex flex-wrap items-center gap-2">
+              <Input className="h-9 max-w-xs" value={find} onChange={(e) => setFind(e.target.value)} placeholder={t('Name, number, barcode or code')} />
+              <label className="inline-flex items-center gap-2 text-[13px]"><Switch checked={soon} onCheckedChange={setSoon} />{t('Only those expiring within 30 days')}</label>
+            </div>
+            {items.isLoading ? <Skeleton className="h-40" /> : !items.data?.length
+              ? <p className="text-[13px] text-muted-foreground">{t('This supplier delivered nothing to this unit that can still go back.')}</p>
               : (
-                <ul className="max-h-[50vh] divide-y overflow-y-auto rounded-md border">
-                  {sources.data.map((s) => (
-                    <li key={s.id}>
-                      <button type="button" disabled={doc.isFetching} onClick={() => setReceipt(s)}
-                        className="flex w-full flex-wrap items-center gap-x-4 gap-y-0.5 px-3 py-2.5 text-left text-[13px] hover:bg-muted">
-                        <span className="font-medium">{s.number}</span>
-                        <span className="text-muted-foreground">{formatDate(s.receipt_date)}{s.warehouse ? ` · ${s.warehouse}` : ''}</span>
-                        {s.bills && <span className="text-muted-foreground">{t('Purchase invoice')}: {s.bills}</span>}
-                        {s.vendor_delivery_note && <span className="text-muted-foreground">{t('Delivery note:')} {s.vendor_delivery_note}</span>}
-                        <span className="ml-auto tabular-nums">{s.total_value != null ? formatMoney(s.total_value) : ''}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <div className="max-h-[45vh] overflow-y-auto rounded-md border">
+                  <Table>
+                    <TableHeader><TableRow>
+                      <TableHead>{t('Item')}</TableHead><TableHead>{t('Nearest date')}</TableHead><TableHead className="text-right">{t('In stock')}</TableHead>
+                      <TableHead className="text-right">{t('Can go back')}</TableHead><TableHead className="w-32 text-right">{t('Return now')}</TableHead>
+                    </TableRow></TableHeader>
+                    <TableBody>
+                      {shown.map((i) => {
+                        const max = Math.min(num(i.returnable), Math.max(num(i.on_hand), 0))
+                        const bad = num(qty[i.variant_id]) > max
+                        return (
+                          <TableRow key={i.variant_id}>
+                            <TableCell><div className="text-[13px] font-medium">{i.name}</div><div className="text-xs text-muted-foreground">{itemCodes(i)}</div></TableCell>
+                            <TableCell className={cn('whitespace-nowrap text-[13px]', i.nearest_expiry && i.nearest_expiry < today ? 'font-medium text-destructive' : i.nearest_expiry && i.nearest_expiry <= in30 ? 'text-warning' : 'text-muted-foreground')}>
+                              {i.nearest_expiry ? formatDate(i.nearest_expiry) : '—'}</TableCell>
+                            <TableCell className="text-right tabular text-[13px]">{formatQty(i.on_hand, i.uom ?? undefined)}</TableCell>
+                            <TableCell className="text-right tabular text-[13px]">{formatQty(i.returnable, i.uom ?? undefined)}</TableCell>
+                            <TableCell><Input type="number" min="0" step="any" max={max} disabled={max <= 0} aria-label={t('Return now')}
+                              className={cn('h-8 text-right', bad && 'border-destructive')} value={qty[i.variant_id] ?? ''}
+                              onChange={(e) => { setQty((q) => ({ ...q, [i.variant_id]: e.target.value })); setError(null) }} /></TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
-          </div>
+            {can('invoicing.write') && (
+              <label className="flex items-start gap-2.5 rounded-md border bg-muted/30 px-3 py-2 text-[13px]">
+                <Switch className="mt-0.5" checked={book} onCheckedChange={setBook} />
+                <span><span className="font-medium">{t('Book the credit note now')}</span>
+                  <span className="block text-xs text-muted-foreground">{t('The debt to the supplier and the purchase VAT go down together with the stock. Off: only the stock; the credit note is booked when the supplier sends it.')}</span></span>
+              </label>
+            )}
+            <div className="grid gap-1.5"><Label htmlFor="nr-why">{t('Why')}</Label>
+              <Input id="nr-why" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('e.g. near the expiry date, as agreed with the supplier')} /></div>
+          </>
         )}
-        {receipt && doc.isLoading && <p className="flex items-center gap-2 text-[13px] text-muted-foreground"><ArrowLeft className="size-3.5" /> {t('Loading…')}</p>}
-        <div className="flex justify-end"><Button variant="ghost" onClick={onClose}><Undo2 /> {t('Cancel')}</Button></div>
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>{t('Cancel')}</Button>
+          <Button disabled={!chosen.length || !reason.trim()} loading={send.isPending} onClick={() => send.mutate()}>
+            <Undo2 /> {chosen.length ? tn(chosen.length, 'Send back {n} item', 'Send back {n} items') : t('Send back')}</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

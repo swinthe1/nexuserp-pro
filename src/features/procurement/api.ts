@@ -26,7 +26,7 @@ function useInvalidateProcurement() {
 export type PurchasableVariant = {
   id: string; sku: string; name: string; product_type: string; uom_code: string
   on_hand: number; available: number; incoming: number; avg_cost: number; reorder_min: number | null; codes?: string | null
-  sales_price?: number | null; barcode?: string | null
+  sales_price?: number | null; barcode?: string | null; item_no?: number | null
 }
 export function usePurchasableVariants() {
   const { companyId } = useCompany()
@@ -35,7 +35,7 @@ export function usePurchasableVariants() {
     enabled: !!companyId,
     staleTime: 60_000,
     queryFn: () => fetchAll('sku', (x) => after(supabase.from('v_product_stock')
-      .select('id:variant_id, sku, name:variant_name, product_type, uom_code, on_hand, available, incoming, avg_cost, reorder_min, codes, sales_price, barcode')
+      .select('id:variant_id, sku, name:variant_name, product_type, uom_code, on_hand, available, incoming, avg_cost, reorder_min, codes, sales_price, barcode, item_no')
       .eq('company_id', companyId).eq('is_active', true), 'sku', x).order('sku').limit(1000).returns<PurchasableVariant[]>()),
   })
 }
@@ -367,3 +367,12 @@ export function useBillPayMethods(enabled = true) {
 }
 /** the words for how a bill was paid, for a filter and a column */
 export const PAID_WITH: Record<'cash' | 'bank' | 'mixed' | 'none', string> = { cash: msg('Cash|paid'), bank: msg('Bank|paid'), mixed: msg('Cash and bank|paid'), none: msg('Not paid yet') }
+
+/** the average margin of each purchase bill: its goods at today's selling price against what the bill paid, % */
+export function useBillMargins(enabled = true) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...procKeys.all(companyId), 'margins'], enabled: !!companyId && enabled, staleTime: 60_000,
+    queryFn: async () => unwrap(await supabase.rpc('bill_margins', { p_company: companyId! })) as unknown as Record<string, number>,
+  })
+}

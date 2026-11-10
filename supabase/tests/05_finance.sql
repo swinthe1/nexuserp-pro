@@ -242,6 +242,20 @@ select t.ok((select array_agg(a.code order by a.code) from public.journal_lines 
               where jl.entry_id = (select journal_entry_id from public.vendor_bills where id = :'dbill')) = array['401','4456','601'],
             'stock item billed without a receipt: Dr cost of sales + VAT / Cr payable');
 
+-- ---------- the same item from two suppliers: who sold it cheapest -----------------------------------
+insert into public.business_partners (company_id, code, name, is_vendor) values (:'co', 'V9', 'Vaj Ulliri Vlorë', true) returning id as vend2 \gset
+insert into public.vendor_bills (company_id, vendor_id, vendor_invoice_number, bill_date, due_date, currency_code)
+values (:'co', :'vend2', 'DIRECT-2', current_date, current_date + 30, 'ALL') returning id as dbill2 \gset
+insert into public.vendor_bill_lines (company_id, bill_id, line_no, variant_id, description, quantity, unit_price, tax_code_id)
+values (:'co', :'dbill2', 1, :'oil', 'Olive oil, cheaper', 4, 550, :'vat20');
+select public.post_vendor_bill(:'dbill2');
+select public.vendor_price_compare(:'co') -> 'rows' -> 0 as cmp \gset
+select t.ok((:'cmp'::jsonb ->> 'variant_id') = :'oil' and (:'cmp'::jsonb ->> 'cheap_price')::numeric = 550 and (:'cmp'::jsonb ->> 'dear_price')::numeric = 600
+            and (:'cmp'::jsonb ->> 'cheap_vendor') = 'Vaj Ulliri Vlorë' and (:'cmp'::jsonb ->> 'vendors')::int = 2, 'the cheapest and the dearest supplier of the same item');
+select t.ok(jsonb_array_length(public.item_vendor_prices(:'co', :'oil') -> 'vendors') = 2
+            and (public.item_vendor_prices(:'co', :'oil') #>> '{vendors,0,vendor}') = 'Vaj Ulliri Vlorë', 'one item: each supplier, the cheapest first');
+select t.ok((select item_no from public.product_variants where id = :'oil') is not null, 'every item has its number (shifra)');
+
 -- ---------- visibility ----------------------------------------------------------------------------
 select t.login('rexa@fin.al');
 select t.ok((select count(*) from public.journal_entries) = 0, 'sales reps do not see the ledger');

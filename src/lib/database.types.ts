@@ -9774,6 +9774,7 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          item_no: number | null
         }
         Insert: {
           id?: string
@@ -9792,6 +9793,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          item_no?: number | null
         }
         Update: {
           id?: string
@@ -9810,6 +9812,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          item_no?: number | null
         }
         Relationships: [
           { foreignKeyName: "product_variants_company_id_product_id_fkey"; columns: ["company_id", "product_id"]; isOneToOne: false; referencedRelation: "products"; referencedColumns: ["company_id", "id"] },
@@ -15036,7 +15039,7 @@ export type Database = {
           company_id: string
           number: string
           status: string
-          receipt_id: string
+          receipt_id: string | null
           vendor_id: string | null
           purchase_order_id: string | null
           warehouse_id: string
@@ -15054,7 +15057,7 @@ export type Database = {
           company_id: string
           number: string
           status?: string
-          receipt_id: string
+          receipt_id?: string | null
           vendor_id?: string | null
           purchase_order_id?: string | null
           warehouse_id: string
@@ -15072,7 +15075,7 @@ export type Database = {
           company_id?: string
           number?: string
           status?: string
-          receipt_id?: string
+          receipt_id?: string | null
           vendor_id?: string | null
           purchase_order_id?: string | null
           warehouse_id?: string
@@ -16068,6 +16071,7 @@ export type Database = {
           last_sold: string | null
           last_received: string | null
           codes: string | null
+          item_no: number | null
         }
         Relationships: []
       }
@@ -16137,6 +16141,8 @@ export type Database = {
           avg_cost: number | null
           stock_value: number | null
           last_movement_at: string | null
+          item_no: number | null
+          barcode: string | null
         }
         Relationships: []
       }
@@ -16188,6 +16194,7 @@ export type Database = {
           avg_cost: number | null
           sales_price: number | null
           codes: string | null
+          item_no: number | null
         }
         Relationships: []
       }
@@ -16915,6 +16922,12 @@ export type Database = {
           p_bill: string
         }
         Returns: number
+      }
+      bill_margins: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
       }
       bill_pay_methods: {
         Args: {
@@ -18315,6 +18328,15 @@ export type Database = {
           p_id: string
           p_make: boolean
           p_reason?: string
+        }
+        Returns: Json
+      }
+      item_vendor_prices: {
+        Args: {
+          p_company: string
+          p_variant: string
+          p_from?: string
+          p_to?: string
         }
         Returns: Json
       }
@@ -20412,6 +20434,16 @@ export type Database = {
         }
         Returns: Json
       }
+      return_items_to_vendor: {
+        Args: {
+          p_company: string
+          p_vendor: string
+          p_warehouse: string
+          p_lines: Json
+          p_reason: string
+        }
+        Returns: string
+      }
       return_materials: {
         Args: {
           p_wo: string
@@ -21386,6 +21418,14 @@ export type Database = {
         }
         Returns: string
       }
+      vendor_price_compare: {
+        Args: {
+          p_company: string
+          p_from?: string
+          p_to?: string
+        }
+        Returns: Json
+      }
       vendor_return_doc: {
         Args: {
           p_return: string
@@ -21396,6 +21436,14 @@ export type Database = {
         Args: {
           p_company: string
           p_vendor: string
+        }
+        Returns: Json
+      }
+      vendor_returnable_items: {
+        Args: {
+          p_company: string
+          p_vendor: string
+          p_warehouse: string
         }
         Returns: Json
       }

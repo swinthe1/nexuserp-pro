@@ -83,7 +83,7 @@ export function useMembers() {
 }
 
 /** Sellable variants (stockable + services) for document lines */
-export type SellableVariant = { id: string; sku: string; name: string; product_type: string; uom_code: string; sales_price: number; available: number; codes?: string | null; category_id?: string | null }
+export type SellableVariant = { id: string; sku: string; name: string; product_type: string; uom_code: string; sales_price: number; available: number; codes?: string | null; category_id?: string | null; item_no?: number | null; barcode?: string | null }
 export function useSellableVariants() {
   const { companyId } = useCompany()
   return useQuery({
@@ -91,7 +91,7 @@ export function useSellableVariants() {
     enabled: !!companyId,
     staleTime: 60_000,
     queryFn: () => fetchAll('sku', (x) => after(supabase.from('v_product_stock')
-      .select('id:variant_id, sku, name:variant_name, product_type, uom_code, sales_price, available, codes, category_id')
+      .select('id:variant_id, sku, name:variant_name, product_type, uom_code, sales_price, available, codes, category_id, item_no, barcode')
       .eq('company_id', companyId).eq('is_active', true), 'sku', x).order('sku').limit(1000).returns<SellableVariant[]>()),
   })
 }

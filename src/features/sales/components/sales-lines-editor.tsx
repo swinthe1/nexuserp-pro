@@ -1,3 +1,4 @@
+import { itemCodes } from '@/lib/item-codes'
 import { Plus, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { useFieldArray, useWatch, type UseFormReturn } from 'react-hook-form'
@@ -105,8 +106,8 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
   const [partnerId, priceListId, docDate, cur] = useWatch({ control: form.control, name: ['partner_id', 'price_list_id', 'doc_date', 'currency_code'] })
   const rateOf = React.useCallback((taxId?: string | null) => num(taxes.data?.find((t) => t.id === taxId)?.rate), [taxes.data])
   const variantOptions = React.useMemo(() => (variants.data ?? []).map((v) => ({
-    value: v.id, label: v.sku,
-    hint: v.product_type === 'stockable' ? t('{name} · {qty} available', { name: v.name, qty: formatQtyOf(v.available, v.id) }) : v.name,
+    value: v.id, label: v.name,
+    hint: v.product_type === 'stockable' ? `${itemCodes(v)} · ${t('{qty} available', { qty: formatQtyOf(v.available, v.id) })}` : itemCodes(v),
     // the name, every barcode and each supplier's article number find it
     keywords: [v.name, ...(v.codes ? v.codes.split(' ') : [])],
   })), [variants.data])

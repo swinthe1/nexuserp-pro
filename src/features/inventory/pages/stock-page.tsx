@@ -19,7 +19,7 @@ import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { useActiveUnit } from '@/app/active-unit'
 
 type Level = Views<'v_stock_levels'>
-type Pivot = { id: string; product_id: string | null; sku: string | null; name: string | null; category: string | null; uom: string | null; qty: Record<string, number>; total: number; value: number }
+type Pivot = { id: string; product_id: string | null; sku: string | null; name: string | null; item_no: number | null; barcode: string | null; category: string | null; uom: string | null; qty: Record<string, number>; total: number; value: number }
 
 export function StockPage() {
   const navigate = useNavigate()
@@ -43,19 +43,22 @@ export function StockPage() {
     for (const l of levels.data ?? []) {
       const k = l.variant_id ?? l.id!
       let r = m.get(k)
-      if (!r) { r = { id: k, product_id: l.product_id, sku: l.sku, name: l.variant_name, category: l.category_name, uom: l.uom_code, qty: {}, total: 0, value: 0 }; m.set(k, r) }
+      if (!r) { r = { id: k, product_id: l.product_id, sku: l.sku, name: l.variant_name, item_no: l.item_no, barcode: l.barcode, category: l.category_name, uom: l.uom_code, qty: {}, total: 0, value: 0 }; m.set(k, r) }
       if (l.warehouse_id) r.qty[l.warehouse_id] = (r.qty[l.warehouse_id] ?? 0) + num(l.on_hand)
       r.total += num(l.on_hand); r.value += num(l.stock_value)
     }
-    return [...m.values()].sort((a, b) => String(a.sku).localeCompare(String(b.sku)))
+    return [...m.values()].sort((a, b) => String(a.name).localeCompare(String(b.name)))
   }, [pivot, levels.data])
   const parts = useCategoryParts()
   const pivotColumns = React.useMemo<ColumnDef<Pivot>[]>(() => [
     {
-      id: 'product', accessorFn: (r) => `${r.sku} ${r.name}`, enableHiding: false,
-      header: ({ column }) => <ColumnHeader column={column} title={t('Product')} />, meta: { label: t('Product'), exportValue: (r) => r.sku },
-      cell: ({ row: { original: r } }) => <div><div className="font-medium">{r.sku}</div><div className="text-xs text-muted-foreground">{r.name}</div></div>,
+      id: 'product', accessorFn: (r) => `${r.name} ${r.sku} ${r.item_no ?? ''} ${r.barcode ?? ''}`, enableHiding: false,
+      header: ({ column }) => <ColumnHeader column={column} title={t('Product')} />, meta: { label: t('Product'), exportValue: (r) => r.name },
+      cell: ({ row: { original: r } }) => <div><div className="font-medium">{r.name}</div><div className="text-xs text-muted-foreground">{r.sku}</div></div>,
     },
+    { id: 'item_no', accessorFn: (r) => r.item_no, header: ({ column }) => <ColumnHeader column={column} title={t('No.|item')} />, meta: { label: t('No.|item'), align: 'right' },
+      cell: ({ getValue }) => <span className="tabular font-medium">{(getValue() as number | null) ?? '—'}</span> },
+    { id: 'barcode', accessorFn: (r) => r.barcode ?? '', header: t('Barcode'), meta: { label: t('Barcode') }, cell: ({ getValue }) => <span className="tabular text-[13px]">{(getValue() as string) || '—'}</span> },
     ...categoryColumns<Pivot>((r) => r.category, parts),
     ...unitCols.map((w): ColumnDef<Pivot> => ({
       id: `u_${w.id}`, accessorFn: (r) => r.qty[w.id] ?? 0,
@@ -81,10 +84,13 @@ export function StockPage() {
   const columns = React.useMemo<ColumnDef<Level>[]>(() => [
     selectColumn<Level>(),
     {
-      id: 'product', accessorFn: (r) => `${r.sku} ${r.variant_name}`, enableHiding: false,
-      header: ({ column }) => <ColumnHeader column={column} title={t('Product')} />, meta: { label: t('Product'), exportValue: (r) => r.sku },
-      cell: ({ row: { original: r } }) => <div><div className="font-medium">{r.sku}</div><div className="text-xs text-muted-foreground">{r.variant_name}</div></div>,
+      id: 'product', accessorFn: (r) => `${r.variant_name} ${r.sku} ${r.item_no ?? ''} ${r.barcode ?? ''}`, enableHiding: false,
+      header: ({ column }) => <ColumnHeader column={column} title={t('Product')} />, meta: { label: t('Product'), exportValue: (r) => r.variant_name },
+      cell: ({ row: { original: r } }) => <div><div className="font-medium">{r.variant_name}</div><div className="text-xs text-muted-foreground">{r.sku}</div></div>,
     },
+    { id: 'item_no', accessorFn: (r) => r.item_no, header: ({ column }) => <ColumnHeader column={column} title={t('No.|item')} />, meta: { label: t('No.|item'), align: 'right' },
+      cell: ({ getValue }) => <span className="tabular font-medium">{(getValue() as number | null) ?? '—'}</span> },
+    { id: 'barcode', accessorFn: (r) => r.barcode ?? '', header: t('Barcode'), meta: { label: t('Barcode') }, cell: ({ getValue }) => <span className="tabular text-[13px]">{(getValue() as string) || '—'}</span> },
     ...categoryColumns<Level>((r) => r.category_name, parts),
     { accessorKey: 'warehouse_name', id: 'warehouse', filterFn: inFilter, header: ({ column }) => <ColumnHeader column={column} title={t('Warehouse')} />, meta: { label: t('Warehouse') }, cell: ({ getValue }) => td(getValue() as string) },
     ...(placesMatter ? [{ accessorKey: 'location_code', id: 'location_code', header: ({ column }) => <ColumnHeader column={column} title={t('Location')} />, meta: { label: t('Location') } } as ColumnDef<Level>] : []),

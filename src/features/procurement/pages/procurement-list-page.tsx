@@ -1,3 +1,6 @@
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Car, ChevronDown, FileText, PackagePlus, Plus, ReceiptText } from 'lucide-react'
 import * as React from 'react'
@@ -11,9 +14,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { msg, t, td } from '@/i18n'
-import { cn, formatDate, formatMoney, humanize, num, todayISO } from '@/lib/utils'
+import { cn, formatAmount, formatDate, formatMoney, humanize, num, todayISO } from '@/lib/utils'
 import { useRealtimeInvalidate } from '@/hooks/use-realtime'
-import { PROC_TABLE, procKeys, useProcDocuments, type ProcKind, PAID_WITH, useBillPayMethods } from '../api'
+import { PROC_TABLE, procKeys, useProcDocuments, type ProcKind, PAID_WITH, useBillPayMethods, useBillMargins } from '../api'
 import { billLines } from '@/lib/documents/preview-lines'
 import { MatchBadge } from './purchase-document-page'
 
@@ -137,7 +140,10 @@ const buildCfg = (): Record<ProcKind, Cfg> => ({
       {
         id: 'payment_status', filterFn: inFilter, header: t('Payment'), meta: { label: t('Payment') },
         accessorFn: (r) => r.status === 'posted' && r.payment_status !== 'paid' && (r.due_date as string) < todayISO() && r.document_type !== 'vendor_credit' ? 'overdue' : r.payment_status,
-        cell: ({ row: { original: r }, getValue }) => r.status !== 'posted' ? <span className="text-muted-foreground">—</span> : <StatusBadge status={getValue() as string} />,
+        // with how it was paid under it (Kesh / Bankë), one column instead of two
+        cell: ({ row: { original: r }, getValue }) => r.status !== 'posted' ? <span className="text-muted-foreground">—</span> : (
+          <div className="grid justify-items-start gap-0.5 whitespace-nowrap"><StatusBadge status={getValue() as string} />
+            {!!r.paid_with && r.paid_with !== 'none' && <span className="text-xs text-muted-foreground">{t(PAID_WITH[r.paid_with as keyof typeof PAID_WITH])}</span>}</div>),
       },
       dateCol('due_date', t('Due')),
       totalCol(base),
@@ -156,11 +162,17 @@ export function ProcurementListPage({ kind }: { kind: ProcKind }) {
   const docs = useProcDocuments<Row>(kind)
   const vendorFilter = params.get('vendor')
   const book = kind === 'bills' ? (BOOKS.find((b) => b.key === params.get('book'))?.key ?? null) : null
-  const byVendor = React.useMemo(() => (docs.data ?? []).filter((r) => !vendorFilter || (r as { vendor_id?: string }).vendor_id === vendorFilter || nm(r.vendor) === vendorFilter), [docs.data, vendorFilter])
+  // the period: by the document's date
+  const from = params.get('from') ?? '', to = params.get('to') ?? ''
+  const dateKey = kind === 'bills' ? 'bill_date' : kind === 'orders' ? 'order_date' : 'created_at'
+  const inPeriod = (r: Row) => { const d = String(r[dateKey] ?? '').slice(0, 10); return (!from || d >= from) && (!to || d <= to) }
+  const setPeriod = (f: string, tt: string) => setParams((p) => { const n = new URLSearchParams(p); if (f) n.set('from', f); else n.delete('from'); if (tt) n.set('to', tt); else n.delete('to'); return n }, { replace: true })
+  const byVendor = React.useMemo(() => (docs.data ?? []).filter((r) => inPeriod(r) && (!vendorFilter || (r as { vendor_id?: string }).vendor_id === vendorFilter || nm(r.vendor) === vendorFilter)), [docs.data, vendorFilter, from, to])
   // how each bill was paid, in cash or through the bank: a column and a filter
   const payWays = useBillPayMethods(kind === 'bills')
+  const margins = useBillMargins(kind === 'bills')
   const rows = React.useMemo(() => byVendor.filter((r) => !book || bookOf(r) === book)
-    .map((r) => (kind === 'bills' ? { ...r, paid_with: payWays.data?.[r.id] ?? 'none' } : r)), [byVendor, book, kind, payWays.data])
+    .map((r) => (kind === 'bills' ? { ...r, paid_with: payWays.data?.[r.id] ?? 'none', margin_pct: margins.data?.[r.id] ?? null } : r)), [byVendor, book, kind, payWays.data, margins.data])
 
   // the groups of the items on each invoice or order (from the meeting with the staff)
   const groups = useDocGroups<Row>(kind === 'bills' ? 'vendor_bills' : kind === 'orders' ? 'purchase_orders' : null, docs.data)
@@ -168,8 +180,15 @@ export function ProcurementListPage({ kind }: { kind: ProcKind }) {
     { accessorKey: 'number', enableHiding: false, header: ({ column }) => <ColumnHeader column={column} title={t('Number')} />, meta: { label: t('Number') }, cell: ({ getValue }) => <span className="font-medium">{getValue() as string}</span> },
     { accessorKey: 'status', filterFn: inFilter, header: t('Status'), meta: { label: t('Status'), exportValue: (r) => humanize(r.status) }, cell: ({ getValue }) => <StatusBadge status={getValue() as string} /> },
     ...cfg.columns(base),
+    ...(kind === 'bills' ? [
+      { id: 'total_base', accessorFn: (r: Row) => num(r.total_base ?? r.total), header: ({ column }) => <ColumnHeader column={column} title={t('Total in {currency}', { currency: base })} />,
+        meta: { label: t('Total in {currency}', { currency: base }), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number, base) } as ColumnDef<Row>,
+      { id: 'margin_pct', accessorFn: (r: Row) => (r.margin_pct == null ? null : num(r.margin_pct)), sortUndefined: 'last', header: ({ column }) => <ColumnHeader column={column} title={t('Average margin %')} />,
+        meta: { label: t('Average margin %'), align: 'right' },
+        cell: ({ getValue }) => { const v = getValue() as number | null; return v == null ? <span className="text-muted-foreground">—</span> : <span className={cn('tabular', v < 0 ? 'text-destructive' : v < 10 ? 'text-warning' : '')}>{formatAmount(v, 1)}%</span> } } as ColumnDef<Row>,
+    ] : []),
     ...(kind === 'bills' ? [{ id: 'paid_with', accessorFn: (r: Row) => String(r.paid_with ?? 'none'), filterFn: inFilter, header: t('Paid with'),
-      meta: { label: t('Paid with'), exportValue: (r: Row) => t(PAID_WITH[(r.paid_with as keyof typeof PAID_WITH) ?? 'none']) },
+      meta: { label: t('Paid with'), filterOnly: true, exportValue: (r: Row) => t(PAID_WITH[(r.paid_with as keyof typeof PAID_WITH) ?? 'none']) },
       cell: ({ getValue }) => { const v = getValue() as keyof typeof PAID_WITH; return v === 'none' ? <span className="text-muted-foreground">—</span> : t(PAID_WITH[v]) } } as ColumnDef<Row>] : []),
     ...groups.columns,
   ], [cfg, base, groups.columns, kind])
@@ -210,6 +229,7 @@ export function ProcurementListPage({ kind }: { kind: ProcKind }) {
       <PageHeader title={book ? t(BOOKS.find((b) => b.key === book)!.title) : cfg.title} description={cfg.description} actions={newButton} />
       {kind === 'bills' && <BookTabs rows={byVendor} base={base} value={book} loading={docs.isLoading}
         onChange={(b) => setParams((p) => { const n = new URLSearchParams(p); if (b) n.set('book', b); else n.delete('book'); return n }, { replace: true })} />}
+      <PeriodBar from={from} to={to} onChange={setPeriod} />
       <DataTable
         tableKey={`procurement.${kind}`} columns={columns} data={docs.data ? rows : undefined} isLoading={docs.isLoading} error={docs.error}
         getRowId={(r) => r.id} searchPlaceholder={kind === 'bills' ? t('Number, vendor, vendor invoice no.…') : t('Number, vendor…')} exportName={book ? t(BOOKS.find((b) => b.key === book)!.title) : kind}
@@ -247,6 +267,34 @@ function BookTabs({ rows, base, value, loading, onChange }: { rows: Row[]; base:
           </button>
         )
       })}
+    </div>
+  )
+}
+
+const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+const PRESETS: { key: string; label: string; range: () => [string, string] }[] = [
+  { key: 'this_month', label: msg('This month'), range: () => { const n = new Date(); return [iso(new Date(n.getFullYear(), n.getMonth(), 1)), iso(n)] } },
+  { key: 'last_month', label: msg('Last month'), range: () => { const n = new Date(); return [iso(new Date(n.getFullYear(), n.getMonth() - 1, 1)), iso(new Date(n.getFullYear(), n.getMonth(), 0))] } },
+  { key: 'this_quarter', label: msg('This quarter'), range: () => { const n = new Date(); return [iso(new Date(n.getFullYear(), Math.floor(n.getMonth() / 3) * 3, 1)), iso(n)] } },
+  { key: 'ytd', label: msg('Year to date'), range: () => { const n = new Date(); return [iso(new Date(n.getFullYear(), 0, 1)), iso(n)] } },
+  { key: 'last_year', label: msg('Last year'), range: () => { const y = new Date().getFullYear() - 1; return [`${y}-01-01`, `${y}-12-31`] } },
+]
+
+/** the documents of a period: a ready period, or from–to */
+function PeriodBar({ from, to, onChange }: { from: string; to: string; onChange: (from: string, to: string) => void }) {
+  const preset = !from && !to ? 'all' : PRESETS.find((p) => { const [f, tt] = p.range(); return f === from && tt === to })?.key ?? 'custom'
+  return (
+    <div className="mb-3 flex flex-wrap items-end gap-2">
+      <div className="grid gap-1"><Label className="text-xs">{t('Period')}</Label>
+        <Select value={preset} onValueChange={(v) => { if (v === 'all') onChange('', ''); else if (v !== 'custom') { const [f, tt] = PRESETS.find((p) => p.key === v)!.range(); onChange(f, tt) } }}>
+          <SelectTrigger className="h-9 w-44"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="all">{t('All dates')}</SelectItem>{PRESETS.map((p) => <SelectItem key={p.key} value={p.key}>{t(p.label)}</SelectItem>)}
+            <SelectItem value="custom">{t('Custom range')}</SelectItem></SelectContent>
+        </Select></div>
+      <div className="grid gap-1"><Label htmlFor="pl-from" className="text-xs">{t('From')}</Label>
+        <Input id="pl-from" type="date" className="h-9 w-40" value={from} max={to || undefined} onChange={(e) => onChange(e.target.value, to)} /></div>
+      <div className="grid gap-1"><Label htmlFor="pl-to" className="text-xs">{t('To')}</Label>
+        <Input id="pl-to" type="date" className="h-9 w-40" value={to} min={from || undefined} onChange={(e) => onChange(from, e.target.value)} /></div>
     </div>
   )
 }

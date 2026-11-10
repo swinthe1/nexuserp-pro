@@ -1,3 +1,4 @@
+import { itemCodes } from '@/lib/item-codes'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
 import * as React from 'react'
@@ -23,7 +24,7 @@ export const VariantPicker = React.forwardRef<HTMLButtonElement, { value: string
   function VariantPicker({ value, onChange, ...rest }, ref) {
     const { companyId } = useCompany()
     const { data = [] } = useVariantOptions()
-    const options = React.useMemo(() => data.map((v) => ({ value: v.id, label: v.sku, hint: v.name, keywords: [v.name, ...(v.codes ? v.codes.split(' ') : [])] })), [data])
+    const options = React.useMemo(() => data.map((v) => ({ value: v.id, label: v.name, hint: itemCodes(v), keywords: [v.name, ...(v.codes ? v.codes.split(' ') : [])] })), [data])
     return (
       <SearchSelect
         ref={ref}

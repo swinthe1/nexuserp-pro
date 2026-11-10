@@ -147,6 +147,18 @@ select public.post_vendor_bill(:'vcr');
 select t.ok((select x ->> 'credit_state' = 'posted' from jsonb_array_elements(public.vendor_returns_list(:'co')) x where x ->> 'id' = :'vret'), 'and then the credit note is booked');
 select t.ok(pg_temp.grni(:'co') = :'grni0'::numeric + 20000, 'posting the credit clears what the return left');
 select t.ok((select amount_due from public.vendor_bills where id = :'rbill') = 24000 - 2400, 'and the bill owes that much less');
+-- goods back by item, not by receipt, the credit note booked at once
+select (select on_hand from public.stock_levels where variant_id = :'tea' and location_id = :'stock') as before_items \gset
+select public.return_items_to_vendor(:'co', (select vendor_id from public.goods_receipts where id = :'gr'), (select warehouse_id from public.goods_receipts where id = :'gr'),
+       jsonb_build_array(jsonb_build_object('variant_id', :'tea', 'quantity', 3)), 'Afër skadimit') as iret \gset
+select t.ok((select on_hand from public.stock_levels where variant_id = :'tea' and location_id = :'stock') = :'before_items'::numeric - 3
+            and (select sum(quantity) from public.vendor_return_lines where return_id = :'iret') = 3, 'an item goes back without choosing the receipt');
+select public.vendor_credit_from_return(:'iret') as icr \gset
+select public.post_vendor_bill(:'icr');
+select t.ok((select amount_due from public.vendor_bills where id = :'rbill') = 24000 - 2400 - 1440 and pg_temp.grni(:'co') = :'grni0'::numeric + 20000,
+            'its credit note lowers the debt and clears the goods sent back');
+select t.throws(format($q$select public.return_items_to_vendor(%L, %L, %L, '[{"variant_id":"%s","quantity":1000}]', 'x')$q$, :'co',
+       (select vendor_id from public.goods_receipts where id = :'gr'), (select warehouse_id from public.goods_receipts where id = :'gr'), :'tea'), 'and can go back', 'not more than the supplier delivered');
 
 -- ---------- payroll: a raise in the middle of the month --------------------------------------
 select t.login('alice@alba.al');

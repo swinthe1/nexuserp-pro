@@ -1,3 +1,4 @@
+import { ItemVendorPricesCard } from '@/features/procurement/pages/price-compare-page'
 import { categoryTreeOptions } from '@/features/inventory/components/category-picks'
 import { ItemCardView } from './item-card-page'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -61,7 +62,7 @@ export function ProductDetailPage() {
  * window over the item list (inDialog), to look, change and delete without leaving the list.
  */
 export function ProductView({ id, inDialog, onDeleted }: { id: string | undefined; inDialog?: boolean; onDeleted?: () => void }) {
-  const { company } = useCompany()
+  const { company, can } = useCompany()
   const product = useProduct(id)
   const levels = useProductStockLevels(id)
   const units = useUnits()
@@ -95,6 +96,7 @@ export function ProductView({ id, inDialog, onDeleted }: { id: string | undefine
         back={inDialog ? undefined : { href: '/inventory/products', label: t('Products') }}
         title={<span className="flex min-w-0 items-center gap-3"><ProductPhoto productId={p.id} name={p.name} hasImage={p.image_path === 'db'} /><span className="truncate">{p.name}</span></span>}
         meta={<>
+          {p.product_variants.length === 1 && p.product_variants[0]!.item_no != null && <Badge variant="default" className="tabular">{t('No. {n}|item', { n: p.product_variants[0]!.item_no })}</Badge>}
           <Badge variant="outline">{p.code}</Badge>
           {!p.is_active && <Badge variant="secondary">{t('Suspended|item')}</Badge>}
           {p.tracking !== 'none' && <Badge variant="default">{p.tracking === 'lot' ? t('Tracked by lot') : t('Tracked by serial number')}</Badge>}
@@ -167,6 +169,7 @@ export function ProductView({ id, inDialog, onDeleted }: { id: string | undefine
             <CostHistoryCard productId={p.id} variants={p.product_variants} />
             <CostLayersCard variantIds={p.product_variants.map((v) => v.id)} />
           </div>
+          {p.product_type !== 'service' && can('procurement.read') && p.product_variants.slice(0, 3).map((v) => <div key={v.id} className="lg:col-span-2"><ItemVendorPricesCard variantId={v.id} /></div>)}
         </TabsContent>
 
         <TabsContent value="prices"><PriceHistoryCard productId={p.id} variants={p.product_variants} /></TabsContent>
@@ -430,7 +433,7 @@ function VariantsTab({ product }: { product: ProductDetail }) {
           <TableBody>
             {product.product_variants.map((v) => (
               <TableRow key={v.id} className="hover:bg-transparent">
-                <TableCell><div className="font-medium">{v.sku}</div><div className="text-xs text-muted-foreground">{v.name}</div></TableCell>
+                <TableCell><div className="font-medium">{v.name}</div><div className="text-xs text-muted-foreground">{[v.item_no != null ? t('No. {n}|item', { n: v.item_no }) : null, v.sku].filter(Boolean).join(' · ')}</div></TableCell>
                 <TableCell className="text-[13px] text-muted-foreground">
                   {v.variant_attribute_values.map((a) => valueName.get(a.attribute_value_id)).filter(Boolean).join(' · ') || '—'}
                 </TableCell>
