@@ -436,6 +436,8 @@ export function DetailPage({ kind }: { kind: Kind }) {
                   if (i === 0) v = t('Total')
                   else if (def && summable(def)) v = def.type === 'money' ? formatMoney(sum(c.id)) : formatQty(sum(c.id))
                   else if (c.id === 'margin_pct' && net) v = `${formatQty(Math.round((margin / net) * 1000) / 10)}%`
+                  // all rows together are the whole; a search shows the share of the rows left
+                  else if (c.id === 'share' && rows.length) v = `${formatQty(rows.length === table.getCoreRowModel().rows.length ? 100 : Math.min(100, Math.round(sum('share') * 10) / 10))}%`
                   return <TableCell key={c.id} className={cn(i > 0 && 'text-right tabular')}>{v}</TableCell>
                 })}
               </TableRow>
