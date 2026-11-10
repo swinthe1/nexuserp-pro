@@ -57,7 +57,7 @@ function Categories() {
   const fields = [
     { name: 'name' as const, label: t('Name'), placeholder: t('Beverages') },
     { name: 'code' as const, label: t('Code'), optional: true, half: true, uppercase: true },
-    { name: 'parent_id' as const, label: t('Parent'), type: 'select' as const, optional: true, half: true, options: [{ value: '__none', label: t('None') }, ...(cats.data ?? []).map((c) => ({ value: c.id, label: td(c.name) }))] },
+    { name: 'parent_id' as const, label: t('Sub-category of'), type: 'select' as const, optional: true, half: true, options: [{ value: '__none', label: t('None: a main category') }, ...(cats.data ?? []).map((c) => ({ value: c.id, label: td(c.name) }))] },
     // fruit and vegetables: thrown away when they go off; the waste report and the Zebra start from these groups
     { name: 'perishable' as const, label: t('Goes off quickly (fruit, vegetables)'), type: 'switch' as const },
   ]

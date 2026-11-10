@@ -270,7 +270,7 @@ export function BalancesView({ onOpen }: { onOpen: (id: string) => void }) {
           { accessorKey: 'name', header: t('Partner'), enableHiding: false, meta: { label: t('Partner') }, cell: ({ getValue }) => <span className="font-medium">{getValue() as string}</span> },
           { accessorKey: 'code', header: t('Code'), meta: { label: t('Code') } },
           { accessorKey: 'tax_number', header: t('NIPT'), meta: { label: t('NIPT') } },
-          { id: 'groups', accessorFn: (r) => r.groups.join(', '), header: t('Group'), meta: { label: t('Group') } },
+          { id: 'groups', accessorFn: (r) => r.groups.join(', '), header: t('Group|partner'), meta: { label: t('Group') } },
           ...(side === 'vendor' ? [{ id: 'kinds', accessorFn: (r: BalanceRow) => (r.kinds ?? []).map((k) => t(VENDOR_KINDS.find(([x]) => x === k)?.[1] ?? k)).join(', '), header: t('Kind of supplier'), meta: { label: t('Kind of supplier') } }] : []),
           { accessorKey: 'balance', header: side === 'customer' ? t('Owes us') : t('We owe'), meta: { label: side === 'customer' ? t('Owes us') : t('We owe'), align: 'right' },
             cell: ({ getValue }) => <span className="font-medium tabular-nums">{formatMoney(Number(getValue()))}</span> },

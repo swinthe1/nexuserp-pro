@@ -411,7 +411,7 @@ export default {
   "Cycle counts|menu": "Inventarizimi",
   "Low stock|menu": "Po mbarojnë",
   "Lots & expiry|menu": "Afatet e skadimit",
-  'Inventory setup|menu': 'Grupet dhe njësitë matëse',
+  'Inventory setup|menu': "Kategoritë dhe njësitë matëse",
   "Payments|menu": "Pagesat",
   "Receivables|menu": "Të arkëtueshmet (klientët)",
   "Payables|menu": "Të pagueshmet (furnitorët)",

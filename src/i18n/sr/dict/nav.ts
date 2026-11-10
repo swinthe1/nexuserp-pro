@@ -118,7 +118,7 @@ export default {
   "Import data from a file": "Uvezi podatke iz datoteke",
   "In the field and online": "Teren i onlajn",
   "Install the app on this device": "Instaliraj aplikaciju na ovom uređaju",
-  "Inventory setup|menu": "Grupe i jedinice mere",
+  "Inventory setup|menu": "Kategorije i jedinice mere",
   "Inventory|menu": "Zalihe",
   "Invite a user": "Pozovi korisnika",
   "Invoice from a photo|menu": "Faktura iz fotografije",

@@ -248,7 +248,7 @@ export default {
   "Decides where it appears in the financial statements.": "Përcakton ku shfaqet në pasqyrat financiare.",
   "Entry": "Regjistrimi",
   "Financing": "Financimi",
-  "Group": "Grupi",
+  "Group": "Kategoria",
   "Inactive accounts cannot be used in entries": "Llogaritë joaktive nuk mund të përdoren në regjistrime",
   "Investing": "Investimi",
   "Kind": "Lloji i llogarisë",

@@ -22,7 +22,7 @@ export default {
   "Goods thrown away, damaged, expired, used in the company, lost or stolen: each with its description and its value at cost and at the selling price. They lower the stock, never the sales margin.": "Malli i hedhur, i dëmtuar, i skaduar, i përdorur brenda kompanisë, i humbur ose i vjedhur: secila dalje me përshkrimin dhe vlerën me kosto dhe me çmim shitjeje. Ulin stokun, kurrë marzhën e shitjes.",
   "Each output": "Çdo dalje",
   "Thrown away against sales": "Hedhjet ndaj shitjeve",
-  "By group": "Sipas grupit",
+  "By group": "Sipas kategorisë",
   "Item, number, description…": "Artikulli, numri, përshkrimi…",
   "stock-outputs": "daljet-e-mallit",
   "No outputs in these days": "Asnjë dalje në këto ditë",

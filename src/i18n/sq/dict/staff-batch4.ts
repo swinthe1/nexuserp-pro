@@ -7,7 +7,7 @@ export default {
   "cash-book": "ditari-i-arkes",
   "Without an account chosen: every cash account (not the banks), of the units chosen.": "Pa zgjedhur arkë: të gjitha arkat me para në dorë (jo bankat), të njësive të zgjedhura.",
   "No cash movement in these days": "Asnjë lëvizje parash në këto ditë",
-  "Sub-groups": "Nëngrupet",
+  "Sub-groups": "Nënkategoritë",
   "Pack of {n}": "Pako me {n}",
   "{amount} without VAT": "{amount} pa TVSH",
   "Here: {qty}": "Këtu: {qty}",

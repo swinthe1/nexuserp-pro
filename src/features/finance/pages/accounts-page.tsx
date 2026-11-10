@@ -147,7 +147,7 @@ function AccountDialog({ open, account, accounts, onClose }: { open: boolean; ac
           <form onSubmit={submit} className="grid grid-cols-2 gap-3">
             <FormField control={form.control} name="code" render={({ field }) => (<FormItem><FormLabel>{t('Code')}</FormLabel><FormControl><Input className="font-mono" disabled={!!account} {...field} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="parent_id" render={({ field }) => (
-              <FormItem><FormLabel optional>{t('Group')}</FormLabel>
+              <FormItem><FormLabel optional>{t('Group|account')}</FormLabel>
                 <Select value={field.value ?? '__none'} onValueChange={(v) => field.onChange(v === '__none' ? null : v)}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                   <SelectContent><SelectItem value="__none">{t('None')}</SelectItem>{accounts.filter((a) => !a.is_postable && a.id !== account?.id).map((a) => <SelectItem key={a.id} value={a.id}>{a.code} {td(a.name)}</SelectItem>)}</SelectContent></Select></FormItem>
             )} />

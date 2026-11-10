@@ -164,12 +164,15 @@ function columnsOf(kind: Kind, report: string): Col[] {
     ...(report === 'by_item' ? [{ id: 'code', label: msg('Code'), type: 'text' }] as Col[] : []),
     { id: 'label', label: head, type: report === 'by_day' ? 'date' : 'text', strong: true },
     ...(report === 'by_item' ? [{ id: 'category', label: msg('Group'), type: 'text' }, { id: 'uom', label: msg('Unit|measure'), type: 'text', hidden: true },
-      { id: 'qty', label: msg('Quantity'), type: 'qty' }, { id: 'avg_price', label: msg('Average price'), type: 'price' }] as Col[] : []),
+      { id: 'qty', label: msg('Quantity sold'), type: 'qty' }, { id: 'avg_price', label: msg('Average selling price, without VAT'), type: 'price' }] as Col[] : []),
     ...(report === 'by_customer' ? [{ id: 'tax_number', label: msg('Tax number'), type: 'text' }] as Col[] : []),
-    { id: 'documents', label: msg('Documents'), type: 'count' },
-    { id: 'net', label: msg('Value without VAT'), type: 'money', strong: true }, { id: 'vat', label: msg('VAT'), type: 'money', hidden: true }, { id: 'gross', label: msg('Value with VAT'), type: 'money' },
-    { id: 'discount', label: msg('Discounts'), type: 'money', hidden: true }, { id: 'cost', label: msg('Cost'), type: 'money' }, { id: 'margin', label: msg('Margin'), type: 'money', strong: true },
-    { id: 'margin_pct', label: msg('Margin %'), type: 'pct' }, { id: 'share', label: msg('Share'), type: 'pct' },
+    // the money of each row, in the order it is worked out: sold − cost of the goods = profit; profit ÷ sold = margin
+    { id: 'documents', label: msg('Receipts and invoices'), type: 'count', hidden: report === 'by_item' },
+    { id: 'net', label: msg('Sales without VAT'), type: 'money', strong: true }, { id: 'vat', label: msg('VAT'), type: 'money', hidden: true },
+    { id: 'gross', label: msg('Sales with VAT'), type: 'money', hidden: report === 'by_item' },
+    { id: 'discount', label: msg('Discounts'), type: 'money', hidden: true }, { id: 'cost', label: msg('Cost of the goods sold'), type: 'money' },
+    { id: 'margin', label: msg('Gross profit'), type: 'money', strong: true },
+    { id: 'margin_pct', label: msg('Margin %'), type: 'pct' }, { id: 'share', label: msg('Share of all sales %'), type: 'pct' },
     { id: 'avg_document', label: msg('Average document'), type: 'money', hidden: report === 'by_item' },
   ]
 }
@@ -186,7 +189,7 @@ function shown(c: Col, v: unknown): string {
   switch (c.type) {
     case 'date': return formatDate(String(v))
     case 'money': return formatMoney(num(v))
-    case 'price': return formatMoney(num(v), undefined, 4).replace(/0{1,2}$/, '')
+    case 'price': { const n = num(v); return formatMoney(n, undefined, Math.abs(n * 100 - Math.round(n * 100)) > 1e-6 ? 4 : 2) }
     case 'qty': case 'count': return formatQty(num(v))
     case 'pct': case 'rate': return `${formatQty(num(v))}%`
     case 'type': return t(TYPE_LABEL[String(v)] ?? String(v))
@@ -302,7 +305,7 @@ export function DetailPage({ kind }: { kind: Kind }) {
         if (c.type === 'status' && v) return <Badge variant={v === 'paid' ? 'success' : v === 'overdue' ? 'destructive' : v === 'partial' ? 'warning' : 'secondary'}>{shown(c, v)}</Badge>
         if (c.type === 'type' && v) return <span className={cn(['credit', 'till_refund'].includes(String(v)) && 'text-destructive')}>{shown(c, v)}</span>
         if (c.id === 'label' && applied.report === 'by_hour') return <span className="font-medium">{String(v ?? '')}</span>
-        const text = shown(c, v)
+        const text = c.type === 'qty' && v != null && v !== '' ? formatQty(num(v), (row.original.uom as string | null) ?? undefined) : shown(c, v)
         return text === '' ? <span className="text-muted-foreground">—</span>
           : <span className={cn(c.strong && 'font-medium', right && num(v) < 0 && 'text-destructive', c.id === 'margin_pct' && num(v) < 0 && 'text-destructive')}>{text}</span>
       },
@@ -401,6 +404,9 @@ export function DetailPage({ kind }: { kind: Kind }) {
       </div>
 
       <p className="mb-2 text-[12.5px] text-muted-foreground">{said}</p>
+      {kind === 'sales' && cols.some((c) => c.id === 'share') && (
+        <p className="mb-2 text-[12.5px] text-muted-foreground">{t('Cost of the goods sold: what the goods sold cost to buy (average purchase price, without VAT). Gross profit = sales without VAT − that cost. Margin % = gross profit ÷ sales without VAT. Share = the part of all the sales of the period this row makes.')}</p>
+      )}
       {q.data?.truncated && <p className="mb-2 text-[12.5px] text-warning">{t('Only the first {n} rows are shown. Narrow the dates or the filters to see all of them.', { n: q.data.count })}</p>}
 
       <DataTable

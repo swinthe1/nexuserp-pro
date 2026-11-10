@@ -21,8 +21,8 @@ export default {
   'Purchase price without VAT': 'Çmimi i blerjes pa TVSH',
   'It goes into the stock as opening stock, valued at this price.': 'Hyn në stok si gjendje fillestare, me këtë çmim.',
   'Less': 'Më pak',
-  'More: type, category, purchase VAT, variants, reorder points, weight and customs': 'Më shumë: lloji, grupi, TVSH-ja e blerjes, variantet, porositë automatike, pesha dhe dogana',
-  'Kind and group': 'Lloji dhe grupi',
+  'More: type, category, purchase VAT, variants, reorder points, weight and customs': "Më shumë: lloji, kategoria, TVSH-ja e blerjes, variantet, porositë automatike, pesha dhe dogana",
+  'Kind and group': "Lloji dhe kategoria",
   // grupet brenda menysë
   'Customers and prices': "Klientët",
   'New customers': 'Klientë të rinj',
