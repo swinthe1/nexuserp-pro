@@ -52,8 +52,9 @@ export function LotsPage() {
     { id: 'item', accessorFn: (r) => `${r.variant?.sku} ${r.variant?.name}`, header: ({ column }) => <ColumnHeader column={column} title={t('Item')} />, meta: { label: t('Item') },
       cell: ({ row: { original: r } }) => <span><span className="text-muted-foreground">{r.variant?.sku}</span> {r.variant?.name}</span> },
     { accessorKey: 'vendor_name', filterFn: inFilter, header: t('Vendor'), meta: { label: t('Vendor') } },
-    { accessorKey: 'group', filterFn: inFilter, header: t('Group'), meta: { label: t('Group') } },
-    { accessorKey: 'sub', filterFn: inFilter, header: t('Sub-group'), meta: { label: t('Sub-group') } },
+    { accessorKey: 'group', filterFn: inFilter, header: t('Category'), meta: { label: t('Category'), exportValue: (r) => (r.sub ? `${r.group} - ${r.sub}` : r.group) },
+      cell: ({ row: { original: r } }) => (r.sub ? `${r.group} - ${r.sub}` : r.group) || '—' },
+    { accessorKey: 'sub', filterFn: inFilter, header: t('Sub-category'), meta: { label: t('Sub-category'), filterOnly: true, noExport: true } },
     { accessorKey: 'expiry_date', header: ({ column }) => <ColumnHeader column={column} title={t('Expires')} />, meta: { label: t('Expires') }, cell: ({ getValue }) => formatDate(getValue() as string) },
     { accessorKey: 'band', filterFn: inFilter, header: t('Shelf life'), meta: { label: t('Shelf life') }, cell: ({ row: { original: r } }) => { const s = expiryState(r.expiry_date); return <Badge variant={s.tone}>{s.label}</Badge> } },
     { accessorKey: 'stock', filterFn: inFilter, header: t('Stock'), meta: { label: t('Stock') }, cell: () => null, enableHiding: true },
@@ -76,8 +77,8 @@ export function LotsPage() {
           { columnId: 'band', title: t('Shelf life'), options: [{ value: 'expired', label: t('Expired') }, { value: 'soon', label: t('Within 30 days') }, { value: 'ok', label: t('More than 30 days') }, { value: 'none', label: t('No expiry') }] },
           { columnId: 'stock', title: t('Stock'), options: [{ value: 'in_stock', label: t('In stock') }, { value: 'used_up', label: t('Used up') }] },
           { columnId: 'vendor_name', title: t('Vendor'), options: [...new Set(rows.map((r) => r.vendor_name).filter(Boolean))].sort().map((v) => ({ value: v, label: v })) },
-          { columnId: 'group', title: t('Group'), options: [...new Set(rows.map((r) => r.group).filter(Boolean))].sort().map((v) => ({ value: v, label: v })) },
-          { columnId: 'sub', title: t('Sub-group'), options: [...new Set(rows.map((r) => r.sub).filter(Boolean))].sort().map((v) => ({ value: v, label: v })) },
+          { columnId: 'group', title: t('Category'), options: [...new Set(rows.map((r) => r.group).filter(Boolean))].sort().map((v) => ({ value: v, label: v })) },
+          { columnId: 'sub', title: t('Sub-category'), options: [...new Set(rows.map((r) => r.sub).filter(Boolean))].sort().map((v) => ({ value: v, label: v })) },
         ]}
         empty={{ title: t('No lots recorded'), description: t('Lots are created when items tracked by lot are received.') }} />
     </>

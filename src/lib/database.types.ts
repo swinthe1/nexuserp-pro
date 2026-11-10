@@ -21386,6 +21386,25 @@ export type Database = {
         }
         Returns: string
       }
+      vendor_return_doc: {
+        Args: {
+          p_return: string
+        }
+        Returns: Json
+      }
+      vendor_return_sources: {
+        Args: {
+          p_company: string
+          p_vendor: string
+        }
+        Returns: Json
+      }
+      vendor_returns_list: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       vendor_scorecard: {
         Args: {
           p_company: string

@@ -75,10 +75,11 @@ type Parts = ReturnType<typeof useCategoryParts>
 /** the Category and Sub-category columns of a table whose rows know their item's category (its id or its name) */
 export function categoryColumns<T>(get: (r: T) => string | null | undefined, parts: Parts): ColumnDef<T>[] {
   return [
-    { id: 'category', accessorFn: (r) => parts(get(r)).main, filterFn: inFilter, header: t('Category'), meta: { label: t('Category') },
-      cell: ({ getValue }) => (getValue() as string) || '—' },
-    { id: 'subcategory', accessorFn: (r) => parts(get(r)).sub, filterFn: inFilter, header: t('Sub-category'), meta: { label: t('Sub-category') },
-      cell: ({ getValue }) => (getValue() as string) || <span className="text-muted-foreground">—</span> },
+    // one column: "Pije - Alkolike"; filtered by the main category
+    { id: 'category', accessorFn: (r) => parts(get(r)).main, filterFn: inFilter, header: t('Category'),
+      meta: { label: t('Category'), exportValue: (r: T) => { const p = parts(get(r)); return p.sub ? `${p.main} - ${p.sub}` : p.main } },
+      cell: ({ row }) => { const p = parts(get(row.original)); return p.main ? (p.sub ? `${p.main} - ${p.sub}` : p.main) : '—' } },
+    { id: 'subcategory', accessorFn: (r) => parts(get(r)).sub, filterFn: inFilter, header: t('Sub-category'), meta: { label: t('Sub-category'), filterOnly: true, noExport: true } },
   ]
 }
 

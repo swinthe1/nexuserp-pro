@@ -1,6 +1,6 @@
 import { DocumentActions } from '@/components/document-actions'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FileText, Tag, Undo2 } from 'lucide-react'
+import { FileText, Printer, Tag, Undo2 } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -13,9 +13,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { t } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
-import { formatDate, formatMoney, formatQty, num } from '@/lib/utils'
+import { formatDate, formatMoney, num } from '@/lib/utils'
+import { formatQtyOf } from '@/lib/units'
 import { FiscalBadge } from '@/features/procurement/fiscal-status'
 import { BillFromReceiptDialog } from '@/features/procurement/components/bill-from-receipt-dialog'
+import { printVendorReturn } from '@/features/procurement/vendor-return-print'
 
 type Line = { id: string; variant_id: string; quantity: number; unit_cost: number | null }
 type Receipt = { id: string; number?: string; status: string; receipt_type: string; purchase_order_id: string | null; vendor_id: string | null; lines: Line[]; fiscal_status?: string | null }
@@ -66,6 +68,7 @@ export function ReceiptAfterActions({ doc, nameOf }: { doc: Receipt; nameOf: (va
           {returns.data!.map((r) => (
             <li key={r.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5">
               <span className="font-medium">{r.number}</span>
+              <Button size="sm" variant="ghost" onClick={() => void printVendorReturn(r.id)}><Printer /> {t('Return note')}</Button>
               <span className="text-muted-foreground">{formatDate(r.return_date)} · {r.reason}</span>
               <span className="ml-auto tabular-nums">{t('At cost {amount}, without VAT', { amount: formatMoney(r.total_cost, company?.base_currency) })}</span>
               {r.vendor_credit_id ? <Button size="sm" variant="ghost" asChild><Link to={`/procurement/bills/${r.vendor_credit_id}`}>{t('Credit note')}</Link></Button>
@@ -79,7 +82,8 @@ export function ReceiptAfterActions({ doc, nameOf }: { doc: Receipt; nameOf: (va
   )
 }
 
-function ReturnDialog({ doc, nameOf, returned, onClose }: { doc: Receipt; nameOf: (v: string) => string; returned: Map<string, number>; onClose: () => void }) {
+/** goods of one purchase receipt back to the vendor: the quantities and why */
+export function ReturnDialog({ doc, nameOf, returned, onClose, onDone }: { doc: Pick<Receipt, 'id' | 'lines'>; nameOf: (v: string) => string; returned: Map<string, number>; onClose: () => void; onDone?: (id: string) => void }) {
   const qc = useQueryClient()
   const [qty, setQty] = React.useState<Record<string, string>>({})
   const [reason, setReason] = React.useState('')
@@ -89,9 +93,9 @@ function ReturnDialog({ doc, nameOf, returned, onClose }: { doc: Receipt; nameOf
       p_receipt: doc.id, p_reason: reason.trim(),
       p_lines: Object.entries(qty).filter(([, v]) => num(v) > 0).map(([id, v]) => ({ receipt_line_id: id, quantity: num(v) })) as never,
     })),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['vendor-returns', doc.id] }); void qc.invalidateQueries({ queryKey: ['inv'] })
-      toast.success(t('The goods left the stock. Create the credit note when the vendor confirms it.')); onClose()
+    onSuccess: (id) => {
+      void qc.invalidateQueries({ queryKey: ['vendor-returns'] }); void qc.invalidateQueries({ queryKey: ['inv'] })
+      toast.success(t('The goods left the stock. Create the credit note when the vendor confirms it.')); onClose(); onDone?.(id as unknown as string)
     },
     onError: (e) => setError(describeError(e)),
   })
@@ -113,8 +117,8 @@ function ReturnDialog({ doc, nameOf, returned, onClose }: { doc: Receipt; nameOf
                 return (
                   <TableRow key={l.id}>
                     <TableCell className="text-[13px]">{nameOf(l.variant_id)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatQty(l.quantity)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatQty(returned.get(l.id) ?? 0)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatQtyOf(l.quantity, l.variant_id)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatQtyOf(returned.get(l.id) ?? 0, l.variant_id)}</TableCell>
                     <TableCell><Input type="number" min="0" step="any" max={left} disabled={left <= 0} className="h-8 text-right" aria-label={t('Return now')}
                       value={qty[l.id] ?? ''} onChange={(e) => { setQty((q) => ({ ...q, [l.id]: e.target.value })); setError(null) }} /></TableCell>
                   </TableRow>

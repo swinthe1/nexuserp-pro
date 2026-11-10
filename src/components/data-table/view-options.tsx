@@ -7,7 +7,7 @@ import {
 import { t } from '@/i18n'
 
 export function ViewOptions<TData>({ table }: { table: Table<TData> }) {
-  const cols = table.getAllLeafColumns().filter((c) => c.getCanHide())
+  const cols = table.getAllLeafColumns().filter((c) => c.getCanHide() && !c.columnDef.meta?.filterOnly)
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

@@ -69,6 +69,7 @@ const PurchaseDocumentPage = React.lazy(() => import('@/features/procurement/pag
 const RequisitionPage = lazy(() => import('@/features/procurement/pages/requisition-page'), 'RequisitionPage')
 const ReplenishmentPage = lazy(() => import('@/features/procurement/pages/replenishment-page'), 'ReplenishmentPage')
 const VendorPricesPage = lazy(() => import('@/features/procurement/pages/vendor-prices-page'), 'VendorPricesPage')
+const VendorReturnsPage = lazy(() => import('@/features/procurement/pages/vendor-returns-page'), 'VendorReturnsPage')
 const VendorScorecardPage = lazy(() => import('@/features/procurement/pages/vendor-scorecard-page'), 'VendorScorecardPage')
 const ContractsPage = lazy(() => import('@/features/procurement/pages/contracts-page'), 'ContractsPage')
 const RfqListPage = lazy(() => import('@/features/procurement/pages/rfq-pages'), 'RfqListPage')
@@ -294,6 +295,7 @@ const appRoutes: RouteObject[] = [
         { path: 'new', element: <PartnerPage key="new" /> },
         { path: ':id', element: <PartnerPage key="partner" /> },
       ] },
+      { path: 'procurement/returns', element: <RequirePerm perm="inventory.read|invoicing.read" />, children: [{ index: true, element: <VendorReturnsPage /> }] },
       { path: 'procurement/pending-invoices', element: <RequirePerm perm="procurement.read|finance.read|inventory.read" />, children: [{ index: true, element: <PendingInvoicesPage /> }] },
       { path: 'procurement', element: <RequirePerm perm="procurement.read" />, children: [
         { index: true, element: <ProcurementOverviewPage /> },

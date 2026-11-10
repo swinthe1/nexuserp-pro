@@ -6,7 +6,7 @@ import { PortalLinks } from '@/features/portal/portal-links'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
-import { FileText, Pencil, Plus, ShoppingCart, Star, Trash2, Upload } from 'lucide-react'
+import { Undo2, FileText, Pencil, Plus, ShoppingCart, Star, Trash2, Upload } from 'lucide-react'
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -159,6 +159,7 @@ function PartnerView({ partner }: { partner?: PartnerDetail }) {
         actions={<>
           <Can perm="partners.write"><AskDetailsButton partnerId={partner.id} /></Can>
           {partner.is_vendor && <Can perm="procurement.write"><Button variant={partner.is_customer ? 'outline' : 'default'} asChild><Link to={`/procurement/orders/new?vendor=${partner.id}`}><ShoppingCart /> {t('New purchase order')}</Link></Button></Can>}
+          {partner.is_vendor && <Can perm="inventory.write"><Button variant="outline" asChild><Link to={`/procurement/returns?new=1&vendor=${partner.id}`}><Undo2 /> {t('Return goods')}</Link></Button></Can>}
           {/* only the documents this business uses: a shop or a service bills straight away, a wholesaler quotes and takes orders */}
           {partner.is_customer && <Can perm="sales.write">
             {shows('/sales/quotes') && <Button variant="outline" asChild><Link to={`/sales/quotes/new?customer=${partner.id}`}><FileText /> {t('New quote')}</Link></Button>}
@@ -329,6 +330,7 @@ function PartnerForm({ partner }: { partner?: PartnerDetail }) {
                   <SelectContent><SelectItem value="company">{t('Business')}</SelectItem><SelectItem value="individual">{t('Individual')}</SelectItem></SelectContent></Select></FormItem>
             )} />
             <FormField control={form.control} name="tax_number" render={({ field }) => (<FormItem><FormLabel optional>{t('NIPT / NUI')}</FormLabel><FormControl><Input className="uppercase" disabled={!writable} {...field} /></FormControl><FormDescription>{t('Required on fiscal invoices to businesses.')}</FormDescription></FormItem>)} />
+            <FormField control={form.control} name="vat_number" render={({ field }) => (<FormItem><FormLabel optional>{t('VAT number')}</FormLabel><FormControl><Input className="uppercase" disabled={!writable} {...field} value={field.value ?? ''} /></FormControl><FormDescription>{t('If the partner is registered for VAT.')}</FormDescription></FormItem>)} />
             <FormField control={form.control} name="legal_name" render={({ field }) => (<FormItem><FormLabel optional>{t('Legal name')}</FormLabel><FormControl><Input placeholder="… sh.p.k." disabled={!writable} {...field} /></FormControl></FormItem>)} /> {/* i18n-ignore */}
             <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel optional>{t('Email')}</FormLabel><FormControl><Input type="email" disabled={!writable} {...field} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel optional>{t('Phone')}</FormLabel><FormControl><Input type="tel" disabled={!writable} {...field} /></FormControl></FormItem>)} />

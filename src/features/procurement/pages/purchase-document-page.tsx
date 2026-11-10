@@ -549,6 +549,10 @@ function BillForm({ doc }: { doc?: BillDoc }) {
     billMore.push({ label: t('Record credit note'), icon: Undo2, onSelect: async () => { const id = await credit.mutateAsync(doc.id); toast.success(t('Draft credit note created — adjust it to the vendor’s document, then post it')); navigate(`/procurement/bills/${id}`) } })
     if (!isDebit) billMore.push({ label: t('Record debit note'), icon: Redo2, onSelect: () => setDebitNo('') })
   }
+  // goods back to the supplier: from its goods receipts, on the returns page
+  if (doc && doc.status === 'posted' && !isCredit && doc.vendor_id && can('inventory.write')) {
+    billMore.push({ label: t('Return goods to the supplier'), icon: Undo2, onSelect: () => navigate(`/procurement/returns?new=1&vendor=${doc.vendor_id}`) })
+  }
   if (doc && doc.status === 'posted' && !isCredit && Number(doc.amount_due) > 0 && can('invoicing.write')) {
     actions.push(<Button key="pay" asChild><Link to={`/finance/payments/new?type=vendor_payment&partner=${doc.vendor_id}&doc=${doc.id}`}>{t('Pay this bill')}</Link></Button>)
   }

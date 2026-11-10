@@ -236,6 +236,8 @@ export function DataTable<T>({
   }, [columnOrder, columnSizing, columnVisibility, styles]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const getters = React.useMemo(() => gettersOf(columns as ColumnDef<never, unknown>[], () => ''), [columns])
+  // columns kept for a filter only are never shown
+  const filterOnly = React.useMemo(() => Object.fromEntries((columns as ColumnDef<never, unknown>[]).filter((c) => c.meta?.filterOnly && c.id).map((c) => [c.id!, false])), [columns])
   const getterById = React.useMemo(() => new Map(getters.map((g) => [g.id, g])), [getters])
   const kinds = React.useMemo(() => new Map<string, Kind>(getters.map((g) => [g.id, kindOf(g, data ?? [])])), [getters, data])
   const liveRules = React.useMemo(() => rules.filter((r) => getterById.has(r.col) && ruleIsSet(r)), [rules, getterById])
@@ -260,7 +262,7 @@ export function DataTable<T>({
       globalFilter: server ? server.globalFilter : globalFilter,
       pagination: server ? server.pagination : pagination,
       rowSelection,
-      columnVisibility: !multiUnit && unitFacet ? { ...columnVisibility, [unitFacet.columnId]: false } : columnVisibility,
+      columnVisibility: { ...columnVisibility, ...(!multiUnit && unitFacet ? { [unitFacet.columnId]: false } : {}), ...filterOnly },
       columnOrder,
       columnSizing,
     },

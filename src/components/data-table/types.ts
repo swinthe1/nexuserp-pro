@@ -14,6 +14,8 @@ declare module '@tanstack/react-table' {
     className?: string
     /** on a phone the list shows cards: 'title' leads the card, 'amount' sits top right, 'hide' leaves it out */
     mobile?: 'title' | 'amount' | 'hide'
+    /** never shown: it is there for a filter only (e.g. the sub-category, shown inside the category column) */
+    filterOnly?: boolean
   }
 }
 

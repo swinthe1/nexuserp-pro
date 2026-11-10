@@ -1,7 +1,7 @@
 import { Hint } from '@/components/help'
 import { useActiveUnit, useDefaultUnit } from '@/app/active-unit'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCheck, ChevronDown, ChevronUp, Columns3, FileSpreadsheet, PackagePlus, Percent, Save, ScanBarcode, Sparkles, Trash2 } from 'lucide-react'
+import { Undo2, CheckCheck, ChevronDown, ChevronUp, Columns3, FileSpreadsheet, PackagePlus, Percent, Save, ScanBarcode, Sparkles, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -429,13 +429,14 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
     <div className="pb-24">
       <PageHeader back={{ href: '/procurement/bills', label: t('Vendor bills') }} title={doc ? `${t('Purchase invoice')} ${doc.number}` : t('New purchase invoice')}
         description={t('The supplier’s invoice with the goods: they come into the warehouse at their cost, and you set the selling prices here.')}
-        actions={editable && <>
+        actions={editable ? <>
           {doc && <ConfirmDialog trigger={<Button variant="ghost"><Trash2 /> {t('Delete')}</Button>} title={t('Delete this draft?')} description={t('Nothing was received or posted yet.')}
             destructive confirmLabel={t('Delete')} onConfirm={async () => { await del.mutateAsync(doc.id); navigate('/procurement/bills') }} />}
           {doc && <DuplicateButton table="vendor_bills" id={doc.id} />}
           <Button variant="outline" loading={save.isPending && !complete.isPending} disabled={!h.vendor_id || (h.in_vat_book && !h.vendor_invoice_number.trim())} onClick={() => void saveDraft()}><Save /> {t('Save draft')}</Button>
           <Button disabled={!!problem} title={problem ?? undefined} onClick={() => setConfirm(true)}><CheckCheck /> {t('Complete')}</Button>
-        </>} />
+        </> : doc?.status === 'posted' && doc.vendor_id && can('inventory.write')
+          ? <Button variant="outline" asChild><Link to={`/procurement/returns?new=1&vendor=${doc.vendor_id}`}><Undo2 /> {t('Return goods to the supplier')}</Link></Button> : null} />
       {/* why the main button is not active yet, in words, not only on hover */}
       {editable && problem && <p className="-mt-2 mb-3 text-right text-xs text-muted-foreground">{t('To complete: {what}', { what: problem.toLowerCase() })}</p>}
       {doc && <PriceRiseCard billId={doc.id} version={doc.updated_at} currency={base} />}

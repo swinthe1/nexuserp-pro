@@ -134,10 +134,17 @@ select t.ok((select on_hand from public.stock_levels where variant_id = :'tea' a
 select t.ok(pg_temp.grni(:'co') = :'grni0'::numeric + 20000 + 2000, 'at the cost they came in at, waiting for the vendor''s credit');
 select t.throws(format($q$select public.return_to_vendor(%L, '[{"receipt_line_id":"%s","quantity":46}]', 'x')$q$, :'gr', (select id from public.goods_receipt_lines where receipt_id = :'gr')),
   'can still go back', 'not more than came in');
+select t.ok((select x ->> 'credit_state' = 'none' and (x ->> 'total_cost')::numeric > 0 from jsonb_array_elements(public.vendor_returns_list(:'co')) x where x ->> 'id' = :'vret'),
+            'the returns list shows it waiting for the credit note');
+select t.ok(jsonb_array_length(public.vendor_return_doc(:'vret') -> 'lines') = 1 and (public.vendor_return_doc(:'vret') ->> 'reason') = 'Paketim i dëmtuar',
+            'the return note has its goods and why');
+select t.ok(exists (select 1 from jsonb_array_elements(public.vendor_return_sources(:'co', (select vendor_id from public.goods_receipts where id = :'gr'))) x where x ->> 'id' = :'gr'),
+            'the receipt still has goods to return');
 select public.vendor_credit_from_return(:'vret') as vcr \gset
 select t.ok((select original_bill_id = :'rbill'::uuid from public.vendor_bills where id = :'vcr')
             and (select bool_and(is_return) and sum(quantity) = 5 from public.vendor_bill_lines where bill_id = :'vcr'), 'the credit for those goods is prepared against their bill');
 select public.post_vendor_bill(:'vcr');
+select t.ok((select x ->> 'credit_state' = 'posted' from jsonb_array_elements(public.vendor_returns_list(:'co')) x where x ->> 'id' = :'vret'), 'and then the credit note is booked');
 select t.ok(pg_temp.grni(:'co') = :'grni0'::numeric + 20000, 'posting the credit clears what the return left');
 select t.ok((select amount_due from public.vendor_bills where id = :'rbill') = 24000 - 2400, 'and the bill owes that much less');
 

@@ -1,4 +1,4 @@
-import {
+import { Undo2,
   Bell, Printer, CalendarDays, CalendarClock, ClipboardPen, Contact, FileBarChart, Fingerprint, Globe, History, Import, KeyRound, Archive, ListOrdered,
   MapPinned, PackageCheck as PackageDone, Route, ShieldCheck, UserRound, UsersRound, Workflow, Zap,
   BadgePercent, Calculator, ClipboardCheck, Hourglass, PackageOpen, ScanLine, ShoppingBasket,
@@ -88,6 +88,7 @@ export const NAV: NavSection[] = [
       { label: msg('Purchase orders'), href: '/procurement/orders', icon: ShoppingCart, perm: 'procurement.read', keywords: ['po', 'buy', 'order', 'porosi blerje'], hub: msg('Purchase documents|menu') },
       { label: msg('Goods receipts|menu'), href: '/inventory/receipts', icon: PackageCheck, perm: 'inventory.read', keywords: ['grn', 'receive', 'import'], hub: msg('Purchase documents|menu') },
       { label: msg('Goods waiting for the invoice|menu'), href: '/procurement/pending-invoices', icon: Hourglass, perm: 'procurement.read', keywords: ['pa faturë', 'mall pa faturë', 'pranim pa faturë', 'fletëdërgesë', 'në pritje të faturës', '4081', 'grni', 'goods received not invoiced', 'pending invoice'], hub: msg('Purchase documents|menu') },
+      { label: msg('Returns to suppliers|menu'), href: '/procurement/returns', icon: Undo2, perm: 'inventory.read|invoicing.read', keywords: ['kthim', 'kthimi i mallit', 'kthim te furnitori', 'fletëkthim', 'return to vendor', 'supplier return', 'nota e kreditit'], hub: msg('Purchase documents|menu') },
       { label: msg('Invoice from a photo|menu'), href: '/inventory/read-invoice', icon: ScanText, perm: 'inventory.read', keywords: ['ocr', 'scan', 'photo', 'foto', 'fatura', 'ai', 'pdf'], hub: msg('Purchase documents|menu') },
       { label: msg('Landed costs|menu'), href: '/inventory/landed-costs', icon: Ship, perm: 'procurement.read', keywords: ['customs', 'freight', 'import', 'clearance'], hub: msg('Purchase documents|menu') },
       { label: msg('Vendors'), href: '/partners?role=vendor', icon: Handshake, perm: 'partners.read', keywords: ['suppliers', 'furnitor'], focus: ['procurement.write', 'wms.write'], hub: msg('Suppliers|menu') },

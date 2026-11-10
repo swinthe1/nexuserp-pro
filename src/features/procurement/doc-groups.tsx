@@ -5,7 +5,7 @@ import { useCompany } from '@/app/company-provider'
 import { t, td } from '@/i18n'
 import { supabase } from '@/lib/supabase'
 
-type Groups = Record<string, { groups: string[]; subs: string[] }>
+type Groups = Record<string, { groups: string[]; subs: string[]; pairs?: [string, string | null][] }>
 
 /**
  * The groups and sub-groups of the items on each document (from the meeting with the staff): two
@@ -22,11 +22,18 @@ export function useDocGroups<R extends { id: string }>(table: 'vendor_bills' | '
   })
   const map = q.data ?? {}
   const has = Object.keys(map).length > 0
+  // one column, "Pije - Alkolike, Bulmet"; the sub-categories stay for their filter only
+  const shown = (id: string) => {
+    const v = map[id]
+    if (!v) return ''
+    return (v.pairs ?? v.groups.map((g) => [g, null] as [string, null])).map(([g, s]) => (s ? `${td(g)} - ${td(s)}` : td(g))).join(', ')
+  }
   const columns = React.useMemo<ColumnDef<R>[]>(() => !has ? [] : [
-    { id: 'item_groups', accessorFn: (r) => (map[r.id]?.groups ?? []).map((g) => td(g)).join(', '), filterFn: anyOf, header: t('Groups'), meta: { label: t('Groups') },
-      cell: ({ getValue }) => <span className="text-[12.5px] text-muted-foreground">{getValue() as string}</span> },
-    { id: 'item_subs', accessorFn: (r) => (map[r.id]?.subs ?? []).map((g) => td(g)).join(', '), filterFn: anyOf, header: t('Sub-groups'), meta: { label: t('Sub-groups') },
-      cell: ({ getValue }) => <span className="text-[12.5px] text-muted-foreground">{getValue() as string}</span> },
+    { id: 'item_groups', accessorFn: (r) => (map[r.id]?.groups ?? []).map((g) => td(g)).join(', '), filterFn: anyOf, header: t('Categories'),
+      meta: { label: t('Categories'), exportValue: (r: R) => shown(r.id) },
+      cell: ({ row }) => <span className="text-[12.5px] text-muted-foreground">{shown(row.original.id)}</span> },
+    { id: 'item_subs', accessorFn: (r) => (map[r.id]?.subs ?? []).map((g) => td(g)).join(', '), filterFn: anyOf, header: t('Sub-categories'),
+      meta: { label: t('Sub-categories'), filterOnly: true, noExport: true } },
   ], [map, has]) // eslint-disable-line react-hooks/exhaustive-deps
   const facets = React.useMemo(() => {
     if (!has) return []
@@ -34,8 +41,8 @@ export function useDocGroups<R extends { id: string }>(table: 'vendor_bills' | '
     const g = new Set<string>(), s = new Set<string>()
     for (const [id, v] of Object.entries(map)) if (ids.has(id)) { v.groups.forEach((x) => g.add(td(x))); v.subs.forEach((x) => s.add(td(x))) }
     return [
-      { columnId: 'item_groups', title: t('Groups'), options: [...g].sort().map((x) => ({ value: x, label: x })) },
-      ...(s.size ? [{ columnId: 'item_subs', title: t('Sub-groups'), options: [...s].sort().map((x) => ({ value: x, label: x })) }] : []),
+      { columnId: 'item_groups', title: t('Categories'), options: [...g].sort().map((x) => ({ value: x, label: x })) },
+      ...(s.size ? [{ columnId: 'item_subs', title: t('Sub-categories'), options: [...s].sort().map((x) => ({ value: x, label: x })) }] : []),
     ]
   }, [map, has, rows])
   return { columns, facets, hidden: ['item_subs'] }
