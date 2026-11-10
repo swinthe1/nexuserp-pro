@@ -1,5 +1,6 @@
-import { ArrowLeft } from 'lucide-react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
+import * as React from 'react'
+import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 import { t } from '@/i18n'
 import { cn } from '@/lib/utils'
 
@@ -28,6 +29,35 @@ export function BackButton({ home = '/', className }: { home?: string; className
     <button type="button" onClick={go} title={t('Back one step')} aria-label={t('Back one step')}
       className={cn('grid size-9 shrink-0 place-items-center rounded-full border bg-card text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary', className)}>
       <ArrowLeft className="size-[18px]" />
+    </button>
+  )
+}
+
+// the furthest step of this tab's history: a new page cuts off what was ahead, going back keeps it
+let furthest = 0
+
+/** one step forward: the page you went back from, while there is one */
+export function useGoForward() {
+  const navigate = useNavigate()
+  const loc = useLocation()
+  const type = useNavigationType()
+  const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0
+  if (type === 'PUSH') furthest = idx
+  else furthest = Math.max(furthest, idx)
+  const nav = (window as unknown as { navigation?: { canGoForward?: boolean } }).navigation
+  const [, tick] = React.useState(0)
+  React.useEffect(() => { tick((n) => n + 1) }, [loc.key])
+  const can = typeof nav?.canGoForward === 'boolean' ? nav.canGoForward : idx < furthest
+  return { go: () => { if (can) navigate(1) }, can }
+}
+
+/** the arrow beside the back arrow; greyed while there is nothing ahead */
+export function ForwardButton({ className }: { className?: string }) {
+  const { go, can } = useGoForward()
+  return (
+    <button type="button" onClick={go} disabled={!can} title={t('Forward one step')} aria-label={t('Forward one step')}
+      className={cn('grid size-9 shrink-0 place-items-center rounded-full border bg-card text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary disabled:pointer-events-none disabled:opacity-35', className)}>
+      <ArrowRight className="size-[18px]" />
     </button>
   )
 }

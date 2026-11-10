@@ -4,7 +4,7 @@ import { NotificationsButton } from '@/components/layout/notifications'
 import { ChatButton } from '@/features/chat/chat-button'
 import { UserMenu } from '@/components/layout/user-menu'
 import { LastExportButton } from '@/components/layout/last-export'
-import { BackButton } from '@/components/layout/back-button'
+import { BackButton, ForwardButton } from '@/components/layout/back-button'
 import { useCommandPalette } from '@/components/layout/command-palette'
 import { Button } from '@/components/ui/button'
 import { AssistantButton } from '@/features/assistant/assistant'
@@ -22,6 +22,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
         <Menu />
       </Button>
       <BackButton />
+      <ForwardButton className="max-sm:hidden" />
       <button
         onClick={() => open()}
         className="flex h-9 min-w-[8.5rem] flex-[0_1_15rem] items-center gap-2 rounded-full border border-transparent bg-muted px-3.5 text-[13px] text-muted-foreground transition-colors hover:border-primary/30 hover:bg-card hover:text-foreground"

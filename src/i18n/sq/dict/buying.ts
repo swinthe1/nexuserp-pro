@@ -67,14 +67,14 @@ export default {
   "Make them the vendor's prices for the next orders": "Bëji çmime të furnitorit për porositë e ardhshme",
   "The new prices are accepted; the bill can be posted": "Çmimet e reja u pranuan; fatura mund të postohet",
   // the scorecard
-  "Vendor scorecard": "Karta e furnitorëve",
-  "Vendor scorecard|menu": "Karta e furnitorëve",
+  "Vendor scorecard": "Kartela e furnitorëve",
+  "Vendor scorecard|menu": "Kartela e furnitorëve",
   "How each vendor serves us: orders on time and complete, goods refused at the door and price rises. Judged on the orders placed in the period.":
     "Si na shërben çdo furnitor: porositë në kohë dhe të plota, malli i refuzuar në pranim dhe rritjet e çmimeve. Vlerësohet nga porositë e bëra në periudhë.",
   "A: on time at least 95%, complete at least 98%, at most 1% refused. C: on time under 80%, complete under 90% or over 3% refused.":
     "A: në kohë të paktën 95%, të plota të paktën 98%, të refuzuara jo më shumë se 1%. C: në kohë nën 80%, të plota nën 90% ose mbi 3% të refuzuara.",
   "No orders or bills in this period": "S'ka porosi ose fatura në këtë periudhë",
-  "The scorecard fills up as orders are placed and received.": "Karta mbushet sa bëhen dhe pranohen porositë.",
+  "The scorecard fills up as orders are placed and received.": "Kartela mbushet sa bëhen dhe pranohen porositë.",
   "Grade": "Nota",
   "Bought (without VAT)": "Blerë (pa TVSH)",
   "Average delay": "Vonesa mesatare",

@@ -1787,4 +1787,8 @@ export default {
   "Sub-category of": "Nënkategori e",
   "None: a main category": "Asnjë: kategori kryesore",
   "No group is marked \"goes off quickly\" yet: mark fruit and vegetables under Stock → Setup → Categories, or choose the groups above.": "Ende asnjë kategori nuk është shënuar \"prishet shpejt\": shënoni frutat dhe perimet te Stoku → Cilësimet → Kategoritë, ose zgjidhni kategoritë më lart.",
+  "{n} item in all": "{n} artikull gjithsej",
+  "{n} items in all": "{n} artikuj gjithsej",
+  "Forward one step": "Një hap para",
+  "Forward|step": "Para",
 } satisfies Dict

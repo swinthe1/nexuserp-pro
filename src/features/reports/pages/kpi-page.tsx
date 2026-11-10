@@ -110,7 +110,7 @@ export function KpiPage() {
 
   return (
     <>
-      <PageHeader title={t('Manager\'s panel')}
+      <PageHeader back={{ href: '/reports', label: t('Reports') }} title={t('Manager\'s panel')}
         description={t('The shop\'s numbers against its plan and the period before: customers, average receipt, margin, losses, stock and the tills. Amounts without VAT.')}
         actions={<><PageTableExport />{k?.can_set_targets && <Button variant="outline" onClick={() => setTargets(true)}><Target /> {t('Sales targets')}</Button>}</>} />
 

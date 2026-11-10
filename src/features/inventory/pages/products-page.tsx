@@ -7,13 +7,14 @@ import { ProductView } from './product-detail-page'
 import { usePendingItemRequests } from './item-requests-page'
 import { StockByUnitDialog } from '../components/stock-by-unit'
 import { Can, useCompany } from '@/app/company-provider'
-import { ColumnHeader, DataTable, inFilter, selectColumn } from '@/components/data-table/data-table'
+import { ColumnHeader, DataTable, inFilter, LeadCell, selectColumn } from '@/components/data-table/data-table'
+import { TableCell, TableFooter, TableRow } from '@/components/ui/table'
 import { PageHeader } from '@/components/page-header'
 import { StockBar } from '@/components/stock-bar'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { formatDate, formatMoney, formatQty, num } from '@/lib/utils'
+import { cn, formatDate, formatMoney, formatQty, num } from '@/lib/utils'
 import { useBulkProducts, useCategories, useProductStock, type ProductStockRow } from '../api'
 import { t, td, tEnum, tn } from '@/i18n'
 
@@ -89,9 +90,9 @@ export function ProductsPage() {
         ? <StockBar onHand={r.on_hand} reserved={r.reserved} min={r.reorder_min} max={r.reorder_max} className="max-w-[200px]" />
         : <span className="text-[13px] text-muted-foreground">{t('Not stocked')}</span>,
     },
-    { accessorKey: 'on_hand', header: ({ column }) => <ColumnHeader column={column} title={t('On hand')} />, meta: { label: t('On hand'), align: 'right' }, cell: ({ getValue }) => formatQty(getValue() as number) },
-    { accessorKey: 'reserved', header: ({ column }) => <ColumnHeader column={column} title={t('Reserved')} />, meta: { label: t('Reserved'), align: 'right' }, cell: ({ getValue }) => formatQty(getValue() as number) },
-    { accessorKey: 'incoming', header: ({ column }) => <ColumnHeader column={column} title={t('Incoming')} />, meta: { label: t('Incoming'), align: 'right' }, cell: ({ getValue }) => formatQty(getValue() as number) },
+    { accessorKey: 'on_hand', header: ({ column }) => <ColumnHeader column={column} title={t('On hand')} />, meta: { label: t('On hand'), align: 'right' }, cell: ({ row: { original: r } }) => formatQty(r.on_hand, r.uom_code) },
+    { accessorKey: 'reserved', header: ({ column }) => <ColumnHeader column={column} title={t('Reserved')} />, meta: { label: t('Reserved'), align: 'right' }, cell: ({ row: { original: r } }) => formatQty(r.reserved, r.uom_code) },
+    { accessorKey: 'incoming', header: ({ column }) => <ColumnHeader column={column} title={t('Incoming')} />, meta: { label: t('Incoming'), align: 'right' }, cell: ({ row: { original: r } }) => formatQty(r.incoming, r.uom_code) },
     { accessorKey: 'sales_price', header: ({ column }) => <ColumnHeader column={column} title={t('Selling price (without VAT)')} />, meta: { label: t('Selling price (without VAT)'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
     { accessorKey: 'avg_cost', header: ({ column }) => <ColumnHeader column={column} title={t('Avg cost (without VAT)')} />, meta: { label: t('Average cost (without VAT)'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number, undefined, 2) },
     { accessorKey: 'stock_value', header: ({ column }) => <ColumnHeader column={column} title={t('Value at cost')} />, meta: { label: t('Value at cost ({currency})', { currency: cur }), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
@@ -139,6 +140,30 @@ export function ProductsPage() {
         initialSorting={[{ id: 'product', desc: false }]}
         onRowClick={(r) => r.product_id && openItem(r.product_id)}
         exportName="products"
+        footer={(table) => {
+          // how many items the list shows, and how much of them there is, one sum per unit (copë and kg are not added together)
+          const rows = table.getFilteredRowModel().rows.map((r) => r.original)
+          const byUnit = (k: 'available' | 'on_hand' | 'reserved' | 'incoming') => {
+            const m = new Map<string, number>()
+            for (const r of rows) if (r.product_type !== 'service' && num(r[k])) m.set(r.uom_code ?? '', (m.get(r.uom_code ?? '') ?? 0) + num(r[k]))
+            return [...m].sort((a, b) => b[1] - a[1]).map(([u, q]) => <span key={u} className="block whitespace-nowrap">{formatQty(Math.round(q * 1000) / 1000, u || undefined)}</span>)
+          }
+          return (
+            <TableFooter>
+              <TableRow className="hover:bg-transparent align-top font-semibold">
+                <LeadCell />
+                {table.getVisibleLeafColumns().map((c) => {
+                  let v: React.ReactNode = ''
+                  if (c.id === 'product') v = tn(rows.length, '{n} item in all', '{n} items in all')
+                  else if (c.id === 'availability' || c.id === 'on_hand' || c.id === 'reserved' || c.id === 'incoming')
+                    v = byUnit(c.id === 'availability' ? 'available' : c.id)
+                  else if (c.id === 'stock_value') v = formatMoney(rows.reduce((s, r) => s + num(r.stock_value), 0))
+                  return <TableCell key={c.id} className={cn(c.id !== 'product' && 'text-right tabular')}>{v}</TableCell>
+                })}
+              </TableRow>
+            </TableFooter>
+          )
+        }}
         facets={[
           { columnId: 'category', title: t('Category'), options: (categories.data ?? []).map((c) => ({ label: td(c.name), value: c.name })) },
           { columnId: 'type', title: t('Type'), options: ['stockable', 'consumable', 'service'].map((x) => ({ label: tEnum(`product_${x}`), value: x })) },

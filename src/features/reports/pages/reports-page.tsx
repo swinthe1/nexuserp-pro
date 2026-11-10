@@ -96,6 +96,7 @@ const plain = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCa
 export function ReportsPage() {
   const { can, pageAllowed } = useCompany()
   const [q, setQ] = React.useState('')
+  const fromReports = { backTo: { href: '/reports', label: t('Reports') } }
   const want = plain(q.trim())
   const allowed = (href: string, ok: (c: typeof can) => boolean) => ok(can) && pageAllowed(href)
   const match = (...texts: string[]) => !want || texts.some((x) => plain(t(x)).includes(want))
@@ -115,7 +116,7 @@ export function ReportsPage() {
       {!want && favourites.length > 0 && (
         <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {favourites.map((f) => (
-            <Link key={f.href} to={f.href} style={{ '--mod': f.hue } as React.CSSProperties}
+            <Link key={f.href} to={f.href} state={fromReports} style={{ '--mod': f.hue } as React.CSSProperties}
               className="stat-card group flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-card transition-[border-color,transform] hover:-translate-y-px hover:border-primary/30 focus-visible:ring-2 focus-visible:ring-ring">
               <span className="mod-chip flex size-10 items-center justify-center rounded-[10px]"><f.icon className="size-5" /></span>
               <span>
@@ -148,7 +149,7 @@ export function ReportsPage() {
             <ul className="divide-y">
               {g.items.map((i) => (
                 <li key={i.href}>
-                  <Link to={i.href} className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none">
+                  <Link to={i.href} state={fromReports} className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none">
                     <span className="min-w-0 flex-1">
                       <span className="block text-[14px] font-semibold">{t(i.title)}</span>
                       <span className="block text-[12.5px] leading-snug text-muted-foreground">{t(i.question)}</span>
@@ -166,7 +167,7 @@ export function ReportsPage() {
         <section className="mt-6">
           <h2 className="mb-2 text-[13px] font-semibold text-muted-foreground">{t('Overviews of each part')}</h2>
           <div className="flex flex-wrap gap-2">
-            {overviews.map((o) => <Button key={o.href} variant="outline" size="sm" asChild><Link to={o.href}><o.icon /> {t(o.title)}</Link></Button>)}
+            {overviews.map((o) => <Button key={o.href} variant="outline" size="sm" asChild><Link to={o.href} state={fromReports}><o.icon /> {t(o.title)}</Link></Button>)}
           </div>
         </section>
       )}
@@ -187,7 +188,7 @@ function MyReports() {
       <div className="flex flex-wrap gap-2">
         {mine.map((r) => (
           <span key={r.id} className={cn('group inline-flex items-center gap-1 rounded-full border bg-card py-1 pl-3 pr-1 text-[13px] transition-colors hover:border-ring/40')}>
-            <Link to={savedHref(r)} className="font-medium hover:underline">{r.name}</Link>
+            <Link to={savedHref(r)} state={{ backTo: { href: '/reports', label: t('Reports') } }} className="font-medium hover:underline">{r.name}</Link>
             <span className="text-muted-foreground">· {t(reportDef(r.report)!.title)}</span>
             {r.is_shared && <Users className="size-3 text-muted-foreground" aria-label={t('Shared')} />}
             {r.owner_id === user?.id && (

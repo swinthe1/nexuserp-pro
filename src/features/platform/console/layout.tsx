@@ -1,5 +1,5 @@
 import { Wordmark } from '@/components/wordmark'
-import { BackButton } from '@/components/layout/back-button'
+import { BackButton, ForwardButton } from '@/components/layout/back-button'
 import { MonitorSmartphone,
   ArrowRight, Boxes, Cable, Cpu, CircleDollarSign, DatabaseBackup, LayoutDashboard, LogOut, Menu, MonitorDown, Plus, ScrollText,
   Search, Server, Settings2, ShieldCheck, Store, Users, FileSignature, type LucideIcon } from 'lucide-react'
@@ -151,6 +151,7 @@ export function PlatformLayout() {
           <header className="sticky top-0 z-30 flex h-[52px] items-center gap-2 border-b bg-card/90 px-3 backdrop-blur sm:px-5">
             <Button variant="ghost" size="icon-sm" className="lg:hidden" onClick={() => setMobile(true)} aria-label={t('Open navigation')}><Menu /></Button>
             <BackButton home="/platform" />
+            <ForwardButton className="max-sm:hidden" />
             <button type="button" onClick={() => setSearch(true)}
               className="flex h-9 w-full min-w-0 max-w-md items-center gap-2 rounded-full border border-transparent bg-muted px-3.5 text-[13px] text-muted-foreground transition-colors hover:border-primary/30 hover:bg-card hover:text-foreground">
               <Search className="size-4" /><span className="flex-1 truncate text-left">{t('Find a client: name, NUI or email…')}</span>

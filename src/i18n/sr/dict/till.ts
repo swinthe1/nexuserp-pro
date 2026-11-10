@@ -1503,4 +1503,9 @@ export default {
   "Sub-category of": "Potkategorija od",
   "None: a main category": "Nijedna: glavna kategorija",
   "Kind and group": "Vrsta i kategorija",
+  "{n} item in all": "{n} artikal ukupno",
+  "{n} items in all": "{n} artikala ukupno",
+  "Vendor scorecard": "Ocena dobavljača",
+  "Forward one step": "Korak napred",
+  "Forward|step": "Napred",
 } satisfies Dict

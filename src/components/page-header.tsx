@@ -1,5 +1,7 @@
 import { PageHelpButton } from '@/components/help'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useGoForward } from '@/components/layout/back-button'
+import { t } from '@/i18n'
 import * as React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { moduleLook, sectionOf } from '@/app/modules'
@@ -30,6 +32,10 @@ export function PageHeader({ title, description, actions, back, meta, className,
   /** the coloured module icon beside the title */
   icon?: boolean
 }) {
+  // a page opened from a list (e.g. the Reports page) goes back there, whatever its own way back is
+  const from = (useLocation().state as { backTo?: { href: string; label: string } } | null)?.backTo
+  if (from?.href) back = from
+  const fwd = useGoForward()
   // one compact row: the way back, the title and its marks; the description in one line under it (all of it on hover)
   return (
     <div className={cn('mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between', className)}>
@@ -39,6 +45,12 @@ export function PageHeader({ title, description, actions, back, meta, className,
             className="inline-flex h-8 shrink-0 items-center gap-0.5 rounded-md border bg-background pl-1.5 pr-2.5 text-[12.5px] font-medium text-muted-foreground shadow-sm transition-colors hover:border-primary/50 hover:text-primary">
             <ChevronLeft className="size-4" /> <span className="max-w-[10rem] truncate">{back.label}</span>
           </Link>
+        )}
+        {back && (
+          <button type="button" onClick={fwd.go} disabled={!fwd.can} title={t('Forward one step')} aria-label={t('Forward one step')}
+            className="-ml-1.5 inline-flex h-8 shrink-0 items-center gap-0.5 rounded-md border bg-background pl-2.5 pr-1.5 text-[12.5px] font-medium text-muted-foreground shadow-sm transition-colors hover:border-primary/50 hover:text-primary disabled:pointer-events-none disabled:opacity-40">
+            <span>{t('Forward|step')}</span> <ChevronRight className="size-4" />
+          </button>
         )}
         {icon && !back && <ModuleChip className="size-8 rounded-lg [&_svg]:size-4" />}
         <div className="min-w-0">
