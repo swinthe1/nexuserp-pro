@@ -1,3 +1,4 @@
+import { categoryTreeOptions } from '@/features/inventory/components/category-picks'
 import { Hint } from '@/components/help'
 import { Check, ClipboardCheck, EyeOff, FileSpreadsheet, FileText, MapPin, Plus, Printer } from 'lucide-react'
 import * as React from 'react'
@@ -132,7 +133,7 @@ function NewCountDialog({ onClose }: { onClose: () => void }) {
               ))}
             </div></div>
           <div className="grid gap-1.5"><Label>{t('Only this category')}</Label>
-            <SearchSelect value={category} onChange={setCategory} clearable placeholder={t('Any category')} options={(categories.data ?? []).map((c) => ({ value: c.id, label: c.name }))} /></div>
+            <SearchSelect value={category} onChange={setCategory} clearable placeholder={t('Any category')} options={categoryTreeOptions(categories.data ?? [])} /></div>
           <label className="flex items-center justify-between gap-3 rounded-md border p-3 text-[13px]"><span><span className="font-medium">{t('Blind count')}<Hint id="blind_count" /></span><span className="block text-muted-foreground">{t('Counters don’t see the expected quantity.')}</span></span>
             <Switch checked={blind} onCheckedChange={setBlind} /></label>
         </div>

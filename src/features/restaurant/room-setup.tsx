@@ -1,3 +1,4 @@
+import { categoryTreeOptions } from '@/features/inventory/components/category-picks'
 import { Plus, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
@@ -10,7 +11,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { t, td, tn } from '@/i18n'
+import { t, tn } from '@/i18n'
+import { cn } from '@/lib/utils'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { useCategories } from '@/features/inventory/api'
@@ -169,9 +171,9 @@ function Stations({ warehouseId }: { warehouseId: string }) {
             </div>
           )}
           <div className="mt-3 grid max-h-40 grid-cols-2 gap-1.5 overflow-y-auto sm:grid-cols-3">
-            {(categories.data ?? []).map((c) => (
-              <label key={c.id} className="flex items-center gap-2 text-[13px]">
-                <Checkbox checked={s.category_ids.includes(c.id)} onCheckedChange={(on) => save(s, { category_ids: on ? [...s.category_ids, c.id] : s.category_ids.filter((x) => x !== c.id) })} />{td(c.name)}
+            {categoryTreeOptions(categories.data ?? []).map((c) => (
+              <label key={c.value} className={cn('flex items-center gap-2 text-[13px]', c.indent && 'pl-4 text-muted-foreground')}>
+                <Checkbox checked={s.category_ids.includes(c.value)} onCheckedChange={(on) => save(s, { category_ids: on ? [...s.category_ids, c.value] : s.category_ids.filter((x) => x !== c.value) })} />{c.label}
               </label>
             ))}
           </div>

@@ -1,3 +1,4 @@
+import { categoryColumns, categoryFacets, useCategoryParts } from '../components/category-picks'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Ban, CheckCircle2, PackagePlus, Plus, Trash2, Upload, Warehouse } from 'lucide-react'
 import * as React from 'react'
@@ -15,8 +16,8 @@ import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn, formatDate, formatMoney, formatQty, num } from '@/lib/utils'
-import { useBulkProducts, useCategories, useProductStock, type ProductStockRow } from '../api'
-import { t, td, tEnum, tn } from '@/i18n'
+import { useBulkProducts, useProductStock, type ProductStockRow } from '../api'
+import { t, tEnum, tn } from '@/i18n'
 
 function stockState(r: ProductStockRow) {
   if (!r.is_active) return 'inactive'
@@ -42,7 +43,6 @@ export function ProductsPage() {
   const { company } = useCompany()
   const cur = company?.base_currency
   const products = useProductStock()
-  const categories = useCategories()
   const bulk = useBulkProducts()
   const [byUnit, setByUnit] = React.useState<string[] | null>(null)
   // a row opens the item in a window over the list (?item=…), so the list stays as it was: its
@@ -51,6 +51,7 @@ export function ProductsPage() {
   const openId = params.get('item')
   const openItem = (id: string | null) => setParams((p) => { const n = new URLSearchParams(p); if (id) n.set('item', id); else n.delete('item'); return n }, { replace: !id })
 
+  const parts = useCategoryParts()
   const columns = React.useMemo<ColumnDef<ProductStockRow>[]>(() => [
     selectColumn<ProductStockRow>(),
     {
@@ -71,11 +72,7 @@ export function ProductsPage() {
     },
     { accessorKey: 'sku', header: t('SKU'), meta: { label: t('SKU') } },
     { accessorKey: 'barcode', header: t('Barcode'), meta: { label: t('Barcode') }, cell: ({ getValue }) => <span className="tabular text-[13px]">{(getValue() as string) ?? '—'}</span> },
-    {
-      accessorKey: 'category_name', id: 'category', filterFn: inFilter,
-      header: ({ column }) => <ColumnHeader column={column} title={t('Category')} />, meta: { label: t('Category') },
-      cell: ({ getValue }) => td(getValue() as string) || <span className="text-muted-foreground">—</span>,
-    },
+    ...categoryColumns<ProductStockRow>((r) => r.category_id ?? r.category_name, parts),
     {
       accessorKey: 'product_type', id: 'type', filterFn: inFilter,
       header: ({ column }) => <ColumnHeader column={column} title={t('Type')} />, meta: { label: t('Type'), exportValue: (r) => tEnum(`product_${r.product_type}`) },
@@ -117,7 +114,7 @@ export function ProductsPage() {
               : <Badge variant="success">{t('In range')}</Badge>
       },
     },
-  ], [cur])
+  ], [cur, parts])
 
   const productIds = (rows: { original: ProductStockRow }[]) => Array.from(new Set(rows.map((r) => r.original.product_id!).filter(Boolean)))
 
@@ -165,7 +162,7 @@ export function ProductsPage() {
           )
         }}
         facets={[
-          { columnId: 'category', title: t('Category'), options: (categories.data ?? []).map((c) => ({ label: td(c.name), value: c.name })) },
+          ...categoryFacets(products.data, (r) => r.category_id ?? r.category_name, parts),
           { columnId: 'type', title: t('Type'), options: ['stockable', 'consumable', 'service'].map((x) => ({ label: tEnum(`product_${x}`), value: x })) },
           { columnId: 'activity', title: t('Activity'), options: [
             { label: t('Sold in the last 30 days'), value: 'sold_30' }, { label: t('Sold in the last 6 months'), value: 'sold_180' },

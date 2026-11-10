@@ -1,3 +1,4 @@
+import { categoryTreeOptions } from '@/features/inventory/components/category-picks'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Barcode, Download, FileInput, Printer, ReceiptText, Tags, Trash2 } from 'lucide-react'
 import * as React from 'react'
@@ -204,7 +205,7 @@ function AddItems({ onAdd, busy }: { onAdd: (a: { source: Source; ids?: string[]
       )}
       {mode === 'category' && (
         <SearchSelect value={null} placeholder={t('Choose a category: all its items')}
-          options={(categories.data ?? []).map((c) => ({ value: c.id, label: c.name, hint: c.code ?? undefined }))}
+          options={categoryTreeOptions(categories.data ?? [])}
           onChange={(v) => v && onAdd({ source: 'category', ids: [v] })} />
       )}
     </div>

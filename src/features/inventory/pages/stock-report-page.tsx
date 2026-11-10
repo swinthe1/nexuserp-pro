@@ -1,3 +1,4 @@
+import { CategoryPicks } from '@/features/inventory/components/category-picks'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowDown, ArrowUp, ChevronDown, Columns3, Download, FileSpreadsheet, FileText, Play, Printer, RotateCcw, Search, SlidersHorizontal } from 'lucide-react'
 import * as React from 'react'
@@ -260,7 +261,7 @@ export function StockReportPage() {
     if (applied.report === 'slow' || applied.report === 'cover') parts.push(t('Sales of the last {n} days', { n: applied.days }))
     parts.push(applied.units.length ? `${t('Units|stores')}: ${pick(applied.units, unitOpts)}` : t('All units'))
     if (applied.split) parts.push(t('A row per unit'))
-    if (applied.categories.length) parts.push(`${t('Groups')}: ${pick(applied.categories, catOpts)}`)
+    if (applied.categories.length) parts.push(`${t('Categories')}: ${pick(applied.categories, catOpts)}`)
     if (applied.producers.length) parts.push(`${t('Producers')}: ${applied.producers.join(', ')}`)
     if (applied.brands.length) parts.push(`${t('Brands')}: ${applied.brands.join(', ')}`)
     if (applied.vendors.length) parts.push(`${t('Suppliers')}: ${pick(applied.vendors, (vendors.data ?? []).map((v) => ({ value: v.id, label: v.name })))}`)
@@ -296,7 +297,7 @@ export function StockReportPage() {
             options={['30', '60', '90', '180', '365'].map((d) => ({ value: d, label: t('{n} days', { n: d }) }))} />}
           {multi && <MultiPick label={t('Units|stores')} value={draft.units} onChange={(v) => put('units', v)} options={unitOpts} />}
           {multi && <label className="flex h-9 items-center gap-2 rounded-md border px-3 text-[13px]"><Switch checked={draft.split} onCheckedChange={(v) => put('split', v)} />{t('A row per unit')}</label>}
-          <MultiPick label={t('Groups')} value={draft.categories} onChange={(v) => put('categories', v)} options={catOpts} />
+          <CategoryPicks value={draft.categories} onChange={(v) => put('categories', v)} />
           <Button variant={more ? 'secondary' : 'outline'} className="h-9" onClick={() => setMore((m) => !m)} aria-expanded={more}>
             <SlidersHorizontal /> {t('Advanced filters')}<ChevronDown className={cn('size-3.5 transition-transform', more && 'rotate-180')} />
           </Button>

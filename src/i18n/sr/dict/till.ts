@@ -1538,4 +1538,6 @@ export default {
   "e.g. 1234567890": "npr. 1234567890",
   "e.g. Rr. Agim Ramadani 12, Prishtinë": "npr. Ul. Agim Ramadani 12, Priština",
   "e.g. Raiffeisen Bank": "npr. Raiffeisen Bank",
+  "Sub-category": "Potkategorija",
+  "Sub-categories": "Potkategorije",
 } satisfies Dict

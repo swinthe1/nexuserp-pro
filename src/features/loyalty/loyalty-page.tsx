@@ -1,3 +1,4 @@
+import { categoryTreeOptions } from '@/features/inventory/components/category-picks'
 import type { ColumnDef } from '@tanstack/react-table'
 import { BadgePercent, Ban, CreditCard, Pencil, Plus, Printer, RotateCcw } from 'lucide-react'
 import * as React from 'react'
@@ -349,7 +350,7 @@ function ProgramDialog({ program, onClose }: { program: Program | 'new' | null; 
           <div className="grid gap-1.5"><Label>{t('Not for these categories')}</Label>
             <p className="text-xs text-muted-foreground">{t('For example cigarettes, or goods already on offer. Items with a discount typed by the cashier never get the card discount on top.')}</p>
             <div className="grid max-h-36 grid-cols-2 gap-1.5 overflow-y-auto rounded-md border p-2">
-              {(categories.data ?? []).map((c) => <label key={c.id} className="flex items-center gap-2 text-[13px]"><Checkbox checked={v.excluded_category_ids.includes(c.id)} onCheckedChange={() => toggle('excluded_category_ids', c.id)} />{td(c.name)}</label>)}
+              {categoryTreeOptions(categories.data ?? []).map((c) => <label key={c.value} className={cn('flex items-center gap-2 text-[13px]', c.indent && 'pl-4 text-muted-foreground')}><Checkbox checked={v.excluded_category_ids.includes(c.value)} onCheckedChange={() => toggle('excluded_category_ids', c.value)} />{c.label}</label>)}
               {!categories.data?.length && <span className="text-[13px] text-muted-foreground">{t('No categories yet')}</span>}
             </div></div>
           <div className="grid gap-1.5"><Label>{t('Stores')}</Label>

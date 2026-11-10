@@ -1820,4 +1820,6 @@ export default {
   "e.g. 1234567890": "p.sh. 1234567890",
   "e.g. Rr. Agim Ramadani 12, Prishtinë": "p.sh. Rr. Agim Ramadani 12, Prishtinë",
   "e.g. Raiffeisen Bank": "p.sh. Raiffeisen Bank",
+  "Sub-category": "Nënkategoria",
+  "Sub-categories": "Nënkategoritë",
 } satisfies Dict

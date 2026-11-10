@@ -1,3 +1,4 @@
+import { CategoryPicks } from '@/features/inventory/components/category-picks'
 import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
 import * as React from 'react'
@@ -15,7 +16,7 @@ import { t, td } from '@/i18n'
 import { unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { cn, formatMoney, formatMonth, formatDate, formatQty, todayISO } from '@/lib/utils'
-import { useCategories, useWarehouses } from '@/features/inventory/api'
+import { useWarehouses } from '@/features/inventory/api'
 import { useActiveVendors } from '@/features/procurement/api'
 
 type M = { qty: number; net: number; vat: number; gross: number; cost: number; margin: number; margin_pct: number | null; discount: number }
@@ -47,7 +48,6 @@ export function AnalysisPage() {
 
   const whs = useWarehouses()
   const vendors = useActiveVendors()
-  const cats = useCategories()
   const q = useQuery({
     queryKey: ['analysis', companyId, kind, from, to, cmpFrom, cmpTo, by, units, sups, groups], enabled: !!companyId && !!from && !!to,
     queryFn: async () => unwrap(await supabase.rpc('trade_analysis', { p_company: companyId!, p: { kind, from, to, cmp_from: cmpFrom, cmp_to: cmpTo, group_by: by, units, suppliers: sups, groups, items: [] } as never })) as unknown as { rows: Row[]; currency: string },
@@ -96,11 +96,6 @@ export function AnalysisPage() {
     return cols
   }, [by, comparing, sales, labelOf])
 
-  const catOptions = React.useMemo(() => {
-    const all = cats.data ?? []
-    const roots = all.filter((c) => !c.parent_id)
-    return roots.flatMap((r) => [{ value: r.id, label: td(r.name) }, ...all.filter((c) => c.parent_id === r.id).map((c) => ({ value: c.id, label: td(c.name), indent: true }))])
-  }, [cats.data])
 
   return (
     <>
@@ -137,7 +132,7 @@ export function AnalysisPage() {
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <MultiPick label={t('Units|stores')} value={units} onChange={setUnits} options={(whs.data ?? []).map((w) => ({ value: w.id, label: td(w.name), hint: w.code }))} />
         <MultiPick label={t('Suppliers')} value={sups} onChange={setSups} options={(vendors.data ?? []).map((v) => ({ value: v.id, label: v.name, hint: v.tax_number ?? undefined }))} />
-        <MultiPick label={t('Groups')} value={groups} onChange={setGroups} options={catOptions} />
+        <CategoryPicks value={groups} onChange={setGroups} />
         {comparing && cmpFrom && cmpTo && <span className="text-[12.5px] text-muted-foreground">{t('{a} against {b}', { a: `${formatDate(from)} – ${formatDate(to)}`, b: `${formatDate(cmpFrom)} – ${formatDate(cmpTo)}` })}</span>}
       </div>
       <DataTable

@@ -1,3 +1,4 @@
+import { categoryColumns, categoryFacets, useCategoryParts } from '../components/category-picks'
 import type { ColumnDef } from '@tanstack/react-table'
 import * as React from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -48,13 +49,14 @@ export function StockPage() {
     }
     return [...m.values()].sort((a, b) => String(a.sku).localeCompare(String(b.sku)))
   }, [pivot, levels.data])
+  const parts = useCategoryParts()
   const pivotColumns = React.useMemo<ColumnDef<Pivot>[]>(() => [
     {
       id: 'product', accessorFn: (r) => `${r.sku} ${r.name}`, enableHiding: false,
       header: ({ column }) => <ColumnHeader column={column} title={t('Product')} />, meta: { label: t('Product'), exportValue: (r) => r.sku },
       cell: ({ row: { original: r } }) => <div><div className="font-medium">{r.sku}</div><div className="text-xs text-muted-foreground">{r.name}</div></div>,
     },
-    { id: 'category', accessorFn: (r) => r.category ?? '', filterFn: inFilter, header: t('Category'), meta: { label: t('Category') }, cell: ({ getValue }) => td(getValue() as string) || '—' },
+    ...categoryColumns<Pivot>((r) => r.category, parts),
     ...unitCols.map((w): ColumnDef<Pivot> => ({
       id: `u_${w.id}`, accessorFn: (r) => r.qty[w.id] ?? 0,
       header: ({ column }) => <ColumnHeader column={column} title={td(w.name)} />, meta: { label: td(w.name), align: 'right', exportValue: (r) => r.qty[w.id] ?? 0 },
@@ -66,7 +68,7 @@ export function StockPage() {
     { id: 'total', accessorFn: (r) => r.total, header: ({ column }) => <ColumnHeader column={column} title={t('All units')} />, meta: { label: t('All units'), align: 'right' },
       cell: ({ row: { original: r } }) => <span className="font-medium tabular">{formatQty(r.total, r.uom)}</span> },
     { id: 'value', accessorFn: (r) => r.value, header: ({ column }) => <ColumnHeader column={column} title={t('Value at cost')} />, meta: { label: t('Value at cost'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
-  ], [unitCols])
+  ], [unitCols, parts])
   const today = todayISO()
   // a place inside the unit (shelf, fridge) only matters where a unit has more than one: otherwise the column stays out of the way
   const placesMatter = React.useMemo(() => {
@@ -83,7 +85,7 @@ export function StockPage() {
       header: ({ column }) => <ColumnHeader column={column} title={t('Product')} />, meta: { label: t('Product'), exportValue: (r) => r.sku },
       cell: ({ row: { original: r } }) => <div><div className="font-medium">{r.sku}</div><div className="text-xs text-muted-foreground">{r.variant_name}</div></div>,
     },
-    { accessorKey: 'category_name', id: 'category', filterFn: inFilter, header: t('Category'), meta: { label: t('Category') }, cell: ({ getValue }) => td(getValue() as string) || '—' },
+    ...categoryColumns<Level>((r) => r.category_name, parts),
     { accessorKey: 'warehouse_name', id: 'warehouse', filterFn: inFilter, header: ({ column }) => <ColumnHeader column={column} title={t('Warehouse')} />, meta: { label: t('Warehouse') }, cell: ({ getValue }) => td(getValue() as string) },
     ...(placesMatter ? [{ accessorKey: 'location_code', id: 'location_code', header: ({ column }) => <ColumnHeader column={column} title={t('Location')} />, meta: { label: t('Location') } } as ColumnDef<Level>] : []),
     {
@@ -101,7 +103,7 @@ export function StockPage() {
     { accessorKey: 'avg_cost', header: t('Avg. cost'), meta: { label: t('Average cost, without VAT'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
     { accessorKey: 'stock_value', header: ({ column }) => <ColumnHeader column={column} title={t('Value at cost')} />, meta: { label: t('Value at cost'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
     { accessorKey: 'last_movement_at', header: ({ column }) => <ColumnHeader column={column} title={t('Last moved')} />, meta: { label: t('Last moved') }, cell: ({ getValue }) => <span className="text-[13px]">{formatDate(getValue() as string)}</span> },
-  ], [today, placesMatter])
+  ], [today, placesMatter, parts])
 
   return (
     <>
@@ -132,10 +134,10 @@ export function StockPage() {
           error={levels.error}
           getRowId={(r) => r.id}
           searchPlaceholder={t('Code or product')}
-          initialHidden={['category']}
+          initialHidden={['category', 'subcategory']}
           exportName="stock-by-unit"
           onRowClick={(r) => r.product_id && navigate(`/inventory/products/${r.product_id}`)}
-          facets={[{ columnId: 'category', title: t('Category'), options: Array.from(new Set(byItem.map((l) => l.category).filter(Boolean))).map((c) => ({ label: td(c!), value: c! })) }]}
+          facets={categoryFacets(byItem, (r) => r.category, parts)}
           empty={{ title: t('No stock on hand'), description: t('Receive goods or enter your opening stock to start.') }}
           footer={(table) => {
             const rows = table.getFilteredRowModel().rows.map((r) => r.original)
@@ -161,13 +163,13 @@ export function StockPage() {
         error={levels.error}
         getRowId={(r) => r.id!}
         searchPlaceholder={t('Code, product, location or lot')}
-        initialHidden={['category', 'avg_cost', 'reserved']}
+        initialHidden={['category', 'subcategory', 'avg_cost', 'reserved']}
         exportName="stock-levels"
         onRowClick={(r) => navigate(`/inventory/products/${r.product_id}`)}
         bulkActions={(rows) => <Button size="xs" variant="outline" onClick={() => setByUnit([...new Set(rows.map((r) => r.original.variant_id!).filter(Boolean))])}><Warehouse /> {t('Stock in every unit')}</Button>}
         facets={[
           { columnId: 'warehouse', unit: true, title: t('Warehouse'), options: (warehouses.data ?? []).map((w) => ({ label: td(w.name), value: w.name })) },
-          { columnId: 'category', title: t('Category'), options: Array.from(new Set((levels.data ?? []).map((l) => l.category_name).filter(Boolean))).map((c) => ({ label: td(c!), value: c! })) },
+          ...categoryFacets(levels.data ?? undefined, (r) => r.category_name, parts),
         ]}
         empty={{ title: t('No stock on hand'), description: t('Receive goods or enter your opening stock to start.') }}
         footer={(table) => {

@@ -1,3 +1,4 @@
+import { categoryColumns, categoryFacets, useCategoryParts } from '../components/category-picks'
 import type { ColumnDef } from '@tanstack/react-table'
 import { ArrowDown, ArrowUp, Check, Settings2, X } from 'lucide-react'
 import * as React from 'react'
@@ -28,6 +29,7 @@ export function PriceSuggestions() {
   const [edit, setEdit] = React.useState<PriceSuggestion | null>(null)
   const writer = can('inventory.write')
 
+  const parts = useCategoryParts()
   const columns = React.useMemo<ColumnDef<PriceSuggestion>[]>(() => [
     ...(writer && show === 'pending' ? [selectColumn<PriceSuggestion>()] : []),
     {
@@ -35,7 +37,7 @@ export function PriceSuggestions() {
       header: ({ column }) => <ColumnHeader column={column} title={t('Product')} />, meta: { label: t('Product'), exportValue: (r) => r.name },
       cell: ({ row: { original: r } }) => <div><div className="font-medium">{r.name}</div><div className="text-xs text-muted-foreground">{r.sku}</div></div>,
     },
-    { id: 'category', accessorFn: (r) => r.category ?? '', filterFn: inFilter, header: t('Category'), meta: { label: t('Category') }, cell: ({ getValue }) => td(getValue() as string) || '—' },
+    ...categoryColumns<PriceSuggestion>((r) => r.category, parts),
     {
       id: 'cost', accessorFn: (r) => r.cost_after, header: t('Cost (without VAT)'), meta: { label: t('Cost (without VAT)'), align: 'right' },
       cell: ({ row: { original: r } }) => (
@@ -76,7 +78,7 @@ export function PriceSuggestions() {
         </div>
       ),
     } as ColumnDef<PriceSuggestion>] : []),
-  ], [writer, show, decide])
+  ], [writer, show, decide, parts])
 
   return (
     <>
@@ -97,7 +99,7 @@ export function PriceSuggestions() {
         searchPlaceholder={t('Code or product')}
         exportName="new-prices"
         onRowClick={(r) => navigate(`/inventory/products/${r.product_id}`)}
-        facets={[{ columnId: 'category', title: t('Category'), options: Array.from(new Set((list.data ?? []).map((r) => r.category ?? ''))).filter(Boolean).map((c) => ({ label: td(c), value: c })) }]}
+        facets={categoryFacets(list.data, (r) => r.category, parts)}
         bulkActions={writer && show === 'pending' ? (rows, clear) => (
           <>
             <Button size="xs" loading={decide.isPending} onClick={() => decide.mutate({ ids: rows.map((r) => r.original.id), accept: true }, { onSuccess: clear })}><Check /> {t('Accept')}</Button>

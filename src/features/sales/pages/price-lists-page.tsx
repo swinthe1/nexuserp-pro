@@ -1,3 +1,4 @@
+import { categoryTreeOptions } from '@/features/inventory/components/category-picks'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -253,7 +254,7 @@ function PriceRuleDialog({ open, onOpenChange, onApply }: { open: boolean; onOpe
             <Select value={category || 'all'} onValueChange={(v) => setCategory(v === 'all' ? '' : v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent><SelectItem value="all">{t('All items')}</SelectItem>
-                {(cats.data ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{td(c.name)}</SelectItem>)}</SelectContent>
+                {categoryTreeOptions(cats.data ?? []).map((c) => <SelectItem key={c.value} value={c.value}>{c.indent ? <span className="pl-3">{c.label} <span className="text-muted-foreground">· {c.hint}</span></span> : c.label}</SelectItem>)}</SelectContent>
             </Select></div>
           <div className="grid gap-1.5"><Label>{t('Round to')}</Label>
             <Select value={round} onValueChange={setRound}>

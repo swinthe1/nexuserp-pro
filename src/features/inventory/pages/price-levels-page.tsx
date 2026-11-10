@@ -1,3 +1,4 @@
+import { categoryTreeOptions } from '@/features/inventory/components/category-picks'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Check, Percent, Plus, Save, Tag, Trash2, X } from 'lucide-react'
@@ -272,7 +273,7 @@ function Editor({ doc }: { doc?: Level }) {
         <div className="mb-3 flex flex-wrap items-end gap-2">
           <div className="min-w-[280px] flex-1"><SearchSelect value={null} options={options} placeholder={t('Add an item: name, code or scan the barcode')} searchPlaceholder={t('Name, code or barcode')}
             onChange={(v) => v && void add([v]).catch((e) => toast.error(describeError(e)))} /></div>
-          <div className="w-56"><SearchSelect value={null} placeholder={t('Add a whole category')} options={(categories.data ?? []).map((c) => ({ value: c.id, label: c.name }))}
+          <div className="w-56"><SearchSelect value={null} placeholder={t('Add a whole category')} options={categoryTreeOptions(categories.data ?? [])}
             onChange={async (v) => {
               if (!v) return
               const ids = unwrap(await supabase.from('product_variants').select('id, products!inner(category_id)').eq('products.category_id', v).eq('company_id', companyId!).is('deleted_at', null).eq('is_active', true)).map((x) => x.id)

@@ -1,3 +1,4 @@
+import { categoryTreeOptions } from '@/features/inventory/components/category-picks'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PageTableExport } from '@/components/page-table-export'
 import { BadgePercent, Plus, X } from 'lucide-react'
@@ -175,7 +176,7 @@ function Editor({ value, onClose }: { value: Partial<Promo>; onClose: () => void
           <div className="grid gap-1.5">
             <Label>{t('Items')}</Label>
             <SearchSelect value={null} options={options} placeholder={t('Add an item')} onChange={(v) => v && !p.variant_ids?.includes(v) && set({ variant_ids: [...(p.variant_ids ?? []), v] })} />
-            <SearchSelect value={null} placeholder={t('Add a category')} options={(categories.data ?? []).map((c) => ({ value: c.id, label: c.name }))}
+            <SearchSelect value={null} placeholder={t('Add a category')} options={categoryTreeOptions(categories.data ?? [])}
               onChange={(v) => v && !p.category_ids?.includes(v) && set({ category_ids: [...(p.category_ids ?? []), v] })} />
             <div className="flex flex-wrap gap-1">
               {(p.variant_ids ?? []).map((v) => <Badge key={v} variant="secondary" className="gap-1">{(companyId && itemOffline(companyId, v)?.name) || '…'}

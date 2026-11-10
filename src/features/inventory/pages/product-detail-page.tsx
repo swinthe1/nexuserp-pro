@@ -1,3 +1,4 @@
+import { categoryTreeOptions } from '@/features/inventory/components/category-picks'
 import { ItemCardView } from './item-card-page'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Barcode, Maximize2, Pencil, Plus, ScanLine, Tag, Trash2 } from 'lucide-react'
@@ -365,7 +366,7 @@ function EditProductSheet({ product }: { product: ProductDetail }) {
               <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel optional>{t('Description')}</FormLabel><FormControl><Textarea rows={2} {...field} /></FormControl></FormItem>)} />
               <FormField control={form.control} name="category_id" render={({ field }) => (
                 <FormItem><FormLabel optional>{t('Category')}</FormLabel><FormControl>
-                  <SearchSelect value={field.value} onChange={field.onChange} clearable placeholder={t('No category')} options={(categories.data ?? []).map((c) => ({ value: c.id, label: c.name }))} />
+                  <SearchSelect value={field.value} onChange={field.onChange} clearable placeholder={t('No category')} options={categoryTreeOptions(categories.data ?? [])} />
                 </FormControl></FormItem>
               )} />
               <div className="grid grid-cols-2 gap-3">

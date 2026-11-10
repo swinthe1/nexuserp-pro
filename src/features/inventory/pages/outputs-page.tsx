@@ -1,3 +1,4 @@
+import { CategoryPicks } from '@/features/inventory/components/category-picks'
 import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
 import * as React from 'react'
@@ -81,7 +82,7 @@ function Outputs() {
     const filters = [
       `${formatDate(from)} – ${formatDate(to)}`,
       units.length ? `${t('Units|stores')}: ${names(units, (whs.data ?? []).map((w) => ({ value: w.id, label: td(w.name) })))}` : '',
-      groups.length ? `${t('Groups')}: ${names(groups, catOptions)}` : '',
+      groups.length ? `${t('Categories')}: ${names(groups, catOptions)}` : '',
       reasons.length ? `${t('Reason')}: ${reasons.map(reasonLabel).join(', ')}` : '',
     ].filter(Boolean).join(' · ')
     printTable({
@@ -107,7 +108,7 @@ function Outputs() {
         <div className="grid gap-1"><Label className="text-xs">{t('From|date')}</Label><Input type="date" className="h-9 w-40" value={from} max={to} onChange={(e) => setFrom(e.target.value)} /></div>
         <div className="grid gap-1"><Label className="text-xs">{t('To|date')}</Label><Input type="date" className="h-9 w-40" value={to} min={from} onChange={(e) => setTo(e.target.value)} /></div>
         <MultiPick label={t('Units|stores')} value={units} onChange={setUnits} options={(whs.data ?? []).map((w) => ({ value: w.id, label: td(w.name), hint: w.code }))} />
-        <MultiPick label={t('Groups')} value={groups} onChange={setGroups} options={catOptions} />
+        <CategoryPicks value={groups} onChange={setGroups} />
         <MultiPick label={t('Reason')} value={reasons} onChange={setReasons} options={OUT_REASONS.map(([value, label]) => ({ value, label: t(label) }))} />
       </div>
         <DataTable tableKey="inventory.outputs" columns={outCols} data={outRows} isLoading={each.isLoading} error={each.error} getRowId={(r) => `${r.adjustment_id}-${r.variant_id}-${r.quantity}`}

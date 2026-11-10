@@ -1,3 +1,4 @@
+import { CategoryPicks } from '@/features/inventory/components/category-picks'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, Shuffle } from 'lucide-react'
 import * as React from 'react'
@@ -18,7 +19,7 @@ import { t, td } from '@/i18n'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { cn, formatQty, num } from '@/lib/utils'
-import { useCategories, useWarehouses } from '../api'
+import { useWarehouses } from '../api'
 
 type Row = { variant_id: string; sku: string; name: string; uom: string | null; group: string | null; quantity: number
   from_id: string; from: string; from_on_hand: number; from_daily: number; from_days: number | null
@@ -35,7 +36,6 @@ export function BalancingPage() {
   const { companyId, can } = useCompany()
   const qc = useQueryClient()
   const whs = useWarehouses()
-  const cats = useCategories()
   const [days, setDays] = React.useState(30)
   const [cover, setCover] = React.useState(14)
   const [units, setUnits] = React.useState<string[]>([])
@@ -54,10 +54,6 @@ export function BalancingPage() {
     onSuccess: (r) => { setMade(r); setPicked({}); toast.success(t('{n} draft transfers made', { n: r.length })); void qc.invalidateQueries({ queryKey: ['inv', companyId] }) },
     onError: (e) => toast.error(describeError(e)),
   })
-  const catOptions = React.useMemo(() => {
-    const all = cats.data ?? []
-    return all.filter((c) => !c.parent_id).flatMap((r) => [{ value: r.id, label: td(r.name) }, ...all.filter((c) => c.parent_id === r.id).map((c) => ({ value: c.id, label: td(c.name), indent: true }))])
-  }, [cats.data])
   const n = Object.keys(picked).length
   const allOn = rows.length > 0 && n === rows.length
   const toggle = (r: Row) => setPicked((p) => { const x = { ...p }; if (x[key(r)] != null) delete x[key(r)]; else x[key(r)] = num(r.quantity); return x })
@@ -76,7 +72,7 @@ export function BalancingPage() {
         <div className="grid gap-1"><Label className="text-xs">{t('Stock for how many days')}</Label>
           <Input type="number" min={1} max={90} className="h-9 w-28 text-right tabular" value={cover} onChange={(e) => setCover(Number(e.target.value) || 14)} /></div>
         <MultiPick label={t('Units|stores')} value={units} onChange={setUnits} options={(whs.data ?? []).map((w) => ({ value: w.id, label: td(w.name), hint: w.code }))} />
-        <MultiPick label={t('Groups')} value={groups} onChange={setGroups} options={catOptions} />
+        <CategoryPicks value={groups} onChange={setGroups} />
         {(can('inventory.write') || can('wms.write')) && (
           <Button className="ml-auto" disabled={!n || create.isPending} loading={create.isPending} onClick={() => create.mutate()}><Shuffle /> {t('Make the transfers ({n} lines)', { n })}</Button>
         )}

@@ -1,3 +1,4 @@
+import { categoryTreeOptions } from '@/features/inventory/components/category-picks'
 import { Hint } from '@/components/help'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ChevronDown, Plus, Sparkles, Trash2, X } from 'lucide-react'
@@ -260,7 +261,7 @@ export function ProductNewPage() {
                   <FormLabel optional>{t('Category')}</FormLabel>
                   <FormControl>
                     <SearchSelect value={field.value} onChange={field.onChange} clearable placeholder={t('No category')}
-                      options={(categories.data ?? []).map((c) => ({ value: c.id, label: c.name, hint: c.code ?? undefined }))} />
+                      options={categoryTreeOptions(categories.data ?? [])} />
                   </FormControl>
                 </FormItem>
               )} />

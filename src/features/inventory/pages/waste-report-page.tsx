@@ -1,3 +1,4 @@
+import { CategoryPicks } from '@/features/inventory/components/category-picks'
 import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Trash2 } from 'lucide-react'
@@ -51,10 +52,6 @@ export function WasteReportPage() {
   const [base, setBase] = React.useState<Base>('sold')
   const whs = useWarehouses()
   const cats = useCategories()
-  const catOptions = React.useMemo(() => {
-    const all = cats.data ?? []
-    return all.filter((c) => !c.parent_id).flatMap((r) => [{ value: r.id, label: td(r.name) }, ...all.filter((c) => c.parent_id === r.id).map((c) => ({ value: c.id, label: td(c.name), indent: true }))])
-  }, [cats.data])
   const cur = company?.base_currency ?? ''
   const q = useQuery({
     queryKey: ['inv', companyId, 'waste-report', from, to, units, groups, reasons, by], enabled: !!companyId,
@@ -98,7 +95,7 @@ export function WasteReportPage() {
         <div className="grid gap-1"><Label className="text-xs">{t('From|date')}</Label><Input type="date" className="h-9 w-40" value={from} max={to} onChange={(e) => setFrom(e.target.value)} /></div>
         <div className="grid gap-1"><Label className="text-xs">{t('To|date')}</Label><Input type="date" className="h-9 w-40" value={to} min={from} onChange={(e) => setTo(e.target.value)} /></div>
         <MultiPick label={t('Units|stores')} value={units} onChange={setUnits} options={(whs.data ?? []).map((w) => ({ value: w.id, label: td(w.name), hint: w.code }))} />
-        <MultiPick label={t('Groups')} value={groups} onChange={setGroups} options={catOptions} />
+        <CategoryPicks value={groups} onChange={setGroups} />
         <MultiPick label={t('Reason')} value={reasons} onChange={setReasons} options={REASONS.map(([value, label]) => ({ value, label: t(label) }))} />
         <div className="grid gap-1"><Label className="text-xs">{t('Share of')}</Label>
           <Tabs value={base} onValueChange={(v) => setBase(v as Base)}><TabsList><TabsTrigger value="sold">{t('What was sold')}</TabsTrigger><TabsTrigger value="in">{t('What came in')}</TabsTrigger></TabsList></Tabs></div>
