@@ -104,7 +104,7 @@ export function SalesOverviewPage() {
         </Card>
          <RankCard title={t('Top customers (without VAT)')} loading={ov.isLoading} rows={(d?.top_customers ?? []).map((c) => ({ key: c.id, label: c.name, href: `/partners/${c.id}`, value: num(c.revenue) }))} />
         <RankCard title={t('Top products (without VAT)')} loading={ov.isLoading} rows={(d?.top_products ?? []).map((p) => ({ key: p.sku, label: p.sku, sub: t('{name} · {qty} sold', { name: p.name, qty: formatQty(p.quantity) }), value: num(p.revenue) }))} />
-        <RankCard title={t('By salesperson (without VAT)')} loading={ov.isLoading} rows={(d?.by_salesperson ?? []).map((s) => ({ key: s.name, label: s.name, sub: tn(s.invoices, '{n} invoice', '{n} invoices'), value: num(s.revenue) }))} />
+        <RankCard title={t('By salesperson (without VAT)')} loading={ov.isLoading} rows={(d?.by_salesperson ?? []).map((s) => ({ key: s.name, label: s.name === 'Unassigned' ? t('Unassigned') : s.name, sub: tn(s.invoices, '{n} invoice', '{n} invoices'), value: num(s.revenue) }))} />
       </div>
     </>
   )
