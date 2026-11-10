@@ -1,7 +1,9 @@
 # Builds the upgraded libraries where the registry can be reached and hands them over as one file.
 name: Deps upgrade kit
 on:
-  workflow_dispatch:
+  push:
+    branches: [deps-upgrade]
+    paths: ['.github/workflows/deps.yml']
 permissions:
   contents: read
 jobs:
