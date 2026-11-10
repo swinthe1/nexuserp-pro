@@ -1,0 +1,24 @@
+# Builds the upgraded libraries where the registry can be reached and hands them over as one file.
+name: Deps upgrade kit
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  kit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - run: npm install --no-audit --no-fund jspdf@latest jspdf-autotable@latest zod@latest react-router-dom@latest
+      - run: npm audit --omit=dev || true
+      - run: npm ls jspdf jspdf-autotable zod react-router-dom react-router dompurify || true
+      - run: tar czf kit.tgz package.json package-lock.json node_modules
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kit
+          path: kit.tgz
+          retention-days: 2
