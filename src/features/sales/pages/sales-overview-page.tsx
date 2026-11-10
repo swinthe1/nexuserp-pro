@@ -1,3 +1,4 @@
+import { FoldSection } from '@/components/fold-section'
 import { AnalysisSection } from '@/features/reports/pages/report-page'
 import { ArrowRight, FileText, Plus } from 'lucide-react'
 import * as React from 'react'
@@ -124,11 +125,13 @@ export function SalesOverviewPage() {
         </Card>
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+      <FoldSection storeKey="sales.ranks" title={t('Top customers, products and salespeople')} hint={t('Click to open')}>
+      <div className="grid gap-4 lg:grid-cols-3">
          <RankCard title={t('Top customers (without VAT)')} loading={ov.isLoading} rows={(d?.top_customers ?? []).map((c) => ({ key: c.id, label: c.name, href: `/partners/${c.id}`, value: num(c.revenue) }))} />
         <RankCard title={t('Top products (without VAT)')} loading={ov.isLoading} rows={(d?.top_products ?? []).map((p) => ({ key: p.sku, label: p.sku, sub: t('{name} · {qty} sold', { name: p.name, qty: formatQty(p.quantity) }), value: num(p.revenue) }))} />
         <RankCard title={t('By salesperson (without VAT)')} loading={ov.isLoading} rows={(d?.by_salesperson ?? []).map((s) => ({ key: s.name, label: s.name, sub: tn(s.invoices, '{n} invoice', '{n} invoices'), value: num(s.revenue) }))} />
       </div>
+      </FoldSection>
       <AnalysisSection kind="sales" embedded />
     </>
   )

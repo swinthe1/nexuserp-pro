@@ -1822,4 +1822,6 @@ export default {
   "e.g. Raiffeisen Bank": "p.sh. Raiffeisen Bank",
   "Sub-category": "Nënkategoria",
   "Sub-categories": "Nënkategoritë",
+  "Top customers, products and salespeople": "Klientët kryesorë, produktet kryesore dhe shitësit",
+  "Click to open": "klikoni për t’i hapur",
 } satisfies Dict

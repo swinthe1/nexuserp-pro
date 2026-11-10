@@ -1,3 +1,4 @@
+import { FoldSection } from '@/components/fold-section'
 import { AnalysisSection } from '@/features/reports/pages/report-page'
 import { ArrowRight, ClipboardList, Plus } from 'lucide-react'
 import { PageTableExport } from '@/components/page-table-export'
@@ -113,7 +114,8 @@ export function ProcurementOverviewPage() {
           </CardContent>
         </Card>
       </div>
-      <Card className="mt-4">
+      <FoldSection storeKey="purchases.top" title={t('Top purchased items')} hint={t('Click to open')}>
+      <Card>
         <CardHeader><CardTitle>{t('Top purchased items')}</CardTitle><CardDescription>{t('By spend without VAT')}</CardDescription></CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {ov.isLoading && <Skeleton className="h-24" />}
@@ -130,6 +132,7 @@ export function ProcurementOverviewPage() {
           })}
         </CardContent>
       </Card>
+      </FoldSection>
       <AnalysisSection kind="purchases" embedded />
     </>
   )

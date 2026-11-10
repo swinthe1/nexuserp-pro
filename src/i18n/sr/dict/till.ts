@@ -1540,4 +1540,6 @@ export default {
   "e.g. Raiffeisen Bank": "npr. Raiffeisen Bank",
   "Sub-category": "Potkategorija",
   "Sub-categories": "Potkategorije",
+  "Top customers, products and salespeople": "Glavni kupci, proizvodi i prodavci",
+  "Click to open": "kliknite da otvorite",
 } satisfies Dict
