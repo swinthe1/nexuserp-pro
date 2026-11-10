@@ -45,7 +45,7 @@ const vendorCol = (): ColumnDef<Row> => ({
 })
 const totalCol = (_base: string): ColumnDef<Row> => ({
   accessorKey: 'total', header: ({ column }) => <ColumnHeader column={column} title={t('Total (with VAT)')} />, meta: { label: t('Total (with VAT)'), align: 'right', exportValue: (r) => num(r.total) },
-  cell: ({ row: { original: r } }) => <span className="tabular">{formatMoney(r.total as number, r.currency_code)}</span>,
+  cell: ({ row: { original: r } }) => <span className="tabular font-semibold">{formatMoney(r.total as number, r.currency_code)}</span>,
 })
 
 interface Cfg {
@@ -181,8 +181,6 @@ export function ProcurementListPage({ kind }: { kind: ProcKind }) {
     { accessorKey: 'status', filterFn: inFilter, header: t('Status'), meta: { label: t('Status'), exportValue: (r) => humanize(r.status) }, cell: ({ getValue }) => <StatusBadge status={getValue() as string} /> },
     ...cfg.columns(base),
     ...(kind === 'bills' ? [
-      { id: 'total_base', accessorFn: (r: Row) => num(r.total_base ?? r.total), header: ({ column }) => <ColumnHeader column={column} title={t('Total in {currency}', { currency: base })} />,
-        meta: { label: t('Total in {currency}', { currency: base }), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number, base) } as ColumnDef<Row>,
       { id: 'margin_pct', accessorFn: (r: Row) => (r.margin_pct == null ? null : num(r.margin_pct)), sortUndefined: 'last', header: ({ column }) => <ColumnHeader column={column} title={t('Average margin %')} />,
         meta: { label: t('Average margin %'), align: 'right' },
         cell: ({ getValue }) => { const v = getValue() as number | null; return v == null ? <span className="text-muted-foreground">—</span> : <span className={cn('tabular', v < 0 ? 'text-destructive' : v < 10 ? 'text-warning' : '')}>{formatAmount(v, 1)}%</span> } } as ColumnDef<Row>,
