@@ -1,4 +1,3 @@
-import { FoldSection } from '@/components/fold-section'
 import { AnalysisSection } from '@/features/reports/pages/report-page'
 import { ArrowRight, FileText, Plus } from 'lucide-react'
 import * as React from 'react'
@@ -80,9 +79,10 @@ export function SalesOverviewPage() {
         <StatCard label={t('Deals won')} value={winRate == null ? '—' : `${pct(winRate, 0)}%`} loading={ov.isLoading} href="/crm/pipeline" hint={t('{won} won · {lost} lost', { won: d?.won ?? 0, lost: d?.lost ?? 0 })} />
         <StatCard label={t('Open deals (without VAT)')} value={formatMoney(pipeline.reduce((s, p) => s + num(p.value), 0))} loading={ov.isLoading} href="/crm/pipeline" hint={t('{amount} expected by probability', { amount: formatMoney(pipeline.reduce((s, p) => s + num(p.weighted), 0)) })} />
       </div>
+      <AnalysisSection kind="sales" embedded />
 
       {ov.isError && <Card className="mt-4"><ErrorState error={ov.error} onRetry={() => void ov.refetch()} /></Card>}
-      <div className="mt-4 grid gap-4 grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="mt-8 grid gap-4 grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_380px]">
         <Card>
           <CardHeader><CardTitle>{t('Sales by month')}</CardTitle><CardDescription>{t('Last 12 months, {currency} without VAT', { currency: cur })}</CardDescription></CardHeader>
           <CardContent>
@@ -125,14 +125,11 @@ export function SalesOverviewPage() {
         </Card>
       </div>
 
-      <FoldSection storeKey="sales.ranks" title={t('Top customers, products and salespeople')} hint={t('Click to open')}>
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="mt-4 grid gap-4 lg:grid-cols-3">
          <RankCard title={t('Top customers (without VAT)')} loading={ov.isLoading} rows={(d?.top_customers ?? []).map((c) => ({ key: c.id, label: c.name, href: `/partners/${c.id}`, value: num(c.revenue) }))} />
         <RankCard title={t('Top products (without VAT)')} loading={ov.isLoading} rows={(d?.top_products ?? []).map((p) => ({ key: p.sku, label: p.sku, sub: t('{name} · {qty} sold', { name: p.name, qty: formatQty(p.quantity) }), value: num(p.revenue) }))} />
         <RankCard title={t('By salesperson (without VAT)')} loading={ov.isLoading} rows={(d?.by_salesperson ?? []).map((s) => ({ key: s.name, label: s.name, sub: tn(s.invoices, '{n} invoice', '{n} invoices'), value: num(s.revenue) }))} />
       </div>
-      </FoldSection>
-      <AnalysisSection kind="sales" embedded />
     </>
   )
 }

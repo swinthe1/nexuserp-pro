@@ -1,4 +1,3 @@
-import { FoldSection } from '@/components/fold-section'
 import { AnalysisSection } from '@/features/reports/pages/report-page'
 import { ArrowRight, ClipboardList, Plus } from 'lucide-react'
 import { PageTableExport } from '@/components/page-table-export'
@@ -70,8 +69,9 @@ export function ProcurementOverviewPage() {
         <StatCard label={t('Requisitions to order')} value={d?.approved_requisitions ?? 0} loading={ov.isLoading} href="/procurement/requisitions" hint={t('Approved, no order yet')} />
         <StatCard label={t('Bills with a mismatch')} value={d?.match_exceptions ?? 0} loading={ov.isLoading} href="/procurement/bills" tone={d?.match_exceptions ? 'destructive' : 'default'} hint={t('Quantity or price differs from the order')} />
       </div>
+      <AnalysisSection kind="purchases" embedded />
 
-      <div className="mt-4 grid gap-4 grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="mt-8 grid gap-4 grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_420px]">
         <Card>
           <CardHeader><CardTitle>{t('Spend by month')}</CardTitle><CardDescription>{t('Last 12 months, {currency} without VAT', { currency: cur })}</CardDescription></CardHeader>
           <CardContent>
@@ -114,8 +114,7 @@ export function ProcurementOverviewPage() {
           </CardContent>
         </Card>
       </div>
-      <FoldSection storeKey="purchases.top" title={t('Top purchased items')} hint={t('Click to open')}>
-      <Card>
+      <Card className="mt-4">
         <CardHeader><CardTitle>{t('Top purchased items')}</CardTitle><CardDescription>{t('By spend without VAT')}</CardDescription></CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {ov.isLoading && <Skeleton className="h-24" />}
@@ -132,8 +131,6 @@ export function ProcurementOverviewPage() {
           })}
         </CardContent>
       </Card>
-      </FoldSection>
-      <AnalysisSection kind="purchases" embedded />
     </>
   )
 }

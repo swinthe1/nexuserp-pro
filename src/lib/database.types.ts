@@ -16916,6 +16916,12 @@ export type Database = {
         }
         Returns: number
       }
+      bill_pay_methods: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       bill_price_check: {
         Args: {
           p_bill: string

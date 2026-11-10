@@ -1,3 +1,4 @@
+import { PAID_WITH, useBillPayMethods } from '@/features/procurement/api'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, ListPlus, Loader2, Plus, ReceiptText, Sparkles, Trash2, TriangleAlert } from 'lucide-react'
 import * as React from 'react'
@@ -58,6 +59,11 @@ function ReadsPage({ kind }: { kind: Kind }) {
     refetchInterval: (q) => ((q.state.data as Row[] | undefined)?.some((r) => r.status === 'queued' || r.status === 'reading') ? 3000 : false),
     queryFn: async () => unwrap(await supabase.rpc('expense_reads', { p_company: companyId!, p_kind: kind })) as unknown as Row[],
   })
+  // paid in cash or through the bank: a filter over the list
+  const payWays = useBillPayMethods(kind === 'expense')
+  const [way, setWay] = React.useState<'all' | 'cash' | 'bank' | 'none'>('all')
+  const wayOf = (r: Row) => (r.bill_id ? payWays.data?.[r.bill_id] ?? 'none' : 'none')
+  const shown = (list.data ?? []).filter((r) => way === 'all' || (way === 'none' ? wayOf(r) === 'none' : wayOf(r) === way || wayOf(r) === 'mixed'))
   const { send, pick } = usePhotoSubmit({ kind, invalidate: [['expense-reads', companyId, kind]], onOne: (x) => setParams({ id: x }),
     manyMessage: (n) => t('{n} receipts are being read', { n }) })
   const seed = useMutation({
@@ -76,8 +82,20 @@ function ReadsPage({ kind }: { kind: Kind }) {
         hint={kind === 'asset' ? t('The whole invoice in the photo, or the PDF. Several at once from the gallery.') : t('The whole receipt in the photo, flat and with light. Several at once from the gallery.')} />
       {/* written by hand unless a photo was chosen; the recent ones below */}
       <Review key={id ?? `new-${fresh}`} kind={kind} id={id && id !== 'new' ? id : null} onDone={() => { setParams({}); setFresh((n) => n + 1) }} />
+      {!id && kind === 'expense' && !!list.data?.length && (
+        <div role="radiogroup" aria-label={t('Paid with')} className="flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-[12.5px] text-muted-foreground">{t('Paid with')}:</span>
+          {(['all', 'cash', 'bank', 'none'] as const).map((w) => (
+            <button key={w} type="button" role="radio" aria-checked={way === w} onClick={() => setWay(w)}
+              className={cn('rounded-full border px-3 py-1 text-[12.5px] font-medium transition-colors', way === w ? 'border-primary/50 bg-primary/10 text-primary' : 'bg-card text-muted-foreground hover:text-foreground')}>
+              {w === 'all' ? t('All') : t(PAID_WITH[w])}
+              <span className="ml-1.5 tabular opacity-70">{w === 'all' ? list.data.length : list.data.filter((r) => (w === 'none' ? wayOf(r) === 'none' : wayOf(r) === w || wayOf(r) === 'mixed')).length}</span>
+            </button>
+          ))}
+        </div>
+      )}
       {!id && <ReadsList bookedLabel={t('Booked|expense')} onOpen={(x) => setParams({ id: x })}
-        items={(list.data ?? []).map((r) => ({ ...r, booked: !!r.bill_id, extra: r.number,
+        items={shown.map((r) => ({ ...r, booked: !!r.bill_id, extra: r.number,
           title: <>{r.vendor ?? r.file_name ?? t('Receipt')}{r.category ? <span className="font-normal text-muted-foreground"> · {catLabel(r.category) || r.category}</span> : null}</> }))} />}
     </div>
   )

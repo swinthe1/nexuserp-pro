@@ -1,4 +1,4 @@
-import { Pencil, Plus, Trash2, X } from 'lucide-react'
+import { CornerDownRight, Pencil, Plus, Trash2, X } from 'lucide-react'
 import * as React from 'react'
 import { z } from 'zod'
 import { Can, useCompany } from '@/app/company-provider'
@@ -12,9 +12,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { formatQty } from '@/lib/utils'
+import { cn, formatQty } from '@/lib/utils'
 import { useAttributes, useCategories, useMasterData, useUnits } from '../api'
-import { msg, t, td, tEnum } from '@/i18n'
+import { msg, t, td, tEnum, tn } from '@/i18n'
 import { ErrorState } from '@/components/error-state'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -53,48 +53,60 @@ const categorySchema = z.object({
 function Categories() {
   const cats = useCategories()
   const m = useMasterData('product_categories')
-  const byId = new Map((cats.data ?? []).map((c) => [c.id, c]))
-  const fields = [
+  const all = cats.data ?? []
+  // two levels: main categories, and their sub-categories under them
+  const mains = [...all.filter((c) => !c.parent_id || !all.some((p) => p.id === c.parent_id))].sort((a, b) => td(a.name).localeCompare(td(b.name)))
+  const subsOf = (id: string) => all.filter((c) => c.parent_id === id).sort((a, b) => td(a.name).localeCompare(td(b.name)))
+  const fieldsFor = (self?: string) => [
     { name: 'name' as const, label: t('Name'), placeholder: t('Beverages') },
     { name: 'code' as const, label: t('Code'), optional: true, half: true, uppercase: true },
-    { name: 'parent_id' as const, label: t('Sub-category of'), type: 'select' as const, optional: true, half: true, options: [{ value: '__none', label: t('None: a main category') }, ...(cats.data ?? []).map((c) => ({ value: c.id, label: td(c.name) }))] },
+    { name: 'parent_id' as const, label: t('Sub-category of'), type: 'select' as const, optional: true, half: true,
+      options: [{ value: '__none', label: t('None: a main category') }, ...mains.filter((c) => c.id !== self).map((c) => ({ value: c.id, label: td(c.name) }))] },
     // fruit and vegetables: thrown away when they go off; the waste report and the Zebra start from these groups
     { name: 'perishable' as const, label: t('Goes off quickly (fruit, vegetables)'), type: 'switch' as const },
   ]
-  const path = (id: string | null): string => {
-    const c = id ? byId.get(id) : undefined
-    return c ? (c.parent_id ? `${path(c.parent_id)} / ${td(c.name)}` : td(c.name)) : ''
-  }
+  const perishable = (c: { perishable?: boolean }) => !!c.perishable
+  const create = ({ perishable: p, ...v }: z.infer<typeof categorySchema>) => m.create.mutateAsync({ ...v, code: v.code || null, parent_id: v.parent_id ?? null, ...(p ? { perishable: p } : {}) })
+  const row = (c: (typeof all)[number], sub: boolean) => (
+    <TableRow key={c.id} className={cn(!sub && 'bg-muted/30 hover:bg-muted/40')}>
+      <TableCell className={cn(sub ? 'pl-10' : 'font-medium')}>
+        {sub && <CornerDownRight className="mr-1.5 inline size-3.5 text-muted-foreground" />}{td(c.name)}
+      </TableCell>
+      <TableCell className="text-muted-foreground">{sub || !subsOf(c.id).length ? '' : tn(subsOf(c.id).length, '{n} sub-category', '{n} sub-categories')}</TableCell>
+      <TableCell className="text-muted-foreground">{c.code ?? '—'}</TableCell>
+      <TableCell>{perishable(c as { perishable?: boolean }) ? <Badge variant="secondary">{t('Goes off quickly')}</Badge> : null}</TableCell>
+      <TableCell className="whitespace-nowrap text-right"><Can perm="inventory.write">
+        {!sub && <SimpleFormDialog trigger={<Button variant="ghost" size="sm"><Plus /> {t('Sub-category')}</Button>} title={t('New sub-category of {name}', { name: td(c.name) })} schema={categorySchema}
+          defaultValues={{ name: '', code: '', parent_id: c.id, perishable: perishable(c as { perishable?: boolean }) }} fields={fieldsFor()} submitLabel={t('Create sub-category')} onSubmit={create} />}
+        <SimpleFormDialog trigger={<Button variant="ghost" size="icon-sm" aria-label={t('Edit {name}', { name: td(c.name) })}><Pencil /></Button>} title={t('Edit {name}', { name: td(c.name) })} schema={categorySchema}
+          defaultValues={{ name: c.name, code: c.code ?? '', parent_id: c.parent_id, perishable: perishable(c as { perishable?: boolean }) }} fields={fieldsFor(c.id)} submitLabel={t('Save')}
+          onSubmit={({ perishable: p, ...v }) => m.update.mutateAsync({ id: c.id, ...v, code: v.code || null, parent_id: v.parent_id === c.id ? null : v.parent_id ?? null,
+            ...(!!p !== perishable(c as { perishable?: boolean }) ? { perishable: !!p } : {}) })} />
+        <ConfirmDialog trigger={<Button variant="ghost" size="icon-sm" aria-label={t('Delete {name}', { name: td(c.name) })}><Trash2 /></Button>} title={t('Delete {name}?', { name: td(c.name) })}
+          description={sub || !subsOf(c.id).length ? t('Products in this category become uncategorised.') : t('Its sub-categories become main categories; products in this category become uncategorised.')}
+          confirmLabel={t('Delete category')} destructive onConfirm={() => m.remove.mutateAsync(c.id)} />
+      </Can></TableCell>
+    </TableRow>
+  )
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
-        <div><CardTitle>{t('Product categories')}</CardTitle><CardDescription>{t('Group products for reports, price lists and searching.')}</CardDescription></div>
+        <div><CardTitle>{t('Product categories')}</CardTitle><CardDescription>{t('Each category with its sub-categories under it, e.g. Food: dairy, biscuits.')}</CardDescription></div>
         <Can perm="inventory.write">
-          <SimpleFormDialog trigger={<Button size="sm"><Plus /> {t('New category')}</Button>} title={t('New category')} schema={categorySchema}
-            defaultValues={{ name: '', code: '', parent_id: null, perishable: false }} fields={fields} submitLabel={t('Create category')}
-            onSubmit={({ perishable, ...v }) => m.create.mutateAsync({ ...v, code: v.code || null, parent_id: v.parent_id ?? null, ...(perishable ? { perishable } : {}) })} />
+          <div className="flex gap-2">
+            {!!mains.length && <SimpleFormDialog trigger={<Button size="sm" variant="outline"><Plus /> {t('New sub-category')}</Button>} title={t('New sub-category')} schema={categorySchema}
+              defaultValues={{ name: '', code: '', parent_id: mains[0]?.id ?? null, perishable: false }} fields={fieldsFor()} submitLabel={t('Create sub-category')} onSubmit={create} />}
+            <SimpleFormDialog trigger={<Button size="sm"><Plus /> {t('New category')}</Button>} title={t('New category')} schema={categorySchema}
+              defaultValues={{ name: '', code: '', parent_id: null, perishable: false }} fields={fieldsFor()} submitLabel={t('Create category')} onSubmit={create} />
+          </div>
         </Can>
       </CardHeader>
       <CardContent className="p-0">
-        {loadState(cats) ?? (!cats.data?.length ? <EmptyState compact title={t('No categories')} description={t('Examples: Apparel, Beverages, Raw materials.')} /> : (
+        {loadState(cats) ?? (!all.length ? <EmptyState compact title={t('No categories')} description={t('Examples: Apparel, Beverages, Raw materials.')} /> : (
           <Table>
-            <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Category')}</TableHead><TableHead>{t('Code')}</TableHead><TableHead>{t('Goes off')}</TableHead><TableHead className="w-24" /></TableRow></TableHeader>
+            <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Category')}</TableHead><TableHead>{t('Sub-categories')}</TableHead><TableHead>{t('Code')}</TableHead><TableHead>{t('Goes off')}</TableHead><TableHead className="w-48" /></TableRow></TableHeader>
             <TableBody>
-              {[...cats.data].sort((a, b) => path(a.id).localeCompare(path(b.id))).map((c) => (
-                <TableRow key={c.id}>
-                  <TableCell>{path(c.id)}</TableCell>
-                  <TableCell className="text-muted-foreground">{c.code ?? '—'}</TableCell>
-                  <TableCell>{(c as { perishable?: boolean }).perishable ? <Badge variant="secondary">{t('Goes off quickly')}</Badge> : null}</TableCell>
-                  <TableCell className="whitespace-nowrap text-right"><Can perm="inventory.write">
-                    <SimpleFormDialog trigger={<Button variant="ghost" size="icon-sm" aria-label={t('Edit {name}', { name: td(c.name) })}><Pencil /></Button>} title={t('Edit {name}', { name: td(c.name) })} schema={categorySchema}
-                      defaultValues={{ name: c.name, code: c.code ?? '', parent_id: c.parent_id, perishable: !!(c as { perishable?: boolean }).perishable }} fields={fields} submitLabel={t('Save')}
-                      onSubmit={({ perishable, ...v }) => m.update.mutateAsync({ id: c.id, ...v, code: v.code || null, parent_id: v.parent_id === c.id ? null : v.parent_id ?? null,
-                        ...(!!perishable !== !!(c as { perishable?: boolean }).perishable ? { perishable: !!perishable } : {}) })} />
-                    <ConfirmDialog trigger={<Button variant="ghost" size="icon-sm" aria-label={t('Delete {name}', { name: td(c.name) })}><Trash2 /></Button>} title={t('Delete {name}?', { name: td(c.name) })}
-                      description={t('Products in this category become uncategorised.')} confirmLabel={t('Delete category')} destructive onConfirm={() => m.remove.mutateAsync(c.id)} />
-                  </Can></TableCell>
-                </TableRow>
-              ))}
+              {mains.flatMap((c) => [row(c, false), ...subsOf(c.id).map((x) => row(x, true))])}
             </TableBody>
           </Table>
         ))}

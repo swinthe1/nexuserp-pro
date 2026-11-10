@@ -13,7 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { msg, t, td } from '@/i18n'
 import { cn, formatDate, formatMoney, humanize, num, todayISO } from '@/lib/utils'
 import { useRealtimeInvalidate } from '@/hooks/use-realtime'
-import { PROC_TABLE, procKeys, useProcDocuments, type ProcKind } from '../api'
+import { PROC_TABLE, procKeys, useProcDocuments, type ProcKind, PAID_WITH, useBillPayMethods } from '../api'
 import { billLines } from '@/lib/documents/preview-lines'
 import { MatchBadge } from './purchase-document-page'
 
@@ -157,7 +157,10 @@ export function ProcurementListPage({ kind }: { kind: ProcKind }) {
   const vendorFilter = params.get('vendor')
   const book = kind === 'bills' ? (BOOKS.find((b) => b.key === params.get('book'))?.key ?? null) : null
   const byVendor = React.useMemo(() => (docs.data ?? []).filter((r) => !vendorFilter || (r as { vendor_id?: string }).vendor_id === vendorFilter || nm(r.vendor) === vendorFilter), [docs.data, vendorFilter])
-  const rows = React.useMemo(() => byVendor.filter((r) => !book || bookOf(r) === book), [byVendor, book])
+  // how each bill was paid, in cash or through the bank: a column and a filter
+  const payWays = useBillPayMethods(kind === 'bills')
+  const rows = React.useMemo(() => byVendor.filter((r) => !book || bookOf(r) === book)
+    .map((r) => (kind === 'bills' ? { ...r, paid_with: payWays.data?.[r.id] ?? 'none' } : r)), [byVendor, book, kind, payWays.data])
 
   // the groups of the items on each invoice or order (from the meeting with the staff)
   const groups = useDocGroups<Row>(kind === 'bills' ? 'vendor_bills' : kind === 'orders' ? 'purchase_orders' : null, docs.data)
@@ -165,8 +168,11 @@ export function ProcurementListPage({ kind }: { kind: ProcKind }) {
     { accessorKey: 'number', enableHiding: false, header: ({ column }) => <ColumnHeader column={column} title={t('Number')} />, meta: { label: t('Number') }, cell: ({ getValue }) => <span className="font-medium">{getValue() as string}</span> },
     { accessorKey: 'status', filterFn: inFilter, header: t('Status'), meta: { label: t('Status'), exportValue: (r) => humanize(r.status) }, cell: ({ getValue }) => <StatusBadge status={getValue() as string} /> },
     ...cfg.columns(base),
+    ...(kind === 'bills' ? [{ id: 'paid_with', accessorFn: (r: Row) => String(r.paid_with ?? 'none'), filterFn: inFilter, header: t('Paid with'),
+      meta: { label: t('Paid with'), exportValue: (r: Row) => t(PAID_WITH[(r.paid_with as keyof typeof PAID_WITH) ?? 'none']) },
+      cell: ({ getValue }) => { const v = getValue() as keyof typeof PAID_WITH; return v === 'none' ? <span className="text-muted-foreground">—</span> : t(PAID_WITH[v]) } } as ColumnDef<Row>] : []),
     ...groups.columns,
-  ], [cfg, base, groups.columns])
+  ], [cfg, base, groups.columns, kind])
   const newButton = kind === 'bills'
     // one button: what the invoice is for decides where it goes
     ? <Can perm={cfg.perm}>
@@ -209,7 +215,7 @@ export function ProcurementListPage({ kind }: { kind: ProcKind }) {
         getRowId={(r) => r.id} searchPlaceholder={kind === 'bills' ? t('Number, vendor, vendor invoice no.…') : t('Number, vendor…')} exportName={book ? t(BOOKS.find((b) => b.key === book)!.title) : kind}
         onRowClick={(r) => navigate(`${cfg.href}/${r.id}`)}
         preview={kind === 'orders' ? (r) => ({ print: { kind: 'purchase_order', id: r.id }, id: r.id, duplicate: 'purchase_orders' }) : kind === 'bills' ? (r) => ({ lines: billLines(r.id), id: r.id, duplicate: 'vendor_bills' }) : undefined}
-        facets={[{ columnId: 'status', title: t('Status'), options: cfg.statuses.map((s) => ({ label: humanize(s), value: s })) }, ...(cfg.extraFacets?.(docs.data ?? []) ?? []), ...groups.facets]}
+        facets={[{ columnId: 'status', title: t('Status'), options: cfg.statuses.map((s) => ({ label: humanize(s), value: s })) }, ...(cfg.extraFacets?.(docs.data ?? []) ?? []), ...(kind === 'bills' ? [{ columnId: 'paid_with', title: t('Paid with'), options: (['cash', 'bank', 'mixed', 'none'] as const).map((v) => ({ value: v, label: t(PAID_WITH[v]) })) }] : []), ...groups.facets]}
         initialHidden={groups.hidden}
         empty={{ title: cfg.emptyTitle, description: cfg.empty, action: newButton }}
       />

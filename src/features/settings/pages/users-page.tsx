@@ -55,30 +55,33 @@ export function UsersPage() {
   const whs = useWarehouses({ all: true })
 
   const roleOptions = React.useMemo(() => (roles.data ?? []).filter((r) => r.is_assignable).map((r) => ({ value: r.name, label: td(r.name) })), [roles.data])
+  // the columns are made once: a new set on every redraw would close an open row menu at once
+  const live = React.useRef({ write, setStatus, extras, setView, memberWh, whs, trainingOf, setProfileFor, setEditing, setWhFor, setPinFor, setRemoving })
+  live.current = { write, setStatus, extras, setView, memberWh, whs, trainingOf, setProfileFor, setEditing, setWhFor, setPinFor, setRemoving }
   const cols = React.useMemo<ColumnDef<CompanyUser>[]>(() => [
-    { id: 'person', accessorFn: (u) => `${u.full_name ?? ''} ${extras.data?.get(u.member_id)?.username ?? ''} ${isPinOnlyEmail(u.email) ? '' : u.email}`, enableHiding: false, header: ({ column }) => <ColumnHeader column={column} title={t('Person')} />, meta: { label: t('Person'), exportValue: (u) => u.full_name ?? u.email },
+    { id: 'person', accessorFn: (u) => `${u.full_name ?? ''} ${live.current.extras.data?.get(u.member_id)?.username ?? ''} ${isPinOnlyEmail(u.email) ? '' : u.email}`, enableHiding: false, header: ({ column }) => <ColumnHeader column={column} title={t('Person')} />, meta: { label: t('Person'), exportValue: (u) => u.full_name ?? u.email },
       cell: ({ row: { original: u } }) => (
         <div className="flex items-center gap-2.5">
           <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-medium">{initials(u.full_name ?? u.email)}</span>
           <span className="min-w-0">
             <span className="block truncate font-medium">{u.full_name ?? u.email}{u.is_self && <span className="ml-1.5 text-xs font-normal text-muted-foreground">{t('(you)')}</span>}
               {u.external_accountant && <Badge variant="outline" className="ml-1.5 border-primary/40 text-primary">{t('Outside accountant · free')}</Badge>}</span>
-            <span className="block truncate text-xs text-muted-foreground">{extras.data?.get(u.member_id)?.username ? `@${extras.data.get(u.member_id)!.username}` : isPinOnlyEmail(u.email) ? '' : u.email}</span>
+            <span className="block truncate text-xs text-muted-foreground">{live.current.extras.data?.get(u.member_id)?.username ? `@${live.current.extras.data.get(u.member_id)!.username}` : isPinOnlyEmail(u.email) ? '' : u.email}</span>
           </span>
         </div>
       ) },
     { id: 'roles', accessorFn: (u) => u.role_names.map(td).join(', '), filterFn: (row, _id, value: string[]) => !value?.length || row.original.role_names.some((n) => value.includes(n)),
       header: t('Roles'), meta: { label: t('Roles') },
       cell: ({ row: { original: u } }) => <div className="flex flex-wrap gap-1">{u.role_names.map((n) => <Badge key={n} variant="secondary">{td(n)}</Badge>)}</div> },
-    { id: 'warehouses', header: t('Warehouses'), meta: { label: t('Warehouses'), exportValue: (u) => (memberWh.data?.[u.member_id] ?? []).map((id) => whs.data?.find((w) => w.id === id)?.name ?? '').join(', ') || t('All') },
+    { id: 'warehouses', header: t('Warehouses'), meta: { label: t('Warehouses'), exportValue: (u) => (live.current.memberWh.data?.[u.member_id] ?? []).map((id) => live.current.whs.data?.find((w) => w.id === id)?.name ?? '').join(', ') || t('All') },
       cell: ({ row: { original: u } }) => {
-        const ids = memberWh.data?.[u.member_id]
-        return ids?.length ? <div className="flex flex-wrap gap-1">{ids.map((id) => <Badge key={id} variant="outline">{td(whs.data?.find((w) => w.id === id)?.name ?? '…')}</Badge>)}</div>
+        const ids = live.current.memberWh.data?.[u.member_id]
+        return ids?.length ? <div className="flex flex-wrap gap-1">{ids.map((id) => <Badge key={id} variant="outline">{td(live.current.whs.data?.find((w) => w.id === id)?.name ?? '…')}</Badge>)}</div>
           : <span className="text-xs text-muted-foreground">{t('All')}</span>
       } },
     { id: 'easy', header: t('Sign-in and view'), meta: { label: t('Sign-in and view'), noExport: true },
       cell: ({ row: { original: u } }) => {
-        const x = extras.data?.get(u.member_id)
+        const x = live.current.extras.data?.get(u.member_id)
         if (!x) return null
         return <div className="flex flex-wrap gap-1">
           {x.username ? <Badge variant="outline" className={x.login_locked ? 'border-destructive/40 text-destructive' : ''}>{x.login_locked ? t('PIN locked') : t('User name and PIN')}</Badge>
@@ -89,41 +92,41 @@ export function UsersPage() {
     { accessorKey: 'status', filterFn: inFilter, header: t('Status'), meta: { label: t('Status') }, cell: ({ getValue }) => <StatusBadge status={getValue() as string} /> },
     { accessorKey: 'last_sign_in_at', header: ({ column }) => <ColumnHeader column={column} title={t('Last signed in')} />, meta: { label: t('Last signed in') },
       cell: ({ getValue }) => <span className="text-muted-foreground">{getValue() ? formatDate(getValue() as string, true) : t('Never')}</span> },
-    { id: 'training', header: t('Training|menu'), meta: { label: t('Training|menu'), exportValue: (u) => { const x = trainingOf(u); return `${x.done}/${x.total}` } },
-      cell: ({ row: { original: u } }) => { const x = trainingOf(u); return u.status !== 'active' ? null
+    { id: 'training', header: t('Training|menu'), meta: { label: t('Training|menu'), exportValue: (u) => { const x = live.current.trainingOf(u); return `${x.done}/${x.total}` } },
+      cell: ({ row: { original: u } }) => { const x = live.current.trainingOf(u); return u.status !== 'active' ? null
         : <span className={cn('tabular text-[13px]', x.done >= x.total ? 'text-success' : x.done ? 'text-foreground' : 'text-muted-foreground')}>{x.done >= x.total ? t('Finished') : `${x.done}/${x.total}`}</span> } },
     { accessorKey: 'joined_at', header: t('Joined'), meta: { label: t('Joined') }, cell: ({ getValue }) => <span className="text-muted-foreground">{formatDate(getValue() as string)}</span> },
     { id: 'employee', header: t('Employee'), meta: { label: t('Employee'), exportValue: (u) => (u.employee_id ? t('Yes') : '') },
       cell: ({ row: { original: u } }) => u.employee_id ? <Link to={`/hr/employees/${u.employee_id}`} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>{t('Employee file')}</Link> : null },
     { id: 'actions', enableHiding: false, header: '', meta: { noExport: true },
-      cell: ({ row: { original: u } }) => write && (
+      cell: ({ row: { original: u } }) => live.current.write && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon-sm" aria-label={t('Actions for {name}', { name: u.full_name ?? u.email })}><MoreHorizontal /></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {u.user_id && <DropdownMenuItem onSelect={() => setProfileFor(u.user_id)}>{t('Change details')}</DropdownMenuItem>}
-            <DropdownMenuItem onSelect={() => setEditing(u)}>{t('Change roles')}</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setWhFor(u)}>{t('Warehouses they work in')}</DropdownMenuItem>
-            {u.user_id && u.status === 'active' && <DropdownMenuItem onSelect={() => setPinFor(u)}>{extras.data?.get(u.member_id)?.username ? t('User name and new PIN') : t('Give a user name and PIN')}</DropdownMenuItem>}
+            {u.user_id && <DropdownMenuItem onSelect={() => live.current.setProfileFor(u.user_id)}>{t('Change details')}</DropdownMenuItem>}
+            <DropdownMenuItem onSelect={() => live.current.setEditing(u)}>{t('Change roles')}</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => live.current.setWhFor(u)}>{t('Warehouses they work in')}</DropdownMenuItem>
+            {u.user_id && u.status === 'active' && <DropdownMenuItem onSelect={() => live.current.setPinFor(u)}>{live.current.extras.data?.get(u.member_id)?.username ? t('User name and new PIN') : t('Give a user name and PIN')}</DropdownMenuItem>}
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{t('What they see')}</DropdownMenuLabel>
-            <DropdownMenuRadioGroup value={extras.data?.get(u.member_id)?.view_mode ?? 'auto'} onValueChange={(v) => setView.mutate({ member: u.member_id, mode: v as 'auto' | 'simple' | 'full' })}>
+            <DropdownMenuRadioGroup value={live.current.extras.data?.get(u.member_id)?.view_mode ?? 'auto'} onValueChange={(v) => live.current.setView.mutate({ member: u.member_id, mode: v as 'auto' | 'simple' | 'full' })}>
               <DropdownMenuRadioItem value="auto">{t('Automatic, by their roles')}</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="simple">{t('Simple: large buttons')}</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="full">{t('Full: all menus')}</DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
             {!u.is_self && u.status === 'active' && (
-              <DropdownMenuItem onSelect={() => void setStatus.mutateAsync({ member: u.member_id, status: 'suspended' }).then(() => toast.success(t('{name} can no longer sign in to this company', { name: u.full_name ?? u.email })))}>
+              <DropdownMenuItem onSelect={() => void live.current.setStatus.mutateAsync({ member: u.member_id, status: 'suspended' }).then(() => toast.success(t('{name} can no longer sign in to this company', { name: u.full_name ?? u.email })))}>
                 {t('Suspend access')}
               </DropdownMenuItem>
             )}
             {!u.is_self && u.status === 'suspended' && (
-              <DropdownMenuItem onSelect={() => void setStatus.mutateAsync({ member: u.member_id, status: 'active' }).then(() => toast.success(t('Access restored')))}>{t('Restore access')}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => void live.current.setStatus.mutateAsync({ member: u.member_id, status: 'active' }).then(() => toast.success(t('Access restored')))}>{t('Restore access')}</DropdownMenuItem>
             )}
-            {!u.is_self && (<><DropdownMenuSeparator /><DropdownMenuItem className="text-destructive" onSelect={() => setRemoving(u)}>{t('Remove from company')}</DropdownMenuItem></>)}
+            {!u.is_self && (<><DropdownMenuSeparator /><DropdownMenuItem className="text-destructive" onSelect={() => live.current.setRemoving(u)}>{t('Remove from company')}</DropdownMenuItem></>)}
           </DropdownMenuContent>
         </DropdownMenu>
       ) },
-  ], [write, setStatus, extras.data, setView, memberWh.data, whs.data, trainingOf])
+  ], [])
 
   return (
     <>
@@ -165,7 +168,9 @@ export function UsersPage() {
   )
 }
 
+const ADMIN = 'company_admin'
 function RolePicker({ roles, value, onChange }: { roles: RoleRow[]; value: string[]; onChange: (v: string[]) => void }) {
+  const admin = value.includes(ADMIN)
   const groups = [
     { title: t('Built-in roles'), items: roles.filter((r) => r.is_assignable && !r.company_id) },
     { title: t('Custom roles'), items: roles.filter((r) => r.company_id) },
@@ -178,9 +183,13 @@ function RolePicker({ roles, value, onChange }: { roles: RoleRow[]; value: strin
           <div className="grid gap-1">
             {g.items.map((r) => {
               const checked = value.includes(r.key)
+              // the company admin may do everything: the other roles add nothing, so they are greyed out
+              const covered = admin && r.key !== ADMIN
               return (
-                <label key={r.id} className="flex cursor-pointer items-start gap-2.5 rounded-md px-2 py-1.5 hover:bg-secondary/60">
-                  <Checkbox className="mt-0.5" checked={checked} onCheckedChange={(c) => onChange(c ? [...value, r.key] : value.filter((k) => k !== r.key))} />
+                <label key={r.id} className={cn('flex items-start gap-2.5 rounded-md px-2 py-1.5', covered ? 'cursor-not-allowed opacity-45' : 'cursor-pointer hover:bg-secondary/60')}
+                  title={covered ? t('The company administrator can already do everything') : undefined}>
+                  <Checkbox className="mt-0.5" checked={checked || covered} disabled={covered}
+                    onCheckedChange={(c) => onChange(c ? (r.key === ADMIN ? [ADMIN] : [...value, r.key]) : value.filter((k) => k !== r.key))} />
                   <span className="min-w-0 text-[13px]"><span className="font-medium">{td(r.name)}</span>
                     {r.description && <span className="block text-xs text-muted-foreground">{td(r.description)}</span>}</span>
                 </label>
@@ -204,7 +213,7 @@ function AddPersonDialog({ roles, onClose }: { roles: RoleRow[]; onClose: () => 
   const [picked, setPicked] = React.useState<string[]>([])
   const [error, setError] = React.useState<string | null>(null)
   const create = useMutation({
-    mutationFn: async () => unwrap(await supabase.rpc('company_user_create', { p_company: companyId!, p_name: name.trim(), p_username: username, p_pin: pin, p_role_keys: picked })),
+    mutationFn: async () => unwrap(await supabase.rpc('company_user_create', { p_company: companyId!, p_name: name.trim(), p_username: username, p_pin: pin, p_role_keys: picked.includes(ADMIN) ? [ADMIN] : picked })),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['admin'] }); void qc.invalidateQueries({ queryKey: ['member-extras'] })
       toast.success(t('{name} signs in with {user} and the PIN you gave. Tell them the PIN in person.', { name: name.trim(), user: username }))
@@ -297,7 +306,7 @@ function RolesDialog({ user, roles, onClose }: { user: CompanyUser; roles: RoleR
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{t('Cancel')}</Button>
           <Button disabled={!picked.length} loading={save.isPending}
-            onClick={() => void save.mutateAsync({ member: user.member_id, roles: picked.map((k) => idByKey.get(k)!).filter(Boolean) }).then(() => { toast.success(t('Roles saved')); onClose() })}>
+            onClick={() => void save.mutateAsync({ member: user.member_id, roles: (picked.includes(ADMIN) ? [ADMIN] : picked).map((k) => idByKey.get(k)!).filter(Boolean) }).then(() => { toast.success(t('Roles saved')); onClose() })}>
             {t('Save roles')}
           </Button>
         </DialogFooter>

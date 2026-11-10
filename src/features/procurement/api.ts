@@ -1,3 +1,4 @@
+import { msg } from '@/i18n'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
@@ -355,3 +356,14 @@ export function useSaveAutomation() {
     onError: (e) => toast.error(describeError(e)),
   })
 }
+
+/** how each purchase bill was paid: 'cash', 'bank' or 'mixed' (a bill without a payment is not in it) */
+export function useBillPayMethods(enabled = true) {
+  const { companyId, can } = useCompany()
+  return useQuery({
+    queryKey: [...procKeys.all(companyId), 'pay-methods'], enabled: !!companyId && enabled && can('invoicing.read'), staleTime: 60_000,
+    queryFn: async () => unwrap(await supabase.rpc('bill_pay_methods', { p_company: companyId! })) as unknown as Record<string, 'cash' | 'bank' | 'mixed'>,
+  })
+}
+/** the words for how a bill was paid, for a filter and a column */
+export const PAID_WITH: Record<'cash' | 'bank' | 'mixed' | 'none', string> = { cash: msg('Cash|paid'), bank: msg('Bank|paid'), mixed: msg('Cash and bank|paid'), none: msg('Not paid yet') }
