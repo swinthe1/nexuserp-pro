@@ -64,20 +64,19 @@ export function SalesOverviewPage() {
           </Can>
         </>}
       />
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {/* the figures in two short rows (one on a wide screen), so the analysis below comes into view */}
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 2xl:grid-cols-8">
         {hasTill
-          ? <StatCard label={t('Sales (without VAT)')} value={formatMoney(num(d?.revenue) + till)} loading={ov.isLoading} href="/sales?view=detail#analiza"
+          ? <StatCard compact label={t('Sales (without VAT)')} value={formatMoney(num(d?.revenue) + till)} loading={ov.isLoading} href="/sales?view=detail#analiza"
               hint={t('{till} at the tills ({n} receipts) · {inv} on invoices', { till: formatMoney(till), n: d?.till_receipts ?? 0, inv: formatMoney(d?.revenue) })} />
-          : <StatCard label={t('Sales (without VAT)')} value={formatMoney(d?.revenue)} loading={ov.isLoading} href="/sales/invoices" hint={tn(d?.invoice_count ?? 0, '{n} invoice', '{n} invoices')} />}
-        <StatCard label={hasTill ? t('Gross margin on invoices') : t('Gross margin')} value={margin == null ? '—' : `${pct(margin, 1)}%`} loading={ov.isLoading} hint={d ? t('{profit} after {cost} cost of goods, without VAT', { profit: formatMoney(d.revenue - d.cogs), cost: formatMoney(d.cogs) }) : undefined} tone={margin != null && margin < 15 ? 'warning' : 'default'} />
-        <StatCard label={t('Orders taken (without VAT)')} value={formatMoney(d?.orders_value)} loading={ov.isLoading} href="/sales/orders" hint={tn(d?.orders_count ?? 0, '{n} confirmed order', '{n} confirmed orders')} />
-        <StatCard label={t('Overdue invoices (with VAT)')} value={formatMoney(d?.overdue_amount)} loading={ov.isLoading} tone={d?.overdue_count ? 'destructive' : 'default'} href="/sales/invoices" hint={t('{n} past the due date', { n: d?.overdue_count ?? 0 })} />
-      </div>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label={t('To deliver and invoice (without VAT)')} value={formatMoney(d?.backlog)} loading={ov.isLoading} hint={t('Open orders, the part not delivered yet')} />
-        <StatCard label={t('Quotes turned into orders')} value={quoteConv == null ? '—' : `${pct(quoteConv, 0)}%`} loading={ov.isLoading} href="/sales/quotes" hint={t('{done} of {sent} sent', { done: d?.quotes_converted ?? 0, sent: d?.quotes_sent ?? 0 })} />
-        <StatCard label={t('Deals won')} value={winRate == null ? '—' : `${pct(winRate, 0)}%`} loading={ov.isLoading} href="/crm/pipeline" hint={t('{won} won · {lost} lost', { won: d?.won ?? 0, lost: d?.lost ?? 0 })} />
-        <StatCard label={t('Open deals (without VAT)')} value={formatMoney(pipeline.reduce((s, p) => s + num(p.value), 0))} loading={ov.isLoading} href="/crm/pipeline" hint={t('{amount} expected by probability', { amount: formatMoney(pipeline.reduce((s, p) => s + num(p.weighted), 0)) })} />
+          : <StatCard compact label={t('Sales (without VAT)')} value={formatMoney(d?.revenue)} loading={ov.isLoading} href="/sales/invoices" hint={tn(d?.invoice_count ?? 0, '{n} invoice', '{n} invoices')} />}
+        <StatCard compact label={hasTill ? t('Gross margin on invoices') : t('Gross margin')} value={margin == null ? '—' : `${pct(margin, 1)}%`} loading={ov.isLoading} hint={d ? t('{profit} after {cost} cost of goods, without VAT', { profit: formatMoney(d.revenue - d.cogs), cost: formatMoney(d.cogs) }) : undefined} tone={margin != null && margin < 15 ? 'warning' : 'default'} />
+        <StatCard compact label={t('Orders taken (without VAT)')} value={formatMoney(d?.orders_value)} loading={ov.isLoading} href="/sales/orders" hint={tn(d?.orders_count ?? 0, '{n} confirmed order', '{n} confirmed orders')} />
+        <StatCard compact label={t('Overdue invoices (with VAT)')} value={formatMoney(d?.overdue_amount)} loading={ov.isLoading} tone={d?.overdue_count ? 'destructive' : 'default'} href="/sales/invoices" hint={t('{n} past the due date', { n: d?.overdue_count ?? 0 })} />
+        <StatCard compact label={t('To deliver and invoice (without VAT)')} value={formatMoney(d?.backlog)} loading={ov.isLoading} hint={t('Open orders, the part not delivered yet')} />
+        <StatCard compact label={t('Quotes turned into orders')} value={quoteConv == null ? '—' : `${pct(quoteConv, 0)}%`} loading={ov.isLoading} href="/sales/quotes" hint={t('{done} of {sent} sent', { done: d?.quotes_converted ?? 0, sent: d?.quotes_sent ?? 0 })} />
+        <StatCard compact label={t('Deals won')} value={winRate == null ? '—' : `${pct(winRate, 0)}%`} loading={ov.isLoading} href="/crm/pipeline" hint={t('{won} won · {lost} lost', { won: d?.won ?? 0, lost: d?.lost ?? 0 })} />
+        <StatCard compact label={t('Open deals (without VAT)')} value={formatMoney(pipeline.reduce((s, p) => s + num(p.value), 0))} loading={ov.isLoading} href="/crm/pipeline" hint={t('{amount} expected by probability', { amount: formatMoney(pipeline.reduce((s, p) => s + num(p.weighted), 0)) })} />
       </div>
       <AnalysisSection kind="sales" embedded />
 

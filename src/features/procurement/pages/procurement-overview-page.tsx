@@ -53,21 +53,20 @@ export function ProcurementOverviewPage() {
         </>}</>}
       />
       {ov.isError && <Card className="mb-3"><ErrorState compact error={ov.error} onRetry={() => void ov.refetch()} /></Card>}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label={t('Spend (without VAT)')} value={formatMoney(d?.spend)} loading={ov.isLoading} href="/procurement/bills" hint={tn(d?.bill_count ?? 0, '{n} bill', '{n} bills')} />
-        <StatCard label={t('On order (without VAT)')} value={formatMoney(d?.open_po_value)} loading={ov.isLoading} href="/procurement/orders" tone={d?.late_count ? 'warning' : 'default'}
+      {/* the figures in two short rows (one on a wide screen), so the analysis below comes into view */}
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 2xl:grid-cols-8">
+        <StatCard compact label={t('Spend (without VAT)')} value={formatMoney(d?.spend)} loading={ov.isLoading} href="/procurement/bills" hint={tn(d?.bill_count ?? 0, '{n} bill', '{n} bills')} />
+        <StatCard compact label={t('On order (without VAT)')} value={formatMoney(d?.open_po_value)} loading={ov.isLoading} href="/procurement/orders" tone={d?.late_count ? 'warning' : 'default'}
           hint={d?.late_count ? tn(d.late_count, '{n} order past the expected date', '{n} orders past the expected date') : t('Nothing late')} />
-        <StatCard label={t('Received, not billed (without VAT)')} value={formatMoney(d?.to_bill_value)} loading={ov.isLoading} hint={t('Bills to expect from vendors')} />
-        <StatCard label={t('Bills overdue (with VAT)')} value={formatMoney(d?.ap_overdue)} loading={ov.isLoading} tone={d?.ap_overdue_count ? 'destructive' : 'default'} href="/procurement/bills"
+        <StatCard compact label={t('Received, not billed (without VAT)')} value={formatMoney(d?.to_bill_value)} loading={ov.isLoading} hint={t('Bills to expect from vendors')} />
+        <StatCard compact label={t('Bills overdue (with VAT)')} value={formatMoney(d?.ap_overdue)} loading={ov.isLoading} tone={d?.ap_overdue_count ? 'destructive' : 'default'} href="/procurement/bills"
           hint={t('{amount} due in the next 7 days', { amount: formatMoney(d?.ap_due_7) })} />
-      </div>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label={t('On-time deliveries')} value={d?.on_time_pct == null ? '—' : `${num(d.on_time_pct).toFixed(0)}%`} loading={ov.isLoading}
+        <StatCard compact label={t('On-time deliveries')} value={d?.on_time_pct == null ? '—' : `${num(d.on_time_pct).toFixed(0)}%`} loading={ov.isLoading}
           hint={d?.avg_lead_days == null ? t('No goods received against orders yet') : t('{n} days from order to receipt', { n: formatQty(Math.round(num(d.avg_lead_days) * 10) / 10) })} />
-        <StatCard label={t('Waiting for approval')} value={waiting} loading={ov.isLoading} href="/approvals" tone={waiting ? 'warning' : 'default'}
+        <StatCard compact label={t('Waiting for approval')} value={waiting} loading={ov.isLoading} href="/approvals" tone={waiting ? 'warning' : 'default'}
           hint={[tn(d?.pending_po_approvals ?? 0, '{n} order', '{n} orders'), tn(d?.pending_requisitions ?? 0, '{n} requisition', '{n} requisitions')].join(' · ')} />
-        <StatCard label={t('Requisitions to order')} value={d?.approved_requisitions ?? 0} loading={ov.isLoading} href="/procurement/requisitions" hint={t('Approved, no order yet')} />
-        <StatCard label={t('Bills with a mismatch')} value={d?.match_exceptions ?? 0} loading={ov.isLoading} href="/procurement/bills" tone={d?.match_exceptions ? 'destructive' : 'default'} hint={t('Quantity or price differs from the order')} />
+        <StatCard compact label={t('Requisitions to order')} value={d?.approved_requisitions ?? 0} loading={ov.isLoading} href="/procurement/requisitions" hint={t('Approved, no order yet')} />
+        <StatCard compact label={t('Bills with a mismatch')} value={d?.match_exceptions ?? 0} loading={ov.isLoading} href="/procurement/bills" tone={d?.match_exceptions ? 'destructive' : 'default'} hint={t('Quantity or price differs from the order')} />
       </div>
       <AnalysisSection kind="purchases" embedded />
 

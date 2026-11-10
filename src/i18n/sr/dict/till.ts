@@ -1629,4 +1629,5 @@ export default {
   "Categories / sub-categories": "Kategorije/Potkategorije",
   "pick from the list": "izaberi sa liste",
   "{n} chosen": "izabrano: {n}",
+  "Select all": "Izaberi sve",
 } satisfies Dict
