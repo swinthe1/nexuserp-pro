@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { Car, ChevronDown, FileText, PackagePlus, Plus, ReceiptText, ScanText } from 'lucide-react'
+import { Car, ChevronDown, FileText, PackagePlus, Plus, ReceiptText } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Can, useCompany } from '@/app/company-provider'
@@ -170,7 +170,6 @@ export function ProcurementListPage({ kind }: { kind: ProcKind }) {
   const newButton = kind === 'bills'
     // one button: what the invoice is for decides where it goes
     ? <Can perm={cfg.perm}>
-        <Can perm="inventory.read"><Button variant="outline" asChild><Link to="/inventory/read-invoice"><ScanText /> {t('Invoice from a photo|menu')}</Link></Button></Can>
         <DropdownMenu>
           <DropdownMenuTrigger asChild><Button><Plus /> {t('New invoice|purchase')} <ChevronDown className="opacity-70" /></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">

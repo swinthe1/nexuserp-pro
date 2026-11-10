@@ -63,7 +63,7 @@ export function LotsPage() {
   const soon = rows.filter((r) => r.band === 'soon' && r.on_hand > 0)
   return (
     <>
-      <PageHeader title={t('Lot tracing|menu')} description={t('Every lot and serial number, how long it keeps, and where it went. Open a lot to see its full path and the customers who received it.')} />
+      <PageHeader title={t('Lots & expiry|menu')} description={t('Every lot and serial number, how long it keeps, and where it went. Open a lot to see its full path and the customers who received it.')} />
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <StatCard label={t('Expired, still in stock')} value={expired.length} tone={expired.length ? 'destructive' : 'default'} loading={lots.isLoading} hint={t('{n} units to take off the shelves', { n: formatQty(expired.reduce((s, r) => s + r.on_hand, 0)) })} />
         <StatCard label={t('Expiring within 30 days')} value={soon.length} tone={soon.length ? 'warning' : 'default'} loading={lots.isLoading} hint={t('Sell these first — picking and the till already take them first')} />

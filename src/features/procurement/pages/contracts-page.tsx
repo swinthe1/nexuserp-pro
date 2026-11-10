@@ -31,8 +31,7 @@ const daysTo = (d: string | null) => (d ? Math.round((new Date(`${d}T00:00:00`).
  * back expired goods), the dates, the signed file, and a reminder to the buyers before the end. The
  * purchase invoice of that supplier shows the terms in force.
  */
-/** the supplier contracts; with a vendor (on the vendor's card) only that vendor's, without the page header */
-export function ContractsPage({ vendorId }: { vendorId?: string } = {}) {
+export function ContractsPage() {
   const { companyId } = useCompany()
   const qc = useQueryClient()
   const vendors = useActiveVendors()
@@ -40,7 +39,7 @@ export function ContractsPage({ vendorId }: { vendorId?: string } = {}) {
   const key = ['proc', companyId, 'contracts']
   const q = useQuery({ queryKey: key, enabled: !!companyId,
     queryFn: async () => unwrap(await supabase.from('supplier_contracts' as never).select('*').eq('company_id', companyId!).is('deleted_at', null).order('start_date', { ascending: false })) as unknown as Contract[] })
-  const rows = (q.data ?? []).filter((r) => !vendorId || r.vendor_id === vendorId)
+  const rows = q.data ?? []
   const open = params.get('c')
   const editing = open === 'new' ? 'new' : rows.find((r) => r.id === open) ?? null
   const setOpen = (id: string | null) => setParams((p) => { const n = new URLSearchParams(p); if (id) n.set('c', id); else n.delete('c'); return n }, { replace: true })
@@ -65,30 +64,29 @@ export function ContractsPage({ vendorId }: { vendorId?: string } = {}) {
 
   return (
     <>
-      {vendorId ? <div className="mb-3 flex justify-end"><Can perm="procurement.write"><Button size="sm" onClick={() => setOpen('new')}><Plus /> {t('New contract')}</Button></Can></div>
-        : <PageHeader title={t('Supplier contracts|menu')}
+      <PageHeader title={t('Supplier contracts|menu')}
         description={t('The terms agreed with each supplier, the dates and the signed contract. The buyers are reminded before a contract ends, and the purchase invoice shows the terms in force.')}
-        actions={<Can perm="procurement.write"><Button onClick={() => setOpen('new')}><Plus /> {t('New contract')}</Button></Can>} />}
-      {!vendorId && <div className="mb-3 grid grid-cols-2 gap-3 lg:grid-cols-3">
+        actions={<Can perm="procurement.write"><Button onClick={() => setOpen('new')}><Plus /> {t('New contract')}</Button></Can>} />
+      <div className="mb-3 grid grid-cols-2 gap-3 lg:grid-cols-3">
         <StatCard label={t('In force')} value={String(active.length)} />
         <StatCard label={t('Ending soon')} value={String(ending.length)} tone={ending.length ? 'warning' : 'default'} />
         <StatCard label={t('Suppliers with a contract')} value={String(new Set(active.map((r) => r.vendor_id)).size)} />
-      </div>}
-      <DataTable tableKey={vendorId ? 'procurement.contracts.vendor' : 'procurement.contracts'} initialHidden={vendorId ? ['vendor'] : undefined} columns={cols} data={rows} isLoading={q.isLoading} error={q.error} getRowId={(r) => r.id} onRowClick={(r) => setOpen(r.id)}
+      </div>
+      <DataTable tableKey="procurement.contracts" columns={cols} data={rows} isLoading={q.isLoading} error={q.error} getRowId={(r) => r.id} onRowClick={(r) => setOpen(r.id)}
         searchPlaceholder={t('Number, supplier, subject…')} exportName={t('supplier-contracts')} initialFilters={[{ id: 'status', value: ['active', 'draft'] }]}
         facets={[{ columnId: 'status', title: t('Status'), options: (Object.keys(STATUS) as Contract['status'][]).map((s) => ({ value: s, label: t(STATUS[s]) })) }]}
         empty={{ title: t('No contracts yet'), description: t('Add the contract of a supplier with its terms and the signed file.') }} />
-      {editing && <ContractDialog contract={editing === 'new' ? null : editing} vendorId={vendorId} onClose={() => { setOpen(null); void qc.invalidateQueries({ queryKey: key }) }} />}
+      {editing && <ContractDialog contract={editing === 'new' ? null : editing} onClose={() => { setOpen(null); void qc.invalidateQueries({ queryKey: key }) }} />}
     </>
   )
 }
 
-function ContractDialog({ contract, vendorId, onClose }: { contract: Contract | null; vendorId?: string; onClose: () => void }) {
+function ContractDialog({ contract, onClose }: { contract: Contract | null; onClose: () => void }) {
   const { companyId, can } = useCompany()
   const vendors = useActiveVendors()
   const editable = can('procurement.write')
   const [f, setF] = React.useState(() => ({
-    vendor_id: contract?.vendor_id ?? vendorId ?? null as string | null, number: contract?.number ?? '', title: contract?.title ?? '', start_date: contract?.start_date ?? todayISO(), end_date: contract?.end_date ?? '',
+    vendor_id: contract?.vendor_id ?? null as string | null, number: contract?.number ?? '', title: contract?.title ?? '', start_date: contract?.start_date ?? todayISO(), end_date: contract?.end_date ?? '',
     payment_days: contract?.payment_days == null ? '' : String(contract.payment_days), rebate_pct: contract?.rebate_pct == null ? '' : String(contract.rebate_pct), rebate_terms: contract?.rebate_terms ?? '',
     delivery_days: contract?.delivery_days == null ? '' : String(contract.delivery_days), min_order: contract?.min_order == null ? '' : String(contract.min_order),
     returns_expired: contract?.returns_expired ?? false, returns_terms: contract?.returns_terms ?? '', other_terms: contract?.other_terms ?? '', remind_days: String(contract?.remind_days ?? 30),
