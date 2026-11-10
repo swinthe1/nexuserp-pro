@@ -1776,4 +1776,5 @@ export default {
   "{n} drafts to check": "{n} drafte për kontroll",
   "€/month": "€/muaj",
   "Units|places": "Njësitë",
+  "Paid to suppliers": "Pagesat e furnitorëve",
 } satisfies Dict

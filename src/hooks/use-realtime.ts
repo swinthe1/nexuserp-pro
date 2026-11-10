@@ -15,7 +15,8 @@ export function useRealtimeInvalidate(table: string, companyId: string, keys: Re
     if (!companyId) return
     const parsed = JSON.parse(keysJson) as unknown[][]
     const channel = supabase
-      .channel(`rt:${table}:${companyId}`)
+      // one channel per subscriber: two pages listening to the same table must not share one (adding to a joined channel fails)
+      .channel(`rt:${table}:${companyId}:${Math.random().toString(36).slice(2, 10)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table, filter: `company_id=eq.${companyId}` }, (payload) => {
         parsed.forEach((k) => void qc.invalidateQueries({ queryKey: k }))
         cb.current?.(payload)

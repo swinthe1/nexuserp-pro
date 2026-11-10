@@ -399,7 +399,7 @@ export function useTill(registerId: string | undefined) {
     let wait: number | undefined
     // changes come in bursts (a sale moves the stock of several items): one look after the burst
     const soon = () => { window.clearTimeout(wait); wait = window.setTimeout(() => lookRef.current?.(), 1500) }
-    const ch = supabase.channel(`pulse:${companyId}:${registerId}`)
+    const ch = supabase.channel(`pulse:${companyId}:${registerId}:${Math.random().toString(36).slice(2, 10)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pos_catalog_pulse', filter: `company_id=eq.${companyId}` }, soon)
       .subscribe()
     return () => { window.clearTimeout(wait); void supabase.removeChannel(ch) }
@@ -475,7 +475,9 @@ export type ReviewRow = { id: string; number: string; register: string; register
   opened_at: string; closed_at: string; reviewed_at: string | null; opened_by: string | null; closed_by: string | null; reviewed_by: string | null
   opened_by_id: string | null; closed_by_id: string | null
   expected: number; cashier_counted: number | null; counted: number | null; cashier_difference: number | null; difference: number | null
-  review_status: 'pending' | 'returned' | 'reconciled'; sales: number | null; receipts: number | null; hours_waiting: number; last_note: string | null }
+  review_status: 'pending' | 'returned' | 'reconciled'; sales: number | null; receipts: number | null; hours_waiting: number; last_note: string | null
+  /** paid out of the drawer during the shift: to suppliers, and for expenses */
+  supplier_paid: number; expenses: number }
 export function useReviewList(status: 'open' | 'pending' | 'returned' | 'reconciled' | 'all') {
   const { companyId } = useCompany()
   return useQuery({

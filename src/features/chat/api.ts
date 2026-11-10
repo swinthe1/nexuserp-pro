@@ -79,7 +79,7 @@ export function useChatRealtime() {
   const qc = useQueryClient()
   React.useEffect(() => {
     if (!companyId || !user) return
-    const ch = supabase.channel(`chat:${companyId}:${user.id}`)
+    const ch = supabase.channel(`chat:${companyId}:${user.id}:${Math.random().toString(36).slice(2, 10)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages', filter: `company_id=eq.${companyId}` }, (p) => {
         const m = (p.new ?? p.old) as { conversation_id?: string }
         if (m?.conversation_id) void qc.invalidateQueries({ queryKey: chatKeys.messages(m.conversation_id) })

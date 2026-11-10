@@ -1484,4 +1484,5 @@ export default {
   "Bills": "Ulazne fakture",
   "New bill": "Nova ulazna faktura",
   "New invoice|purchase": "Nova ulazna faktura",
+  "Paid to suppliers": "Plaćeno dobavljačima",
 } satisfies Dict
