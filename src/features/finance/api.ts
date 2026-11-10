@@ -581,3 +581,14 @@ export function useExpensePayAccounts() {
   return useQuery({ queryKey: ['expense-pay', companyId], enabled: !!companyId,
     queryFn: async () => unwrap(await supabase.rpc('expense_pay_accounts', { p_company: companyId! })) as unknown as PayAccount[] })
 }
+
+/** from the sales to the net profit, out of the accounts */
+export type FinanceWaterfall = { revenue: number; other_income: number; cogs: number; expenses: { name: string | null; amount: number }[]; net_profit: number }
+export function useFinanceWaterfall(from: string, to: string, enabled = true) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...finKeys.all(companyId), 'waterfall', from, to],
+    enabled: !!companyId && enabled, staleTime: 60_000,
+    queryFn: async () => unwrap(await supabase.rpc('finance_waterfall', { p_company: companyId!, p_from: from, p_to: to })) as unknown as FinanceWaterfall,
+  })
+}

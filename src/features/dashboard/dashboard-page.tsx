@@ -23,8 +23,8 @@ import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { formatDateWith, formatNumberWith, t, td, tn } from '@/i18n'
 import { unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
-import { cn, formatMoneyCompact, formatDate, formatMoney, formatQty, humanize, num, todayISO } from '@/lib/utils'
-import { useSalesOverview } from '@/features/sales/api'
+import { addDaysISO, cn, formatMoneyCompact, formatDate, formatMoney, formatQty, humanize, num, todayISO } from '@/lib/utils'
+import { useSalesDaily, useSalesOverview } from '@/features/sales/api'
 import { useProcurementOverview } from '@/features/procurement/api'
 import { useInventoryOverview, useLowStock } from '@/features/inventory/api'
 import { StockByWarehouse } from './stock-by-warehouse'
@@ -60,6 +60,12 @@ export function DashboardPage() {
   const fin = useFinanceOverview(monthStart, todayISO(), can('finance.read'))
   const mk = useDashboardMarket()
   const m = mk.data
+  // the last 30 days as small lines in the cards of the shop
+  const daily = useSalesDaily(addDaysISO(todayISO(), -29), todayISO(), can('sales.read'))
+  const dd = daily.data ?? []
+  const sparkGross = dd.length > 1 ? dd.map((x) => num(x.gross)) : undefined
+  const sparkBasket = dd.length > 1 ? dd.map((x) => (x.receipts ? num(x.gross) / x.receipts : 0)) : undefined
+  const sparkMargin = dd.length > 1 && dd.some((x) => x.cost != null) ? dd.map((x) => { const n = num(x.till) + num(x.invoices); return n > 0 ? ((n - num(x.cost)) / n) * 100 : 0 }) : undefined
   const pending = useQuery({
     queryKey: ['approvals', companyId, 'count'],
     enabled: !!companyId,
@@ -90,7 +96,7 @@ export function DashboardPage() {
 
   /* ------------------------------------------------ the shop and the tills (what a market looks at first) */
   add('today_sales', t('Sales today (with VAT)'), can('sales.read'),
-    <StatCard icon={ShoppingBasket} hue="152 68%" label={t('Sales today (with VAT)')} value={formatMoney(m?.today, cur)} loading={mk.isLoading} href="/pos/history"
+    <StatCard icon={ShoppingBasket} hue="152 68%" label={t('Sales today (with VAT)')} value={formatMoney(m?.today, cur)} loading={mk.isLoading} href="/pos/history" spark={sparkGross}
       trend={{ pct: pct(m?.today, m?.week_ago), label: t('vs the same hour a week ago'), upIsGood: true }}
       hint={m ? <>{m.today_margin_pct != null && <span className="block font-medium text-foreground/80">{t('Margin {pct}%: {amount} earned, without VAT', { pct: formatNumberWith(m.today_margin_pct, { maximumFractionDigits: 1 }), amount: formatMoney(m.today_margin) })}</span>}
         {t('{n} receipts · average basket {amount}', { n: m.receipts ?? 0, amount: m.basket != null ? formatMoney(m.basket) : '—' })}</> : undefined} />)
@@ -101,12 +107,12 @@ export function DashboardPage() {
         : tn(m.open_shifts ?? 0, '{n} till open', '{n} tills open')) : undefined} />)
   add('margin_month', t('Gross margin this month'), can('sales.read'),
     <StatCard icon={Percent} hue="262 60%" label={t('Gross margin this month')} value={m?.month_margin_pct != null ? formatNumberWith(m.month_margin_pct, { maximumFractionDigits: 1 }) : '—'} unit="%"
-      meter={m?.month_margin_pct ?? null} loading={mk.isLoading} href="/reports/margin"
+      spark={sparkMargin} loading={mk.isLoading} href="/reports/margin"
       hint={m ? t('{amount} earned on {sales} of sales, without VAT', { amount: formatMoney(m.month_margin), sales: formatMoney(m.month_net) }) : undefined} />)
   add('sales_month_all', t('Sales this month, tills and invoices (with VAT)'), can('sales.read'),
-    <StatCard icon={TrendingUp} hue="204 82%" label={t('Sales this month, tills and invoices (with VAT)')} value={formatMoney(m?.month, cur)} loading={mk.isLoading} href="/reports/analysis" />)
+    <StatCard icon={TrendingUp} hue="204 82%" label={t('Sales this month, tills and invoices (with VAT)')} value={formatMoney(m?.month, cur)} loading={mk.isLoading} href="/reports/analysis" spark={sparkGross} hint={t('The line: each of the last 30 days')} />)
   add('basket', t('Average basket today (with VAT)'), can('sales.read'),
-    <StatCard icon={Receipt} hue="188 78%" label={t('Average basket today (with VAT)')} value={m?.basket != null ? formatMoney(m.basket, cur) : '—'} loading={mk.isLoading} href="/pos/history"
+    <StatCard icon={Receipt} hue="188 78%" label={t('Average basket today (with VAT)')} value={m?.basket != null ? formatMoney(m.basket, cur) : '—'} loading={mk.isLoading} href="/pos/history" spark={sparkBasket}
       trend={{ pct: pct(m?.receipts, m?.receipts_week_ago), label: t('receipts vs a week ago') }}
       hint={m ? tn(m.receipts ?? 0, '{n} receipt so far today', '{n} receipts so far today') : undefined} />)
   add('till_diff', t('Till differences this month'), can('pos.read') || can('sales.read'),

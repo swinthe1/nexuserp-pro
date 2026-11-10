@@ -115,6 +115,13 @@ export function todayISO() {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
 }
 
+/** a day as YYYY-MM-DD, some days from another (negative: earlier) */
+export function addDaysISO(day: string, days: number) {
+  const d = new Date(`${day}T12:00:00`)
+  d.setDate(d.getDate() + days)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 /** A database enum value as a label in the current language (falls back to readable English). */
 export function humanize(value: string | null | undefined) {
   return tEnum(value)

@@ -3,7 +3,6 @@ import { ArrowRight, ClipboardList, Plus } from 'lucide-react'
 import { PageTableExport } from '@/components/page-table-export'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { Can, useCompany } from '@/app/company-provider'
 import { PageHeader } from '@/components/page-header'
 import { StatCard } from '@/components/stat-card'
@@ -13,12 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ErrorState } from '@/components/error-state'
-import { formatDateWith, msg, t, tn } from '@/i18n'
-import { cn, formatMoneyCompact, formatMoney, formatQty, num } from '@/lib/utils'
+import { msg, t, tn } from '@/i18n'
+import { cn, formatMoney, formatQty, num } from '@/lib/utils'
 import { useProcurementOverview } from '../api'
+import { PurchaseCharts } from '../components/purchase-charts'
 
-const tooltipStyle = { background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }
-const axisTick = { fontSize: 11, fill: 'hsl(var(--muted-foreground))' }
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 const RANGES = {
   month: { label: msg('This month'), range: () => { const n = new Date(); return [new Date(n.getFullYear(), n.getMonth(), 1), n] } },
@@ -35,7 +33,6 @@ export function ProcurementOverviewPage() {
   const [from, to] = React.useMemo(() => RANGES[rangeKey].range().map(iso) as [string, string], [rangeKey])
   const ov = useProcurementOverview(from, to)
   const d = ov.data
-  const months = (d?.spend_by_month ?? []).map((m) => ({ month: formatDateWith(new Date(`${m.month}-01T00:00:00`), { month: 'short' }), spend: num(m.spend) }))
   const waiting = (d?.pending_po_approvals ?? 0) + (d?.pending_requisitions ?? 0)
 
   return (
@@ -71,24 +68,7 @@ export function ProcurementOverviewPage() {
       <AnalysisSection kind="purchases" embedded />
 
       <div className="mt-8 grid gap-4 grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_420px]">
-        <Card>
-          <CardHeader><CardTitle>{t('Spend by month')}</CardTitle><CardDescription>{t('Last 12 months, {currency} without VAT', { currency: cur })}</CardDescription></CardHeader>
-          <CardContent>
-            {ov.isLoading ? <Skeleton className="h-64" /> : (
-              <div className="h-64">
-                <ResponsiveContainer>
-                  <BarChart data={months} margin={{ left: -8, right: 4 }}>
-                    <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
-                    <XAxis dataKey="month" tick={axisTick} tickLine={false} axisLine={false} />
-                    <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatMoneyCompact(v)} width={70} />
-                    <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }} formatter={(v: number) => [formatMoney(v, cur), t('Spend (without VAT)')]} />
-                    <Bar dataKey="spend" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <PurchaseCharts to={to} currency={cur} />
         <Card>
           <CardHeader className="flex-row items-center justify-between space-y-0">
             <div><CardTitle>{t('Vendors')}</CardTitle><CardDescription>{t('By spend in the period')}</CardDescription></div>

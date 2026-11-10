@@ -1,5 +1,6 @@
 import { ArrowDownRight, ArrowUpRight, Minus, type LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { Sparkline } from '@/components/charts'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 
@@ -12,7 +13,7 @@ export type StatTrend = {
   upIsGood?: boolean
 }
 
-export function StatCard({ label, value, hint, href, loading, tone = 'default', pending, icon: Icon, hue = '158 82%', trend, meter, unit, compact }: {
+export function StatCard({ label, value, hint, href, loading, tone = 'default', pending, icon: Icon, hue = '158 82%', trend, meter, unit, compact, spark }: {
   label: string
   /** small: a row of many figures that should not take the page (e.g. over a report) */
   compact?: boolean
@@ -30,6 +31,8 @@ export function StatCard({ label, value, hint, href, loading, tone = 'default', 
   pending?: string
   /** up or down against an earlier day or month */
   trend?: StatTrend
+  /** the last days as a small line at the bottom (e.g. 30 days of sales) */
+  spark?: number[]
   /** a thin bar under the number, 0–100 (e.g. a margin) */
   meter?: number | null
 }) {
@@ -60,6 +63,7 @@ export function StatCard({ label, value, hint, href, loading, tone = 'default', 
         </span>
       )}
       {hint && <span className={cn('relative text-muted-foreground', compact ? 'truncate text-[11px]' : 'text-xs')} title={compact && typeof hint === 'string' ? hint : undefined}>{hint}</span>}
+      {spark && spark.length > 1 && !loading && <Sparkline values={spark} height={compact ? 26 : 34} className="mt-auto pt-1" />}
     </div>
   )
   return href ? <Link to={href} className="rounded-xl focus-visible:ring-2 focus-visible:ring-ring">{body}</Link> : body

@@ -376,3 +376,13 @@ export function useBillMargins(enabled = true) {
     queryFn: async () => unwrap(await supabase.rpc('bill_margins', { p_company: companyId! })) as unknown as Record<string, number>,
   })
 }
+
+/** 24 months of purchases, for this year against last year */
+export function usePurchaseMonths(to: string, enabled = true) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...procKeys.all(companyId), 'months', to.slice(0, 7)],
+    enabled: !!companyId && enabled, staleTime: 120_000,
+    queryFn: async () => unwrap(await supabase.rpc('purchase_months', { p_company: companyId!, p_to: to })) as unknown as { month: string; spend: number }[],
+  })
+}

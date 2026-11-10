@@ -402,3 +402,29 @@ export function useSavePriceList() {
     onError: (e) => toast.error(describeError(e)),
   })
 }
+
+/* the figures behind the charts of the sales pages and the dashboard */
+export type SalesDay = { d: string; till: number; invoices: number; gross: number; cost: number | null; receipts: number }
+export type SalesCharts = {
+  costs: boolean; month: string
+  months: { month: string; till: number; invoices: number; cost: number | null }[]
+  hours: { dow: number; hour: number; net: number }[]
+  dow_days: Record<string, number>
+  categories: { name: string | null; net: number; cost: number | null }[]
+}
+export function useSalesCharts(month: string, enabled = true) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...salesKeys.all(companyId), 'charts', month.slice(0, 7)],
+    enabled: !!companyId && enabled, staleTime: 120_000,
+    queryFn: async () => unwrap(await supabase.rpc('sales_charts', { p_company: companyId!, p_month: month })) as unknown as SalesCharts,
+  })
+}
+export function useSalesDaily(from: string, to: string, enabled = true) {
+  const { companyId } = useCompany()
+  return useQuery({
+    queryKey: [...salesKeys.all(companyId), 'daily', from, to],
+    enabled: !!companyId && enabled, staleTime: 120_000,
+    queryFn: async () => unwrap(await supabase.rpc('sales_daily', { p_company: companyId!, p_from: from, p_to: to })) as unknown as SalesDay[],
+  })
+}

@@ -18100,6 +18100,14 @@ export type Database = {
         }
         Returns: Json
       }
+      finance_waterfall: {
+        Args: {
+          p_company: string
+          p_from: string
+          p_to: string
+        }
+        Returns: Json
+      }
       find_variant_by_code: {
         Args: {
           p_company: string
@@ -20095,6 +20103,13 @@ export type Database = {
         }
         Returns: Json
       }
+      purchase_months: {
+        Args: {
+          p_company: string
+          p_to?: string
+        }
+        Returns: Json
+      }
       push_public_key: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -20655,6 +20670,21 @@ export type Database = {
       safes_overview: {
         Args: {
           p_company: string
+        }
+        Returns: Json
+      }
+      sales_charts: {
+        Args: {
+          p_company: string
+          p_month?: string
+        }
+        Returns: Json
+      }
+      sales_daily: {
+        Args: {
+          p_company: string
+          p_from: string
+          p_to: string
         }
         Returns: Json
       }

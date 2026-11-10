@@ -2,7 +2,6 @@ import { AnalysisSection } from '@/features/reports/pages/report-page'
 import { ArrowRight, FileText, Plus } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { Can, useCompany } from '@/app/company-provider'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
@@ -11,13 +10,12 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { formatMoneyCompact, formatMoney, formatQty, num } from '@/lib/utils'
+import { formatMoney, formatQty, num } from '@/lib/utils'
 import { useSalesOverview } from '../api'
+import { SalesCharts } from '../components/sales-charts'
 import { ErrorState } from '@/components/error-state'
-import { formatDateWith, formatNumberWith, msg, t, td, tn } from '@/i18n'
+import { formatNumberWith, msg, t, td, tn } from '@/i18n'
 
-const tooltipStyle = { background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }
-const axisTick = { fontSize: 11, fill: 'hsl(var(--muted-foreground))' }
 const pct = (v: number, digits: number) => formatNumberWith(v, { minimumFractionDigits: digits, maximumFractionDigits: digits })
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
@@ -43,7 +41,6 @@ export function SalesOverviewPage() {
   const hasTill = till !== 0 || (d?.revenue_by_month ?? []).some((m) => num(m.till) !== 0)
   const winRate = d && d.won + d.lost > 0 ? (d.won / (d.won + d.lost)) * 100 : null
   const quoteConv = d && d.quotes_sent > 0 ? (d.quotes_converted / d.quotes_sent) * 100 : null
-  const months = (d?.revenue_by_month ?? []).map((m) => ({ month: formatDateWith(new Date(`${m.month}T00:00:00`), { month: 'short' }), revenue: num(m.revenue), till: num(m.till) }))
   const pipeline = d?.pipeline ?? []
   const pipeMax = Math.max(1, ...pipeline.map((p) => num(p.value)))
 
@@ -81,27 +78,10 @@ export function SalesOverviewPage() {
       <AnalysisSection kind="sales" embedded />
 
       {ov.isError && <Card className="mt-4"><ErrorState error={ov.error} onRetry={() => void ov.refetch()} /></Card>}
-      <div className="mt-8 grid gap-4 grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_380px]">
-        <Card>
-          <CardHeader><CardTitle>{t('Sales by month')}</CardTitle><CardDescription>{t('Last 12 months, {currency} without VAT', { currency: cur })}</CardDescription></CardHeader>
-          <CardContent>
-            {ov.isLoading ? <Skeleton className="h-64" /> : (
-              <div className="h-64">
-                <ResponsiveContainer>
-                  <BarChart data={months} margin={{ left: -8, right: 4 }}>
-                    <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
-                    <XAxis dataKey="month" tick={axisTick} tickLine={false} axisLine={false} />
-                    <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatMoneyCompact(v)} width={70} />
-                    <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }}
-                      formatter={(v: number, k: string) => [formatMoney(v, cur), k === 'till' ? t('At the tills') : hasTill ? t('On invoices') : t('Sales (without VAT)')]} />
-                    {hasTill && <Bar dataKey="till" stackId="s" fill="hsl(var(--primary) / 0.45)" />}
-                    <Bar dataKey="revenue" stackId="s" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {/* the charts under the figures and the analysis, one card with a tab each */}
+      <div className="mt-8"><SalesCharts to={to} currency={cur} /></div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2 2xl:grid-cols-4">
         <Card>
           <CardHeader className="flex-row items-center justify-between space-y-0">
             <div><CardTitle>{t('Sales pipeline')}</CardTitle><CardDescription>{t('Open deals by stage, without VAT')}</CardDescription></div>
@@ -122,9 +102,6 @@ export function SalesOverviewPage() {
             {!!pipeline.length && <p className="text-xs text-muted-foreground">{t("Dark bar: the value you can expect, using each stage's probability.")}</p>}
           </CardContent>
         </Card>
-      </div>
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
          <RankCard title={t('Top customers (without VAT)')} loading={ov.isLoading} rows={(d?.top_customers ?? []).map((c) => ({ key: c.id, label: c.name, href: `/partners/${c.id}`, value: num(c.revenue) }))} />
         <RankCard title={t('Top products (without VAT)')} loading={ov.isLoading} rows={(d?.top_products ?? []).map((p) => ({ key: p.sku, label: p.sku, sub: t('{name} · {qty} sold', { name: p.name, qty: formatQty(p.quantity) }), value: num(p.revenue) }))} />
         <RankCard title={t('By salesperson (without VAT)')} loading={ov.isLoading} rows={(d?.by_salesperson ?? []).map((s) => ({ key: s.name, label: s.name, sub: tn(s.invoices, '{n} invoice', '{n} invoices'), value: num(s.revenue) }))} />

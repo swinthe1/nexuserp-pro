@@ -1,7 +1,8 @@
-import { ArrowDownLeft, ArrowUpRight, BookPlus } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, BookPlus, ChartColumn, Landmark, Waves } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
-import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { SignedBars, Waterfall } from '@/components/charts'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Can, useCompany } from '@/app/company-provider'
 import { MoreMenu } from '@/components/more-menu'
 import { PageHeader } from '@/components/page-header'
@@ -11,9 +12,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/error-state'
-import { formatDateWith, formatNumberWith, msg, t, tn } from '@/i18n'
-import { cn, formatMoneyCompact, formatMoney, num } from '@/lib/utils'
-import { useFinanceOverview } from '../api'
+import { formatDateWith, formatNumberWith, msg, t, td, tn } from '@/i18n'
+import { cn, formatMoney, num } from '@/lib/utils'
+import { useFinanceOverview, useFinanceWaterfall } from '../api'
 
 export const tooltipStyle = { background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }
 export const axisTick = { fontSize: 11, fill: 'hsl(var(--muted-foreground))' }
@@ -33,7 +34,7 @@ export function FinanceOverviewPage() {
   const [from, to] = React.useMemo(() => RANGES[rangeKey].range().map(iso) as [string, string], [rangeKey])
   const ov = useFinanceOverview(from, to)
   const d = ov.data
-  const months = (d?.cash_by_month ?? []).map((m) => ({ month: formatDateWith(new Date(`${m.month}-01T00:00:00`), { month: 'short' }), cash: num(m.cash), profit: num(m.profit) }))
+  const months = (d?.cash_by_month ?? []).map((m) => { const dt = new Date(`${m.month}-01T00:00:00`); return { key: m.month, label: formatDateWith(dt, { month: 'short' }), title: formatDateWith(dt, { month: 'long', year: 'numeric' }), cash: num(m.cash), profit: num(m.profit) } })
   const income = num(d?.revenue) + num(d?.other_income)
   const margin = income ? (num(d?.net_profit) / income) * 100 : null
 
@@ -69,27 +70,7 @@ export function FinanceOverviewPage() {
         <StatCard label={t('Stock value in the accounts (at purchase price, without VAT)')} value={formatMoney(d?.inventory)} loading={ov.isLoading} href="/inventory/stock" hint={t('Stock value plus production in progress')} />
         <StatCard label={t('Draft entries')} value={d?.draft_entries ?? 0} loading={ov.isLoading} href="/finance/journal" tone={d?.draft_entries ? 'warning' : 'default'} hint={t('Manual entries not posted yet')} />
       </div>
-      <Card className="mt-4">
-        <CardHeader><CardTitle>{t('Cash and profit by month')}</CardTitle><CardDescription>{t('Cash and bank at the end of each month (bars, left scale) and the month’s net profit without VAT (line, right scale), last 12 months')}</CardDescription></CardHeader>
-        <CardContent>
-          {ov.isLoading ? <Skeleton className="h-72" /> : (
-            <div className="h-72">
-              <ResponsiveContainer>
-                <ComposedChart data={months} margin={{ left: -8, right: 4 }}>
-                  <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
-                  <XAxis dataKey="month" tick={axisTick} tickLine={false} axisLine={false} />
-                  <YAxis yAxisId="cash" tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatMoneyCompact(v)} width={70} />
-                  <YAxis yAxisId="profit" orientation="right" tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => formatMoneyCompact(v)} width={70} />
-                  <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }}
-                    formatter={(v: number, n: string) => [formatMoney(v, cur), n === 'cash' ? t('Cash and bank') : t('Net profit (without VAT)')]} />
-                  <Bar yAxisId="cash" dataKey="cash" fill="hsl(var(--primary) / 0.35)" radius={[3, 3, 0, 0]} />
-                  <Line yAxisId="profit" dataKey="profit" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 2.5 }} />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <div className="mt-4"><FinanceCharts from={from} to={to} currency={cur} months={months} loading={ov.isLoading} /></div>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
           { href: '/finance/reports', title: msg('Financial statements'), text: msg('Income statement, balance sheet, cash flow and trial balance, compared across years.') },
@@ -104,5 +85,47 @@ export function FinanceOverviewPage() {
         ))}
       </div>
     </>
+  )
+}
+
+type MonthFig = { key: string; label: string; title: string; cash: number; profit: number }
+
+/** from the sales to the profit for the period, and the profit and the money month by month (each on its own scale) */
+function FinanceCharts({ from, to, currency, months, loading }: { from: string; to: string; currency: string; months: MonthFig[]; loading: boolean }) {
+  const [tab, setTab] = React.useState('way')
+  const wf = useFinanceWaterfall(from, to)
+  const w = wf.data
+  const steps = w ? [
+    { name: t('Sales'), value: num(w.revenue) + num(w.other_income), kind: 'total' as const },
+    { name: t('Cost of the goods sold'), value: num(w.cogs), kind: 'down' as const },
+    { name: t('Gross profit'), value: num(w.revenue) + num(w.other_income) - num(w.cogs), kind: 'total' as const },
+    ...w.expenses.map((e) => ({ name: e.name ? td(e.name) : t('Other costs'), value: num(e.amount), kind: (num(e.amount) >= 0 ? 'down' : 'up') as 'down' | 'up' })),
+    { name: t('Net profit'), value: num(w.net_profit), kind: 'result' as const },
+  ] : []
+  const desc: Record<string, string> = {
+    way: t('What is left of the sales after each cost, in the chosen period, without VAT.'),
+    profit: t('The net profit of each month, last 12 months, without VAT.'),
+    cash: t('Cash and bank at the end of each month, last 12 months.'),
+  }
+  return (
+    <Card>
+      <Tabs value={tab} onValueChange={setTab}>
+        <CardHeader className="flex-row flex-wrap items-start justify-between gap-3 space-y-0">
+          <div className="grid gap-1"><CardTitle>{t('Profit and money in charts')}</CardTitle><CardDescription>{desc[tab]}</CardDescription></div>
+          <TabsList>
+            <TabsTrigger value="way"><Waves />{t('From sales to profit')}</TabsTrigger>
+            <TabsTrigger value="profit"><ChartColumn />{t('Profit by month')}</TabsTrigger>
+            <TabsTrigger value="cash"><Landmark />{t('Money by month')}</TabsTrigger>
+          </TabsList>
+        </CardHeader>
+        <CardContent>
+          <TabsContent value="way" className="mt-0">
+            {wf.isLoading ? <Skeleton className="h-72" /> : wf.isError ? <ErrorState compact error={wf.error} onRetry={() => void wf.refetch()} /> : <Waterfall steps={steps} currency={currency} />}
+          </TabsContent>
+          <TabsContent value="profit" className="mt-0">{loading ? <Skeleton className="h-56" /> : <SignedBars rows={months.map((m) => ({ ...m, value: m.profit }))} currency={currency} label={t('Net profit (without VAT)')} height={240} />}</TabsContent>
+          <TabsContent value="cash" className="mt-0">{loading ? <Skeleton className="h-56" /> : <SignedBars rows={months.map((m) => ({ ...m, value: m.cash }))} currency={currency} label={t('Cash and bank')} height={240} />}</TabsContent>
+        </CardContent>
+      </Tabs>
+    </Card>
   )
 }
