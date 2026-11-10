@@ -342,7 +342,7 @@ export function WorkTabBar({ className }: { className?: string }) {
   if (!visible.length) return null
   const askingTab = ctx.tabs.find((x) => x.id === asking)
   return (
-    <div data-work-tabs="" className={cn('sticky top-[52px] z-20 flex h-10 items-end gap-1 border-b border-border bg-muted px-2 pt-1 print:hidden', className)}>
+    <div data-work-tabs="" className={cn('sticky top-[52px] z-20 flex h-10 items-end gap-1 border-b border-foreground/20 bg-[hsl(var(--foreground)/0.075)] px-2 pt-1 dark:border-border dark:bg-muted print:hidden', className)}>
       <div ref={strip} role="tablist" aria-label={t('Open pages')} className="flex min-w-0 flex-1 items-end gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {visible.map((tab, i) => {
           const active = tab.id === ctx.activeId
@@ -359,8 +359,8 @@ export function WorkTabBar({ className }: { className?: string }) {
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ctx.activate(tab.id) } }}
               style={{ ['--mod' as string]: look.hue }}
               className={cn('group relative flex h-[31px] min-w-[130px] max-w-[230px] shrink-0 cursor-pointer select-none items-center gap-1.5 rounded-t-lg border border-b-0 pl-3 pr-1 text-[12.5px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring',
-                active ? 'z-10 -mb-px h-[33px] border-border bg-background font-semibold text-foreground shadow-[inset_0_3px_0_hsl(var(--primary))]'
-                  : 'border-border/80 bg-card/70 text-muted-foreground shadow-[0_-1px_0_hsl(var(--border))_inset] hover:bg-background hover:text-foreground')}>
+                active ? 'z-10 -mb-px h-[33px] border-foreground/25 bg-background font-semibold text-foreground shadow-[inset_0_3px_0_hsl(var(--primary))] dark:border-border'
+                  : 'border-foreground/20 bg-[hsl(var(--background)/0.72)] text-foreground/75 shadow-[0_1px_2px_hsl(var(--foreground)/0.08)] hover:bg-background hover:text-foreground dark:border-border/80 dark:bg-card/70 dark:text-muted-foreground')}>
               <Icon className="size-3.5 shrink-0" style={{ color: 'hsl(var(--mod) 42%)' }} />
               <span className="min-w-0 flex-1 truncate">{title}</span>
               {tab.dirty && <span aria-label={t('Has changes')} className="size-1.5 shrink-0 rounded-full bg-warning" />}
