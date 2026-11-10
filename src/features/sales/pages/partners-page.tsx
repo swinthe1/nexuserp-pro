@@ -1,3 +1,5 @@
+import { ContractsPage } from '@/features/procurement/pages/contracts-page'
+import { VendorScorecardPage } from '@/features/procurement/pages/vendor-scorecard-page'
 import { Hint } from '@/components/help'
 import { useHiddenSections } from '@/components/layout/nav-prefs'
 import { CustomerReminders } from '@/features/finance/components/reminders'
@@ -180,6 +182,8 @@ function PartnerView({ partner }: { partner?: PartnerDetail }) {
           {partner.is_customer && can('invoicing.read') && <TabsTrigger value="reminders">{t('Reminders')}</TabsTrigger>}
           {partner.is_vendor && <TabsTrigger value="purchasing">{t('Purchasing')}</TabsTrigger>}
           {partner.is_vendor && <TabsTrigger value="vendor-prices">{t('Vendor prices')}</TabsTrigger>}
+          {partner.is_vendor && can('procurement.read') && <TabsTrigger value="contracts">{t('Contracts|supplier')}</TabsTrigger>}
+          {partner.is_vendor && can('procurement.read') && <TabsTrigger value="scorecard">{t('How they serve us')}</TabsTrigger>}
           <TabsTrigger value="activity">{t('Activity')}</TabsTrigger>
         </TabsList>
         {partner.is_customer && <TabsContent value="overview"><PartnerOverview partner={partner} /></TabsContent>}
@@ -190,6 +194,8 @@ function PartnerView({ partner }: { partner?: PartnerDetail }) {
         {can('invoicing.read') && <TabsContent value="card"><PartnerCards partnerId={partner.id} isCustomer={partner.is_customer} isVendor={partner.is_vendor} /></TabsContent>}
         {partner.is_vendor && <TabsContent value="purchasing"><VendorPurchasing vendorId={partner.id} /></TabsContent>}
         {partner.is_vendor && <TabsContent value="vendor-prices"><VendorPricesTable vendorId={partner.id} /></TabsContent>}
+        {partner.is_vendor && can('procurement.read') && <TabsContent value="contracts"><ContractsPage vendorId={partner.id} /></TabsContent>}
+        {partner.is_vendor && can('procurement.read') && <TabsContent value="scorecard"><VendorScorecardPage vendorId={partner.id} /></TabsContent>}
         {partner.is_customer && can('invoicing.read') && <TabsContent value="reminders"><CustomerReminders partnerId={partner.id} noReminders={partner.no_reminders} hasContact={!!(partner.email || partner.phone)} /></TabsContent>}
         <TabsContent value="activity" className="grid max-w-2xl gap-4"><LinkedTasks entityType="business_partners" entityId={partner.id} label={partner.name} /><ActivityTimeline table="business_partners" id={partner.id} /></TabsContent>
       </Tabs>

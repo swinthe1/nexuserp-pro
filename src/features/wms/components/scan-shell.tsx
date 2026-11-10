@@ -1,3 +1,4 @@
+import { useStackSection } from '@/components/page-stack'
 import { PageHelpButton } from '@/components/help'
 import { ChevronLeft, Minus, Plus } from 'lucide-react'
 import * as React from 'react'
@@ -12,14 +13,18 @@ import { cn, formatQty } from '@/lib/utils'
 export function ScanShell({ title, back, meta, actions, children, className }: {
   title: React.ReactNode; back?: { href: string; label: string }; meta?: React.ReactNode; actions?: React.ReactNode; children: React.ReactNode; className?: string
 }) {
+  // a part of a bigger page: a section heading, and no room left for the phone's thumb
+  const stack = useStackSection()
+  const part = !!stack && !stack.first
   return (
-    <div className={cn('mx-auto grid max-w-3xl gap-4 pb-24', className)}>
+    <div className={cn('mx-auto grid max-w-3xl gap-4', part ? 'pb-2' : 'pb-24', className)}>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           {back && <Link to={back.href} className="mb-1 inline-flex items-center gap-0.5 text-[13px] text-muted-foreground hover:text-foreground"><ChevronLeft className="size-4" /> {back.label}</Link>}
-          <div className="flex flex-wrap items-center gap-2"><h1 className="text-xl font-semibold tracking-[-0.01em]">{title}</h1><PageHelpButton />{meta}</div>
+          <div className="flex flex-wrap items-center gap-2">{part ? <h2 className="text-[17px] font-semibold tracking-[-0.01em]">{title}</h2> : <><h1 className="text-xl font-semibold tracking-[-0.01em]">{title}</h1><PageHelpButton /></>}{meta}</div>
         </div>
         {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+        {stack?.first && stack.links && <div className="basis-full">{stack.links}</div>}
       </div>
       {children}
     </div>

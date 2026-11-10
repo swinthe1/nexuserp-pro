@@ -1822,4 +1822,11 @@ export default {
   "e.g. Raiffeisen Bank": "p.sh. Raiffeisen Bank",
   "Sub-category": "Nënkategoria",
   "Sub-categories": "Nënkategoritë",
+  "Prices|menu": "Çmimet",
+  "Till history and reconciling|menu": "Historiku dhe barazimi i arkave",
+  "Dates and lots|menu": "Afatet dhe lotet",
+  "Losses and waste|menu": "Humbjet dhe firot",
+  "Contracts|supplier": "Kontratat",
+  "How they serve us": "Si na shërbejnë",
+  "Supplier terms|menu": "Çmimet, kontratat dhe vlerësimi",
 } satisfies Dict

@@ -1540,4 +1540,11 @@ export default {
   "e.g. Raiffeisen Bank": "npr. Raiffeisen Bank",
   "Sub-category": "Potkategorija",
   "Sub-categories": "Potkategorije",
+  "Prices|menu": "Cene",
+  "Till history and reconciling|menu": "Istorija i usklađivanje kasa",
+  "Dates and lots|menu": "Rokovi i lotovi",
+  "Losses and waste|menu": "Gubici i kalo",
+  "Contracts|supplier": "Ugovori",
+  "How they serve us": "Kako nas uslužuju",
+  "Supplier terms|menu": "Cene, ugovori i ocena",
 } satisfies Dict

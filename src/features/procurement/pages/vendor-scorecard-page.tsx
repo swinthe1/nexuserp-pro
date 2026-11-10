@@ -27,7 +27,8 @@ const pct = (v: number | null | undefined, d = 1) => (v == null ? '—' : `${for
 const GRADE: Record<'A' | 'B' | 'C', string> = { A: 'border-success/40 bg-success/10 text-success', B: 'border-warning/40 bg-warning/10 text-warning', C: 'border-destructive/40 bg-destructive/10 text-destructive' }
 
 /** How each vendor serves us: on time, complete, goods refused at the door, price rises */
-export function VendorScorecardPage() {
+/** with a vendor (on the vendor's card): only that vendor's line, without the page header */
+export function VendorScorecardPage({ vendorId }: { vendorId?: string } = {}) {
   const { companyId, company } = useCompany()
   const [params, setParams] = useSearchParams()
   const n = new Date()
@@ -42,8 +43,8 @@ export function VendorScorecardPage() {
   const cur = company?.base_currency
   return (
     <>
-      <PageHeader actions={<PageTableExport />} title={t('Vendor scorecard')}
-        description={t('How each vendor serves us: orders on time and complete, goods refused at the door and price rises. Judged on the orders placed in the period.')} />
+      {!vendorId && <PageHeader actions={<PageTableExport />} title={t('Vendor scorecard')}
+        description={t('How each vendor serves us: orders on time and complete, goods refused at the door and price rises. Judged on the orders placed in the period.')} />}
       <Card className="mb-4"><CardContent className="flex flex-wrap items-end gap-3 p-3">
         <div className="grid gap-1"><Label htmlFor="vs-from" className="text-xs">{t('From')}</Label><Input id="vs-from" type="date" className="h-8 w-[150px]" value={from} max={to} onChange={(e) => e.target.value && set('from', e.target.value)} /></div>
         <div className="grid gap-1"><Label htmlFor="vs-to" className="text-xs">{t('To')}</Label><Input id="vs-to" type="date" className="h-8 w-[150px]" value={to} min={from} onChange={(e) => e.target.value && set('to', e.target.value)} /></div>
@@ -53,7 +54,7 @@ export function VendorScorecardPage() {
         <div className={cn('grid gap-4', q.isFetching && 'opacity-60')}>
           <Card>
             <CardContent className="overflow-x-auto p-0">
-              {!d.vendors.length ? <EmptyState title={t('No orders or bills in this period')} description={t('The scorecard fills up as orders are placed and received.')} /> : (
+              {!d.vendors.filter((v) => !vendorId || v.vendor_id === vendorId).length ? <EmptyState title={t('No orders or bills in this period')} description={t('The scorecard fills up as orders are placed and received.')} /> : (
                 <Table>
                   <TableHeader><TableRow>
                     <TableHead>{t('Vendor')}</TableHead><TableHead className="text-center">{t('Grade')}</TableHead>
@@ -63,7 +64,7 @@ export function VendorScorecardPage() {
                     <TableHead className="text-right">{t('Confirmed')}</TableHead><TableHead className="text-right">{t('Price rises')}</TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
-                    {d.vendors.map((v) => (
+                    {d.vendors.filter((v) => !vendorId || v.vendor_id === vendorId).map((v) => (
                       <TableRow key={v.vendor_id}>
                         <TableCell><Link to={`/partners/${v.vendor_id}`} className="font-medium hover:underline">{v.name}</Link>
                           {v.late_now > 0 && <span className="block text-xs text-destructive">{tn(v.late_now, '{n} order late now', '{n} orders late now')}</span>}
@@ -86,7 +87,7 @@ export function VendorScorecardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          {!vendorId && <Card>
             <CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
               <div><CardTitle>{t('Main items with only one vendor')}</CardTitle>
                 <CardDescription>{t('The A items of the ABC analysis that only one vendor sells us. Find a second vendor for each, so a late or short delivery does not empty the shelf.')}</CardDescription></div>
@@ -109,7 +110,7 @@ export function VendorScorecardPage() {
                   </Table>
                 )}
             </CardContent>
-          </Card>
+          </Card>}
         </div>
       )}
     </>

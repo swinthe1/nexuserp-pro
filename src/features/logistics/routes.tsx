@@ -1,3 +1,5 @@
+import { PageStack, ToSection } from '@/components/page-stack'
+import { msg } from '@/i18n'
 import { Navigate, type RouteObject } from 'react-router-dom'
 import { lazyPage, RequirePerm } from '@/app/require-perm'
 
@@ -12,11 +14,14 @@ const ChannelPage = lazyPage(() => import('@/features/ecommerce/pages/channels-p
 
 export const logisticsRoutes: RouteObject[] = [
   { path: 'logistics', element: <RequirePerm perm="logistics.read" />, children: [
-    { index: true, element: <LogisticsOverviewPage /> },
-    { path: 'planning', element: <PlanningPage /> },
+    { index: true, element: <PageStack sections={[
+      { id: 'overview', label: msg('Logistics overview'), element: <LogisticsOverviewPage /> },
+      { id: 'planning', label: msg('Delivery planning'), element: <PlanningPage /> },
+      { id: 'shipments', label: msg('Shipments'), element: <ShipmentsPage /> }]} /> },
+    { path: 'planning', element: <ToSection to="/logistics" section="planning" alone={<PlanningPage />} /> },
     { path: 'routes', element: <Navigate to="/logistics/planning" replace /> },
     { path: 'routes/:id', element: <RoutePage key="route" /> },
-    { path: 'shipments', element: <ShipmentsPage /> },
+    { path: 'shipments', element: <ToSection to="/logistics" section="shipments" alone={<ShipmentsPage />} /> },
     { path: 'shipments/:id', element: <ShipmentPage key="shipment" /> },
     { path: 'setup', element: <LogisticsSetupPage /> },
   ] },

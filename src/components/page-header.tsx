@@ -1,6 +1,7 @@
 import { PageHelpButton } from '@/components/help'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useGoForward } from '@/components/layout/back-button'
+import { useStackSection } from '@/components/page-stack'
 import { t } from '@/i18n'
 import * as React from 'react'
 import { Link, useLocation } from 'react-router-dom'
@@ -32,10 +33,23 @@ export function PageHeader({ title, description, actions, back, meta, className,
   /** the coloured module icon beside the title */
   icon?: boolean
 }) {
+  const stack = useStackSection()
   // a page opened from a list (e.g. the Reports page) goes back there, whatever its own way back is
   const from = (useLocation().state as { backTo?: { href: string; label: string } } | null)?.backTo
   if (from?.href) back = from
   const fwd = useGoForward()
+  // a page shown as a part of a bigger page: its header is the part's heading
+  if (stack && !stack.first) {
+    return (
+      <div className={cn('mb-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between', className)}>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2"><h2 className="text-[17px] font-semibold tracking-[-0.01em]">{title}</h2>{meta}</div>
+          {description && <p className="mt-0.5 line-clamp-2 max-w-3xl text-[12.5px] text-muted-foreground">{description}</p>}
+        </div>
+        {actions && <div className="flex min-w-0 max-w-full shrink-0 flex-wrap items-center gap-2 sm:justify-end print:hidden">{actions}</div>}
+      </div>
+    )
+  }
   // one compact row: the way back, the title and its marks; the description in one line under it (all of it on hover)
   return (
     <div className={cn('mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between', className)}>
@@ -63,6 +77,7 @@ export function PageHeader({ title, description, actions, back, meta, className,
         </div>
       </div>
       {actions && <div className="flex min-w-0 max-w-full shrink-0 flex-wrap items-center gap-2 sm:ml-auto sm:justify-end print:hidden max-sm:[&_a]:whitespace-normal max-sm:[&_button]:whitespace-normal">{actions}</div>}
+      {stack?.links && <div className="basis-full">{stack.links}</div>}
     </div>
   )
 }

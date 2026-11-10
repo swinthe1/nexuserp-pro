@@ -1,3 +1,5 @@
+import { PageStack, ToSection } from '@/components/page-stack'
+import { msg } from '@/i18n'
 import type { RouteObject } from 'react-router-dom'
 import { lazyPage, RequirePerm } from '@/app/require-perm'
 
@@ -24,8 +26,10 @@ export const hrRoutes: RouteObject[] = [
     { path: ':id', element: <ContractPage /> },
   ] },
   { path: 'hr', element: <RequirePerm perm="hr.read" />, children: [
-    { index: true, element: <HrOverviewPage /> },
-    { path: 'employees', element: <EmployeesPage /> },
+    { index: true, element: <PageStack sections={[
+      { id: 'overview', label: msg('People overview'), element: <HrOverviewPage /> },
+      { id: 'employees', label: msg('Employees|menu'), element: <EmployeesPage /> }]} /> },
+    { path: 'employees', element: <ToSection to="/hr" section="employees" alone={<EmployeesPage />} /> },
     { path: 'employees/new', element: <EmployeePage key="new" /> },
     { path: 'employees/:id', element: <EmployeePage key="emp" /> },
     { path: 'leave', element: <LeavePage /> },
