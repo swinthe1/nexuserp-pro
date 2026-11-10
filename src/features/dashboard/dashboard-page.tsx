@@ -286,7 +286,7 @@ export function DashboardPage() {
             {low.data?.slice(0, 6).map((r) => (
               <Link key={r.rule_id} to={`/inventory/products/${r.product_id}`} className="grid gap-1 rounded-md p-1 hover:bg-secondary/60">
                 <div className="flex justify-between text-[13px]"><span className="truncate font-medium">{r.sku}</span><span className="text-muted-foreground">{td(r.warehouse_name)}</span></div>
-                <StockBar onHand={r.available} reserved={0} min={r.min_qty} max={r.max_qty} />
+                <StockBar onHand={r.available} reserved={0} min={r.min_qty} max={r.max_qty} variantId={r.variant_id} />
               </Link>
             ))}
           </CardContent>

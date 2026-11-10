@@ -3,7 +3,7 @@ import type { Dict } from '../index'
 /** Paying suppliers and expenses from the till; the managers told of every item taken off */
 export default {
   "Cash in and out of the drawer": "Hyrje dhe dalje parash nga sirtari",
-  "No cash in or out in this shift": "Asnjë hyrje ose dalje parash në këtë turn",
+  "No cash in or out in this shift": "Asnjë hyrje ose dalje parash në këtë ndërrim",
   "Change added, cash taken out, suppliers and expenses paid from the till show up here.": "Këtu dalin kusuri i shtuar, paratë e nxjerra, furnitorët dhe shpenzimet e paguara nga arka.",
   "Document no.": "Nr. i dokumentit",
   "Document number": "Numri i dokumentit",

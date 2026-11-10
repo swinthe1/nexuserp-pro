@@ -96,7 +96,7 @@ export function StockPage() {
     { accessorKey: 'reserved', header: ({ column }) => <ColumnHeader column={column} title={t('Reserved')} />, meta: { label: t('Reserved'), align: 'right' }, cell: ({ row: { original: r } }) => formatQty(r.reserved, r.uom_code) },
     {
       accessorKey: 'available', header: ({ column }) => <ColumnHeader column={column} title={t('Available')} />, meta: { label: t('Available') },
-      cell: ({ row: { original: r } }) => <StockBar onHand={r.on_hand} reserved={r.reserved} className="max-w-[200px]" />,
+      cell: ({ row: { original: r } }) => <StockBar onHand={r.on_hand} reserved={r.reserved} unit={r.uom_code} className="max-w-[200px]" />,
     },
     { accessorKey: 'avg_cost', header: t('Avg. cost'), meta: { label: t('Average cost, without VAT'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },
     { accessorKey: 'stock_value', header: ({ column }) => <ColumnHeader column={column} title={t('Value at cost')} />, meta: { label: t('Value at cost'), align: 'right' }, cell: ({ getValue }) => formatMoney(getValue() as number) },

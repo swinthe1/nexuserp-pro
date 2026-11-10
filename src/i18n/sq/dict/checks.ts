@@ -6,7 +6,7 @@ export default {
   "Daily checks": "Kontrollet ditore",
   "Daily checks|menu": "Kontrollet ditore",
   "The shop is checked at fixed times: opening, dates and prices, hygiene, fridge temperatures and closing. A reading out of its range is reported to the managers at once, and the shift leader signs each list.":
-    "Njësia kontrollohet në orë të caktuara: hapja, afatet dhe çmimet, higjiena, temperaturat e frigoriferëve dhe mbyllja. Matja jashtë kufijve u raportohet menjëherë menaxherëve, dhe përgjegjësi i turnit e nënshkruan çdo listë.",
+    "Njësia kontrollohet në orë të caktuara: hapja, afatet dhe çmimet, higjiena, temperaturat e frigoriferëve dhe mbyllja. Matja jashtë kufijve u raportohet menjëherë menaxherëve, dhe përgjegjësi i ndërrimit e nënshkruan çdo listë.",
   "Choose a store": "Zgjidhni një njësi",
   "The lists": "Listat",
   "Hygiene": "Higjiena",

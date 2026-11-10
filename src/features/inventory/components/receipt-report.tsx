@@ -1,3 +1,4 @@
+import { formatQtyOf } from '@/lib/units'
 import { useQuery } from '@tanstack/react-query'
 import { FileWarning, Printer, Thermometer } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -6,10 +7,10 @@ import { formatDateWith, formatNumberWith, msg, t } from '@/i18n'
 import { unwrap } from '@/lib/errors'
 import { printHtml } from '@/lib/print'
 import { supabase } from '@/lib/supabase'
-import { cn, formatDate, formatQty } from '@/lib/utils'
+import { cn, formatDate } from '@/lib/utils'
 
 type Issue = 'short' | 'over' | 'refused' | 'warm' | 'not_measured'
-type Line = { sku: string; name: string; expected: number | null; accepted: number; refused: number; reason: string | null
+type Line = { variant_id?: string | null; sku: string; name: string; expected: number | null; accepted: number; refused: number; reason: string | null
   temperature: number | null; max_temperature: number | null; issues: Issue[] }
 export type ReceiptReport = { id: string; number: string; status: string; date: string; done_at: string | null; vendor: string | null; vendor_tax: string | null
   order: string | null; delivery_note: string | null; driver_name: string | null; warehouse: string | null; received_by: string | null; company: string
@@ -47,7 +48,7 @@ export function ReceiptReportCard({ receiptId, version }: { receiptId: string; v
         {bad.map((l) => (
           <li key={l.sku} className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border/60 pt-1">
             <span className="font-medium">{l.name}</span>
-            <span className="text-muted-foreground">{l.expected != null ? t('{a} of {b} accepted', { a: formatQty(l.accepted), b: formatQty(l.expected) }) : t('{a} accepted', { a: formatQty(l.accepted) })}</span>
+            <span className="text-muted-foreground">{l.expected != null ? t('{a} of {b} accepted', { a: formatQtyOf(l.accepted, l.variant_id), b: formatQtyOf(l.expected, l.variant_id) }) : t('{a} accepted', { a: formatQtyOf(l.accepted, l.variant_id) })}</span>
             {l.temperature != null && <span className={cn('inline-flex items-center gap-0.5', l.issues.includes('warm') && 'text-destructive')}><Thermometer className="size-3.5" />{temp(l.temperature)}</span>}
             {l.issues.map((i) => <Badge key={i} variant="outline" className={cn('font-normal', i === 'warm' || i === 'refused' ? 'border-destructive/40 text-destructive' : 'border-warning/40 text-warning')}>{issueText(i)}</Badge>)}
             {l.reason && <span className="text-muted-foreground">· {l.reason}</span>}
@@ -60,7 +61,7 @@ export function ReceiptReportCard({ receiptId, version }: { receiptId: string; v
 
 export function printReceiptReport(r: ReceiptReport) {
   const rows = r.lines.map((l, i) => `<tr class="${l.issues.length ? 'bad' : ''}"><td>${i + 1}</td><td>${esc(l.sku)}</td><td>${esc(l.name)}</td>
-    <td class="r">${l.expected == null ? '—' : esc(formatQty(l.expected))}</td><td class="r">${esc(formatQty(l.accepted))}</td><td class="r">${l.refused ? esc(formatQty(l.refused)) : ''}</td>
+    <td class="r">${l.expected == null ? '—' : esc(formatQtyOf(l.expected, l.variant_id))}</td><td class="r">${esc(formatQtyOf(l.accepted, l.variant_id))}</td><td class="r">${l.refused ? esc(formatQtyOf(l.refused, l.variant_id)) : ''}</td>
     <td class="r">${l.temperature == null ? '' : esc(temp(l.temperature))}${l.max_temperature != null ? `<br><small>${esc(t('max {v}', { v: temp(l.max_temperature) }))}</small>` : ''}</td>
     <td>${esc(l.issues.map(issueText).join(', '))}${l.reason ? `<br><small>${esc(l.reason)}</small>` : ''}</td></tr>`).join('')
   const kv = (k: string, v: unknown) => (v ? `<div><span>${esc(k)}</span> ${esc(v)}</div>` : '')

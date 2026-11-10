@@ -147,7 +147,7 @@ export function ProductView({ id, inDialog, onDeleted }: { id: string | undefine
                         <TableCell className="text-[13px]">{r.sku}</TableCell>
                         <TableCell className="text-[13px]">{td(r.warehouse_name)} <span className="text-muted-foreground">· {r.location_code}</span></TableCell>
                         <TableCell className="text-[13px]">{r.lot_number ?? '—'}{r.expiry_date && <span className="ml-1 text-muted-foreground">{t('expires {date}', { date: formatDate(r.expiry_date) })}</span>}</TableCell>
-                        <TableCell><StockBar onHand={r.on_hand} reserved={r.reserved} className="max-w-[220px]" /></TableCell>
+                        <TableCell><StockBar onHand={r.on_hand} reserved={r.reserved} variantId={r.variant_id} className="max-w-[220px]" /></TableCell>
                         <TableCell className="text-right tabular">{formatMoney(r.stock_value)}</TableCell>
                       </TableRow>
                     ))}

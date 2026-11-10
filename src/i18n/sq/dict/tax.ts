@@ -172,7 +172,7 @@ export default {
   "sales-book|file": "libri-shitjeve",
   "{amount} is to be paid to the {authority}.": "{amount} duhet t'i paguhen {authority}.",
   "{amount} of credit-note VAT sits on the other side of the form ([16]–[19], [53]–[56]); accounting keeps it on its own side, so it is left out of the comparison.": "{amount} TVSH nga notat e kreditit qëndron në anën tjetër të formularit ([16]–[19], [53]–[56]); kontabiliteti e mban në anën e vet, ndaj lihet jashtë krahasimit.",
-  "{amount} of till VAT is in open shifts; it is booked with the Z-report.": "{amount} TVSH e arkës është në turne të hapur; kontabilizohet me raportin Z.",
+  "{amount} of till VAT is in open shifts; it is booked with the Z-report.": "{amount} TVSH e arkës është në ndërrime të hapur; kontabilizohet me raportin Z.",
   "{n} document fiscalized": "U fiskalizua {n} dokument",
   "{n} documents fiscalized": "U fiskalizuan {n} dokumente",
   "{n} line": "{n} rresht",

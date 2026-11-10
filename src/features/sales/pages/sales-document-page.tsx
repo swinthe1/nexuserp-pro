@@ -1,3 +1,4 @@
+import { formatQtyOf } from '@/lib/units'
 import { Hint } from '@/components/help'
 import { useDefaultUnit } from '@/app/active-unit'
 import { useQueryClient } from '@tanstack/react-query'
@@ -419,7 +420,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
 
 function SidePanel({ kind, doc, availability, currency, base }: {
   kind: DocKind; doc?: Doc; currency: string; base: string
-  availability?: { line_id: string | null; sku: string | null; ordered: number | null; reserved: number | null; delivered: number | null; to_reserve: number | null; available: number | null; incoming: number | null; is_stockable: boolean | null }[]
+  availability?: { line_id: string | null; variant_id?: string | null; sku: string | null; ordered: number | null; reserved: number | null; delivered: number | null; to_reserve: number | null; available: number | null; incoming: number | null; is_stockable: boolean | null }[]
 }) {
   const qc = useQueryClient()
   if (!doc) {
@@ -498,10 +499,10 @@ function SidePanel({ kind, doc, availability, currency, base }: {
                 <div key={a.line_id} className="grid gap-0.5">
                   <div className="flex justify-between"><span className="font-medium">{a.sku}</span>
                     {open <= 0 ? <Badge variant="success"><PackageCheck className="size-3" /> {t('Delivered')}</Badge>
-                      : short > 0 ? <Badge variant="warning">{t('{qty} waiting for stock', { qty: formatQty(short) })}</Badge> : <Badge variant="success">{t('Reserved')}</Badge>}
+                      : short > 0 ? <Badge variant="warning">{t('{qty} waiting for stock', { qty: formatQtyOf(short, a.variant_id) })}</Badge> : <Badge variant="success">{t('Reserved')}</Badge>}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {open <= 0 ? t('All {qty} delivered', { qty: formatQty(a.ordered) }) : <>{t('Reserved {reserved} of {open} open · {free} free in the warehouse', { reserved: formatQty(a.reserved), open: formatQty(open), free: formatQty(a.available) })}{num(a.incoming) > 0 && ` · ${t('{qty} incoming', { qty: formatQty(a.incoming) })}`}</>}
+                    {open <= 0 ? t('All {qty} delivered', { qty: formatQtyOf(a.ordered, a.variant_id) }) : <>{t('Reserved {reserved} of {open} open · {free} free in the warehouse', { reserved: formatQtyOf(a.reserved, a.variant_id), open: formatQtyOf(open, a.variant_id), free: formatQtyOf(a.available, a.variant_id) })}{num(a.incoming) > 0 && ` · ${t('{qty} incoming', { qty: formatQtyOf(a.incoming, a.variant_id) })}`}</>}
                   </div>
                 </div>
               )

@@ -1,3 +1,4 @@
+import { formatQtyOf } from '@/lib/units'
 import type { ColumnDef } from '@tanstack/react-table'
 import { BellOff, PackageCheck, ShoppingCart } from 'lucide-react'
 import * as React from 'react'
@@ -40,9 +41,9 @@ export function AlertsPage() {
     { accessorKey: 'warehouse_name', id: 'warehouse', filterFn: inFilter, header: t('Warehouse'), meta: { label: t('Warehouse') }, cell: ({ getValue }) => td(getValue() as string) },
     {
       id: 'level', header: t('Available vs. reorder point'), meta: { label: t('Available'), exportValue: (r) => r.available },
-      cell: ({ row: { original: r } }) => <StockBar onHand={r.available} reserved={0} min={r.min_qty} max={r.max_qty} className="max-w-[240px]" />,
+      cell: ({ row: { original: r } }) => <StockBar onHand={r.available} reserved={0} min={r.min_qty} max={r.max_qty} variantId={r.variant_id} className="max-w-[240px]" />,
     },
-    { accessorKey: 'min_qty', header: t('Reorder at'), meta: { label: t('Reorder at'), align: 'right' }, cell: ({ getValue }) => formatQty(getValue() as number) },
+    { accessorKey: 'min_qty', header: t('Reorder at'), meta: { label: t('Reorder at'), align: 'right' }, cell: ({ row: { original: r } }) => formatQtyOf(r.min_qty, r.variant_id) },
     {
       accessorKey: 'incoming', header: t('Incoming'), meta: { label: t('Incoming'), align: 'right' },
       cell: ({ row: { original: r } }) => <>{formatQty(r.incoming)}{r.next_expected_date && <div className="text-xs text-muted-foreground">{t('by {date}', { date: formatDate(r.next_expected_date) })}</div>}</>,

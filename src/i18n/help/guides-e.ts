@@ -36,7 +36,7 @@ export const GUIDES_E: Record<string, Guide> = {
       { sq: 'Artikulli që kuzhina e ka marrë nuk fshihet: anulohet me arsye, dhe arsyeja mbetet në histori.', en: 'An item the kitchen already has is not deleted: it is cancelled with a reason, and the reason stays in the history.' },
       { sq: 'Llogaria e printuar nuk është kupon fiskal: kuponi del kur paguhet.', en: 'The printed bill is not a fiscal receipt: the receipt comes when it is paid.' },
     ],
-    after: { sq: 'Kur paguhet e gjithë llogaria, tavolina lirohet; malli dhe recetat zbresin nga stoku dhe pagesa shkon te turni i arkës.', en: 'When the whole bill is paid, the table is free; the goods and recipes leave stock and the payment goes to the till\'s shift.' },
+    after: { sq: 'Kur paguhet e gjithë llogaria, tavolina lirohet; malli dhe recetat zbresin nga stoku dhe pagesa shkon te ndërrimi i arkës.', en: 'When the whole bill is paid, the table is free; the goods and recipes leave stock and the payment goes to the till\'s shift.' },
     related: [{ href: '/pos/waiters', label: { sq: 'Kamarierët', en: 'Waiters' } }, { href: '/manufacturing/boms', label: { sq: 'Recetat', en: 'Recipes' } }],
     tour: [
       { target: 'Takeaway', say: { sq: 'Porosi pa tavolinë: me vete ose në banak.', en: 'An order without a table: takeaway or at the bar.' } },

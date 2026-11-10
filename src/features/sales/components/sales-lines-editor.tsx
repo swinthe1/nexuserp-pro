@@ -192,7 +192,7 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
                     <TableCell className="text-right tabular">{num(l.discount_pct) ? `${num(l.discount_pct)}%` : '—'}</TableCell>
                     <TableCell className="text-[13px]">{taxName(l.tax_code_id)}</TableCell>
                     {showProgress && (
-                      <TableCell>{pr && v?.product_type !== 'service' ? <ProgressBar p={pr} /> : pr ? <span className="text-xs text-muted-foreground">{t('Service · invoiced {done}/{total}', { done: formatQty(pr.invoiced), total: formatQty(pr.ordered) })}</span> : null}</TableCell>
+                      <TableCell>{pr && v?.product_type !== 'service' ? <ProgressBar p={pr} unit={v?.uom_code} /> : pr ? <span className="text-xs text-muted-foreground">{t('Service · invoiced {done}/{total}', { done: formatQty(pr.invoiced, v?.uom_code), total: formatQty(pr.ordered, v?.uom_code) })}</span> : null}</TableCell>
                     )}
                     <TableCell className="text-right tabular font-medium">{formatMoney(lineAmounts(l, rateOf(l.tax_code_id)).sub, currency)}</TableCell>
                   </TableRow>
@@ -314,18 +314,18 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
   )
 }
 
-function ProgressBar({ p }: { p: LineProgress }) {
+function ProgressBar({ p, unit }: { p: LineProgress; unit?: string | null }) {
   const o = num(p.ordered) || 1
   const pct = (x: unknown) => `${Math.min(100, (num(x) / o) * 100)}%`
   return (
-    <div className="grid gap-1" title={t('{delivered} delivered · {reserved} reserved · {invoiced} invoiced of {ordered}', { delivered: formatQty(p.delivered), reserved: formatQty(p.reserved), invoiced: formatQty(p.invoiced), ordered: formatQty(p.ordered) })}>
+    <div className="grid gap-1" title={t('{delivered} delivered · {reserved} reserved · {invoiced} invoiced of {ordered}', { delivered: formatQty(p.delivered, unit), reserved: formatQty(p.reserved, unit), invoiced: formatQty(p.invoiced, unit), ordered: formatQty(p.ordered, unit) })}>
       <div className="relative h-1.5 overflow-hidden rounded-full bg-secondary">
         <div className="absolute inset-y-0 left-0 bg-primary/35" style={{ width: pct(num(p.delivered) + num(p.reserved)) }} />
         <div className="absolute inset-y-0 left-0 bg-primary" style={{ width: pct(p.delivered) }} />
       </div>
       <div className="text-2xs text-muted-foreground">
-        {t('{delivered}/{ordered} delivered · {invoiced} invoiced', { delivered: formatQty(p.delivered), ordered: formatQty(p.ordered), invoiced: formatQty(p.invoiced) })}
-        {num(p.reserved) > 0 && <> · {t('{qty} reserved', { qty: formatQty(p.reserved) })}</>}
+        {t('{delivered}/{ordered} delivered · {invoiced} invoiced', { delivered: formatQty(p.delivered, unit), ordered: formatQty(p.ordered, unit), invoiced: formatQty(p.invoiced, unit) })}
+        {num(p.reserved) > 0 && <> · {t('{qty} reserved', { qty: formatQty(p.reserved, unit) })}</>}
       </div>
     </div>
   )

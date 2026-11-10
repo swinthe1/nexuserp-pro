@@ -118,7 +118,9 @@ export function ReportPage() {
   if (two && can(two.perm)) {
     const def = reportDef(key)
     // without the analysis (e.g. an invoicing role) the detail is the page
-    if (params.get('view') === 'detail' || (def && !canRunReport(can, def))) return <DetailPage kind={two.kind} merged />
+    // opened plainly, the page shows the detail at once (as the detailed sales and purchases did); the analysis when one is chosen
+    const analysisAsked = ['group_by', 'across', 'trail', 'saved', 'from', 'to'].some((k) => params.has(k)) && params.get('view') !== 'detail'
+    if (!analysisAsked || (def && !canRunReport(can, def))) return <DetailPage kind={two.kind} merged />
   }
   return <ReportView />
 }

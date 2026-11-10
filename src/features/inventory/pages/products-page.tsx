@@ -87,7 +87,7 @@ export function ProductsPage() {
       header: ({ column }) => <ColumnHeader column={column} title={t('Available')} />,
       meta: { label: t('Available'), exportValue: (r) => r.available },
       cell: ({ row: { original: r } }) => r.product_type === 'stockable'
-        ? <StockBar onHand={r.on_hand} reserved={r.reserved} min={r.reorder_min} max={r.reorder_max} className="max-w-[200px]" />
+        ? <StockBar onHand={r.on_hand} reserved={r.reserved} min={r.reorder_min} max={r.reorder_max} unit={r.uom_code} className="max-w-[200px]" />
         : <span className="text-[13px] text-muted-foreground">{t('Not stocked')}</span>,
     },
     { accessorKey: 'on_hand', header: ({ column }) => <ColumnHeader column={column} title={t('On hand')} />, meta: { label: t('On hand'), align: 'right' }, cell: ({ row: { original: r } }) => formatQty(r.on_hand, r.uom_code) },

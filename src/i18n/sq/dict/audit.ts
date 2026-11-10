@@ -76,7 +76,7 @@ export default {
   'enum:pos_orders': 'Kuponat e arkës',
   'enum:pos_payments': 'Pagesat në arkë',
   'enum:pos_registers': 'Arkat',
-  'enum:pos_sessions': 'Turnet e arkës',
+  'enum:pos_sessions': 'Ndërrimet e arkës',
   'enum:price_list_items': 'Çmimet në lista',
   'enum:price_lists': 'Listat e çmimeve',
   'enum:product_attribute_values': 'Vlerat e atributeve',

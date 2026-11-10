@@ -78,7 +78,7 @@ export default {
   'This order is closed.': 'Kjo porosi është mbyllur.',
   'Tickets off': 'Fletët: fikur',
   'Tickets on': 'Fletët: ndezur',
-  'Till and shift': 'Arka dhe turni',
+  'Till and shift': 'Arka dhe ndërrimi',
   'What is paid now?': 'Çfarë paguhet tani?',
   'Whole bill': 'E gjithë llogaria',
   'allergy': 'alergji',

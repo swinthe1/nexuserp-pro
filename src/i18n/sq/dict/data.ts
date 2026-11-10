@@ -85,7 +85,7 @@ export default {
   "Leave Request": "Kërkesë për leje",
   "Opportunity": "Mundësi shitjeje",
   "POS Receipt": "Kupon arke",
-  "POS Session": "Turn arke",
+  "POS Session": "Ndërrim arke",
   "Payroll Run": "Listëpagesë",
   "Purchase Order": "Porosi blerjeje",
   "Purchase Requisition": "Kërkesë blerjeje",

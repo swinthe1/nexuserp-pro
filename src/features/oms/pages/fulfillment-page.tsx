@@ -1,3 +1,4 @@
+import { formatQtyOf } from '@/lib/units'
 import { PackageCheck, RefreshCw, Search, Truck } from 'lucide-react'
 import { PageTableExport } from '@/components/page-table-export'
 import * as React from 'react'
@@ -112,12 +113,12 @@ export function FulfillmentPage() {
                         </>}
                       </TableCell>
                       <TableCell><div className="font-medium">{l.sku}</div><div className="text-xs text-muted-foreground">{l.name}</div></TableCell>
-                      <TableCell className="text-right tabular">{formatQty(l.ordered)}</TableCell>
-                      <TableCell className="text-right tabular">{num(l.delivered) ? formatQty(l.delivered) : '—'}</TableCell>
-                      <TableCell className="text-right tabular">{num(l.reserved) ? formatQty(l.reserved) : '—'}</TableCell>
-                      <TableCell className="text-right tabular font-medium">{formatQty(l.outstanding)}</TableCell>
-                      <TableCell className={cn('text-right tabular', num(l.available) < 0 && 'text-destructive')} title={num(l.available) < 0 ? t('More is reserved than is on hand') : undefined}>{formatQty(l.available)}</TableCell>
-                      <TableCell className="text-right tabular">{num(l.incoming) ? formatQty(l.incoming) : '—'}</TableCell>
+                      <TableCell className="text-right tabular">{formatQtyOf(l.ordered, l.variant_id)}</TableCell>
+                      <TableCell className="text-right tabular">{num(l.delivered) ? formatQtyOf(l.delivered, l.variant_id) : '—'}</TableCell>
+                      <TableCell className="text-right tabular">{num(l.reserved) ? formatQtyOf(l.reserved, l.variant_id) : '—'}</TableCell>
+                      <TableCell className="text-right tabular font-medium">{formatQtyOf(l.outstanding, l.variant_id)}</TableCell>
+                      <TableCell className={cn('text-right tabular', num(l.available) < 0 && 'text-destructive')} title={num(l.available) < 0 ? t('More is reserved than is on hand') : undefined}>{formatQtyOf(l.available, l.variant_id)}</TableCell>
+                      <TableCell className="text-right tabular">{num(l.incoming) ? formatQtyOf(l.incoming, l.variant_id) : '—'}</TableCell>
                       <TableCell className="text-[13px]">{l.next_receipt ? formatDate(l.next_receipt) : '—'}</TableCell>
                       <TableCell>{l.state === 'in_delivery'
                         ? <Link to={`/sales/orders/${l.sales_order_id}`} className="whitespace-nowrap text-[13px] text-primary hover:underline">{t(STATE_LABEL[l.state] ?? l.state)}</Link>

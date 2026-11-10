@@ -117,12 +117,14 @@ export function PurchaseLinesEditor({ form: anyForm, editable, currency, progres
   })
 
   const matchCell = (lineNo: number) => {
+    const vid = watched?.[lineNo - 1]?.variant_id
+    const u = vid ? vmap.get(vid)?.uom_code : undefined
     const m = match?.[lineNo]
     if (!m) return null
     return (
       <div className="mt-1 flex flex-col items-end gap-0.5">
         <Badge variant={MATCH_TONE[m.status] ?? 'secondary'}>{MATCH_LABEL[m.status] ? t(MATCH_LABEL[m.status]!) : humanize(m.status)}</Badge>
-        {m.status === 'qty_variance' && m.qty_variance != null && <span className="text-2xs text-destructive">{t('+{qty} over what was received', { qty: formatQty(m.qty_variance) })}{m.expected_qty != null && ` (${formatQty(m.expected_qty)})`}</span>}
+        {m.status === 'qty_variance' && m.qty_variance != null && <span className="text-2xs text-destructive">{t('+{qty} over what was received', { qty: formatQty(m.qty_variance, u) })}{m.expected_qty != null && ` (${formatQty(m.expected_qty, u)})`}</span>}
         {m.status === 'price_variance' && m.price_variance != null && <span className="text-2xs text-destructive">{t('+{amount} per unit over the order', { amount: formatMoney(m.price_variance, currency) })}{m.po_net_price != null && ` (${formatMoney(m.po_net_price, currency)})`}</span>}
         {m.status === 'matched' && num(m.price_variance) !== 0 && m.price_variance != null && <span className="text-2xs text-muted-foreground">{t('{amount} per unit, within tolerance', { amount: `${num(m.price_variance) > 0 ? '+' : ''}${formatMoney(m.price_variance, currency)}` })}</span>}
       </div>
@@ -140,7 +142,7 @@ export function PurchaseLinesEditor({ form: anyForm, editable, currency, progres
               key: l.key ?? String(i), no: i + 1, code: v?.sku ?? null, name: l.description || v?.name || '', barcode: v?.barcode ?? null, uom: v?.uom_code ? td(v.uom_code) : null,
               qty: num(l.quantity), price: num(l.unit_price), discount: num(l.discount_pct), vatRate: rateOf(l.tax_code_id), vatName: taxName(l.tax_code_id),
               sell: v?.sales_price != null ? num(v.sales_price) : null,
-              extra: pr || match?.[i + 1] ? <div className="flex items-center gap-2">{pr && <ProgressBar p={pr} />}{matchCell(i + 1)}</div> : undefined,
+              extra: pr || match?.[i + 1] ? <div className="flex items-center gap-2">{pr && <ProgressBar p={pr} unit={v?.uom_code} />}{matchCell(i + 1)}</div> : undefined,
             }
           })} />
     </div>
@@ -209,7 +211,7 @@ export function PurchaseLinesEditor({ form: anyForm, editable, currency, progres
                       )} />
                       <PackQty packs={l?.variant_id ? packs.byVariant.get(l.variant_id) : undefined} packId={l?.pack_id} packQty={l?.pack_qty} quantity={l?.quantity}
                         uom={v?.uom_code} line={i + 1} onChange={(c) => { setPack(i, c); if (c.quantity && l?.variant_id && l.price_source === 'auto') void applyPrice(i, l.variant_id, c.quantity, false) }} />
-                      {belowMoq && <p className="mt-1 text-right text-2xs text-warning">{t('vendor minimum {qty}', { qty: formatQty(h!.min_order_qty) })}</p>}
+                      {belowMoq && <p className="mt-1 text-right text-2xs text-warning">{t('vendor minimum {qty}', { qty: formatQty(h!.min_order_qty, v?.uom_code) })}</p>}
                     </TableCell>
                     <TableCell>
                       <FormField control={form.control} name={`lines.${i}.unit_price`} render={({ field }) => (
@@ -254,19 +256,19 @@ export function PurchaseLinesEditor({ form: anyForm, editable, currency, progres
   )
 }
 
-function ProgressBar({ p }: { p: PurchaseProgress }) {
+function ProgressBar({ p, unit }: { p: PurchaseProgress; unit?: string | null }) {
   const o = num(p.ordered) || 1
   const pct = (x: unknown) => `${Math.min(100, (num(x) / o) * 100)}%`
   return (
-    <div className="grid gap-1" title={t('{received} received · {billed} billed of {ordered}', { received: formatQty(p.received), billed: formatQty(p.billed), ordered: formatQty(p.ordered) })}>
+    <div className="grid gap-1" title={t('{received} received · {billed} billed of {ordered}', { received: formatQty(p.received, unit), billed: formatQty(p.billed, unit), ordered: formatQty(p.ordered, unit) })}>
       {!p.isService && (
         <div className="relative h-1.5 overflow-hidden rounded-full bg-secondary">
           <div className="absolute inset-y-0 left-0 bg-primary" style={{ width: pct(p.received) }} />
         </div>
       )}
       <div className="text-2xs text-muted-foreground">
-        {p.isService ? t('Service') : <><span className="tabular text-foreground">{formatQty(p.received)}</span>/{formatQty(p.ordered)} {t('received')}</>}
-        {' · '}<span className="tabular text-foreground">{formatQty(p.billed)}</span> {t('billed')}
+        {p.isService ? t('Service') : <><span className="tabular text-foreground">{formatQty(p.received, unit)}</span>/{formatQty(p.ordered, unit)} {t('received')}</>}
+        {' · '}<span className="tabular text-foreground">{formatQty(p.billed, unit)}</span> {t('billed')}
       </div>
     </div>
   )

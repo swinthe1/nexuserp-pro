@@ -23,7 +23,7 @@ export default {
   "Confirmed by": "Konfirmoi",
   "Nobody": "Askush",
   "Nobody (offline)": "Askush (pa internet)",
-  "No voids in this shift": "Asnjë anulim në këtë turn",
+  "No voids in this shift": "Asnjë anulim në këtë ndërrim",
   "Items taken off a sale, quantities lowered and cleared sales show up here.": "Këtu shfaqen artikujt e hequr nga shitja, sasitë e ulura dhe shitjet e fshira.",
   "Sale cleared": "Shitja u fshi",
   "Quantity lowered": "Sasia u ul",
@@ -35,7 +35,7 @@ export default {
   "When the drawer is off": "Kur arka nuk përputhet",
   "Voids need a manager": "Anulimet kërkojnë menaxherin",
   "Taking an item off a sale, lowering its quantity or clearing a sale asks for a manager's PIN (once per sale). Every void is kept with the shift either way.":
-    "Heqja e një artikulli nga shitja, ulja e sasisë ose fshirja e shitjes kërkon PIN-in e menaxherit (një herë për shitje). Çdo anulim ruhet me turnin gjithsesi.",
+    "Heqja e një artikulli nga shitja, ulja e sasisë ose fshirja e shitjes kërkon PIN-in e menaxherit (një herë për shitje). Çdo anulim ruhet me ndërrimin gjithsesi.",
   // short dates
   "Short dates|menu": "Afatet e afërta",
   "Items about to expire in each store: the shelf worker proposes a discount, the manager approves it and the till sells it at that price until the date. What expired comes off the shelf as a loss.":

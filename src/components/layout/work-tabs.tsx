@@ -342,8 +342,8 @@ export function WorkTabBar({ className }: { className?: string }) {
   if (!visible.length) return null
   const askingTab = ctx.tabs.find((x) => x.id === asking)
   return (
-    <div data-work-tabs="" className={cn('sticky top-[52px] z-20 flex h-9 items-end gap-1 border-b bg-muted/60 px-2 backdrop-blur print:hidden', className)}>
-      <div ref={strip} role="tablist" aria-label={t('Open pages')} className="flex min-w-0 flex-1 items-end gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div data-work-tabs="" className={cn('sticky top-[52px] z-20 flex h-10 items-end gap-1 border-b border-border bg-muted px-2 pt-1 print:hidden', className)}>
+      <div ref={strip} role="tablist" aria-label={t('Open pages')} className="flex min-w-0 flex-1 items-end gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {visible.map((tab, i) => {
           const active = tab.id === ctx.activeId
           const m = menuLabel(tab.location.pathname)
@@ -358,16 +358,16 @@ export function WorkTabBar({ className }: { className?: string }) {
               onMouseDown={(e) => { if (e.button === 1) e.preventDefault() }}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ctx.activate(tab.id) } }}
               style={{ ['--mod' as string]: look.hue }}
-              className={cn('group relative flex h-[30px] min-w-[120px] max-w-[220px] shrink-0 cursor-pointer select-none items-center gap-1.5 rounded-t-md border border-b-0 pl-2.5 pr-1 text-[12.5px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring',
-                active ? 'z-10 -mb-px h-[31px] border-border bg-background font-medium text-foreground shadow-[inset_0_2px_0_hsl(var(--primary))]'
-                  : 'border-transparent text-muted-foreground hover:bg-background/60 hover:text-foreground')}>
+              className={cn('group relative flex h-[31px] min-w-[130px] max-w-[230px] shrink-0 cursor-pointer select-none items-center gap-1.5 rounded-t-lg border border-b-0 pl-3 pr-1 text-[12.5px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring',
+                active ? 'z-10 -mb-px h-[33px] border-border bg-background font-semibold text-foreground shadow-[inset_0_3px_0_hsl(var(--primary))]'
+                  : 'border-border/80 bg-card/70 text-muted-foreground shadow-[0_-1px_0_hsl(var(--border))_inset] hover:bg-background hover:text-foreground')}>
               <Icon className="size-3.5 shrink-0" style={{ color: 'hsl(var(--mod) 42%)' }} />
               <span className="min-w-0 flex-1 truncate">{title}</span>
               {tab.dirty && <span aria-label={t('Has changes')} className="size-1.5 shrink-0 rounded-full bg-warning" />}
               <button type="button" aria-label={t('Close {name}', { name: title })} tabIndex={-1}
                 onClick={(e) => { e.stopPropagation(); requestClose(tab.id) }}
                 className={cn('flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground',
-                  active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100')}>
+                  active ? 'opacity-100' : 'opacity-50 group-hover:opacity-100')}>
                 <X className="size-3.5" />
               </button>
             </div>

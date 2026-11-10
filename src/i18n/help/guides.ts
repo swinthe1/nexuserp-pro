@@ -13,20 +13,20 @@ import { GUIDES_E } from './guides-e'
 const BASE: Record<string, Guide> = {
   /* ------------------------------------------------------------------ the till */
   '/pos': {
-    what: { sq: 'Këtu janë arkat e shitjes me pakicë: hap një arkë për të shitur, shiko turnet dhe raportet Z të ditës. Te restoranti dhe kafeja, arka hap tavolinat dhe ekranin e kuzhinës.', en: 'The shop\'s tills: open one to sell, and see the shifts and the day\'s Z reports. In a restaurant or café the till opens the tables and the kitchen screen.' },
+    what: { sq: 'Këtu janë arkat e shitjes me pakicë: hap një arkë për të shitur, shiko ndërrimet dhe raportet Z të ditës. Te restoranti dhe kafeja, arka hap tavolinat dhe ekranin e kuzhinës.', en: 'The shop\'s tills: open one to sell, and see the shifts and the day\'s Z reports. In a restaurant or café the till opens the tables and the kitchen screen.' },
     steps: [
-      { sq: 'Te arka ku punon kliko "Hap arkën" (në mëngjes) ose "Shko te arka" (kur turni është i hapur).', en: 'On the till you work at, click "Open till" (in the morning) or "Go to till" (when the shift is open).' },
+      { sq: 'Te arka ku punon kliko "Hap arkën" (në mëngjes) ose "Shko te arka" (kur ndërrimi është i hapur).', en: 'On the till you work at, click "Open till" (in the morning) or "Go to till" (when the shift is open).' },
       { sq: 'Në fillim të ditës shkruaj sa para ka në sirtar: ato janë baza për numërimin në fund.', en: 'At the start of the day, type the cash in the drawer: it is the base for the count at the end.' },
       { sq: 'Te restoranti kliko "Hap tavolinat" ose "Shko te tavolinat"; kuzhina hap "Ekrani i kuzhinës".', en: 'In a restaurant click "Open the tables" or "Go to the tables"; the kitchen opens "Kitchen screen".' },
-      { sq: 'Në fund të ditës mbyll turnin: numëro paratë dhe printo raportin Z.', en: 'At the end of the day close the shift: count the cash and print the Z report.' },
+      { sq: 'Në fund të ditës mbyll ndërrimin: numëro paratë dhe printo raportin Z.', en: 'At the end of the day close the shift: count the cash and print the Z report.' },
       { sq: 'Te cilësimet e arkës vendos "Zbritja më e madhe pa menaxher": mbi të, zbritjen në rresht e miraton menaxheri.', en: 'In the till\'s settings set "Largest discount without a manager": above it, a manager approves the line discount.' },
     ],
     mistakes: [{ sq: 'Mos e lër arkën të hapur natën: shitjet e ditës tjetër përzihen me të sotmet.', en: 'Do not leave the till open overnight: tomorrow\'s sales get mixed with today\'s.' }],
-    after: { sq: 'Çdo turn i mbyllur bëhet raport Z dhe regjistrim në kontabilitet; diferenca e parave del te sefi.', en: 'Each closed shift becomes a Z report and a book entry; any cash difference shows at the safe.' },
+    after: { sq: 'Çdo ndërrim i mbyllur bëhet raport Z dhe regjistrim në kontabilitet; diferenca e parave del te sefi.', en: 'Each closed shift becomes a Z report and a book entry; any cash difference shows at the safe.' },
     related: [{ href: '/safe', label: { sq: 'Sefi', en: 'Safe' } }, { href: '/pos/loyalty', label: { sq: 'Kartat e zbritjes', en: 'Loyalty cards' } }],
     tour: [
       { target: 'Open till', say: { sq: 'Në mëngjes: shkruaj paratë e sirtarit dhe hape arkën.', en: 'In the morning: type the drawer cash and open the till.' } },
-      { target: 'Go to till', say: { sq: 'Turni është i hapur: vazhdo të shesësh.', en: 'The shift is open: carry on selling.' } },
+      { target: 'Go to till', say: { sq: 'Ndërrimi është i hapur: vazhdo të shesësh.', en: 'The shift is open: carry on selling.' } },
       { target: 'Go to the tables', say: { sq: 'Te restoranti: tavolinat dhe porositë.', en: 'In a restaurant: the tables and the orders.' } },
       { target: 'Kitchen screen', say: { sq: 'Ekrani që kuzhina e mban hapur: porositë e reja dalin vetë.', en: 'The screen the kitchen keeps open: new orders appear by themselves.' } },
     ],
@@ -38,14 +38,14 @@ const BASE: Record<string, Guide> = {
       { sq: 'Për sasi ose zbritje kliko rreshtin dhe zgjidh "Sasia, zbritja…".', en: 'For a quantity or a discount, click the line and choose "Quantity, discount…".' },
       { sq: 'Kliko "Paguaj", zgjidh para në dorë ose kartë dhe shkruaj sa të dha klienti: kusuri del vetë.', en: 'Click "Pay", choose cash or card and type what the customer gave: the change is shown.' },
       { sq: 'Kliko "Përfundo shitjen"; kuponi printohet dhe fillon shitja tjetër.', en: 'Click "Complete sale"; the receipt prints and the next sale starts.' },
-      { sq: 'Lart: "Kthim" (F9) për mallin që kthehet; te butoni ⋯ janë "Para dhe pagesa", "Shit kupon dhurate", "Raporti X" dhe "Ndërro arkëtarin". "Kyçe" e mbyll ekranin kur largohesh; "Mbyll turnin" në fund të ditës.', en: 'On top: "Refund" (F9) for goods brought back; under the ⋯ button are "Cash and payments", "Sell a gift voucher", "X-report" and "Switch cashier". "Lock" locks the screen when you step away; "Close till" at the end of the day.' },
+      { sq: 'Lart: "Kthim" (F9) për mallin që kthehet; te butoni ⋯ janë "Para dhe pagesa", "Shit kupon dhurate", "Raporti X" dhe "Ndërro arkëtarin". "Kyçe" e mbyll ekranin kur largohesh; "Mbyll ndërrimin" në fund të ditës.', en: 'On top: "Refund" (F9) for goods brought back; under the ⋯ button are "Cash and payments", "Sell a gift voucher", "X-report" and "Switch cashier". "Lock" locks the screen when you step away; "Close till" at the end of the day.' },
       { sq: 'Klienti harroi kuletën ose diçka tjetër? Kliko "Lëre në pritje" (F8): shitja ruhet mënjanë dhe vazhdon me klientin tjetër. Kur kthehet, e merr sërish me një prekje te shiriti "Në pritje" mbi rreshtat dhe e paguan; mund të presin deri në 5.', en: 'The customer forgot the wallet or something else? Click "Hold" (F8): the sale is put aside and you serve the next customer. When they are back, take it back with one tap on the "On hold" strip above the lines and take the payment; up to 5 can wait.' },
     ],
     mistakes: [
       { sq: 'Kthimi bëhet me "Kthim", jo duke shitur me minus.', en: 'A return is done with "Refund", not by selling a negative quantity.' },
       { sq: 'Zbritjet e mëdha kërkojnë menaxherin: thirre para se ta premtosh zbritjen.', en: 'Big discounts need the manager: call them before promising the discount.' },
     ],
-    after: { sq: 'Malli zbret nga stoku menjëherë; paratë shkojnë te sirtari i arkës deri në mbylljen e turnit.', en: 'The goods leave stock at once; the money goes to the till drawer until the shift is closed.' },
+    after: { sq: 'Malli zbret nga stoku menjëherë; paratë shkojnë te sirtari i arkës deri në mbylljen e ndërrimit.', en: 'The goods leave stock at once; the money goes to the till drawer until the shift is closed.' },
     tour: [
       { target: 'input[type=search], [data-help=till-scan]', say: { sq: 'Këtu skanon ose shkruan emrin e artikullit.', en: 'Scan here, or type the item\'s name.' } },
       { target: 'Refund', say: { sq: 'Malli që kthehet: skano kuponin e shitjes.', en: 'Goods brought back: scan the sale\'s receipt.' } },
@@ -57,7 +57,7 @@ const BASE: Record<string, Guide> = {
   '/safe': {
     what: { sq: 'Sefi: paratë që nxirren nga arkat, dorëzohen në bankë ose merren nga pronari.', en: 'The safe: money taken from the tills, taken to the bank or by the owner.' },
     steps: [
-      { sq: 'Kur mbyllet një turn, paratë e arkës kalojnë në sef.', en: 'When a shift closes, the till\'s cash moves to the safe.' },
+      { sq: 'Kur mbyllet një ndërrim, paratë e arkës kalojnë në sef.', en: 'When a shift closes, the till\'s cash moves to the safe.' },
       { sq: 'Për dorëzim në bankë ose marrje nga pronari regjistro lëvizjen me shumën dhe arsyen.', en: 'For a bank deposit or the owner taking money, record the movement with the amount and the reason.' },
       { sq: 'Numëro sefin rregullisht: diferenca regjistrohet dhe e sheh pronari.', en: 'Count the safe regularly: a difference is recorded and the owner sees it.' },
     ],

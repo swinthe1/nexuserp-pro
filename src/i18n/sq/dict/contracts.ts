@@ -30,7 +30,7 @@ const dict: Record<string, string> = {
   'Place of work': 'Vendi i punës',
   'The company address': 'Adresa e kompanisë',
   'What the job is': 'Çfarë pune bën',
-  'e.g. Serves customers at the till, keeps the shelves full and counts the cash at the end of the shift.': 'p.sh. Shërben klientët në arkë, mban raftet plot dhe numëron paratë në fund të turnit.',
+  'e.g. Serves customers at the till, keeps the shelves full and counts the cash at the end of the shift.': 'p.sh. Shërben klientët në arkë, mban raftet plot dhe numëron paratë në fund të ndërrimit.',
   'Paid by day of the next month': 'Paguhet deri në datën e muajit pasues',
   'e.g. Monday to Friday, 08:00–16:00': 'p.sh. E hënë–e premte, 08:00–16:00',
   'Probation (months)': 'Prova (muaj)',
