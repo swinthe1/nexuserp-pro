@@ -342,7 +342,7 @@ export function WorkTabBar({ className }: { className?: string }) {
   if (!visible.length) return null
   const askingTab = ctx.tabs.find((x) => x.id === asking)
   return (
-    <div data-work-tabs="" className={cn('sticky top-[52px] z-20 flex h-10 items-end gap-1 border-b border-foreground/20 bg-[hsl(var(--foreground)/0.075)] px-2 pt-1 dark:border-border dark:bg-muted print:hidden', className)}>
+    <div data-work-tabs="" className={cn('sticky top-[52px] z-20 flex h-10 items-end gap-1 border-b border-foreground/20 bg-background [background-image:linear-gradient(hsl(var(--foreground)/0.075),hsl(var(--foreground)/0.075))] px-2 pt-1 dark:border-border dark:bg-muted dark:[background-image:none] print:hidden', className)}>
       <div ref={strip} role="tablist" aria-label={t('Open pages')} className="flex min-w-0 flex-1 items-end gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {visible.map((tab, i) => {
           const active = tab.id === ctx.activeId

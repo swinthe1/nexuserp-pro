@@ -9,7 +9,7 @@ import { ColumnHeader, DataTable, LeadCell } from '@/components/data-table/data-
 import { MultiPick } from '@/components/multi-pick'
 import { Pick, Range, SavedFilters } from '../components/saved-filters'
 import { PageHeader } from '@/components/page-header'
-import { ReportPicker } from './report-page'
+import { AnalysisHead, ReportPicker } from './report-page'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -204,7 +204,7 @@ export const PurchasesDetailPage = () => <DetailPage kind="purchases" />
 export const SalesDetailPage = () => <DetailPage kind="sales" />
 
 /** "Blerjet e detajuara" and "Shitjet e detajuara": pick the report, set the filters, press Show. */
-export function DetailPage({ kind, merged }: { kind: Kind; merged?: boolean }) {
+export function DetailPage({ kind, merged, embedded }: { kind: Kind; merged?: boolean; embedded?: boolean }) {
   const { companyId, company } = useCompany()
   const { unit, multi } = useActiveUnit()
   const navigate = useNavigate()
@@ -337,14 +337,17 @@ export function DetailPage({ kind, merged }: { kind: Kind; merged?: boolean }) {
   const title = merged ? (kind === 'purchases' ? t('Purchase analysis') : t('Sales analysis')) : kind === 'purchases' ? t('Detailed purchases') : t('Detailed sales')
   return (
     <>
-      <PageHeader back={{ href: '/reports', label: t('Reports') }} title={title}
-        description={kind === 'purchases'
+      {(() => {
+        const description = kind === 'purchases'
           ? t('Every purchase by item, document, supplier or line, with discounts and import costs. Values in {currency}; credit notes count as minus.', { currency: cur })
-          : t('Invoices and tills together, by item, document, customer, unit, person, group, day or hour, with the margin. Values in {currency}; returns count as minus.', { currency: cur })}
-        actions={<SavedFilters<Filters> storeKey={`reports.detail.${kind}.filters`} current={() => draft}
+          : t('Invoices and tills together, by item, document, customer, unit, person, group, day or hour, with the margin. Values in {currency}; returns count as minus.', { currency: cur })
+        const actions = <SavedFilters<Filters> storeKey={`reports.detail.${kind}.filters`} current={() => draft}
           prepare={(f) => (f.period === 'custom' ? f : { ...f, from: undefined, to: undefined })}
           restore={(c) => (c.period && c.period !== 'custom' ? { ...c, ...periodDates(c.period) } : c)}
-          onApply={(f) => apply({ ...start, ...f })} />} />
+          onApply={(f) => apply({ ...start, ...f })} />
+        return embedded ? <AnalysisHead title={title} description={description} actions={actions} />
+          : <PageHeader back={{ href: '/reports', label: t('Reports') }} title={title} description={description} actions={actions} />
+      })()}
 
       <div className="mb-3 rounded-lg border bg-card p-3">
         <div className="flex flex-wrap items-end gap-2">

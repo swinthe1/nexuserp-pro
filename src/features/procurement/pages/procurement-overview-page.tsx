@@ -1,3 +1,4 @@
+import { AnalysisSection } from '@/features/reports/pages/report-page'
 import { ArrowRight, ClipboardList, Plus } from 'lucide-react'
 import { PageTableExport } from '@/components/page-table-export'
 import * as React from 'react'
@@ -129,6 +130,7 @@ export function ProcurementOverviewPage() {
           })}
         </CardContent>
       </Card>
+      <AnalysisSection kind="purchases" embedded />
     </>
   )
 }

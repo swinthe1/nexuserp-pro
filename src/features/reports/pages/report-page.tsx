@@ -1,6 +1,6 @@
 import { ChevronRight, ExternalLink } from 'lucide-react'
 import * as React from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useAuth } from '@/app/auth-provider'
 import { useCompany } from '@/app/company-provider'
@@ -83,6 +83,7 @@ export function ReportPicker({ report, value, dates, onPick, className }: {
   report: 'sales' | 'purchases'; value: string; dates: { from: string; to: string }; onPick: (v: string) => boolean; className?: string
 }) {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const { can } = useCompany()
   const def = reportDef(report)
   const analysis = !!def && canRunReport(can, def)
@@ -92,7 +93,7 @@ export function ReportPicker({ report, value, dates, onPick, className }: {
     const q = new URLSearchParams()
     if (v.startsWith('a:')) { q.set('group_by', v.slice(2)); q.set('from', dates.from); q.set('to', dates.to) }
     else { q.set('view', 'detail'); q.set('f', JSON.stringify({ report: v.slice(2), period: 'custom', from: dates.from, to: dates.to })) }
-    navigate(`/reports/${report}?${q}`)
+    navigate(`${pathname}?${q}${pathname.startsWith('/reports') ? '' : '#analiza'}`)
   }
   return (
     <div className="grid gap-1">
@@ -110,23 +111,54 @@ export function ReportPicker({ report, value, dates, onPick, className }: {
   )
 }
 
+/** the heading of the analysis when it sits inside the Sales or Purchases page, in place of the page header */
+export function AnalysisHead({ title, description, actions }: { title: React.ReactNode; description?: React.ReactNode; actions?: React.ReactNode }) {
+  return (
+    <div id="analiza" className="mb-3 mt-8 flex scroll-mt-28 flex-col gap-2 border-t pt-6 sm:flex-row sm:items-end sm:justify-between">
+      <div className="min-w-0"><h2 className="text-[17px] font-semibold tracking-[-0.01em]">{title}</h2>
+        {description && <p className="mt-0.5 line-clamp-2 max-w-3xl text-[12.5px] text-muted-foreground">{description}</p>}</div>
+      {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
+    </div>
+  )
+}
+
+/** the analysis (grouped or in detail) of sales or purchases: a page of its own under Reports, or a part of the Sales / Purchases page */
+export function AnalysisSection({ kind, embedded }: { kind: 'sales' | 'purchases'; embedded?: boolean }) {
+  const [params] = useSearchParams()
+  const { hash } = useLocation()
+  const { can } = useCompany()
+  const def = reportDef(kind)
+  // opened plainly, the detail shows at once (as the detailed sales and purchases did); the analysis when one is chosen
+  const analysisAsked = ['group_by', 'across', 'trail', 'saved', 'from', 'to'].some((k) => params.has(k)) && params.get('view') !== 'detail'
+  // coming here for the analysis (a link, a saved report): straight to it
+  React.useEffect(() => {
+    if (!embedded || (hash !== '#analiza' && !analysisAsked && !params.has('f'))) return
+    const id = window.setTimeout(() => document.getElementById('analiza')?.scrollIntoView({ block: 'start' }), 150)
+    return () => window.clearTimeout(id)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [embedded])
+  if (!can(TWO_VIEWS[kind].perm)) return null
+  if (!analysisAsked || (def && !canRunReport(can, def))) return <DetailPage kind={kind} merged embedded={embedded} />
+  return <ReportView reportKey={kind} embedded={embedded} />
+}
+
 export function ReportPage() {
   const { key = '' } = useParams()
-  const [params] = useSearchParams()
-  const { can } = useCompany()
+  const { search } = useLocation()
+  const { can, pageAllowed } = useCompany()
   const two = TWO_VIEWS[key]
-  if (two && can(two.perm)) {
-    const def = reportDef(key)
-    // without the analysis (e.g. an invoicing role) the detail is the page
-    // opened plainly, the page shows the detail at once (as the detailed sales and purchases did); the analysis when one is chosen
-    const analysisAsked = ['group_by', 'across', 'trail', 'saved', 'from', 'to'].some((k) => params.has(k)) && params.get('view') !== 'detail'
-    if (!analysisAsked || (def && !canRunReport(can, def))) return <DetailPage kind={two.kind} merged />
+  // sales and purchase analysis live inside the Sales and Purchases pages
+  if (two) {
+    const home = two.kind === 'sales' ? '/sales' : '/procurement'
+    if (can(two.kind === 'sales' ? 'sales.read' : 'procurement.read') && pageAllowed(home)) return <Navigate replace to={`${home}${search}#analiza`} />
+    if (can(two.perm)) return <AnalysisSection kind={two.kind} />
   }
   return <ReportView />
 }
 
-function ReportView() {
-  const { key = '' } = useParams()
+function ReportView({ reportKey, embedded }: { reportKey?: string; embedded?: boolean }) {
+  const { key: routeKey = '' } = useParams()
+  const key = reportKey ?? routeKey
   const def = reportDef(key)
   const { can, company } = useCompany()
   const { user } = useAuth()
@@ -193,13 +225,12 @@ function ReportView() {
 
   return (
     <>
-      <PageHeader
-        back={{ href: '/reports', label: t('Reports') }}
-        title={saved ? saved.name : t(def.title)}
-        description={saved ? t(def.title) : t(def.question)}
-        actions={<div className="flex items-center gap-2"><SaveReportButton report={def.key} params={saveParams} current={saved && saved.owner_id === user?.id ? saved : null} />{!pivotBy && <ExportMenu rows={rows} columns={exportCols} filename={`${def.key}-${groupBy}-${to}`} title={t(def.title)}
-          subtitle={[company?.name, periodText, filterText].filter(Boolean).join(' · ')} xlsx={{ totals }} />}</div>}
-      />
+      {(() => {
+        const acts = <div className="flex items-center gap-2"><SaveReportButton report={def.key} params={saveParams} current={saved && saved.owner_id === user?.id ? saved : null} />{!pivotBy && <ExportMenu rows={rows} columns={exportCols} filename={`${def.key}-${groupBy}-${to}`} title={t(def.title)}
+          subtitle={[company?.name, periodText, filterText].filter(Boolean).join(' · ')} xlsx={{ totals }} />}</div>
+        return embedded ? <AnalysisHead title={saved ? saved.name : t(def.title)} description={saved ? t(def.title) : t(def.question)} actions={acts} />
+          : <PageHeader back={{ href: '/reports', label: t('Reports') }} title={saved ? saved.name : t(def.title)} description={saved ? t(def.title) : t(def.question)} actions={acts} />
+      })()}
       <Card className="mb-4">
         <CardContent className="flex flex-wrap items-end gap-3 p-3">
           {TWO_VIEWS[key] && <ReportPicker report={TWO_VIEWS[key].kind} value={`a:${groupBy}`} dates={{ from, to }} className="h-8"

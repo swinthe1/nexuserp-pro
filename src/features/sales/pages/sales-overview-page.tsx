@@ -1,3 +1,4 @@
+import { AnalysisSection } from '@/features/reports/pages/report-page'
 import { ArrowRight, FileText, Plus } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
@@ -65,7 +66,7 @@ export function SalesOverviewPage() {
       />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {hasTill
-          ? <StatCard label={t('Sales (without VAT)')} value={formatMoney(num(d?.revenue) + till)} loading={ov.isLoading} href="/reports/sales?view=detail"
+          ? <StatCard label={t('Sales (without VAT)')} value={formatMoney(num(d?.revenue) + till)} loading={ov.isLoading} href="/sales?view=detail#analiza"
               hint={t('{till} at the tills ({n} receipts) · {inv} on invoices', { till: formatMoney(till), n: d?.till_receipts ?? 0, inv: formatMoney(d?.revenue) })} />
           : <StatCard label={t('Sales (without VAT)')} value={formatMoney(d?.revenue)} loading={ov.isLoading} href="/sales/invoices" hint={tn(d?.invoice_count ?? 0, '{n} invoice', '{n} invoices')} />}
         <StatCard label={hasTill ? t('Gross margin on invoices') : t('Gross margin')} value={margin == null ? '—' : `${pct(margin, 1)}%`} loading={ov.isLoading} hint={d ? t('{profit} after {cost} cost of goods, without VAT', { profit: formatMoney(d.revenue - d.cogs), cost: formatMoney(d.cogs) }) : undefined} tone={margin != null && margin < 15 ? 'warning' : 'default'} />
@@ -128,6 +129,7 @@ export function SalesOverviewPage() {
         <RankCard title={t('Top products (without VAT)')} loading={ov.isLoading} rows={(d?.top_products ?? []).map((p) => ({ key: p.sku, label: p.sku, sub: t('{name} · {qty} sold', { name: p.name, qty: formatQty(p.quantity) }), value: num(p.revenue) }))} />
         <RankCard title={t('By salesperson (without VAT)')} loading={ov.isLoading} rows={(d?.by_salesperson ?? []).map((s) => ({ key: s.name, label: s.name, sub: tn(s.invoices, '{n} invoice', '{n} invoices'), value: num(s.revenue) }))} />
       </div>
+      <AnalysisSection kind="sales" embedded />
     </>
   )
 }
