@@ -1,5 +1,5 @@
 import { msg } from '@/i18n'
-import { z } from 'zod'
+import { z } from 'zod/v3'
 
 const gtinCheck = (code: string) => {
   const body = code.slice(0, -1)

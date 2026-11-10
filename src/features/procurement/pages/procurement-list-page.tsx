@@ -136,9 +136,9 @@ const buildCfg = (): Record<ProcKind, Cfg> => ({
       { id: 'vat_book', accessorFn: (r) => r.in_vat_book === false ? 'out' : 'in', filterFn: inFilter, header: t('VAT book'), meta: { label: t('VAT book'), exportValue: (r) => r.in_vat_book === false ? t('Purchase invoice (no VAT)') : t('In the purchase book') },
         cell: ({ getValue }) => getValue() === 'out' ? <Badge variant="secondary">{t('Purchase invoice (no VAT)')}</Badge> : <span className="text-muted-foreground">✓</span> },
       { id: 'order', accessorFn: (r) => nm(r.order, 'number'), header: t('Order'), meta: { label: t('Purchase order') }, cell: ({ getValue }) => (getValue() as string) || '—' },
-      { accessorKey: 'match_status', filterFn: inFilter, header: t('Match'), meta: { label: t('Match') }, cell: ({ row: { original: r } }) => r.document_type === 'vendor_credit' ? <span className="text-muted-foreground">—</span> : <MatchBadge status={r.match_status as string} /> },
+      { accessorKey: 'match_status', filterFn: inFilter, header: t('Match'), meta: { label: t('Match'), exportValue: (r) => (r.document_type === 'vendor_credit' ? '' : humanize(r.match_status as string)) }, cell: ({ row: { original: r } }) => r.document_type === 'vendor_credit' ? <span className="text-muted-foreground">—</span> : <MatchBadge status={r.match_status as string} /> },
       {
-        id: 'payment_status', filterFn: inFilter, header: t('Payment'), meta: { label: t('Payment') },
+        id: 'payment_status', filterFn: inFilter, header: t('Payment'), meta: { label: t('Payment'), exportValue: (r) => (r.status !== 'posted' ? '' : humanize(r.payment_status as string)) },
         accessorFn: (r) => r.status === 'posted' && r.payment_status !== 'paid' && (r.due_date as string) < todayISO() && r.document_type !== 'vendor_credit' ? 'overdue' : r.payment_status,
         // with how it was paid under it (Kesh / Bankë), one column instead of two
         cell: ({ row: { original: r }, getValue }) => r.status !== 'posted' ? <span className="text-muted-foreground">—</span> : (

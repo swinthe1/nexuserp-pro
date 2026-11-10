@@ -2,7 +2,7 @@ import { CircleAlert, ExternalLink, Globe, Link2, Plus, RefreshCw, RotateCcw, Se
 import * as React from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { z } from 'zod'
+import { z } from 'zod/v3'
 import { Can, useCompany } from '@/app/company-provider'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'

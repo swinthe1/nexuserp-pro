@@ -1,6 +1,6 @@
 import { CornerDownRight, Pencil, Plus, Trash2, X } from 'lucide-react'
 import * as React from 'react'
-import { z } from 'zod'
+import { z } from 'zod/v3'
 import { Can, useCompany } from '@/app/company-provider'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState } from '@/components/empty-state'

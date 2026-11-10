@@ -1,5 +1,5 @@
 import { msg } from '@/i18n'
-import { z } from 'zod'
+import { z } from 'zod/v3'
 
 const num = (msg: string) => z.coerce.number({ invalid_type_error: msg })
 const optUuid = z.string().uuid().nullable().optional()

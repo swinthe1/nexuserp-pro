@@ -1,5 +1,5 @@
 import { categoryTreeOptions } from '@/features/inventory/components/category-picks'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { zodResolver } from '@/lib/zod-resolver'
 import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Percent, Plus, Star, Trash2 } from 'lucide-react'

@@ -2,7 +2,7 @@ import { MapPin, Pencil, Plus, Trash2, Warehouse as WarehouseIcon } from 'lucide
 import { PageTableExport } from '@/components/page-table-export'
 import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { z } from 'zod'
+import { z } from 'zod/v3'
 import { Can, useCompany } from '@/app/company-provider'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState } from '@/components/empty-state'

@@ -1,4 +1,4 @@
-import { zodResolver } from '@hookform/resolvers/zod'
+import { zodResolver } from '@/lib/zod-resolver'
 import { useFillUnit } from '@/app/active-unit'
 import { useQuery } from '@tanstack/react-query'
 import { Globe2, Plus, Ship, Thermometer, Trash2 } from 'lucide-react'

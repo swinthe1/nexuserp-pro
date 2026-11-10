@@ -1,6 +1,6 @@
 import { categoryTreeOptions } from '@/features/inventory/components/category-picks'
 import { Hint } from '@/components/help'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { zodResolver } from '@/lib/zod-resolver'
 import { ChevronDown, Plus, Sparkles, Trash2, X } from 'lucide-react'
 import * as React from 'react'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'

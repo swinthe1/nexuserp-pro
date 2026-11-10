@@ -1,4 +1,4 @@
-import { zodResolver } from '@hookform/resolvers/zod'
+import { zodResolver } from '@/lib/zod-resolver'
 import { useFillUnit } from '@/app/active-unit'
 import { ArrowRight, Plus, Trash2 } from 'lucide-react'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'

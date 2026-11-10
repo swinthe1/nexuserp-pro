@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from 'zod/v3'
 import { t } from './index'
 
 /** Zod's built-in validation messages in the current language (custom messages in schemas are translated by FormMessage). */

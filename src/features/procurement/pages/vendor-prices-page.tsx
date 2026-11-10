@@ -1,4 +1,4 @@
-import { zodResolver } from '@hookform/resolvers/zod'
+import { zodResolver } from '@/lib/zod-resolver'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Plus, Star } from 'lucide-react'
 import * as React from 'react'

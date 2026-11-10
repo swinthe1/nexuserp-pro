@@ -1,4 +1,4 @@
-import { zodResolver } from '@hookform/resolvers/zod'
+import { zodResolver } from '@/lib/zod-resolver'
 import { useDefaultUnit } from '@/app/active-unit'
 import { Check, Plus, Send, ShoppingCart, Trash2, Undo2, X } from 'lucide-react'
 import * as React from 'react'

@@ -1,7 +1,7 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import { Pencil, Plus } from 'lucide-react'
 import * as React from 'react'
-import { z } from 'zod'
+import { z } from 'zod/v3'
 import { Can, useCompany } from '@/app/company-provider'
 import { ColumnHeader, DataTable } from '@/components/data-table/data-table'
 import { PageHeader } from '@/components/page-header'

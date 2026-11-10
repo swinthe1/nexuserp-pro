@@ -1,6 +1,6 @@
 import { DocumentActions } from '@/components/document-actions'
 import { useDefaultUnit } from '@/app/active-unit'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { zodResolver } from '@/lib/zod-resolver'
 import {
   Ban, CheckCheck, ClipboardCheck, FileText, PackageCheck, PhoneCall, Receipt, Repeat, Send, ShieldAlert, Tag, Trash2, Undo2, Redo2 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'

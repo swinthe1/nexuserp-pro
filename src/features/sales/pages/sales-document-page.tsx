@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useRegistryRemote } from '@/lib/registry'
 import { DocumentActions } from '@/components/document-actions'
 import { AdvanceButton, AdvancesCard } from '../components/advances'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { zodResolver } from '@/lib/zod-resolver'
 import {
   Ban, Check, CheckCheck, FileText, PackageCheck, PackageOpen, Receipt, Repeat, RotateCcw, Send, ShoppingCart, Trash2, Truck, Redo2, Undo2, X, } from 'lucide-react'
 import * as React from 'react'
