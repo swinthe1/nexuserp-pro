@@ -6,6 +6,7 @@ import { useAuth } from '@/app/auth-provider'
 import { useCompany } from '@/app/company-provider'
 import { EmptyState } from '@/components/empty-state'
 import { ExportMenu } from '@/components/export-menu'
+import { MultiPick } from '@/components/multi-pick'
 import { PageHeader } from '@/components/page-header'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -21,6 +22,7 @@ import { axisTick, iso, tooltipStyle } from '@/features/finance/pages/finance-ov
 import { type ReportColumn, type ReportRow, type SavedReport, useReport, useSavedReports } from '../api'
 import { formatMeasure, PivotTable, SaveReportButton } from '../components/pivot'
 import { DIM_LABEL, canRunReport, reportDef } from '../catalog'
+import { DetailPage } from './detail-page'
 
 type Step = { dim: string; key: string; label: string }
 const NO_PIVOT = '__none'
@@ -56,7 +58,56 @@ const monthLabel = (m: string) => /^\d{4}-\d{2}$/.test(m) ? formatDateWith(new D
 
 const fmt = (c: ReportColumn, v: unknown) => formatMeasure(c, v, '—')
 
+/** Sales and purchase analysis hold two views on one page: the analysis (grouped, pivoted) and the detail (lines, documents, filters) */
+const TWO_VIEWS: Record<string, { kind: 'sales' | 'purchases'; perm: string }> = {
+  sales: { kind: 'sales', perm: 'sales.read' }, purchases: { kind: 'purchases', perm: 'procurement.read|invoicing.read' },
+}
+
+export function AnalysisSwitch({ report, view }: { report: string; view: 'analysis' | 'detail' }) {
+  const [params] = useSearchParams()
+  const navigate = useNavigate()
+  const { can } = useCompany()
+  const def = reportDef(report)
+  if (!def || !canRunReport(can, def)) return null
+  // the dates go along to the other view
+  const go = (to: 'analysis' | 'detail') => {
+    if (to === view) return
+    const q = new URLSearchParams()
+    if (to === 'detail') {
+      const [ytdFrom, today] = presetRange('ytd')
+      q.set('view', 'detail')
+      q.set('f', JSON.stringify({ period: 'custom', from: params.get('from') ?? ytdFrom, to: params.get('to') ?? today }))
+    } else {
+      try { const f = JSON.parse(params.get('f') ?? '{}') as { from?: string; to?: string }; if (f.from && f.to) { q.set('from', f.from); q.set('to', f.to) } } catch { /* the default period */ }
+    }
+    navigate(`/reports/${report}${q.size ? `?${q}` : ''}`)
+  }
+  return (
+    <div role="tablist" aria-label={t('View')} className="mb-3 inline-flex rounded-lg border bg-muted/50 p-0.5 text-[13px]">
+      {(['analysis', 'detail'] as const).map((v) => (
+        <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => go(v)}
+          className={cn('rounded-md px-3 py-1.5 font-medium transition-colors', view === v ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground')}>
+          {v === 'analysis' ? t('Analysis by month, category, customer|view') : t('In detail: items, documents and filters|view')}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export function ReportPage() {
+  const { key = '' } = useParams()
+  const [params] = useSearchParams()
+  const { can } = useCompany()
+  const two = TWO_VIEWS[key]
+  if (two && can(two.perm)) {
+    const def = reportDef(key)
+    // without the analysis (e.g. an invoicing role) the detail is the page
+    if (params.get('view') === 'detail' || (def && !canRunReport(can, def))) return <DetailPage kind={two.kind} merged />
+  }
+  return <ReportView />
+}
+
+function ReportView() {
   const { key = '' } = useParams()
   const def = reportDef(key)
   const { can, company } = useCompany()
@@ -71,7 +122,11 @@ export function ReportPage() {
   const filters = React.useMemo(() => Object.fromEntries(trail.map((s) => [s.dim, s.key])), [trail])
   const across = params.get('across') ?? ''
   const pivotBy = across && across !== groupBy ? across : ''
-  const report = useReport(key, { from, to, group_by: groupBy, pivot_by: pivotBy || undefined, filters }, !!def && canRunReport(can, def))
+  // across one dimension, only some of its values may be wanted (e.g. two suppliers out of all)
+  const only: string[] = React.useMemo(() => { try { const v = JSON.parse(params.get('only') ?? '[]'); return Array.isArray(v) ? v.map(String) : [] } catch { return [] } }, [params])
+  const runFilters = React.useMemo(() => (pivotBy && only.length ? { ...filters, [pivotBy]: only } : filters), [filters, pivotBy, only])
+  const report = useReport(key, { from, to, group_by: groupBy, pivot_by: pivotBy || undefined, filters: runFilters }, !!def && canRunReport(can, def))
+  const choices = useReport(key, { from, to, group_by: pivotBy || groupBy, filters }, !!def && canRunReport(can, def) && !!pivotBy)
   const savedList = useSavedReports()
   const saved = savedList.data?.find((r) => r.id === params.get('saved')) ?? null
 
@@ -107,7 +162,8 @@ export function ReportPage() {
   }
   const colLabel = (k: string | null, l: string | null) => pivotBy === 'month' ? monthLabel(String(l ?? k ?? '')) : l === null ? '—' : tServer(String(l))
   const periodText = def.asOf ? t('As of {date}', { date: formatDate(to) }) : `${formatDate(from)} – ${formatDate(to)}`
-  const filterText = trail.map((s) => `${t(DIM_LABEL[s.dim] ?? s.dim)}: ${s.label}`).join(' · ')
+  const onlyText = pivotBy && only.length ? `${t(DIM_LABEL[pivotBy] ?? pivotBy)}: ${only.map((k) => { const r = choices.data?.rows.find((x) => String(x.key) === k); return r?.label == null ? k : tServer(String(r.label)) }).join(', ')}` : ''
+  const filterText = [...trail.map((s) => `${t(DIM_LABEL[s.dim] ?? s.dim)}: ${s.label}`), onlyText].filter(Boolean).join(' · ')
   const dimLabel = t(DIM_LABEL[groupBy] ?? groupBy)
   const rowLabel = (r: ReportRow) => groupBy === 'month' ? monthLabel(String(r.label ?? '')) : r.label === null ? '—' : tServer(String(r.label))
 
@@ -126,6 +182,7 @@ export function ReportPage() {
         actions={<div className="flex items-center gap-2"><SaveReportButton report={def.key} params={saveParams} current={saved && saved.owner_id === user?.id ? saved : null} />{!pivotBy && <ExportMenu rows={rows} columns={exportCols} filename={`${def.key}-${groupBy}-${to}`} title={t(def.title)}
           subtitle={[company?.name, periodText, filterText].filter(Boolean).join(' · ')} xlsx={{ totals }} />}</div>}
       />
+      {TWO_VIEWS[key] && can(TWO_VIEWS[key].perm) && <AnalysisSwitch report={key} view="analysis" />}
       <Card className="mb-4">
         <CardContent className="flex flex-wrap items-end gap-3 p-3">
           {!def.asOf && (
@@ -151,7 +208,7 @@ export function ReportPage() {
           </div>
           <div className="grid gap-1">
             <Label className="text-xs">{t('Across')}</Label>
-            <Select value={pivotBy || NO_PIVOT} onValueChange={(v) => set({ across: v === NO_PIVOT ? null : v })}>
+            <Select value={pivotBy || NO_PIVOT} onValueChange={(v) => set({ across: v === NO_PIVOT ? null : v, only: null })}>
               <SelectTrigger className="h-8 w-[170px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={NO_PIVOT}>{t('Nothing (a list)')}</SelectItem>
@@ -159,6 +216,14 @@ export function ReportPage() {
               </SelectContent>
             </Select>
           </div>
+          {pivotBy && (
+            <div className="grid gap-1">
+              <Label className="text-xs">{t('Which ones|columns')}</Label>
+              <MultiPick className="h-8" label={t(DIM_LABEL[pivotBy] ?? pivotBy)} value={only}
+                onChange={(v) => set({ only: v.length ? JSON.stringify(v) : null })}
+                options={(choices.data?.rows ?? []).filter((r) => r.key !== null).map((r) => ({ value: String(r.key), label: pivotBy === 'month' ? monthLabel(String(r.label ?? '')) : r.label === null ? '—' : tServer(String(r.label)) }))} />
+            </div>
+          )}
           {pivotBy && shown && (
             <div className="grid gap-1">
               <Label className="text-xs">{t('Show')}</Label>

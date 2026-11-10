@@ -8,6 +8,7 @@ export type MarketNumbers = {
   currency: string
   today?: number; week_ago?: number; receipts?: number; receipts_week_ago?: number; basket?: number | null; month?: number
   month_net?: number; month_margin?: number; month_margin_pct?: number | null
+  today_net?: number; today_margin?: number; today_margin_pct?: number | null
   open_shifts?: number; shifts_left_open?: number; cash_in_tills?: number
   till_diff_count?: number; till_diff?: number; till_diff_abs?: number
   refunds_today?: number; refunded_today?: number; voids_today?: number; voided_today?: number

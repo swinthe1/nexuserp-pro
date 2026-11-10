@@ -13,7 +13,7 @@ export interface ReportResult {
   /** one cell per row key and column key, when a second grouping was asked */
   pivot?: ({ key: string | null; col: string | null; col_label: string | null } & Record<string, number | string | null>)[] | null
 }
-export interface ReportParams { from: string; to: string; group_by: string; pivot_by?: string; filters: Record<string, string> }
+export interface ReportParams { from: string; to: string; group_by: string; pivot_by?: string; filters: Record<string, string | string[]> }
 
 /** a report as someone set it up; the period is kept relative ("this month") when it was one */
 export interface SavedReport {

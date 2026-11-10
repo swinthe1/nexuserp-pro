@@ -65,7 +65,7 @@ export function SalesOverviewPage() {
       />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {hasTill
-          ? <StatCard label={t('Sales (without VAT)')} value={formatMoney(num(d?.revenue) + till)} loading={ov.isLoading} href="/reports/sales-detail"
+          ? <StatCard label={t('Sales (without VAT)')} value={formatMoney(num(d?.revenue) + till)} loading={ov.isLoading} href="/reports/sales?view=detail"
               hint={t('{till} at the tills ({n} receipts) · {inv} on invoices', { till: formatMoney(till), n: d?.till_receipts ?? 0, inv: formatMoney(d?.revenue) })} />
           : <StatCard label={t('Sales (without VAT)')} value={formatMoney(d?.revenue)} loading={ov.isLoading} href="/sales/invoices" hint={tn(d?.invoice_count ?? 0, '{n} invoice', '{n} invoices')} />}
         <StatCard label={hasTill ? t('Gross margin on invoices') : t('Gross margin')} value={margin == null ? '—' : `${pct(margin, 1)}%`} loading={ov.isLoading} hint={d ? t('{profit} after {cost} cost of goods, without VAT', { profit: formatMoney(d.revenue - d.cogs), cost: formatMoney(d.cogs) }) : undefined} tone={margin != null && margin < 15 ? 'warning' : 'default'} />

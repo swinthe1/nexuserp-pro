@@ -122,6 +122,10 @@ select public.run_report(:'co', 'sales', jsonb_build_object('group_by', 'documen
 select t.ok((:'rep2'::jsonb #>> '{rows,0,href}') = '/sales/invoices/' || :'inv', 'drill-down to the documents, with links');
 select t.ok(jsonb_array_length((public.run_report(:'co', 'sales', '{"group_by":"customer","filters":{"customer":"x'' or ''1''=''1"}}')) -> 'rows') = 0,
             'filter values are data, not SQL');
+select t.ok((public.run_report(:'co', 'sales', jsonb_build_object('group_by', 'customer', 'from', current_date - 1, 'to', current_date, 'filters', jsonb_build_object('customer', jsonb_build_array(:'cust', gen_random_uuid())))) -> 'totals' ->> 'revenue')::numeric = 10000
+        and (public.run_report(:'co', 'sales', jsonb_build_object('group_by', 'customer', 'from', current_date - 1, 'to', current_date, 'filters', jsonb_build_object('customer', jsonb_build_array()))) -> 'totals' ->> 'revenue')::numeric = 10000
+        and jsonb_array_length(public.run_report(:'co', 'sales', jsonb_build_object('group_by', 'customer', 'filters', jsonb_build_object('customer', jsonb_build_array(gen_random_uuid(), 'x'' or ''1''=''1')))) -> 'rows') = 0,
+        'a filter can be a list of values (an empty list is all of them), still data, not SQL');
 select t.throws(format($q$select public.run_report(%L, 'sales', '{"group_by":"pg_sleep(1)"}')$q$, :'co'), 'Cannot group', 'unknown groupings are refused');
 select t.ok((public.run_report(:'co', 'inventory', '{}') -> 'totals' ->> 'value')::numeric = 24000, 'inventory report: 40 on hand at 600 (invoicing alone moves no stock)');
 select t.ok((public.run_report(:'co', 'receivables', '{}') -> 'totals' ->> 'due')::numeric = 12000, 'receivables report: open 12,000');

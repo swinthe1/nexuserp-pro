@@ -29,8 +29,7 @@ const def = (key: string) => REPORTS.find((r) => r.key === key)!
 
 const GROUPS: Group[] = [
   { key: 'sales', title: msg('Sales'), question: msg('How much did we sell, what and to whom?'), icon: TrendingUp, hue: '204 82%', items: [
-    { href: '/reports/sales', title: def('sales').title, question: msg('By month, group, item or customer, tills and invoices together; click a row to go deeper.'), ok: run('sales') },
-    { href: '/reports/sales-detail', title: msg('Detailed sales'), question: msg('A list of every sale by item, receipt, customer, unit, cashier, day or hour, with margin and filters.'), ok: perm('sales.read') },
+    { href: '/reports/sales', title: def('sales').title, question: msg('By month, category, item or customer, and in detail: every receipt and invoice line with margin and filters.'), ok: (c) => run('sales')(c) || c('sales.read') },
     { href: '/reports/analysis', title: msg('Compare two periods'), question: msg('This month against last month or last year, by unit, group, supplier or item.'), ok: perm('sales.read|procurement.read') },
     { href: '/reports/kpi', title: msg('Manager\'s panel'), question: msg('Are we on plan? Customers, average receipt, margin, losses and stock turnover.'), ok: (can) => can('sales.read') && can('reports.read') },
     { href: '/pos/history', title: msg('Till receipts'), question: msg('Every receipt of every till, to find one or print it again.'), ok: perm('pos.read') },
@@ -51,8 +50,7 @@ const GROUPS: Group[] = [
     { href: '/inventory/item-card', title: msg('Item card'), question: msg('Every movement of one item: in, out, at what cost and by which document.'), ok: perm('inventory.read') },
   ] },
   { key: 'buying', title: msg('Buying'), question: msg('What did we buy and from whom?'), icon: ShoppingCart, hue: '262 60%', items: [
-    { href: '/reports/purchases', title: def('purchases').title, question: msg('By month, supplier, group or item, with the VAT on it.'), ok: run('purchases') },
-    { href: '/reports/purchases-detail', title: msg('Detailed purchases'), question: msg('Every purchase line with both discounts, import costs and filters.'), ok: perm('procurement.read|invoicing.read') },
+    { href: '/reports/purchases', title: def('purchases').title, question: msg('By month, supplier, category or item, and in detail: every purchase line with discounts, import costs and filters.'), ok: (c) => run('purchases')(c) || c('procurement.read|invoicing.read') },
     { href: '/procurement/scorecard', title: msg('Vendor scorecard'), question: msg('Which suppliers deliver on time, complete and at the agreed price.'), ok: perm('procurement.read') },
     { href: '/procurement/pending-invoices', title: msg('Goods waiting for the invoice|menu'), question: msg('Goods received whose supplier invoice is not entered yet.'), ok: perm('invoicing.read|procurement.read') },
   ] },

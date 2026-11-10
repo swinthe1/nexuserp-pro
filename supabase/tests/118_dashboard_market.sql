@@ -19,6 +19,8 @@ select t.ok(:'d'::jsonb ?& array['today', 'week_ago', 'receipts', 'month', 'mont
 select t.ok((:'d'::jsonb ->> 'today')::numeric = (public.sales_pulse(:'mini') ->> 'today')::numeric, 'today is the same as in the day''s sentence');
 select t.ok((:'d'::jsonb ->> 'cash_in_tills')::numeric >= 0 and (:'d'::jsonb ->> 'open_shifts')::int >= 0, 'the cash in the open tills is a plain sum');
 select t.ok((:'d'::jsonb ->> 'month_margin_pct') is null or (:'d'::jsonb ->> 'month_margin_pct')::numeric between -100 and 100, 'the margin is a percent');
+select t.ok(:'d'::jsonb ?& array['today_net', 'today_margin'] and ((:'d'::jsonb ->> 'today_margin_pct') is null or (:'d'::jsonb ->> 'today_margin_pct')::numeric between -100 and 100)
+        and (:'d'::jsonb ->> 'today_net')::numeric <= (:'d'::jsonb ->> 'month_net')::numeric + 0.01 or (:'d'::jsonb ->> 'today_net')::numeric < 0, 'today''s margin: a percent, of a part of the month''s sales');
 
 -- 2. not for someone outside the company
 reset role;

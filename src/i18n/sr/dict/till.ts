@@ -1508,4 +1508,12 @@ export default {
   "Vendor scorecard": "Ocena dobavljača",
   "Forward one step": "Korak napred",
   "Forward|step": "Napred",
+  "Analysis by month, category, customer|view": "Grupisana analiza",
+  "In detail: items, documents and filters|view": "Detaljno: artikli, dokumenti i filteri",
+  "Which ones|columns": "Koje",
+  "By month, category, item or customer, and in detail: every receipt and invoice line with margin and filters.": "Po mesecu, kategoriji, artiklu ili kupcu, i detaljno: svaki račun i red fakture sa maržom i filterima.",
+  "By month, supplier, category or item, and in detail: every purchase line with discounts, import costs and filters.": "Po mesecu, dobavljaču, kategoriji ili artiklu, i detaljno: svaki red nabavke sa rabatima, troškovima uvoza i filterima.",
+  "Sales analysis|menu": "Analiza prodaje",
+  "Purchase analysis|menu": "Analiza nabavke",
+  "Margin {pct}%: {amount} earned, without VAT": "Marža {pct}%: {amount} zarade, bez PDV",
 } satisfies Dict

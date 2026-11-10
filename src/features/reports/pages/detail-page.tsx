@@ -9,6 +9,7 @@ import { ColumnHeader, DataTable, LeadCell } from '@/components/data-table/data-
 import { MultiPick } from '@/components/multi-pick'
 import { Pick, Range, SavedFilters } from '../components/saved-filters'
 import { PageHeader } from '@/components/page-header'
+import { AnalysisSwitch } from './report-page'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -203,7 +204,7 @@ export const PurchasesDetailPage = () => <DetailPage kind="purchases" />
 export const SalesDetailPage = () => <DetailPage kind="sales" />
 
 /** "Blerjet e detajuara" and "Shitjet e detajuara": pick the report, set the filters, press Show. */
-export function DetailPage({ kind }: { kind: Kind }) {
+export function DetailPage({ kind, merged }: { kind: Kind; merged?: boolean }) {
   const { companyId, company } = useCompany()
   const { unit, multi } = useActiveUnit()
   const navigate = useNavigate()
@@ -277,7 +278,7 @@ export function DetailPage({ kind }: { kind: Kind }) {
     if (applied.partners.length) parts.push(`${kind === 'purchases' ? t('Suppliers') : t('Customers')}: ${names(applied.partners, partnerOpts)}`)
     if (applied.partner_tags.length) parts.push(`${t('Tags')}: ${applied.partner_tags.join(', ')}`)
     if (applied.items.length) parts.push(`${t('Items')}: ${names(applied.items, itemOpts)}`)
-    if (applied.categories.length) parts.push(`${t('Groups')}: ${names(applied.categories, catOpts)}`)
+    if (applied.categories.length) parts.push(`${t('Categories')}: ${names(applied.categories, catOpts)}`)
     if (applied.brands.length) parts.push(`${t('Brands')}: ${applied.brands.join(', ')}`)
     if (applied.doc_types.length) parts.push(applied.doc_types.map((d) => t(TYPE_LABEL[d] ?? d)).join(', '))
     if (applied.vat_book !== 'all') parts.push(applied.vat_book === 'in' ? t('In the VAT book') : t('Outside the VAT book'))
@@ -333,7 +334,7 @@ export function DetailPage({ kind }: { kind: Kind }) {
     if ((rep === 'detailed' || rep === 'lines') && r.source === 'invoice' && r.doc_id) navigate(`/sales/invoices/${r.doc_id}`)
   }
 
-  const title = kind === 'purchases' ? t('Detailed purchases') : t('Detailed sales')
+  const title = merged ? (kind === 'purchases' ? t('Purchase analysis') : t('Sales analysis')) : kind === 'purchases' ? t('Detailed purchases') : t('Detailed sales')
   return (
     <>
       <PageHeader back={{ href: '/reports', label: t('Reports') }} title={title}
@@ -344,6 +345,7 @@ export function DetailPage({ kind }: { kind: Kind }) {
           prepare={(f) => (f.period === 'custom' ? f : { ...f, from: undefined, to: undefined })}
           restore={(c) => (c.period && c.period !== 'custom' ? { ...c, ...periodDates(c.period) } : c)}
           onApply={(f) => apply({ ...start, ...f })} />} />
+      {merged && <AnalysisSwitch report={kind} view="detail" />}
 
       <div className="mb-3 rounded-lg border bg-card p-3">
         <div className="flex flex-wrap items-end gap-2">
@@ -376,7 +378,7 @@ export function DetailPage({ kind }: { kind: Kind }) {
           <div className="mt-3 grid gap-3 border-t pt-3">
             <div className="flex flex-wrap items-center gap-2">
               <MultiPick label={t('Items')} value={draft.items} onChange={(v) => put('items', v)} options={itemOpts} />
-              <MultiPick label={t('Groups')} value={draft.categories} onChange={(v) => put('categories', v)} options={catOpts} />
+              <MultiPick label={t('Categories')} value={draft.categories} onChange={(v) => put('categories', v)} options={catOpts} />
               <MultiPick label={t('Brands')} value={draft.brands} onChange={(v) => put('brands', v)} options={(extras.data?.brands ?? []).map((b) => ({ value: b, label: b }))} />
               <MultiPick label={t('Partner tags')} value={draft.partner_tags} onChange={(v) => put('partner_tags', v)} options={(extras.data?.tags ?? []).map((b) => ({ value: b, label: b }))} />
               <MultiPick label={t('Document type')} value={draft.doc_types} onChange={(v) => put('doc_types', v)} options={DOC_TYPES[kind].map((d) => ({ value: d.value, label: t(d.label) }))} />

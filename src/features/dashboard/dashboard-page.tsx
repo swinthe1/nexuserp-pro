@@ -92,7 +92,8 @@ export function DashboardPage() {
   add('today_sales', t('Sales today (with VAT)'), can('sales.read'),
     <StatCard icon={ShoppingBasket} hue="152 68%" label={t('Sales today (with VAT)')} value={formatMoney(m?.today, cur)} loading={mk.isLoading} href="/pos/history"
       trend={{ pct: pct(m?.today, m?.week_ago), label: t('vs the same hour a week ago'), upIsGood: true }}
-      hint={m ? t('{n} receipts · average basket {amount}', { n: m.receipts ?? 0, amount: m.basket != null ? formatMoney(m.basket) : '—' }) : undefined} />)
+      hint={m ? <>{m.today_margin_pct != null && <span className="block font-medium text-foreground/80">{t('Margin {pct}%: {amount} earned, without VAT', { pct: formatNumberWith(m.today_margin_pct, { maximumFractionDigits: 1 }), amount: formatMoney(m.today_margin) })}</span>}
+        {t('{n} receipts · average basket {amount}', { n: m.receipts ?? 0, amount: m.basket != null ? formatMoney(m.basket) : '—' })}</> : undefined} />)
   add('cash_in_tills', t('Cash in the tills now'), can('pos.read') || can('sales.read'),
     <StatCard icon={CoinsIcon} hue="44 92%" label={t('Cash in the tills now')} value={formatMoney(m?.cash_in_tills, cur)} loading={mk.isLoading} href="/pos"
       tone={m?.shifts_left_open ? 'warning' : 'default'}

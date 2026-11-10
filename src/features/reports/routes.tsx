@@ -1,22 +1,28 @@
-import type { RouteObject } from 'react-router-dom'
+import { Navigate, useLocation, type RouteObject } from 'react-router-dom'
 import { RequirePerm, lazyPage } from '@/app/require-perm'
 
 const ReportsPage = lazyPage(() => import('./pages/reports-page'), 'ReportsPage')
 const ReportPage = lazyPage(() => import('./pages/report-page'), 'ReportPage')
 const KpiPage = lazyPage(() => import('./pages/kpi-page'), 'KpiPage')
 const AnalysisPage = lazyPage(() => import('./pages/analysis-page'), 'AnalysisPage')
-const PurchasesDetailPage = lazyPage(() => import('./pages/detail-page'), 'PurchasesDetailPage')
-const SalesDetailPage = lazyPage(() => import('./pages/detail-page'), 'SalesDetailPage')
 const ProfitPage = lazyPage(() => import('./pages/profit-page'), 'ProfitPage')
 const FulfillmentPage = lazyPage(() => import('@/features/oms/pages/fulfillment-page'), 'FulfillmentPage')
+
+/** the old addresses of the detail reports: now a view of the analysis page, with their filters */
+function ToDetail({ report }: { report: string }) {
+  const { search } = useLocation()
+  const q = new URLSearchParams(search)
+  q.set('view', 'detail')
+  return <Navigate replace to={`/reports/${report}?${q}`} />
+}
 
 export const reportsRoutes: RouteObject[] = [
   { path: 'reports', element: <RequirePerm perm="core.read" />, children: [
     { index: true, element: <ReportsPage /> },
     { path: 'kpi', element: <RequirePerm perm="reports.read" />, children: [{ index: true, element: <KpiPage /> }] },
     { path: 'analysis', element: <RequirePerm perm="sales.read|procurement.read" />, children: [{ index: true, element: <AnalysisPage /> }] },
-    { path: 'purchases-detail', element: <RequirePerm perm="procurement.read|invoicing.read" />, children: [{ index: true, element: <PurchasesDetailPage /> }] },
-    { path: 'sales-detail', element: <RequirePerm perm="sales.read" />, children: [{ index: true, element: <SalesDetailPage /> }] },
+    { path: 'purchases-detail', element: <ToDetail report="purchases" /> },
+    { path: 'sales-detail', element: <ToDetail report="sales" /> },
     { path: 'profit', element: <RequirePerm perm="finance.read|reports.read" />, children: [{ index: true, element: <ProfitPage /> }] },
     { path: ':key', element: <ReportPage /> },
   ] },

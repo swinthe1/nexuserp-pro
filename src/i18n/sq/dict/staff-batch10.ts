@@ -1791,4 +1791,12 @@ export default {
   "{n} items in all": "{n} artikuj gjithsej",
   "Forward one step": "Një hap para",
   "Forward|step": "Para",
+  "Analysis by month, category, customer|view": "Analiza e grupuar",
+  "In detail: items, documents and filters|view": "Me detaje: artikuj, dokumente dhe filtra",
+  "Which ones|columns": "Cilat",
+  "By month, category, item or customer, and in detail: every receipt and invoice line with margin and filters.": "Sipas muajit, kategorisë, artikullit ose klientit, dhe me detaje: çdo kupon dhe rresht fature me marzhë dhe filtra.",
+  "By month, supplier, category or item, and in detail: every purchase line with discounts, import costs and filters.": "Sipas muajit, furnitorit, kategorisë ose artikullit, dhe me detaje: çdo rresht blerjeje me rabate, kosto importi dhe filtra.",
+  "Sales analysis|menu": "Analiza e shitjeve",
+  "Purchase analysis|menu": "Analiza e blerjeve",
+  "Margin {pct}%: {amount} earned, without VAT": "Marzhi {pct}%: {amount} fitim, pa TVSH",
 } satisfies Dict
