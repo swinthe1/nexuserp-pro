@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/page-header'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import type { XlsxColumn } from '@/lib/export'
@@ -22,7 +22,7 @@ import { axisTick, iso, tooltipStyle } from '@/features/finance/pages/finance-ov
 import { type ReportColumn, type ReportRow, type SavedReport, useReport, useSavedReports } from '../api'
 import { formatMeasure, PivotTable, SaveReportButton } from '../components/pivot'
 import { DIM_LABEL, canRunReport, reportDef } from '../catalog'
-import { DetailPage } from './detail-page'
+import { DETAIL_REPORTS, DetailPage } from './detail-page'
 
 type Step = { dim: string; key: string; label: string }
 const NO_PIVOT = '__none'
@@ -63,33 +63,49 @@ const TWO_VIEWS: Record<string, { kind: 'sales' | 'purchases'; perm: string }> =
   sales: { kind: 'sales', perm: 'sales.read' }, purchases: { kind: 'purchases', perm: 'procurement.read|invoicing.read' },
 }
 
-export function AnalysisSwitch({ report, view }: { report: string; view: 'analysis' | 'detail' }) {
-  const [params] = useSearchParams()
+// what the analysis can be grouped by, in the order a shop thinks of it
+const ANALYSIS_DIMS: Record<'sales' | 'purchases', string[]> = {
+  sales: ['month', 'category', 'product', 'customer', 'vendor', 'warehouse', 'salesperson', 'channel', 'city', 'document'],
+  purchases: ['month', 'vendor', 'category', 'product', 'account', 'document'],
+}
+const BY: Record<string, string> = {
+  month: msg('By month|analysis'), category: msg('By category|analysis'), product: msg('By item|analysis'), customer: msg('By customer|analysis'),
+  vendor: msg('By supplier|analysis'), warehouse: msg('By unit|analysis'), salesperson: msg('By salesperson|analysis'), channel: msg('By channel|analysis'),
+  city: msg('By city|analysis'), document: msg('By document|analysis'), account: msg('By expense account|analysis'),
+}
+
+/**
+ * The one "Report" list of the sales and purchase analysis: the grouped analysis (chart, columns, steps down)
+ * and the detailed lists (items, documents, lines, filters) side by side; the dates go along.
+ * `value` is 'a:<dimension>' or 'd:<detail report>'; `onPick` handles a choice of the view it sits in.
+ */
+export function ReportPicker({ report, value, dates, onPick, className }: {
+  report: 'sales' | 'purchases'; value: string; dates: { from: string; to: string }; onPick: (v: string) => boolean; className?: string
+}) {
   const navigate = useNavigate()
   const { can } = useCompany()
   const def = reportDef(report)
-  if (!def || !canRunReport(can, def)) return null
-  // the dates go along to the other view
-  const go = (to: 'analysis' | 'detail') => {
-    if (to === view) return
+  const analysis = !!def && canRunReport(can, def)
+  const detail = can(TWO_VIEWS[report].perm)
+  const pick = (v: string) => {
+    if (onPick(v)) return
     const q = new URLSearchParams()
-    if (to === 'detail') {
-      const [ytdFrom, today] = presetRange('ytd')
-      q.set('view', 'detail')
-      q.set('f', JSON.stringify({ period: 'custom', from: params.get('from') ?? ytdFrom, to: params.get('to') ?? today }))
-    } else {
-      try { const f = JSON.parse(params.get('f') ?? '{}') as { from?: string; to?: string }; if (f.from && f.to) { q.set('from', f.from); q.set('to', f.to) } } catch { /* the default period */ }
-    }
-    navigate(`/reports/${report}${q.size ? `?${q}` : ''}`)
+    if (v.startsWith('a:')) { q.set('group_by', v.slice(2)); q.set('from', dates.from); q.set('to', dates.to) }
+    else { q.set('view', 'detail'); q.set('f', JSON.stringify({ report: v.slice(2), period: 'custom', from: dates.from, to: dates.to })) }
+    navigate(`/reports/${report}?${q}`)
   }
   return (
-    <div role="tablist" aria-label={t('View')} className="mb-3 inline-flex rounded-lg border bg-muted/50 p-0.5 text-[13px]">
-      {(['analysis', 'detail'] as const).map((v) => (
-        <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => go(v)}
-          className={cn('rounded-md px-3 py-1.5 font-medium transition-colors', view === v ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground')}>
-          {v === 'analysis' ? t('Analysis by month, category, customer|view') : t('In detail: items, documents and filters|view')}
-        </button>
-      ))}
+    <div className="grid gap-1">
+      <Label className="text-xs">{t('Report')}</Label>
+      <Select value={value} onValueChange={pick}>
+        <SelectTrigger className={cn('h-9 w-64', className)}><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {analysis && <SelectGroup><SelectLabel>{t('Analysis, with chart and columns')}</SelectLabel>
+            {ANALYSIS_DIMS[report].map((d) => <SelectItem key={d} value={`a:${d}`}>{t(BY[d] ?? d)}</SelectItem>)}</SelectGroup>}
+          {detail && <SelectGroup><SelectLabel>{t('In detail, with filters')}</SelectLabel>
+            {DETAIL_REPORTS[report].map((r) => <SelectItem key={r.value} value={`d:${r.value}`}>{t(r.label)}</SelectItem>)}</SelectGroup>}
+        </SelectContent>
+      </Select>
     </div>
   )
 }
@@ -182,9 +198,10 @@ function ReportView() {
         actions={<div className="flex items-center gap-2"><SaveReportButton report={def.key} params={saveParams} current={saved && saved.owner_id === user?.id ? saved : null} />{!pivotBy && <ExportMenu rows={rows} columns={exportCols} filename={`${def.key}-${groupBy}-${to}`} title={t(def.title)}
           subtitle={[company?.name, periodText, filterText].filter(Boolean).join(' · ')} xlsx={{ totals }} />}</div>}
       />
-      {TWO_VIEWS[key] && can(TWO_VIEWS[key].perm) && <AnalysisSwitch report={key} view="analysis" />}
       <Card className="mb-4">
         <CardContent className="flex flex-wrap items-end gap-3 p-3">
+          {TWO_VIEWS[key] && <ReportPicker report={TWO_VIEWS[key].kind} value={`a:${groupBy}`} dates={{ from, to }} className="h-8"
+            onPick={(v) => { if (!v.startsWith('a:')) return false; set({ group_by: v.slice(2) }); return true }} />}
           {!def.asOf && (
             <div className="grid gap-1">
               <Label className="text-xs">{t('Period')}</Label>
@@ -199,13 +216,14 @@ function ReportView() {
             <Input id="rep-from" type="date" className="h-8 w-[150px]" value={from} max={to} onChange={(e) => e.target.value && set({ from: e.target.value })} /></div>}
           <div className="grid gap-1"><Label htmlFor="rep-to" className="text-xs">{def.asOf ? t('On date') : t('To')}</Label>
             <Input id="rep-to" type="date" className="h-8 w-[150px]" value={to} onChange={(e) => e.target.value && set({ to: e.target.value })} /></div>
+          {TWO_VIEWS[key] ? null : (
           <div className="grid gap-1">
             <Label className="text-xs">{t('Group by')}</Label>
             <Select value={groupBy} onValueChange={(v) => set({ group_by: v })}>
               <SelectTrigger className="h-8 w-[170px]"><SelectValue /></SelectTrigger>
               <SelectContent>{dims.map((d) => <SelectItem key={d} value={d}>{t(DIM_LABEL[d] ?? d)}</SelectItem>)}</SelectContent>
             </Select>
-          </div>
+          </div>)}
           <div className="grid gap-1">
             <Label className="text-xs">{t('Across')}</Label>
             <Select value={pivotBy || NO_PIVOT} onValueChange={(v) => set({ across: v === NO_PIVOT ? null : v, only: null })}>

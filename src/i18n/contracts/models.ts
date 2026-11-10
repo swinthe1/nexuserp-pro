@@ -63,7 +63,8 @@ export const PLACEHOLDERS: { key: string; sq: string; en: string }[] = [
   { key: 'punemarresi', sq: 'Emri i punonjësit', en: 'Employee name' },
   { key: 'nr_personal', sq: 'Numri personal', en: 'Personal number' },
   { key: 'datelindja', sq: 'Datëlindja', en: 'Date of birth' },
-  { key: 'adresa_punemarresit', sq: 'Adresa e punonjësit', en: 'Employee address' },
+  { key: 'adresa_punemarresit', sq: 'Vendbanimi i punonjësit', en: 'Employee address' },
+  { key: 'tel_punemarresit', sq: 'Telefoni i punonjësit', en: 'Employee phone' },
   { key: 'pozita', sq: 'Pozita e punës', en: 'Position' },
   { key: 'pershkrimi', sq: 'Përshkrimi i punës', en: 'Job description' },
   { key: 'vendi_punes', sq: 'Vendi i punës', en: 'Place of work' },
@@ -81,7 +82,8 @@ export const PLACEHOLDERS: { key: string; sq: string; en: string }[] = [
   { key: 'pushimi', sq: 'Ditët e pushimit vjetor', en: 'Annual leave days' },
   { key: 'njoftimi_teksti', sq: 'Afatet e njoftimit në fjali', en: 'Notice periods as a sentence' },
   { key: 'kontrata_kolektive', sq: 'Kontrata kolektive', en: 'Collective agreement' },
-  { key: 'iban', sq: 'IBAN i punonjësit', en: 'Employee IBAN' },
+  { key: 'iban', sq: 'Xhirollogaria e punonjësit', en: 'Employee bank account' },
+  { key: 'banka', sq: 'Banka e punonjësit', en: 'Employee bank' },
   { key: 'nr_kontrates', sq: 'Aneks: numri i kontratës që ndryshon', en: 'Annex: number of the contract it changes' },
   { key: 'data_kontrates', sq: 'Aneks: data e asaj kontrate', en: 'Annex: date of that contract' },
   { key: 'data_aneksit', sq: 'Aneks: nga kur vlen', en: 'Annex: applies from' },
@@ -101,7 +103,7 @@ Në mbështetje të neneve 10 dhe 11 të {{ligjit}}, më {{data}} në {{vendi}},
 Neni 1 – Palët kontraktuese
 Punëdhënësi: {{punedhenesi}}, me seli në {{adresa_punedhenesit}}, NUI {{nui}}, i përfaqësuar nga {{perfaqesuesi}}, {{pozita_perfaqesuesit}} (në vijim: Punëdhënësi),
 dhe
-I punësuari: {{punemarresi}}, numri personal {{nr_personal}}, i lindur më {{datelindja}}, me vendbanim në {{adresa_punemarresit}} (në vijim: I punësuari).
+I punësuari: {{punemarresi}}, numri personal {{nr_personal}}, i lindur më {{datelindja}}, me vendbanim në {{adresa_punemarresit}}, tel. {{tel_punemarresit}} (në vijim: I punësuari).
 
 Neni 2 – Pozita dhe detyrat e punës
 I punësuari punësohet në pozitën: {{pozita}}.
@@ -122,7 +124,7 @@ Orari i plotë i punës është {{oret}} orë në javë, {{orari}}. Puna jashtë
 
 Neni 7 – Paga
 Paga bazë bruto mujore është {{paga}} ({{paga_fjale}}). Nga paga bruto mbahen kontributet pensionale dhe tatimi në të ardhurat personale, sipas ligjit.
-Paga paguhet një herë në muaj, jo më vonë se data {{dita_pageses}} e muajit pasues, në llogarinë bankare të të punësuarit.
+Paga paguhet një herë në muaj, jo më vonë se data {{dita_pageses}} e muajit pasues, në llogarinë bankare të të punësuarit nr. {{iban}} ({{banka}}).
 Për punë jashtë orarit, natën, në ditë festash dhe në fundjavë, i punësuari paguhet me shtesat e parapara në nenin 56 të Ligjit të Punës.
 
 Neni 8 – Pushimi vjetor dhe lejet
@@ -156,7 +158,7 @@ Në mbështetje të nenit 21 të {{ligjit}}, më {{data}} në {{vendi}}, lidhet 
 Neni 1 – Palët kontraktuese
 Punëdhënësi: {{punedhenesi}}, me seli në {{adresa_punedhenesit}}, NIPT {{nui}}, i përfaqësuar nga {{perfaqesuesi}}, {{pozita_perfaqesuesit}} (në vijim: Punëdhënësi),
 dhe
-Punëmarrësi: {{punemarresi}}, numri personal {{nr_personal}}, i lindur më {{datelindja}}, me banim në {{adresa_punemarresit}} (në vijim: Punëmarrësi).
+Punëmarrësi: {{punemarresi}}, numri personal {{nr_personal}}, i lindur më {{datelindja}}, me banim në {{adresa_punemarresit}}, tel. {{tel_punemarresit}} (në vijim: Punëmarrësi).
 
 Neni 2 – Pozita dhe përshkrimi i punës
 Punëmarrësi punësohet në pozitën: {{pozita}}.
@@ -177,7 +179,7 @@ Kohëzgjatja normale e punës është {{oret}} orë në javë, {{orari}}. Puna j
 
 Neni 7 – Paga
 Paga bruto mujore është {{paga}} ({{paga_fjale}}). Nga paga mbahen kontributet e sigurimeve shoqërore e shëndetësore dhe tatimi mbi të ardhurat personale, sipas ligjit.
-Paga paguhet një herë në muaj, jo më vonë se data {{dita_pageses}} e muajit pasues, me transfertë bankare në llogarinë e Punëmarrësit.
+Paga paguhet një herë në muaj, jo më vonë se data {{dita_pageses}} e muajit pasues, me transfertë bankare në llogarinë e Punëmarrësit nr. {{iban}} ({{banka}}).
 
 Neni 8 – Pushimet vjetore
 Punëmarrësi ka të drejtë për pushim vjetor të paguar prej {{pushimi}} ditë pune në vit, pa llogaritur festat zyrtare.

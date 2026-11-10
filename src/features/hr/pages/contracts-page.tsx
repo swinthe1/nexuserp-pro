@@ -30,7 +30,7 @@ import { cn, formatDate, formatMoney, formatQty, humanize, num, todayISO } from 
 import { useCompanyProfile, useCompanySettings } from '@/features/settings/api'
 import {
   openSignedCopy, useAnnexContract, useContract, useContractChain, useContractList, useContractTemplates, useCreateContract, useDeleteContract,
-  useEmployee, useEmployees, useEndContract, useSignContract, useUpdateContract, useUploadSignedCopy, type ContractFull,
+  useEmployee, useEmployees, useEndContract, useSaveEmployee, useSignContract, useUpdateContract, useUploadSignedCopy, type ContractFull,
 } from '../api'
 import { contractPaper, CONTRACT_CSS, contractValues, countryOf, defaultModel, fillModel, printContract, probationEnd, type ContractFacts } from '../contract-doc'
 import { MoreMenu } from '@/components/more-menu'
@@ -129,11 +129,20 @@ export function NewContractDialog({ employeeId, onClose }: { employeeId?: string
   })
   const set = <K extends keyof typeof v>(k: K) => (x: (typeof v)[K]) => setV((s) => ({ ...s, [k]: x }))
   React.useEffect(() => { if (person.data?.position?.title) setV((s) => s.job_title ? s : { ...s, job_title: person.data!.position!.title }) }, [person.data])
+  // the employee's own details the contract is written with: taken from their card, and saved back to it
+  const saveEmp = useSaveEmployee()
+  const [me, setMe] = React.useState({ personal_number: '', address: '', iban: '', bank_name: '', phone: '' })
+  React.useEffect(() => {
+    const p = person.data
+    setMe({ personal_number: p?.personal_number ?? '', address: p?.address ?? '', iban: p?.iban ?? '', bank_name: p?.bank_name ?? '', phone: p?.phone ?? '' })
+  }, [person.data])
+  const setOne = (k: keyof typeof me) => (e: React.ChangeEvent<HTMLInputElement>) => setMe((s) => ({ ...s, [k]: e.target.value }))
   const fixed = v.contract_type === 'fixed_term' || v.contract_type === 'seasonal'
   const custom = (templates.data ?? []).filter((x) => x.kind === 'contract' && (!x.contract_type || x.contract_type === v.contract_type))
   const notice = v.notice_days === '' ? legalNoticeDays(country, v.start_date, v.start_date) : num(v.notice_days)
   const problems = [
     !emp && t('Choose the employee'),
+    !me.personal_number.trim() && t('Enter the personal number (ID card)'),
     !v.job_title.trim() && t('Enter the position'),
     num(v.gross_salary) <= 0 && v.contract_type !== 'service' && t('Enter the gross pay'),
     fixed && !v.end_date && t('A fixed-term contract needs an end date'),
@@ -152,6 +161,18 @@ export function NewContractDialog({ employeeId, onClose }: { employeeId?: string
           {!employeeId && <div className="grid gap-1.5 sm:col-span-2"><Label>{t('Employee')}</Label>
             <SearchSelect value={emp} onChange={setEmp} placeholder={t('Choose the employee')}
               options={(employees.data ?? []).filter((e) => e.employment_status !== 'terminated').map((e) => ({ value: e.id, label: e.full_name, hint: e.position?.title ?? e.number ?? undefined }))} /></div>}
+          {emp && <>
+            <div className="grid gap-1.5"><Label htmlFor="nc-pn">{t('Personal number (ID card)')}</Label>
+              <Input id="nc-pn" inputMode="numeric" value={me.personal_number} onChange={setOne('personal_number')} placeholder={t('e.g. 1234567890')} /></div>
+            <div className="grid gap-1.5"><Label htmlFor="nc-tel">{t('Phone number')}</Label>
+              <Input id="nc-tel" type="tel" value={me.phone} onChange={setOne('phone')} placeholder="+383 4x xxx xxx" /></div>{/* i18n-ignore */}
+            <div className="grid gap-1.5 sm:col-span-2"><Label htmlFor="nc-addr">{t('Place of residence')}</Label>
+              <Input id="nc-addr" value={me.address} onChange={setOne('address')} placeholder={t('e.g. Rr. Agim Ramadani 12, Prishtinë')} /></div>
+            <div className="grid gap-1.5"><Label htmlFor="nc-iban">{t('Bank account|employee')}</Label>
+              <Input id="nc-iban" value={me.iban} onChange={setOne('iban')} placeholder="XK05 1212 0123 4567 8906" className="tabular" /></div>{/* i18n-ignore */}
+            <div className="grid gap-1.5"><Label htmlFor="nc-bank">{t('Bank')}<span className="ml-1 font-normal text-muted-foreground">({t('optional')})</span></Label>
+              <Input id="nc-bank" value={me.bank_name} onChange={setOne('bank_name')} placeholder={t('e.g. Raiffeisen Bank')} /></div>
+          </>}
           <div className="grid gap-1.5"><Label>{t('Type')}</Label>
             <Select value={v.contract_type} onValueChange={(x) => setV((s) => ({ ...s, contract_type: x, template: 'default' }))}><SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{CONTRACT_TYPES.map((s) => <SelectItem key={s} value={s}>{humanize(s)}</SelectItem>)}</SelectContent></Select></div>
@@ -185,7 +206,12 @@ export function NewContractDialog({ employeeId, onClose }: { employeeId?: string
         </div>
         {!!problems.length && emp && <ul className="grid gap-0.5 text-xs text-destructive">{problems.map((p) => <li key={p}>{p}</li>)}</ul>}
         <DialogFooter><Button variant="outline" onClick={onClose}>{t('Cancel')}</Button>
-          <Button loading={create.isPending} disabled={!!problems.length} onClick={async () => {
+          <Button loading={create.isPending || saveEmp.isPending} disabled={!!problems.length} onClick={async () => {
+            // first the employee's card, so the contract text is written with these details
+            const p = person.data
+            const changed = Object.fromEntries(Object.entries(me).map(([k, x]): [string, string | null] => [k, x.trim() || null])
+              .filter(([k, x]) => x !== ((p as Record<string, unknown> | undefined)?.[k] ?? null)))
+            if (Object.keys(changed).length) await saveEmp.mutateAsync({ id: emp!, ...changed })
             const r = await create.mutateAsync({
               employee_id: emp!, contract_type: v.contract_type, start_date: v.start_date, end_date: v.end_date || null, gross_salary: num(v.gross_salary),
               currency_code: company?.base_currency ?? 'EUR', working_hours_per_week: num(v.working_hours_per_week), job_title: v.job_title.trim() || null,

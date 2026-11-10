@@ -9,7 +9,7 @@ import { ColumnHeader, DataTable, LeadCell } from '@/components/data-table/data-
 import { MultiPick } from '@/components/multi-pick'
 import { Pick, Range, SavedFilters } from '../components/saved-filters'
 import { PageHeader } from '@/components/page-header'
-import { AnalysisSwitch } from './report-page'
+import { ReportPicker } from './report-page'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -39,7 +39,7 @@ type Filters = {
   currency: string; landed_basis: string; source: string; till_mode: string
 }
 
-const REPORTS: Record<Kind, { value: string; label: string }[]> = {
+export const DETAIL_REPORTS: Record<Kind, { value: string; label: string }[]> = {
   purchases: [
     { value: 'by_item', label: msg('By item') },
     { value: 'detailed', label: msg('By document') },
@@ -256,7 +256,7 @@ export function DetailPage({ kind, merged }: { kind: Kind; merged?: boolean }) {
   })
   const cur = q.data?.currency ?? company?.base_currency ?? ''
   const cols = React.useMemo(() => columnsOf(kind, applied.report), [kind, applied.report])
-  const reportLabel = t(REPORTS[kind].find((r) => r.value === applied.report)?.label ?? '')
+  const reportLabel = t(DETAIL_REPORTS[kind].find((r) => r.value === applied.report)?.label ?? '')
 
   // the options of the pickers
   const unitOpts = (whs.data ?? []).map((w) => ({ value: w.id, label: td(w.name), hint: w.code }))
@@ -345,15 +345,16 @@ export function DetailPage({ kind, merged }: { kind: Kind; merged?: boolean }) {
           prepare={(f) => (f.period === 'custom' ? f : { ...f, from: undefined, to: undefined })}
           restore={(c) => (c.period && c.period !== 'custom' ? { ...c, ...periodDates(c.period) } : c)}
           onApply={(f) => apply({ ...start, ...f })} />} />
-      {merged && <AnalysisSwitch report={kind} view="detail" />}
 
       <div className="mb-3 rounded-lg border bg-card p-3">
         <div className="flex flex-wrap items-end gap-2">
-          <div className="grid gap-1"><Label className="text-xs">{t('Report')}</Label>
+          {merged ? <ReportPicker report={kind} value={`d:${draft.report}`} dates={{ from: draft.from, to: draft.to }}
+            onPick={(v) => { if (!v.startsWith('d:')) return false; put('report', v.slice(2)); return true }} />
+          : <div className="grid gap-1"><Label className="text-xs">{t('Report')}</Label>
             <Select value={draft.report} onValueChange={(v) => put('report', v)}>
               <SelectTrigger className="h-9 w-64"><SelectValue /></SelectTrigger>
-              <SelectContent>{REPORTS[kind].map((r) => <SelectItem key={r.value} value={r.value}>{t(r.label)}</SelectItem>)}</SelectContent>
-            </Select></div>
+              <SelectContent>{DETAIL_REPORTS[kind].map((r) => <SelectItem key={r.value} value={r.value}>{t(r.label)}</SelectItem>)}</SelectContent>
+            </Select></div>}
           <div className="grid gap-1"><Label className="text-xs">{t('Period')}</Label>
             <Select value={draft.period} onValueChange={(v) => setDraft((d) => ({ ...d, period: v, ...(periodDates(v) ?? {}) }))}>
               <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>

@@ -334,10 +334,10 @@ export function useMyTeamLeave() {
 
 /* ------------------------------------------------------------------ contracts as documents */
 export type ContractFull = Contract & {
-  employee: Pick<Tables<'employees'>, 'id' | 'full_name' | 'first_name' | 'last_name' | 'number' | 'personal_number' | 'date_of_birth' | 'address' | 'hire_date' | 'termination_date' | 'employment_status' | 'iban' | 'bank_name'>
+  employee: Pick<Tables<'employees'>, 'id' | 'full_name' | 'first_name' | 'last_name' | 'number' | 'personal_number' | 'date_of_birth' | 'address' | 'hire_date' | 'termination_date' | 'employment_status' | 'iban' | 'bank_name' | 'phone'>
     & { position: { title: string } | null; department: { name: string } | null } | null
 }
-const CONTRACT_SELECT = '*, employee:employees(id, full_name, first_name, last_name, number, personal_number, date_of_birth, address, hire_date, termination_date, employment_status, iban, bank_name, position:job_positions!employees_company_id_position_id_fkey(title), department:departments!employees_company_id_department_id_fkey(name))'
+const CONTRACT_SELECT = '*, employee:employees(id, full_name, first_name, last_name, number, personal_number, date_of_birth, address, hire_date, termination_date, employment_status, iban, bank_name, phone, position:job_positions!employees_company_id_position_id_fkey(title), department:departments!employees_company_id_department_id_fkey(name))'
 export function useContractList() {
   const { companyId, key } = useCo()
   return useQuery({ queryKey: [...key, 'contracts', 'all'], enabled: !!companyId,

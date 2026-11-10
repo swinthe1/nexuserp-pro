@@ -68,6 +68,7 @@ export function contractValues(f: ContractFacts): Record<string, string> {
     nr_personal: e?.personal_number || '…',
     datelindja: d(e?.date_of_birth),
     adresa_punemarresit: e?.address || '…',
+    tel_punemarresit: e?.phone || '…',
     pozita: c.job_title || e?.position?.title || '…',
     pershkrimi: c.job_description || 'Detyrat e punës që i cakton punëdhënësi në përputhje me pozitën e punës.',
     vendi_punes: c.workplace || companyAddress,
