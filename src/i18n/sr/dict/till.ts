@@ -1625,4 +1625,8 @@ export default {
   "What each supplier charged for this item in the last year, without VAT, after the discounts.": "Koliko je svaki dobavljač naplatio ovaj artikal u poslednjih godinu dana, bez PDV, posle rabata.",
   "e.g. near the expiry date, as agreed with the supplier": "npr. blizu roka trajanja, po dogovoru sa dobavljačem",
   "{qty} available": "{qty} raspoloživo",
+  "Category / sub-category": "Kategorija/Potkategorija",
+  "Categories / sub-categories": "Kategorije/Potkategorije",
+  "pick from the list": "izaberi sa liste",
+  "{n} chosen": "izabrano: {n}",
 } satisfies Dict

@@ -296,6 +296,12 @@ export function DataTable<T>({
     // reset manually on filter change; the auto-reset schedules a state update before mount
     autoResetPageIndex: false,
   })
+  // totals and values with VAT read in bold: right-aligned columns named 'Total…' or '… with VAT' (meta.strong decides when set)
+  const strongCols = React.useMemo(() => new Set(table.getAllLeafColumns().filter((c) => {
+    const m = c.columnDef.meta
+    if (m?.strong != null) return m.strong
+    return m?.align === 'right' && STRONG_LABEL.test(columnLabel(table, c.id))
+  }).map((c) => c.id)), [columns]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // apply the user's default saved view once
   const views = useSavedViews(tableKey)
@@ -550,7 +556,7 @@ export function DataTable<T>({
                       data-col={cell.column.id}
                       style={sized ? { maxWidth: sized } : undefined}
                       className={cn('whitespace-nowrap', sized && 'overflow-hidden text-ellipsis', dense && 'h-8 py-1', cell.column.columnDef.meta?.align === 'right' && 'text-right tabular',
-                        cell.column.columnDef.meta?.className, c?.colour && !pt.rowColour && COLOURS[c.colour].cell, c?.bold && 'font-semibold')}
+                        cell.column.columnDef.meta?.className, c?.colour && !pt.rowColour && COLOURS[c.colour].cell, (c?.bold || strongCols.has(cell.column.id)) && 'font-semibold')}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
@@ -610,10 +616,13 @@ function LastExports() {
 /** the values a column holds, for "is one of": the most frequent first */
 function distinctTexts(rows: readonly unknown[], g: Getter): string[] {
   const n = new Map<string, number>()
-  for (const r of rows) { const v = g.text(r); n.set(v, (n.get(v) ?? 0) + 1) }
+  for (const r of rows) for (const v of g.parts ? (g.parts(r).length ? g.parts(r) : ['']) : [g.text(r)]) n.set(v, (n.get(v) ?? 0) + 1)
   return [...n.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([v]) => v)
 }
 /* ------------------------------------------------------------------ phone: one card per row */
+
+// 'Total', 'Totali (me TVSH)', 'Price with VAT', 'Ukupno sa PDV'…
+const STRONG_LABEL = /^(total|totali|totalet|ukupno)\b|\b(with VAT|me TVSH|sa PDV)\b/i
 
 // the column's name: meta.label, a string header, or the title given to ColumnHeader
 function columnLabel<T>(table: TanTable<T>, colId: string): string {

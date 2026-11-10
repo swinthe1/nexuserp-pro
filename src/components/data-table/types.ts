@@ -16,6 +16,10 @@ declare module '@tanstack/react-table' {
     mobile?: 'title' | 'amount' | 'hide'
     /** never shown: it is there for a filter only (e.g. the sub-category, shown inside the category column) */
     filterOnly?: boolean
+    /** bold values; by default the right-aligned totals and the values with VAT are */
+    strong?: boolean
+    /** the cell holds several values joined by this (', '): the column's filter lists each one */
+    listSep?: string
   }
 }
 

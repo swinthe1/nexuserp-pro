@@ -52,7 +52,7 @@ export function LotsPage() {
     { id: 'item', accessorFn: (r) => `${r.variant?.sku} ${r.variant?.name}`, header: ({ column }) => <ColumnHeader column={column} title={t('Item')} />, meta: { label: t('Item') },
       cell: ({ row: { original: r } }) => <span><span className="text-muted-foreground">{r.variant?.sku}</span> {r.variant?.name}</span> },
     { accessorKey: 'vendor_name', filterFn: inFilter, header: t('Vendor'), meta: { label: t('Vendor') } },
-    { accessorKey: 'group', filterFn: inFilter, header: t('Category'), meta: { label: t('Category'), exportValue: (r) => (r.sub ? `${r.group} - ${r.sub}` : r.group) },
+    { accessorKey: 'group', filterFn: inFilter, header: t('Category / sub-category'), meta: { label: t('Category / sub-category'), exportValue: (r) => (r.sub ? `${r.group} - ${r.sub}` : r.group) },
       cell: ({ row: { original: r } }) => (r.sub ? `${r.group} - ${r.sub}` : r.group) || '—' },
     { accessorKey: 'sub', filterFn: inFilter, header: t('Sub-category'), meta: { label: t('Sub-category'), filterOnly: true, noExport: true } },
     { accessorKey: 'expiry_date', header: ({ column }) => <ColumnHeader column={column} title={t('Expires')} />, meta: { label: t('Expires') }, cell: ({ getValue }) => formatDate(getValue() as string) },

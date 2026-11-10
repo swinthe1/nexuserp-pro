@@ -142,7 +142,7 @@ const buildCfg = (): Record<ProcKind, Cfg> => ({
         accessorFn: (r) => r.status === 'posted' && r.payment_status !== 'paid' && (r.due_date as string) < todayISO() && r.document_type !== 'vendor_credit' ? 'overdue' : r.payment_status,
         // with how it was paid under it (Kesh / Bankë), one column instead of two
         cell: ({ row: { original: r }, getValue }) => r.status !== 'posted' ? <span className="text-muted-foreground">—</span> : (
-          <div className="grid justify-items-start gap-0.5 whitespace-nowrap"><StatusBadge status={getValue() as string} />
+          <div className="grid min-w-[6.5rem] justify-items-start gap-0.5"><StatusBadge status={getValue() as string} />
             {!!r.paid_with && r.paid_with !== 'none' && <span className="text-xs text-muted-foreground">{t(PAID_WITH[r.paid_with as keyof typeof PAID_WITH])}</span>}</div>),
       },
       dateCol('due_date', t('Due')),

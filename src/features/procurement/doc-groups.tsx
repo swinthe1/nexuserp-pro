@@ -29,8 +29,8 @@ export function useDocGroups<R extends { id: string }>(table: 'vendor_bills' | '
     return (v.pairs ?? v.groups.map((g) => [g, null] as [string, null])).map(([g, s]) => (s ? `${td(g)} - ${td(s)}` : td(g))).join(', ')
   }
   const columns = React.useMemo<ColumnDef<R>[]>(() => !has ? [] : [
-    { id: 'item_groups', accessorFn: (r) => (map[r.id]?.groups ?? []).map((g) => td(g)).join(', '), filterFn: anyOf, header: t('Categories'),
-      meta: { label: t('Categories'), exportValue: (r: R) => shown(r.id) },
+    { id: 'item_groups', accessorFn: (r) => (map[r.id]?.groups ?? []).map((g) => td(g)).join(', '), filterFn: anyOf, header: t('Categories / sub-categories'),
+      meta: { label: t('Categories / sub-categories'), listSep: ', ', exportValue: (r: R) => shown(r.id) },
       cell: ({ row }) => <span className="text-[12.5px] text-muted-foreground">{shown(row.original.id)}</span> },
     { id: 'item_subs', accessorFn: (r) => (map[r.id]?.subs ?? []).map((g) => td(g)).join(', '), filterFn: anyOf, header: t('Sub-categories'),
       meta: { label: t('Sub-categories'), filterOnly: true, noExport: true } },

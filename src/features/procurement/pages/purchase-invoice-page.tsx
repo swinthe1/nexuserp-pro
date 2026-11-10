@@ -372,7 +372,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
     },
   })
   const dup = useQuery({
-    queryKey: ['bill-duplicate', companyId, dupKey, doc?.id], enabled: !!companyId && !!h.vendor_id && dupKey.split('|')[1]!.length > 0,
+    queryKey: ['bill-duplicate', companyId, dupKey, doc?.id], enabled: !!companyId && !!h.vendor_id && (dupKey.split('|')[1] ?? '').length > 0,
     queryFn: async () => unwrap(await supabase.rpc('vendor_bill_duplicate', { p_company: companyId!, p_vendor: dupKey.split('|')[0]!, p_number: dupKey.split('|')[1]!, p_exclude: (doc?.id ?? null) as string })) as unknown as
       { id: string; number: string | null; vendor_invoice_number: string; date: string; total: number; status: string; vendor: string } | null,
   })

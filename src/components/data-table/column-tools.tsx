@@ -11,7 +11,7 @@ import { COLOURS, NO_VALUE, OPS, TWO_VALUES, type Colour, type ColumnStyle, type
 
 export const opLabel = (op: Op): string => ({
   contains: t('contains'), not_contains: t('does not contain'), equals: t('is exactly'), not_equals: t('is not'), starts: t('starts with'), ends: t('ends with'),
-  in: t('is one of'), empty: t('is empty'), not_empty: t('is not empty'),
+  in: t('pick from the list'), empty: t('is empty'), not_empty: t('is not empty'),
   eq: '=', ne: '≠', gt: '>', ge: '≥', lt: '<', le: '≤', between: t('between'),
   today: t('today'), yesterday: t('yesterday'), this_week: t('this week'), this_month: t('this month'), last_month: t('last month'), this_year: t('this year'),
   last_days: t('in the last … days'), on: t('on the day'), before: t('before'), after: t('after'), range: t('from … to'),
@@ -28,7 +28,12 @@ function ValueBoxes({ rule, kind, onChange, values }: { rule: Rule; kind: Kind; 
     const chosen = new Set(rule.values ?? [])
     return (
       <div className="grid gap-1.5">
-        <Input className="h-8 text-[13px]" placeholder={t('Search…')} value={q} onChange={(e) => setQ(e.target.value)} />
+        <Input autoFocus className="h-8 text-[13px]" placeholder={t('Search…')} value={q} onChange={(e) => setQ(e.target.value)} />
+        <div className="flex items-center gap-3 px-0.5 text-[12px]">
+          <button type="button" className="font-medium text-primary hover:underline" onClick={() => onChange({ ...rule, values: [...new Set([...chosen, ...list])] })}>{t('Select all')}</button>
+          {chosen.size > 0 && <button type="button" className="text-muted-foreground hover:underline" onClick={() => onChange({ ...rule, values: [] })}>{t('Clear')}</button>}
+          {chosen.size > 0 && <span className="ml-auto text-muted-foreground">{t('{n} chosen', { n: chosen.size })}</span>}
+        </div>
         <div className="max-h-48 overflow-y-auto rounded-md border p-1">
           {list.map((v) => (
             <label key={v} className="flex cursor-pointer items-center gap-2 rounded-sm px-1.5 py-1 text-[13px] hover:bg-accent">
@@ -89,7 +94,7 @@ export function ColumnTools({ getter, kind, rule, onRule, style, onStyle, values
   const [open, setOpen] = React.useState(false)
   const first = OPS[kind][0]!
   const [draft, setDraft] = React.useState<Rule>(rule ?? { col: getter.id, op: first })
-  React.useEffect(() => { if (open) setDraft(rule ?? { col: getter.id, op: kind === 'text' ? 'contains' : kind === 'number' ? 'ge' : 'this_month' }) }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+  React.useEffect(() => { if (open) setDraft(rule ?? { col: getter.id, op: kind === 'text' ? 'in' : kind === 'number' ? 'ge' : 'this_month' }) }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
   const vals = React.useMemo(() => (open ? values() : []), [open]) // eslint-disable-line react-hooks/exhaustive-deps
   const when = style?.when ?? []
   const setWhen = (w: NonNullable<ColumnStyle['when']>) => onStyle({ ...style, when: w.length ? w : undefined })

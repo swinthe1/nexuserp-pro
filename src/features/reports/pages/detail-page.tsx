@@ -106,7 +106,7 @@ const RATES = ['18', '8', '0']
 function columnsOf(kind: Kind, report: string): Col[] {
   if (kind === 'purchases') {
     if (report === 'by_item') return [
-      { id: 'code', label: msg('Code'), type: 'text' }, { id: 'item', label: msg('Item'), type: 'text', strong: true }, { id: 'category', label: msg('Category'), type: 'text' },
+      { id: 'code', label: msg('Code'), type: 'text' }, { id: 'item', label: msg('Item'), type: 'text', strong: true }, { id: 'category', label: msg('Category / sub-category'), type: 'text' },
       { id: 'uom', label: msg('Unit|measure'), type: 'text', hidden: true }, { id: 'qty', label: msg('Quantity'), type: 'qty' },
       { id: 'avg_price', label: msg('Average price'), type: 'price' }, { id: 'min_price', label: msg('Lowest price'), type: 'price', hidden: true }, { id: 'max_price', label: msg('Highest price'), type: 'price', hidden: true },
       { id: 'net', label: msg('Value without VAT'), type: 'money', strong: true }, { id: 'vat', label: msg('VAT'), type: 'money' }, { id: 'gross', label: msg('Value with VAT'), type: 'money' },
@@ -129,7 +129,7 @@ function columnsOf(kind: Kind, report: string): Col[] {
     return [
       { id: 'date', label: msg('Date'), type: 'date' }, { id: 'number', label: msg('Number'), type: 'text' }, { id: 'vendor_invoice', label: msg('Supplier invoice no.'), type: 'text', hidden: true },
       { id: 'vendor', label: msg('Supplier'), type: 'text' }, { id: 'unit', label: msg('Unit|store'), type: 'text', hidden: true }, { id: 'type', label: msg('Type'), type: 'type', hidden: true },
-      { id: 'code', label: msg('Code'), type: 'text' }, { id: 'item', label: msg('Item'), type: 'text', strong: true }, { id: 'category', label: msg('Category'), type: 'text', hidden: true },
+      { id: 'code', label: msg('Code'), type: 'text' }, { id: 'item', label: msg('Item'), type: 'text', strong: true }, { id: 'category', label: msg('Category / sub-category'), type: 'text', hidden: true },
       { id: 'brand', label: msg('Brand'), type: 'text', hidden: true }, { id: 'uom', label: msg('Unit|measure'), type: 'text', hidden: true }, { id: 'qty', label: msg('Quantity'), type: 'qty' },
       { id: 'price_list', label: msg('Price'), type: 'price' }, { id: 'discount1', label: msg('Discount 1'), type: 'rate' }, { id: 'discount2', label: msg('Discount 2'), type: 'rate' },
       { id: 'discount', label: msg('Discount'), type: 'rate', hidden: true }, { id: 'price_net', label: msg('Price after discount'), type: 'price' },
@@ -154,7 +154,7 @@ function columnsOf(kind: Kind, report: string): Col[] {
   if (report === 'lines') return [
     { id: 'date', label: msg('Date'), type: 'date' }, { id: 'number', label: msg('Number'), type: 'text' }, { id: 'type', label: msg('Type'), type: 'type', hidden: true },
     { id: 'customer', label: msg('Customer'), type: 'text' }, { id: 'unit', label: msg('Unit|store'), type: 'text', hidden: true }, { id: 'person', label: msg('Salesperson or cashier'), type: 'text', hidden: true },
-    { id: 'code', label: msg('Code'), type: 'text' }, { id: 'item', label: msg('Item'), type: 'text', strong: true }, { id: 'category', label: msg('Category'), type: 'text', hidden: true },
+    { id: 'code', label: msg('Code'), type: 'text' }, { id: 'item', label: msg('Item'), type: 'text', strong: true }, { id: 'category', label: msg('Category / sub-category'), type: 'text', hidden: true },
     { id: 'brand', label: msg('Brand'), type: 'text', hidden: true }, { id: 'uom', label: msg('Unit|measure'), type: 'text', hidden: true }, { id: 'qty', label: msg('Quantity'), type: 'qty' },
     { id: 'price_list', label: msg('Price'), type: 'price' }, { id: 'discount', label: msg('Discount'), type: 'rate' }, { id: 'price_net', label: msg('Price after discount'), type: 'price' },
     { id: 'net', label: msg('Value without VAT'), type: 'money', strong: true }, { id: 'vat_rate', label: msg('VAT rate'), type: 'rate', hidden: true }, { id: 'vat', label: msg('VAT'), type: 'money' },
@@ -165,7 +165,7 @@ function columnsOf(kind: Kind, report: string): Col[] {
   return [
     ...(report === 'by_item' ? [{ id: 'code', label: msg('Code'), type: 'text' }] as Col[] : []),
     { id: 'label', label: head, type: report === 'by_day' ? 'date' : 'text', strong: true },
-    ...(report === 'by_item' ? [{ id: 'category', label: msg('Category'), type: 'text' }, { id: 'uom', label: msg('Unit|measure'), type: 'text', hidden: true },
+    ...(report === 'by_item' ? [{ id: 'category', label: msg('Category / sub-category'), type: 'text' }, { id: 'uom', label: msg('Unit|measure'), type: 'text', hidden: true },
       { id: 'qty', label: msg('Quantity sold'), type: 'qty' }, { id: 'avg_price', label: msg('Average selling price, without VAT'), type: 'price' }] as Col[] : []),
     ...(report === 'by_customer' ? [{ id: 'tax_number', label: msg('Tax number'), type: 'text' }] as Col[] : []),
     // the money of each row, in the order it is worked out: sold − cost of the goods = profit; profit ÷ sold = margin

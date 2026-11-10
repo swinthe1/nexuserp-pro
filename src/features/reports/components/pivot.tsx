@@ -94,7 +94,7 @@ export function PivotTable({ data, measure, rowLabel, colLabel, rowHeader, colHe
                   const v = r.cells[c.key] ?? null
                   return <TableCell key={c.key} className={cn('whitespace-nowrap text-right tabular', v !== null && v < 0 && 'text-destructive')}>{fmt(measure, v)}</TableCell>
                 })}
-                <TableCell className="whitespace-nowrap text-right font-medium tabular">{fmt(measure, r.total)}</TableCell>
+                <TableCell className="whitespace-nowrap text-right font-semibold tabular">{fmt(measure, r.total)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

@@ -1907,4 +1907,8 @@ export default {
   "What each supplier charged for this item in the last year, without VAT, after the discounts.": "Sa e ka shitur secili furnitor këtë artikull në vitin e fundit, pa TVSH, pas rabateve.",
   "e.g. near the expiry date, as agreed with the supplier": "p.sh. afër afatit të skadimit, sipas marrëveshjes me furnitorin",
   "{qty} available": "{qty} në dispozicion",
+  "Category / sub-category": "Kategoria/Nënkategoria",
+  "Categories / sub-categories": "Kategoritë/Nënkategoritë",
+  "pick from the list": "zgjidh nga lista",
+  "{n} chosen": "{n} të zgjedhura",
 } satisfies Dict

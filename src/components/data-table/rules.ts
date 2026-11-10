@@ -14,7 +14,8 @@ export type Op =
 export interface Rule { col: string; op: Op; value?: string; value2?: string; values?: string[] }
 
 export const OPS: Record<Kind, Op[]> = {
-  text: ['contains', 'not_contains', 'equals', 'not_equals', 'starts', 'ends', 'in', 'empty', 'not_empty'],
+  // picking from the list of what the column holds comes first; typing a piece of text second
+  text: ['in', 'contains', 'not_contains', 'empty', 'not_empty'],
   number: ['eq', 'ne', 'gt', 'ge', 'lt', 'le', 'between', 'empty', 'not_empty'],
   date: ['today', 'yesterday', 'this_week', 'this_month', 'last_month', 'this_year', 'last_days', 'on', 'before', 'after', 'range', 'empty', 'not_empty'],
 }
@@ -22,7 +23,9 @@ export const OPS: Record<Kind, Op[]> = {
 export const NO_VALUE: Op[] = ['empty', 'not_empty', 'today', 'yesterday', 'this_week', 'this_month', 'last_month', 'this_year']
 export const TWO_VALUES: Op[] = ['between', 'range']
 
-export interface Getter { id: string; label: string; raw: (row: unknown) => unknown; text: (row: unknown) => string }
+export interface Getter { id: string; label: string; raw: (row: unknown) => unknown; text: (row: unknown) => string
+  /** a cell holding several values ('Pije - Alkolike, Bulmet'): each one on its own in the list to pick from */
+  parts?: (row: unknown) => string[] }
 
 type AnyCol = ColumnDef<unknown, unknown> & { accessorKey?: string; accessorFn?: (r: unknown, i: number) => unknown; columns?: AnyCol[] }
 const dig = (row: unknown, key: string) => key.split('.').reduce<unknown>((o, k) => (o == null ? o : (o as Record<string, unknown>)[k]), row)
@@ -37,10 +40,9 @@ export function gettersOf(columns: ColumnDef<never, unknown>[], labelOf: (id: st
     const raw = c.accessorFn ? (r: unknown) => c.accessorFn!(r, 0) : c.accessorKey ? (r: unknown) => dig(r, c.accessorKey!) : null
     if (!raw) return
     const shown = c.meta?.exportValue as ((r: unknown) => unknown) | undefined
-    out.push({
-      id, label: labelOf(id) || id, raw,
-      text: (r) => { const v = shown ? shown(r) : raw(r); return v == null ? '' : typeof v === 'object' ? '' : String(v) },
-    })
+    const text = (r: unknown) => { const v = shown ? shown(r) : raw(r); return v == null ? '' : typeof v === 'object' ? '' : String(v) }
+    const sep = c.meta?.listSep
+    out.push({ id, label: labelOf(id) || id, raw, text, parts: sep ? (r) => text(r).split(sep).map((x) => x.trim()).filter(Boolean) : undefined })
   })
   walk(columns as unknown as AnyCol[])
   return out
@@ -127,7 +129,11 @@ export function test(rule: Rule, g: Getter, kind: Kind, row: unknown): boolean {
     return !!d && d >= span[0] && d <= span[1]
   }
   const text = normalize(g.text(row)), want = normalize(rule.value)
-  if (rule.op === 'in') return !rule.values?.length || rule.values.includes(g.text(row))
+  if (rule.op === 'in') {
+    if (!rule.values?.length) return true
+    if (g.parts) { const have = g.parts(row); return have.length ? rule.values.some((v) => have.includes(v)) : rule.values.includes('') }
+    return rule.values.includes(g.text(row))
+  }
   if (!want) return true
   switch (rule.op) {
     case 'contains': return text.includes(want)
