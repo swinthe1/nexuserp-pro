@@ -17,7 +17,7 @@ import { ErrorState } from '@/components/error-state'
 import { formatDateWith, getLocale, t, tn, tServer } from '@/i18n'
 import { cn, formatDate, formatMoney, num } from '@/lib/utils'
 import { type BookRow, type LayoutCol, layoutLabel, monthLabel, monthRange, previousMonth, useCompanyTaxProfile, useVatBook, useVatLayout } from '../api'
-import { atkHead, atkLayout, atkValues, exportAtkBook } from '../atk-book-xlsx'
+import { atkDate, atkHead, atkLayout, atkValues, exportAtkBook, plain } from '../atk-book-xlsx'
 import { MonthPicker } from '../components/tax-ui'
 
 export function VatBooksPage() {
@@ -85,8 +85,9 @@ export function VatBooksPage() {
   // in them this period (as on the screen), so the book fits an A4 page
   const bookCols = (which: LayoutCol[], paper: boolean): XlsxColumn<BookRow>[] => [
     { header: t('No.|register'), value: (r) => r.line_no, format: 'int', width: 5 },
-    { header: t('Date'), value: (r) => (paper ? formatDateWith(new Date(`${r.doc_date}T12:00:00`), { day: '2-digit', month: '2-digit', year: 'numeric' }) : formatDate(r.doc_date)), width: 11 },
-    { header: t('Number'), value: (r) => tServer(r.number) },
+    // in the Excel file the date is plain text, 01.10.2026, and the number has no signs ATK's upload does not know
+    { header: t('Date'), value: (r) => (paper ? formatDateWith(new Date(`${r.doc_date}T12:00:00`), { day: '2-digit', month: '2-digit', year: 'numeric' }) : atkDate(r.doc_date)), format: 'text', width: 12 },
+    { header: t('Number'), value: (r) => (paper ? tServer(r.number) : plain(tServer(r.number))) },
     // the sales book's note ("40 kuponë") stays on the paper; the Excel file goes without it (the owner's decision)
     ...(book === 'sales' && !paper ? [] : [{ header: book === 'sales' ? t('Note') : t('Vendor invoice / DUD'), value: (r: BookRow) => (r.ref ? tServer(r.ref) : r.ref) }]),
     ...(showFiscal ? [{ header: xk ? t('Fiscal code') : t('NIVF'), value: (r: BookRow) => r.fiscal_code, format: 'text' as const }] : []),

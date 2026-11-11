@@ -90,8 +90,10 @@ export function atkValues(L: { cols: AtkCol[] }, row: BookRow): number[] {
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 const colName = (i: number) => { let s = ''; i += 1; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26) } return s }
 const r2 = (n: number) => Math.round(n * 100) / 100
-/** the day as Excel counts it */
-const serial = (iso: string) => Math.round(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) / 86400000) + 25569
+/** the date as text, 01.10.2026: ATK's upload does not take a date cell (the owner's finding, 11.11.2026) */
+export const atkDate = (iso: string) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}`
+/** text ATK's upload reads: the signs it does not know (· • – — … and the like) become plain ones; letters such as ë and ç stay */
+export const plain = (v: string) => v.replace(/\s*[·•]\s*/g, ' - ').replace(/[–—]/g, '-').replace(/…/g, '...').replace(/[“”„]/g, '"').replace(/[‘’]/g, "'").replace(/\u00a0/g, ' ')
 
 export async function exportAtkBook(book: 'sales' | 'purchase', rows: BookRow[], filename: string, number: (r: BookRow) => string, partner: (r: BookRow) => string, taxNo: (r: BookRow) => string | null) {
   const { zipSync, strToU8 } = await import('fflate')
@@ -120,7 +122,7 @@ export async function exportAtkBook(book: 'sales' | 'purchase', rows: BookRow[],
   out.push(`<row r="3">${[txt('A3', 'Numri i kutisë në Deklaratën e TVSH-së', 3), ...['B', 'C', 'D', 'E', 'F'].map((c) => blank(`${c}3`, 3)), ...L.cols.map((c, i) => txt(`${colName(first + i)}3`, c.box ?? '', 3))].join('')}</row>`)
   rows.forEach((row, n) => {
     const r = n + 4
-    const cells = [`<c r="A${r}" s="7"><v>${n + 1}</v></c>`, `<c r="B${r}" s="5"><v>${serial(row.doc_date)}</v></c>`, txt(`C${r}`, number(row), 6), txt(`D${r}`, partner(row), 6),
+    const cells = [`<c r="A${r}" s="7"><v>${n + 1}</v></c>`, txt(`B${r}`, atkDate(row.doc_date), 6), txt(`C${r}`, plain(number(row)), 6), txt(`D${r}`, plain(partner(row)), 6),
       taxNo(row) ? txt(`E${r}`, taxNo(row)!, 6) : blank(`E${r}`, 6), blank(`F${r}`, 6)]
     const val = atkValues(L, row)
     L.cols.forEach((c, i) => {

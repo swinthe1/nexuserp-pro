@@ -1,5 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { useActiveHref, useMenuSections } from '@/components/layout/sidebar'
+import { hubOf } from '@/components/layout/hubs'
 import { t } from '@/i18n'
 import { cn } from '@/lib/utils'
 
@@ -14,13 +15,14 @@ export function SectionTabs() {
   if (!activeHref) return null
   const section = sections.find((s) => s.items.some((i) => i.href === activeHref))
   const item = section?.items.find((i) => i.href === activeHref)
-  if (!section || !item?.hub) return null
+  const hub = item ? hubOf(item) : undefined
+  if (!section || !item || !hub) return null
   const own = [item.href, ...(item.match ?? [])].map((h) => h.split('?')[0])
   if (!own.includes(pathname)) return null
-  const tabs = section.items.filter((i) => i.hub === item.hub)
+  const tabs = section.items.filter((i) => hubOf(i) === hub)
   if (tabs.length < 2) return null
   return (
-    <nav aria-label={t(item.hub)} className="-mt-1 mb-3 border-b print:hidden">
+    <nav aria-label={t(hub)} className="-mt-1 mb-3 border-b print:hidden">
       {/* folder tabs: each one apart, the open page raised with a coloured top edge; many go onto a second row */}
       <div className="flex flex-wrap items-end gap-1">
         {tabs.map((i) => {
