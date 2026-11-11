@@ -70,8 +70,9 @@ export function ItemCardView({ variantId }: { variantId: string }) {
           <Select value={wh} onValueChange={setWh}><SelectTrigger className="w-56" aria-label={t('Warehouse')}><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="all">{t('All warehouses')}</SelectItem>{(warehouses.data ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{td(w.name)}</SelectItem>)}</SelectContent></Select></div>
         <div className="grid gap-1.5"><Label>{t('Supplier')}</Label>
-          <Select value={vendor} onValueChange={setVendor} disabled={!vendors.length}><SelectTrigger className="w-60" aria-label={t('Supplier')}><SelectValue /></SelectTrigger>
-            <SelectContent><SelectItem value="all">{t('All suppliers')}</SelectItem>{vendors.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent></Select></div>
+          <SearchSelect value={vendor === 'all' ? null : vendor} onChange={(v) => setVendor(v ?? 'all')} disabled={!vendors.length} clearable
+            className="w-60" aria-label={t('Supplier')} placeholder={t('All suppliers')} searchPlaceholder={t('Search supplier by name…')}
+            options={vendors.map((v) => ({ value: v, label: v }))} /></div>
         <div className="grid gap-1.5"><Label htmlFor="ic-from">{t('From')}</Label><Input id="ic-from" type="date" className="w-40" value={from} onChange={(e) => e.target.value && setFrom(e.target.value)} /></div>
         <div className="grid gap-1.5"><Label htmlFor="ic-to">{t('To')}</Label><Input id="ic-to" type="date" className="w-40" value={to} onChange={(e) => e.target.value && setTo(e.target.value)} /></div>
         <div className="ml-auto"><StatementActions disabled={!c} build={async () => itemCardStatement(c ?? await fetchItemCard(variantId, wh === 'all' ? null : wh, from, to))} /></div>

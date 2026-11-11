@@ -24,6 +24,7 @@ export const SearchSelect = React.forwardRef<HTMLButtonElement, {
   /** more results searched elsewhere as the person types (e.g. the business register); shown under their own heading */
   remote?: { heading: string; search: (query: string) => Promise<SearchOption[]>; onSelect: (option: SearchOption) => void }
   'aria-invalid'?: boolean
+  'aria-label'?: string
   id?: string
 }>(function SearchSelect({ value, onChange, options, placeholder, searchPlaceholder, emptyText, disabled, clearable, className, onUnmatchedEnter, remote, ...rest }, ref) {
   const [open, setOpen] = React.useState(false)

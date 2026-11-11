@@ -2044,4 +2044,5 @@ export default {
   "Total value (with VAT)": "Vlera totale (me TVSH)",
   "All suppliers": "Të gjithë furnitorët",
   "Total from {name}": "Gjithsej nga {name}",
+  "Search supplier by name…": "Kërko furnitorin me emër…",
 } satisfies Dict
