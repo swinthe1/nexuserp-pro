@@ -415,7 +415,7 @@ export default {
   "Payments|menu": "Pagesat",
   "Receivables|menu": "Të arkëtueshmet (klientët)",
   "Payables|menu": "Të pagueshmet (furnitorët)",
-  "Partner cards|menu": "Kartelat e partnerëve",
+  "Partner cards|menu": "Kartela e Partnerëve",
   "Tax codes|menu": "Normat e TVSH",
   "Journal entries|menu": "Regjistrimet kontabël",
   "Fixed assets|menu": "Mjetet themelore",
