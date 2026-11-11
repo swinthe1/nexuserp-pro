@@ -20,7 +20,7 @@ let recorder: Recorder | null = null
 let pendingRows: number | null = null
 export function setExportRecorder(fn: Recorder | null) { recorder = fn }
 
-function download(blob: Blob, filename: string) {
+export function download(blob: Blob, filename: string) {
   try { recorder?.(blob, filename, pendingRows) } catch { /* the copy is a convenience */ }
   pendingRows = null
   const url = URL.createObjectURL(blob)

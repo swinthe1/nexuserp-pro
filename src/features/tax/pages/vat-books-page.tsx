@@ -17,6 +17,7 @@ import { ErrorState } from '@/components/error-state'
 import { formatDateWith, getLocale, t, tn, tServer } from '@/i18n'
 import { cn, formatDate, formatMoney, num } from '@/lib/utils'
 import { type BookRow, type LayoutCol, layoutLabel, monthLabel, monthRange, previousMonth, useCompanyTaxProfile, useVatBook, useVatLayout } from '../api'
+import { exportAtkBook } from '../atk-book-xlsx'
 import { MonthPicker } from '../components/tax-ui'
 
 export function VatBooksPage() {
@@ -97,6 +98,10 @@ export function VatBooksPage() {
           <Button variant="outline" size="sm" disabled={!rows.length} onClick={() => printTable({ title, subtitle: `${profile.data?.legal_name ?? profile.data?.name ?? company?.name ?? ''} · ${taxLabel} ${profile.data?.tax_number ?? '—'} · ${periodText}`,
             columns: paperCols.map((c) => ({ header: c.header, format: c.format === 'money' ? 'money' : c.format === 'int' ? 'int' : 'text', nowrap: nowrapCols.has(c.header) })),
             rows: rows.map((r) => paperCols.map((c) => c.value(r))), totals: paperCols.map((c) => exportTotals[c.header] ?? null) })}><Printer /> {t('Print')}</Button>
+          {/* the file as ATK's own sample: its headings, its boxes, its formulas */}
+          {xk && <Button variant="outline" size="sm" disabled={!rows.length} title={t('The Excel file in the layout of ATK’s sample book')}
+            onClick={() => void exportAtkBook(book, rows, `${book === 'sales' ? t('sales-book|file') : t('purchase-book|file')}-${ym}`,
+              (r) => (book === 'purchase' && r.ref ? tServer(r.ref) : tServer(r.number)), (r) => tServer(r.partner))}><FileSpreadsheet /> {t('Excel, ATK layout')}</Button>}
           <ExportMenu rows={rows} columns={exportCols} pdfColumns={paperCols} filename={`${book === 'sales' ? t('sales-book|file') : t('purchase-book|file')}-${ym}`} title={title}
             subtitle={`${profile.data?.legal_name ?? profile.data?.name ?? company?.name ?? ''} · ${taxLabel} ${profile.data?.tax_number ?? '—'} · ${periodText}`}
             xlsx={{ title: [profile.data?.legal_name ?? profile.data?.name ?? '', `${taxLabel} ${profile.data?.tax_number ?? '—'}`, `${title} · ${periodText}`], totals: exportTotals }} />

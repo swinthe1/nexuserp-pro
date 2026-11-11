@@ -1992,4 +1992,7 @@ export default {
   "Free-text line": "Rresht me tekst të lirë",
   "A line of free text, with no item: a service, a note": "Një rresht me tekst të lirë, pa artikull: një shërbim, një shënim",
   "The price of an item fills in by itself: the price agreed with this customer, then their price list, then the item’s own price. You can always type another.": "Çmimi i artikullit plotësohet vetë: çmimi i rënë dakord me këtë klient, pastaj lista e tij e çmimeve, pastaj çmimi i vetë artikullit. Gjithmonë mund të shkruani një tjetër.",
+  "Excel, ATK layout": "Excel, formati i ATK-së",
+  "The Excel file in the layout of ATK’s sample book": "Skedari Excel në formatin e librit mostër të ATK-së",
+  "The Excel file in ATK’s template for declaring wages": "Skedari Excel në shabllonin e ATK-së për deklarimin e pagave",
 } satisfies Dict
