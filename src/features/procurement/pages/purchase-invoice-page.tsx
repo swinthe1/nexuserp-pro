@@ -31,7 +31,7 @@ import { findOffline, searchOffline, useScanCatalog, itemOffline } from '@/lib/o
 import { packForScan, usePacks } from '@/lib/packs'
 import { supabase } from '@/lib/supabase'
 import { useRegistryRemote } from '@/lib/registry'
-import { cn, formatDate, formatMoney, formatQty, num, todayISO } from '@/lib/utils'
+import { cn, formatAmount, formatDate, formatMoney, formatQty, num, todayISO } from '@/lib/utils'
 import { useCurrencies, useWarehouses } from '@/features/inventory/api'
 import { useBankAccounts } from '@/features/finance/api'
 import { usePaymentTerms } from '@/features/sales/api'
@@ -61,6 +61,8 @@ type Row = {
 
 const r2 = (n: number) => Math.round(n * 100) / 100
 const fmt = (n: number, d = 2) => formatMoney(n, undefined, d)
+/** a price as it is kept: 4 decimals */
+const p4 = (n: number) => String(Math.round(n * 10000) / 10000)
 /** the due date from the invoice date and the payment terms */
 const dueFrom = (date: string, days?: number | null) => {
   const d = new Date(`${date}T12:00:00`); d.setDate(d.getDate() + (days ?? 0)); return d.toISOString().slice(0, 10)
@@ -94,14 +96,18 @@ const fullOrder = (saved: string[] | undefined) => {
   return o
 }
 
-/** the purchase price with VAT: shows the price without VAT plus its VAT; a figure typed here is taken back to the price without VAT (4 decimals) */
-function GrossCostInput({ net, rate, onNet, onKeyDown }: { net: string; rate: number; onNet: (net: string) => void; onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void }) {
+/**
+ * A figure of the line that is worked out from the price (the price with VAT, the cost after discounts, the line's value):
+ * it shows what it comes to, and a figure typed into it is handed back so the price without VAT can follow.
+ */
+function WorkedInput({ value, decimals = 2, label, onValue, onKeyDown, className }: {
+  value: number; decimals?: number; label: string; onValue: (v: number) => void; onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void; className?: string }) {
   const [text, setText] = React.useState<string | null>(null)
-  const n = num(String(net).replace(',', '.'))
-  const shown = n > 0 ? String(Math.round(n * (1 + rate / 100) * 10000) / 10000) : ''
-  return <Input data-nav inputMode="decimal" className="h-8 min-w-[70px] text-right tabular-nums" aria-label={t('Purchase price (with VAT)')}
+  const p = 10 ** decimals
+  const shown = value > 0 ? String(Math.round(value * p) / p) : ''
+  return <Input data-nav inputMode="decimal" className={cn('h-8 min-w-[70px] text-right tabular-nums', className)} aria-label={label}
     value={text ?? shown} onFocus={(e) => { setText(shown); e.target.select() }} onBlur={() => setText(null)} onKeyDown={onKeyDown}
-    onChange={(e) => { setText(e.target.value); const g = num(e.target.value.replace(',', '.')); onNet(g > 0 ? String(Math.round(g / (1 + rate / 100) * 10000) / 10000) : '') }} />
+    onChange={(e) => { setText(e.target.value); const v = num(e.target.value.replace(',', '.')); if (v > 0) onValue(v) }} />
 }
 
 function ColumnsMenu({ hidden, onChange, order, onOrder, onReset }: { hidden: Set<string>; onChange: (h: Set<string>) => void; order: string[]; onOrder: (o: string[]) => void; onReset: () => void }) {
@@ -569,10 +575,13 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
                       title={lastChanged ? t('Last time {price}', { price: fmt(num(c.i!.last!.price), 4) }) : undefined}
                       onChange={(e) => upd(c.r.key, { price: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Purchase price (without VAT)')} /></td>,
                       // the same price as the supplier's invoice shows it with VAT: typing here sets the price without VAT
-                      pgross: <td data-col="pgross" className="px-1 py-1"><GrossCostInput net={c.r.price} rate={taxRate(c.r.tax)} onNet={(v) => upd(c.r.key, { price: v })} onKeyDown={next} /></td>,
+                      pgross: <td data-col="pgross" className="px-1 py-1"><WorkedInput value={c.price * (1 + taxRate(c.r.tax) / 100)} decimals={4} label={t('Purchase price (with VAT)')} onKeyDown={next}
+                        onValue={(v) => upd(c.r.key, { price: p4(v / (1 + taxRate(c.r.tax) / 100)) })} /></td>,
                       d1: <td data-col="d1" className="px-1 py-1"><Input data-nav inputMode="decimal" className="h-8 min-w-[42px] text-right tabular-nums" value={c.r.d1} placeholder="0" onChange={(e) => upd(c.r.key, { d1: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Disc. %')} /></td>,
                       d2: <td data-col="d2" className="px-1 py-1"><Input data-nav inputMode="decimal" className="h-8 min-w-[42px] text-right tabular-nums" value={c.r.d2} placeholder="0" onChange={(e) => upd(c.r.key, { d2: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Extra %')} /></td>,
-                      cost: <td data-col="cost" className="px-2 py-2 text-right tabular-nums">{fmt(c.unit, 4)}</td>,
+                      // the cost after the discounts, the line without VAT and with VAT: typed by hand, the price without VAT follows
+                      cost: <td data-col="cost" className="px-1 py-1"><WorkedInput value={c.unit} decimals={4} label={t('Cost (without VAT)')} onKeyDown={next}
+                        onValue={(v) => c.disc < 100 && upd(c.r.key, { price: p4(v / (1 - c.disc / 100)) })} /></td>,
                       avg: <td data-col="avg" className={cn('px-2 py-2 text-right tabular-nums text-muted-foreground', c.i && c.i.avg_cost > 0 && c.costBase > c.i.avg_cost * 1.05 && 'text-amber-700 dark:text-amber-400')}>{c.i ? fmt(num(c.i.avg_cost), 4) : '…'}</td>,
                       vat: <td data-col="vat" className="px-1 py-1">
                       <Select value={c.r.tax ?? ''} onValueChange={(v) => upd(c.r.key, { tax: v })}>
@@ -580,8 +589,10 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
                         <SelectContent>{(taxes.data ?? []).filter((x) => x.is_active !== false).map((x) => <SelectItem key={x.id} value={x.id}>{td(x.name)}</SelectItem>)}</SelectContent>
                       </Select>
                     </td>,
-                      net: <td data-col="net" className="px-2 py-2 text-right tabular-nums">{fmt(c.net)}</td>,
-                      gross: <td data-col="gross" className="px-2 py-2 text-right tabular-nums">{fmt(c.net + c.vat)}</td>,
+                      net: <td data-col="net" className="px-1 py-1"><WorkedInput value={c.net} label={t('Without VAT')} onKeyDown={next}
+                        onValue={(v) => c.qty > 0 && c.disc < 100 && upd(c.r.key, { price: p4(v / c.qty / (1 - c.disc / 100)) })} /></td>,
+                      gross: <td data-col="gross" className="px-1 py-1"><WorkedInput value={c.net + c.vat} label={t('With VAT')} onKeyDown={next}
+                        onValue={(v) => c.qty > 0 && c.disc < 100 && upd(c.r.key, { price: p4(v / (1 + taxRate(c.r.tax) / 100) / c.qty / (1 - c.disc / 100)) })} /></td>,
                       cur: <td data-col="cur" className="px-2 py-2 text-right tabular-nums text-muted-foreground">{c.curGross == null ? '…' : fmt(c.curGross)}</td>,
                       rec: <td data-col="rec" className="px-1 py-1 text-right">
                       {c.rec ? (
@@ -590,9 +601,9 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
                           onClick={() => upd(c.r.key, { gross: String(c.rec!.gross), m: null })}>
                           <span className={cn('block tabular-nums', c.rec.from !== 'current' && 'font-medium text-primary')}>{fmt(c.rec.gross)}</span>
                           <span className="block text-[10.5px] leading-tight text-muted-foreground">
-                            {c.rec.from === 'item' ? t('item target {pct}%', { pct: fmt(num(c.rec.pct), 0) })
-                              : c.rec.from === 'category' ? t('{category} {pct}%', { category: c.i?.category ?? '', pct: fmt(num(c.rec.pct), 0) })
-                              : c.rec.from === 'keep' ? t('same margin {pct}%', { pct: fmt(num(c.rec.pct), 1) })
+                            {c.rec.from === 'item' ? t('item target {pct}%', { pct: formatAmount(num(c.rec.pct), 0) })
+                              : c.rec.from === 'category' ? t('{category} {pct}%', { category: c.i?.category ?? '', pct: formatAmount(num(c.rec.pct), 0) })
+                              : c.rec.from === 'keep' ? t('same margin {pct}%', { pct: formatAmount(num(c.rec.pct), 1) })
                               : t('keep the price')}
                           </span>
                         </button>
@@ -603,7 +614,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
                       margin: <td data-col="margin" className="px-1 py-1">
                       <Input data-nav inputMode="decimal" aria-label={t('Margin %')} disabled={!c.i || c.costBase <= 0}
                         className={cn('h-8 min-w-[52px] text-right tabular-nums', c.markup != null && c.markup < 0 ? 'font-medium text-destructive' : c.markup != null && c.markup < 5 ? 'text-amber-700 dark:text-amber-400' : '')}
-                        value={c.r.m ?? (c.markup == null ? '' : fmt(c.markup))}
+                        value={c.r.m ?? (c.markup == null ? '' : formatAmount(c.markup))}
                         onChange={(e) => upd(c.r.key, { m: e.target.value, ...(c.i && c.costBase > 0 && e.target.value.trim() !== '' && e.target.value.trim() !== '-'
                           ? { gross: String(priceFor(c.costBase, num(e.target.value.replace(',', '.')), basis, c.i.sales_tax, step)) } : {}) })}
                         onBlur={() => upd(c.r.key, { m: null })} onKeyDown={next} onFocus={(e) => e.target.select()} />
@@ -639,7 +650,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
             <div className="flex justify-between"><dt className="text-muted-foreground">{t('Selling value without VAT')}</dt><dd className="tabular-nums">{formatMoney(tot.sale, base)}</dd></div>
             <div className="flex justify-between"><dt className="text-muted-foreground">{t('Cost of the goods (without VAT)')}</dt><dd className="tabular-nums">{formatMoney(tot.cost, base)}</dd></div>
             <div className="flex justify-between font-medium"><dt>{t('Difference (margin, without VAT)')}</dt>
-              <dd className={cn('tabular-nums', tot.sale - tot.cost < 0 && 'text-destructive')}>{formatMoney(tot.sale - tot.cost, base)}{tot.cost > 0 && tot.sale > 0 && ` · ${fmt(marginOf(tot.sale, tot.cost, basis) ?? 0)} %`}</dd></div>
+              <dd className={cn('tabular-nums', tot.sale - tot.cost < 0 && 'text-destructive')}>{formatMoney(tot.sale - tot.cost, base)}{tot.cost > 0 && tot.sale > 0 && ` · ${formatAmount(marginOf(tot.sale, tot.cost, basis) ?? 0)} %`}</dd></div>
           </dl>
           <dl className="grid content-start gap-1 text-sm md:ml-auto md:w-80">
             <div className="flex justify-between"><dt className="text-muted-foreground">{t('Before discount (without VAT)')}</dt><dd className="tabular-nums">{fmt(tot.gross)}</dd></div>
