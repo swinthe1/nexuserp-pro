@@ -6,7 +6,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Can } from '@/app/company-provider'
 import { StatCard } from '@/components/stat-card'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState } from '@/components/empty-state'
 import { ErrorState } from '@/components/error-state'
 import { PageHeader } from '@/components/page-header'
@@ -35,8 +35,8 @@ const SHOW_HREF: Record<Show, string> = { all: '/finance/cards', ar: '/finance/r
 
 /**
  * Finance › Partner cards: the debts and the cards in one place (the owner's decision, 11.11.2026).
- * Three buttons: all the cards (what is to collect and what is to pay as two windows side by side, and the net of the two
- * for a partner who is both a customer and a supplier), only the receivables, only the payables. One partner can be chosen
+ * Three buttons: all the cards (every partner on one row: what is to collect, what is to pay and the difference of the two,
+ * which matters for a partner who is both a customer and a supplier), only the receivables, only the payables. One partner can be chosen
  * at any time: everything then narrows to that partner, and their card opens underneath.
  */
 export function CardsPage({ show = 'all' }: { show?: Show }) {
@@ -56,11 +56,15 @@ export function CardsPage({ show = 'all' }: { show?: Show }) {
   const apRows = React.useMemo(() => only(ap.data).sort((a, b) => num(b.total) - num(a.total)), [ap.data, id]) // eslint-disable-line react-hooks/exhaustive-deps
   const arTotal = arRows.reduce((s, r) => s + num(r.total), 0), apTotal = apRows.reduce((s, r) => s + num(r.total), 0)
   const net = arTotal - apTotal
-  const apBy = React.useMemo(() => new Map((ap.data ?? []).map((r) => [r.partner_id, num(r.total)])), [ap.data])
-  const arBy = React.useMemo(() => new Map((ar.data ?? []).map((r) => [r.partner_id, num(r.total)])), [ar.data])
-  // a partner on both sides: we sell to them and buy from them
-  const both = React.useMemo(() => arRows.filter((r) => apBy.has(r.partner_id)).map((r) => ({ id: r.partner_id, name: r.partner_name, ar: num(r.total), ap: apBy.get(r.partner_id) ?? 0 }))
-    .sort((a, b) => Math.abs(b.ar - b.ap) - Math.abs(a.ar - a.ap)), [arRows, apBy])
+  // one row a partner: what they owe us, what we owe them, and the difference of the two
+  const merged = React.useMemo(() => {
+    const late = (r: AgingRow) => num(r.d1_30) + num(r.d31_60) + num(r.d61_90) + num(r.d90_plus)
+    const m = new Map<string, DebtRow>()
+    const row = (r: AgingRow) => m.get(r.partner_id) ?? { id: r.partner_id, name: r.partner_name, ar: 0, arLate: 0, ap: 0, apLate: 0, oldest: null as string | null }
+    for (const r of arRows) { const x = row(r); x.ar = num(r.total); x.arLate = late(r); x.oldest = r.oldest_due; m.set(r.partner_id, x) }
+    for (const r of apRows) { const x = row(r); x.ap = num(r.total); x.apLate = late(r); if (r.oldest_due && (!x.oldest || r.oldest_due < x.oldest)) x.oldest = r.oldest_due; m.set(r.partner_id, x) }
+    return [...m.values()].sort((a, b) => Math.abs(b.ar - b.ap) - Math.abs(a.ar - a.ap))
+  }, [arRows, apRows])
   const loading = ar.isLoading || ap.isLoading
   return (
     <>
@@ -87,7 +91,7 @@ export function CardsPage({ show = 'all' }: { show?: Show }) {
         </div>
         {show === 'all' && !id && (
           <button type="button" className="ml-auto text-[13px] text-primary hover:underline" onClick={() => setBalances(!balances)}>
-            {balances ? t('Back to the two windows') : t('Balances of all, by group')}</button>
+            {balances ? t('Back to all the cards') : t('Balances of all, by group')}</button>
         )}
       </div>
 
@@ -102,32 +106,7 @@ export function CardsPage({ show = 'all' }: { show?: Show }) {
       </div>
 
       {balances ? <BalancesView onOpen={(pid) => pick(pid)} /> : show === 'ar' ? <AgingBody kind="ar" asOf={asOf} partnerId={id} /> : show === 'ap' ? <AgingBody kind="ap" asOf={asOf} partnerId={id} /> : (
-        <div className="grid gap-4">
-          <div className="grid items-start gap-4 lg:grid-cols-2">
-            <DebtWindow kind="ar" rows={arRows} other={apBy} total={arTotal} asOf={asOf} loading={ar.isLoading} error={ar.error} onPick={pick} chosen={id} />
-            <DebtWindow kind="ap" rows={apRows} other={arBy} total={apTotal} asOf={asOf} loading={ap.isLoading} error={ap.error} onPick={pick} chosen={id} />
-          </div>
-          {!id && both.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2"><CardTitle>{t('Customers who are also suppliers')}</CardTitle>
-                <CardDescription>{t('You sell to them and buy from them: what is left when one debt is set against the other.')}</CardDescription></CardHeader>
-              <CardContent className="overflow-x-auto p-0">
-                <Table>
-                  <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{t('Partner')}</TableHead><TableHead className="text-right">{t('To collect (with VAT)')}</TableHead>
-                    <TableHead className="text-right">{t('To pay (with VAT)')}</TableHead><TableHead className="text-right">{t('Net')}</TableHead><TableHead /></TableRow></TableHeader>
-                  <TableBody>{both.map((b) => (
-                    <TableRow key={b.id} className="cursor-pointer" onClick={() => pick(b.id)}>
-                      <TableCell className="font-medium">{b.name}</TableCell>
-                      <TableCell className="text-right tabular">{formatMoney(b.ar)}</TableCell><TableCell className="text-right tabular">{formatMoney(b.ap)}</TableCell>
-                      <TableCell className={cn('text-right tabular font-semibold', b.ar - b.ap < 0 && 'text-warning')}>{formatMoney(Math.abs(b.ar - b.ap))}</TableCell>
-                      <TableCell className="whitespace-nowrap text-[12.5px] text-muted-foreground">{b.ar - b.ap >= 0 ? t('they owe us') : t('we owe them')}</TableCell>
-                    </TableRow>
-                  ))}</TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+        <DebtTable rows={merged} asOf={asOf} loading={loading} error={ar.error ?? ap.error} onPick={pick} chosen={id} />
       )}
 
       {/* one partner chosen: their card underneath, whichever button is on */}
@@ -146,38 +125,48 @@ export function CardsPage({ show = 'all' }: { show?: Show }) {
 export const ReceivablesPage = () => <CardsPage show="ar" />
 export const PayablesPage = () => <CardsPage show="ap" />
 
-/** one window of the two: who owes (or is owed), how much of it is late, the total */
-function DebtWindow({ kind, rows, other, total, asOf, loading, error, onPick, chosen }: {
-  kind: 'ar' | 'ap'; rows: AgingRow[]; other: Map<string, number>; total: number; asOf: string; loading: boolean; error: unknown; onPick: (id: string) => void; chosen: string | null }) {
-  const isAR = kind === 'ar'
-  const late = (r: AgingRow) => num(r.d1_30) + num(r.d31_60) + num(r.d61_90) + num(r.d90_plus)
-  const lateTotal = rows.reduce((s, r) => s + late(r), 0)
+type DebtRow = { id: string; name: string; ar: number; arLate: number; ap: number; apLate: number; oldest: string | null }
+
+/** every partner on one row: to collect, to pay, and the difference (the owner's decision: both sides in one row) */
+function DebtTable({ rows, asOf, loading, error, onPick, chosen }: { rows: DebtRow[]; asOf: string; loading: boolean; error: unknown; onPick: (id: string) => void; chosen: string | null }) {
+  const sum = (k: 'ar' | 'arLate' | 'ap' | 'apLate') => rows.reduce((s, r) => s + r[k], 0)
+  const net = sum('ar') - sum('ap')
+  const money = (v: number, late = false) => <span className={cn(!v && 'text-muted-foreground/50', late && v > 0 && 'text-destructive')}>{v ? formatMoney(v) : '—'}</span>
+  const diff = (d: number, one = true) => <><span className={cn('font-semibold', d < 0 && 'text-warning')}>{formatMoney(Math.abs(d))}</span>
+    {Math.abs(d) > 0.004 && <span className="ml-2 text-[12px] font-normal text-muted-foreground">{one ? (d >= 0 ? t('owes us|one') : t('we owe|one')) : d >= 0 ? t('they owe us') : t('we owe them')}</span>}</>
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="flex-row items-baseline justify-between gap-3 space-y-0 border-b bg-muted/40 py-3">
-        <div><CardTitle>{isAR ? t('Receivable|cards') : t('Payable|cards')}</CardTitle>
-          <CardDescription>{isAR ? t('What customers owe you') : t('What you owe suppliers')}</CardDescription></div>
-        <span className="text-lg font-semibold tabular">{formatMoney(total)}</span>
-      </CardHeader>
       <CardContent className="overflow-x-auto p-0">
         {loading ? <Skeleton className="m-4 h-40" /> : error ? <ErrorState compact error={error} /> : !rows.length ? (
-          <EmptyState compact title={isAR ? t('No customer owes you anything') : t('Nothing to pay')} description={isAR ? t('On {date} every invoice is paid.', { date: formatDate(asOf) }) : t('On {date} every vendor bill is paid.', { date: formatDate(asOf) })} />
+          <EmptyState compact title={t('No open debts')} description={t('On {date} nobody owes you and you owe nobody.', { date: formatDate(asOf) })} />
         ) : (
           <Table>
-            <TableHeader><TableRow className="hover:bg-transparent"><TableHead>{isAR ? t('Customer') : t('Vendor')}</TableHead><TableHead className="text-right">{t('Late')}</TableHead>
-              <TableHead className="text-right">{t('Total with VAT')}</TableHead><TableHead>{t('Oldest due date')}</TableHead></TableRow></TableHeader>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead rowSpan={2} className="align-bottom">{t('Partner')}</TableHead>
+                <TableHead colSpan={2} className="border-b text-center font-semibold text-foreground">{t('Receivable|cards')}</TableHead>
+                <TableHead colSpan={2} className="border-b text-center font-semibold text-foreground">{t('Payable|cards')}</TableHead>
+                <TableHead rowSpan={2} className="bg-muted/40 text-right align-bottom font-semibold text-foreground">{t('Difference|debts')}</TableHead>
+                <TableHead rowSpan={2} className="align-bottom">{t('Oldest due date')}</TableHead>
+              </TableRow>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="text-right">{t('Total with VAT')}</TableHead><TableHead className="text-right">{t('Late')}</TableHead>
+                <TableHead className="text-right">{t('Total with VAT')}</TableHead><TableHead className="text-right">{t('Late')}</TableHead>
+              </TableRow>
+            </TableHeader>
             <TableBody>{rows.map((r) => (
-              <TableRow key={r.partner_id} className={cn('cursor-pointer', chosen === r.partner_id && 'bg-primary/5')} onClick={() => onPick(r.partner_id)}>
-                <TableCell><span className="font-medium">{r.partner_name}</span>
-                  {other.has(r.partner_id) && <span className="ml-2 whitespace-nowrap rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">
-                    {isAR ? t('also a supplier: we owe {amount}', { amount: formatMoney(other.get(r.partner_id)) }) : t('also a customer: owes us {amount}', { amount: formatMoney(other.get(r.partner_id)) })}</span>}</TableCell>
-                <TableCell className={cn('text-right tabular', late(r) > 0 ? 'text-destructive' : 'text-muted-foreground/50')}>{late(r) > 0 ? formatMoney(late(r)) : '—'}</TableCell>
-                <TableCell className="text-right tabular font-medium">{formatMoney(r.total)}</TableCell>
-                <TableCell className={cn('whitespace-nowrap text-[13px]', r.oldest_due && r.oldest_due < asOf && 'text-destructive')}>{formatDate(r.oldest_due)}</TableCell>
+              <TableRow key={r.id} className={cn('cursor-pointer', chosen === r.id && 'bg-primary/5')} onClick={() => onPick(r.id)}>
+                <TableCell className="font-medium">{r.name}</TableCell>
+                <TableCell className="text-right tabular">{money(r.ar)}</TableCell><TableCell className="text-right tabular">{money(r.arLate, true)}</TableCell>
+                <TableCell className="text-right tabular">{money(r.ap)}</TableCell><TableCell className="text-right tabular">{money(r.apLate, true)}</TableCell>
+                <TableCell className="whitespace-nowrap bg-muted/40 text-right tabular">{diff(r.ar - r.ap)}</TableCell>
+                <TableCell className={cn('whitespace-nowrap text-[13px]', r.oldest && r.oldest < asOf && 'text-destructive')}>{formatDate(r.oldest)}</TableCell>
               </TableRow>
             ))}</TableBody>
             <TableFooter><TableRow className="hover:bg-transparent"><TableCell className="font-medium">{t('Total')}</TableCell>
-              <TableCell className="text-right tabular">{lateTotal > 0 ? formatMoney(lateTotal) : '—'}</TableCell><TableCell className="text-right tabular font-semibold">{formatMoney(total)}</TableCell><TableCell /></TableRow></TableFooter>
+              <TableCell className="text-right tabular font-semibold">{formatMoney(sum('ar'))}</TableCell><TableCell className="text-right tabular">{money(sum('arLate'), true)}</TableCell>
+              <TableCell className="text-right tabular font-semibold">{formatMoney(sum('ap'))}</TableCell><TableCell className="text-right tabular">{money(sum('apLate'), true)}</TableCell>
+              <TableCell className="whitespace-nowrap bg-muted/40 text-right tabular">{diff(net, false)}</TableCell><TableCell /></TableRow></TableFooter>
           </Table>
         )}
       </CardContent>

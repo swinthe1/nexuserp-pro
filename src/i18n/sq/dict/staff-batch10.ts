@@ -2020,4 +2020,10 @@ export default {
   "What you owe suppliers": "Çfarë u keni borxh furnitorëve",
   "also a supplier: we owe {amount}": "edhe furnitor: i kemi borxh {amount}",
   "also a customer: owes us {amount}": "edhe klient: na ka borxh {amount}",
+  "Difference|debts": "Diferenca",
+  "No open debts": "Asnjë borxh i hapur",
+  "On {date} nobody owes you and you owe nobody.": "Më {date} askush nuk ju ka borxh dhe ju nuk i keni borxh askujt.",
+  "Back to all the cards": "Kthehu te të gjitha kartelat",
+  "owes us|one": "na ka borxh",
+  "we owe|one": "i kemi borxh",
 } satisfies Dict
