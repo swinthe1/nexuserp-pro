@@ -13,7 +13,7 @@ import { supabase } from '@/lib/supabase'
 import { cn, formatMoney, formatQty, num } from '@/lib/utils'
 import { openAssistant } from '@/features/simple/simple-home'
 
-type Pulse = { currency: string; weekday: number; today: number; receipts: number; week_ago: number; month: number; prev_month: number
+type Pulse = { currency: string; weekday: number; today: number; receipts: number; week_ago: number; month: number; month_tills?: number; prev_month: number
   top: { name: string; amount: number; quantity: number } | null }
 
 /** "last Saturday" as the sentence needs it, Monday = 1 */
@@ -69,6 +69,10 @@ export function SalesPulse() {
           {month != null && <Change pct={month} more={msg('{pct}% more than the same days last month')} less={msg('{pct}% less than the same days last month')}
             same={msg('about the same as the same days last month')} />}
         </p>
+        {/* only when both sell: a shop with tills alone needs no split */}
+        {p.month_tills != null && num(p.month_tills) > 0.005 && num(p.month) - num(p.month_tills) > 0.005 && (
+          <p className="text-[13px]">{t('Of it: tills {tills} · invoices {invoices}', { tills: formatMoney(num(p.month_tills), cur), invoices: formatMoney(num(p.month) - num(p.month_tills), cur) })}</p>
+        )}
         {p.top && <p>{t('Best seller today:')} <b className="font-semibold text-foreground">{p.top.name}</b> · {formatQty(num(p.top.quantity))} · {formatMoney(num(p.top.amount), cur)}</p>}
         <p className="flex flex-wrap items-center gap-x-3 text-[12px]">
           <span>{t('With VAT: the tills, the invoices and every unit.')}</span>

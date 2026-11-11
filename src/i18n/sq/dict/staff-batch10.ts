@@ -1986,4 +1986,5 @@ export default {
   "For hand-written invoices choose the supplier first: the reader then knows what they usually deliver and reads the names far better.": "Për faturat e shkruara me dorë zgjidhni së pari furnitorin: lexuesi atëherë e di çfarë sjell zakonisht ai dhe i lexon emrat shumë më mirë.",
   "Hard to read: check the name and the numbers": "Vështirë për t’u lexuar: kontrolloni emrin dhe numrat",
   "Invoices|read": "Fatura",
+  "Of it: tills {tills} · invoices {invoices}": "Prej tyre: arkat {tills} · faturat e shitjes {invoices}",
 } satisfies Dict
