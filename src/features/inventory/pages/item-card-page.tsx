@@ -55,12 +55,23 @@ export function ItemCardView({ variantId }: { variantId: string }) {
   const [to, setTo] = React.useState(todayISO())
   const q = useQuery({ queryKey: ['item-card', variantId, wh, from, to], staleTime: 0, queryFn: () => fetchItemCard(variantId, wh === 'all' ? null : wh, from, to) })
   const c = q.data
+  // the suppliers this item came from (or went back to) in the period: choosing one leaves only their lines
+  const [vendor, setVendor] = React.useState<string>('all')
+  const vendors = React.useMemo(() => [...new Set((c?.rows ?? []).filter((r) => r.partner && (r.type === 'receipt' || r.type === 'purchase_return')).map((r) => r.partner as string))].sort((a, b) => a.localeCompare(b)), [c])
+  React.useEffect(() => { if (vendor !== 'all' && c && !vendors.includes(vendor)) setVendor('all') }, [vendors, vendor, c])
+  const shown = React.useMemo(() => (c?.rows ?? []).filter((r) => vendor === 'all' || ((r.type === 'receipt' || r.type === 'purchase_return') && r.partner === vendor)), [c, vendor])
+  const filtered = vendor !== 'all'
+  const sumIn = shown.reduce((a, r) => a + Number(r.qty_in || 0), 0), sumOut = shown.reduce((a, r) => a + Number(r.qty_out || 0), 0)
+  const valueIn = shown.reduce((a, r) => a + Number(r.value_in || 0), 0), valueOut = shown.reduce((a, r) => a + Number(r.value_out || 0), 0)
   return (
     <div className="grid gap-3">
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1.5"><Label>{t('Warehouse')}</Label>
           <Select value={wh} onValueChange={setWh}><SelectTrigger className="w-56" aria-label={t('Warehouse')}><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="all">{t('All warehouses')}</SelectItem>{(warehouses.data ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{td(w.name)}</SelectItem>)}</SelectContent></Select></div>
+        <div className="grid gap-1.5"><Label>{t('Supplier')}</Label>
+          <Select value={vendor} onValueChange={setVendor} disabled={!vendors.length}><SelectTrigger className="w-60" aria-label={t('Supplier')}><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value="all">{t('All suppliers')}</SelectItem>{vendors.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent></Select></div>
         <div className="grid gap-1.5"><Label htmlFor="ic-from">{t('From')}</Label><Input id="ic-from" type="date" className="w-40" value={from} onChange={(e) => e.target.value && setFrom(e.target.value)} /></div>
         <div className="grid gap-1.5"><Label htmlFor="ic-to">{t('To')}</Label><Input id="ic-to" type="date" className="w-40" value={to} onChange={(e) => e.target.value && setTo(e.target.value)} /></div>
         <div className="ml-auto"><StatementActions disabled={!c} build={async () => itemCardStatement(c ?? await fetchItemCard(variantId, wh === 'all' ? null : wh, from, to))} /></div>
@@ -74,10 +85,10 @@ export function ItemCardView({ variantId }: { variantId: string }) {
               <TableHead className="text-right">{t('Quantity')}</TableHead><TableHead className="text-right">{t('Value at cost')}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              <TableRow className="bg-muted/40 font-medium"><TableCell>{formatDate(c.from)}</TableCell><TableCell colSpan={6}>{t('Opening balance')}</TableCell>
-                <TableCell className="text-right tabular-nums">{formatQty(c.opening_qty, c.uom)}</TableCell><TableCell className="text-right tabular-nums">{formatMoney(c.opening_value)}</TableCell></TableRow>
-              {c.rows.length === 0 && <TableRow><TableCell colSpan={9} className="py-8 text-center text-muted-foreground">{t('Nothing in this period.')}</TableCell></TableRow>}
-              {c.rows.map((r) => {
+              {!filtered && <TableRow className="bg-muted/40 font-medium"><TableCell>{formatDate(c.from)}</TableCell><TableCell colSpan={6}>{t('Opening balance')}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatQty(c.opening_qty, c.uom)}</TableCell><TableCell className="text-right tabular-nums">{formatMoney(c.opening_value)}</TableCell></TableRow>}
+              {shown.length === 0 && <TableRow><TableCell colSpan={9} className="py-8 text-center text-muted-foreground">{t('Nothing in this period.')}</TableCell></TableRow>}
+              {shown.map((r) => {
                 const href = r.source_type && r.source_id && HREF[r.source_type] ? HREF[r.source_type] + r.source_id : null
                 return (
                   <TableRow key={r.id}>
@@ -94,11 +105,23 @@ export function ItemCardView({ variantId }: { variantId: string }) {
                 )
               })}
             </TableBody>
-            <TableFooter><TableRow>
-              <TableCell colSpan={7}>{t('Closing balance')} · {formatDate(c.to)}</TableCell>
-              <TableCell className="text-right tabular-nums">{formatQty(c.closing_qty, c.uom)}</TableCell>
-              <TableCell className="text-right tabular-nums">{formatMoney(c.closing_value, c.currency)}</TableCell>
-            </TableRow></TableFooter>
+            <TableFooter>{filtered ? (
+              // one supplier: what came in from them and what went back, in quantity and at cost
+              <TableRow>
+                <TableCell colSpan={4}>{t('Total from {name}', { name: vendor })}</TableCell>
+                <TableCell className="text-right tabular-nums">{sumIn ? formatQty(sumIn, c.uom) : ''}</TableCell>
+                <TableCell className="text-right tabular-nums">{sumOut ? formatQty(sumOut, c.uom) : ''}</TableCell>
+                <TableCell />
+                <TableCell className="text-right tabular-nums">{formatQty(sumIn - sumOut, c.uom)}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatMoney(valueIn - valueOut, c.currency)}</TableCell>
+              </TableRow>
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7}>{t('Closing balance')} · {formatDate(c.to)}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatQty(c.closing_qty, c.uom)}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatMoney(c.closing_value, c.currency)}</TableCell>
+              </TableRow>
+            )}</TableFooter>
           </Table>
         </div>
       )}

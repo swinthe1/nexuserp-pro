@@ -2042,4 +2042,6 @@ export default {
   "One employee, all months": "Një punonjës, të gjithë muajt",
   "Prepayment|cards": "Parapagim",
   "Total value (with VAT)": "Vlera totale (me TVSH)",
+  "All suppliers": "Të gjithë furnitorët",
+  "Total from {name}": "Gjithsej nga {name}",
 } satisfies Dict
