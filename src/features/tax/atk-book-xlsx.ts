@@ -7,10 +7,10 @@ import type { BookRow } from './api'
  * the two heading rows, the row of the VAT return's boxes, one row per invoice from row 4, and the VAT worked out by
  * formula in [K1], [K2] and the total, exactly as in ATK's sample files). The headings are ATK's, in Albanian, in every language.
  */
-type Col = { h: string; box?: string; key?: string; f?: (r: number) => string; w?: number }
-type Group = { h: string; span: number }
+export type AtkCol = { h: string; box?: string; key?: string; f?: (r: number) => string; w?: number }
+export type AtkGroup = { h: string; span: number }
 
-const SALES: { groups: Group[]; cols: Col[] } = {
+const SALES: { groups: AtkGroup[]; cols: AtkCol[] } = {
   groups: [{ h: 'Shitjet e liruara nga TVSH', span: 6 }, { h: 'Shitjet e tatueshme me normën 18%', span: 6 }, { h: 'Shitjet e tatueshme me normën 8%', span: 5 }],
   cols: [
     { h: 'Shitjet e liruara pa të drejtë kreditimi', box: '[9]', key: '9' },
@@ -33,7 +33,7 @@ const SALES: { groups: Group[]; cols: Col[] } = {
     { h: 'Totali i TVSH-së së llogaritur me   18% dhe 8%', box: '[30]', f: (r) => `R${r}+W${r}` },
   ],
 }
-const PURCHASE: { groups: Group[]; cols: Col[] } = {
+const PURCHASE: { groups: AtkGroup[]; cols: AtkCol[] } = {
   groups: [{ h: 'Blerjet dhe Importet e liruara dhe me TVSH jo të zbritshme', span: 4 }, { h: 'Blerjet dhe Importet e tatushme me 18%, si dhe rregullimet e zbritjeve', span: 9 },
     { h: 'Blerjet dhe Importet e tatushme me 8%, si dhe rregullimet e zbritjeve', span: 9 }],
   cols: [
@@ -63,13 +63,37 @@ const PURCHASE: { groups: Group[]; cols: Col[] } = {
   ],
 }
 
+/** ATK's own headings of the first six columns (Albanian in every language, as on its form) */
+export const atkHead = (book: 'sales' | 'purchase') => {
+  const who = book === 'sales' ? 'blerësit' : 'shitësit'
+  return { no: 'Nr.', invoice: 'Fatura', party: book === 'sales' ? 'Blerësi' : 'Shitësi', date: 'Data', number: 'Numri i faturës', name: `Emri i ${who}`,
+    fiscal: `Numri Fiskal i ${who}`, vat: `Numri i TVSH-së së ${who}`, boxes: 'Numri i kutisë në Deklaratën e TVSH-së' }
+}
+
+/** ATK's layout of a book: the groups of the first heading row and the amount columns under them */
+export const atkLayout = (book: 'sales' | 'purchase') => (book === 'sales' ? SALES : PURCHASE)
+
+/** a row's figure in each of ATK's columns: what was booked, and what ATK's formulas give in [K1], [K2] and the totals */
+export function atkValues(L: { cols: AtkCol[] }, row: BookRow): number[] {
+  const first = 6
+  const val: number[] = []
+  L.cols.forEach((c, i) => {
+    if (!c.f) { val[i] = c.key ? num(row.cols?.[c.key]) : 0; return }
+    const f = c.f(1)
+    const letters = f.replace(/[()]/g, '').replace(/\*.*$/, '').split('+').map((x) => x.replace(/1$/, ''))
+    const sum = letters.reduce((a, x) => a + (val[L.cols.findIndex((_, j) => colName(first + j) === x)] ?? 0), 0)
+    val[i] = sum * (/\*18%/.test(f) ? 0.18 : /\*8%/.test(f) ? 0.08 : 1)
+  })
+  return val
+}
+
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 const colName = (i: number) => { let s = ''; i += 1; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26) } return s }
 const r2 = (n: number) => Math.round(n * 100) / 100
 /** the day as Excel counts it */
 const serial = (iso: string) => Math.round(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) / 86400000) + 25569
 
-export async function exportAtkBook(book: 'sales' | 'purchase', rows: BookRow[], filename: string, number: (r: BookRow) => string, partner: (r: BookRow) => string) {
+export async function exportAtkBook(book: 'sales' | 'purchase', rows: BookRow[], filename: string, number: (r: BookRow) => string, partner: (r: BookRow) => string, taxNo: (r: BookRow) => string | null) {
   const { zipSync, strToU8 } = await import('fflate')
   const L = book === 'sales' ? SALES : PURCHASE
   const who = book === 'sales' ? 'blerësit' : 'shitësit'
@@ -97,22 +121,12 @@ export async function exportAtkBook(book: 'sales' | 'purchase', rows: BookRow[],
   rows.forEach((row, n) => {
     const r = n + 4
     const cells = [`<c r="A${r}" s="7"><v>${n + 1}</v></c>`, `<c r="B${r}" s="5"><v>${serial(row.doc_date)}</v></c>`, txt(`C${r}`, number(row), 6), txt(`D${r}`, partner(row), 6),
-      row.tax_number ? txt(`E${r}`, row.tax_number, 6) : blank(`E${r}`, 6), blank(`F${r}`, 6)]
-    const val: number[] = []
+      taxNo(row) ? txt(`E${r}`, taxNo(row)!, 6) : blank(`E${r}`, 6), blank(`F${r}`, 6)]
+    const val = atkValues(L, row)
     L.cols.forEach((c, i) => {
       const ref = `${colName(first + i)}${r}`
-      if (c.f) {
-        // the figure the formula gives, kept in the file too, for a program that reads it without working formulas out
-        const letters = c.f(1).replace(/[()]/g, '').replace(/\*.*$/, '').split('+').map((x) => x.replace(/1$/, ''))
-        const sum = letters.reduce((s, x) => s + (val[L.cols.findIndex((_, j) => colName(first + j) === x)] ?? 0), 0)
-        const pct = /\*18%/.test(c.f(1)) ? 0.18 : /\*8%/.test(c.f(1)) ? 0.08 : 1
-        val[i] = sum * pct
-        cells.push(`<c r="${ref}" s="4"><f>${c.f(r)}</f><v>${r2(val[i]!)}</v></c>`)
-      } else {
-        const v = c.key ? num(row.cols?.[c.key]) : 0
-        val[i] = v
-        cells.push(v !== 0 ? `<c r="${ref}" s="4"><v>${r2(v)}</v></c>` : blank(ref, 4))
-      }
+      if (c.f) cells.push(`<c r="${ref}" s="4"><f>${c.f(r)}</f><v>${r2(val[i]!)}</v></c>`)
+      else cells.push(val[i] !== 0 ? `<c r="${ref}" s="4"><v>${r2(val[i]!)}</v></c>` : blank(ref, 4))
     })
     out.push(`<row r="${r}">${cells.join('')}</row>`)
   })

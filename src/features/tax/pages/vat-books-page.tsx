@@ -17,7 +17,7 @@ import { ErrorState } from '@/components/error-state'
 import { formatDateWith, getLocale, t, tn, tServer } from '@/i18n'
 import { cn, formatDate, formatMoney, num } from '@/lib/utils'
 import { type BookRow, type LayoutCol, layoutLabel, monthLabel, monthRange, previousMonth, useCompanyTaxProfile, useVatBook, useVatLayout } from '../api'
-import { exportAtkBook } from '../atk-book-xlsx'
+import { atkHead, atkLayout, atkValues, exportAtkBook } from '../atk-book-xlsx'
 import { MonthPicker } from '../components/tax-ui'
 
 export function VatBooksPage() {
@@ -48,11 +48,11 @@ export function VatBooksPage() {
     return all.filter((r) => (!partners.length || partners.includes(r.partner ?? ''))
       && (kind === 'all' || (kind === 'credits') === isCredit(r))
       && (!withCols.length || withCols.some((k) => num(r.cols?.[k]) !== 0))
-      && (!words.length || words.every((w) => `${tServer(r.number)} ${r.ref ?? ''} ${tServer(r.partner)} ${r.tax_number ?? ''} ${r.fiscal_code ?? ''}`.toLowerCase().includes(w))))
+      && (!words.length || words.every((w) => `${tServer(r.number)} ${r.ref ?? ''} ${tServer(r.partner)} ${r.partner === 'Retail customers' ? t('Physical buyer') : ''} ${r.tax_number ?? ''} ${r.fiscal_code ?? ''}`.toLowerCase().includes(w))))
   }, [all, q, partners, kind, withCols]) // eslint-disable-line react-hooks/exhaustive-deps
   const filtering = !!(q.trim() || partners.length || kind !== 'all' || withCols.length)
   const partnerOptions = React.useMemo(() => [...new Set(all.map((r) => r.partner ?? '').filter(Boolean))].sort((a, b) => a.localeCompare(b))
-    .map((p) => ({ value: p, label: tServer(p) })), [all])
+    .map((p) => ({ value: p, label: xk && p === 'Retail customers' ? t('Physical buyer') : tServer(p) })), [all, xk])
   const totals = React.useMemo(() => {
     const sum: Record<string, number> = { total: 0 }
     for (const r of rows) { sum.total! += num(r.total); for (const c of cols) sum[c.key] = (sum[c.key] ?? 0) + num(r.cols?.[c.key]) }
@@ -65,7 +65,18 @@ export function VatBooksPage() {
   const shown = allCols ? cols : filled
   const set = (k: string, v: string) => setParams((p) => { p.set(k, v); if (k === 'month') { p.delete('from'); p.delete('to') } return p })
   const taxLabel = xk ? 'NUI' : 'NIPT'
-  const showFiscal = book === 'sales'
+  // Kosovo: no fiscal code in the book; a sale to a person carries "Blerës fizik" and the number 1 where the NUI goes (ATK's rule)
+  const showFiscal = book === 'sales' && !xk
+  const partnerOf = (r: BookRow) => (xk && r.partner === 'Retail customers' ? t('Physical buyer') : tServer(r.partner))
+  const taxOf = (r: BookRow) => r.tax_number || (xk && book === 'sales' ? '1' : null)
+  const numberOf = (r: BookRow) => (book === 'purchase' && r.ref ? tServer(r.ref) : tServer(r.number))
+  // Kosovo: the book on the screen in ATK's own layout (the groups, the boxes of the return, VAT by ATK's formulas)
+  const atk = xk ? atkLayout(book) : null
+  const head = atkHead(book)
+  const atkRows = React.useMemo(() => (atk ? rows.map((r) => atkValues(atk, r)) : []), [atk, rows])
+  const atkTotals = atk ? atk.cols.map((_, i) => atkRows.reduce((a, v) => a + (v[i] ?? 0), 0)) : []
+  const atkShown = atk ? atk.cols.map((_, i) => i).filter((i) => allCols || atkRows.some((v) => Math.abs(v[i] ?? 0) > 0.004)) : []
+  const atkHidden = atk ? atk.cols.length - atkShown.length : 0
   const colLabel = (c: LayoutCol) => (xk ? `[${c.key}] ` : '') + layoutLabel(c)
   const periodText = params.get('from') ? `${formatDate(range.from)} – ${formatDate(range.to)}` : monthLabel(ym)
 
@@ -77,8 +88,8 @@ export function VatBooksPage() {
     { header: t('Number'), value: (r) => tServer(r.number) },
     { header: book === 'sales' ? t('Note') : t('Vendor invoice / DUD'), value: (r) => (r.ref ? tServer(r.ref) : r.ref) },
     ...(showFiscal ? [{ header: xk ? t('Fiscal code') : t('NIVF'), value: (r: BookRow) => r.fiscal_code, format: 'text' as const }] : []),
-    { header: book === 'sales' ? t('Buyer') : t('Seller'), value: (r) => tServer(r.partner) },
-    { header: taxLabel, value: (r) => r.tax_number, format: 'text' },
+    { header: book === 'sales' ? t('Buyer') : t('Seller'), value: (r) => partnerOf(r) },
+    { header: taxLabel, value: (r) => taxOf(r), format: 'text' },
     ...which.map((c): XlsxColumn<BookRow> => ({ header: colLabel(c), value: (r) => r.cols?.[c.key] ?? null, format: 'money' })),
     { header: t('Total with VAT'), value: (r) => num(r.total), format: 'money' },
   ]
@@ -101,7 +112,7 @@ export function VatBooksPage() {
           {/* the file as ATK's own sample: its headings, its boxes, its formulas */}
           {xk && <Button variant="outline" size="sm" disabled={!rows.length} title={t('The Excel file in the layout of ATK’s sample book')}
             onClick={() => void exportAtkBook(book, rows, `${book === 'sales' ? t('sales-book|file') : t('purchase-book|file')}-${ym}`,
-              (r) => (book === 'purchase' && r.ref ? tServer(r.ref) : tServer(r.number)), (r) => tServer(r.partner))}><FileSpreadsheet /> {t('Excel, ATK layout')}</Button>}
+              numberOf, partnerOf, taxOf)}><FileSpreadsheet /> {t('Excel, ATK layout')}</Button>}
           <ExportMenu rows={rows} columns={exportCols} pdfColumns={paperCols} filename={`${book === 'sales' ? t('sales-book|file') : t('purchase-book|file')}-${ym}`} title={title}
             subtitle={`${profile.data?.legal_name ?? profile.data?.name ?? company?.name ?? ''} · ${taxLabel} ${profile.data?.tax_number ?? '—'} · ${periodText}`}
             xlsx={{ title: [profile.data?.legal_name ?? profile.data?.name ?? '', `${taxLabel} ${profile.data?.tax_number ?? '—'}`, `${title} · ${periodText}`], totals: exportTotals }} />
@@ -117,9 +128,9 @@ export function VatBooksPage() {
           ))}
         </div>
         <span className="text-[13px] text-muted-foreground">{periodText} · {filtering ? t('{n} of {total} lines', { n: rows.length, total: all.length }) : tn(rows.length, '{n} line', '{n} lines')} · {t('amounts in {currency}', { currency: company?.base_currency ?? '' })}</span>
-        {cols.length > filled.length && rows.length > 0 && (
+        {(atk ? atkHidden > 0 || allCols : cols.length > filled.length) && rows.length > 0 && (
           <button type="button" className="ml-auto text-[13px] text-primary hover:underline" onClick={() => setAllCols((x) => !x)}>
-            {allCols ? t('Hide the empty columns') : tn(cols.length - filled.length, 'Show the {n} empty column too', 'Show the {n} empty columns too')}
+            {allCols ? t('Hide the empty columns') : tn(atk ? atkHidden : cols.length - filled.length, 'Show the {n} empty column too', 'Show the {n} empty columns too')}
           </button>
         )}
       </div>
@@ -150,6 +161,53 @@ export function VatBooksPage() {
         ) : !rows.length ? (
           <EmptyState icon={FileSpreadsheet} title={t('Nothing in the {book} for {period}', { book: title, period: periodText })} description={t('Only final invoices, purchase invoices, till receipts and customs declarations appear here.')} />
         ) : (
+          atk ? (
+          <div className="max-h-[calc(100dvh-260px)] overflow-auto">
+            <table className="w-full border-separate border-spacing-0 text-[13px]">
+              <thead className="sticky top-0 z-10 bg-card">
+                <tr className="text-center align-middle">
+                  <Th rowSpan={2} className="w-10 text-center">{head.no}</Th>
+                  <Th colSpan={2} className="text-center font-semibold text-foreground">{head.invoice}</Th>
+                  <Th colSpan={3} className="text-center font-semibold text-foreground">{head.party}</Th>
+                  {(() => { let at = 0; return atk.groups.map((g) => { const from = at; at += g.span; const n = atkShown.filter((i) => i >= from && i < from + g.span).length
+                    return n ? <Th key={g.h} colSpan={n} className="text-center font-semibold text-foreground">{g.h}</Th> : null }) })()}
+                  {atkShown.includes(atk.cols.length - 1) && <Th rowSpan={2} className="min-w-[84px] bg-muted/40 text-center text-foreground">{atk.cols[atk.cols.length - 1]!.h}</Th>}
+                </tr>
+                <tr className="text-center align-middle">
+                  <Th className="text-center">{head.date}</Th><Th className="text-center">{head.number}</Th>
+                  <Th className="min-w-[110px] text-center">{head.name}</Th>
+                  <Th className="text-center">{head.fiscal}</Th>
+                  <Th className="text-center">{head.vat}</Th>
+                  {atkShown.filter((i) => i < atk.cols.length - 1).map((i) => <Th key={i} className={cn('min-w-[84px] text-center leading-tight text-foreground', atk.cols[i]!.f && 'bg-muted/40')}>{atk.cols[i]!.h}</Th>)}
+                </tr>
+                <tr className="bg-muted text-center">
+                  <Th colSpan={6} className="bg-muted py-1 text-center">{head.boxes}</Th>
+                  {atkShown.map((i) => <Th key={i} className="whitespace-nowrap bg-muted py-1 text-center font-mono text-foreground">{atk.cols[i]!.box}</Th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r, n) => (
+                  <tr key={`${r.line_no}`} className={cn('hover:bg-muted/40', isCredit(r) && 'text-muted-foreground')}>
+                    <Td className="text-right tabular text-muted-foreground">{n + 1}</Td>
+                    <Td className="whitespace-nowrap tabular">{formatDate(r.doc_date)}</Td>
+                    <Td className="whitespace-nowrap">{r.href ? <Link to={r.href} className="font-medium text-primary hover:underline">{numberOf(r)}</Link> : numberOf(r)}</Td>
+                    <Td className="min-w-[110px] leading-tight">{partnerOf(r)}</Td>
+                    <Td className="whitespace-nowrap tabular text-muted-foreground">{taxOf(r) ?? ''}</Td>
+                    <Td />
+                    {atkShown.map((i) => { const v = atkRows[n]?.[i] ?? 0
+                      return <Td key={i} className={cn('text-right tabular', atk.cols[i]!.f && 'bg-muted/40', v < -0.004 && 'text-destructive')}>{Math.abs(v) > 0.004 ? formatMoney(v) : ''}</Td> })}
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="sticky bottom-0 bg-card">
+                <tr className="font-semibold">
+                  <Td className="border-t-2" colSpan={6}>{t('Total')}</Td>
+                  {atkShown.map((i) => <Td key={i} className={cn('border-t-2 text-right tabular', atk.cols[i]!.f && 'bg-muted/40')}>{Math.abs(atkTotals[i] ?? 0) > 0.004 ? formatMoney(atkTotals[i]) : ''}</Td>)}
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          ) : (
           <div className="max-h-[calc(100dvh-260px)] overflow-auto">
             <table className="w-full border-separate border-spacing-0 text-[13px]">
               <thead className="sticky top-0 z-10 bg-card">
@@ -197,14 +255,15 @@ export function VatBooksPage() {
               </tfoot>
             </table>
           </div>
+          )
         )}
       </Card>
     </>
   )
 }
 
-function Th({ children, className }: { children?: React.ReactNode; className?: string }) {
-  return <th className={cn('border-b px-2 py-2 text-left text-xs font-medium text-muted-foreground', className)}>{children}</th>
+function Th({ children, className, colSpan, rowSpan }: { children?: React.ReactNode; className?: string; colSpan?: number; rowSpan?: number }) {
+  return <th colSpan={colSpan} rowSpan={rowSpan} className={cn('border-b px-2 py-2 text-left text-xs font-medium text-muted-foreground', className)}>{children}</th>
 }
 function Td({ children, className, colSpan, title }: { children?: React.ReactNode; className?: string; colSpan?: number; title?: string }) {
   return <td colSpan={colSpan} title={title} className={cn('border-b px-2 py-1.5', className)}>{children}</td>
