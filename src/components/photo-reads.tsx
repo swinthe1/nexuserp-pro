@@ -28,8 +28,10 @@ export function readError(e: string | null | undefined) {
 export type ReadKind = 'invoice' | 'expense' | 'asset' | 'z_report'
 
 /** Sends the chosen photos or PDFs to be read; one file opens its review, several are read in the background. */
-export function usePhotoSubmit({ kind, invalidate, onOne, manyMessage }: {
+export function usePhotoSubmit({ kind, invalidate, onOne, manyMessage, vendorId }: {
   kind: ReadKind; invalidate: QueryKey[]; onOne: (id: string) => void; manyMessage?: (n: number) => string
+  /** whose invoice it is, when the person says so before the photo: the reader then gets that supplier's rules and usual items */
+  vendorId?: string | null
 }) {
   const { companyId } = useCompany()
   const qc = useQueryClient()
@@ -40,7 +42,7 @@ export function usePhotoSubmit({ kind, invalidate, onOne, manyMessage }: {
         if (!/^(image\/|application\/pdf)/.test(file.type)) throw new Error(t('Choose a photo or a PDF'))
         const f = await shrink(file)
         last = unwrap(await supabase.rpc('doc_read_submit', { p_company: companyId!, p_file: f.data, p_mime: f.mime, p_name: file.name,
-          ...(kind === 'invoice' ? {} : { p_kind: kind }) })) as string
+          ...(kind === 'invoice' ? {} : { p_kind: kind }), ...(kind === 'invoice' && vendorId ? { p_vendor: vendorId } : {}) })) as string
       }
       return { last, n: files.length }
     },

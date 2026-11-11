@@ -17900,6 +17900,13 @@ export type Database = {
         }
         Returns: Json
       }
+      doc_read_feedback: {
+        Args: {
+          p_id: string
+          p: Json
+        }
+        Returns: Json
+      }
       doc_read_get: {
         Args: {
           p_id: string
@@ -17913,6 +17920,7 @@ export type Database = {
           p_mime: string
           p_name?: string
           p_kind?: string
+          p_vendor?: string
         }
         Returns: string
       }
@@ -18472,6 +18480,7 @@ export type Database = {
           p_mime: string
           p_name?: string
           p_kind?: string
+          p_hints?: string
         }
         Returns: string
       }
@@ -20136,6 +20145,21 @@ export type Database = {
         }
         Returns: undefined
       }
+      read_rules_get: {
+        Args: {
+          p_company: string
+          p_vendor: string
+        }
+        Returns: Json
+      }
+      read_rules_save: {
+        Args: {
+          p_company: string
+          p_vendor: string
+          p_notes: string
+        }
+        Returns: undefined
+      }
       reader_claim: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -20154,6 +20178,12 @@ export type Database = {
       }
       reader_relayed: {
         Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      reader_stats: {
+        Args: {
+          p_company: string
+        }
         Returns: Json
       }
       receipt_report: {
