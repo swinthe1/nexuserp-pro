@@ -1674,4 +1674,5 @@ export default {
   "Hours|chart": "Sati",
   "Choose the bank whose card terminal takes the payment": "Izaberite banku čijim se POS terminalom plaća",
   "With the card terminal of": "POS terminalom banke",
+  "No bank named": "Bez navedene banke",
 } satisfies Dict

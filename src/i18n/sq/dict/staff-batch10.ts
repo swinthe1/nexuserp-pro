@@ -1998,4 +1998,5 @@ export default {
   "Physical buyer": "Blerës fizik",
   "Choose the bank whose card terminal takes the payment": "Zgjidhni bankën me POS-in e së cilës bëhet pagesa",
   "With the card terminal of": "Me POS-in e bankës",
+  "No bank named": "Pa bankë të shënuar",
 } satisfies Dict

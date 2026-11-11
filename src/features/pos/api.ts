@@ -186,6 +186,13 @@ export type SessionControls = {
   count: { notes_coins: Record<string, number> | null; counted: number; difference: number; counted_by: string | null; witnessed_by: string | null } | null
   voids: { count: number; amount: number; unconfirmed: number
     lines: { kind: 'void_line' | 'void_qty' | 'void_sale'; description: string | null; quantity: number | null; amount: number; at: string; cashier: string | null; approved_by: string | null; offline: boolean }[] }
+  /** the shift's card money by the bank whose terminal took it ('' = taken before the bank was asked) */
+  card_banks?: Record<string, number>
+}
+/** the card money by bank as lines to show under "Card": nothing when no payment names a bank */
+export function cardBankLines(c: SessionControls | null | undefined): [string, number][] {
+  const e = Object.entries(c?.card_banks ?? {}).map(([k, v]) => [k, Number(v)] as [string, number])
+  return e.some(([k]) => k) ? e.sort((a, b) => (a[0] ? 0 : 1) - (b[0] ? 0 : 1) || a[0].localeCompare(b[0])) : []
 }
 export async function sessionControls(id: string) {
   return unwrap(await supabase.rpc('pos_session_controls', { p_session: id })) as unknown as SessionControls

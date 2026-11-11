@@ -33,7 +33,7 @@ import { useBankAccounts, useJournals } from '@/features/finance/api'
 import { AccountingTab } from '@/features/finance/components/t-accounts'
 import { useLocations, useWarehouses } from '@/features/inventory/api'
 import { usePartners, usePriceLists } from '@/features/sales/api'
-import { posKeys, xReport, useCashRules, useRegisters, useSaveRegister, useSessionControls, useSessionDetail, useSessionPayouts, useSessions, type Register, type SessionRow } from '../api'
+import { cardBankLines, posKeys, xReport, useCashRules, useRegisters, useSaveRegister, useSessionControls, useSessionDetail, useSessionPayouts, useSessions, type Register, type SessionRow } from '../api'
 import { discard, retry, syncNow, useSyncState } from '../offline'
 import { ShiftReviewCard } from './review-page'
 import { printReceipt, printZReport } from '../receipt'
@@ -379,7 +379,8 @@ export function PosSessionPage() {
             </div>
             <div className="grid gap-4 lg:grid-cols-3">
               <Card><CardHeader className="pb-2"><CardTitle>{t('Payments')}</CardTitle></CardHeader><CardContent className="grid gap-1.5 text-[13px]">
-                {Object.entries(pay).filter(([k]) => k !== 'change_given').map(([k, v2]) => <Row key={k} k={humanize(k)} v={formatMoney(v2)} />)}
+                {Object.entries(pay).filter(([k]) => k !== 'change_given').map(([k, v2]) => <React.Fragment key={k}><Row k={humanize(k)} v={formatMoney(v2)} />
+                  {k === 'card' && cardBankLines(c).map(([b, v3]) => <div key={b} className="flex justify-between pl-4 text-[12.5px] text-muted-foreground"><span>{b || t('No bank named')}</span><span className="tabular">{formatMoney(v3)}</span></div>)}</React.Fragment>)}
                 <Row k={t('Change given')} v={`${num(pay.change_given) ? '−' : ''}${formatMoney(pay.change_given ?? 0)}`} />
               </CardContent></Card>
               <Card><CardHeader className="pb-2"><CardTitle>{t('Cash drawer')}</CardTitle></CardHeader><CardContent className="grid gap-1.5 text-[13px]">

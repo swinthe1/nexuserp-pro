@@ -27,7 +27,7 @@ import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { formatDateWith, msg, t, td, tEnum, tn, tServer } from '@/i18n'
 import { cn, formatDate, formatMoney, formatQty, initials, num, todayISO } from '@/lib/utils'
-import { cardBanks, checkVoucher, lookupReceipt, posApprove, searchTill, xReport, sellVoucher, setQuickItems, sessionControls, useCustomerCredit, type VoucherInfo, useCashMove, useCloseSession, useOpenSession, usePayees, usePayOut, useSessionSummary, useTill, useVendorBills, type CatalogItem, type ReceiptLookup, type TillData } from '../api'
+import { cardBankLines, cardBanks, checkVoucher, lookupReceipt, useSessionControls, posApprove, searchTill, xReport, sellVoucher, setQuickItems, sessionControls, useCustomerCredit, type VoucherInfo, useCashMove, useCloseSession, useOpenSession, usePayees, usePayOut, useSessionSummary, useTill, useVendorBills, type CatalogItem, type ReceiptLookup, type TillData } from '../api'
 import { enqueue, logTill, nextDeviceRef, syncNow, useOnServerBack, useOnSynced, useSyncState, type QueuedSale, type TillLogEntry } from '../offline'
 import { ManagerDialog, ManagerPinFields, pinReady } from '../manager-pin'
 import { ChoosePinDialog, LockScreen, SwitchCashierDialog, useTillLock } from '../till-lock'
@@ -1867,6 +1867,7 @@ function CloseDialog({ data, pending, held = 0, onClose, onClosed, waitersOwing 
   waitersOwing?: WaiterOwes[]; onHandover?: () => void }) {
   const session = data.session!
   const summary = useSessionSummary(session.id)
+  const byBank = useSessionControls(session.id)
   const close = useCloseSession()
   const [counts, setCounts] = React.useState<Record<number, string>>({})
   const [direct, setDirect] = React.useState('')
@@ -1942,7 +1943,8 @@ function CloseDialog({ data, pending, held = 0, onClose, onClosed, waitersOwing 
             </> : <>
               <Row k={t('Receipts')} v={t('{a} · {b} refunds', { a: s.orders, b: s.refunds })} />
               <Row k={t('Sales (with VAT)')} v={formatMoney(num(s.gross) - num(s.refunded))} />
-              {Object.entries(s.payments).map(([m, v]) => <Row key={m} k={tEnum(m)} v={formatMoney(v)} />)}
+              {Object.entries(s.payments).map(([m, v]) => <React.Fragment key={m}><Row k={tEnum(m)} v={formatMoney(v)} />
+                {m === 'card' && cardBankLines(byBank.data).map(([b, v2]) => <div key={b} className="flex justify-between pl-4 text-[12.5px] text-muted-foreground"><span>{b || t('No bank named')}</span><span className="tabular">{formatMoney(v2)}</span></div>)}</React.Fragment>)}
               <Row k={t('Change given')} v={`${num(s.change) ? '−' : ''}${formatMoney(s.change)}`} />
               <div className="my-1 border-t" />
               <Row k={t('Opening cash')} v={formatMoney(session.opening_cash)} />

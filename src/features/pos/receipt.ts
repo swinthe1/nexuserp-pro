@@ -1,7 +1,7 @@
 import { formatDateWith, formatNumberWith, t, tEnum } from '@/i18n'
 import { printHtml } from '@/lib/print'
 import { labelledBarcodeSvg } from '@/lib/barcode'
-import type { SessionControls } from './api'
+import { cardBankLines, type SessionControls } from './api'
 import { fiscalCss, fiscalReceiptHtml, paperOf, type FiscalPrint, type Paper } from './fiscal-receipt'
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
@@ -93,7 +93,9 @@ export interface ZData {
 export function printZReport(z: ZData) {
   const c = z.controls
   const row = (k: string, v: string, cls = '') => `<tr class="${cls}"><td>${esc(k)}</td><td class="r">${esc(v)}</td></tr>`
-  const pays = Object.entries(z.payments).filter(([k]) => k !== 'change_given').map(([k, v]) => row(method(k), money(Number(v)))).join('')
+  // under the card: how much each bank's terminal took, to hold against the terminal's own slip
+  const banks = cardBankLines(c).map(([b, v]) => row(`· ${b || t('No bank named')}`, money(v), 'muted')).join('')
+  const pays = Object.entries(z.payments).filter(([k]) => k !== 'change_given').map(([k, v]) => row(method(k), money(Number(v))) + (k === 'card' ? banks : '')).join('')
   printHtml(`<div class="c b big">${esc(z.x ? t('X-REPORT · {number}', { number: z.number }) : t('Z-REPORT {number}', { number: z.number }))}</div><div class="c muted">${esc(z.company)}<br>${esc(z.register)} · ${esc(t('shift {number}', { number: z.session }))}<br>
     ${esc(stamp(new Date(z.opened)))} → ${esc(z.closed ? stamp(new Date(z.closed)) : '')}</div><hr>
     <table>${row(t('Receipts'), String(z.orders))}${row(t('Refunds|count'), String(z.refunds))}${row(t('Gross sales (with VAT)'), money(z.gross))}${row(t('Refunds (with VAT)'), `−${money(z.refundsTotal)}`)}
