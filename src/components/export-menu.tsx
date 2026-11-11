@@ -7,7 +7,7 @@ import { exportCsv, exportPdf, exportXlsx, type XlsxColumn, type XlsxOptions } f
 import { printTable } from '@/lib/print-table'
 
 /** Excel / PDF / CSV for tables that are not a DataTable (official books, reports) */
-export function ExportMenu<T>({ rows, columns, pdfColumns, filename, title, subtitle, xlsx, disabled }: {
+export function ExportMenu<T>({ rows, columns, pdfColumns, filename, title, subtitle, xlsx, disabled, noXlsxTotals }: {
   rows: T[]
   columns: XlsxColumn<T>[]
   /** the columns for the PDF and the print when they differ from Excel's (a wide official book: only the filled ones) */
@@ -17,6 +17,8 @@ export function ExportMenu<T>({ rows, columns, pdfColumns, filename, title, subt
   title: string
   subtitle?: string
   xlsx?: XlsxOptions
+  /** the totals stay on the PDF and the paper, but the Excel file carries the rows alone (a file to upload or to add up oneself) */
+  noXlsxTotals?: boolean
   disabled?: boolean
 }) {
   return (
@@ -25,7 +27,7 @@ export function ExportMenu<T>({ rows, columns, pdfColumns, filename, title, subt
         <Button variant="outline" size="sm" disabled={disabled || !rows.length}><Download /> {t('Export')}</Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onSelect={() => void exportXlsx(rows, columns, filename, { sheet: title, title: [title, ...(subtitle ? [subtitle] : [])], ...xlsx })}>
+        <DropdownMenuItem onSelect={() => void exportXlsx(rows, columns, filename, { sheet: title, title: [title, ...(subtitle ? [subtitle] : [])], ...xlsx, ...(noXlsxTotals ? { totals: undefined } : {}) })}>
           <FileSpreadsheet /> Excel
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => void exportPdf(rows, pdfColumns ?? columns, filename, title, subtitle, xlsx?.totals)}><FileText /> PDF</DropdownMenuItem>

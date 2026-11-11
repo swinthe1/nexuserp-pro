@@ -77,7 +77,8 @@ export function VatBooksPage() {
   const atkTotals = atk ? atk.cols.map((_, i) => atkRows.reduce((a, v) => a + (v[i] ?? 0), 0)) : []
   const atkShown = atk ? atk.cols.map((_, i) => i).filter((i) => allCols || atkRows.some((v) => Math.abs(v[i] ?? 0) > 0.004)) : []
   const atkHidden = atk ? atk.cols.length - atkShown.length : 0
-  const colLabel = (c: LayoutCol) => (xk ? `[${c.key}] ` : '') + layoutLabel(c)
+  // a VAT column that names its rate carries no box number: "TVSH 18%", not "[13] TVSH 18%" (the plain "TVSH" ones keep theirs, to tell them apart)
+  const colLabel = (c: LayoutCol) => (xk && !(c.vat && layoutLabel(c).includes('%')) ? `[${c.key}] ` : '') + layoutLabel(c)
   const periodText = params.get('from') ? `${formatDate(range.from)} – ${formatDate(range.to)}` : monthLabel(ym)
 
   // Excel keeps every column of the official layout; the paper and the PDF only the columns with something
@@ -113,7 +114,7 @@ export function VatBooksPage() {
           {xk && <Button variant="outline" size="sm" disabled={!rows.length} title={t('The Excel file in the layout of ATK’s sample book')}
             onClick={() => void exportAtkBook(book, rows, `${book === 'sales' ? t('sales-book|file') : t('purchase-book|file')}-${ym}`,
               numberOf, partnerOf, taxOf)}><FileSpreadsheet /> {t('Excel, ATK layout')}</Button>}
-          <ExportMenu rows={rows} columns={exportCols} pdfColumns={paperCols} filename={`${book === 'sales' ? t('sales-book|file') : t('purchase-book|file')}-${ym}`} title={title}
+          <ExportMenu noXlsxTotals rows={rows} columns={exportCols} pdfColumns={paperCols} filename={`${book === 'sales' ? t('sales-book|file') : t('purchase-book|file')}-${ym}`} title={title}
             subtitle={`${profile.data?.legal_name ?? profile.data?.name ?? company?.name ?? ''} · ${taxLabel} ${profile.data?.tax_number ?? '—'} · ${periodText}`}
             xlsx={{ title: [profile.data?.legal_name ?? profile.data?.name ?? '', `${taxLabel} ${profile.data?.tax_number ?? '—'}`, `${title} · ${periodText}`], totals: exportTotals }} />
         </>} />
