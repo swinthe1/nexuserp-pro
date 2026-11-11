@@ -87,7 +87,8 @@ export function VatBooksPage() {
     { header: t('No.|register'), value: (r) => r.line_no, format: 'int', width: 5 },
     { header: t('Date'), value: (r) => (paper ? formatDateWith(new Date(`${r.doc_date}T12:00:00`), { day: '2-digit', month: '2-digit', year: 'numeric' }) : formatDate(r.doc_date)), width: 11 },
     { header: t('Number'), value: (r) => tServer(r.number) },
-    { header: book === 'sales' ? t('Note') : t('Vendor invoice / DUD'), value: (r) => (r.ref ? tServer(r.ref) : r.ref) },
+    // the sales book's note ("40 kuponë") stays on the paper; the Excel file goes without it (the owner's decision)
+    ...(book === 'sales' && !paper ? [] : [{ header: book === 'sales' ? t('Note') : t('Vendor invoice / DUD'), value: (r: BookRow) => (r.ref ? tServer(r.ref) : r.ref) }]),
     ...(showFiscal ? [{ header: xk ? t('Fiscal code') : t('NIVF'), value: (r: BookRow) => r.fiscal_code, format: 'text' as const }] : []),
     { header: book === 'sales' ? t('Buyer') : t('Seller'), value: (r) => partnerOf(r) },
     { header: taxLabel, value: (r) => taxOf(r), format: 'text' },
