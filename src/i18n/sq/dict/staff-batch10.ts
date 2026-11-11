@@ -1996,4 +1996,6 @@ export default {
   "The Excel file in the layout of ATK’s sample book": "Skedari Excel në formatin e librit mostër të ATK-së",
   "The Excel file in ATK’s template for declaring wages": "Skedari Excel në shabllonin e ATK-së për deklarimin e pagave",
   "Physical buyer": "Blerës fizik",
+  "Choose the bank whose card terminal takes the payment": "Zgjidhni bankën me POS-in e së cilës bëhet pagesa",
+  "With the card terminal of": "Me POS-in e bankës",
 } satisfies Dict

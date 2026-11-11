@@ -1672,4 +1672,6 @@ export default {
   "Sales in charts": "Prodaja u grafikonima",
   "Days|chart": "Dani",
   "Hours|chart": "Sati",
+  "Choose the bank whose card terminal takes the payment": "Izaberite banku čijim se POS terminalom plaća",
+  "With the card terminal of": "POS terminalom banke",
 } satisfies Dict

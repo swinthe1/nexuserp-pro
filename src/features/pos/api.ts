@@ -124,6 +124,18 @@ export type VoucherInfo = { id: string; code: string; amount: number; balance: n
 export async function checkVoucher(register: string, code: string) {
   return unwrap(await supabase.rpc('pos_voucher_check', { p_register: register, p_code: code })) as unknown as VoucherInfo | null
 }
+/** the banks whose card terminal may take a payment at this till (kept on the device, so the till knows them offline too) */
+export async function cardBanks(register: string): Promise<string[]> {
+  const key = `drispro.till.banks.${register}`
+  try {
+    const list = unwrap(await supabase.rpc('till_card_banks', { p_register: register })) as unknown as string[]
+    try { localStorage.setItem(key, JSON.stringify(list)) } catch { /* private window */ }
+    return list
+  } catch (e) {
+    try { const s = localStorage.getItem(key); if (s) return JSON.parse(s) as string[] } catch { /* nothing kept */ }
+    throw e
+  }
+}
 export async function sellVoucher(session: string, p: { amount: number; method: 'cash' | 'card'; valid_until?: string | null; note?: string | null; client_uuid: string }) {
   return unwrap(await supabase.rpc('pos_voucher_sell', { p_session: session, p: p as never })) as unknown as { id: string; code: string; amount: number; valid_until: string; duplicate: boolean }
 }

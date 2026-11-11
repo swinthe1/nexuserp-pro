@@ -2,7 +2,7 @@ import { PageHelpButton, TourHost } from '@/components/help'
 import { TillTasks } from '@/features/tasks/components/till-tasks'
 import { whereElsewhere } from '@/features/inventory/where'
 import {
-  ArrowLeft, BadgePercent, Banknote, Camera, Check, CloudOff, CreditCard, Ellipsis, Landmark, ListOrdered, LogOut, Minus, NotebookPen, Plus, Printer, ReceiptText, RotateCcw, ScanLine, Search,
+  ArrowLeft, BadgePercent, Banknote, Camera, Check, CloudOff, CreditCard, Ellipsis, ListOrdered, LogOut, Minus, NotebookPen, Plus, Printer, ReceiptText, RotateCcw, ScanLine, Search,
   HandCoins, Lock, NotebookTabs, Pause, Pin, PinOff, ShieldCheck, Ticket, Trash2, UserRound, Users, Wallet, X,
 } from 'lucide-react'
 import * as React from 'react'
@@ -27,7 +27,7 @@ import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { formatDateWith, msg, t, td, tEnum, tn, tServer } from '@/i18n'
 import { cn, formatDate, formatMoney, formatQty, initials, num, todayISO } from '@/lib/utils'
-import { checkVoucher, lookupReceipt, posApprove, searchTill, xReport, sellVoucher, setQuickItems, sessionControls, useCustomerCredit, type VoucherInfo, useCashMove, useCloseSession, useOpenSession, usePayees, usePayOut, useSessionSummary, useTill, useVendorBills, type CatalogItem, type ReceiptLookup, type TillData } from '../api'
+import { cardBanks, checkVoucher, lookupReceipt, posApprove, searchTill, xReport, sellVoucher, setQuickItems, sessionControls, useCustomerCredit, type VoucherInfo, useCashMove, useCloseSession, useOpenSession, usePayees, usePayOut, useSessionSummary, useTill, useVendorBills, type CatalogItem, type ReceiptLookup, type TillData } from '../api'
 import { enqueue, logTill, nextDeviceRef, syncNow, useOnServerBack, useOnSynced, useSyncState, type QueuedSale, type TillLogEntry } from '../offline'
 import { ManagerDialog, ManagerPinFields, pinReady } from '../manager-pin'
 import { ChoosePinDialog, LockScreen, SwitchCashierDialog, useTillLock } from '../till-lock'
@@ -54,7 +54,6 @@ const NOTES = [100, 200, 500, 1000, 2000, 5000, 10000]
 const METHODS = [
   { id: 'cash', label: msg('enum:cash'), icon: Banknote, key: 'F5' },
   { id: 'card', label: msg('enum:card'), icon: CreditCard, key: 'F6' },
-  { id: 'bank_transfer', label: msg('enum:bank_transfer'), icon: Landmark, key: 'F7' },
   { id: 'voucher', label: msg('enum:voucher'), icon: Ticket, key: 'F8' },
   // on account: only with a known customer, up to their credit limit
   { id: 'account', label: msg('enum:account'), icon: NotebookTabs, key: 'F10' },
@@ -1185,6 +1184,17 @@ export function PayDialog({ total, currency, cashLimit, onCancel, onPaid, regist
   const [vcode, setVcode] = React.useState('')
   const [voucher, setVoucher] = React.useState<VoucherInfo | null>(null)
   const [vbusy, setVbusy] = React.useState(false)
+  // a card: which bank's terminal takes it (the last one used at this till comes chosen)
+  const bankKey = `drispro.till.bank.${registerId ?? ''}`
+  const [banks, setBanks] = React.useState<string[]>([])
+  const [bank, setBank] = React.useState<string>(() => { try { return localStorage.getItem(bankKey) ?? '' } catch { return '' } })
+  React.useEffect(() => {
+    if (!registerId) return
+    let off = false
+    cardBanks(registerId).then((l) => { if (off) return; setBanks(l); setBank((b) => (l.includes(b) ? b : l.length === 1 ? l[0]! : '')) }).catch(() => undefined)
+    return () => { off = true }
+  }, [registerId])
+  const pickBank = (b: string) => { setBank(b); try { localStorage.setItem(bankKey, b) } catch { /* private window */ } input.current?.focus() }
   const [tenders, setTenders] = React.useState<Tender[]>([])
   const [method, setMethod] = React.useState<Method>('cash')
   const paid = r2(tenders.reduce((s, t) => s + t.amount, 0))
@@ -1229,6 +1239,10 @@ export function PayDialog({ total, currency, cashLimit, onCancel, onPaid, regist
       if (voucher && voucher.code === reference && v + already > num(voucher.balance) + 0.001) {
         toast.error(t('The voucher has {amount} left', { amount: formatMoney(num(voucher.balance) - already) })); return
       }
+    }
+    if (m === 'card' && banks.length) {
+      if (!bank) { toast.error(t('Choose the bank whose card terminal takes the payment')); return }
+      reference = bank
     }
     if (m === 'account') {
       if (!account) return
@@ -1281,7 +1295,7 @@ export function PayDialog({ total, currency, cashLimit, onCancel, onPaid, regist
             {t('Take the part above it by card or bank.')}
           </p>
         )}
-        <div className={cn('grid gap-2', methods.length > 4 ? 'grid-cols-5' : 'grid-cols-4')}>
+        <div className={cn('grid gap-2', methods.length > 3 ? 'grid-cols-4' : 'grid-cols-3')}>
           {methods.map((m) => (
             <button key={m.id} type="button" onClick={() => { setMethod(m.id); input.current?.focus() }} aria-pressed={method === m.id}
               className={cn('flex flex-col items-center gap-1 rounded-lg border-2 py-3 text-[13px] font-medium transition-colors', method === m.id ? 'border-primary bg-primary/5 text-primary' : 'hover:bg-muted')}>
@@ -1301,6 +1315,17 @@ export function PayDialog({ total, currency, cashLimit, onCancel, onPaid, regist
                 <Input aria-label={t('Voucher code')} placeholder={t('Voucher code')} value={vcode} className="h-11 font-mono"
                   onChange={(e) => { setVcode(e.target.value); setVoucher(null) }} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void lookVoucher() } }} />
                 <Button type="button" variant="outline" className="h-11" loading={vbusy} onClick={() => void lookVoucher()}>{t('Check')}</Button>
+              </div>
+            )}
+            {method === 'card' && banks.length > 0 && (
+              <div className="grid gap-1.5">
+                <span className="text-[13px] text-muted-foreground">{t('With the card terminal of')}</span>
+                <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t('With the card terminal of')}>
+                  {banks.map((b) => (
+                    <button key={b} type="button" role="radio" aria-checked={bank === b} onClick={() => pickBank(b)}
+                      className={cn('h-11 rounded-lg border-2 px-4 text-[14px] font-medium transition-colors', bank === b ? 'border-primary bg-primary/5 text-primary' : 'hover:bg-muted')}>{b}</button>
+                  ))}
+                </div>
               </div>
             )}
             {method === 'voucher' && voucher && voucher.status === 'active' && (
@@ -1332,7 +1357,7 @@ export function PayDialog({ total, currency, cashLimit, onCancel, onPaid, regist
           <div className="grid gap-1 rounded-lg bg-muted/50 p-3 text-[13px]">
             {tenders.map((x, i) => (
               <div key={i} className="flex items-center justify-between gap-2">
-                <span>{t(METHODS.find((m) => m.id === x.method)!.label)}{x.reference ? <span className="ml-1.5 font-mono text-xs text-muted-foreground">{x.reference}</span> : null}</span>
+                <span>{t(METHODS.find((m) => m.id === x.method)!.label)}{x.reference ? <span className={cn('ml-1.5 text-xs text-muted-foreground', x.method !== 'card' && 'font-mono')}>{x.reference}</span> : null}</span>
                 <span className="flex items-center gap-2 tabular">{formatMoney(x.amount)}
                   <button type="button" className="text-muted-foreground hover:text-destructive" aria-label={t('Remove payment')} onClick={() => setTenders((ts) => ts.filter((_, j) => j !== i))}><X className="size-3.5" /></button></span>
               </div>

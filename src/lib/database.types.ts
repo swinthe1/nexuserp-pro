@@ -21354,6 +21354,12 @@ export type Database = {
         }
         Returns: { obligation: string | null; period_start: string | null; period_end: string | null; due_date: string | null; status: string | null; document_id: string | null; document_number: string | null; amount: number | null }[]
       }
+      till_card_banks: {
+        Args: {
+          p_register: string
+        }
+        Returns: Json
+      }
       trade_analysis: {
         Args: {
           p_company: string
