@@ -87,8 +87,8 @@ function columnsOf(f: Filters): Col[] {
     { id: 'code', label: msg('Code'), type: 'text' },
     { id: 'barcode', label: msg('Barcode'), type: 'text', hidden: !['price_list', 'sheet'].includes(f.report) || f.sheet === 'charge' },
     { id: 'item', label: msg('Item'), type: 'text', strong: true },
-    { id: 'group', label: msg('Group'), type: 'text', hidden: true },
-    { id: 'category', label: msg('Sub-group'), type: 'text', hidden: true },
+    // one column: "Pije - Alkolike" (the main category alone when the item sits right in it)
+    { id: 'catsub', label: msg('Category / sub-category'), type: 'text', hidden: true },
     { id: 'producer', label: msg('Producer'), type: 'text', hidden: true },
     { id: 'brand', label: msg('Brand'), type: 'text', hidden: true },
     { id: 'uom', label: msg('Unit|measure'), type: 'text' },
@@ -354,9 +354,13 @@ export function StockReportPage() {
 }
 
 /** the rows, with groups and their subtotals, sortable, searchable, the columns to choose; exports what is seen */
-function ReportTable({ rows, filters, costs, title, subtitle, fileName, onOpen }: {
+function ReportTable({ rows: rowsIn, filters, costs, title, subtitle, fileName, onOpen }: {
   rows: Row[]; filters: Filters; costs: boolean; title: string; subtitle: string; fileName: string; onOpen: (r: Row) => void
 }) {
+  const rows = React.useMemo(() => rowsIn.map((r) => {
+    const g = r.group ? String(r.group) : '', c = r.category ? String(r.category) : ''
+    return { ...r, catsub: g && c && g !== c ? `${g} - ${c}` : g || c || null } as Row
+  }), [rowsIn])
   const cols = React.useMemo(() => columnsOf(filters).filter((c) => costs || !COST_COLS.has(c.id)), [filters, costs])
   const storeKey = `stock-report.cols.${filters.report}.${filters.sheet}`
   const [hidden, setHidden] = React.useState<Set<string>>(() => readHidden(storeKey, cols))
@@ -495,7 +499,15 @@ function ReportTable({ rows, filters, costs, title, subtitle, fileName, onOpen }
 }
 
 function readHidden(key: string, cols: Col[]): Set<string> {
-  try { const s = localStorage.getItem(key); if (s) return new Set(JSON.parse(s) as string[]) } catch { /* private mode */ }
+  try {
+    const s = localStorage.getItem(key)
+    if (s) {
+      const set = new Set(JSON.parse(s) as string[])
+      // the two old columns (category, sub-category) became one: hidden before, hidden now
+      if (set.has('group') && set.has('category')) set.add('catsub')
+      return set
+    }
+  } catch { /* private mode */ }
   return new Set(cols.filter((c) => c.hidden).map((c) => c.id))
 }
 
