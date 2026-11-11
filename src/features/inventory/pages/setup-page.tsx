@@ -57,11 +57,13 @@ function Categories() {
   // two levels: main categories, and their sub-categories under them
   const mains = [...all.filter((c) => !c.parent_id || !all.some((p) => p.id === c.parent_id))].sort((a, b) => td(a.name).localeCompare(td(b.name)))
   const subsOf = (id: string) => all.filter((c) => c.parent_id === id).sort((a, b) => td(a.name).localeCompare(td(b.name)))
-  const fieldsFor = (self?: string) => [
-    { name: 'name' as const, label: t('Name'), placeholder: t('Beverages') },
-    { name: 'code' as const, label: t('Code'), optional: true, half: true, uppercase: true },
-    { name: 'parent_id' as const, label: t('Sub-category of'), type: 'select' as const, optional: true, half: true,
-      options: [{ value: '__none', label: t('None: a main category') }, ...mains.filter((c) => c.id !== self).map((c) => ({ value: c.id, label: td(c.name) }))] },
+  // 'main': a main category has none above it · 'sub': a new sub-category must say whose it is · 'fixed': opened from its main category
+  // 'move': an existing one may go under another main category, or become one itself
+  const fieldsFor = (kind: 'main' | 'sub' | 'fixed' | 'move', self?: string) => [
+    { name: 'name' as const, label: t('Name'), placeholder: kind === 'main' ? t('Beverages') : kind === 'move' ? undefined : t('e.g. Dairy') },
+    { name: 'code' as const, label: t('Code'), optional: true, half: kind === 'sub' || kind === 'move', uppercase: true },
+    ...(kind === 'sub' || kind === 'move' ? [{ name: 'parent_id' as const, label: t('Main category'), type: 'select' as const, half: true,
+      options: [...(kind === 'move' ? [{ value: '__none', label: t('None: a main category') }] : []), ...mains.filter((c) => c.id !== self).map((c) => ({ value: c.id, label: td(c.name) }))] }] : []),
     // fruit and vegetables: thrown away when they go off; the waste report and the Zebra start from these groups
     { name: 'perishable' as const, label: t('Goes off quickly (fruit, vegetables)'), type: 'switch' as const },
   ]
@@ -77,9 +79,9 @@ function Categories() {
       <TableCell>{perishable(c as { perishable?: boolean }) ? <Badge variant="secondary">{t('Goes off quickly')}</Badge> : null}</TableCell>
       <TableCell className="whitespace-nowrap text-right"><Can perm="inventory.write">
         {!sub && <SimpleFormDialog trigger={<Button variant="ghost" size="sm"><Plus /> {t('Sub-category')}</Button>} title={t('New sub-category of {name}', { name: td(c.name) })} schema={categorySchema}
-          defaultValues={{ name: '', code: '', parent_id: c.id, perishable: perishable(c as { perishable?: boolean }) }} fields={fieldsFor()} submitLabel={t('Create sub-category')} onSubmit={create} />}
+          defaultValues={{ name: '', code: '', parent_id: c.id, perishable: perishable(c as { perishable?: boolean }) }} fields={fieldsFor('fixed')} submitLabel={t('Create sub-category')} onSubmit={create} />}
         <SimpleFormDialog trigger={<Button variant="ghost" size="icon-sm" aria-label={t('Edit {name}', { name: td(c.name) })}><Pencil /></Button>} title={t('Edit {name}', { name: td(c.name) })} schema={categorySchema}
-          defaultValues={{ name: c.name, code: c.code ?? '', parent_id: c.parent_id, perishable: perishable(c as { perishable?: boolean }) }} fields={fieldsFor(c.id)} submitLabel={t('Save')}
+          defaultValues={{ name: c.name, code: c.code ?? '', parent_id: c.parent_id, perishable: perishable(c as { perishable?: boolean }) }} fields={fieldsFor(!sub && subsOf(c.id).length ? 'main' : 'move', c.id)} submitLabel={t('Save')}
           onSubmit={({ perishable: p, ...v }) => m.update.mutateAsync({ id: c.id, ...v, code: v.code || null, parent_id: v.parent_id === c.id ? null : v.parent_id ?? null,
             ...(!!p !== perishable(c as { perishable?: boolean }) ? { perishable: !!p } : {}) })} />
         <ConfirmDialog trigger={<Button variant="ghost" size="icon-sm" aria-label={t('Delete {name}', { name: td(c.name) })}><Trash2 /></Button>} title={t('Delete {name}?', { name: td(c.name) })}
@@ -95,9 +97,9 @@ function Categories() {
         <Can perm="inventory.write">
           <div className="flex gap-2">
             {!!mains.length && <SimpleFormDialog trigger={<Button size="sm" variant="outline"><Plus /> {t('New sub-category')}</Button>} title={t('New sub-category')} schema={categorySchema}
-              defaultValues={{ name: '', code: '', parent_id: mains[0]?.id ?? null, perishable: false }} fields={fieldsFor()} submitLabel={t('Create sub-category')} onSubmit={create} />}
+              defaultValues={{ name: '', code: '', parent_id: mains[0]?.id ?? null, perishable: false }} fields={fieldsFor('sub')} submitLabel={t('Create sub-category')} onSubmit={create} />}
             <SimpleFormDialog trigger={<Button size="sm"><Plus /> {t('New category')}</Button>} title={t('New category')} schema={categorySchema}
-              defaultValues={{ name: '', code: '', parent_id: null, perishable: false }} fields={fieldsFor()} submitLabel={t('Create category')} onSubmit={create} />
+              defaultValues={{ name: '', code: '', parent_id: null, perishable: false }} fields={fieldsFor('main')} submitLabel={t('Create category')} onSubmit={create} />
           </div>
         </Can>
       </CardHeader>

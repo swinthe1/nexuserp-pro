@@ -1987,4 +1987,6 @@ export default {
   "Hard to read: check the name and the numbers": "Vështirë për t’u lexuar: kontrolloni emrin dhe numrat",
   "Invoices|read": "Fatura",
   "Of it: tills {tills} · invoices {invoices}": "Prej tyre: arkat {tills} · faturat e shitjes {invoices}",
+  "Main category": "Kategoria kryesore",
+  "e.g. Dairy": "p.sh. Bulmet",
 } satisfies Dict

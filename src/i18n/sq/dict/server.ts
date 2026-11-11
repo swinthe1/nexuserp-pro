@@ -929,4 +929,9 @@ export default {
   "Only a draft contract is activated": "Aktivizohet vetëm një kontratë draft",
   "Only an active contract is renewed": "Rinovohet vetëm një kontratë aktive",
   "Write the reason": "Shkruani arsyen",
+  "A category cannot be its own sub-category": "Kategoria nuk mund të jetë nënkategori e vetvetes",
+  "A sub-category goes under a main category, not under another sub-category": "Nënkategoria vendoset nën një kategori kryesore, jo nën një nënkategori tjetër",
+  "This category has sub-categories of its own: move them first": "Kjo kategori ka nënkategoritë e veta: zhvendosini ato së pari",
+  "There is already a category with this name": "Ekziston tashmë një kategori me këtë emër",
+  "This category already has a sub-category with this name": "Kjo kategori e ka tashmë një nënkategori me këtë emër",
 } satisfies Dict
