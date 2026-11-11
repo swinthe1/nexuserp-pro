@@ -28,19 +28,71 @@ import { ErrorState } from '@/components/error-state'
 import { useRealtimeInvalidate } from '@/hooks/use-realtime'
 import { t, td, tn } from '@/i18n'
 import { formatDateWith } from '@/i18n/format'
-import { formatDate, formatMoney, formatMonth, formatQty, humanize, num, todayISO } from '@/lib/utils'
+import { cn, formatDate, formatMoney, formatMonth, formatQty, humanize, num, todayISO } from '@/lib/utils'
 import { useBankAccounts } from '@/features/finance/api'
 import { AccountingTab } from '@/features/finance/components/t-accounts'
 import {
   useApprovePayroll, usePayrollOtherApprovers, useCalculatePayroll, useCancelPayroll, useCreatePayrollRun, useDeleteRunItem, useEmployees, usePayPayroll, usePayrollRegister,
-  usePayrollRun, usePayrollRuns, usePayslips, usePostPayroll, useReopenPayroll, useRunItems, useSaveRunItem, type PayrollRun, type PayslipRow, type RegisterRow,
-} from '../api'
+  usePayrollRun, usePayrollRuns, usePayslips, usePostPayroll, useReopenPayroll, useRunItems, useSaveRunItem, type PayrollRun, type PayslipRow, type RegisterRow, useEmployeePayslips } from '../api'
 import { PayslipDialog } from '../components/payslip'
 import { MoreMenu } from '@/components/more-menu'
 
 const monthName = (d: string) => formatMonth(`${d}T00:00:00`)
 
 /* ================================================================== runs */
+/** one employee through every month a salary was calculated for them: the figures, the totals, the file */
+function EmployeePayHistory() {
+  const { company } = useCompany()
+  const emps = useEmployees()
+  const [id, setId] = React.useState<string | null>(null)
+  const slips = useEmployeePayslips(id ?? undefined)
+  const rows = React.useMemo(() => [...(slips.data ?? [])].filter((x) => x.run && x.run.status !== 'cancelled').sort((a, b) => (a.run!.period_start < b.run!.period_start ? 1 : -1)), [slips.data])
+  const emp = emps.data?.find((e) => e.id === id)
+  const cols: XlsxColumn<(typeof rows)[number]>[] = [
+    { header: t('Month'), value: (r) => monthName(r.run!.period_start) },
+    { header: t('Payroll'), value: (r) => r.run!.number },
+    { header: t('Paid days'), value: (r) => num(r.paid_days), format: 'qty' },
+    { header: t('Gross salary'), value: (r) => num(r.gross_salary), format: 'money' },
+    { header: t('Employee contributions'), value: (r) => num(r.employee_contributions), format: 'money' },
+    { header: t('Tax on salaries'), value: (r) => num(r.income_tax), format: 'money' },
+    { header: t('Other deductions'), value: (r) => num(r.other_deductions), format: 'money' },
+    { header: t('Net salary'), value: (r) => num(r.net_salary), format: 'money' },
+    { header: t('Employer contributions'), value: (r) => num(r.employer_contributions), format: 'money' },
+    { header: t('Pay date'), value: (r) => formatDate(r.run!.pay_date) },
+    { header: t('Status'), value: (r) => humanize(r.run!.status) },
+  ]
+  const totals: Record<string, number | string> = { [t('Month')]: t('Total') }
+  for (const c of cols) if (c.format === 'money') totals[c.header] = rows.reduce((a, r) => a + num(c.value(r)), 0)
+  return (
+    <div className="grid gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="w-full max-w-sm"><SearchSelect value={id} onChange={setId} clearable placeholder={t('Choose the employee')}
+          options={(emps.data ?? []).map((e) => ({ value: e.id, label: e.full_name, hint: e.number }))} /></div>
+        {id && rows.length > 0 && <span className="text-[13px] text-muted-foreground">{tn(rows.length, '{n} month paid', '{n} months paid')}</span>}
+        {id && <div className="ml-auto"><ExportMenu rows={rows} columns={cols} filename={`${t('payroll|file')}-${emp?.number ?? ''}`} title={t('Salaries of {name}', { name: emp?.full_name ?? '' })}
+          subtitle={company?.name ?? ''} xlsx={{ totals }} disabled={!rows.length} /></div>}
+      </div>
+      {!id ? <Card><EmptyState title={t('Choose the employee')} description={t('Every month a salary was calculated for them shows here, with the totals.')} /></Card>
+        : slips.isLoading ? <Skeleton className="h-48" /> : !rows.length ? <Card><EmptyState title={t('No payslips yet.')} /></Card> : (
+          <Card><CardContent className="overflow-x-auto p-0">
+            <Table>
+              <TableHeader><TableRow className="hover:bg-transparent">{cols.map((c) => <TableHead key={c.header} className={cn(c.format && 'text-right')}>{c.header}</TableHead>)}</TableRow></TableHeader>
+              <TableBody>{rows.map((r) => (
+                <TableRow key={r.id}>{cols.map((c, i) => (
+                  <TableCell key={c.header} className={cn(c.format && 'text-right tabular', c.header === t('Net salary') && 'font-medium')}>
+                    {i === 1 ? <Link to={`/hr/payroll/${r.payroll_run_id}`} className="text-primary hover:underline">{String(c.value(r))}</Link>
+                      : c.format === 'money' ? formatMoney(c.value(r) as number) : c.header === t('Status') ? <StatusBadge status={r.run!.status} /> : String(c.value(r) ?? '')}
+                  </TableCell>))}</TableRow>
+              ))}</TableBody>
+              <TableFooter><TableRow className="hover:bg-transparent">{cols.map((c, i) => (
+                <TableCell key={c.header} className={cn('font-semibold', c.format && 'text-right tabular')}>{i === 0 ? t('Total') : c.format === 'money' ? formatMoney(totals[c.header] as number) : ''}</TableCell>))}</TableRow></TableFooter>
+            </Table>
+          </CardContent></Card>
+        )}
+    </div>
+  )
+}
+
 export function PayrollRunsPage() {
   const navigate = useNavigate()
   const runs = usePayrollRuns()
@@ -57,14 +109,22 @@ export function PayrollRunsPage() {
     { accessorKey: 'total_employer_cost', header: t('Employer cost'), meta: { label: t('Employer cost'), align: 'right' }, cell: ({ getValue }) => <span className="tabular font-medium">{formatMoney(getValue() as number)}</span> },
     { accessorKey: 'pay_date', header: t('Pay date'), meta: { label: t('Pay date') }, cell: ({ getValue }) => formatDate(getValue() as string) },
   ], [])
+  const [by, setBy] = React.useState<'month' | 'person'>('month')
   return (
     <>
       <PageHeader title={t('Payroll')} description={t('One payroll per month: calculate it, have someone else approve it, make it final, then pay.')}
         actions={<Can perm="payroll.write"><Button onClick={() => setNewOpen(true)}><Plus /> {t('New monthly payroll')}</Button></Can>} />
-      <DataTable tableKey="hr.payroll" columns={cols} data={runs.data} isLoading={runs.isLoading} error={runs.error} getRowId={(r) => r.id} exportName="payroll-runs"
+      {/* by month (the payrolls) or one person through all the months they were paid */}
+      <div className="mb-3 inline-flex w-fit rounded-lg bg-muted p-1 text-sm">
+        {(['month', 'person'] as const).map((v) => (
+          <button key={v} type="button" aria-pressed={by === v} onClick={() => setBy(v)}
+            className={cn('rounded-md px-3 py-1.5 font-medium', by === v ? 'bg-background shadow-sm' : 'text-muted-foreground')}>{v === 'month' ? t('By month|payroll') : t('One employee, all months')}</button>
+        ))}
+      </div>
+      {by === 'person' ? <EmployeePayHistory /> : <DataTable tableKey="hr.payroll" columns={cols} data={runs.data} isLoading={runs.isLoading} error={runs.error} getRowId={(r) => r.id} exportName="payroll-runs"
         onRowClick={(r) => navigate(`/hr/payroll/${r.id}`)}
         facets={[{ columnId: 'status', title: t('Status'), options: ['draft', 'calculated', 'approved', 'posted', 'paid', 'cancelled'].map((s) => ({ value: s, label: humanize(s) })) }]}
-        empty={{ title: t('No payroll yet'), description: t('Start with the first month; everyone with an active contract is included.'), action: <Can perm="payroll.write"><Button size="sm" onClick={() => setNewOpen(true)}><Plus /> {t('New monthly payroll')}</Button></Can> }} />
+        empty={{ title: t('No payroll yet'), description: t('Start with the first month; everyone with an active contract is included.'), action: <Can perm="payroll.write"><Button size="sm" onClick={() => setNewOpen(true)}><Plus /> {t('New monthly payroll')}</Button></Can> }} />}
       {newOpen && <NewRunDialog onClose={() => setNewOpen(false)} />}
     </>
   )

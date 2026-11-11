@@ -60,9 +60,9 @@ export function CardsPage({ show = 'all' }: { show?: Show }) {
   const merged = React.useMemo(() => {
     const late = (r: AgingRow) => num(r.d1_30) + num(r.d31_60) + num(r.d61_90) + num(r.d90_plus)
     const m = new Map<string, DebtRow>()
-    const row = (r: AgingRow) => m.get(r.partner_id) ?? { id: r.partner_id, name: r.partner_name, ar: 0, arLate: 0, ap: 0, apLate: 0, oldest: null as string | null }
-    for (const r of arRows) { const x = row(r); x.ar = num(r.total); x.arLate = late(r); x.oldest = r.oldest_due; m.set(r.partner_id, x) }
-    for (const r of apRows) { const x = row(r); x.ap = num(r.total); x.apLate = late(r); if (r.oldest_due && (!x.oldest || r.oldest_due < x.oldest)) x.oldest = r.oldest_due; m.set(r.partner_id, x) }
+    const row = (r: AgingRow) => m.get(r.partner_id) ?? { id: r.partner_id, name: r.partner_name, ar: 0, arLate: 0, arPre: 0, ap: 0, apLate: 0, apPre: 0, oldest: null as string | null }
+    for (const r of arRows) { const x = row(r); x.ar = num(r.total); x.arLate = late(r); x.arPre = Math.abs(num(r.unapplied)); x.oldest = r.oldest_due; m.set(r.partner_id, x) }
+    for (const r of apRows) { const x = row(r); x.ap = num(r.total); x.apLate = late(r); x.apPre = Math.abs(num(r.unapplied)); if (r.oldest_due && (!x.oldest || r.oldest_due < x.oldest)) x.oldest = r.oldest_due; m.set(r.partner_id, x) }
     return [...m.values()].sort((a, b) => Math.abs(b.ar - b.ap) - Math.abs(a.ar - a.ap))
   }, [arRows, apRows])
   const loading = ar.isLoading || ap.isLoading
@@ -125,11 +125,11 @@ export function CardsPage({ show = 'all' }: { show?: Show }) {
 export const ReceivablesPage = () => <CardsPage show="ar" />
 export const PayablesPage = () => <CardsPage show="ap" />
 
-type DebtRow = { id: string; name: string; ar: number; arLate: number; ap: number; apLate: number; oldest: string | null }
+type DebtRow = { id: string; name: string; ar: number; arLate: number; arPre: number; ap: number; apLate: number; apPre: number; oldest: string | null }
 
 /** every partner on one row: to collect, to pay, and the difference (the owner's decision: both sides in one row) */
 function DebtTable({ rows, asOf, loading, error, onPick, chosen }: { rows: DebtRow[]; asOf: string; loading: boolean; error: unknown; onPick: (id: string) => void; chosen: string | null }) {
-  const sum = (k: 'ar' | 'arLate' | 'ap' | 'apLate') => rows.reduce((s, r) => s + r[k], 0)
+  const sum = (k: 'ar' | 'arLate' | 'arPre' | 'ap' | 'apLate' | 'apPre') => rows.reduce((s, r) => s + r[k], 0)
   const net = sum('ar') - sum('ap')
   const money = (v: number, late = false) => <span className={cn(!v && 'text-muted-foreground/50', late && v > 0 && 'text-destructive')}>{v ? formatMoney(v) : '—'}</span>
   const diff = (d: number, one = true) => <><span className={cn('font-semibold', d < 0 && 'text-warning')}>{formatMoney(Math.abs(d))}</span>
@@ -144,28 +144,29 @@ function DebtTable({ rows, asOf, loading, error, onPick, chosen }: { rows: DebtR
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead rowSpan={2} className="align-bottom">{t('Partner')}</TableHead>
-                <TableHead colSpan={2} className="border-b text-center font-semibold text-foreground">{t('Receivable|cards')}</TableHead>
-                <TableHead colSpan={2} className="border-b text-center font-semibold text-foreground">{t('Payable|cards')}</TableHead>
+                <TableHead colSpan={3} className="border-b text-center font-semibold text-foreground">{t('Receivable|cards')}</TableHead>
+                <TableHead colSpan={3} className="border-b text-center font-semibold text-foreground">{t('Payable|cards')}</TableHead>
                 <TableHead rowSpan={2} className="bg-muted/40 text-right align-bottom font-semibold text-foreground">{t('Difference|debts')}</TableHead>
                 <TableHead rowSpan={2} className="align-bottom">{t('Oldest due date')}</TableHead>
               </TableRow>
               <TableRow className="hover:bg-transparent">
-                <TableHead className="text-right">{t('Total with VAT')}</TableHead><TableHead className="text-right">{t('Late')}</TableHead>
-                <TableHead className="text-right">{t('Total with VAT')}</TableHead><TableHead className="text-right">{t('Late')}</TableHead>
+                {/* the prepayment: money paid ahead and not yet set against a document; the total already has it taken off */}
+                <TableHead className="text-right">{t('Total with VAT')}</TableHead><TableHead className="text-right">{t('Late')}</TableHead><TableHead className="text-right">{t('Prepayment|cards')}</TableHead>
+                <TableHead className="text-right">{t('Total with VAT')}</TableHead><TableHead className="text-right">{t('Late')}</TableHead><TableHead className="text-right">{t('Prepayment|cards')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>{rows.map((r) => (
               <TableRow key={r.id} className={cn('cursor-pointer', chosen === r.id && 'bg-primary/5')} onClick={() => onPick(r.id)}>
                 <TableCell className="font-medium">{r.name}</TableCell>
-                <TableCell className="text-right tabular">{money(r.ar)}</TableCell><TableCell className="text-right tabular">{money(r.arLate, true)}</TableCell>
-                <TableCell className="text-right tabular">{money(r.ap)}</TableCell><TableCell className="text-right tabular">{money(r.apLate, true)}</TableCell>
+                <TableCell className="text-right tabular">{money(r.ar)}</TableCell><TableCell className="text-right tabular">{money(r.arLate, true)}</TableCell><TableCell className="text-right tabular text-muted-foreground">{money(r.arPre)}</TableCell>
+                <TableCell className="text-right tabular">{money(r.ap)}</TableCell><TableCell className="text-right tabular">{money(r.apLate, true)}</TableCell><TableCell className="text-right tabular text-muted-foreground">{money(r.apPre)}</TableCell>
                 <TableCell className="whitespace-nowrap bg-muted/40 text-right tabular">{diff(r.ar - r.ap)}</TableCell>
                 <TableCell className={cn('whitespace-nowrap text-[13px]', r.oldest && r.oldest < asOf && 'text-destructive')}>{formatDate(r.oldest)}</TableCell>
               </TableRow>
             ))}</TableBody>
             <TableFooter><TableRow className="hover:bg-transparent"><TableCell className="font-medium">{t('Total')}</TableCell>
-              <TableCell className="text-right tabular font-semibold">{formatMoney(sum('ar'))}</TableCell><TableCell className="text-right tabular">{money(sum('arLate'), true)}</TableCell>
-              <TableCell className="text-right tabular font-semibold">{formatMoney(sum('ap'))}</TableCell><TableCell className="text-right tabular">{money(sum('apLate'), true)}</TableCell>
+              <TableCell className="text-right tabular font-semibold">{formatMoney(sum('ar'))}</TableCell><TableCell className="text-right tabular">{money(sum('arLate'), true)}</TableCell><TableCell className="text-right tabular">{money(sum('arPre'))}</TableCell>
+              <TableCell className="text-right tabular font-semibold">{formatMoney(sum('ap'))}</TableCell><TableCell className="text-right tabular">{money(sum('apLate'), true)}</TableCell><TableCell className="text-right tabular">{money(sum('apPre'))}</TableCell>
               <TableCell className="whitespace-nowrap bg-muted/40 text-right tabular">{diff(net, false)}</TableCell><TableCell /></TableRow></TableFooter>
           </Table>
         )}

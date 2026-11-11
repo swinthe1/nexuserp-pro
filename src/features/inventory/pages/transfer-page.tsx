@@ -5,6 +5,8 @@ import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
 import * as React from 'react'
 import { toast } from 'sonner'
+import { useQuery } from '@tanstack/react-query'
+import { useCompany } from '@/app/company-provider'
 import { supabase } from '@/lib/supabase'
 import { EmptyState } from '@/components/empty-state'
 import { Button } from '@/components/ui/button'
@@ -15,8 +17,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
 import type { Tables } from '@/lib/database.types'
-import { cn, formatQty, num, todayISO } from '@/lib/utils'
-import { useDocument, useLocations, usePostDocument, useSaveDocument, useShipTransfer, useVariantOptions, useWarehouseLevels } from '../api'
+import { cn, formatMoney, formatQty, num, todayISO } from '@/lib/utils'
+import { useDocument, useLocations, usePostDocument, useSaveDocument, useShipTransfer, useTaxCodes, useVariantOptions, useWarehouseLevels } from '../api'
 import { ReceiveTransferCard } from '../components/receive-transfer'
 import { Switch } from '@/components/ui/switch'
 import { DocumentShell, LinesCard, SummaryCard } from '../components/document-shell'
@@ -58,6 +60,31 @@ function TransferForm({ doc }: { doc?: TransferDoc }) {
   const lines = useFieldArray({ control: form.control, name: 'lines' })
   const [fromWh, toWh, watched] = useWatch({ control: form.control, name: ['from_warehouse_id', 'to_warehouse_id', 'lines'] })
   const levels = useWarehouseLevels(editable ? fromWh || undefined : undefined)
+  // what the goods on each line are worth: the barcode, the purchase price with VAT (the cost plus the item's purchase VAT) and the line's value
+  const { can } = useCompany()
+  const costs = can('inventory.costs')
+  const taxes = useTaxCodes()
+  const ids = [...new Set((watched ?? []).map((l) => l.variant_id).filter(Boolean))].sort()
+  const extra = useQuery({
+    queryKey: ['inv', 'transfer-line-info', ids.join(',')], enabled: ids.length > 0, staleTime: 60_000,
+    queryFn: async () => {
+      const prodIds = [...new Set(ids.map((id) => variants.data?.find((v) => v.id === id)?.product_id).filter((x): x is string => !!x))]
+      const [b, p] = await Promise.all([
+        supabase.from('product_barcodes').select('variant_id, barcode, is_primary').in('variant_id', ids).is('deleted_at', null),
+        prodIds.length ? supabase.from('products').select('id, purchase_tax_code_id, sales_tax_code_id').in('id', prodIds) : Promise.resolve({ data: [] as { id: string; purchase_tax_code_id: string | null; sales_tax_code_id: string | null }[] }),
+      ])
+      const barcode = new Map<string, string>()
+      for (const x of [...(b.data ?? [])].sort((m, n) => Number(n.is_primary) - Number(m.is_primary))) if (!barcode.has(x.variant_id)) barcode.set(x.variant_id, x.barcode)
+      return { barcode, tax: new Map((p.data ?? []).map((x) => [x.id, x.purchase_tax_code_id ?? x.sales_tax_code_id])) }
+    },
+  })
+  const priceWithVat = (variantId?: string | null) => {
+    const v = variants.data?.find((x) => x.id === variantId)
+    if (!v) return 0
+    const rate = num(taxes.data?.find((x) => x.id === extra.data?.tax.get(v.product_id))?.rate)
+    return num(v.avg_cost) * (1 + rate / 100)
+  }
+  const totalValue = (watched ?? []).reduce((s, l) => s + num(l.quantity) * priceWithVat(l.variant_id), 0)
   // a unit supplied by another (a market by the central warehouse): its goods come from there
   React.useEffect(() => {
     if (doc || !toWh || (fromWh && fromWh !== toWh)) return
@@ -110,7 +137,7 @@ function TransferForm({ doc }: { doc?: TransferDoc }) {
           ? <div className="mb-4 rounded-lg border bg-muted/40 px-4 py-3 text-sm">{t('A request from the receiving store. Check the quantities, then ship.')}</div>
           : undefined}
         lines={doc && doc.status !== 'draft' && doc.shipped_at && doc.from_warehouse_id !== doc.to_warehouse_id && doc.lines.some((l) => l.quantity_received !== null || doc.status === 'in_transit')
-          ? <ReceiveTransferCard doc={doc} />
+          ? <ReceiveTransferCard doc={doc} info={{ barcode: (id) => extra.data?.barcode.get(id), price: costs ? priceWithVat : undefined }} />
           : <LinesCard
             title={t('Products to move')}
             error={form.formState.errors.lines?.root?.message ?? form.formState.errors.lines?.message}
@@ -124,8 +151,9 @@ function TransferForm({ doc }: { doc?: TransferDoc }) {
             {lines.fields.length === 0 ? <EmptyState compact title={fromWh && toWh ? t('No lines yet') : t('Choose both warehouses first')} /> : (
               <Table>
                 <TableHeader><TableRow className="hover:bg-transparent">
-                  <TableHead className="min-w-[200px]">{t('Product')}</TableHead><TableHead className="min-w-[150px]">{t('From shelf')}</TableHead><TableHead className="min-w-[150px]">{t('To shelf')}</TableHead>
-                  <TableHead className="min-w-[140px]">{t('Lot')}</TableHead><TableHead className="w-24 text-right">{t('Available')}</TableHead><TableHead className="w-24 text-right">{t('Qty')}</TableHead><TableHead className="w-10" />
+                  <TableHead className="min-w-[200px]">{t('Product')}</TableHead><TableHead>{t('Barcode')}</TableHead><TableHead className="min-w-[150px]">{t('From shelf')}</TableHead><TableHead className="min-w-[150px]">{t('To shelf')}</TableHead>
+                  <TableHead className="min-w-[140px]">{t('Lot')}</TableHead><TableHead className="w-24 text-right">{t('Available')}</TableHead><TableHead className="w-24 text-right">{t('Qty')}</TableHead>
+                  {costs && <><TableHead className="text-right">{t('Purchase price (with VAT)')}</TableHead><TableHead className="text-right">{t('Total value (with VAT)')}</TableHead></>}<TableHead className="w-10" />
                 </TableRow></TableHeader>
                 <TableBody>
                   {lines.fields.map((f, i) => {
@@ -135,11 +163,14 @@ function TransferForm({ doc }: { doc?: TransferDoc }) {
                     return (
                       <TableRow key={f.id} className="align-top hover:bg-transparent">
                         <TableCell><FormField control={form.control} name={`lines.${i}.variant_id`} render={({ field }) => (<FormItem><FormControl><VariantPicker value={field.value} onChange={(x) => field.onChange(x ?? '')} disabled={field.disabled} /></FormControl><FormMessage /></FormItem>)} /></TableCell>
+                        <TableCell className="whitespace-nowrap pt-4 text-[13px] tabular text-muted-foreground">{(l?.variant_id && extra.data?.barcode.get(l.variant_id)) || '—'}</TableCell>
                         <TableCell><FormField control={form.control} name={`lines.${i}.from_location_id`} render={({ field }) => (<FormItem><FormControl><LocationPicker warehouseId={fromWh} value={field.value} onChange={(x) => field.onChange(x ?? '')} disabled={field.disabled} /></FormControl><FormMessage /></FormItem>)} /></TableCell>
                         <TableCell><FormField control={form.control} name={`lines.${i}.to_location_id`} render={({ field }) => (<FormItem><FormControl><LocationPicker warehouseId={toWh} value={field.value} onChange={(x) => field.onChange(x ?? '')} disabled={field.disabled} /></FormControl><FormMessage /></FormItem>)} /></TableCell>
                         <TableCell>{v && v.tracking !== 'none' ? <FormField control={form.control} name={`lines.${i}.lot_id`} render={({ field }) => (<LotPicker variantId={l?.variant_id} value={field.value} onChange={field.onChange} disabled={field.disabled} />)} /> : <span className="text-xs text-muted-foreground">—</span>}</TableCell>
                         <TableCell className={cn('pt-4 text-right tabular text-[13px]', editable && num(l?.quantity) > avail && 'text-destructive')}>{editable ? formatQty(avail) : '—'}</TableCell>
                         <TableCell><FormField control={form.control} name={`lines.${i}.quantity`} render={({ field }) => (<FormItem><FormControl><Input type="number" step="any" min="0" className="h-9 min-w-[88px] text-right" {...field} /></FormControl><FormMessage /></FormItem>)} /></TableCell>
+                        {costs && <><TableCell className="whitespace-nowrap pt-4 text-right tabular text-[13px]">{v ? formatMoney(priceWithVat(l?.variant_id)) : '—'}</TableCell>
+                          <TableCell className="whitespace-nowrap pt-4 text-right tabular text-[13px] font-medium">{v ? formatMoney(num(l?.quantity) * priceWithVat(l?.variant_id)) : '—'}</TableCell></>}
                         <TableCell>{editable && <Button type="button" variant="ghost" size="icon-sm" onClick={() => lines.remove(i)} aria-label={t('Remove line {n}', { n: i + 1 })}><Trash2 /></Button>}</TableCell>
                       </TableRow>
                     )
@@ -149,7 +180,8 @@ function TransferForm({ doc }: { doc?: TransferDoc }) {
             )}
           </LinesCard>
         }
-        summary={<SummaryCard rows={[[t('Lines'), (watched ?? []).length], [t('Units'), formatQty((watched ?? []).reduce((s, l) => s + num(l.quantity), 0))]]}
+        summary={<SummaryCard rows={[[t('Lines'), (watched ?? []).length], [t('Units'), formatQty((watched ?? []).reduce((s, l) => s + num(l.quantity), 0))],
+          ...(costs ? [[t('Total value (with VAT)'), formatMoney(totalValue)] as [string, string]] : [])]}
           footer={t('Use the same warehouse on both sides to move stock between shelves.')} />}
       >
         <Card>

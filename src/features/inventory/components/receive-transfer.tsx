@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
 import type { Tables } from '@/lib/database.types'
-import { cn, formatDate, formatQty, num } from '@/lib/utils'
+import { cn, formatDate, formatMoney, formatQty, num } from '@/lib/utils'
 import { t, tn } from '@/i18n'
 import { useBarcodesOf, useReceiveTransfer, useVariantOptions } from '../api'
 import { formatQtyOf } from '@/lib/units'
@@ -25,7 +25,8 @@ type Doc = Tables<'stock_transfers'> & { lines: Line[] }
  * A transfer on the road: the receiving store counts what arrived (typing or scanning) and
  * says what happens to anything missing. Once received, the same card shows the result.
  */
-export function ReceiveTransferCard({ doc }: { doc: Doc }) {
+/** `info`: the barcode of an item and, for those who may see costs, its purchase price with VAT */
+export function ReceiveTransferCard({ doc, info }: { doc: Doc; info?: { barcode: (variantId: string) => string | undefined; price?: (variantId: string) => number } }) {
   const receiving = doc.status === 'in_transit'
   const variants = useVariantOptions()
   const barcodes = useBarcodesOf(doc.lines.map((l) => l.variant_id))
@@ -119,7 +120,9 @@ export function ReceiveTransferCard({ doc }: { doc: Doc }) {
         <Table>
           <TableHeader><TableRow className="hover:bg-transparent">
             <TableHead className="min-w-[220px]">{t('Product')}</TableHead>
+            {info && <TableHead>{t('Barcode')}</TableHead>}
             <TableHead className="w-28 text-right">{t('Shipped')}</TableHead>
+            {info?.price && <><TableHead className="text-right">{t('Purchase price (with VAT)')}</TableHead><TableHead className="text-right">{t('Total value (with VAT)')}</TableHead></>}
             {counted && <TableHead className="w-28 text-right">{t('Counted on arrival')}</TableHead>}
             <TableHead className="w-32 text-right">{t('Received|transfer')}</TableHead>
             <TableHead className="w-28 text-right">{t('Difference')}</TableHead>
@@ -135,7 +138,10 @@ export function ReceiveTransferCard({ doc }: { doc: Doc }) {
                     <div className="font-medium">{v?.name ?? '—'}</div>
                     <div className="text-xs text-muted-foreground">{v?.sku}</div>
                   </TableCell>
+                  {info && <TableCell className="whitespace-nowrap text-[13px] tabular text-muted-foreground">{info.barcode(l.variant_id) ?? '—'}</TableCell>}
                   <TableCell className="text-right tabular">{formatQtyOf(shipped(l), l.variant_id)}</TableCell>
+                  {info?.price && <><TableCell className="whitespace-nowrap text-right tabular">{formatMoney(info.price(l.variant_id))}</TableCell>
+                    <TableCell className="whitespace-nowrap text-right tabular font-medium">{formatMoney(num(shipped(l)) * info.price(l.variant_id))}</TableCell></>}
                   {counted && <TableCell className="text-right tabular text-muted-foreground">{l.quantity_counted == null ? '—' : formatQtyOf(l.quantity_counted, l.variant_id)}</TableCell>}
                   <TableCell className="text-right">
                     {receiving
