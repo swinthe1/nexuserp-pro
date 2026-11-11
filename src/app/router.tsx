@@ -82,7 +82,6 @@ const JournalEntriesPage = lazy(() => import('@/features/finance/pages/journal-p
 const JournalEntryPage = lazy(() => import('@/features/finance/pages/journal-page'), 'JournalEntryPage')
 const PaymentsPage = lazy(() => import('@/features/finance/pages/payments-page'), 'PaymentsPage')
 const PaymentPage = lazy(() => import('@/features/finance/pages/payments-page'), 'PaymentPage')
-const AgingPage = React.lazy(() => import('@/features/finance/pages/aging-page').then((m) => ({ default: m.AgingPage })))
 const BankPage = lazy(() => import('@/features/finance/pages/bank-page'), 'BankPage')
 const StatementPage = lazy(() => import('@/features/finance/pages/bank-page'), 'StatementPage')
 const AssetsPage = lazy(() => import('@/features/finance/pages/assets-page'), 'AssetsPage')
@@ -122,6 +121,8 @@ const TillPage = lazy(() => import('@/features/pos/pages/till-page'), 'TillPage'
 const SafePage = lazy(() => import('@/features/safe/safe-page'), 'SafePage')
 const PurchaseInvoicePage = lazy(() => import('@/features/procurement/pages/purchase-invoice-page'), 'PurchaseInvoicePage')
 const CardsPage = lazy(() => import('@/features/finance/pages/cards-page'), 'CardsPage')
+const ReceivablesPage = lazy(() => import('@/features/finance/pages/cards-page'), 'ReceivablesPage')
+const PayablesPage = lazy(() => import('@/features/finance/pages/cards-page'), 'PayablesPage')
 const CompensationsPage = lazy(() => import('@/features/finance/pages/compensations-page'), 'CompensationsPage')
 const AppointmentsCalendarPage = lazy(() => import('@/features/appointments/calendar-page'), 'AppointmentsCalendarPage')
 const AppointmentsSetupPage = lazy(() => import('@/features/appointments/setup-page'), 'AppointmentsSetupPage')
@@ -337,10 +338,10 @@ const appRoutes: RouteObject[] = [
       { path: 'finance/asset-invoices', element: <RequirePerm perm="finance.read" />, children: [{ index: true, element: <AssetInvoicesPage /> }] },
       { path: 'finance/cards', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <CardsPage /> }] },
       { path: 'finance/compensations', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <CompensationsPage /> }] },
-      { path: 'finance/receivables', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <AgingPage key="ar" kind="ar" /> }] },
+      { path: 'finance/receivables', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <ReceivablesPage /> }] },
       { path: 'finance/payment-proposal', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <PaymentProposalPage /> }] },
       { path: 'finance/cash-forecast', element: <RequirePerm perm="finance.read" />, children: [{ index: true, element: <CashForecastPage /> }] },
-      { path: 'finance/payables', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <AgingPage key="ap" kind="ap" /> }] },
+      { path: 'finance/payables', element: <RequirePerm perm="invoicing.read" />, children: [{ index: true, element: <PayablesPage /> }] },
       { path: 'finance', element: <RequirePerm perm="finance.read" />, children: [
         { index: true, element: <FinanceOverviewPage /> },
         { path: 'accounts', element: <AccountsPage /> },

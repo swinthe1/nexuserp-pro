@@ -4,14 +4,10 @@ import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Can, useCompany } from '@/app/company-provider'
 import { EmptyState } from '@/components/empty-state'
-import { PageHeader } from '@/components/page-header'
 import { StatCard } from '@/components/stat-card'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ErrorState } from '@/components/error-state'
 import { msg, t, tn } from '@/i18n'
@@ -41,7 +37,7 @@ type Due = { id: string; number: string; ref: string | null; partner_id: string;
  * Every open invoice or bill by its due date (from the meeting with the staff): late ones first,
  * then week by week, with what falls due each week; bills also by unit and by kind of supplier.
  */
-function DueList({ kind, asOf }: { kind: 'ar' | 'ap'; asOf: string }) {
+function DueList({ kind, asOf, partnerId }: { kind: 'ar' | 'ap'; asOf: string; partnerId?: string | null }) {
   const { companyId } = useCompany()
   const whs = useWarehouses()
   const [units, setUnits] = React.useState<string[]>([])
@@ -50,7 +46,7 @@ function DueList({ kind, asOf }: { kind: 'ar' | 'ap'; asOf: string }) {
     queryKey: ['fin', companyId, 'debts-by-due', kind, units, kinds, asOf], enabled: !!companyId,
     queryFn: async () => unwrap(await supabase.rpc('debts_by_due', { p_company: companyId!, p_kind: kind, p: { units, kinds, as_of: asOf } as never })) as unknown as { rows: Due[]; as_of: string },
   })
-  const rows = q.data?.rows ?? []
+  const rows = React.useMemo(() => (q.data?.rows ?? []).filter((r) => !partnerId || r.partner_id === partnerId), [q.data, partnerId])
   // the week a due date falls in: late, this week, next week, then the Monday it starts
   const groups = React.useMemo(() => {
     const today = new Date(`${q.data?.as_of ?? todayISO()}T00:00:00`)
@@ -110,13 +106,16 @@ function DueList({ kind, asOf }: { kind: 'ar' | 'ap'; asOf: string }) {
   )
 }
 
-export function AgingPage({ kind }: { kind: 'ar' | 'ap' }) {
+/**
+ * One side of the debts in full: by partner with how late each part is, or document by document by its due date.
+ * The page around it (Finance › Partner cards) gives the date and, when one is chosen, the partner.
+ */
+export function AgingBody({ kind, asOf, partnerId }: { kind: 'ar' | 'ap'; asOf: string; partnerId?: string | null }) {
   const [view, setView] = React.useState<'partner' | 'due'>('partner')
   const navigate = useNavigate()
   const { company } = useCompany()
-  const [asOf, setAsOf] = React.useState(todayISO())
   const aging = useAging(kind, asOf)
-  const rows = React.useMemo(() => [...(aging.data ?? [])].sort((a, b) => num(b.total) - num(a.total)), [aging.data])
+  const rows = React.useMemo(() => [...(aging.data ?? [])].filter((r) => !partnerId || r.partner_id === partnerId).sort((a, b) => num(b.total) - num(a.total)), [aging.data, partnerId])
   const sum = (k: keyof AgingRow) => rows.reduce((s, r) => s + num(r[k]), 0)
   const total = sum('total')
   const overdue = sum('d1_30') + sum('d31_60') + sum('d61_90') + sum('d90_plus')
@@ -133,29 +132,19 @@ export function AgingPage({ kind }: { kind: 'ar' | 'ap' }) {
 
   return (
     <>
-      <PageHeader title={t('Debts|menu')}
-        description={isAR ? t('Open customer balances, by how long they are overdue. Receipts not yet matched to an invoice reduce the balance.') : t('Open vendor balances, by how long they are overdue. Payments not yet matched to a bill reduce the balance.')}
-        actions={<>
-          <div className="flex items-center gap-2"><Label htmlFor="asof" className="text-[13px] text-muted-foreground">{t('On date')}</Label>
-            <Input id="asof" type="date" className="w-[150px]" value={asOf} onChange={(e) => setAsOf(e.target.value || todayISO())} /></div>
-          <GridExportMenu name={`${isAR ? t('receivables') : t('payables')}-${asOf}`} title={t('Debts|menu')} subtitle={`${isAR ? t('Customers') : t('Vendors')} · ${formatDate(asOf)}`} grid={exportGrid} disabled={!rows.length} />
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="inline-flex w-fit rounded-lg bg-muted p-1 text-sm">
+          {(['partner', 'due'] as const).map((v) => (
+            <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)}
+              className={cn('rounded-md px-3 py-1.5 font-medium', view === v ? 'bg-background shadow-sm' : 'text-muted-foreground')}>{v === 'partner' ? t('By partner') : t('By due date')}</button>
+          ))}
+        </div>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <GridExportMenu name={`${isAR ? t('receivables') : t('payables')}-${asOf}`} title={isAR ? t('Receivables|menu') : t('Payables|menu')} subtitle={`${isAR ? t('Customers') : t('Vendors')} · ${formatDate(asOf)}`} grid={exportGrid} disabled={!rows.length} />
           {!isAR && <Button variant="outline" asChild><Link to="/finance/payment-proposal">{t('Pay several at once')}</Link></Button>}
-          <Can perm="invoicing.write"><Button asChild><Link to={`/finance/payments/new?type=${payType}`}>{isAR ? t('Receive a payment') : t('Pay a vendor')}</Link></Button></Can>
-        </>} />
-      {/* both sides of the debts on one page: what customers owe me, what I owe suppliers */}
-      <Tabs value={kind} onValueChange={(v) => navigate(v === 'ar' ? '/finance/receivables' : '/finance/payables', { replace: true })} className="mb-4">
-        <TabsList>
-          <TabsTrigger value="ar">{t('Receivables|menu')}</TabsTrigger>
-          <TabsTrigger value="ap">{t('Payables|menu')}</TabsTrigger>
-        </TabsList>
-      </Tabs>
-      <div className="mb-3 inline-flex w-fit rounded-lg bg-muted p-1 text-sm">
-        {(['partner', 'due'] as const).map((v) => (
-          <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)}
-            className={cn('rounded-md px-3 py-1.5 font-medium', view === v ? 'bg-background shadow-sm' : 'text-muted-foreground')}>{v === 'partner' ? t('By partner') : t('By due date')}</button>
-        ))}
+        </div>
       </div>
-      {view === 'due' ? <DueList kind={kind} asOf={asOf} /> : <>
+      {view === 'due' ? <DueList kind={kind} asOf={asOf} partnerId={partnerId} /> : <>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label={isAR ? t('Total to collect (with VAT)') : t('Total to pay (with VAT)')} value={formatMoney(total)} loading={aging.isLoading} hint={[isAR ? tn(rows.length, '{n} customer', '{n} customers') : tn(rows.length, '{n} vendor', '{n} vendors'), company?.base_currency].filter(Boolean).join(' · ')} />
         <StatCard label={t('Overdue (with VAT)')} value={formatMoney(overdue)} loading={aging.isLoading} tone={overdue ? (isAR ? 'warning' : 'destructive') : 'default'} hint={total ? t('{pct}% of the balance', { pct: ((overdue / total) * 100).toFixed(0) }) : undefined} />
