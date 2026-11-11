@@ -3865,6 +3865,7 @@ export type Database = {
           updated_by: string | null
           deleted_at: string | null
           deleted_by: string | null
+          job_status: string
         }
         Insert: {
           id?: string
@@ -3897,6 +3898,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          job_status?: string
         }
         Update: {
           id?: string
@@ -3929,6 +3931,7 @@ export type Database = {
           updated_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
+          job_status?: string
         }
         Relationships: [
           { foreignKeyName: "employees_company_id_cost_center_id_fkey"; columns: ["company_id", "cost_center_id"]; isOneToOne: false; referencedRelation: "cost_centers"; referencedColumns: ["company_id", "id"] },

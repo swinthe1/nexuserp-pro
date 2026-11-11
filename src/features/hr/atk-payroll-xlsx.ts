@@ -14,15 +14,14 @@ const WIDTHS = [14, 16, 14, 12, 14, 14, 17, 15, 9, 12, 15, 8]
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 const col = (i: number) => String.fromCharCode(65 + i)
 
-export async function exportAtkPayroll(rows: RegisterRow[], periodStart: string, periodEnd: string, filename: string) {
+export async function exportAtkPayroll(rows: RegisterRow[], filename: string) {
   const { zipSync, strToU8 } = await import('fflate')
-  // the main job or a second one: from the contract in force in the month
+  // the main job, a second job or an intern: as the employee's page says now
   const ids = rows.map((r) => r.employee_id)
   const primary = new Map<string, boolean>()
   if (ids.length) {
-    const { data } = await supabase.from('employment_contracts').select('employee_id, is_primary_employer, start_date, end_date')
-      .in('employee_id', ids).is('deleted_at', null).lte('start_date', periodEnd).order('start_date')
-    for (const c of data ?? []) if (!c.end_date || c.end_date >= periodStart) primary.set(c.employee_id, c.is_primary_employer !== false)
+    const { data } = await supabase.from('employees').select('id, job_status').in('id', ids)
+    for (const e of data ?? []) primary.set(e.id, e.job_status !== 'secondary')
   }
   const txt = (ref: string, v: string, s: number) => `<c r="${ref}" t="inlineStr" s="${s}"><is><t xml:space="preserve">${esc(v)}</t></is></c>`
   const n = (ref: string, v: number) => `<c r="${ref}" s="2"><v>${Math.round(v * 100) / 100}</v></c>`

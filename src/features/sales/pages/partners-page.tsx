@@ -264,7 +264,6 @@ function DocList({ title, rows, empty }: { title: string; empty: string; rows: {
 /* ---------------------------------------------------------------- form */
 function PartnerForm({ partner }: { partner?: PartnerDetail }) {
   const navigate = useNavigate()
-  const [params] = useSearchParams()
   const { company, companyId, can } = useCompany()
   const terms = usePaymentTerms()
   const lists = usePriceLists()
@@ -272,12 +271,12 @@ function PartnerForm({ partner }: { partner?: PartnerDetail }) {
   const currencies = useCurrencies()
   const save = useSaveRecord('business_partners')
   const writable = can('partners.write')
-  const vendor = !!params.get('vendor')
   const form = useForm<PartnerValues>({
     resolver: zodResolver(partnerSchema),
     defaultValues: {
       code: partner?.code ?? '', name: partner?.name ?? '', legal_name: partner?.legal_name ?? '', kind: (partner?.kind as PartnerValues['kind']) ?? 'company',
-      is_customer: partner?.is_customer ?? !vendor, is_vendor: partner?.is_vendor ?? vendor, vendor_kinds: ((partner as { vendor_kinds?: string[] } | undefined)?.vendor_kinds ?? []) as PartnerValues['vendor_kinds'], tax_number: partner?.tax_number ?? '', vat_number: partner?.vat_number ?? '',
+      /* a new partner starts as a customer and a supplier, active (the owner's decision): one is switched off when it does not apply */
+      is_customer: partner?.is_customer ?? true, is_vendor: partner?.is_vendor ?? true, vendor_kinds: ((partner as { vendor_kinds?: string[] } | undefined)?.vendor_kinds ?? []) as PartnerValues['vendor_kinds'], tax_number: partner?.tax_number ?? '', vat_number: partner?.vat_number ?? '',
       email: partner?.email ?? '', phone: partner?.phone ?? '', website: partner?.website ?? '', currency_code: partner?.currency_code ?? null,
       payment_term_id: partner?.payment_term_id ?? null, price_list_id: partner?.price_list_id ?? null, default_discount_pct: partner?.default_discount_pct ?? 0,
       credit_limit: partner?.credit_limit ?? null, salesperson_id: partner?.salesperson_id ?? null, notes: partner?.notes ?? '', is_active: partner?.is_active ?? true,

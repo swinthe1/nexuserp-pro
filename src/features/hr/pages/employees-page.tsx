@@ -97,7 +97,7 @@ function EmployeeForm({ emp }: { emp?: EmployeeRow }) {
     gender: emp?.gender ?? null as string | null, email: blank(emp?.email), phone: blank(emp?.phone), address: blank(emp?.address),
     department_id: emp?.department_id ?? null as string | null, position_id: emp?.position_id ?? null as string | null, manager_id: emp?.manager_id ?? null as string | null,
     hire_date: emp?.hire_date ?? todayISO(), termination_date: blank(emp?.termination_date), employment_status: emp?.employment_status ?? 'active',
-    employment_type: emp?.employment_type ?? 'full_time', bank_name: blank(emp?.bank_name), iban: blank(emp?.iban), cost_center_id: emp?.cost_center_id ?? null as string | null,
+    employment_type: emp?.employment_type ?? 'full_time', job_status: (emp?.job_status ?? 'primary') as 'primary' | 'secondary' | 'intern', bank_name: blank(emp?.bank_name), iban: blank(emp?.iban), cost_center_id: emp?.cost_center_id ?? null as string | null,
     user_id: emp?.user_id ?? null as string | null,
   }))
   const set = <K extends keyof typeof v>(k: K) => (x: (typeof v)[K]) => setV((s) => ({ ...s, [k]: x }))
@@ -107,7 +107,7 @@ function EmployeeForm({ emp }: { emp?: EmployeeRow }) {
       id: emp?.id, first_name: v.first_name.trim(), last_name: v.last_name.trim(), personal_number: v.personal_number.trim().toUpperCase() || null,
       date_of_birth: v.date_of_birth || null, gender: v.gender, email: v.email.trim() || null, phone: v.phone.trim() || null, address: v.address.trim() || null,
       department_id: v.department_id, position_id: v.position_id, manager_id: v.manager_id, hire_date: v.hire_date, termination_date: v.termination_date || null,
-      employment_status: v.employment_status, employment_type: v.employment_type, bank_name: v.bank_name.trim() || null,
+      employment_status: v.employment_status, employment_type: v.employment_type, job_status: v.job_status, bank_name: v.bank_name.trim() || null,
       iban: v.iban.replace(/\s+/g, '').toUpperCase() || null, cost_center_id: v.cost_center_id, user_id: v.user_id,
     })
     toast.success(emp ? t('Employee saved') : t('Employee added'))
@@ -140,6 +140,11 @@ function EmployeeForm({ emp }: { emp?: EmployeeRow }) {
         <div className="grid gap-1.5"><Label>{t('Employment type')}</Label>
           <Select value={v.employment_type} onValueChange={set('employment_type')} disabled={!editable}><SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>{['full_time', 'part_time', 'contract', 'intern'].map((s) => <SelectItem key={s} value={s}>{humanize(s)}</SelectItem>)}</SelectContent></Select></div>
+        {/* main job, second job or intern: decides the tax on the salary and "Punë Primare" in ATK's payroll file */}
+        <div className="grid gap-1.5"><Label>{t('Job with us')}</Label>
+          <Select value={v.job_status} onValueChange={set('job_status')} disabled={!editable}><SelectTrigger aria-label={t('Job with us')}><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value="primary">{t('Main job|status')}</SelectItem><SelectItem value="secondary">{t('Second job|status')}</SelectItem><SelectItem value="intern">{t('Intern|status')}</SelectItem></SelectContent></Select>
+          <p className="text-xs text-muted-foreground">{v.job_status === 'secondary' ? t('A second job: the salary is taxed at the flat rate, and ATK’s payroll file says JO under “Punë Primare”.') : t('ATK’s payroll file says PO under “Punë Primare”.')}</p></div>
         {field('bank_name', msg('Bank'))}{field('iban', msg('IBAN'))}
         <div className="grid gap-1.5"><Label>{t('Cost center')}</Label><SearchSelect value={v.cost_center_id} onChange={set('cost_center_id')} disabled={!editable} clearable placeholder={t('From the department')}
           options={(ccs.data ?? []).map((c) => ({ value: c.id, label: `${c.code} ${td(c.name)}` }))} /></div>

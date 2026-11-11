@@ -2026,4 +2026,10 @@ export default {
   "Back to all the cards": "Kthehu te të gjitha kartelat",
   "owes us|one": "na ka borxh",
   "we owe|one": "i kemi borxh",
+  "Job with us": "Puna te ne",
+  "Main job|status": "Punë primare",
+  "Second job|status": "Punë sekondare",
+  "Intern|status": "Praktikant",
+  "A second job: the salary is taxed at the flat rate, and ATK’s payroll file says JO under “Punë Primare”.": "Punë sekondare: paga tatohet me normën e sheshtë dhe në skedarin e pagave të ATK-së del JO te “Punë Primare”.",
+  "ATK’s payroll file says PO under “Punë Primare”.": "Në skedarin e pagave të ATK-së del PO te “Punë Primare”.",
 } satisfies Dict

@@ -310,7 +310,7 @@ function RegisterCard({ run }: { run: PayrollRun }) {
             <Landmark /> {t('Transfers for the bank')}</Button>}
           {/* ATK's own template for the monthly declaration of wages */}
           {run.country_rules === 'XK' && rows.length > 0 && <Button variant="outline" size="sm" title={t('The Excel file in ATK’s template for declaring wages')}
-            onClick={() => void exportAtkPayroll(rows, run.period_start, run.period_end, `${t('payroll-list|file')}-${run.period_start.slice(0, 7)}`)}><FileSpreadsheet /> {t('Excel, ATK layout')}</Button>}
+            onClick={() => void exportAtkPayroll(rows, `${t('payroll-list|file')}-${run.period_start.slice(0, 7)}`)}><FileSpreadsheet /> {t('Excel, ATK layout')}</Button>}
           <ExportMenu rows={rows} columns={cols} filename={`${run.country_rules === 'XK' ? t('payroll-list|file') : t('payroll|file')}-${run.period_start.slice(0, 7)}`}
             title={title} subtitle={`${company?.name ?? ''} · ${period} · ${run.number}`} xlsx={{ totals }} />
         </div>
