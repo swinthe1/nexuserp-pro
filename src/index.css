@@ -185,6 +185,8 @@
   .dark, .sidebar-navy { --mod-l: 68%; }
 }
 @layer components {
+  /* every table: a thin line between its columns (the owner's rule); `no-col-lines` for a table that only lays things out */
+  table:not(.no-col-lines) th + th, table:not(.no-col-lines) td + td { border-left: 1px solid hsl(var(--border)); }
   .mod-chip {
     color: hsl(var(--mod) var(--mod-l));
     background: hsl(var(--mod) var(--mod-l) / 0.12);

@@ -281,12 +281,12 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
   const title = doc ? doc.number : t(cfg.newTitle)
   const body = (
     <>
-      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
+      <div className={cn('grid grid-cols-[minmax(0,1fr)] items-start gap-3', doc && 'lg:grid-cols-[minmax(0,1fr)_280px]')}>
         <div className="grid min-w-0 content-start">
         <Card>
-          <CardContent className="grid gap-3 p-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+          <CardContent className="grid items-start gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-4">
             <FormField control={form.control} name="partner_id" render={({ field }) => (
-              <FormItem className="sm:col-span-2 lg:col-span-1"><FormLabel>{t('Customer')}</FormLabel>
+              <FormItem className="sm:col-span-2"><FormLabel>{t('Customer')}</FormLabel>
                 <FormControl><SearchSelect value={field.value} onChange={onCustomer} disabled={!editable} placeholder={t('Choose a customer')} remote={registry}
                   options={(customers.data ?? []).map((c) => ({ value: c.id, label: c.name, hint: c.tax_number ?? c.code, keywords: [c.code] }))} /></FormControl>
                 {partner && <FormDescription>{[partner.email, partner.phone].filter(Boolean).join(' · ') || partner.code}{num(partner.default_discount_pct) > 0 && ` · ${t('{pct}% customer discount', { pct: partner.default_discount_pct })}`}</FormDescription>}
@@ -353,20 +353,20 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
               )} />
             )}
             <FormField control={form.control} name="notes" render={({ field }) => (
-              <FormItem className="sm:col-span-2 lg:col-span-3 2xl:col-span-4"><FormLabel optional>{t('Notes')}</FormLabel><FormControl><Textarea rows={2} disabled={!editable} {...field} /></FormControl></FormItem>
+              <FormItem className="sm:col-span-2 lg:col-span-4"><FormLabel optional>{t('Notes')}</FormLabel><FormControl><Textarea rows={1} disabled={!editable} {...field} /></FormControl></FormItem>
             )} />
             {kind === 'quotes' && (
               <FormField control={form.control} name="terms" render={({ field }) => (
-                <FormItem className="sm:col-span-2 lg:col-span-3 2xl:col-span-4"><FormLabel optional>{t('Terms shown to the customer')}</FormLabel><FormControl><Textarea rows={2} disabled={!editable} placeholder={t('Delivery within 7 working days. Prices exclude VAT.')} {...field} /></FormControl></FormItem>
+                <FormItem className="sm:col-span-2 lg:col-span-4"><FormLabel optional>{t('Terms shown to the customer')}</FormLabel><FormControl><Textarea rows={2} disabled={!editable} placeholder={t('Delivery within 7 working days. Prices exclude VAT.')} {...field} /></FormControl></FormItem>
               )} />
             )}
           </CardContent>
         </Card>
         <SalesLinesEditor form={form} editable={editable} currency={currency} progress={progress} showProgress={!!progress} />
         </div>
-        <div className="side-compact grid content-start gap-3 lg:sticky lg:top-[64px]">
+        {doc && <div className="side-compact grid content-start gap-3 lg:sticky lg:top-[64px]">
         <SidePanel kind={kind} doc={doc} availability={availability.data} currency={currency} base={base} />
-        </div>
+        </div>}
       </div>
     </>
   )
@@ -382,7 +382,8 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
             {kind === 'orders' && doc.status !== 'draft' && <StatusBadge status={doc.invoice_status as string} />}
             {kind === 'invoices' && doc.status === 'posted' && <StatusBadge status={doc.payment_status as string} />}
           </>}
-          description={doc ? t('Created {date}', { date: formatDate(doc.created_at, true) }) : undefined}
+          description={doc ? t('Created {date}', { date: formatDate(doc.created_at, true) })
+            : t('The price of an item fills in by itself: the price agreed with this customer, then their price list, then the item’s own price. You can always type another.')}
           actions={<>{doc && <DocumentActions id={doc.id} kind={kind === 'quotes' ? 'sales_quote' : kind === 'orders' ? 'sales_order' : 'sales_invoice'}
             alt={kind === 'quotes' ? [{ kind: 'proforma_quote', label: t('pro forma') }] : kind === 'orders' ? [{ kind: 'proforma', label: t('pro forma') }] : undefined} />}
             {doc && <Can perm={cfg.writePerm}><DuplicateButton table={kind === 'quotes' ? 'sales_quotes' : kind === 'orders' ? 'sales_orders' : 'sales_invoices'} id={doc.id} /></Can>}

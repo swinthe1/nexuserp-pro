@@ -530,7 +530,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table id="pi-lines" className="w-full text-[13px]">
+          <table id="pi-lines" className="doc-lines w-full text-[13px]">
             <thead className="bg-muted/50 text-left text-[12px] text-muted-foreground">
               <tr>
                 <th className="w-8 px-2 py-2 font-medium">#</th>

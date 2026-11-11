@@ -1,12 +1,10 @@
 import { itemCodes } from '@/lib/item-codes'
-import { Plus, Trash2 } from 'lucide-react'
+import { PackagePlus, Plus, ScanBarcode, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { useFieldArray, useWatch, type UseFormReturn } from 'react-hook-form'
 import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
-import { EmptyState } from '@/components/empty-state'
 import { PackQty, packsFromPieces, type PackChange } from '@/components/pack-qty'
-import { SearchSelect } from '@/components/search-select'
 import { Button } from '@/components/ui/button'
 import { FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
@@ -85,6 +83,8 @@ function GrossPriceInput({ net, rate, quantity, discountPct, manual, line, onNet
   </>
 }
 
+const foldText = (x: string) => x.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+
 let keySeq = 0
 export const newLineKey = () => `n${Date.now()}-${keySeq++}`
 
@@ -105,13 +105,6 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
   const watched = useWatch({ control: form.control, name: 'lines' })
   const [partnerId, priceListId, docDate, cur] = useWatch({ control: form.control, name: ['partner_id', 'price_list_id', 'doc_date', 'currency_code'] })
   const rateOf = React.useCallback((taxId?: string | null) => num(taxes.data?.find((t) => t.id === taxId)?.rate), [taxes.data])
-  const variantOptions = React.useMemo(() => (variants.data ?? []).map((v) => ({
-    value: v.id, label: v.name,
-    hint: v.product_type === 'stockable' ? `${itemCodes(v)} · ${t('{qty} available', { qty: formatQtyOf(v.available, v.id) })}` : itemCodes(v),
-    // the name, every barcode and each supplier's article number find it
-    keywords: [v.name, ...(v.codes ? v.codes.split(' ') : [])],
-  })), [variants.data])
-
   const applyPrice = React.useCallback(async (i: number, variantId: string, quantity: number, setDescription: boolean) => {
     try {
       const p = await fetchPrice({ companyId, partnerId, variantId, quantity, date: docDate, priceListId, currency: cur })
@@ -151,20 +144,105 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
   const addLine = () => lines.append({ key: newLineKey(), variant_id: null, description: '', quantity: 1, unit_price: 0, discount_pct: 0, tax_code_id: taxes.data?.find((t) => t.scope !== 'purchase' && num(t.rate) > 0)?.id ?? null, price_source: 'auto', sales_order_line_id: null, pack_id: null, pack_qty: null })
 
   const discount = totals.gross - totals.sub
+
+  // the same way in as on the purchase invoice: scan or type above, the item becomes a line, the cursor waits on its quantity
+  const [code, setCode] = React.useState('')
+  const [listOpen, setListOpen] = React.useState(false)
+  const [pick, setPick] = React.useState(0)
+  const codeRef = React.useRef<HTMLInputElement>(null)
+  const qtyRefs = React.useRef(new Map<string, HTMLInputElement>())
+  const dq = React.useDeferredValue(code)
+  const hay = React.useMemo(() => (variants.data ?? []).map((v) => ({ v, text: foldText(`${v.name} ${v.sku ?? ''} ${v.codes ?? ''}`) })), [variants.data])
+  const fits = React.useMemo(() => {
+    const q = foldText(dq.trim())
+    if (!q || (/^\d+$/.test(q) && q.length >= 8)) return []
+    const words = q.split(/\s+/)
+    const out: (typeof hay)[number]['v'][] = []
+    for (const h of hay) { if (words.every((w) => h.text.includes(w))) { out.push(h.v); if (out.length >= 8) break } }
+    return out
+  }, [hay, dq])
+  React.useEffect(() => setPick(0), [dq])
+  const focusQty = (key: string) => window.setTimeout(() => { const el = qtyRefs.current.get(key); el?.focus(); el?.select() }, 60)
+  const take = (variantId: string, units = 1) => {
+    setCode(''); setListOpen(false)
+    const all = form.getValues('lines')
+    const at = all.findIndex((l) => l.variant_id === variantId && !l.advance_invoice_id && !l.sales_order_line_id)
+    if (at >= 0) {
+      // scanned again: one more on the same line
+      const l = all[at]!, q = num(l.quantity) + units
+      form.setValue(`lines.${at}.quantity`, q, { shouldDirty: true, shouldValidate: true })
+      if (l.pack_id) form.setValue(`lines.${at}.pack_qty`, packsFromPieces(packs.byId.get(l.pack_id), q))
+      if (l.price_source === 'auto') void applyPrice(at, variantId, q, false)
+      return focusQty(l.key ?? '')
+    }
+    const key = newLineKey(), i = all.length
+    const k = packForScan(packs.byVariant.get(variantId), units)
+    lines.append({ key, variant_id: variantId, description: variants.data?.find((x) => x.id === variantId)?.name ?? '', quantity: units, unit_price: 0, discount_pct: 0,
+      tax_code_id: taxes.data?.find((t) => t.scope !== 'purchase' && num(t.rate) > 0)?.id ?? null, price_source: 'auto', sales_order_line_id: null,
+      pack_id: k && units > 1 ? k.id : null, pack_qty: k && units > 1 ? 1 : null }, { shouldFocus: false })
+    void applyPrice(i, variantId, units, true)
+    focusQty(key)
+  }
+  const onCode = async () => {
+    const c = code.trim(); if (!c || !companyId) return
+    const chosen = dq.trim() === c ? fits[Math.min(pick, fits.length - 1)] : undefined
+    if (chosen && (fits.length === 1 || listOpen)) return take(chosen.id)
+    const hit = await lookupCode(companyId, c).catch(() => null)
+    if (hit) return take(hit.variant_id, num(hit.units_per_scan) || 1)
+    if (fits.length > 1) return setListOpen(true)
+    toast.error(t('No product with barcode or code “{code}”', { code: c }))
+  }
+  const onCodeKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') { e.preventDefault(); void onCode() }
+    else if (e.key === 'ArrowDown' && fits.length) { e.preventDefault(); setListOpen(true); setPick((i) => Math.min(i + 1, fits.length - 1)) }
+    else if (e.key === 'ArrowUp' && fits.length) { e.preventDefault(); setPick((i) => Math.max(i - 1, 0)) }
+    else if (e.key === 'Escape') setListOpen(false)
+  }
+  // Enter in a line goes on to its next field, and from the last one back to the scan field
+  const next = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+    const row = e.currentTarget.closest('tr')
+    const inputs = row ? [...row.querySelectorAll<HTMLInputElement>('input[data-nav]')] : []
+    const n = inputs[inputs.indexOf(e.currentTarget) + 1]
+    if (n) { n.focus(); n.select() } else codeRef.current?.focus()
+  }
   const variantLabel = (id?: string | null) => variants.data?.find((v) => v.id === id)
   const taxName = (id?: string | null) => { const n = taxes.data?.find((x) => x.id === id)?.name; return n ? td(n) : t('No VAT') }
 
   return (
     <div className="mt-4 rounded-lg border bg-card">
-      <div className="flex items-center justify-between px-4 py-3">
-        <h3 className="text-sm font-semibold">{t('Lines')}</h3>
-        {editable && <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 text-[13px]"><Switch checked={withVat} onCheckedChange={switchVat} aria-label={t('Type prices with VAT')} /> {t('Type prices with VAT')}</label>
-          <Button type="button" size="sm" variant="outline" onClick={addLine}><Plus /> {t('Add line')}</Button>
-        </div>}
-      </div>
+      {editable ? (
+        <div className="flex flex-wrap items-center gap-2 border-b p-3">
+          <div className="relative w-full max-w-xl">
+            <ScanBarcode className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input ref={codeRef} value={code} onChange={(e) => { setCode(e.target.value); setListOpen(true) }} onKeyDown={onCodeKey}
+              onFocus={() => setListOpen(true)} onBlur={() => window.setTimeout(() => setListOpen(false), 150)}
+              className="pl-8" placeholder={variants.data ? t('Scan the barcode, or type the code or the name') : t('Loading the items…')} aria-label={t('Barcode, code or name')}
+              role="combobox" aria-expanded={listOpen && fits.length > 0} aria-controls="sl-fits" aria-autocomplete="list" />
+            {listOpen && fits.length > 0 && (
+              <ul id="sl-fits" role="listbox" className="absolute inset-x-0 top-full z-30 mt-1 max-h-80 overflow-y-auto rounded-md border bg-popover p-1 text-[13px] shadow-md">
+                {fits.map((it, i) => (
+                  <li key={it.id} role="option" aria-selected={i === pick}
+                    className={cn('flex cursor-pointer items-center gap-3 rounded-sm px-2 py-1.5', i === pick && 'bg-accent')}
+                    onMouseEnter={() => setPick(i)} onMouseDown={(e) => { e.preventDefault(); take(it.id) }}>
+                    <span className="min-w-0 flex-1 truncate font-medium">{it.name}</span>
+                    <span className="shrink-0 text-[11px] text-muted-foreground">{itemCodes(it)}</span>
+                    {it.product_type === 'stockable' && <span className="w-20 shrink-0 text-right tabular-nums text-muted-foreground">{formatQtyOf(it.available, it.id)}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="ml-auto flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-2 text-[13px]"><Switch checked={withVat} onCheckedChange={switchVat} aria-label={t('Type prices with VAT')} /> {t('Type prices with VAT')}</label>
+            <Button type="button" size="sm" variant="outline" onClick={addLine} title={t('A line of free text, with no item: a service, a note')}><Plus /> {t('Free-text line')}</Button>
+          </div>
+        </div>
+      ) : <div className="px-4 py-3"><h3 className="text-sm font-semibold">{t('Lines')}</h3></div>}
       {lines.fields.length === 0 ? (
-        <EmptyState compact title={t('No lines yet')} description={t("Add products or services. Prices come from the customer's price list automatically.")} action={editable && <Button size="sm" type="button" onClick={addLine}><Plus /> {t('Add line')}</Button>} />
+        <div className="px-3 py-10 text-center text-[13px] text-muted-foreground">
+          <PackagePlus className="mx-auto mb-2 size-6" />{editable ? t('Scan or type the first item above.') : t('No lines yet')}</div>
       ) : !editable ? (
         <div className="overflow-x-auto">
           <Table className="min-w-[760px]">
@@ -204,111 +282,107 @@ export function SalesLinesEditor({ form, editable, progress, currency, showProgr
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <Table className="min-w-[900px]">
-            <TableHeader><TableRow className="hover:bg-transparent">
-              <TableHead className="w-8">#</TableHead>
-              <TableHead>{t('Item')}</TableHead>
-              <TableHead className="w-32 text-right">{t('Qty')}</TableHead>
-              <TableHead className="w-32 text-right">{withVat ? t('Unit price (with VAT)') : t('Unit price (without VAT)')}</TableHead>
-              <TableHead className="w-24 text-right">{t('Disc. %')}</TableHead>
-              <TableHead className="w-36">{t('VAT')}</TableHead>
-              <TableHead className="w-32 text-right">{t('Amount (without VAT)')}</TableHead>
-              <TableHead className="w-10" />
-            </TableRow></TableHeader>
-            <TableBody>
+          <table className="doc-lines w-full min-w-[900px] text-[13px]">
+            <thead className="bg-muted/50 text-left text-[12px] text-muted-foreground">
+              <tr>
+                <th className="w-8 px-2 py-2 font-medium">#</th>
+                <th className="px-2 py-2 font-medium">{t('Item')}</th>
+                <th className="w-24 px-2 py-2 text-right font-medium">{t('Qty')}</th>
+                <th className="w-28 px-2 py-2 text-right font-medium">{withVat ? t('Unit price (with VAT)') : t('Unit price (without VAT)')}</th>
+                <th className="w-20 px-2 py-2 text-right font-medium">{t('Disc. %')}</th>
+                <th className="w-32 px-2 py-2 font-medium">{t('VAT')}</th>
+                <th className="w-28 px-2 py-2 text-right font-medium">{t('Without VAT')}</th>
+                <th className="w-28 px-2 py-2 text-right font-medium">{t('With VAT')}</th>
+                <th className="w-8" />
+              </tr>
+            </thead>
+            <tbody>
               {lines.fields.map((f, i) => {
                 const l = watched?.[i]
-                const amt = l ? lineAmounts(l, rateOf(l.tax_code_id)) : { sub: 0 }
+                const amt = l ? lineAmounts(l, rateOf(l.tax_code_id)) : { sub: 0, total: 0 }
                 const v = variantLabel(l?.variant_id)
                 const short = v && v.product_type === 'stockable' && num(l?.quantity) > num(v.available)
+                const remove = <td className="px-1 py-1"><Button type="button" size="icon" variant="ghost" className="size-8" onClick={() => lines.remove(i)} aria-label={t('Remove line {n}', { n: i + 1 })}><Trash2 /></Button></td>
                 if (l?.advance_invoice_id) return (
-                  <TableRow key={f.id} className="bg-muted/30 hover:bg-muted/30">
-                    <TableCell className="text-[13px] text-muted-foreground">{i + 1}</TableCell>
-                    <TableCell colSpan={4} className="text-[13px]"><span className="font-medium">{t('Advance deducted')}</span> · {l.description}</TableCell>
-                    <TableCell className="text-[13px]">{taxName(l.tax_code_id)}</TableCell>
-                    <TableCell className="text-right tabular text-[13px] font-medium">{formatMoney(amt.sub, currency)}</TableCell>
-                    <TableCell><Button type="button" variant="ghost" size="icon-sm" onClick={() => lines.remove(i)} aria-label={t('Remove line {n}', { n: i + 1 })}><Trash2 /></Button></TableCell>
-                  </TableRow>
+                  <tr key={f.id} className="border-t bg-muted/30">
+                    <td className="px-2 py-2 tabular-nums text-muted-foreground">{i + 1}</td>
+                    <td colSpan={4} className="px-2 py-2"><span className="font-medium">{t('Advance deducted')}</span> · {l.description}</td>
+                    <td className="px-2 py-2">{taxName(l.tax_code_id)}</td>
+                    <td className="px-2 py-2 text-right tabular-nums font-medium">{formatMoney(amt.sub, currency)}</td>
+                    <td className="px-2 py-2 text-right tabular-nums font-medium">{formatMoney(amt.total, currency)}</td>
+                    {remove}
+                  </tr>
                 )
                 return (
-                  <TableRow key={f.id} className="align-top hover:bg-transparent">
-                    <TableCell className="pt-4 text-[13px] text-muted-foreground">{i + 1}</TableCell>
-                    <TableCell className="min-w-[280px]">
-                      <div className="grid gap-1.5">
-                        <FormField control={form.control} name={`lines.${i}.variant_id`} render={({ field }) => (
-                          <FormItem><FormControl>
-                            <SearchSelect value={field.value} options={variantOptions} placeholder={t('Product, or leave empty for a free-text line')} clearable
-                              searchPlaceholder={t('Code, name or scan')}
-                              onChange={(val) => { field.onChange(val); setPack(i, { pack_id: null, pack_qty: null }); if (val) void applyPrice(i, val, num(l?.quantity) || 1, true) }}
-                              onUnmatchedEnter={async (code) => {
-                                const hit = await lookupCode(companyId!, code).catch(() => null)
-                                if (!hit) return void toast.error(t('No product with barcode or code “{code}”', { code }))
-                                field.onChange(hit.variant_id)
-                                form.setValue(`lines.${i}.quantity`, num(hit.units_per_scan) || 1)
-                                const k = packForScan(packs.byVariant.get(hit.variant_id), num(hit.units_per_scan))
-                                setPack(i, k ? { pack_id: k.id, pack_qty: 1 } : { pack_id: null, pack_qty: null })
-                                void applyPrice(i, hit.variant_id, num(hit.units_per_scan) || 1, true)
-                              }} />
-                          </FormControl></FormItem>
-                        )} />
-                        <FormField control={form.control} name={`lines.${i}.description`} render={({ field }) => (
-                          <FormItem><FormControl><Input className="h-8 text-[13px]" placeholder={t('Description on the document')} aria-label={t('Description, line {n}', { n: i + 1 })} {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                      </div>
-                    </TableCell>
-                    <TableCell>
+                  <tr key={f.id} className="border-t align-top">
+                    <td className="px-2 py-2 tabular-nums text-muted-foreground">{i + 1}</td>
+                    <td className="min-w-[240px] px-1 py-1">
+                      {/* the name as it goes on the document: it can be reworded; a line with no item is free text */}
+                      <FormField control={form.control} name={`lines.${i}.description`} render={({ field }) => (
+                        <FormItem className="space-y-0"><FormControl><Input className={cn('h-8 font-medium', v && 'border-transparent bg-transparent px-1 shadow-none hover:border-input focus-visible:border-input')}
+                          placeholder={t('Description on the document')} aria-label={t('Description, line {n}', { n: i + 1 })} {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                      {v && <p className="px-1 text-[11px] text-muted-foreground">{itemCodes(v)}{v.uom_code ? ` · ${v.uom_code}` : ''}{v.product_type === 'stockable' ? ` · ${t('{qty} available', { qty: formatQtyOf(v.available, v.id) })}` : ''}</p>}
+                    </td>
+                    <td className="px-1 py-1">
                       <FormField control={form.control} name={`lines.${i}.quantity`} render={({ field }) => (
-                        <FormItem><FormControl><Input type="number" step="any" min="0" className={cn('h-9 min-w-[80px] text-right', short && 'border-warning')} aria-label={t('Quantity, line {n}', { n: i + 1 })}
-                          {...field} onChange={(e) => { field.onChange(e); if (l?.pack_id) form.setValue(`lines.${i}.pack_qty`, packsFromPieces(packs.byId.get(l.pack_id), e.target.value)) }}
+                        <FormItem className="space-y-0"><FormControl><Input data-nav type="number" step="any" min="0" className={cn('h-8 min-w-[70px] text-right tabular-nums', short && 'border-warning')} aria-label={t('Quantity, line {n}', { n: i + 1 })}
+                          {...field} ref={(el) => { field.ref(el); const k = l?.key ?? f.id; if (el) qtyRefs.current.set(k, el); else qtyRefs.current.delete(k) }}
+                          onKeyDown={next} onFocus={(e) => e.target.select()}
+                          onChange={(e) => { field.onChange(e); if (l?.pack_id) form.setValue(`lines.${i}.pack_qty`, packsFromPieces(packs.byId.get(l.pack_id), e.target.value)) }}
                           onBlur={() => { field.onBlur(); if (l?.variant_id && l.price_source === 'auto') void applyPrice(i, l.variant_id, num(field.value) || 1, false) }} /></FormControl><FormMessage /></FormItem>
                       )} />
                       <PackQty packs={l?.variant_id ? packs.byVariant.get(l.variant_id) : undefined} packId={l?.pack_id} packQty={l?.pack_qty} quantity={l?.quantity}
                         uom={v?.uom_code} line={i + 1} onChange={(c) => { setPack(i, c); if (c.quantity && l?.variant_id && l.price_source === 'auto') void applyPrice(i, l.variant_id, c.quantity, false) }} />
                       {short && <p className="mt-1 text-right text-2xs text-warning">{t('only {qty} free', { qty: formatQty(v.available, v?.uom_code) })}</p>}
-                    </TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="px-1 py-1">
                       {withVat && l ? (
                         <GrossPriceInput net={num(l.unit_price)} rate={rateOf(l.tax_code_id)} quantity={num(l.quantity)} discountPct={num(l.discount_pct)} manual={l.price_source === 'manual'} line={i + 1}
                           onNet={(n) => { form.setValue(`lines.${i}.unit_price`, n, { shouldDirty: true, shouldValidate: true }); form.setValue(`lines.${i}.price_source`, 'manual') }} />
                       ) : <FormField control={form.control} name={`lines.${i}.unit_price`} render={({ field }) => (
-                        <FormItem><FormControl><Input type="number" step="any" min="0" className="h-9 min-w-[100px] text-right" aria-label={t('Unit price, line {n}', { n: i + 1 })}
-                          {...field} onChange={(e) => { field.onChange(e); form.setValue(`lines.${i}.price_source`, 'manual') }} /></FormControl><FormMessage /></FormItem>
+                        <FormItem className="space-y-0"><FormControl><Input data-nav type="number" step="any" min="0" className="h-8 min-w-[80px] text-right tabular-nums" aria-label={t('Unit price, line {n}', { n: i + 1 })}
+                          {...field} onKeyDown={next} onFocus={(e) => e.target.select()} onChange={(e) => { field.onChange(e); form.setValue(`lines.${i}.price_source`, 'manual') }} /></FormControl><FormMessage /></FormItem>
                       )} />}
-                      {l?.price_source === 'auto' && l.variant_id && <p className="mt-1 text-right text-2xs text-muted-foreground">{t('automatic price')}</p>}
-                      {l && rateOf(l.tax_code_id) > 0 && num(l.unit_price) > 0 && <p className="mt-0.5 text-right text-2xs text-muted-foreground">{withVat
+                      {l?.price_source === 'auto' && l.variant_id && <p className="mt-0.5 text-right text-2xs text-muted-foreground">{t('automatic price')}</p>}
+                      {l && rateOf(l.tax_code_id) > 0 && num(l.unit_price) > 0 && <p className="text-right text-2xs text-muted-foreground">{withVat
                         ? t('Without VAT {amount}', { amount: formatNumberWith(num(l.unit_price), { minimumFractionDigits: 2, maximumFractionDigits: 4 }) })
                         : t('With VAT {amount}', { amount: formatMoney(num(l.unit_price) * (1 + rateOf(l.tax_code_id) / 100), currency) })}</p>}
-                    </TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="px-1 py-1">
                       <FormField control={form.control} name={`lines.${i}.discount_pct`} render={({ field }) => (
-                        <FormItem><FormControl><Input type="number" step="any" min="0" max="100" className="h-9 min-w-[70px] text-right" aria-label={t('Discount, line {n}', { n: i + 1 })} {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem className="space-y-0"><FormControl><Input data-nav type="number" step="any" min="0" max="100" className="h-8 min-w-[52px] text-right tabular-nums" aria-label={t('Discount, line {n}', { n: i + 1 })}
+                          {...field} onKeyDown={next} onFocus={(e) => e.target.select()} /></FormControl><FormMessage /></FormItem>
                       )} />
-                    </TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="px-1 py-1">
                       <FormField control={form.control} name={`lines.${i}.tax_code_id`} render={({ field }) => (
                         <Select value={field.value ?? ''} onValueChange={field.onChange}>
-                          <SelectTrigger className="h-9" aria-label={t('VAT, line {n}', { n: i + 1 })}><SelectValue placeholder={t('No VAT')} /></SelectTrigger>
+                          <SelectTrigger className="h-8 min-w-[78px]" aria-label={t('VAT, line {n}', { n: i + 1 })}><SelectValue placeholder={t('No VAT')} /></SelectTrigger>
                           <SelectContent>{(taxes.data ?? []).filter((x) => x.scope !== 'purchase' && x.is_active).map((x) => <SelectItem key={x.id} value={x.id}>{td(x.name)}</SelectItem>)}</SelectContent>
                         </Select>
                       )} />
-                    </TableCell>
-                    <TableCell className="pt-4 text-right tabular text-[13px] font-medium">{formatMoney(amt.sub, currency)}</TableCell>
-                    <TableCell><Button type="button" variant="ghost" size="icon-sm" onClick={() => lines.remove(i)} aria-label={t('Remove line {n}', { n: i + 1 })}><Trash2 /></Button></TableCell>
-                  </TableRow>
+                    </td>
+                    <td className="px-2 py-2 text-right tabular-nums">{formatMoney(amt.sub, currency)}</td>
+                    <td className="px-2 py-2 text-right tabular-nums font-medium">{formatMoney(amt.total, currency)}</td>
+                    {remove}
+                  </tr>
                 )
               })}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
       )}
       {lines.fields.length > 0 && (
-        <dl className="ml-auto grid w-full max-w-xs grid-cols-[1fr_auto] gap-x-6 gap-y-1 border-t px-4 py-3 text-[13px]">
-          {discount > 0 && <><dt className="text-muted-foreground">{t('Before discount, without VAT')}</dt><dd className="text-right tabular">{formatMoney(totals.gross, currency)}</dd>
-            <dt className="text-muted-foreground">{t('Discount')}</dt><dd className="text-right tabular text-success">−{formatMoney(discount, currency)}</dd></>}
-          <dt className="text-muted-foreground">{t('Amount without VAT')}</dt><dd className="text-right tabular">{formatMoney(totals.sub, currency)}</dd>
-          <dt className="text-muted-foreground">{t('VAT')}</dt><dd className="text-right tabular">{formatMoney(totals.tax, currency)}</dd>
-          <dt className="mt-1 border-t pt-2 font-semibold">{t('Total with VAT')}</dt><dd className="mt-1 border-t pt-2 text-right tabular text-base font-semibold">{formatMoney(totals.total, currency)}</dd>
-        </dl>
+        <div className="border-t p-4">
+          <dl className="grid content-start gap-1 text-sm md:ml-auto md:w-80">
+            <div className="flex justify-between"><dt className="text-muted-foreground">{t('Before discount (without VAT)')}</dt><dd className="tabular-nums">{formatMoney(totals.gross, currency)}</dd></div>
+            <div className="flex justify-between"><dt className="text-muted-foreground">{t('Discounts')}</dt><dd className="tabular-nums">{discount < 0.005 ? formatMoney(0, currency) : `−${formatMoney(discount, currency)}`}</dd></div>
+            <div className="flex justify-between"><dt className="text-muted-foreground">{t('Amount without VAT')}</dt><dd className="tabular-nums">{formatMoney(totals.sub, currency)}</dd></div>
+            <div className="flex justify-between"><dt className="text-muted-foreground">{t('VAT')}</dt><dd className="tabular-nums">{formatMoney(totals.tax, currency)}</dd></div>
+            <div className="flex justify-between border-t pt-1 text-base font-semibold"><dt>{t('Total (with VAT)')}</dt><dd className="tabular-nums">{formatMoney(totals.total, currency)}</dd></div>
+          </dl>
+        </div>
       )}
       {form.formState.errors.lines?.message && <p className="px-4 pb-3 text-xs font-medium text-destructive">{t(form.formState.errors.lines.message)}</p>}
     </div>

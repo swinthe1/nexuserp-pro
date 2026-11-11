@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { formatNumberWith, t } from '@/i18n'
-import { cn } from '@/lib/utils'
+import { useTaxCodes } from '@/features/inventory/api'
+import { cn, num } from '@/lib/utils'
 
 /* ------------------------------------------------------------------ the arithmetic (no eval) */
 /**
@@ -90,7 +91,12 @@ export function CalculatorButton() {
 
 function CalculatorPad({ onClose }: { onClose: () => void }) {
   const { company } = useCompany()
-  const vat = company?.country_code === 'AL' ? 20 : 18
+  // every VAT rate the company works with (Kosovo: 18% and 8%), the highest first
+  const taxes = useTaxCodes()
+  const rates = React.useMemo(() => {
+    const r = [...new Set((taxes.data ?? []).filter((x) => x.is_active !== false && num(x.rate) > 0).map((x) => num(x.rate)))].sort((a, b) => b - a).slice(0, 4)
+    return r.length ? r : [company?.country_code === 'AL' ? 20 : 18]
+  }, [taxes.data, company?.country_code])
   const [e, setE] = React.useState('')
   const [done, setDone] = React.useState<Line | null>(null)
   const [history, setHistory] = React.useState<Line[]>(readHistory)
@@ -120,7 +126,7 @@ function CalculatorPad({ onClose }: { onClose: () => void }) {
   }
   const back = () => { if (done && !e) { setDone(null); return } setE((x) => x.slice(0, -1)) }
   const clear = () => { setE(''); setDone(null) }
-  const withVat = (add: boolean) => {
+  const withVat = (add: boolean, vat: number) => {
     const v = value
     if (v === null) return
     const r = Math.round((add ? v * (1 + vat / 100) : v / (1 + vat / 100)) * 1e6) / 1e6
@@ -192,8 +198,10 @@ function CalculatorPad({ onClose }: { onClose: () => void }) {
             ))}
           </div>
           <div className="mt-1.5 grid grid-cols-2 gap-1.5">
-            <Button type="button" variant="outline" size="sm" onClick={() => { withVat(true); box.current?.focus() }} disabled={value === null}>{t('+ VAT {pct}%', { pct: vat })}</Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => { withVat(false); box.current?.focus() }} disabled={value === null}>{t('Without VAT {pct}%', { pct: vat })}</Button>
+            {rates.map((vat) => <React.Fragment key={vat}>
+              <Button type="button" variant="outline" size="sm" onClick={() => { withVat(true, vat); box.current?.focus() }} disabled={value === null}>{t('+ VAT {pct}%', { pct: vat })}</Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => { withVat(false, vat); box.current?.focus() }} disabled={value === null}>{t('Without VAT {pct}%', { pct: vat })}</Button>
+            </React.Fragment>)}
           </div>
         </>
       )}
