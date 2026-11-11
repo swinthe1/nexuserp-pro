@@ -206,9 +206,10 @@ export const NAV: NavSection[] = [
     label: msg('Accounting'),
     title: msg('Accounting and taxes|menu'),
     items: [
-      { label: msg('Books check'), href: '/check', icon: ShieldCheck, perm: 'invoicing.read', keywords: ['kontrolli', 'gabime', 'gabimet', 'mistakes', 'check', 'kujdestari', 'pa faturë', 'minus', 'nui'] },
-      { label: msg('VAT books|menu'), href: '/tax/books', icon: BookOpen, perm: 'tax.read', keywords: ['libri i shitjes', 'libri i shitjeve', 'sales book', 'vat book', 'tvsh', 'libri i blerjes', 'libri i blerjeve', 'purchase book'], hub: msg('VAT|menu'), part: msg('Taxes and books') },
-      { label: msg('VAT declarations'), href: '/tax/declarations', icon: ClipboardPen, perm: 'tax.read', keywords: ['vat return', 'deklarata', 'tvsh', 'dpt', 'atk'], hub: msg('VAT|menu'), part: msg('Taxes and books') },
+      // the check of the books, the VAT books and the VAT returns: one entry, "Kontrolli i Librave", three tabs (the owner's decision)
+      { label: msg('Books check'), href: '/check', icon: ShieldCheck, perm: 'invoicing.read', keywords: ['kontrolli', 'gabime', 'gabimet', 'mistakes', 'check', 'kujdestari', 'pa faturë', 'minus', 'nui'], hub: msg('Books check') },
+      { label: msg('VAT books|menu'), href: '/tax/books', icon: BookOpen, perm: 'tax.read', keywords: ['libri i shitjes', 'libri i shitjeve', 'sales book', 'vat book', 'tvsh', 'libri i blerjes', 'libri i blerjeve', 'purchase book'], hub: msg('Books check'), part: msg('Taxes and books') },
+      { label: msg('VAT declarations'), href: '/tax/declarations', icon: ClipboardPen, perm: 'tax.read', keywords: ['vat return', 'deklarata', 'tvsh', 'dpt', 'atk'], hub: msg('Books check'), part: msg('Taxes and books') },
       { label: msg('Corporate income tax'), href: '/tax/income-tax', icon: PieChart, perm: 'tax.read', keywords: ['tatimi mbi fitimin', 'tatim fitimi', 'cit', 'profit tax', 'deklarata vjetore'], hub: msg('Other taxes|menu'), part: msg('Taxes and books') },
       { label: msg('Withholding tax'), href: '/tax/withholding', icon: HandCoins, perm: 'tax.read', keywords: ['tatim në burim', 'tatimi në burim', 'withholding', 'qira', 'rent', 'wht'], hub: msg('Other taxes|menu'), part: msg('Taxes and books') },
       { label: msg('Small business tax'), href: '/tax/small-business', icon: BadgePercent, perm: 'tax.read', keywords: ['biznes i vogël', 'biznes i vogel', '3%', '9%', 'tremujor', 'qarkullim', 'small business', 'turnover tax'], hub: msg('Other taxes|menu'), part: msg('Taxes and books') },

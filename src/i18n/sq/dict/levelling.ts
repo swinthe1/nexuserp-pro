@@ -130,7 +130,7 @@ export default {
   "Before posting, the guard warned and the person went on. Often that is right; when one person does it often, a few minutes together with them saves mistakes.": "Para postimit Kujdestari paralajmëroi dhe personi vazhdoi. Shpesh kjo është në rregull; kur një person e bën shpesh, disa minuta së bashku me të kursejnë gabime.",
   "{n} time": "{n} herë",
   "{n} times": "{n} herë",
-  "Books check": "Kontrolli i librave",
+  "Books check": "Kontrolli i Librave",
   "What slipped through, found every morning: each with why it matters and where to fix it.": "Çfarë ka kaluar pa u vënë re, e gjetur çdo mëngjes: secila me arsyen pse ka rëndësi dhe vendin ku rregullohet.",
   "Nothing to check. The books look clean.": "Asgjë për të kontrolluar. Librat duken në rregull.",
   "See all": "Shiko të gjitha",
