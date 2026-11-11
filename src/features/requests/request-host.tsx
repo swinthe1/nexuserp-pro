@@ -220,6 +220,7 @@ export function RequestHost() {
             onClick={() => { window.open(menuAt.href!, '_blank', 'noopener'); setMenuAt(null) }}>{t('Open in a new tab')}</button>}
         </div>
       )}
+      <RequestsIntro onRequest={() => { setTimeout(() => void start(null, false), 250) }} />
       {picking && <Picker onDone={(r) => void picked(r)} />}
       {snapping && <div data-req-ignore="" className="fixed bottom-4 left-1/2 z-[101] flex -translate-x-1/2 items-center gap-2 rounded-full bg-foreground px-4 py-2 text-sm text-background shadow-lg">
         <Loader2 className="size-4 animate-spin" />{t('Taking a picture of the screen…')}</div>}
@@ -258,7 +259,7 @@ export function RequestHost() {
             <div className={cn('grid gap-2 rounded-lg border p-3', confirmed ? 'border-success/40 bg-success/[0.06]' : 'border-primary/40 bg-primary/[0.04]')}>
               <div className="flex items-center gap-2 text-sm font-medium">
                 {confirmed ? <Check className="size-4 text-success" /> : <Lightbulb className="size-4 text-primary" />}
-                {confirmed ? t('Detailed request confirmed') : t('The AI wrote your request out. Read it, fix it if needed and confirm it.')}
+                {confirmed ? t('Detailed request confirmed') : t('Agent Dris wrote your request out. Read it, fix it if needed and confirm it.')}
               </div>
               <Textarea rows={8} value={detail} onChange={(e) => { setDetail(e.target.value); setConfirmed(false) }} aria-label={t('Detailed request')} />
               {!confirmed && (
@@ -292,6 +293,45 @@ export function RequestHost() {
         </DialogContent>
       </Dialog>
     </>
+  )
+}
+
+const INTRO_KEY = 'drispro.requests.intro'
+/** each time the program opens: what "Requests" is and how it works, in four steps */
+function RequestsIntro({ onRequest }: { onRequest: () => void }) {
+  const [open, setOpen] = React.useState(() => { try { return !sessionStorage.getItem(INTRO_KEY) } catch { return true } })
+  const close = () => { setOpen(false); try { sessionStorage.setItem(INTRO_KEY, '1') } catch { /* shown again next time */ } }
+  const steps = [
+    t('Press "Request" at the top right on any page, or right click a line of the menu.'),
+    t('Choose what you want: Add, Remove, Change, Join or Mistake. With "Point at the spot" click the column, button, field or menu you mean.'),
+    t('Write it with your own words. Press "Write it out in detail" and Agent Dris writes it out clearly; you read it and confirm it.'),
+    t('Send it. The picture of the screen is taken by itself. You are told when your request is accepted or done.'),
+  ]
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) close() }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><Lightbulb className="size-5 text-primary" />{t('You can send requests here now')}</DialogTitle>
+          <DialogDescription>{t('The program is still being built. Anything you want added, taken out, changed or joined, or a mistake you meet, send it from the page where you see it.')}</DialogDescription>
+        </DialogHeader>
+        <ol className="grid gap-3">
+          {steps.map((s, i) => (
+            <li key={i} className="flex gap-3 text-sm">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{i + 1}</span>
+              <span>{s}</span>
+            </li>
+          ))}
+        </ol>
+        <p className="rounded-lg bg-muted/50 px-3 py-2 text-sm">{t('Everyone sees the requests on the page "Requests". If someone already asked the same, press "Me too" instead of writing it again.')}</p>
+        <DialogFooter className="gap-2 sm:justify-between">
+          <Link to="/requests" className="self-center text-sm text-primary hover:underline" onClick={close}>{t('See the requests')}</Link>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={close}>{t('I understand')}</Button>
+            <Button onClick={() => { close(); onRequest() }}><Lightbulb /> {t('Send a request now')}</Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

@@ -105,9 +105,9 @@ export async function writeOutInDetail(companyId: string, p: { kind: RequestKind
     await new Promise((r) => setTimeout(r, i < 5 ? 700 : 1200))
     const r = unwrap(await supabase.rpc('change_request_detail_result' as never, { p_id: id } as never)) as unknown as { status: string; text: string | null; error: string | null }
     if (r.status === 'done') return (r.text ?? '').trim()
-    if (r.status === 'failed') throw new Error(r.error ?? 'The AI could not answer now')
+    if (r.status === 'failed') throw new Error('Agent Dris could not answer now')
   }
-  throw new Error('The AI did not answer in time, try again')
+  throw new Error('Agent Dris did not answer in time, try again')
 }
 
 export async function pictureUrl(path: string) {
