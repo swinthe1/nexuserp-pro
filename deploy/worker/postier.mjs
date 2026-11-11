@@ -578,7 +578,7 @@ async function assistantLoop() {
   }
 }
 
-// the cloud answers for the local servers
+// the cloud answers for the local servers; every server answers its own "write the request out in detail"
 async function relayLoop() {
   for (;;) {
     try {
@@ -732,7 +732,7 @@ async function tick() {
 }
 
 log(`postier ${MODE} → ${API}`)
-if (!ONCE) { if (process.env.ASSISTANT !== '0') assistantLoop(); pinLoop(); for (let i = 0; i < 3; i++) atkLoop(); if (MODE === 'cloud') relayLoop() }
+if (!ONCE) { if (process.env.ASSISTANT !== '0') assistantLoop(); pinLoop(); for (let i = 0; i < 3; i++) atkLoop(); relayLoop() }
 for (;;) {
   try { await tick(); const n = (await round()) + (await pushRound().catch((e) => { log('phone notifications failed', String(e.message || e)); pushPause = Date.now() + 10 * 60 * 1000; return 0 }))
     + (await webhookRound().catch((e) => { log('webhooks failed', String(e.message || e)); hookPause = Date.now() + 10 * 60 * 1000; return 0 })) + (await readerRound().catch((e) => { log('reading failed', String(e.message || e)); return 0 })); if (ONCE) break; await new Promise((r) => setTimeout(r, n ? 2000 : 20000)) }

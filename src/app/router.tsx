@@ -25,6 +25,7 @@ const lazy = <T,>(load: () => Promise<T>, name: keyof T) =>
 const DashboardPage = lazy(() => import('@/features/dashboard/dashboard-page'), 'DashboardPage')
 const TrainingPage = lazy(() => import('@/features/training/training-page'), 'TrainingPage')
 const ItemRequestsPage = lazy(() => import('@/features/inventory/pages/item-requests-page'), 'ItemRequestsPage')
+const RequestsPage = lazy(() => import('@/features/requests/requests-page'), 'RequestsPage')
 const ExportsPage = lazy(() => import('@/features/exports/exports-page'), 'ExportsPage')
 const ChatPage = lazy(() => import('@/features/chat/chat-page'), 'ChatPage')
 const TasksPage = lazy(() => import('@/features/tasks/pages/tasks-page'), 'TasksPage')
@@ -217,6 +218,7 @@ const appRoutes: RouteObject[] = [
         { path: 'approvals', element: <ApprovalsPage /> },
         { path: 'training', element: <TrainingPage /> },
         { path: 'exports', element: <ExportsPage /> },
+        { path: 'requests', element: <RequestsPage /> },
         { path: 'chat', element: <ChatPage /> },
         { path: 'tasks', element: <TasksPage /> },
         { path: 'tasks/setup', element: <TasksSetupPage /> },
@@ -472,6 +474,7 @@ const router = createBrowserRouter([
       { path: 'releases', element: consolePage(<PlatformReleases />) },
       { path: 'prices', element: consolePage(<PlatformPrices />) },
       { path: 'diary', element: consolePage(<PlatformDiary />) },
+      { path: 'requests', element: consolePage(<RequestsPage />) },
       { path: 'settings', element: consolePage(<PlatformSettings />) },
       { path: '*', element: <Navigate to="/platform" replace /> },
     ],

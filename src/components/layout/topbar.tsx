@@ -1,3 +1,4 @@
+import { RequestButton } from '@/features/requests/request-host'
 import { Menu, Search } from 'lucide-react'
 import { NewMenu } from '@/components/layout/new-menu'
 import { NotificationsButton } from '@/components/layout/notifications'
@@ -36,6 +37,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
       {/* the person's own shortcuts: any page or new document, in their order */}
       <div className="min-w-0 flex-1"><ShortcutBar /></div>
       <div className="ml-auto flex shrink-0 items-center gap-1">
+        <RequestButton />
         <LastExportButton />
         <TillLockButton />
         <div className="max-sm:hidden"><CalculatorButton /></div>

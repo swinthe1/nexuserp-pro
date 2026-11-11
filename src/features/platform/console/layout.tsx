@@ -1,6 +1,6 @@
 import { Wordmark } from '@/components/wordmark'
 import { BackButton, ForwardButton } from '@/components/layout/back-button'
-import { MonitorSmartphone,
+import { Lightbulb, MonitorSmartphone,
   ArrowRight, Boxes, Cable, Cpu, CircleDollarSign, DatabaseBackup, LayoutDashboard, LogOut, Menu, MonitorDown, Plus, ScrollText,
   Search, Server, Settings2, ShieldCheck, Store, Users, FileSignature, type LucideIcon } from 'lucide-react'
 import * as React from 'react'
@@ -38,6 +38,7 @@ const NAV: { title?: string; items: Item[] }[] = [
     { label: msg('Prices'), href: '/platform/prices', icon: CircleDollarSign },
   ] },
   { title: msg('System'), items: [
+    { label: msg('Requests'), href: '/platform/requests', icon: Lightbulb },
     { label: msg('Platform diary'), href: '/platform/diary', icon: ScrollText },
     { label: msg('Settings'), href: '/platform/settings', icon: Settings2 },
   ] },

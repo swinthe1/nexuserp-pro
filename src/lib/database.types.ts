@@ -1671,6 +1671,81 @@ export type Database = {
           { foreignKeyName: "cash_plan_items_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
         ]
       }
+      change_requests: {
+        Row: {
+          id: string
+          number: number
+          company_id: string
+          author_id: string | null
+          author_name: string | null
+          kind: string
+          body: string
+          detail: string | null
+          page_path: string | null
+          page_title: string | null
+          target: string | null
+          screenshot: string | null
+          version: string | null
+          screen: string | null
+          status: string
+          done_version: string | null
+          reply: string | null
+          duplicate_of: string | null
+          votes: string[]
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          number?: number
+          company_id: string
+          author_id?: string | null
+          author_name?: string | null
+          kind: string
+          body: string
+          detail?: string | null
+          page_path?: string | null
+          page_title?: string | null
+          target?: string | null
+          screenshot?: string | null
+          version?: string | null
+          screen?: string | null
+          status?: string
+          done_version?: string | null
+          reply?: string | null
+          duplicate_of?: string | null
+          votes?: string[]
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          number?: number
+          company_id?: string
+          author_id?: string | null
+          author_name?: string | null
+          kind?: string
+          body?: string
+          detail?: string | null
+          page_path?: string | null
+          page_title?: string | null
+          target?: string | null
+          screenshot?: string | null
+          version?: string | null
+          screen?: string | null
+          status?: string
+          done_version?: string | null
+          reply?: string | null
+          duplicate_of?: string | null
+          votes?: string[]
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "change_requests_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "change_requests_duplicate_of_fkey"; columns: ["duplicate_of"]; isOneToOne: false; referencedRelation: "change_requests"; referencedColumns: ["id"] },
+        ]
+      }
       channel_orders: {
         Row: {
           id: string
@@ -8169,6 +8244,7 @@ export type Database = {
           billing_post: boolean
           billing_email: boolean
           billing_grace_days: number
+          requests_on: boolean
         }
         Insert: {
           id?: boolean
@@ -8181,6 +8257,7 @@ export type Database = {
           billing_post?: boolean
           billing_email?: boolean
           billing_grace_days?: number
+          requests_on?: boolean
         }
         Update: {
           id?: boolean
@@ -8193,6 +8270,7 @@ export type Database = {
           billing_post?: boolean
           billing_email?: boolean
           billing_grace_days?: number
+          requests_on?: boolean
         }
         Relationships: [
           { foreignKeyName: "platform_settings_billing_company_id_fkey"; columns: ["billing_company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -17065,6 +17143,52 @@ export type Database = {
         }
         Returns: undefined
       }
+      change_request_detail_result: {
+        Args: {
+          p_id: string
+        }
+        Returns: Json
+      }
+      change_request_detail_start: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: string
+      }
+      change_request_submit: {
+        Args: {
+          p: Json
+        }
+        Returns: Json
+      }
+      change_request_update: {
+        Args: {
+          p_id: string
+          p: Json
+        }
+        Returns: undefined
+      }
+      change_request_vote: {
+        Args: {
+          p_id: string
+        }
+        Returns: undefined
+      }
+      change_request_withdraw: {
+        Args: {
+          p_id: string
+        }
+        Returns: undefined
+      }
+      change_requests_list: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      change_requests_on: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       chat_add_members: {
         Args: {
           p_conv: string
@@ -19380,6 +19504,12 @@ export type Database = {
           p_company: string
           p_extra: string[]
           p_max_warehouses: number
+        }
+        Returns: undefined
+      }
+      platform_set_requests_on: {
+        Args: {
+          p_on: boolean
         }
         Returns: undefined
       }

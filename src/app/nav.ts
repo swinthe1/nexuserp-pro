@@ -1,4 +1,4 @@
-import { Undo2,
+import { Lightbulb, Undo2,
   Bell, Printer, CalendarDays, CalendarClock, ClipboardPen, Contact, FileBarChart, Fingerprint, Globe, History, Import, KeyRound, Archive, ListOrdered,
   MapPinned, PackageCheck as PackageDone, Route, ShieldCheck, UserRound, UsersRound, Workflow, Zap,
   BadgePercent, Calculator, ClipboardCheck, Hourglass, PackageOpen, ScanLine, ShoppingBasket,
@@ -45,6 +45,7 @@ export const NAV: NavSection[] = [
       { label: msg('Training|menu'), href: '/training', icon: GraduationCap, perm: 'core.read', keywords: ['trajnimi', 'trajnim', 'mësime', 'udhëzime', 'si punon', 'ndihmë', 'help', 'tutorial', 'learn'], hub: msg('Dashboard') },
       { label: msg('Chat'), href: '/chat', icon: MessageSquare, perm: 'core.read', hideInMenu: true, keywords: ['chat', 'biseda', 'mesazhe', 'mesazh', 'shkruaj', 'grup', 'teams', 'slack', 'whatsapp', 'kolegët'] },
       { label: msg('My exports'), href: '/exports', icon: FolderDown, perm: 'core.read', hideInMenu: true, keywords: ['eksportet', 'eksporti', 'shkarkimet', 'excel', 'pdf', 'csv', 'downloads', 'skedarët'] },
+      { label: msg('Requests'), href: '/requests', icon: Lightbulb, perm: 'core.read', hideInMenu: true, keywords: ['kërkesat', 'kërkesë', 'kerkesa', 'propozim', 'ndryshim', 'gabim', 'testimi', 'feedback'] },
       { label: msg('My clients'), href: '/accountant', icon: BookOpen, perm: 'core.read', hideInMenu: true, keywords: ['kontabilisti', 'kontabilist', 'accountant', 'klientët e kontabilistit', 'zyra e kontabilitetit'] },
       { label: msg('Notifications'), href: '/notifications', icon: Bell, perm: 'core.read', keywords: ['alerts', 'inbox', 'reminders', 'njoftime'], always: true, hideInMenu: true },
     ],

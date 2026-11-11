@@ -361,4 +361,5 @@ export default {
   "VAT summary": "Pregled PDV-a",
   "Payroll cost": "Trošak plata",
   "Production cost": "Trošak proizvodnje",
+  "Requests": "Zahtevi",
 } satisfies Dict

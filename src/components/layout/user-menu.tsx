@@ -1,4 +1,4 @@
-import { Download, IdCard, KeyRound, Languages, LaptopMinimal, LayoutGrid, LogOut, Monitor, Moon, PanelLeft, BriefcaseBusiness, ServerCog, Smartphone, Sparkles, Sun, UserRound, GraduationCap, FolderDown, Minus, Plus, ZoomIn, PanelTop } from 'lucide-react'
+import { Download, IdCard, KeyRound, Languages, LaptopMinimal, LayoutGrid, LogOut, Monitor, Moon, PanelLeft, BriefcaseBusiness, ServerCog, Smartphone, Sparkles, Sun, UserRound, GraduationCap, FolderDown, Minus, Plus, ZoomIn, PanelTop, Lightbulb } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/app/auth-provider'
@@ -54,6 +54,7 @@ export function UserMenu() {
         <DropdownMenuItem asChild><Link to="/hr/me"><UserRound /> {t('My workplace')}</Link></DropdownMenuItem>
         <DropdownMenuItem asChild><Link to="/training"><GraduationCap /> {t('Training|menu')}</Link></DropdownMenuItem>
         <DropdownMenuItem asChild><Link to="/exports"><FolderDown /> {t('My exports')}</Link></DropdownMenuItem>
+        <DropdownMenuItem asChild><Link to="/requests"><Lightbulb /> {t('Requests')}</Link></DropdownMenuItem>
         {isSuperAdmin && !myLogin.data
           ? <DropdownMenuItem onSelect={() => setPwOpen(true)}><KeyRound /> {t('Change password')}</DropdownMenuItem>
           : <DropdownMenuItem onSelect={() => setPinOpen(true)}><KeyRound /> {t('Change my PIN')}</DropdownMenuItem>}

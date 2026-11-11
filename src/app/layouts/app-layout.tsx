@@ -7,6 +7,7 @@ import { CommandPaletteProvider } from '@/components/layout/command-palette'
 import { CompanySwitcher } from '@/components/layout/company-switcher'
 import { Sidebar, SidebarNav } from '@/components/layout/sidebar'
 import { Topbar } from '@/components/layout/topbar'
+import { RequestHost } from '@/features/requests/request-host'
 import { ClassicShell } from '@/components/layout/classic-shell'
 import { SectionTabs } from '@/components/layout/section-tabs'
 import { useTheme } from '@/app/theme-provider'
@@ -88,7 +89,7 @@ export function AppLayout() {
         <LicenseBanner />
         <main id="main" className="flex-1 px-3 py-3 sm:px-5">
           <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
-          <GuardHost /><LoginSetupGate /><ExportsRecorder /><ItemUnits />
+          <GuardHost /><LoginSetupGate /><ExportsRecorder /><ItemUnits /><RequestHost />
         </main>
       </div>
     )
@@ -107,7 +108,7 @@ export function AppLayout() {
           <main id="main" className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
             <SectionTabs />
             <PageErrorBoundary key={location.pathname}>{pageAllowed(location.pathname) ? <Outlet /> : <PlanLocked path={location.pathname} />}</PageErrorBoundary>
-            <GuardHost /><LoginSetupGate /><ExportsRecorder /><ItemUnits />
+            <GuardHost /><LoginSetupGate /><ExportsRecorder /><ItemUnits /><RequestHost />
             <TourHost />
           </main>
         </div>
@@ -144,7 +145,7 @@ export function AppLayout() {
           <main id="main" className="flex-1 px-3 py-3 sm:px-4">
             <SectionTabs />
             <WorkPanes />
-            <GuardHost /><LoginSetupGate /><ExportsRecorder /><ItemUnits />
+            <GuardHost /><LoginSetupGate /><ExportsRecorder /><ItemUnits /><RequestHost />
             <TourHost />
           </main>
         </ClassicShell>
@@ -175,7 +176,7 @@ export function AppLayout() {
           <main id="main" className="flex-1 px-4 py-5 pb-24 sm:px-6 md:pb-5 lg:px-8">
             <SectionTabs />
             <WorkPanes />
-            <GuardHost /><LoginSetupGate /><ExportsRecorder /><ItemUnits />
+            <GuardHost /><LoginSetupGate /><ExportsRecorder /><ItemUnits /><RequestHost />
             <TourHost />
           </main>
         </div>
