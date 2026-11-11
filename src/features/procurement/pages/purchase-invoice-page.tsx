@@ -77,6 +77,7 @@ const newKey = () => Math.random().toString(36).slice(2)
 /** the columns of the lines: a person may hide them (not the quantity and the price) and put them in any order */
 const COLUMNS: { key: string; label: () => string; fixed?: boolean }[] = [
   { key: 'qty', label: () => t('Qty'), fixed: true }, { key: 'price', label: () => t('Purchase price (without VAT)'), fixed: true },
+  { key: 'pgross', label: () => t('Purchase price (with VAT)') },
   { key: 'd1', label: () => t('Disc. %') }, { key: 'd2', label: () => t('Extra %') }, { key: 'cost', label: () => t('Cost (without VAT)') },
   { key: 'avg', label: () => t('Avg. cost now (without VAT)') }, { key: 'vat', label: () => t('VAT') }, { key: 'net', label: () => t('Without VAT') },
   { key: 'gross', label: () => t('With VAT') }, { key: 'cur', label: () => t('Selling price now (with VAT)') }, { key: 'rec', label: () => t('Recommended (with VAT)') },
@@ -85,12 +86,22 @@ const COLUMNS: { key: string; label: () => string; fixed?: boolean }[] = [
 ]
 /** the few that most invoices need */
 const MAIN_ONLY = new Set(['d2', 'cost', 'avg', 'cur', 'rec'])
-const DEFAULT_ORDER = ['qty', 'price', 'd1', 'd2', 'cost', 'avg', 'vat', 'net', 'gross', 'cur', 'rec', 'new', 'margin', 'expiry']
+const DEFAULT_ORDER = ['qty', 'price', 'pgross', 'd1', 'd2', 'cost', 'avg', 'vat', 'net', 'gross', 'cur', 'rec', 'new', 'margin', 'expiry']
 /** a saved order, with any column it does not know yet put back in its usual place */
 const fullOrder = (saved: string[] | undefined) => {
   const o = (saved ?? []).filter((k) => DEFAULT_ORDER.includes(k))
   for (const k of DEFAULT_ORDER) if (!o.includes(k)) o.splice(Math.min(DEFAULT_ORDER.indexOf(k), o.length), 0, k)
   return o
+}
+
+/** the purchase price with VAT: shows the price without VAT plus its VAT; a figure typed here is taken back to the price without VAT (4 decimals) */
+function GrossCostInput({ net, rate, onNet, onKeyDown }: { net: string; rate: number; onNet: (net: string) => void; onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void }) {
+  const [text, setText] = React.useState<string | null>(null)
+  const n = num(String(net).replace(',', '.'))
+  const shown = n > 0 ? String(Math.round(n * (1 + rate / 100) * 10000) / 10000) : ''
+  return <Input data-nav inputMode="decimal" className="h-8 min-w-[70px] text-right tabular-nums" aria-label={t('Purchase price (with VAT)')}
+    value={text ?? shown} onFocus={(e) => { setText(shown); e.target.select() }} onBlur={() => setText(null)} onKeyDown={onKeyDown}
+    onChange={(e) => { setText(e.target.value); const g = num(e.target.value.replace(',', '.')); onNet(g > 0 ? String(Math.round(g / (1 + rate / 100) * 10000) / 10000) : '') }} />
 }
 
 function ColumnsMenu({ hidden, onChange, order, onOrder, onReset }: { hidden: Set<string>; onChange: (h: Set<string>) => void; order: string[]; onOrder: (o: string[]) => void; onReset: () => void }) {
@@ -413,6 +424,7 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
     qty: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'qty'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'qty') }} className="w-20 px-2 py-2 text-right font-medium cursor-grab select-none">{t('Qty')}</th>,
     price: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'price'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'price') }} className="w-24 px-2 py-2 text-right font-medium cursor-grab select-none">{t('Purchase price (without VAT)')}</th>,
     d1: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'd1'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'd1') }} data-col="d1" className="w-16 px-2 py-2 text-right font-medium cursor-grab select-none">{t('Disc. %')}</th>,
+    pgross: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'pgross'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'pgross') }} data-col="pgross" className="w-24 px-2 py-2 text-right font-medium cursor-grab select-none">{t('Purchase price (with VAT)')}</th>,
     d2: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'd2'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'd2') }} data-col="d2" className="w-16 px-2 py-2 text-right font-medium cursor-grab select-none">{t('Extra %')}</th>,
     cost: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'cost'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'cost') }} data-col="cost" className="w-24 px-2 py-2 text-right font-medium cursor-grab select-none">{t('Cost (without VAT)')}</th>,
     avg: <th draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', 'avg'); e.dataTransfer.effectAllowed = 'move' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); moveCol(e.dataTransfer.getData('text/plain'), 'avg') }} data-col="avg" className="w-24 px-2 py-2 text-right font-medium cursor-grab select-none">{t('Avg. cost now (without VAT)')}</th>,
@@ -556,6 +568,8 @@ function InvoiceForm({ doc }: { doc?: BillDoc }) {
                       price: <td className="px-1 py-1"><Input data-nav inputMode="decimal" className={cn('h-8 min-w-[70px] text-right tabular-nums', lastChanged && 'border-amber-500')} value={c.r.price}
                       title={lastChanged ? t('Last time {price}', { price: fmt(num(c.i!.last!.price), 4) }) : undefined}
                       onChange={(e) => upd(c.r.key, { price: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Purchase price (without VAT)')} /></td>,
+                      // the same price as the supplier's invoice shows it with VAT: typing here sets the price without VAT
+                      pgross: <td data-col="pgross" className="px-1 py-1"><GrossCostInput net={c.r.price} rate={taxRate(c.r.tax)} onNet={(v) => upd(c.r.key, { price: v })} onKeyDown={next} /></td>,
                       d1: <td data-col="d1" className="px-1 py-1"><Input data-nav inputMode="decimal" className="h-8 min-w-[42px] text-right tabular-nums" value={c.r.d1} placeholder="0" onChange={(e) => upd(c.r.key, { d1: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Disc. %')} /></td>,
                       d2: <td data-col="d2" className="px-1 py-1"><Input data-nav inputMode="decimal" className="h-8 min-w-[42px] text-right tabular-nums" value={c.r.d2} placeholder="0" onChange={(e) => upd(c.r.key, { d2: e.target.value })} onKeyDown={next} onFocus={(e) => e.target.select()} aria-label={t('Extra %')} /></td>,
                       cost: <td data-col="cost" className="px-2 py-2 text-right tabular-nums">{fmt(c.unit, 4)}</td>,

@@ -1999,4 +1999,5 @@ export default {
   "Choose the bank whose card terminal takes the payment": "Zgjidhni bankën me POS-in e së cilës bëhet pagesa",
   "With the card terminal of": "Me POS-in e bankës",
   "No bank named": "Pa bankë të shënuar",
+  "Purchase price (with VAT)": "Çm. blerje (me TVSH)",
 } satisfies Dict
