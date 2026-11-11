@@ -33,7 +33,7 @@ function download(blob: Blob, filename: string) {
 
 /**
  * The name of an exported file, in the reader's language: what was exported (the title the person
- * sees: "Transferet", "Libri i shitjeve · nëntor 2026") and when it is for (the period in the code
+ * sees: "Transferet", "Libri i shitjeve · Nëntor 2026") and when it is for (the period in the code
  * name, as 01.11.2026, otherwise today). The code names (sales-book-2026-11) only give the dates.
  */
 const PERIOD = /(\d{4})-(\d{2})(?:-(\d{2}))?/g

@@ -63,7 +63,7 @@ export default {
   "accepted": "pranuar",
   "{n} item costs more than before. Your name and the reason are kept on the bill.": "{n} artikull kushton më shumë se më parë. Emri juaj dhe arsyeja ruhen në faturë.",
   "{n} items cost more than before. Your name and the reason are kept on the bill.": "{n} artikuj kushtojnë më shumë se më parë. Emri juaj dhe arsyeja ruhen në faturë.",
-  "e.g. The vendor raised prices from 1 November, confirmed by email": "p.sh. Furnitori i rriti çmimet nga 1 nëntori, konfirmuar me email",
+  "e.g. The vendor raised prices from 1 November, confirmed by email": "p.sh. Furnitori i rriti çmimet nga 1 Nëntori, konfirmuar me email",
   "Make them the vendor's prices for the next orders": "Bëji çmime të furnitorit për porositë e ardhshme",
   "The new prices are accepted; the bill can be posted": "Çmimet e reja u pranuan; fatura mund të postohet",
   // the scorecard
@@ -116,7 +116,7 @@ export default {
   "Give the request a name": "Jepini kërkesës një emër",
   "Choose at least two vendors": "Zgjidhni të paktën dy furnitorë",
   "What is it for": "Për çka është",
-  "e.g. Flour and oil for December": "p.sh. Miell dhe vaj për dhjetor",
+  "e.g. Flour and oil for December": "p.sh. Miell dhe vaj për Dhjetor",
   "Offers by": "Ofertat deri më",
   "Notes to the vendors": "Shënime për furnitorët",
   "Quality, packaging, how to deliver…": "Cilësia, paketimi, si të dërgohet…",

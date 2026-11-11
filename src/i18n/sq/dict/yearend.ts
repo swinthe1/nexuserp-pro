@@ -49,7 +49,7 @@ export default {
   'Result of {year}': 'Rezultati i {year}',
   'Closing moves this result to account 109 on {date}, so the next year starts with revenue and expenses at zero. The reports of {year} keep showing the year as it was.':
     'Mbyllja e kalon këtë rezultat në llogarinë 109 më {date}, që viti tjetër të fillojë me të ardhura dhe shpenzime zero. Raportet e {year} vazhdojnë ta tregojnë vitin siç ishte.',
-  'Carry the result to the results of earlier years (account 108) on 1 January': 'Kaloje rezultatin te rezultatet e viteve të mëparshme (llogaria 108) më 1 janar',
+  'Carry the result to the results of earlier years (account 108) on 1 January': 'Kaloje rezultatin te rezultatet e viteve të mëparshme (llogaria 108) më 1 Janar',
   'Leave it off if the owners will first decide what to do with the profit.': 'Lëreni të fikur nëse ortakët do të vendosin më parë për fitimin.',
   'Finish what is marked red first.': 'Përfundoni së pari çfarë është me të kuqe.',
   'Only someone who can approve in finance can close the year.': 'Vetëm dikush me të drejtë miratimi në financë mund ta mbyllë vitin.',

@@ -23,7 +23,7 @@ export const GUIDES_D: Record<string, Guide> = {
       { sq: 'Te "Pozicionet" shkruaj titujt e punës: ato dalin në fletëpagesë dhe në listën për tatimet.', en: 'Under "Positions" type the job titles: they show on payslips and on the payroll list for the tax office.' },
       { sq: 'Te "Llojet e lejeve" cakto "Ditë në vit" (0 do të thotë pa kufi, p.sh. pushimi mjekësor) dhe nëse leja paguhet.', en: 'Under "Leave types" set "Days per year" (0 means no limit, e.g. sick leave) and whether the leave is paid.' },
       { sq: 'Te "Festat zyrtare" kliko "Shto festë" për çdo festë të vitit.', en: 'Under "Public holidays" click "Add holiday" for each holiday of the year.' },
-      { sq: 'Festat zyrtare shtohen vetë për çdo vit (Pashkët llogariten, festat në fundjavë zhvendosen). Në dhjetor vjen një detyrë për t\'i kontrolluar festat e vitit të ri dhe për të shtuar Bajramet kur të shpallen.', en: 'Public holidays are added by themselves for every year (Easter is worked out, weekend holidays are moved). In December a task comes to check the new year\'s holidays and add the Bajrams once announced.' },
+      { sq: 'Festat zyrtare shtohen vetë për çdo vit (Pashkët llogariten, festat në fundjavë zhvendosen). Në Dhjetor vjen një detyrë për t\'i kontrolluar festat e vitit të ri dhe për të shtuar Bajramet kur të shpallen.', en: 'Public holidays are added by themselves for every year (Easter is worked out, weekend holidays are moved). In December a task comes to check the new year\'s holidays and add the Bajrams once announced.' },
     ],
     mistakes: [
       { sq: 'Kur festa bie në fundjavë, shkruaj ditën ku zhvendoset pushimi, jo të shtunën ose të dielën.', en: 'When a holiday falls on a weekend, enter the day it moves to, not the Saturday or Sunday.' },

@@ -127,7 +127,7 @@ export function humanize(value: string | null | undefined) {
   return tEnum(value)
 }
 
-/** Month name + year, e.g. "tetor 2026" / "October 2026" */
+/** Month name + year, e.g. "Tetor 2026" / "October 2026" */
 export function formatMonth(value: string | Date | null | undefined) {
   if (!value) return '—'
   const d = typeof value === 'string' ? new Date(value.length === 7 ? `${value}-01` : value) : value

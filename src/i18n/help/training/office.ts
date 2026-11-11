@@ -323,7 +323,7 @@ export const ACCOUNTANT: Track = {
         { sq: 'Te "Mbyllja e vitit" zgjidh vitin lart.', en: 'In "Year-end close" choose the year on top.' },
         { sq: 'Nëse del "Vitet e mëparshme janë ende të hapura", mbyllini ato së pari, me radhë.', en: 'If it says "Earlier years are still open", close those first, in order.' },
         { sq: 'Te "Para mbylljes" rregullo çdo gjë me të kuqe me "Hap"; e verdha vlen të kontrollohet, por nuk e ndalon mbylljen.', en: 'Under "Before closing" fix everything in red with "Open"; yellow is worth checking but does not stop the closing.' },
-        { sq: 'Shiko rezultatin e vitit, zgjidh nëse kalon te llogaria 108 më 1 janar, pastaj kliko "Mbyll vitin". Këtë e bën vetëm kush ka të drejtë miratimi në financë.', en: 'Look at the result of the year, choose whether it is carried to account 108 on 1 January, then click "Close the year". Only someone who can approve in finance can do this.' },
+        { sq: 'Shiko rezultatin e vitit, zgjidh nëse kalon te llogaria 108 më 1 Janar, pastaj kliko "Mbyll vitin". Këtë e bën vetëm kush ka të drejtë miratimi në financë.', en: 'Look at the result of the year, choose whether it is carried to account 108 on 1 January, then click "Close the year". Only someone who can approve in finance can do this.' },
       ],
       practice: { sq: 'Provo vetë: zgjidh vitin që po mbaron, lexo listën "Para mbylljes" dhe kliko "Hap" te një rresht me të kuqe për të parë çka mbetet. Mos kliko "Mbyll vitin".', en: 'Try it: choose the year that is ending, read the "Before closing" list and click "Open" on a red line to see what is left. Do not click "Close the year".' },
       check: {

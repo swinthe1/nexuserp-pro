@@ -227,7 +227,7 @@ export default {
   "New manual entry": "Regjistrim manual i ri",
   "For accruals, opening balances, reclassifications and corrections. Documents record their own entries automatically.": "Për përllogaritje, gjendje fillestare, riklasifikime dhe korrigjime. Dokumentet i regjistrojnë vetë veprimet e tyre.",
   "Entry posted": "Regjistrimi u kontabilizua",
-  "e.g. October rent not yet invoiced": "p.sh. Qiraja e tetorit ende e pafaturuar",
+  "e.g. October rent not yet invoiced": "p.sh. Qiraja e Tetorit ende e pafaturuar",
   "Description, line {n}": "Përshkrimi, rreshti {n}",
   "Debit, line {n}": "Debi, rreshti {n}",
   "Credit, line {n}": "Kredi, rreshti {n}",

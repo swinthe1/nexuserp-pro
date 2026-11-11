@@ -341,7 +341,7 @@ export default {
   'Credit note {number}': 'Nota e kreditit {number}',
   'Post despite the mismatch?': 'Ta kontabilizoni pavarësisht mospërputhjes?',
   'The reason and your name are stored on the bill and shown to auditors.': 'Arsyeja dhe emri juaj ruhen në faturë dhe u shfaqen audituesve.',
-  'e.g. Agreed price increase from 1 Nov, confirmed by email': 'p.sh. Rritje çmimi e rënë dakord nga 1 nëntori, e konfirmuar me email',
+  'e.g. Agreed price increase from 1 Nov, confirmed by email': 'p.sh. Rritje çmimi e rënë dakord nga 1 Nëntori, e konfirmuar me email',
   // text the app stores in English
   'Cancelled by buyer': 'Anuluar nga blerësi',
 

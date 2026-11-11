@@ -75,7 +75,7 @@ export const SALES: Track = {
       ],
       practice: { sq: 'Provo vetë: hap "Detyrat e mia" dhe gjej detyrat me shenjën ✨. Hap njërën dhe lexo për cilin dokument është, pa e ndryshuar. Pastaj te "Ofertat" filtro statusin "Skaduar".', en: 'Try it: open "My tasks" and find the tasks with the ✨ mark. Open one and read which document it is about, without changing it. Then under "Quotes" filter the status "Expired".' },
       check: {
-        q: { sq: 'Oferta ka "E vlefshme deri më" 10 nëntor dhe klienti nuk është përgjigjur. Çfarë ndodh më 11 nëntor?', en: 'The quote is "Valid until" 10 November and the customer has not answered. What happens on 11 November?' },
+        q: { sq: 'Oferta ka "E vlefshme deri më" 10 Nëntor dhe klienti nuk është përgjigjur. Çfarë ndodh më 11 Nëntor?', en: 'The quote is "Valid until" 10 November and the customer has not answered. What happens on 11 November?' },
         options: [
           { sq: 'Oferta fshihet bashkë me rreshtat', en: 'The quote is deleted with its lines' },
           { sq: 'Mbetet "Dërguar" derisa ta mbyllësh me dorë', en: 'It stays "Sent" until you close it by hand' },

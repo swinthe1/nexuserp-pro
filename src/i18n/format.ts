@@ -1,12 +1,12 @@
 /**
  * Dates and numbers in the current language without depending on the browser's locale data
  * (some browsers and kiosk/embedded builds ship without Albanian, and would show "Oct 24, 2026").
- * Albanian: "24 tet 2026", "e shtunë", "1 234 567,50".
+ * Albanian: "24 Tet 2026" (the months always with a capital letter: the owner's rule), "e shtunë", "1 234 567,50".
  */
 import { getLocale } from './index'
 
-const MONTH_LONG = ['janar', 'shkurt', 'mars', 'prill', 'maj', 'qershor', 'korrik', 'gusht', 'shtator', 'tetor', 'nëntor', 'dhjetor']
-const MONTH_SHORT = ['jan', 'shk', 'mar', 'pri', 'maj', 'qer', 'korr', 'gush', 'sht', 'tet', 'nën', 'dhj']
+const MONTH_LONG = ['Janar', 'Shkurt', 'Mars', 'Prill', 'Maj', 'Qershor', 'Korrik', 'Gusht', 'Shtator', 'Tetor', 'Nëntor', 'Dhjetor']
+const MONTH_SHORT = ['Jan', 'Shk', 'Mar', 'Pri', 'Maj', 'Qer', 'Korr', 'Gush', 'Sht', 'Tet', 'Nën', 'Dhj']
 const WEEKDAY_LONG = ['e diel', 'e hënë', 'e martë', 'e mërkurë', 'e enjte', 'e premte', 'e shtunë']
 const WEEKDAY_SHORT = ['Die', 'Hën', 'Mar', 'Mër', 'Enj', 'Pre', 'Sht']
 // Serbian, Latin script (ekavian, as in Kosovo): "3. novembar 2026", "03.11.2026", "1.234.567,50"

@@ -129,7 +129,7 @@ export default {
   "With a business, per day": "Me biznes, në ditë",
   "The law: {amount}": "Ligji: {amount}",
   "With an individual, per day": "Me person fizik, në ditë",
-  "Kosovo: 2,000 € with individuals since 1 June 2026. The government has announced lowering the limit between businesses from 500 € to 300 €; change it here when it is in force.": "Kosova: 2.000 € me persona fizikë që nga 1 qershori 2026. Qeveria ka njoftuar uljen e kufirit mes bizneseve nga 500 € në 300 €; ndryshojeni këtu kur të hyjë në fuqi.",
+  "Kosovo: 2,000 € with individuals since 1 June 2026. The government has announced lowering the limit between businesses from 500 € to 300 €; change it here when it is in force.": "Kosova: 2.000 € me persona fizikë që nga 1 Qershori 2026. Qeveria ka njoftuar uljen e kufirit mes bizneseve nga 500 € në 300 €; ndryshojeni këtu kur të hyjë në fuqi.",
   "Refuse cash above the limit": "Refuzo paratë në dorë mbi kufi",
   "Off: the payment goes through and whoever approves in finance is told. On: the payment is refused and must go through the bank.": "Fikur: pagesa kalon dhe njoftohet kush miraton në financa. Ndezur: pagesa refuzohet dhe duhet bërë përmes bankës.",
   "Cash with an individual is limited by law to {limit} a day; with this payment it is {total}.": "Me person fizik paratë në dorë kufizohen me ligj në {limit} në ditë; me këtë pagesë bëhen {total}.",

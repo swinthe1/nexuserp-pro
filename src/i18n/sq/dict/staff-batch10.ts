@@ -1507,7 +1507,7 @@ export default {
   "The shop stays open. Each person joins from their phone and counts; the expected quantity is never shown to them.": "Dyqani mbetet hapur. Secili futet nga telefoni dhe numëron; sasia e pritur nuk i shfaqet kurrë.",
   "The whole unit, with the shop open: each person counts into a list of their own. Whoever counts an item first has it on their list; the others add their quantity to it, and every entry is kept.": "E gjithë njësia, me dyqanin hapur: secili numëron në listën e vet. Kush e numëron i pari një artikull e ka në listën e tij; të tjerët i shtojnë sasinë e tyre, dhe çdo hyrje ruhet.",
   "Write the quantity": "Shkruaj sasinë",
-  "e.g. Inventory of November": "p.sh. Inventari i nëntorit",
+  "e.g. Inventory of November": "p.sh. Inventari i Nëntorit",
   "on the list of {name}": "në listën e {name}",
   "since {time}": "që nga {time}",
   "yours {n}": "juaja {n}",
