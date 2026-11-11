@@ -1,16 +1,18 @@
-import { Check, Crosshair, ImagePlus, Lightbulb, Loader2, Sparkles, X } from 'lucide-react'
+import { Check, ChevronDown, Crosshair, ImagePlus, Lightbulb, ListChecks, Loader2, Pencil, Sparkles, X } from 'lucide-react'
 import * as React from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
 import { activePage } from '@/components/layout/work-tabs'
 import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { getLocale, t, tServer } from '@/i18n'
 import { describeError } from '@/lib/errors'
 import { cn } from '@/lib/utils'
+import { DrawOnPicture } from './draw-on-picture'
 import { KINDS, reqNo, useRequestsOn, useSubmitRequest, writeOutInDetail, type RequestKind } from './api'
 
 const EVENT = 'drispro:request'
@@ -21,6 +23,11 @@ export function openRequest(target?: string | null, pick?: boolean) {
 
 const clean = (s: string | null | undefined, n = 80) => (s ?? '').replace(/\s+/g, ' ').trim().slice(0, n)
 const textOf = (el: Element | null | undefined) => clean(el?.getAttribute('aria-label') || (el as HTMLElement | null)?.innerText || el?.textContent)
+
+/** the element the words name: the whole menu line, column head, cell, field or button, not the icon inside it */
+function spotOf(el: Element): Element {
+  return el.closest('aside a, aside button, th, td, input, textarea, select, [role="combobox"], button, a, [role="tab"], h1, h2, h3') ?? el
+}
 
 /** the spot the person pointed at, in words: a menu line, a column, a field, a button */
 export function describeSpot(el: Element): string {
@@ -50,37 +57,97 @@ export function describeSpot(el: Element): string {
   return `${t('Spot')}: ${textOf(el) || el.tagName.toLowerCase()}`
 }
 
-/** a picture of what is on the screen, the spot marked in red; nothing if the browser cannot make one in time */
-async function screenPicture(mark?: DOMRect | null): Promise<Blob | null> {
+/**
+ * The page's own fonts as CSS with the font files inside (a picture cannot load them from the web), made once.
+ * Only the Latin parts the program writes in, so it stays small and quick.
+ */
+let fontCssCache: Promise<string | null> | null = null
+function pageFonts() {
+  fontCssCache ??= (async () => {
+    try {
+      const links = [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"][href*="fonts.googleapis.com"]')]
+      const css = (await Promise.all(links.map((l) => fetch(l.href).then((r) => (r.ok ? r.text() : ''))))).join('\n')
+      const faces = css.split('/*').filter((b) => /^\s*latin(-ext)? \*\//.test(b)).map((b) => b.slice(b.indexOf('*/') + 2))
+      const inline = async (face: string) => {
+        const url = /url\(([^)]+)\)/.exec(face)?.[1]?.replace(/["']/g, '')
+        if (!url) return ''
+        const blob = await fetch(url).then((r) => (r.ok ? r.blob() : null))
+        if (!blob) return ''
+        const data = await new Promise<string>((res) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result)); fr.readAsDataURL(blob) })
+        return face.replace(/url\([^)]+\)/, `url(${data})`)
+      }
+      return (await Promise.all(faces.map(inline))).join('\n') || null
+    } catch { return null }
+  })()
+  return fontCssCache
+}
+
+/**
+ * A picture of what is on the screen, drawn by the browser itself (sharp text), the spot outlined in red.
+ * The menu and the top bar stay where the person sees them, scrolled lists keep their place. Nothing if it takes too long.
+ */
+async function screenPicture(spot?: Element | null): Promise<Blob | null> {
+  const sx = window.scrollX, sy = window.scrollY
+  const shifted: HTMLElement[] = []
   try {
-    const { default: html2canvas } = await import('html2canvas')
-    const scale = Math.min(1, 1600 / window.innerWidth)
-    const canvas = await Promise.race([
-      html2canvas(document.body, { x: window.scrollX, y: window.scrollY, width: window.innerWidth, height: window.innerHeight, scale, logging: false,
-        useCORS: true, ignoreElements: (el) => el instanceof HTMLElement && el.hasAttribute('data-req-ignore') }),
-      new Promise<null>((r) => setTimeout(() => r(null), 8000)),
-    ])
-    if (!canvas) return null
-    if (mark) {
-      const g = canvas.getContext('2d')
-      if (g) { g.strokeStyle = '#e11d48'; g.lineWidth = 3; g.strokeRect((mark.left - 3) * scale, (mark.top - 3) * scale, (mark.width + 6) * scale, (mark.height + 6) * scale) }
+    const { domToCanvas } = await import('modern-screenshot')
+    // the menu and the top bar stick to the top while the page scrolls; the picture is of the page from its top
+    if (sy > 0) for (const el of document.querySelectorAll<HTMLElement>('aside, header')) {
+      const cs = getComputedStyle(el)
+      if (cs.position === 'sticky' && el.getBoundingClientRect().top <= (parseFloat(cs.top) || 0) + 1) { el.dataset.reqShift = String(sy); shifted.push(el) }
     }
-    return await new Promise((r) => canvas.toBlob((b) => r(b), 'image/jpeg', 0.75))
-  } catch { return null }
+    if (spot instanceof HTMLElement) spot.dataset.reqMark = ''
+    // lists scrolled inside (the menu, a table): the picture shows them where the person left them
+    for (const el of document.querySelectorAll<HTMLElement>('aside *, main *, aside')) {
+      if (el.scrollTop > 0 || el.scrollLeft > 0) { el.dataset.reqScroll = `${el.scrollLeft},${el.scrollTop}`; shifted.push(el) }
+    }
+    const scale = Math.min(window.devicePixelRatio || 1, 2, 2400 / window.innerWidth)
+    const fontCss = await pageFonts()
+    const full = await Promise.race([
+      domToCanvas(document.body, {
+        scale, backgroundColor: getComputedStyle(document.body).backgroundColor || '#ffffff', timeout: 8000, style: { margin: '0' },
+        ...(fontCss ? { font: { cssText: fontCss } } : {}),
+        filter: (n) => !(n instanceof HTMLElement && n.hasAttribute('data-req-ignore')),
+        onCloneNode: (root) => {
+          if (!(root instanceof HTMLElement)) return
+          for (const c of root.querySelectorAll<HTMLElement>('[data-req-shift]')) { c.style.transform = `translateY(${c.dataset.reqShift}px)`; c.style.zIndex = '40' }
+          for (const c of root.querySelectorAll<HTMLElement>('[data-req-scroll]')) {
+            const [x, y] = (c.dataset.reqScroll ?? '0,0').split(',').map(Number)
+            c.style.overflow = 'hidden'
+            for (const ch of Array.from(c.children)) if (ch instanceof HTMLElement || ch instanceof SVGElement) ch.style.transform = `translate(${-x}px, ${-y}px)`
+          }
+          for (const c of root.querySelectorAll<HTMLElement>('[data-req-mark]')) { c.style.outline = '3px solid #e11d48'; c.style.outlineOffset = '2px'; c.style.borderRadius = c.style.borderRadius || '4px' }
+        },
+      }),
+      new Promise<null>((r) => setTimeout(() => r(null), 12000)),
+    ])
+    if (!full) return null
+    // only what the person sees on the screen
+    const out = document.createElement('canvas')
+    out.width = Math.round(window.innerWidth * scale)
+    out.height = Math.round(window.innerHeight * scale)
+    const g = out.getContext('2d')
+    if (!g) return null
+    g.drawImage(full, Math.round(sx * scale), Math.round(sy * scale), out.width, out.height, 0, 0, out.width, out.height)
+    return await new Promise((r) => out.toBlob((b) => r(b), 'image/jpeg', 0.88))
+  } catch { return null } finally {
+    for (const el of shifted) { delete el.dataset.reqShift; delete el.dataset.reqScroll }
+    if (spot instanceof HTMLElement) delete spot.dataset.reqMark
+  }
 }
 
 /** "point at the spot": the next click on the page is not a click, it names the spot */
-function Picker({ onDone }: { onDone: (r: { target: string; rect: DOMRect } | null) => void }) {
+function Picker({ onDone }: { onDone: (r: { target: string; el: Element } | null) => void }) {
   const [box, setBox] = React.useState<DOMRect | null>(null)
   React.useEffect(() => {
-    const ours = (e: Event) => (e.target as Element | null)?.closest?.('[data-req-ignore]')
-    const move = (e: MouseEvent) => { if (!ours(e)) setBox((e.target as Element).getBoundingClientRect()) }
+    const ours = (e: Event) => (e.target as Element | null)?.closest?.('[data-req-ignore], [data-req-button]')
+    const move = (e: MouseEvent) => { if (!ours(e)) setBox(spotOf(e.target as Element).getBoundingClientRect()) }
     const stop = (e: Event) => { if (ours(e)) return; e.preventDefault(); e.stopPropagation() }
     const click = (e: MouseEvent) => {
       if (ours(e)) return
       e.preventDefault(); e.stopPropagation()
       const el = e.target as Element
-      onDone({ target: describeSpot(el), rect: el.getBoundingClientRect() })
+      onDone({ target: describeSpot(el), el: spotOf(el) })
     }
     const key = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); onDone(null) } }
     document.addEventListener('mousemove', move, true)
@@ -131,6 +198,7 @@ export function RequestHost() {
   const [confirmed, setConfirmed] = React.useState(false)
   const [writing, setWriting] = React.useState(false)
   const [snapping, setSnapping] = React.useState(false)
+  const [drawing, setDrawing] = React.useState(false)
   const fileRef = React.useRef<HTMLInputElement>(null)
 
   React.useEffect(() => {
@@ -159,9 +227,9 @@ export function RequestHost() {
     return () => window.removeEventListener(EVENT, h)
   }, [start])
 
-  const picked = React.useCallback(async (r: { target: string; rect: DOMRect } | null) => {
+  const picked = React.useCallback(async (r: { target: string; el: Element } | null) => {
     setPicking(false)
-    if (r) { setTarget(r.target); setSnapping(true); setPicture(await screenPicture(r.rect)); setSnapping(false) }
+    if (r) { setTarget(r.target); setSnapping(true); setPicture(await screenPicture(r.el)); setSnapping(false) }
     setOpen(true)
   }, [])
 
@@ -220,6 +288,7 @@ export function RequestHost() {
             onClick={() => { window.open(menuAt.href!, '_blank', 'noopener'); setMenuAt(null) }}>{t('Open in a new tab')}</button>}
         </div>
       )}
+      {drawing && picture && <DrawOnPicture picture={picture} onClose={() => setDrawing(false)} onDone={(b) => { setPicture(b); setDrawing(false) }} />}
       <RequestsIntro onRequest={() => { setTimeout(() => void start(null, false), 250) }} />
       {picking && <Picker onDone={(r) => void picked(r)} />}
       {snapping && <div data-req-ignore="" className="fixed bottom-4 left-1/2 z-[101] flex -translate-x-1/2 items-center gap-2 rounded-full bg-foreground px-4 py-2 text-sm text-background shadow-lg">
@@ -273,11 +342,12 @@ export function RequestHost() {
           <div className="flex items-center gap-3">
             {pictureUrl ? (
               <div className="relative">
-                <a href={pictureUrl} target="_blank" rel="noopener"><img src={pictureUrl} alt={t('Picture of the screen')} className="h-20 rounded-md border object-cover" /></a>
+                <button type="button" onClick={() => setDrawing(true)} title={t('Draw on the picture')}><img src={pictureUrl} alt={t('Picture of the screen')} className="h-20 rounded-md border object-cover hover:ring-2 hover:ring-primary" /></button>
                 <button type="button" className="absolute -right-2 -top-2 rounded-full border bg-card p-0.5 shadow" aria-label={t('Remove the picture')} onClick={() => setPicture(null)}><X className="size-3.5" /></button>
               </div>
             ) : null}
-            <div className="text-xs text-muted-foreground">
+            <div className="grid gap-1 text-xs text-muted-foreground">
+              {picture && <Button size="sm" variant="outline" className="w-fit" onClick={() => setDrawing(true)}><Pencil /> {t('Draw on the picture')}</Button>}
               <button type="button" className="flex items-center gap-1.5 text-primary hover:underline" onClick={() => fileRef.current?.click()}><ImagePlus className="size-4" />{pictureUrl ? t('Another picture') : t('Add a picture')}</button>
               <span>{t('Or paste one with Ctrl+V.')}</span>
             </div>
@@ -305,7 +375,7 @@ function RequestsIntro({ onRequest }: { onRequest: () => void }) {
     t('Press "Request" at the top right on any page, or right click a line of the menu.'),
     t('Choose what you want: Add, Remove, Change, Join or Mistake. With "Point at the spot" click the column, button, field or menu you mean.'),
     t('Write it with your own words. Press "Write it out in detail" and Agent Dris writes it out clearly; you read it and confirm it.'),
-    t('Send it. The picture of the screen is taken by itself. You are told when your request is accepted or done.'),
+    t('The picture of the screen is taken by itself; draw on it with a pen, a box or an arrow to show what you mean. Send it, and you are told when it is accepted or done.'),
   ]
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) close() }}>
@@ -335,13 +405,23 @@ function RequestsIntro({ onRequest }: { onRequest: () => void }) {
   )
 }
 
-/** the top bar's button */
+/** the top bar's button: a new request, or the list of all requests */
 export function RequestButton() {
   const on = useRequestsOn()
+  const navigate = useNavigate()
   if (!on.data) return null
   return (
-    <Button variant="outline" size="sm" className="h-8 gap-1.5 border-primary/40 text-primary" data-req-ignore="" onClick={() => openRequest()} title={t('Ask for a change on this page')}>
-      <Lightbulb /> <span className="max-lg:hidden">{t('Request|button')}</span>
-    </Button>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className="h-8 gap-1.5 border-primary/40 text-primary" data-req-button="" title={t('Ask for a change on this page')}>
+          <Lightbulb /> <span className="max-lg:hidden">{t('Request|button')}</span><ChevronDown className="opacity-60" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" data-req-ignore="">
+        <DropdownMenuItem onSelect={() => setTimeout(() => openRequest(), 150)}><Lightbulb /> {t('New request')}</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => setTimeout(() => openRequest(null, true), 150)}><Crosshair /> {t('Point at the spot and ask')}</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => navigate('/requests')}><ListChecks /> {t('List of requests')}</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
