@@ -209,7 +209,8 @@ export default {
   "The discount is more than the sale itself.": "Zbritja është më e madhe se vetë shitja.",
   "The shift's receipts": "Kuponët e ndërrimit",
   "The receipts of the shift open when the till is online again.": "Kuponët e ndërrimit hapen kur arka të ketë përsëri internet.",
-  "See a receipt again or print its copy. The copy of a fiscal coupon is marked as a copy and is not sent to ATK again.": "Shikoni përsëri një kupon ose printoni kopjen e tij. Kopja e kuponit fiskal del me shënimin e kopjes dhe nuk dërgohet përsëri në ATK.",
   "See|receipt": "Shiko",
   "The receipt as its copy prints.": "Kuponi ashtu siç shtypet kopja e tij.",
+  "See a receipt again or print its copy. The copy of a fiscal coupon is marked as a copy, is not sent to ATK again, and each print is written into the SEF log.": "Shikoni përsëri një kupon ose printoni kopjen e tij. Kopja e kuponit fiskal del me shënimin e kopjes, nuk dërgohet përsëri në ATK, dhe çdo printim shkruhet në regjistrin e SEF-it.",
+  "copies printed: {n}": "kopje të printuara: {n}",
 } satisfies Dict

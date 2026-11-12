@@ -329,4 +329,6 @@ export default {
   "Try the VAT rates in this company": "Testiraj stope PDV-a u ovoj firmi",
   "The company has no VAT number, so every item goes under the letter C with no VAT. With this on, the coupons carry VAT by rate (the letters A, C, D and E), only in ATK's test environment. The coupon still has no VAT number at its head. Open the till again after changing it.": "Firma nema PDV broj, pa svaki artikal ide pod slovo C, bez PDV-a. Kad je ovo uključeno, kuponi nose PDV po stopi (slova A, C, D i E), samo u test okruženju ATK-a. Kupon i dalje nema PDV broj u zaglavlju. Posle promene ponovo otvorite kasu.",
   "VAT rates tried in the test environment|log": "Stope PDV-a se testiraju u test okruženju",
+  "Copy of a coupon printed|log": "Odštampana kopija kupona",
+  "copy no. {n}": "kopija br. {n}",
 } satisfies Dict

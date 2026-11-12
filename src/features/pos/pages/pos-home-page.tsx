@@ -37,7 +37,7 @@ import { cardBankLines, posKeys, xReport, useCashRules, useRegisters, useSaveReg
 import { discard, isFiscal, retry, syncNow, useSyncState } from '../offline'
 import { ShiftReviewCard } from './review-page'
 import { printReceipt, printZReport } from '../receipt'
-import { receiptCopy } from '../reprint'
+import { logCopyPrinted, receiptCopy } from '../reprint'
 
 const since = (iso: string) => {
   const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000)
@@ -327,7 +327,7 @@ export function PosSessionPage() {
   const c = ctl.data
   const voids = c?.voids
   const reprint = async (orderId: string) => {
-    try { printReceipt(await receiptCopy(orderId, { registerId: s.register_id, paperMm: paper.data, currency: cur, companyName: company?.name ?? '' }))
+    try { printReceipt(await receiptCopy(orderId, { registerId: s.register_id, paperMm: paper.data, currency: cur, companyName: company?.name ?? '' })); void logCopyPrinted(orderId)
     } catch (e) { toast.error(describeError(e)) }
   }
 

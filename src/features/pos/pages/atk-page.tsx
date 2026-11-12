@@ -447,7 +447,7 @@ type LogCheck = { ok: boolean; rows: number; broken: number[]; first_broken_at: 
 const KINDS: Record<string, string> = {
   started: msg('Till opened|log'), offline: msg('Internet lost|log'), online: msg('Internet back|log'), clock: msg('Clock off|log'),
   sent: msg('Sent to ATK|log'), failed: msg('Not taken by ATK|log'), change: msg('Change to the SEF|log'),
-  gap: msg('Coupon numbers missing|log'), stuck: msg('Coupon not taken by the server|log'),
+  gap: msg('Coupon numbers missing|log'), stuck: msg('Coupon not taken by the server|log'), copy: msg('Copy of a coupon printed|log'),
 }
 const CHANGES: Record<string, string> = {
   fiscalization_no: msg('Fiscalization number (EDI)'), sef_enabled: msg('DrisPRO signs the till receipts'), environment: msg('Environment'),
@@ -471,6 +471,7 @@ function logText(r: LogRow) {
     case 'online': return t('After {time} without internet · {n} sales were waiting', { time: dur(Number(d.offline_seconds) || 0), n: Number(d.waiting) || 0 })
     case 'clock': return t('The device clock was {s} s off', { s: v('offset_seconds') })
     case 'gap': return t('Numbers {from} to {to} have not arrived ({n})', { from: v('from'), to: v('to'), n: v('missing') })
+    case 'copy': return [v('number'), t('copy no. {n}', { n: v('copy_no') }), v('by')].filter(Boolean).join(' · ')
     case 'stuck': return `${t('Signed on the till, refused by the server')}: ${tServer(v('error'))}`
     case 'started': return d.online === false ? t('Opened without internet') : ''
     case 'change': return `${t(CHANGES[v('what')] ?? v('what'))}: ${v('from') || '—'} → ${v('to') || '—'}`

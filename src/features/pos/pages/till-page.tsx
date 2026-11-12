@@ -37,7 +37,7 @@ import { WaiterHandoverDialog, useWaitersOwing } from '../waiters'
 import type { WaiterOwes } from '../api'
 import { readScaleBarcode } from '@/lib/scale-barcode'
 import { printReceipt, printVoucher, printZReport, receiptDoc, type ReceiptData } from '../receipt'
-import { receiptCopy } from '../reprint'
+import { logCopyPrinted, receiptCopy } from '../reprint'
 import { qrSvg, signAtkSale, useAtkState, waitForAtk } from '../atk'
 import { fiscalCss, fiscalReceiptHtml, paperOf, type FiscalPrint } from '../fiscal-receipt'
 import { clockNow, useClockCheck } from '../clock'
@@ -1611,7 +1611,8 @@ function ShiftReceiptsDialog({ sessionId, registerId, paperMm, currency, company
   const [rows, setRows] = React.useState<Row[] | null>(null)
   const [error, setError] = React.useState<string | null>(null)
   const [busy, setBusy] = React.useState<string | null>(null)
-  const [seen, setSeen] = React.useState<ReceiptData | null>(null)
+  const [seen, setSeen] = React.useState<{ id: string; r: ReceiptData } | null>(null)
+  const [counts, setCounts] = React.useState<Record<string, number>>({})
   React.useEffect(() => {
     let alive = true
     void (async () => {
@@ -1619,22 +1620,26 @@ function ShiftReceiptsDialog({ sessionId, registerId, paperMm, currency, company
         const r = unwrap(await supabase.from('pos_orders').select('id, number, order_at, total, is_refund, coupon_type:atk->>type, coupon_no:atk->>coupon_id')
           .eq('session_id', sessionId).order('order_at', { ascending: false }).limit(200).returns<Row[]>())
         if (alive) setRows(r)
+        const c = await supabase.rpc('atk_copy_counts', { p_session: sessionId })
+        if (alive && c.data) setCounts(c.data as unknown as Record<string, number>)
       } catch (e) { if (alive) setError(navigator.onLine ? describeError(e) : t('The receipts of the shift open when the till is online again.')) }
     })()
     return () => { alive = false }
   }, [sessionId])
+  // every copy printed is written into the SEF log, with which copy it is
+  const print = (id: string, r: ReceiptData) => { printReceipt(r); void logCopyPrinted(id).then((n) => { if (n) setCounts((c) => ({ ...c, [id]: n })) }) }
   const copy = async (id: string, show: boolean) => {
     setBusy(id)
     try {
       const r = await receiptCopy(id, { registerId, paperMm, currency, companyName })
-      if (show) setSeen(r); else printReceipt(r)
+      if (show) setSeen({ id, r }); else print(id, r)
     } catch (e) { toast.error(describeError(e)) } finally { setBusy(null) }
   }
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
       <DialogContent className="max-w-xl">
         <DialogHeader><DialogTitle>{t('The shift\'s receipts')}</DialogTitle>
-          <DialogDescription>{t('See a receipt again or print its copy. The copy of a fiscal coupon is marked as a copy and is not sent to ATK again.')}</DialogDescription></DialogHeader>
+          <DialogDescription>{t('See a receipt again or print its copy. The copy of a fiscal coupon is marked as a copy, is not sent to ATK again, and each print is written into the SEF log.')}</DialogDescription></DialogHeader>
         {error ? <p className="text-[13px] text-warning">{error}</p> : !rows ? <p className="py-6 text-center text-[13px] text-muted-foreground">{t('Loading…')}</p>
           : !rows.length ? <p className="py-6 text-center text-[13px] text-muted-foreground">{t('No receipts in this shift.')}</p> : (
           <ul className="max-h-[60vh] divide-y overflow-y-auto rounded-lg border">
@@ -1642,7 +1647,7 @@ function ShiftReceiptsDialog({ sessionId, registerId, paperMm, currency, company
               <li key={o.id} className="flex items-center gap-3 px-3 py-2">
                 <div className="min-w-0 flex-1">
                   <div className="font-medium">{o.number} {o.coupon_type === '2' ? <Badge variant="destructive" className="ml-1">{t('Cancellation|coupon')}</Badge> : o.is_refund && <Badge variant="destructive" className="ml-1">{t('Refund')}</Badge>}</div>
-                  <div className="text-xs text-muted-foreground tabular">{formatDate(o.order_at, true)}{o.coupon_no ? ` · ${t('Coupon no.')} ${o.coupon_no}` : ''}</div>
+                  <div className="text-xs text-muted-foreground tabular">{formatDate(o.order_at, true)}{o.coupon_no ? ` · ${t('Coupon no.')} ${o.coupon_no}` : ''}{counts[o.id] ? ` · ${t('copies printed: {n}', { n: counts[o.id] })}` : ''}</div>
                 </div>
                 <div className={cn('shrink-0 font-semibold tabular', (o.is_refund || o.coupon_type === '2') && 'text-destructive')}>{formatMoney(o.total, currency)}</div>
                 <Button size="sm" variant="ghost" disabled={busy === o.id} onClick={() => void copy(o.id, true)}><ReceiptText /> {t('See|receipt')}</Button>
@@ -1654,10 +1659,10 @@ function ShiftReceiptsDialog({ sessionId, registerId, paperMm, currency, company
         {seen && (
           <Dialog open onOpenChange={(o) => { if (!o) setSeen(null) }}>
             <DialogContent className="max-w-[26rem]">
-              <DialogHeader><DialogTitle>{seen.number ?? seen.ref}</DialogTitle><DialogDescription>{t('The receipt as its copy prints.')}</DialogDescription></DialogHeader>
+              <DialogHeader><DialogTitle>{seen.r.number ?? seen.r.ref}</DialogTitle><DialogDescription>{t('The receipt as its copy prints.')}</DialogDescription></DialogHeader>
               <iframe title={t('The receipt as its copy prints.')} className="h-[65vh] w-full rounded-md border bg-white"
-                srcDoc={receiptDoc(seen)} />
-              <DialogFooter><Button variant="outline" onClick={() => setSeen(null)}>{t('Close')}</Button><Button onClick={() => { printReceipt(seen); setSeen(null) }}><Printer /> {t('Print')}</Button></DialogFooter>
+                srcDoc={receiptDoc(seen.r)} />
+              <DialogFooter><Button variant="outline" onClick={() => setSeen(null)}>{t('Close')}</Button><Button onClick={() => { print(seen.id, seen.r); setSeen(null) }}><Printer /> {t('Print')}</Button></DialogFooter>
             </DialogContent>
           </Dialog>
         )}

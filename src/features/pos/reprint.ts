@@ -34,3 +34,8 @@ export async function receiptCopy(orderId: string, a: { registerId: string; pape
     payments: o.payments.map((p) => ({ method: p.method, amount: num(p.amount) })), change: num(o.change_given),
   }
 }
+
+/** writes the copy into the SEF log (a fiscal coupon only); gives which copy of that coupon it was, 0 when it is not fiscal or the log could not be reached */
+export async function logCopyPrinted(orderId: string): Promise<number> {
+  try { return Number(unwrap(await supabase.rpc('atk_copy_printed', { p_order: orderId }))) || 0 } catch { return 0 }
+}

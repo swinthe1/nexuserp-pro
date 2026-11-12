@@ -1690,8 +1690,9 @@ export default {
   "The discount is more than the sale itself.": "Popust je veći od same prodaje.",
   "The shift's receipts": "Kuponi smene",
   "The receipts of the shift open when the till is online again.": "Kuponi smene se otvaraju kad kasa ponovo bude na internetu.",
-  "See a receipt again or print its copy. The copy of a fiscal coupon is marked as a copy and is not sent to ATK again.": "Pogledajte kupon ponovo ili odštampajte njegovu kopiju. Kopija fiskalnog kupona je označena kao kopija i ne šalje se ponovo ATK-u.",
   "Loading…": "Učitavanje…",
   "See|receipt": "Pogledaj",
   "The receipt as its copy prints.": "Kupon kako se štampa njegova kopija.",
+  "See a receipt again or print its copy. The copy of a fiscal coupon is marked as a copy, is not sent to ATK again, and each print is written into the SEF log.": "Pogledajte kupon ponovo ili odštampajte njegovu kopiju. Kopija fiskalnog kupona je označena kao kopija, ne šalje se ponovo ATK-u, a svako štampanje se upisuje u dnevnik SEF-a.",
+  "copies printed: {n}": "odštampanih kopija: {n}",
 } satisfies Dict

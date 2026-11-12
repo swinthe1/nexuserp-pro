@@ -16855,6 +16855,18 @@ export type Database = {
         }
         Returns: undefined
       }
+      atk_copy_counts: {
+        Args: {
+          p_session: string
+        }
+        Returns: Json
+      }
+      atk_copy_printed: {
+        Args: {
+          p_order: string
+        }
+        Returns: number
+      }
       atk_coupon_status: {
         Args: {
           p_register: string
