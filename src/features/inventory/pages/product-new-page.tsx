@@ -204,7 +204,7 @@ export function ProductNewPage() {
             <div className="grid gap-4 sm:grid-cols-3">
               <FormItem>
                 <FormLabel>{t('Selling price with VAT')}<Hint id="price_with_vat" /></FormLabel>
-                <Input type="number" step="0.01" min="0" inputMode="decimal" value={gross} onChange={(e) => setGrossPrice(e.target.value)} placeholder="0.00" />
+                <Input type="number" step="any" min="0" inputMode="decimal" value={gross} onChange={(e) => setGrossPrice(e.target.value)} placeholder="0.00" />
                 <FormDescription>{t('Without VAT: {amount}', { amount: formatMoney(Number(salesPrice) || 0) })}</FormDescription>
               </FormItem>
               <FormField control={form.control} name="sales_tax_code_id" render={({ field }) => (

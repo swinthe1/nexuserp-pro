@@ -38,6 +38,14 @@ export function formatMoney(value: number | string | null | undefined, currency?
   return cur ? `${s} ${currencyLabel(cur)}` : s
 }
 
+/** A price of one unit: two decimals, or up to four when the price has them (0,3333 €) */
+export function formatPrice(value: number | string | null | undefined, currency?: string | null) {
+  if (value === null || value === undefined || value === '') return '—'
+  const n = Math.round(Number(value) * 1e4) / 1e4
+  const d = Math.abs(n * 100 - Math.round(n * 100)) < 1e-6 ? 2 : Math.abs(n * 1000 - Math.round(n * 1000)) < 1e-6 ? 3 : 4
+  return formatMoney(n, currency, d)
+}
+
 /** An amount without its currency: for inputs and spreadsheets only */
 export function formatAmount(value: number | string | null | undefined, decimals = 2) {
   if (value === null || value === undefined || value === '') return ''

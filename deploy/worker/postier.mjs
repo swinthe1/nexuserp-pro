@@ -629,7 +629,8 @@ async function atkPost(url, body) {
       body: JSON.stringify(body), signal: AbortSignal.timeout(25000) })
     const text = await r.text()
     let json = null
-    try { json = text ? JSON.parse(text) : null } catch { json = { error: text.slice(0, 300) } }
+    // ATK's transaction number is longer than a JavaScript number keeps exact: it is read as text
+    try { json = text ? JSON.parse(text.replace(/("\s*:\s*)(\d{16,})(?=\s*[,}])/g, '$1"$2"')) : null } catch { json = { error: text.slice(0, 300) } }
     // ATK sometimes wraps its own answer as JSON text inside "error": keep only its message
     if (json && typeof json.error === 'string' && json.error.trim().startsWith('{')) {
       try { const inner = JSON.parse(json.error); json = { ...json, error: inner.message || inner.error || json.error, atk_code: inner.code ?? null } } catch { /* keep it as it came */ }

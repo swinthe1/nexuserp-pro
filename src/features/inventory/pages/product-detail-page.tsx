@@ -35,7 +35,7 @@ import type { Tables } from '@/lib/database.types'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { useMutation } from '@tanstack/react-query'
-import { formatDate, formatMoney, formatQty, humanize, num } from '@/lib/utils'
+import { formatDate, formatMoney, formatPrice, formatQty, humanize, num } from '@/lib/utils'
 import {
   useAttributes, useCategories, useCostHistory, usePriceChanges, useProduct, useProductStockLevels, useTaxCodes, useUnits, useUpdateProduct,
   useVariantMutations, useVendors, useWarehouses, type ProductDetail,
@@ -119,7 +119,7 @@ export function ProductView({ id, inDialog, onDeleted }: { id: string | undefine
             hint={lowVariants ? tn(lowVariants, '{n} variant at or below the reorder point', '{n} variants at or below the reorder point') : t('All variants are above the reorder point')} loading={levels.isLoading} />
           <StatCard label={t('Average cost, without VAT')} value={formatMoney(avg)} hint={t('With VAT {amount} · weighted, updated on every receipt', { amount: formatMoney(avg * buyVat) })} loading={levels.isLoading} />
           <StatCard label={t('Value at purchase price, without VAT')} value={formatMoney(value, company?.base_currency)} hint={t('With VAT {amount}', { amount: formatMoney(value * buyVat) })} loading={levels.isLoading} />
-          <StatCard label={t('Value at selling price, with VAT')} value={formatMoney(onHand * sellGross, company?.base_currency)} hint={t('Selling price with VAT {price}', { price: formatMoney(sellGross) })} loading={levels.isLoading} />
+          <StatCard label={t('Value at selling price, with VAT')} value={formatMoney(onHand * sellGross, company?.base_currency)} hint={t('Selling price with VAT {price}', { price: formatPrice(sellGross) })} loading={levels.isLoading} />
         </div>
       )}
 
@@ -324,7 +324,7 @@ function EditProductSheet({ product }: { product: ProductDetail }) {
   const update = useUpdateProduct(product.id)
   // the price is typed with VAT, as on the shelf; a change goes through a levelling (NIV-) with the old and the new price
   const rateOf = (id: string | null) => num((taxes.data ?? []).find((x) => x.id === id)?.rate)
-  const grossNow = Math.round(num(product.sales_price) * (1 + rateOf(product.sales_tax_code_id) / 100) * 100) / 100
+  const grossNow = Math.round(num(product.sales_price) * (1 + rateOf(product.sales_tax_code_id) / 100) * 1e4) / 1e4
   const level = useMutation({ mutationFn: async (a: { variant: string; price: number }) => unwrap(await supabase.rpc('price_level_quick', { p_variant: a.variant, p_price: a.price })) as unknown as { number: string } })
   const form = useForm<z.infer<typeof editSchema>>({
     resolver: zodResolver(editSchema),
@@ -341,7 +341,7 @@ function EditProductSheet({ product }: { product: ProductDetail }) {
     // the PLU goes only when it changed: a server not yet updated has no such column, and the rest still saves
     const { scale_plu, min_shelf_days, sales_price: gross, ...rest } = v
     const net = Math.round((num(gross) / (1 + rateOf(v.sales_tax_code_id) / 100)) * 1e6) / 1e6
-    const priceChanged = Math.abs(num(gross) - grossNow) >= 0.005 || (v.sales_tax_code_id !== product.sales_tax_code_id && Math.abs(net - num(product.sales_price)) >= 0.0001)
+    const priceChanged = Math.abs(num(gross) - grossNow) >= 0.00005 || (v.sales_tax_code_id !== product.sales_tax_code_id && Math.abs(net - num(product.sales_price)) >= 0.0001)
     const plu = scale_plu || null
     const pluChanged = plu !== ((product as { scale_plu?: string | null }).scale_plu ?? null)
     const shelfChanged = (min_shelf_days ?? null) !== ((product as { min_shelf_days?: number | null }).min_shelf_days ?? null)
@@ -373,7 +373,7 @@ function EditProductSheet({ product }: { product: ProductDetail }) {
                 </FormControl></FormItem>
               )} />
               <div className="grid grid-cols-2 gap-3">
-                <FormField control={form.control} name="sales_price" render={({ field }) => (<FormItem><FormLabel>{t('Sales price with VAT')}</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                <FormField control={form.control} name="sales_price" render={({ field }) => (<FormItem><FormLabel>{t('Sales price with VAT')}</FormLabel><FormControl><Input type="number" step="any" {...field} /></FormControl>
                   <FormDescription>{t('A new price is saved with a levelling document.')}</FormDescription><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="sales_tax_code_id" render={({ field }) => (
                   <FormItem><FormLabel>{t('Sales VAT')}</FormLabel>

@@ -59,7 +59,7 @@ export const fiscalCss = (mm: Paper = 80) => mm === 58
 export const FISCAL_CSS = `@page{size:80mm auto;margin:3mm 4mm} *{box-sizing:border-box} body{margin:0;font:11.5px/1.35 Arial,Helvetica,sans-serif;color:#000;width:72mm}
  .c{text-align:center} .r{text-align:right} .b{font-weight:700} .big{font-size:15px} .title{font-size:17px;font-weight:700;letter-spacing:.5px}
  .rule{border-top:2px dotted #000;margin:5px 0} hr{border:0;border-top:1px solid #000;margin:4px 0}
- table{width:100%;border-collapse:collapse} td{vertical-align:top;padding:1px 0} th{font-weight:400;font-size:10px;text-align:left;padding:1px 0;border-bottom:1px solid #000}
+ table{width:100%;border-collapse:collapse} td{vertical-align:top;padding:1px 0} td+td{padding-left:6px;white-space:nowrap} th+th{padding-left:6px;white-space:nowrap} th{font-weight:400;font-size:10px;text-align:left;padding:1px 0;border-bottom:1px solid #000}
  .sm{font-size:10px} .qr{margin:4px 0 2px} .qr svg{width:40mm;height:40mm} .logo{height:10mm;width:auto;margin:2px auto 0;display:block}
  .ek{font-style:italic;font-weight:700;font-size:13px;font-family:Georgia,serif} .mark{border:1.5px solid #000;padding:1px 4px;font-weight:700;display:inline-block;margin:2px 0}`
 

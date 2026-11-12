@@ -26,7 +26,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { formatDateWith, msg, t, td, tEnum, tn, tServer } from '@/i18n'
-import { cn, formatDate, formatMoney, formatQty, initials, num, todayISO } from '@/lib/utils'
+import { cn, formatDate, formatMoney, formatPrice, formatQty, initials, num, todayISO } from '@/lib/utils'
 import { cardBankLines, cardBanks, checkVoucher, lookupReceipt, useSessionControls, posApprove, searchTill, xReport, sellVoucher, setQuickItems, sessionControls, useCustomerCredit, type VoucherInfo, useCashMove, useCloseSession, useOpenSession, usePayees, usePayOut, useSessionSummary, useTill, useVendorBills, type CatalogItem, type ReceiptLookup, type TillData } from '../api'
 import { enqueue, logTill, nextDeviceRef, syncNow, useOnServerBack, useOnSynced, useSyncState, type QueuedSale, type TillLogEntry } from '../offline'
 import { ManagerDialog, ManagerPinFields, pinReady } from '../manager-pin'
@@ -829,7 +829,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
                       </span>
                     </span>
                     <span className="text-right">
-                      <span className="block text-base font-semibold tabular" title={t('Price with VAT')}>{formatMoney(c.price)}</span>
+                      <span className="block text-base font-semibold tabular" title={t('Price with VAT')}>{formatPrice(c.price)}</span>
                       <span className="block text-[11px] text-muted-foreground tabular">{t('{amount} without VAT', { amount: formatMoney(Math.round(net * 100) / 100) })}</span>
                       {c.product_type === 'stockable' && <span className={cn('block text-[11px] tabular', c.on_hand <= 0 ? 'font-medium text-destructive' : 'text-muted-foreground')}>{t('Here: {qty}', { qty: formatQtyOf(num(c.on_hand), c.variant_id) })}</span>}
                     </span>
@@ -872,7 +872,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
             <span className="min-w-0"><span className="block truncate font-medium">{l.name}</span>
               {l.sku && <span className="block truncate text-[11.5px] text-muted-foreground tabular">{l.sku}</span>}</span>
             <span className="text-right font-semibold tabular">{formatQtyOf(num(l.qty), l.variant_id)}</span>
-            <span className="text-right tabular">{formatMoney(l.price)}</span>
+            <span className="text-right tabular">{formatPrice(l.price)}</span>
             <span className="text-right text-[13px] text-primary tabular">{[l.discount ? `−${Math.round(l.discount * 100) / 100}%` : '', l.off ? `−${formatMoney(l.off)}` : ''].filter(Boolean).join(' ')}</span>
             <span className="text-right font-semibold tabular">{formatMoney(lineTotal(l))}</span>
           </div>
@@ -1032,7 +1032,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
                 className="flex flex-col justify-between rounded-lg border bg-card p-2.5 text-left transition-[border-color,transform] hover:border-primary/50 active:scale-[0.98]">
                 <span className="line-clamp-2 text-[13px] font-medium leading-tight">{c.name}</span>
                 <span className="flex items-end justify-between gap-1">
-                  <span className="text-base font-semibold tabular" title={t('Price with VAT')}>{formatMoney(c.price)}</span>
+                  <span className="text-base font-semibold tabular" title={t('Price with VAT')}>{formatPrice(c.price)}</span>
                   {c.product_type === 'stockable' && <span className={cn('text-[11px] tabular', c.on_hand <= 0 ? 'text-destructive' : 'text-muted-foreground')} title={t('In stock at this till')}>{num(c.on_hand)}</span>}
                 </span>
               </button>
@@ -1111,7 +1111,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
                 <div aria-live="polite">
                   <div className="text-[12px] font-medium text-muted-foreground">{focusLine.key === priced[priced.length - 1]?.key ? t('Last item|till') : t('Selected line')}</div>
                   <div className="mt-1 line-clamp-2 text-xl font-semibold leading-snug">{focusLine.name}</div>
-                  <div className="mt-1 text-[15px] text-muted-foreground tabular">{formatQtyOf(num(focusLine.qty), focusLine.variant_id)} × {formatMoney(focusLine.price)}{focusLine.discount ? <span className="text-primary"> · −{Math.round(focusLine.discount * 100) / 100}%{focusLine.promo ? ` ${focusLine.promo.name}` : ''}</span> : null}</div>
+                  <div className="mt-1 text-[15px] text-muted-foreground tabular">{formatQtyOf(num(focusLine.qty), focusLine.variant_id)} × {formatPrice(focusLine.price)}{focusLine.discount ? <span className="text-primary"> · −{Math.round(focusLine.discount * 100) / 100}%{focusLine.promo ? ` ${focusLine.promo.name}` : ''}</span> : null}</div>
                   <div className="mt-2 text-4xl font-semibold tracking-[-0.02em] tabular">{formatMoney(lineTotal(focusLine))}</div>
                 </div>
               ) : (
@@ -1129,7 +1129,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
                 className={cn('grid cursor-pointer grid-cols-[1fr_auto] gap-x-3 border-b px-4 py-2.5', selected === l.key ? 'bg-primary/5 ring-1 ring-inset ring-primary/30' : 'hover:bg-muted/40')}>
                 <div className="min-w-0">
                   <div className="truncate text-[13px] font-medium">{l.name}</div>
-                  <div className="text-xs text-muted-foreground tabular">{num(l.qty)} × {formatMoney(l.price)}{l.discount ? <span className="text-primary"> · −{Math.round(l.discount * 100) / 100}%{l.card ? ` ${t('card')}` : ''}{(l as PricedLine).promo ? ` ${(l as PricedLine).promo!.name}` : ''}</span> : null}{l.off ? <span className="text-primary"> · −{formatMoney(l.off)}</span> : null}</div>
+                  <div className="text-xs text-muted-foreground tabular">{num(l.qty)} × {formatPrice(l.price)}{l.discount ? <span className="text-primary"> · −{Math.round(l.discount * 100) / 100}%{l.card ? ` ${t('card')}` : ''}{(l as PricedLine).promo ? ` ${(l as PricedLine).promo!.name}` : ''}</span> : null}{l.off ? <span className="text-primary"> · −{formatMoney(l.off)}</span> : null}</div>
                 </div>
                 <div className="text-right text-[15px] font-semibold tabular">{formatMoney(lineTotal(l))}</div>
                 {selected === l.key && (
@@ -1802,7 +1802,7 @@ function NoReceiptRefund({ data, currency, onBack, onClose, onRefund }: { data: 
               <div className="absolute inset-x-0 top-full z-10 mt-1 overflow-hidden rounded-md border bg-popover shadow-md">
                 {found.map((c) => (
                   <button key={c.variant_id} type="button" className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[13px] hover:bg-muted" onClick={() => add(c)}>
-                    <span className="truncate">{c.name}</span><span className="shrink-0 tabular text-muted-foreground">{formatMoney(c.price)}</span>
+                    <span className="truncate">{c.name}</span><span className="shrink-0 tabular text-muted-foreground">{formatPrice(c.price)}</span>
                   </button>
                 ))}
               </div>
@@ -1813,7 +1813,7 @@ function NoReceiptRefund({ data, currency, onBack, onClose, onRefund }: { data: 
               {picked.map((p, i) => (
                 <div key={p.item.variant_id} className="flex items-center gap-3 border-b px-3 py-2 last:border-0">
                   <div className="min-w-0 flex-1"><div className="truncate text-[13px] font-medium">{p.item.name}</div>
-                    <div className="text-xs text-muted-foreground">{t('{price} with VAT', { price: formatMoney(p.item.price) })}</div></div>
+                    <div className="text-xs text-muted-foreground">{t('{price} with VAT', { price: formatPrice(p.item.price) })}</div></div>
                   <Input aria-label={t('Return quantity for {item}', { item: p.item.name })} inputMode="decimal" className="h-10 w-20 text-right tabular" value={p.qty}
                     onChange={(e) => setPicked((s) => s.map((x, j) => (j === i ? { ...x, qty: e.target.value.replace(',', '.') } : x)))} />
                   <Button type="button" variant="ghost" size="icon" aria-label={t('Remove')} onClick={() => setPicked((s) => s.filter((_, j) => j !== i))}><X /></Button>
@@ -2126,7 +2126,7 @@ function QuickStrip({ items, edit, canEdit, onAdd, onEdit, onUnpin }: {
         {items.map((c) => (
           <button key={c.variant_id} type="button" onClick={() => (edit ? onUnpin(c.variant_id) : onAdd(c))}
             className={cn('flex h-11 max-w-[220px] items-center gap-2 rounded-md border bg-card px-3 text-left text-[13px] hover:border-primary/50 active:scale-[0.98]', edit && 'border-dashed border-destructive/50')}>
-            <span className="truncate font-medium">{c.name}</span><span className="shrink-0 font-semibold tabular">{formatMoney(c.price)}</span>
+            <span className="truncate font-medium">{c.name}</span><span className="shrink-0 font-semibold tabular">{formatPrice(c.price)}</span>
             {edit && <X className="size-3.5 shrink-0 text-destructive" />}
           </button>
         ))}
@@ -2165,7 +2165,7 @@ function QuickPanel({ items, pinnedMode, edit, canEdit, searching, hint, onAdd, 
                 <button type="button" onClick={() => (edit ? onUnpin(c.variant_id) : onAdd(c))}
                   className={cn('flex size-full flex-col justify-between rounded-lg border bg-card p-2.5 text-left transition-[border-color,transform] hover:border-primary/50 active:scale-[0.98]', edit && 'border-dashed')}>
                   <span className="line-clamp-2 text-[13px] font-medium leading-tight">{c.name}</span>
-                  <span className="text-[15px] font-semibold tabular">{formatMoney(c.price)}</span>
+                  <span className="text-[15px] font-semibold tabular">{formatPrice(c.price)}</span>
                 </button>
                 {edit && <span className="pointer-events-none absolute right-1.5 top-1.5 grid size-5 place-items-center rounded-full bg-destructive text-destructive-foreground"><X className="size-3" /></span>}
               </div>
