@@ -24,6 +24,7 @@ import { toBase64 } from '@/lib/atk/proto'
 import { ATK_TYPES, ATK_UNITS } from '@/lib/atk/codes'
 import { describeError, unwrap } from '@/lib/errors'
 import { downloadCsv } from '@/lib/export'
+import { SCENARIOS } from '../atk-scenarios'
 import { supabase } from '@/lib/supabase'
 import { cn, formatDate, todayISO } from '@/lib/utils'
 import { useWarehouses } from '@/features/inventory/api'
@@ -107,6 +108,7 @@ export function AtkPage() {
             <TabsTrigger value="tills">{t('Tills|atk')}</TabsTrigger>
             <TabsTrigger value="settings">{t('Settings')}</TabsTrigger>
             <TabsTrigger value="codes">{t('Codes|atk')}</TabsTrigger>
+            <TabsTrigger value="test">{t('Technical test|atk')}</TabsTrigger>
             <TabsTrigger value="sent">{t('Sending|atk')}{s.queue.failed > 0 && <span className="ml-1.5 rounded-full bg-destructive px-1.5 text-[11px] text-destructive-foreground">{s.queue.failed}</span>}</TabsTrigger>
           </TabsList>
           <TabsContent value="tills" className="grid gap-4">
@@ -119,6 +121,7 @@ export function AtkPage() {
             <TillsCard s={s} keys={device.keys} focus={focus} onRegister={(r) => setWizard({ till: r })} onForgotten={() => { device.refresh(); void q.refetch() }} />
           </TabsContent>
           <TabsContent value="codes" className="grid gap-4"><CodesCard canEdit={s.can_setup} /></TabsContent>
+          <TabsContent value="test" className="grid gap-4"><TestCard s={s} /></TabsContent>
           <TabsContent value="sent" className="grid gap-4"><QueueCard s={s} /><LogCard /></TabsContent>
         </Tabs>
       )}
@@ -531,6 +534,56 @@ function LogCard() {
           </table>
         </div>
         {(rows.data?.length ?? 0) >= 100 && <p className="text-xs text-muted-foreground">{t('The newest 100 are shown; the file has them all.')}</p>}
+      </CardContent>
+    </Card>
+  )
+}
+
+/**
+ * ATK's technical test, scenario by scenario: what ATK checks, the steps, a button that fills the till for a sale,
+ * and a tick for what was tried (kept on this computer, for this company).
+ */
+function TestCard({ s }: { s: Setup }) {
+  const { companyId } = useCompany()
+  const key = `drispro.atk.test.${companyId}`
+  const [done, setDone] = React.useState<Record<string, boolean>>(() => { try { return JSON.parse(localStorage.getItem(key) ?? '{}') } catch { return {} } })
+  const tick = (id: string, v: boolean) => { const n = { ...done, [id]: v }; setDone(n); try { localStorage.setItem(key, JSON.stringify(n)) } catch { /* only on this screen then */ } }
+  const tills = s.tills.filter((x) => x.certified)
+  const [till, setTill] = React.useState<string>(() => tills[0]?.id ?? s.tills[0]?.id ?? '')
+  const count = SCENARIOS.filter((x) => done[x.id]).length
+  return (
+    <Card>
+      <CardHeader><CardTitle>{t('ATK\'s technical test, scenario by scenario')}</CardTitle>
+        <CardDescription>{t('What the Commission checks at the technical test. Go through each scenario in the test environment before the day, and tick it when it worked. Every coupon has five items.')}</CardDescription></CardHeader>
+      <CardContent className="grid gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="grid gap-1"><Label className="text-xs">{t('Till for the scenarios')}</Label>
+            <Select value={till} onValueChange={setTill}><SelectTrigger className="h-9 w-64" aria-label={t('Till for the scenarios')}><SelectValue /></SelectTrigger>
+              <SelectContent>{s.tills.map((x) => <SelectItem key={x.id} value={x.id}>{x.name}{x.certified ? '' : ` (${t('not registered at ATK')})`}</SelectItem>)}</SelectContent></Select></div>
+          <div className="ml-auto text-sm"><span className="text-2xl font-semibold tabular">{count}</span> <span className="text-muted-foreground">{t('of {n} scenarios tried', { n: SCENARIOS.length })}</span></div>
+        </div>
+        {s.env !== 'test' && <p className="rounded-md border border-warning/40 bg-warning/[0.08] px-3 py-2 text-[13px]">{t('The company is in the real environment: the scenarios are for the test environment. ATK\'s real environment is not for trials.')}</p>}
+        <ol className="grid gap-2">
+          {SCENARIOS.map((sc, i) => (
+            <li key={sc.id} className={cn('rounded-lg border p-3', done[sc.id] && 'border-success/40 bg-success/[0.05]')}>
+              <div className="flex flex-wrap items-start gap-3">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{i + 1}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium">{t(sc.title)}</div>
+                  <div className="text-[13px] text-muted-foreground">{t(sc.checks)}</div>
+                  <ul className="mt-1.5 grid gap-0.5 text-[13px]">
+                    {sc.steps.map((st) => <li key={st} className="flex gap-2"><span className="text-muted-foreground">–</span><span>{t(st)}</span></li>)}
+                  </ul>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  {sc.sale && till && <Button size="sm" variant="outline" asChild><Link to={`/pos/till/${till}?atk=${sc.id}`}>{t('Fill the till')}</Link></Button>}
+                  <label className="flex items-center gap-2 text-[13px]"><input type="checkbox" className="size-4 accent-[hsl(var(--primary))]" checked={!!done[sc.id]} onChange={(e) => tick(sc.id, e.target.checked)} />{t('Tried, it works')}</label>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ol>
+        <p className="text-[13px] text-muted-foreground">{t('On the day bring the computer with the till registered in the test environment, the thermal printer with paper, and a phone with ATK\'s app to scan the QR code.')}</p>
       </CardContent>
     </Card>
   )

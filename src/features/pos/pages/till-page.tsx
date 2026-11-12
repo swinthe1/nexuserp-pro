@@ -42,6 +42,7 @@ import { clockNow, useClockCheck } from '../clock'
 import { logSef, watchSef } from '../sef-log'
 import { fuzzyFind } from '@/lib/fuzzy'
 import { SyncPanel } from './pos-home-page'
+import { SCENARIOS, scenarioLines } from '../atk-scenarios'
 import { phoneKey, quoteLoyalty, type TillCardRow, type TillProgram } from '@/features/loyalty/api'
 import { formatQtyOf } from '@/lib/units'
 
@@ -548,6 +549,19 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
 
   /* ---------- an appointment paid here: its service, price and client go on the sale */
   const [params, setParams] = useSearchParams()
+  // a scenario of ATK's technical test, opened from the SEF page: five items, with its discounts, on an empty sale
+  React.useEffect(() => {
+    const id = params.get('atk')
+    if (!id || !data.catalog.length) return
+    setParams((p) => { p.delete('atk'); return p }, { replace: true })
+    const sc = SCENARIOS.find((x) => x.id === id)
+    if (!sc?.sale || lines.length) return
+    const byId = new Map(data.catalog.map((c) => [c.variant_id, c]))
+    setLines(scenarioLines(data.catalog, sc).map((l) => { const c = byId.get(l.variant_id)!
+      return { key: crypto.randomUUID(), variant_id: c.variant_id, name: c.name, sku: c.sku, price: c.price, qty: l.qty, discount: l.discount, off: l.off, rate: c.tax_rate, barcode: null } }))
+    setSaleDisc(sc.sale.saleDisc ?? null)
+    setFlash({ tone: 'ok', text: `${t(sc.title)} · ${t(sc.sale.pay)}` })
+  }, [params, data.catalog]) // eslint-disable-line react-hooks/exhaustive-deps
   const apptRef = React.useRef<string | null>(null)
   React.useEffect(() => {
     const id = params.get('appt')

@@ -35,6 +35,8 @@ export type AtkTill = {
   header?: FiscalHeader
   /** the cashier's number in the staff list */
   operator_no?: string | null
+  /** false for a taxpayer not registered for VAT: no VAT on its coupons (a server not updated yet sends none) */
+  vat_registered?: boolean
 }
 
 
@@ -112,12 +114,14 @@ export async function signAtkSale(s: AtkSaleInput): Promise<{ payload: Record<st
   const cancel = !!s.cancelReason
   if ((s.isReturn || cancel) && !s.returnOf) throw new Error(t('This receipt was made before the till was registered with ATK, so ATK cannot take a return of it here'))
   const exempt = new Set(a.exempt_taxes ?? [])
+  // a taxpayer not registered for VAT charges none: every line goes under the 0 % letter (C), never the exempt one
+  const noVat = a.vat_registered === false
   const seq = await nextCouponSeq(s.registerId, a.env!, a.last_seq ?? 0)
   const built = buildCoupons({
     nui: a.nui ?? '', branchId: a.branch_id!, posId: a.pos_id!, applicationId: a.application_id!, location: a.location ?? '', operator: s.operator,
     couponSeq: seq, type: cancel ? CouponType.Cancel : s.isReturn ? CouponType.Return : CouponType.Sale, time: s.time, referenceNo: s.returnOf ?? null,
     saleDiscount: s.saleDiscountPct ? { pct: s.saleDiscountPct } : null,
-    lines: mergeLines(s.lines).map((l) => ({ name: l.name, qty: l.qty, price: l.price, total: l.total, rate: l.rate, exempt: !!l.tax_code_id && exempt.has(l.tax_code_id),
+    lines: mergeLines(s.lines).map((l) => ({ name: l.name, qty: l.qty, price: l.price, total: l.total, rate: noVat ? 0 : l.rate, exempt: !noVat && !!l.tax_code_id && exempt.has(l.tax_code_id),
       discountPct: l.discountPct ?? null, discountValue: l.discountValue ?? null, saleShare: l.saleShare ?? null,
       unit: a.units?.[l.variant_id] ?? 'CP', category: a.types?.[l.variant_id] ?? a.default_type ?? 'TT' })),
     payments: s.payments, change: s.change,
@@ -129,7 +133,7 @@ export async function signAtkSale(s: AtkSaleInput): Promise<{ payload: Record<st
       details: signed.details, signature: signed.signature, qr: signed.qr, type: built.pos.type, reference_no: s.returnOf ?? null,
       total: signed.total, tax: signed.totalTax, daily_no: s.dailyNo ?? null, reason: s.cancelReason ?? null, operator_no: a.operator_no ?? null, block_no: s.blockNo ?? null,
       print: built.print },
-    receipt: { env: a.env!, nui: a.nui ?? '', header: a.header ?? { legal_name: a.business ?? '', store: null, store_address: null, city: a.location ?? null, phone: null, vat_number: null },
+    receipt: { env: a.env!, nui: a.nui ?? '', header: { ...(a.header ?? { legal_name: a.business ?? '', store: null, store_address: null, city: a.location ?? null, phone: null, vat_number: null }), ...(noVat ? { vat_number: null } : {}) },
       operator: s.operator, operatorNo: a.operator_no ?? null, coupon: built.pos, qr: signed.qr, dailyNo: s.dailyNo ?? null, reason: s.cancelReason ?? null,
       offline: !!s.offline, change: Math.round(Math.max(s.change, 0) * 100), footer: s.footer ?? null, blockNo: s.blockNo ?? null, print: built.print },
   }
