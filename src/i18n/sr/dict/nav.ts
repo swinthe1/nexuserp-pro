@@ -362,4 +362,5 @@ export default {
   "Payroll cost": "Trošak plata",
   "Production cost": "Trošak proizvodnje",
   "Requests": "Zahtevi",
+  "Close this tab": "Zatvori ovu karticu",
 } satisfies Dict

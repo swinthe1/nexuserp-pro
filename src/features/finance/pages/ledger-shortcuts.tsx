@@ -1,7 +1,10 @@
 import { ArrowDownLeft, ArrowUpRight, Printer, Wallet } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useCompany } from '@/app/company-provider'
+import { useWarehouses } from '@/features/inventory/api'
+import { supabase } from '@/lib/supabase'
 import { EmptyState } from '@/components/empty-state'
 import { GridExportMenu } from '@/components/export-menu'
 import { ErrorState } from '@/components/error-state'
@@ -26,7 +29,7 @@ type Day = { date: string; rows: LedgerLine[]; inflow: number; outflow: number; 
  * Several cash desks: choose which one. Printable for the signature at the end of the month.
  */
 export function CashBookPage() {
-  const { company } = useCompany()
+  const { company, companyId } = useCompany()
   const accounts = useAccounts()
   const [params, setParams] = useSearchParams()
   const [from, setFrom] = React.useState(params.get('from') ?? monthStart())
@@ -35,18 +38,34 @@ export function CashBookPage() {
   const id = params.get('account') ?? cashes[0]?.id
   const cash = cashes.find((a) => a.id === id)
   const ledger = useAccountLedger(cash?.id, from, to)
+  // the cash of one unit: a line belongs to the unit it came from (the till's shift, the unit's safe, a payment at its cash desk)
+  const warehouses = useWarehouses()
+  const unitOf = useQuery({
+    queryKey: ['fin', companyId, 'cash-entry-units', from, to], enabled: !!companyId, staleTime: 60_000,
+    queryFn: async () => {
+      const r = await supabase.rpc('cash_entry_units', { p_company: companyId!, p_from: from, p_to: to })
+      return r.error ? null : (r.data as unknown as Record<string, string>)   // a server not updated yet: no choice of unit
+    },
+  })
+  const unitIds = React.useMemo(() => new Set(Object.values(unitOf.data ?? {})), [unitOf.data])
+  const unitOptions = (warehouses.data ?? []).filter((w) => unitIds.has(w.id))
+  const unitParam = params.get('unit') ?? 'all'
+  const unit = unitParam === 'none' || unitOptions.some((w) => w.id === unitParam) ? unitParam : 'all'
+  const one = unit !== 'all'
 
   const days = React.useMemo<Day[]>(() => {
-    let bal = ledger.data?.opening ?? 0
+    // with a unit chosen there is no cash at the start: the account is the whole company's, so the running figure starts at zero
+    let bal = one ? 0 : ledger.data?.opening ?? 0
     const out: Day[] = []
     for (const l of ledger.data?.rows ?? []) {
+      if (one && (unit === 'none' ? !!unitOf.data?.[l.entry_id] : unitOf.data?.[l.entry_id] !== unit)) continue
       let d = out[out.length - 1]
       if (!d || d.date !== l.entry.entry_date) { d = { date: l.entry.entry_date, rows: [], inflow: 0, outflow: 0, close: bal }; out.push(d) }
       d.rows.push(l); d.inflow += num(l.debit); d.outflow += num(l.credit)
       bal += num(l.debit) - num(l.credit); d.close = bal
     }
     return out
-  }, [ledger.data])
+  }, [ledger.data, one, unit, unitOf.data])
   const inflow = days.reduce((s, d) => s + d.inflow, 0)
   const outflow = days.reduce((s, d) => s + d.outflow, 0)
 
@@ -67,15 +86,15 @@ export function CashBookPage() {
   return (
     <div className="mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)] gap-4">
       <PageHeader title={t('Cash book|ledger')}
-        description={<>{company?.name} · <span className="font-mono">{cash.code}</span> {td(cash.name)} · {formatDate(from)} – {formatDate(to)}. {t('Amounts in {cur}.', { cur: company?.base_currency ?? '' })}</>}
+        description={<>{company?.name} · <span className="font-mono">{cash.code}</span> {td(cash.name)}{one && unit !== 'none' ? ` · ${td(unitOptions.find((w) => w.id === unit)?.name ?? '')}` : ''} · {formatDate(from)} – {formatDate(to)}. {t('Amounts in {cur}.', { cur: company?.base_currency ?? '' })}</>}
         actions={<div className="flex gap-2 print:hidden">
           <GridExportMenu name={`${t('cash-journal')}-${cash.code}-${from}-${to}`} title={t('Cash book|ledger')} disabled={!days.length}
             subtitle={`${company?.name ?? ''} · ${cash.code} ${td(cash.name)} · ${formatDate(from)} – ${formatDate(to)} · ${company?.base_currency ?? ''}`}
             grid={() => {
-              let run = num(ledger.data?.opening ?? 0)
+              let run = one ? 0 : num(ledger.data?.opening ?? 0)
               const r2 = (x: number) => Math.round(x * 100) / 100
               return [[t('Date'), t('Document'), t('Description'), t('In'), t('Out'), t('Cash')],
-                [formatDate(from), null, t('Opening balance on {date}', { date: formatDate(from) }), null, null, r2(run)],
+                ...(one ? [] : [[formatDate(from), null, t('Opening balance on {date}', { date: formatDate(from) }), null, null, r2(run)]]),
                 ...days.flatMap((d) => [
                   ...d.rows.map((l) => {
                     run += num(l.debit) - num(l.credit)
@@ -84,7 +103,7 @@ export function CashBookPage() {
                   }),
                   [null, null, t('Total of {date}', { date: formatDate(d.date) }), r2(d.inflow), r2(d.outflow), r2(d.close)],
                 ]),
-                [formatDate(to), null, t('Closing balance on {date}', { date: formatDate(to) }), r2(inflow), r2(outflow), r2(num(ledger.data?.closing ?? 0))]]
+                [formatDate(to), null, one ? t('Total of the period') : t('Closing balance on {date}', { date: formatDate(to) }), r2(inflow), r2(outflow), r2(one ? inflow - outflow : num(ledger.data?.closing ?? 0))]]
             }} />
           <Button variant="outline" onClick={() => window.print()}><Printer /> {t('Print')}</Button>
         </div>} />
@@ -96,6 +115,16 @@ export function CashBookPage() {
             <SelectContent>{cashes.map((a) => <SelectItem key={a.id} value={a.id}>{a.code} · {td(a.name)}</SelectItem>)}</SelectContent>
           </Select>
         )}
+        {unitOptions.length > 0 && (
+          <Select value={unit} onValueChange={(v) => { const p = new URLSearchParams(params); if (v === 'all') p.delete('unit'); else p.set('unit', v); setParams(p, { replace: true }) }}>
+            <SelectTrigger className="w-full sm:w-[220px]" aria-label={t('Unit|store')}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('All units')}</SelectItem>
+              {unitOptions.map((w) => <SelectItem key={w.id} value={w.id}>{td(w.name)}</SelectItem>)}
+              <SelectItem value="none">{t('Without a unit|cash')}</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
         <Input type="date" value={from} onChange={(e) => e.target.value && setPeriod(e.target.value, to)} className="w-[150px]" aria-label={t('From')} />
         <Input type="date" value={to} onChange={(e) => e.target.value && setPeriod(from, e.target.value)} className="w-[150px]" aria-label={t('To')} />
         <Button variant="ghost" size="sm" onClick={() => setPeriod(todayISO(), todayISO())}>{t('Today')}</Button>
@@ -105,12 +134,15 @@ export function CashBookPage() {
       {ledger.isLoading ? <Skeleton className="h-64" /> : ledger.isError ? <ErrorState error={ledger.error} onRetry={() => void ledger.refetch()} /> : <>
         {/* the four numbers a cashier and the owner look at */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <Sum label={t('Cash at the start')} value={ledger.data?.opening ?? 0} />
+          {!one && <Sum label={t('Cash at the start')} value={ledger.data?.opening ?? 0} />}
           <Sum label={t('Came in')} value={inflow} tone="in" />
           <Sum label={t('Went out')} value={outflow} tone="out" />
-          <Sum label={t('Cash at the end')} value={ledger.data?.closing ?? 0} strong />
+          {one ? <Sum label={t('In less out|cash')} value={inflow - outflow} strong /> : <Sum label={t('Cash at the end')} value={ledger.data?.closing ?? 0} strong />}
         </div>
 
+        {one && <p className="text-[12.5px] text-muted-foreground print:hidden">{unit === 'none'
+          ? t('Lines that belong to no unit: entries typed by hand, or payments through a cash account shared by several units.')
+          : t('Only what came from this unit: its tills\' shifts, its safe and the payments at its cash desk. The cash account is one for the company, so the figure on the right counts from zero for these days.')}</p>}
         {!days.length ? <Card><CardContent className="py-10 text-center text-[13px] text-muted-foreground">{t('No movements in this period.')}</CardContent></Card> : <>
           {/* phone: one card per day */}
           <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:hidden print:hidden">
@@ -141,8 +173,8 @@ export function CashBookPage() {
                 <TableHead className="text-right">{t('In')}</TableHead><TableHead className="text-right">{t('Out')}</TableHead><TableHead className="text-right">{t('Cash')}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                <TableRow className="bg-muted/40 hover:bg-muted/40"><TableCell colSpan={5} className="text-[13px] font-medium">{t('Opening balance on {date}', { date: formatDate(from) })}</TableCell>
-                  <TableCell className="text-right font-medium tabular">{formatMoney(ledger.data?.opening ?? 0)}</TableCell></TableRow>
+                {!one && <TableRow className="bg-muted/40 hover:bg-muted/40"><TableCell colSpan={5} className="text-[13px] font-medium">{t('Opening balance on {date}', { date: formatDate(from) })}</TableCell>
+                  <TableCell className="text-right font-medium tabular">{formatMoney(ledger.data?.opening ?? 0)}</TableCell></TableRow>}
                 {days.map((d) => {
                   let run = d.close - d.inflow + d.outflow
                   return (
@@ -170,10 +202,10 @@ export function CashBookPage() {
                   )
                 })}
                 <TableRow className="bg-muted/40 hover:bg-muted/40">
-                  <TableCell colSpan={3} className="text-[13px] font-medium">{t('Closing balance on {date}', { date: formatDate(to) })}</TableCell>
+                  <TableCell colSpan={3} className="text-[13px] font-medium">{one ? t('Total of the period') : t('Closing balance on {date}', { date: formatDate(to) })}</TableCell>
                   <TableCell className="text-right font-medium tabular">{formatMoney(inflow)}</TableCell>
                   <TableCell className="text-right font-medium tabular">{formatMoney(outflow)}</TableCell>
-                  <TableCell className="text-right font-semibold tabular">{formatMoney(ledger.data?.closing ?? 0)}</TableCell>
+                  <TableCell className="text-right font-semibold tabular">{formatMoney(one ? inflow - outflow : ledger.data?.closing ?? 0)}</TableCell>
                 </TableRow>
               </TableBody>
             </Table>

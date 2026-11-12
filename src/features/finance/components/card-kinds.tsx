@@ -214,6 +214,11 @@ export function BalancesView({ onOpen }: { onOpen: (id: string) => void }) {
   const [side, setSide] = React.useState<Side>('customer')
   const [date, setDate] = React.useState(todayISO())
   const [group, setGroup] = React.useState<string>('')
+  // a period to compare with: the balance at its start, what was added and what was taken off until the date
+  const [from, setFrom] = React.useState('')
+  const period = useQuery({ queryKey: ['partner-balances-period', companyId, side, from, date], enabled: !!companyId && !!from && from <= date, staleTime: 0,
+    queryFn: async () => unwrap(await supabase.rpc('partner_balances_period', { p_company: companyId!, p_side: side, p_from: from, p_to: date })) as unknown as Record<string, { opening: number; added: number; taken: number }> })
+  const per = from && from <= date ? period.data : undefined
   const q = useQuery({ queryKey: ['partner-balances', companyId, side, date], enabled: !!companyId, staleTime: 0,
     queryFn: async () => unwrap(await supabase.rpc('partner_balances', { p_company: companyId!, p_side: side, p_date: date })) as unknown as { rows: BalanceRow[]; currency: string } })
   const all = q.data?.rows ?? []
@@ -239,6 +244,9 @@ export function BalancesView({ onOpen }: { onOpen: (id: string) => void }) {
           ))}
         </div>
         <div className="grid gap-1.5"><Label htmlFor="pb-date">{t('At|date')}</Label><Input id="pb-date" type="date" className="w-40" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} /></div>
+        <div className="grid gap-1.5"><Label htmlFor="pb-from">{t('Compare with the balance on|date')}</Label>
+          <div className="flex items-center gap-1"><Input id="pb-from" type="date" className="w-40" value={from} max={date} onChange={(e) => setFrom(e.target.value)} />
+            {from && <Button size="sm" variant="ghost" onClick={() => setFrom('')}>{t('Clear')}</Button>}</div></div>
       </div>
       {hasKinds && (
         <div className="flex flex-wrap items-center gap-1.5 text-[13px]">
@@ -272,6 +280,14 @@ export function BalancesView({ onOpen }: { onOpen: (id: string) => void }) {
           { accessorKey: 'tax_number', header: t('NIPT'), meta: { label: t('NIPT') } },
           { id: 'groups', accessorFn: (r) => r.groups.join(', '), header: t('Group|partner'), meta: { label: t('Group') } },
           ...(side === 'vendor' ? [{ id: 'kinds', accessorFn: (r: BalanceRow) => (r.kinds ?? []).map((k) => t(VENDOR_KINDS.find(([x]) => x === k)?.[1] ?? k)).join(', '), header: t('Kind of supplier'), meta: { label: t('Kind of supplier') } }] : []),
+          ...(per ? [
+            { id: 'opening', accessorFn: (r: BalanceRow) => per[r.id]?.opening ?? 0, header: () => <span className="whitespace-nowrap">{t('Balance on {date}', { date: formatDate(from) })}</span>, meta: { label: t('Balance at the start'), align: 'right' as const },
+              cell: ({ getValue }: { getValue: () => unknown }) => <span className="tabular-nums">{formatMoney(Number(getValue()))}</span> },
+            { id: 'added', accessorFn: (r: BalanceRow) => per[r.id]?.added ?? 0, header: () => <span className="whitespace-nowrap">{t('Added in the period')}</span>, meta: { label: t('Added in the period'), align: 'right' as const },
+              cell: ({ getValue }: { getValue: () => unknown }) => <span className="tabular-nums">{Number(getValue()) ? formatMoney(Number(getValue())) : ''}</span> },
+            { id: 'taken', accessorFn: (r: BalanceRow) => per[r.id]?.taken ?? 0, header: () => <span className="whitespace-nowrap">{t('Taken off in the period')}</span>, meta: { label: t('Taken off in the period'), align: 'right' as const },
+              cell: ({ getValue }: { getValue: () => unknown }) => <span className="tabular-nums">{Number(getValue()) ? formatMoney(Number(getValue())) : ''}</span> },
+          ] : []),
           { accessorKey: 'balance', header: side === 'customer' ? t('Owes us') : t('We owe'), meta: { label: side === 'customer' ? t('Owes us') : t('We owe'), align: 'right' },
             cell: ({ getValue }) => <span className="font-medium tabular-nums">{formatMoney(Number(getValue()))}</span> },
           { accessorKey: 'late', header: t('Of which late'), meta: { label: t('Of which late'), align: 'right' },

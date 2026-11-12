@@ -17170,6 +17170,14 @@ export type Database = {
         }
         Returns: Json
       }
+      cash_entry_units: {
+        Args: {
+          p_company: string
+          p_from: string
+          p_to: string
+        }
+        Returns: Json
+      }
       cash_forecast: {
         Args: {
           p_company: string
@@ -19082,6 +19090,15 @@ export type Database = {
           p_company: string
           p_side: string
           p_date?: string
+        }
+        Returns: Json
+      }
+      partner_balances_period: {
+        Args: {
+          p_company: string
+          p_side: string
+          p_from: string
+          p_to: string
         }
         Returns: Json
       }

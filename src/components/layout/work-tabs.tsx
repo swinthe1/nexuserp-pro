@@ -322,6 +322,15 @@ const Pane = React.memo(function Pane({ tab, active, pageAllowed }: { tab: Tab; 
 export function WorkTabBar({ className }: { className?: string }) {
   const ctx = useTabs()
   const [asking, setAsking] = React.useState<string | null>(null)
+  // a right click on a tab: close it, the others, or all of them
+  const [menu, setMenu] = React.useState<{ id: string; x: number; y: number } | null>(null)
+  React.useEffect(() => {
+    if (!menu) return
+    const off = () => setMenu(null)
+    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenu(null) }
+    window.addEventListener('pointerdown', off); window.addEventListener('blur', off); window.addEventListener('resize', off); window.addEventListener('keydown', key)
+    return () => { window.removeEventListener('pointerdown', off); window.removeEventListener('blur', off); window.removeEventListener('resize', off); window.removeEventListener('keydown', key) }
+  }, [menu])
   const strip = React.useRef<HTMLDivElement>(null)
   const requestClose = React.useCallback((id: string) => {
     const tab = ctx?.tabs.find((x) => x.id === id)
@@ -355,6 +364,7 @@ export function WorkTabBar({ className }: { className?: string }) {
             <div key={tab.id} role="tab" aria-selected={active} tabIndex={active ? 0 : -1} title={`${title}${i < 9 ? ` (Alt+${i + 1})` : ''}`}
               onClick={() => ctx.activate(tab.id)}
               onAuxClick={(e) => { if (e.button === 1) { e.preventDefault(); requestClose(tab.id) } }}
+              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setMenu({ id: tab.id, x: Math.min(e.clientX, window.innerWidth - 240), y: e.clientY }) }}
               onMouseDown={(e) => { if (e.button === 1) e.preventDefault() }}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ctx.activate(tab.id) } }}
               style={{ ['--mod' as string]: look.hue }}
@@ -374,6 +384,19 @@ export function WorkTabBar({ className }: { className?: string }) {
           )
         })}
       </div>
+      {menu && (
+        <div role="menu" aria-label={t('Tab options')} onPointerDown={(e) => e.stopPropagation()} style={{ left: menu.x, top: menu.y }}
+          className="fixed z-50 w-56 rounded-md border bg-popover p-1 text-sm text-popover-foreground shadow-md">
+          {([
+            [t('Close this tab'), () => requestClose(menu.id), false],
+            [t('Close the other tabs'), () => ctx.closeOthers(menu.id), visible.length < 2],
+            [t('Close all tabs'), () => ctx.closeAll(), false],
+          ] as [string, () => void, boolean][]).map(([label, run, off]) => (
+            <button key={label} type="button" role="menuitem" disabled={off} onClick={() => { setMenu(null); run() }}
+              className="flex w-full items-center rounded-sm px-2 py-1.5 text-left outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent disabled:pointer-events-none disabled:opacity-50">{label}</button>
+          ))}
+        </div>
+      )}
       <DropdownMenu>
         <Tooltip>
           <TooltipTrigger asChild>

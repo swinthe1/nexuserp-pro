@@ -5,7 +5,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useCompany } from '@/app/company-provider'
 import { ColumnHeader, DataTable, inFilter, LeadCell, selectColumn } from '@/components/data-table/data-table'
 import { Button } from '@/components/ui/button'
-import { Warehouse } from 'lucide-react'
+import { Warehouse, X } from 'lucide-react'
+import { SearchSelect } from '@/components/search-select'
 import { StockByUnitDialog } from '../components/stock-by-unit'
 import { PageHeader } from '@/components/page-header'
 import { StatCard } from '@/components/stat-card'
@@ -35,12 +36,23 @@ export function StockPage() {
   const { multi, unit } = useActiveUnit()
   // several units: one row per item with a column for each unit (unless one unit is chosen, or the person asks for the lines)
   const [view, setView] = React.useState<'units' | 'lines' | null>(null)
-  const pivot = multi && !onlyWarehouse && (view ?? (unit ? 'lines' : 'units')) === 'units'
+  // a handful of items picked to look at alone (a partner asks how much of these five is in each unit)
+  const [picked, setPicked] = React.useState<string[]>([])
+  const itemOptions = React.useMemo(() => {
+    const m = new Map<string, { value: string; label: string; hint?: string; keywords?: string[] }>()
+    for (const l of levels.data ?? []) {
+      if (l.variant_id && !m.has(l.variant_id)) m.set(l.variant_id, { value: l.variant_id, label: l.variant_name ?? '', hint: [l.item_no, l.sku].filter(Boolean).join(' · '), keywords: [String(l.item_no ?? ''), l.sku ?? '', l.barcode ?? ''].filter(Boolean) })
+    }
+    return [...m.values()].sort((a, b) => a.label.localeCompare(b.label))
+  }, [levels.data])
+  const shown = React.useMemo(() => (picked.length ? (levels.data ?? []).filter((l) => l.variant_id && picked.includes(l.variant_id)) : levels.data), [levels.data, picked])
+  // with items picked, the units stand side by side unless the person asked for the lines
+  const pivot = multi && !onlyWarehouse && (view ?? (unit && !picked.length ? 'lines' : 'units')) === 'units'
   const unitCols = React.useMemo(() => (warehouses.data ?? []).filter((w) => w.is_active && w.warehouse_type !== 'transit'), [warehouses.data])
   const byItem = React.useMemo(() => {
     if (!pivot) return []
     const m = new Map<string, Pivot>()
-    for (const l of levels.data ?? []) {
+    for (const l of shown ?? []) {
       const k = l.variant_id ?? l.id!
       let r = m.get(k)
       if (!r) { r = { id: k, product_id: l.product_id, sku: l.sku, name: l.variant_name, item_no: l.item_no, barcode: l.barcode, category: l.category_name, uom: l.uom_code, qty: {}, total: 0, value: 0 }; m.set(k, r) }
@@ -48,7 +60,7 @@ export function StockPage() {
       r.total += num(l.on_hand); r.value += num(l.stock_value)
     }
     return [...m.values()].sort((a, b) => String(a.name).localeCompare(String(b.name)))
-  }, [pivot, levels.data])
+  }, [pivot, shown])
   const parts = useCategoryParts()
   const pivotColumns = React.useMemo<ColumnDef<Pivot>[]>(() => [
     {
@@ -121,6 +133,18 @@ export function StockPage() {
         <StatCard label={t('Low stock')} value={overview.data?.low_stock ?? 0} tone={overview.data?.low_stock ? 'warning' : 'default'} loading={overview.isLoading} href="/inventory/alerts" hint={t('At or below the reorder point')} />
         <StatCard label={t('Lines below zero')} value={overview.data?.negative_lines ?? 0} tone={overview.data?.negative_lines ? 'destructive' : 'default'} loading={overview.isLoading} hint={t('Only possible when selling without stock is allowed')} />
       </div>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <SearchSelect value={null} onChange={(v) => { if (v) setPicked((p) => (p.includes(v) ? p : [...p, v])) }} options={itemOptions.filter((o) => !picked.includes(o.value))}
+          placeholder={picked.length ? t('Add another item') : t('Show only chosen items…')} searchPlaceholder={t('Name, number or barcode')} aria-label={t('Show only chosen items…')} className="h-9 w-72" />
+        {picked.map((id) => (
+          <span key={id} className="inline-flex h-7 items-center gap-1 rounded-full border bg-card pl-2.5 pr-1 text-[13px]">
+            <span className="max-w-[180px] truncate">{itemOptions.find((o) => o.value === id)?.label ?? '—'}</span>
+            <button type="button" aria-label={t('Remove {name}', { name: itemOptions.find((o) => o.value === id)?.label ?? '' })} onClick={() => setPicked((p) => p.filter((x) => x !== id))}
+              className="flex size-5 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-3.5" /></button>
+          </span>
+        ))}
+        {picked.length > 1 && <Button size="xs" variant="ghost" onClick={() => setPicked([])}>{t('Show all items')}</Button>}
+      </div>
       {multi && !onlyWarehouse && (
         <div role="radiogroup" aria-label={t('How to show the stock')} className="mb-3 inline-flex h-9 rounded-md border bg-muted/40 p-0.5 text-[13px]">
           {(['units', 'lines'] as const).map((x) => (
@@ -164,7 +188,7 @@ export function StockPage() {
         tableKey="inventory.stock-levels"
         initialFilters={onlyWarehouse ? [{ id: 'warehouse', value: [onlyWarehouse] }] : undefined}
         columns={costs ? columns : columns.filter((c) => !['avg_cost', 'stock_value'].includes((c as { accessorKey?: string }).accessorKey ?? ''))}
-        data={levels.data}
+        data={shown}
         isLoading={levels.isLoading}
         error={levels.error}
         getRowId={(r) => r.id!}
