@@ -98,24 +98,51 @@ export function fiscalReceiptHtml(f: FiscalPrint, paper: Paper = 80) {
   const saleRows = sale && sale.off > 0
     ? `<hr><table><tr><td>${esc(t('SUBTOTAL|fiscal'))}</td><td class="r">${eur(subtotal)}</td></tr><tr><td>${esc(sale.pct
         ? t('Discount on the total {pct}%|fiscal', { pct: formatNumberWith(sale.pct, { maximumFractionDigits: 2 }) }) : t('Discount on the total|fiscal'))}</td><td class="r">−${eur(sale.off)}</td></tr></table>` : ''
+  const stamp = (unix: number) => formatDateWith(new Date(unix * 1000), { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  const taxName = (letter: string) => (letter === 'A' ? t('VAT A exempt|fiscal') : t('VAT {letter} {rate}%|fiscal', { letter, rate: RATE_OF[letter as keyof typeof RATE_OF] }))
+  const itemsHead = `<tr><th>${esc(t('ITEM|fiscal'))}</th><th class="r">${esc(t('QTY X PRICE|fiscal'))}</th><th class="r">${esc(t('AMOUNT|fiscal'))}</th></tr>`
+  // a return or a cancellation names the coupon it is about: its daily number and its time (Shtojca F)
+  const o = c.type === CouponType.Sale ? null : f.print?.orig ?? null
+  const origLine = o ? `<div class="c sm">${esc(t('FISCAL COUPON NO. {no}  DATE: {date}|fiscal', { no: o.no ? String(o.no).padStart(4, '0') : String(c.referenceNo), date: stamp(o.time) }))}</div>` : ''
+  // a return shows the original coupon first, then what comes back with a minus, the total returned and what is left
+  const origBlock = c.type === CouponType.Return && o?.items?.length ? `<table>${itemsHead}${o.items.map(([name, qty, list, gross, off, letter]) =>
+      `<tr><td>${esc(name)}</td><td class="r">${esc(qtyText(qty))} X ${esc(unitPrice(list))}</td><td class="r">${eur(gross)} ${esc(letter)}</td></tr>`
+      + (off > 0 ? `<tr class="sm"><td colspan="2">&nbsp;${esc(t('Discount|fiscal'))}</td><td class="r">−${eur(off)}</td></tr>` : '')).join('')}</table>
+    ${o.sale && o.sale.off > 0 ? `<table class="sm"><tr><td>${esc(o.sale.pct ? t('Discount on the total {pct}%|fiscal', { pct: formatNumberWith(o.sale.pct, { maximumFractionDigits: 2 }) }) : t('Discount on the total|fiscal'))}</td><td class="r">−${eur(o.sale.off)}</td></tr></table>` : ''}
+    <hr><table><tr class="b"><td>${esc(t('TOTAL TO PAY|fiscal'))}</td><td class="r">${eur(o.total ?? 0)}</td></tr></table>
+    <table><tr><td class="sm">${esc(t('PAYMENT METHOD|fiscal'))}</td><td class="r sm">${esc((o.payments ?? []).map(([k]) => payName(k)).join(', '))}</td></tr>
+    ${(o.taxGroups ?? []).map((g) => `<tr><td>${esc(taxName(g.taxRate))}</td><td class="r">${eur(g.totalTax)}</td></tr>`).join('')}
+    <tr><td>${esc(t('TOTAL WITHOUT VAT|fiscal'))}</td><td class="r">${eur(o.totalNoTax ?? 0)}</td></tr></table>
+    <div class="rule"></div><div class="c">${esc(t('RETURN OF THE ITEMS|fiscal'))}</div><div class="rule"></div>` : ''
+  const returnLines = origBlock ? c.items.map((i, k) => {
+    const list = f.print?.lines[k]?.list ?? i.price
+    return `<tr><td>${esc(i.name)}</td><td class="r">${esc(qtyText(i.quantity))} X ${esc(unitPrice(list))}</td><td class="r">−${eur(Math.round(i.total / 100))} ${esc(i.taxRate)}</td></tr>`
+  }).join('') : ''
   const pays = c.payments.map((p) => `<tr><td>${esc(payName(p.type))}</td><td class="r">${eur(p.amount)}</td></tr>`).join('')
-  const taxes = c.taxGroups.map((g) => `<tr><td>${esc(g.taxRate === 'A' ? t('VAT A exempt|fiscal') : t('VAT {letter} {rate}%|fiscal', { letter: g.taxRate, rate: RATE_OF[g.taxRate] }))}</td><td class="r">${eur(g.totalTax)}</td></tr>`).join('')
-  const when = formatDateWith(new Date(c.time * 1000), { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-  const sefId = `${c.branchId}-${f.nui}-${c.posId}`
+  const taxes = c.taxGroups.map((g) => `<tr><td>${esc(taxName(g.taxRate))}</td><td class="r">${eur(g.totalTax)}</td></tr>`).join('')
+  const when = stamp(c.time)
+  // the SEF's identification number: the unit's number, the NUI, the till (Kërkesat, neni 25.18)
+  const sefId = `${f.print?.unitNo || c.branchId}-${f.nui}-${c.posId}`
+  // the body: a return as Shtojca F (the original coupon, the items back, the total returned, what is left); the rest as a coupon
+  const body = origBlock
+    ? `${origBlock}<table>${returnLines}</table>
+    <hr><table><tr><td>${esc(t('TOTAL RETURNED|fiscal'))}</td><td class="r">−${eur(c.total)}</td></tr>
+    <tr class="b big"><td>${esc(t('TOTAL LEFT|fiscal'))}</td><td class="r">${eur(o?.left ?? 0)}</td></tr></table>
+    <div class="r sm">${esc(t('ITEMS RETURNED - {n}|fiscal', { n: c.items.length }))}</div><hr>`
+    : `<table>${itemsHead}${lines}</table>
+    ${saleRows}
+    <hr><table><tr class="b big"><td>${esc(c.type === CouponType.Return ? t('TOTAL|fiscal') : t('TOTAL TO PAY|fiscal'))}</td><td class="r">${eur(c.total)}</td></tr></table>
+    <table><tr><td class="sm">${esc(t('PAYMENT METHOD|fiscal'))}</td><td></td></tr>${pays}${f.change ? `<tr><td>${esc(t('Change|fiscal'))}</td><td class="r">${eur(f.change)}</td></tr>` : ''}
+    ${taxes}<tr><td>${esc(t('TOTAL WITHOUT VAT|fiscal'))}</td><td class="r">${eur(c.totalNoTax)}</td></tr></table>
+    <div class="r sm">${esc(t('ITEMS - {n}|fiscal', { n: c.items.length }))}</div><hr>`
   return `<div class="c">${head}</div><div class="rule"></div>
     <div class="r sm">${esc(t('WORKER: {name}', { name: f.operator }))}${f.operatorNo ? ` · ${esc(t('NO. {no}|worker', { no: f.operatorNo }))}` : ''}</div>
     <div class="c title">${esc(kind)}</div>
     ${f.copy ? `<div class="c"><span class="mark">${esc(t('COPY OF THE COUPON|fiscal'))}</span></div>` : ''}
-    ${c.referenceNo ? `<div class="c sm">${esc(t('Original coupon: {no}|fiscal', { no: String(c.referenceNo) }))}</div>` : ''}
+    ${origLine || (c.referenceNo ? `<div class="c sm">${esc(t('Original coupon: {no}|fiscal', { no: String(c.referenceNo) }))}</div>` : '')}
     ${f.blockNo ? `<div class="c sm b">${esc(t('From the fiscal receipt book, no. {no}', { no: f.blockNo }))}</div>` : ''}
     ${f.reason ? `<div class="sm">${esc(t('Reason for the cancellation: {reason}', { reason: f.reason }))}</div>` : ''}
-    <table><tr><th>${esc(t('ITEM|fiscal'))}</th><th class="r">${esc(t('QTY X PRICE|fiscal'))}</th><th class="r">${esc(t('AMOUNT|fiscal'))}</th></tr>${lines}</table>
-    ${saleRows}
-    ${c.totalDiscount > 0 ? `<table class="sm"><tr><td>${esc(t('Discounts|fiscal'))}</td><td class="r">−${eur(c.totalDiscount)}</td></tr></table>` : ''}
-    <hr><table><tr class="b big"><td>${esc(c.type === CouponType.Sale ? t('TOTAL TO PAY|fiscal') : t('TOTAL|fiscal'))}</td><td class="r">${eur(c.total)}</td></tr></table>
-    <table><tr><td class="sm">${esc(t('PAYMENT METHOD|fiscal'))}</td><td></td></tr>${pays}${f.change ? `<tr><td>${esc(t('Change|fiscal'))}</td><td class="r">${eur(f.change)}</td></tr>` : ''}
-    ${taxes}<tr><td>${esc(t('TOTAL WITHOUT VAT|fiscal'))}</td><td class="r">${eur(c.totalNoTax)}</td></tr></table>
-    <div class="r sm">${esc(t('ITEMS - {n}|fiscal', { n: c.items.length }))}</div><hr>
+    ${body}
     <table class="sm"><tr><td colspan="2">${esc(String(c.couponId).padStart(10, '0'))}</td></tr>
     <tr><td>${esc(t('DATE AND TIME|fiscal'))}</td><td class="r">${esc(when)}</td></tr>
     <tr><td>${esc(t('SEF ID NUMBER|fiscal'))}</td><td class="r">${esc(sefId)}</td></tr></table>

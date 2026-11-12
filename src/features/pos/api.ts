@@ -461,8 +461,10 @@ export async function setMyPin(member: string, pin: string) {
 export type ReceiptLookup = { id: string; number: string; device_ref: string | null; order_at: string; total: number; is_refund: boolean
   /** the ATK coupon of the sale (Kosovo), needed for a return */
   atk_coupon: string | null
+  /** the coupon as kept, for the return coupon that shows it (Shtojca F) */
+  atk?: { details?: string; daily_no?: number | null; print?: unknown } | null
   lines: { variant_id: string; description: string; quantity: number; unit_price: number; discount_pct: number; line_total: number; tax_rate: number }[]
-  refunds: { lines: { variant_id: string; quantity: number }[] }[] }
+  refunds: { total?: number; lines: { variant_id: string; quantity: number }[] }[] }
 /**
  * The sale behind what the customer brings back. Anything printed on the coupon finds it: DrisPRO's number
  * (KUP-…), the till's reference, ATK's coupon number (printed with leading zeros), the NUIKF, or the QR code
@@ -470,7 +472,7 @@ export type ReceiptLookup = { id: string; number: string; device_ref: string | n
  */
 export async function lookupReceipt(companyId: string, code: string): Promise<ReceiptLookup | null> {
   const raw = code.trim()
-  const fields = 'id, number, device_ref, order_at, total, is_refund, atk_coupon:atk->>coupon_id, lines:pos_order_lines(variant_id, description, quantity, unit_price, discount_pct, line_total, tax_rate)'
+  const fields = 'id, number, device_ref, order_at, total, is_refund, atk_coupon:atk->>coupon_id, atk, lines:pos_order_lines(variant_id, description, quantity, unit_price, discount_pct, line_total, tax_rate)'
   const base = () => supabase.from('pos_orders').select(fields).eq('company_id', companyId).eq('status', 'paid').limit(1)
   let rows: unknown[]
   if (raw.includes('|')) rows = unwrap(await base().eq('atk->>qr', raw))
@@ -483,7 +485,7 @@ export async function lookupReceipt(companyId: string, code: string): Promise<Re
   const o = rows[0] as { id: string } | undefined
   if (!o) return null
   // earlier refunds of this receipt (fetched separately: the self-reference cannot be embedded)
-  const refunds = unwrap(await supabase.from('pos_orders').select('lines:pos_order_lines(variant_id, quantity)')
+  const refunds = unwrap(await supabase.from('pos_orders').select('total, lines:pos_order_lines(variant_id, quantity)')
     .eq('company_id', companyId).eq('refund_of_id', o.id).eq('status', 'paid'))
   return { ...(o as unknown as Omit<ReceiptLookup, 'refunds'>), refunds: refunds as unknown as ReceiptLookup['refunds'] }
 }

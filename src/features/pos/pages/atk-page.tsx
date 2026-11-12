@@ -35,7 +35,7 @@ type Till = { id: string; code: string; name: string; warehouse_id: string; atk_
   taken?: boolean; next_free?: number | null }
 type Setup = { country: string; nui: string | null; business: string; enabled: boolean; training: boolean; env: AtkEnv; fiscalization_no: string | null; application_id: number | null
   application_ids: { test: number | null; production: number | null } | null; is_super_admin: boolean; can_setup: boolean; can_register: boolean
-  stores: { id: string; code: string; name: string; city: string | null; atk_branch_id: number | null; tills: number }[]; tills: Till[]
+  stores: { id: string; code: string; name: string; city: string | null; atk_branch_id: number | null; atk_unit_no?: string | null; tills: number }[]; tills: Till[]
   queue: { waiting: number; failed: number; sent_today: number; oldest: string | null } }
 
 const MISSING: Record<string, string> = {
@@ -227,13 +227,14 @@ function TillsCard({ s, keys, focus, onRegister, onForgotten }: { s: Setup; keys
   const qc = useQueryClient()
   const [stores, setStores] = React.useState<Record<string, string>>(() => Object.fromEntries(s.stores.map((w) => [w.id, String(w.atk_branch_id ?? '')])))
   const [tills, setTills] = React.useState<Record<string, string>>(() => Object.fromEntries(s.tills.map((r) => [r.id, String(r.atk_pos_id ?? '')])))
-  const dirty = s.stores.some((w) => (stores[w.id] ?? '') !== String(w.atk_branch_id ?? '')) || s.tills.some((r) => (tills[r.id] ?? '') !== String(r.atk_pos_id ?? ''))
+  const [units, setUnits] = React.useState<Record<string, string>>(() => Object.fromEntries(s.stores.map((w) => [w.id, w.atk_unit_no ?? ''])))
+  const dirty = s.stores.some((w) => (stores[w.id] ?? '') !== String(w.atk_branch_id ?? '') || (units[w.id] ?? '') !== (w.atk_unit_no ?? '')) || s.tills.some((r) => (tills[r.id] ?? '') !== String(r.atk_pos_id ?? ''))
   const save = useMutation({
     mutationFn: async () => {
       const changed = s.tills.filter((r) => r.certified && (tills[r.id] ?? '') !== String(r.atk_pos_id ?? ''))
       if (changed.length && !confirm(t('A certificate names its till number. Changing it means registering these tills again: {names}. Go on?', { names: changed.map((r) => r.name).join(', ') }))) return false
       unwrap(await supabase.rpc('atk_numbers_save', { p_company: companyId!,
-        p_stores: s.stores.map((w) => ({ id: w.id, atk_branch_id: stores[w.id] || null })) as never,
+        p_stores: s.stores.map((w) => ({ id: w.id, atk_branch_id: stores[w.id] || null, atk_unit_no: units[w.id] || null })) as never,
         p_tills: s.tills.map((r) => ({ id: r.id, atk_pos_id: tills[r.id] || null })) as never }))
       return true
     },
@@ -260,6 +261,9 @@ function TillsCard({ s, keys, focus, onRegister, onForgotten }: { s: Setup; keys
             <div className="flex flex-wrap items-center gap-3 border-b bg-muted/30 px-3 py-2">
               <Store className="size-4 text-muted-foreground" />
               <span className="flex-1 text-[13px] font-medium">{w.name}{w.city ? <span className="font-normal text-muted-foreground"> · {w.city}</span> : null}</span>
+              <Label htmlFor={`u-${w.id}`} className="text-xs text-muted-foreground" title={t('The unit\'s registration number, printed on the coupon in the SEF identification number: [unit number]-[NUI]-[till].')}>{t('Unit number')}</Label>
+              <Input id={`u-${w.id}`} className="h-8 w-28 text-right tabular" disabled={!s.can_setup} value={units[w.id] ?? ''}
+                onChange={(e) => setUnits((m) => ({ ...m, [w.id]: e.target.value.replace(/[^0-9A-Za-z]/g, '').slice(0, 12) }))} />
               <Label htmlFor={`b-${w.id}`} className="text-xs text-muted-foreground">{t('Store no. at ATK')}</Label>
               <Input id={`b-${w.id}`} className="h-8 w-20 text-right tabular" inputMode="numeric" disabled={!s.can_setup} value={stores[w.id] ?? ''}
                 onChange={(e) => setStores((m) => ({ ...m, [w.id]: e.target.value.replace(/\D/g, '').slice(0, 3) }))} />

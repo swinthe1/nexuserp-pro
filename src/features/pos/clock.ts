@@ -46,7 +46,16 @@ export function useClockCheck(onOff?: (ms: number) => void) {
     void run()
     const id = setInterval(run, 30 * 60_000)
     window.addEventListener('online', run)
-    return () => { alive = false; clearInterval(id); window.removeEventListener('online', run) }
+    // the device's clock moved by hand (or the device slept): the wall clock and the steady one no longer agree,
+    // so the difference to the server is measured again at once, not at the next half hour
+    let wall = Date.now(), steady = performance.now()
+    const watch = setInterval(() => {
+      const w = Date.now(), p = performance.now()
+      const jump = (w - wall) - (p - steady)
+      wall = w; steady = p
+      if (Math.abs(jump) > 5000) void run()
+    }, 5000)
+    return () => { alive = false; clearInterval(id); clearInterval(watch); window.removeEventListener('online', run) }
   }, [])
   return off
 }

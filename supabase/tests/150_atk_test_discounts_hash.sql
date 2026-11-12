@@ -48,6 +48,16 @@ select t.ok((select total = round(4 * :p * 0.9, 2) - 0.50 and sale_discount = 0.
 select t.ok((select count(*) > 0 from public.v_sales_book where company_id = :'co'), 'the sales book still reads the till lines');
 set role authenticated;
 select t.login(:'boss');
+-- one of the four pieces comes back: at what was paid for a piece, discounts and all, never at the shelf price
+select round((round(4 * :p * 0.9, 2) - 0.50) / 4, 4) as paid_each \gset
+select public.pos_submit_order(jsonb_build_object('client_uuid', gen_random_uuid(), 'session_id', :'ses', 'is_refund', true, 'refund_of_id', :'ord', 'refund_reason', 'Kthim prove',
+  'lines', jsonb_build_array(jsonb_build_object('variant_id', :'ban', 'quantity', -1, 'unit_price', :p)),
+  'payments', jsonb_build_array(jsonb_build_object('method', 'cash', 'amount', -round(:paid_each, 2))))) ->> 'id' as back \gset
+reset role;
+select t.ok((select unit_price = :paid_each and discount_pct = 0 and discount_amount = 0 and line_total = -round(:paid_each, 2) from public.pos_order_lines where pos_order_id = :'back'),
+  'a piece of a discounted sale comes back at the price paid for it');
+set role authenticated;
+select t.login(:'boss');
 select t.throws(format($$select public.pos_submit_order(jsonb_build_object('client_uuid', gen_random_uuid(), 'session_id', %L,
   'lines', jsonb_build_array(jsonb_build_object('variant_id', %L, 'quantity', 1, 'unit_price', %s, 'discount_amount', %s)),
   'payments', jsonb_build_array(jsonb_build_object('method', 'cash', 'amount', 0))))$$, :'ses', :'ban', :p, :p + 1), 'more than the line', 'a discount bigger than the line is refused');

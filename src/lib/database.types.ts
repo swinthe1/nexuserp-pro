@@ -15436,6 +15436,7 @@ export type Database = {
           atk_branch_id: number | null
           pos_receipt_max: number | null
           supplied_from_id: string | null
+          atk_unit_no: string | null
         }
         Insert: {
           id?: string
@@ -15457,6 +15458,7 @@ export type Database = {
           atk_branch_id?: number | null
           pos_receipt_max?: number | null
           supplied_from_id?: string | null
+          atk_unit_no?: string | null
         }
         Update: {
           id?: string
@@ -15478,6 +15480,7 @@ export type Database = {
           atk_branch_id?: number | null
           pos_receipt_max?: number | null
           supplied_from_id?: string | null
+          atk_unit_no?: string | null
         }
         Relationships: [
           { foreignKeyName: "warehouses_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },

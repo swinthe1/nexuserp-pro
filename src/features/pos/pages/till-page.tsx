@@ -37,7 +37,7 @@ import type { WaiterOwes } from '../api'
 import { readScaleBarcode } from '@/lib/scale-barcode'
 import { printReceipt, printVoucher, printZReport, type ReceiptData } from '../receipt'
 import { qrSvg, signAtkSale, useAtkState, waitForAtk } from '../atk'
-import type { FiscalPrint } from '../fiscal-receipt'
+import { fiscalCss, fiscalReceiptHtml, paperOf, type FiscalPrint } from '../fiscal-receipt'
 import { clockNow, useClockCheck } from '../clock'
 import { logSef, watchSef } from '../sef-log'
 import { fuzzyFind } from '@/lib/fuzzy'
@@ -641,7 +641,10 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
           saleDiscountPct: !refund && saleOff > 0 ? saleDisc?.pct ?? null : null,
           payments: tenders.map((x) => ({ method: x.method, amount: x.amount })), change: Math.max(change, 0),
           isReturn: !!refund, returnOf: refund?.of?.atk_coupon ? Number(refund.of.atk_coupon) : null, cancelReason: refund?.cancelReason ?? null,
-          dailyNo: Number(device_ref.split('-').at(-1)) || null, offline: isOffline, footer: data.register.receipt_footer, blockNo: fromBook?.no ?? null })
+          dailyNo: Number(device_ref.split('-').at(-1)) || null, offline: isOffline, footer: data.register.receipt_footer, blockNo: fromBook?.no ?? null,
+          // the return coupon shows the coupon it is about, and what is left of it (Shtojca F)
+          original: refund?.of?.atk?.details ? { details: refund.of.atk.details, dailyNo: refund.of.atk.daily_no ?? (Number(refund.of.device_ref?.split('-').at(-1)) || null),
+            print: (refund.of.atk.print ?? null) as never, refundedBefore: refund.of.refunds.reduce((a, x) => a + Math.abs(num(x.total)), 0) } : null })
       } catch (e) { toast.error(describeError(e)); return }
     }
     const payload = {
@@ -1436,6 +1439,10 @@ export function PayDialog({ total, currency, cashLimit, onCancel, onPaid, regist
 }
 
 function DoneOverlay({ done, currency, onNext, onPrint }: { done: Done; currency: string; onNext: () => void; onPrint: () => void }) {
+  // "Print Preview": the whole coupon on the screen, as it prints, for a customer who wants no paper (Kërkesat, neni 25.18)
+  const [preview, setPreview] = React.useState(false)
+  const fiscal = done.receipt.fiscal
+  const paper = paperOf(done.receipt.register.paper_mm)
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-6 backdrop-blur-sm" role="dialog" aria-label={t('Sale complete')}>
       <div className="w-full max-w-md rounded-2xl border bg-card p-8 text-center shadow-lg">
@@ -1456,6 +1463,18 @@ function DoneOverlay({ done, currency, onNext, onPrint }: { done: Done; currency
               <div className="mt-1">{t('The customer can scan the code to check the coupon at ATK.')}</div>
             </div>
           </div>
+        )}
+        {fiscal && <Button variant="ghost" size="sm" className="mt-3" onClick={() => setPreview(true)}><ReceiptText /> {t('See the whole coupon (print preview)')}</Button>}
+        {fiscal && preview && (
+          <Dialog open onOpenChange={(o) => { if (!o) setPreview(false) }}>
+            <DialogContent className="max-w-[26rem]">
+              <DialogHeader><DialogTitle>{t('Print preview of the coupon')}</DialogTitle>
+                <DialogDescription>{t('The coupon as it prints. The customer can scan the QR code from the screen.')}</DialogDescription></DialogHeader>
+              <iframe title={t('Print preview of the coupon')} className="h-[65vh] w-full rounded-md border bg-white"
+                srcDoc={`<!doctype html><meta charset="utf-8"><style>${fiscalCss(paper)} body{margin:8px auto!important}</style>${fiscalReceiptHtml(fiscal, paper)}`} />
+              <DialogFooter><Button variant="outline" onClick={() => setPreview(false)}>{t('Close')}</Button><Button onClick={() => { setPreview(false); onPrint() }}><Printer /> {t('Print')}</Button></DialogFooter>
+            </DialogContent>
+          </Dialog>
         )}
         <div className="mt-6 grid grid-cols-2 gap-2">
           <Button variant="outline" size="lg" onClick={onPrint}><Printer /> {t('Receipt|pos')} <Kbd>P</Kbd></Button>
@@ -1632,7 +1651,13 @@ function RefundDialog({ data, currency, onClose, onRefund }: { data: TillData; c
   }
   const left = (r: ReceiptLookup, variant: string, sold: number) =>
     Math.max(sold - r.refunds.flatMap((x) => x.lines).filter((x) => x.variant_id === variant).reduce((s, x) => s - num(x.quantity), 0), 0)
-  const lines: Line[] = found ? found.lines.map((l, i) => ({ key: String(i), variant_id: l.variant_id, name: l.description, sku: '', price: num(l.unit_price), qty: -num(qty[i]), discount: num(l.discount_pct), rate: num(l.tax_rate), barcode: null }))
+  // what comes back is priced at what was paid for a piece, every discount in it (the server works it out the same way, by item)
+  const paidEach = (variant: string) => {
+    const ls = (found?.lines ?? []).filter((x) => x.variant_id === variant)
+    const q = ls.reduce((a, x) => a + num(x.quantity), 0)
+    return q ? Math.round(ls.reduce((a, x) => a + num(x.line_total), 0) / q * 10000) / 10000 : 0
+  }
+  const lines: Line[] = found ? found.lines.map((l, i) => ({ key: String(i), variant_id: l.variant_id, name: l.description, sku: '', price: paidEach(l.variant_id), qty: -num(qty[i]), discount: 0, rate: num(l.tax_rate), barcode: null }))
     .filter((l) => l.qty < 0) : []
   const total = lines.reduce((s, l) => s + Math.abs(lineTotal(l)), 0)
   const tooMuch = found ? found.lines.some((l, i) => num(qty[i]) > left(found, l.variant_id, num(l.quantity))) : false
@@ -1663,7 +1688,7 @@ function RefundDialog({ data, currency, onClose, onRefund }: { data: TillData; c
                 return (
                   <div key={i} className="flex items-center gap-3 border-b px-3 py-2 last:border-0">
                     <div className="min-w-0 flex-1"><div className="truncate text-[13px] font-medium">{l.description}</div>
-                      <div className="text-xs text-muted-foreground">{t('{a} sold · {b} can be returned · {price} with VAT', { a: num(l.quantity), b: max, price: formatMoney(l.unit_price) })}</div></div>
+                      <div className="text-xs text-muted-foreground">{t('{a} sold · {b} can be returned · {price} with VAT', { a: num(l.quantity), b: max, price: formatMoney(paidEach(l.variant_id)) })}</div></div>
                     <Input aria-label={t('Return quantity for {item}', { item: l.description })} inputMode="decimal" disabled={cancel} className={cn('h-10 w-20 text-right tabular', num(qty[i]) > max && 'border-destructive')}
                       value={qty[i] ?? ''} onChange={(e) => setQty((s) => ({ ...s, [i]: e.target.value.replace(',', '.') }))} />
                   </div>

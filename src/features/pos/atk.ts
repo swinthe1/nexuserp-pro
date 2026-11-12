@@ -5,9 +5,9 @@
  */
 import * as React from 'react'
 import { renderSVG } from 'uqr'
-import { buildCoupons, CouponType, signCoupons, type SignedCoupon } from '@/lib/atk/coupon'
+import { buildCoupons, CouponType, signCoupons, type CouponPrint, type SignedCoupon } from '@/lib/atk/coupon'
 import { getTillKey, nextCouponSeq, type AtkEnv, type TillKey } from '@/lib/atk/keys'
-import { toBase64 } from '@/lib/atk/proto'
+import { decodePosCoupon, fromBase64, toBase64 } from '@/lib/atk/proto'
 import type { FiscalHeader, FiscalPrint } from './fiscal-receipt'
 import { t } from '@/i18n'
 import { supabase } from '@/lib/supabase'
@@ -35,6 +35,8 @@ export type AtkTill = {
   header?: FiscalHeader
   /** the cashier's number in the staff list */
   operator_no?: string | null
+  /** the unit's registration number (the first part of the SEF's identification number on the coupon) */
+  unit_no?: string | null
   /** false for a taxpayer not registered for VAT: no VAT on its coupons (a server not updated yet sends none) */
   vat_registered?: boolean
 }
@@ -88,6 +90,8 @@ export interface AtkSaleInput {
   footer?: string | null
   /** a coupon from the fiscal receipt book, registered after the till was down: the book's number */
   blockNo?: string | null
+  /** a return or a cancellation: the original sale's coupon as kept (Base64), its daily number, what it kept for printing, and what was returned on it before */
+  original?: { details: string; dailyNo: number | null; print?: CouponPrint | null; refundedBefore: number } | null
 }
 
 /** the same item at the same price and discount is one line on a fiscal coupon (Kërkesat, neni 25.18) */
@@ -121,6 +125,8 @@ export async function signAtkSale(s: AtkSaleInput): Promise<{ payload: Record<st
     nui: a.nui ?? '', branchId: a.branch_id!, posId: a.pos_id!, applicationId: a.application_id!, location: a.location ?? '', operator: s.operator,
     couponSeq: seq, type: cancel ? CouponType.Cancel : s.isReturn ? CouponType.Return : CouponType.Sale, time: s.time, referenceNo: s.returnOf ?? null,
     saleDiscount: s.saleDiscountPct ? { pct: s.saleDiscountPct } : null,
+    origin: s.original ? { coupon: decodePosCoupon(fromBase64(s.original.details)), print: s.original.print ?? null, dailyNo: s.original.dailyNo, refundedBefore: s.original.refundedBefore } : null,
+    unitNo: a.unit_no ?? null,
     lines: mergeLines(s.lines).map((l) => ({ name: l.name, qty: l.qty, price: l.price, total: l.total, rate: noVat ? 0 : l.rate, exempt: !noVat && !!l.tax_code_id && exempt.has(l.tax_code_id),
       discountPct: l.discountPct ?? null, discountValue: l.discountValue ?? null, saleShare: l.saleShare ?? null,
       unit: a.units?.[l.variant_id] ?? 'CP', category: a.types?.[l.variant_id] ?? a.default_type ?? 'TT' })),

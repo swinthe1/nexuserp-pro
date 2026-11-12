@@ -69,6 +69,9 @@ export interface AtkSale {
   /** the original coupon of a return or a cancellation */
   referenceNo?: number | null
   lines: AtkSaleLine[]
+  /** a return or a cancellation: the coupon it is about, for the paper (Shtojca F) */
+  origin?: { coupon: PosCoupon; print?: CouponPrint | null; dailyNo: number | null; refundedBefore: number } | null
+  unitNo?: string | null
   /** a discount on the whole sale (already shared out in the lines' totals), for the printed coupon */
   saleDiscount?: { pct?: number | null } | null
   payments: { method: string; amount: number }[]
@@ -86,7 +89,43 @@ export interface CouponPrint {
   lines: { list: number; off: number; pct?: number; value?: boolean }[]
   /** the discount on the whole sale, in cents */
   sale?: { off: number; pct?: number } | null
+  /**
+   * On a return or a cancellation: the coupon it is about, as Shtojca F prints it above the returned items
+   * (its daily number and time, its lines, total, payments and VAT), and what is left of it after this return, in cents.
+   */
+  orig?: CouponOrigin | null
+  /** the unit's registration number, the first part of the SEF's identification number on the paper */
+  unitNo?: string | null
 }
+export interface CouponOrigin {
+  no: number | null
+  /** unix seconds */
+  time: number
+  /** name, quantity, shelf price (ten-thousandths), amount before the discount (cents), own discount (cents), VAT letter */
+  items?: [string, number, number, number, number, string][]
+  sale?: { off: number; pct?: number } | null
+  total?: number
+  payments?: [number, number][]
+  taxGroups?: TaxGroup[]
+  totalNoTax?: number
+  left?: number
+}
+
+/** the coupon a return is about, made small for the paper */
+export function originOf(c: PosCoupon, print: CouponPrint | null | undefined, no: number | null, refundedBefore: number, thisReturn: number): CouponOrigin {
+  return {
+    no, time: c.time, total: c.total, totalNoTax: c.totalNoTax, taxGroups: c.taxGroups, payments: c.payments.map((p) => [p.type, p.amount]),
+    items: c.items.slice(0, 150).map((i, k) => {
+      const p = print?.lines[k]
+      const list = p?.list ?? i.price
+      const gross = Math.max(Math.round(list * i.quantity / 100), Math.round(i.total / 100))
+      return [i.name.slice(0, 60), i.quantity, list, gross, p ? Math.min(p.off, gross) : gross - Math.round(i.total / 100), i.taxRate]
+    }),
+    sale: print?.sale ?? null,
+    left: Math.max(c.total - Math.round(refundedBefore * 100) - thisReturn, 0),
+  }
+}
+
 
 export function buildCoupons(s: AtkSale, verification = verificationNo()) {
   if (!/^\d{9}$/.test(s.nui)) throw new Error(t('The company\'s NUI must have 9 digits'))
@@ -157,6 +196,8 @@ export function buildCoupons(s: AtkSale, verification = verificationNo()) {
     businessId: pos.businessId, couponId, branchId: s.branchId, posId: s.posId, verificationNo: verification, type: s.type, time,
     total, taxGroups, totalTax, totalNoTax: pos.totalNoTax,
   }
+  if (s.origin) print.orig = originOf(s.origin.coupon, s.origin.print, s.origin.dailyNo, s.origin.refundedBefore, s.type === CouponType.Cancel ? s.origin.coupon.total : total)
+  if (s.unitNo) print.unitNo = s.unitNo
   return { pos, citizen, couponId, verificationNo: verification, print }
 }
 

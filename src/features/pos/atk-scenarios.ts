@@ -47,6 +47,8 @@ export const SCENARIOS: Scenario[] = [
     steps: [msg('In the till open "More" and choose "From the receipt book".'), msg('Type the number in the book and the date and time written on it, then make the sale as written.')] },
   { id: 'copy', title: msg('A copy of a coupon'), checks: msg('A coupon printed again is marked "COPY OF THE COUPON".'),
     steps: [msg('On the tills page open the shift, go to "Receipts" and press "Reprint" on a coupon.')] },
+  { id: 'preview', title: msg('The coupon on the screen (Print Preview)'), checks: msg('The whole coupon shown on the screen, with its QR code, for a customer who wants no paper.'),
+    steps: [msg('After a sale, on the "Paid" screen press "See the whole coupon (print preview)".'), msg('Scan the QR code from the screen with ATK\'s app.')] },
   { id: 'clock', title: msg('The clock'), checks: msg('The till takes the time from the server, so a computer with a wrong clock still writes the right time.'),
     steps: [msg('Move the computer\'s clock one hour ahead and make a sale.'), msg('The coupon has the right time, and the log has "Clock off".'), msg('Put the computer\'s clock back.')] },
   { id: 'log', title: msg('The log: PayLoad, Hash Chain and Integrity Check'), checks: msg('Every send and failed send to the second, the errors, the changes; each row with its payload, the previous hash and its own; a check of the chain; the export.'),
