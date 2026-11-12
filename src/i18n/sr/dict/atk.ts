@@ -331,4 +331,10 @@ export default {
   "VAT rates tried in the test environment|log": "Stope PDV-a se testiraju u test okruženju",
   "Copy of a coupon printed|log": "Odštampana kopija kupona",
   "copy no. {n}": "kopija br. {n}",
+  "The unit \"{name}\" has no address": "Jedinica \"{name}\" nema adresu",
+  "The unit \"{name}\" has no town": "Jedinica \"{name}\" nema mesto",
+  "The unit \"{name}\" has no unit number (the first part of the SEF number on the coupon)": "Jedinica \"{name}\" nema broj jedinice (prvi deo SEF broja na kuponu)",
+  "{name} has no number in the staff list (the cashier's number on the coupon)": "{name} nema broj u spisku zaposlenih (broj kasira na kuponu)",
+  "The coupon prints without these": "Kupon se štampa bez ovoga",
+  "ATK asks for them on every fiscal coupon. The address and the town are in the unit's details, the unit number under Settings here, and the cashier's number on the employee's page.": "ATK ih traži na svakom fiskalnom kuponu. Adresa i mesto su u podacima jedinice, broj jedinice u Podešavanjima ovde, a broj kasira na stranici zaposlenog.",
 } satisfies Dict

@@ -343,4 +343,10 @@ export default {
   "VAT rates tried in the test environment|log": "Normat e TVSH-së testohen në ambientin e testimit",
   "Copy of a coupon printed|log": "U printua kopje e kuponit",
   "copy no. {n}": "kopja nr. {n}",
+  "The unit \"{name}\" has no address": "Njësia \"{name}\" nuk ka adresë",
+  "The unit \"{name}\" has no town": "Njësia \"{name}\" nuk ka vend (qytet)",
+  "The unit \"{name}\" has no unit number (the first part of the SEF number on the coupon)": "Njësia \"{name}\" nuk ka numër njësie (pjesa e parë e numrit të SEF-it në kupon)",
+  "{name} has no number in the staff list (the cashier's number on the coupon)": "{name} nuk ka numër te lista e punonjësve (numri i arkëtarit në kupon)",
+  "The coupon prints without these": "Kuponi shtypet pa këto",
+  "ATK asks for them on every fiscal coupon. The address and the town are in the unit's details, the unit number under Settings here, and the cashier's number on the employee's page.": "ATK-ja i kërkon në çdo kupon fiskal. Adresa dhe vendi janë te të dhënat e njësisë, numri i njësisë te Cilësimet këtu, dhe numri i arkëtarit te faqja e punonjësit.",
 } satisfies Dict

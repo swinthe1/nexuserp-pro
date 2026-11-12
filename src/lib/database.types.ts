@@ -16867,6 +16867,12 @@ export type Database = {
         }
         Returns: number
       }
+      atk_coupon_gaps: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       atk_coupon_status: {
         Args: {
           p_register: string

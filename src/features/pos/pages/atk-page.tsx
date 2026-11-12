@@ -113,6 +113,7 @@ export function AtkPage() {
           </TabsList>
           <TabsContent value="tills" className="grid gap-4">
             <ThisDeviceCard s={s} keys={device.keys} onStart={(r) => setWizard({ till: r ?? null })} />
+            <CouponGaps />
             <TillsOverview s={s} keys={device.keys} focus={focus} onRegister={(r) => setWizard({ till: r })} />
             <SwitchCard s={s} />
           </TabsContent>
@@ -121,7 +122,7 @@ export function AtkPage() {
             <TillsCard s={s} keys={device.keys} focus={focus} onRegister={(r) => setWizard({ till: r })} onForgotten={() => { device.refresh(); void q.refetch() }} />
           </TabsContent>
           <TabsContent value="codes" className="grid gap-4"><CodesCard canEdit={s.can_setup} /></TabsContent>
-          <TabsContent value="test" className="grid gap-4"><TestCard s={s} /></TabsContent>
+          <TabsContent value="test" className="grid gap-4"><CouponGaps /><TestCard s={s} /></TabsContent>
           <TabsContent value="sent" className="grid gap-4"><QueueCard s={s} /><LogCard /></TabsContent>
         </Tabs>
       )}
@@ -556,6 +557,26 @@ function LogCard() {
         {(rows.data?.length ?? 0) >= 100 && <p className="text-xs text-muted-foreground">{t('The newest 100 are shown; the file has them all.')}</p>}
       </CardContent>
     </Card>
+  )
+}
+
+/** what the fiscal coupon would print without (Kërkesat, neni 25.18): the unit's address and number, the cashier's number */
+function CouponGaps() {
+  const { companyId } = useCompany()
+  const q = useQuery({ queryKey: ['atk-coupon-gaps', companyId], enabled: !!companyId, staleTime: 30_000,
+    queryFn: async () => { const r = await supabase.rpc('atk_coupon_gaps', { p_company: companyId! }); return r.error ? [] : (r.data as unknown as { what: string; name: string }[]) } })
+  const gaps = q.data ?? []
+  if (!gaps.length) return null
+  const text = (g: { what: string; name: string }) => g.what === 'address' ? t('The unit "{name}" has no address', { name: g.name })
+    : g.what === 'city' ? t('The unit "{name}" has no town', { name: g.name })
+    : g.what === 'unit_no' ? t('The unit "{name}" has no unit number (the first part of the SEF number on the coupon)', { name: g.name })
+    : t('{name} has no number in the staff list (the cashier\'s number on the coupon)', { name: g.name })
+  return (
+    <div className="rounded-lg border border-warning/40 bg-warning/[0.08] p-3 text-[13px]">
+      <div className="flex items-center gap-2 font-medium"><CircleAlert className="size-4 text-warning" /> {t('The coupon prints without these')}</div>
+      <ul className="mt-1.5 grid gap-0.5 pl-6">{gaps.map((g, i) => <li key={i} className="list-disc">{text(g)}</li>)}</ul>
+      <p className="mt-1.5 text-muted-foreground">{t('ATK asks for them on every fiscal coupon. The address and the town are in the unit\'s details, the unit number under Settings here, and the cashier\'s number on the employee\'s page.')}</p>
+    </div>
   )
 }
 
