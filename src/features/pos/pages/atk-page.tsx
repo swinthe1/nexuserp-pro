@@ -33,7 +33,7 @@ type Till = { id: string; code: string; name: string; warehouse_id: string; atk_
   cert_at: string | null; cert_by: string | null; device: string | null; public_key: string | null; missing: string[]
   /** ATK registered this till number once already: it will not register it again */
   taken?: boolean; next_free?: number | null }
-type Setup = { country: string; nui: string | null; business: string; enabled: boolean; training: boolean; env: AtkEnv; fiscalization_no: string | null; application_id: number | null
+type Setup = { country: string; nui: string | null; business: string; enabled: boolean; training: boolean; env: AtkEnv; fiscalization_no: string | null; test_vat?: boolean; vat_registered?: boolean; application_id: number | null
   application_ids: { test: number | null; production: number | null } | null; is_super_admin: boolean; can_setup: boolean; can_register: boolean
   stores: { id: string; code: string; name: string; city: string | null; atk_branch_id: number | null; atk_unit_no?: string | null; tills: number }[]; tills: Till[]
   queue: { waiting: number; failed: number; sent_today: number; oldest: string | null } }
@@ -451,7 +451,7 @@ const KINDS: Record<string, string> = {
 }
 const CHANGES: Record<string, string> = {
   fiscalization_no: msg('Fiscalization number (EDI)'), sef_enabled: msg('DrisPRO signs the till receipts'), environment: msg('Environment'),
-  store_number: msg('Store no. at ATK'), till_number: msg('Till no.'), till_registered: msg('Registered with ATK|log'), till_unregistered: msg('Unregistered from ATK|log'),
+  store_number: msg('Store no. at ATK'), till_number: msg('Till no.'), till_registered: msg('Registered with ATK|log'), till_unregistered: msg('Unregistered from ATK|log'), test_vat: msg('VAT rates tried in the test environment|log'),
 }
 const FILTERS: { v: string; l: string; kinds: string[] | null }[] = [
   { v: 'all', l: msg('Everything|log'), kinds: null },
@@ -570,6 +570,12 @@ function TestCard({ s }: { s: Setup }) {
   const tills = s.tills.filter((x) => x.certified)
   const [till, setTill] = React.useState<string>(() => tills[0]?.id ?? s.tills[0]?.id ?? '')
   const count = SCENARIOS.filter((x) => done[x.id]).length
+  const qc = useQueryClient()
+  const testVat = useMutation({
+    mutationFn: async (on: boolean) => { unwrap(await supabase.rpc('atk_test_vat_set', { p_company: companyId!, p_on: on })) },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['atk-setup', companyId] }),
+    onError: (e) => toast.error(describeError(e)),
+  })
   return (
     <Card>
       <CardHeader><CardTitle>{t('ATK\'s technical test, scenario by scenario')}</CardTitle>
@@ -582,6 +588,15 @@ function TestCard({ s }: { s: Setup }) {
           <div className="ml-auto text-sm"><span className="text-2xl font-semibold tabular">{count}</span> <span className="text-muted-foreground">{t('of {n} scenarios tried', { n: SCENARIOS.length })}</span></div>
         </div>
         {s.env !== 'test' && <p className="rounded-md border border-warning/40 bg-warning/[0.08] px-3 py-2 text-[13px]">{t('The company is in the real environment: the scenarios are for the test environment. ATK\'s real environment is not for trials.')}</p>}
+        {s.env === 'test' && s.vat_registered === false && (
+          <div className="flex items-start gap-3 rounded-lg border p-3">
+            <div className="min-w-0 flex-1">
+              <div className="font-medium">{t('Try the VAT rates in this company')}</div>
+              <div className="text-[13px] text-muted-foreground">{t('The company has no VAT number, so every item goes under the letter C with no VAT. With this on, the coupons carry VAT by rate (the letters A, C, D and E), only in ATK\'s test environment. The coupon still has no VAT number at its head. Open the till again after changing it.')}</div>
+            </div>
+            {s.can_setup && <Switch checked={!!s.test_vat} disabled={testVat.isPending} onCheckedChange={(v) => testVat.mutate(v)} aria-label={t('Try the VAT rates in this company')} />}
+          </div>
+        )}
         <ol className="grid gap-2">
           {SCENARIOS.map((sc, i) => (
             <li key={sc.id} className={cn('rounded-lg border p-3', done[sc.id] && 'border-success/40 bg-success/[0.05]')}>

@@ -2486,6 +2486,7 @@ export type Database = {
           pos_waiter_handover: boolean
           cash_payment_limit: number | null
           appt_whatsapp: boolean
+          atk_test_vat: boolean
         }
         Insert: {
           id?: string
@@ -2581,6 +2582,7 @@ export type Database = {
           pos_waiter_handover?: boolean
           cash_payment_limit?: number | null
           appt_whatsapp?: boolean
+          atk_test_vat?: boolean
         }
         Update: {
           id?: string
@@ -2676,6 +2678,7 @@ export type Database = {
           pos_waiter_handover?: boolean
           cash_payment_limit?: number | null
           appt_whatsapp?: boolean
+          atk_test_vat?: boolean
         }
         Relationships: [
           { foreignKeyName: "company_settings_company_id_default_purchase_tax_code_id_fkey"; columns: ["company_id", "default_purchase_tax_code_id"]; isOneToOne: false; referencedRelation: "tax_codes"; referencedColumns: ["company_id", "id"] },
@@ -16953,6 +16956,13 @@ export type Database = {
           p_company: string
         }
         Returns: Json
+      }
+      atk_test_vat_set: {
+        Args: {
+          p_company: string
+          p_on: boolean
+        }
+        Returns: undefined
       }
       atk_till: {
         Args: {

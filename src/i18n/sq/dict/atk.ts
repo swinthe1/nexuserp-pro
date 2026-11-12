@@ -338,4 +338,7 @@ export default {
   "A sale with a fiscal coupon cannot be discarded: ATK must get it. Fix the cause and try again; it is in the SEF log already.": "Shitja me kupon fiskal nuk mund të hidhet: ATK duhet ta marrë. Rregulloni shkakun dhe provoni përsëri; ajo është tashmë në regjistrin e SEF-it.",
   "Fiscal coupon: cannot be discarded": "Kupon fiskal: nuk mund të hidhet",
   "A sale with a fiscal coupon cannot be discarded": "Shitja me kupon fiskal nuk mund të hidhet",
+  "Try the VAT rates in this company": "Testo normat e TVSH-së në këtë kompani",
+  "The company has no VAT number, so every item goes under the letter C with no VAT. With this on, the coupons carry VAT by rate (the letters A, C, D and E), only in ATK's test environment. The coupon still has no VAT number at its head. Open the till again after changing it.": "Kompania nuk ka numër TVSH-je, prandaj çdo artikull del me shkronjën C, pa TVSH. Me këtë të ndezur, kuponët dalin me TVSH sipas normës (shkronjat A, C, D dhe E), vetëm në ambientin e testimit të ATK-së. Kuponi mbetet pa numër TVSH-je në krye. Pas ndryshimit hape arkën përsëri.",
+  "VAT rates tried in the test environment|log": "Normat e TVSH-së testohen në ambientin e testimit",
 } satisfies Dict
