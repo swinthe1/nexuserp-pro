@@ -136,7 +136,8 @@ export function fiscalReceiptHtml(f: FiscalPrint, paper: Paper = 80) {
     ${taxes}<tr><td>${esc(t('TOTAL WITHOUT VAT|fiscal'))}</td><td class="r">${eur(c.totalNoTax)}</td></tr></table>
     <div class="r sm">${esc(t('ITEMS - {n}|fiscal', { n: c.items.length }))}</div><hr>`
   return `<div class="c">${head}</div><div class="rule"></div>
-    <div class="r sm">${esc(t('WORKER: {name}', { name: f.operator }))}${f.operatorNo ? ` · ${esc(t('NO. {no}|worker', { no: f.operatorNo }))}` : ''}</div>
+    <div class="r sm">${esc(t('WORKER: {name}', { name: f.operator }))}</div>${f.operatorNo ? `
+    <div class="r sm" style="white-space:nowrap">${esc(t('NO. {no}|worker', { no: f.operatorNo }))}</div>` : ''}
     <div class="c title">${esc(kind)}</div>
     ${f.copy ? `<div class="c"><span class="mark">${esc(t('COPY OF THE COUPON|fiscal'))}</span></div>` : ''}
     ${origLine || (c.referenceNo ? `<div class="c sm">${esc(t('Original coupon: {no}|fiscal', { no: String(c.referenceNo) }))}</div>` : '')}
