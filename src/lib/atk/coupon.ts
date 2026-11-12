@@ -41,10 +41,15 @@ export interface AtkSaleLine {
   name: string
   /** quantity sold (a return line may come negative: only the size is used) */
   qty: number
-  /** unit price with VAT, before the discount */
+  /** unit price with VAT, before the discount (the price on the shelf) */
   price: number
-  /** line total with VAT, after the discount */
+  /** line total with VAT, after every discount */
   total: number
+  /** how the discount was given, for the printed coupon: a percentage, or an amount in euro; without it the percentage is worked out */
+  discountPct?: number | null
+  discountValue?: number | null
+  /** the part of a discount on the whole sale that fell on this line, in euro (it is inside "total" already) */
+  saleShare?: number | null
   /** VAT % */
   rate: number
   exempt?: boolean
@@ -64,22 +69,52 @@ export interface AtkSale {
   /** the original coupon of a return or a cancellation */
   referenceNo?: number | null
   lines: AtkSaleLine[]
+  /** a discount on the whole sale (already shared out in the lines' totals), for the printed coupon */
+  saleDiscount?: { pct?: number | null } | null
   payments: { method: string; amount: number }[]
   change?: number
 }
 
 const cents = (v: number) => Math.round(Math.abs(v) * 100)
 
+/**
+ * What the printed coupon needs and ATK's coupon does not carry: ATK takes each line's price with the discount in it,
+ * the paper shows the shelf price, then the discount with a minus (Kërkesat, neni 25.18). Kept with the coupon for its copies.
+ */
+export interface CouponPrint {
+  /** one per coupon line: the shelf price in ten-thousandths, the line's own discount in cents, and how it was given */
+  lines: { list: number; off: number; pct?: number; value?: boolean }[]
+  /** the discount on the whole sale, in cents */
+  sale?: { off: number; pct?: number } | null
+}
+
 export function buildCoupons(s: AtkSale, verification = verificationNo()) {
   if (!/^\d{9}$/.test(s.nui)) throw new Error(t('The company\'s NUI must have 9 digits'))
   if (!s.lines.length) throw new Error(t('A coupon needs at least one line'))
   if ((s.type === CouponType.Return || s.type === CouponType.Cancel) && !s.referenceNo) throw new Error(t('A return or a cancellation needs the original coupon'))
   const couponId = couponIdOf(s.branchId, s.posId, s.couponSeq)
-  const items: CouponItem[] = s.lines.map((l) => ({
-    name: l.name.slice(0, 200), price: Math.round(Math.abs(l.price) * 10000), unit: (l.unit || 'CP').slice(0, 20), quantity: Math.abs(l.qty),
-    // ATK's documentation (8 June 2026): a line's total is in ten-thousandths, like its price; the coupon's totals stay in cents
-    total: cents(l.total) * 100, taxRate: taxLetter(l.rate, l.exempt), type: (l.category || 'TT').slice(0, 20),
-  }))
+  const items: CouponItem[] = s.lines.map((l) => {
+    const qty = Math.abs(l.qty), net = cents(l.total)
+    return {
+      // ATK (the invitation to the technical test, 12 November 2026): the price of a line is the price WITH its discount,
+      // in "price" as in "total"; four decimals, so quantity × price gives the total
+      name: l.name.slice(0, 200), price: qty > 0 ? Math.round(net * 100 / qty) : Math.round(Math.abs(l.price) * 10000),
+      unit: (l.unit || 'CP').slice(0, 20), quantity: qty,
+      // ATK's documentation (8 June 2026): a line's total is in ten-thousandths, like its price; the coupon's totals stay in cents
+      total: net * 100, taxRate: taxLetter(l.rate, l.exempt), type: (l.category || 'TT').slice(0, 20),
+    }
+  })
+  // for the paper: the shelf price, each line's own discount, and the sale's discount apart
+  const print: CouponPrint = {
+    lines: s.lines.map((l) => {
+      const all = Math.max(cents(l.qty * l.price) - cents(l.total), 0)
+      const off = Math.max(all - Math.min(cents(l.saleShare ?? 0), all), 0)
+      return { list: Math.round(Math.abs(l.price) * 10000), off,
+        ...(off > 0 && l.discountValue ? { value: true } : off > 0 && l.discountPct ? { pct: l.discountPct } : {}) }
+    }),
+  }
+  const saleOff = s.lines.reduce((n, l) => n + Math.min(cents(l.saleShare ?? 0), Math.max(cents(l.qty * l.price) - cents(l.total), 0)), 0)
+  if (saleOff > 0) print.sale = { off: saleOff, ...(s.saleDiscount?.pct ? { pct: s.saleDiscount.pct } : {}) }
   const lineCents = (i: CouponItem) => i.total / 100
   const total = items.reduce((n, i) => n + lineCents(i), 0)
   const discount = s.lines.reduce((n, l) => n + Math.max(cents(l.qty * l.price) - cents(l.total), 0), 0)
@@ -122,7 +157,7 @@ export function buildCoupons(s: AtkSale, verification = verificationNo()) {
     businessId: pos.businessId, couponId, branchId: s.branchId, posId: s.posId, verificationNo: verification, type: s.type, time,
     total, taxGroups, totalTax, totalNoTax: pos.totalNoTax,
   }
-  return { pos, citizen, couponId, verificationNo: verification }
+  return { pos, citizen, couponId, verificationNo: verification, print }
 }
 
 export interface SignedCoupon {

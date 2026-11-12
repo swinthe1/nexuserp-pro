@@ -68,7 +68,11 @@ export interface AtkSaleInput {
   key: TillKey
   operator: string
   time: Date
-  lines: { name: string; qty: number; price: number; total: number; rate: number; variant_id: string; tax_code_id?: string | null }[]
+  lines: { name: string; qty: number; price: number; total: number; rate: number; variant_id: string; tax_code_id?: string | null
+    /** how the line's own discount was given (for the paper), and its share of a discount on the whole sale, in euro */
+    discountPct?: number | null; discountValue?: number | null; saleShare?: number | null }[]
+  /** a discount on the whole sale given as a percentage (for the paper) */
+  saleDiscountPct?: number | null
   payments: { method: string; amount: number }[]
   change: number
   /** a refund: the coupon of the original sale */
@@ -89,10 +93,15 @@ function mergeLines(lines: AtkSaleInput['lines']) {
   const out: AtkSaleInput['lines'] = []
   const at = new Map<string, number>()
   for (const l of lines) {
-    const k = `${l.variant_id}|${l.price}|${l.rate}|${l.qty ? Math.round(l.total / l.qty * 10000) : 0}`
+    const k = `${l.variant_id}|${l.price}|${l.rate}|${l.qty ? Math.round(l.total / l.qty * 10000) : 0}|${l.discountValue ? "v" : "p"}|${l.saleShare ? "s" : ""}`
     const i = at.get(k)
     if (i === undefined) { at.set(k, out.length); out.push({ ...l }) }
-    else { const m = out[i]!; m.qty = Math.round((m.qty + l.qty) * 1000) / 1000; m.total = Math.round((m.total + l.total) * 100) / 100 }
+    else {
+      const m = out[i]!
+      m.qty = Math.round((m.qty + l.qty) * 10000) / 10000; m.total = Math.round((m.total + l.total) * 100) / 100
+      if (l.discountValue) m.discountValue = Math.round(((m.discountValue ?? 0) + l.discountValue) * 100) / 100
+      if (l.saleShare) m.saleShare = Math.round(((m.saleShare ?? 0) + l.saleShare) * 100) / 100
+    }
   }
   return out
 }
@@ -107,7 +116,9 @@ export async function signAtkSale(s: AtkSaleInput): Promise<{ payload: Record<st
   const built = buildCoupons({
     nui: a.nui ?? '', branchId: a.branch_id!, posId: a.pos_id!, applicationId: a.application_id!, location: a.location ?? '', operator: s.operator,
     couponSeq: seq, type: cancel ? CouponType.Cancel : s.isReturn ? CouponType.Return : CouponType.Sale, time: s.time, referenceNo: s.returnOf ?? null,
+    saleDiscount: s.saleDiscountPct ? { pct: s.saleDiscountPct } : null,
     lines: mergeLines(s.lines).map((l) => ({ name: l.name, qty: l.qty, price: l.price, total: l.total, rate: l.rate, exempt: !!l.tax_code_id && exempt.has(l.tax_code_id),
+      discountPct: l.discountPct ?? null, discountValue: l.discountValue ?? null, saleShare: l.saleShare ?? null,
       unit: a.units?.[l.variant_id] ?? 'CP', category: a.types?.[l.variant_id] ?? a.default_type ?? 'TT' })),
     payments: s.payments, change: s.change,
   })
@@ -116,10 +127,11 @@ export async function signAtkSale(s: AtkSaleInput): Promise<{ payload: Record<st
     signed,
     payload: { env: a.env, coupon_id: signed.couponId, seq, pos_id: a.pos_id, branch_id: a.branch_id, verification_no: signed.verificationNo,
       details: signed.details, signature: signed.signature, qr: signed.qr, type: built.pos.type, reference_no: s.returnOf ?? null,
-      total: signed.total, tax: signed.totalTax, daily_no: s.dailyNo ?? null, reason: s.cancelReason ?? null, operator_no: a.operator_no ?? null, block_no: s.blockNo ?? null },
+      total: signed.total, tax: signed.totalTax, daily_no: s.dailyNo ?? null, reason: s.cancelReason ?? null, operator_no: a.operator_no ?? null, block_no: s.blockNo ?? null,
+      print: built.print },
     receipt: { env: a.env!, nui: a.nui ?? '', header: a.header ?? { legal_name: a.business ?? '', store: null, store_address: null, city: a.location ?? null, phone: null, vat_number: null },
       operator: s.operator, operatorNo: a.operator_no ?? null, coupon: built.pos, qr: signed.qr, dailyNo: s.dailyNo ?? null, reason: s.cancelReason ?? null,
-      offline: !!s.offline, change: Math.round(Math.max(s.change, 0) * 100), footer: s.footer ?? null, blockNo: s.blockNo ?? null },
+      offline: !!s.offline, change: Math.round(Math.max(s.change, 0) * 100), footer: s.footer ?? null, blockNo: s.blockNo ?? null, print: built.print },
   }
 }
 

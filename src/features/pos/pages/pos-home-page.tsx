@@ -39,13 +39,14 @@ import { ShiftReviewCard } from './review-page'
 import { printReceipt, printZReport } from '../receipt'
 import type { FiscalHeader } from '../fiscal-receipt'
 import { decodePosCoupon, fromBase64 } from '@/lib/atk/proto'
+import type { CouponPrint } from '@/lib/atk/coupon'
 
 const since = (iso: string) => {
   const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000)
   return m < 60 ? t('{m} min', { m }) : m < 1440 ? t('{h} h {m} min', { h: Math.floor(m / 60), m: m % 60 }) : tn(Math.floor(m / 1440), '{n} day', '{n} days')
 }
 
-type AtkReceipt = { atk: { env: 'test' | 'production'; details: string; qr: string; daily_no?: number | null; reason?: string | null; operator_no?: string | null; block_no?: string | null }
+type AtkReceipt = { atk: { env: 'test' | 'production'; details: string; qr: string; daily_no?: number | null; reason?: string | null; operator_no?: string | null; block_no?: string | null; print?: CouponPrint | null }
   number: string; device_ref: string | null; order_at: string; nui: string | null; cashier: string | null; fiscal_status: string | null
   register: { code: string; name: string; receipt_header: string | null; receipt_footer: string | null }; header: FiscalHeader }
 
@@ -338,7 +339,7 @@ export function PosSessionPage() {
           ref: fr.device_ref ?? fr.number, number: fr.number, date: new Date(fr.order_at), cashier: fr.cashier ?? '', currency: cur, lines: [], payments: [], change: 0,
           fiscal: { env: fr.atk.env, nui: fr.nui ?? '', header: fr.header, operator: fr.cashier ?? '', operatorNo: fr.atk.operator_no ?? null,
             coupon: decodePosCoupon(fromBase64(fr.atk.details)), qr: fr.atk.qr, dailyNo: fr.atk.daily_no ?? (Number(fr.device_ref?.split('-').at(-1)) || null), reason: fr.atk.reason ?? null,
-            offline: fr.fiscal_status !== 'fiscalized', copy: true, footer: fr.register.receipt_footer, blockNo: fr.atk.block_no ?? null } })
+            offline: fr.fiscal_status !== 'fiscalized', copy: true, footer: fr.register.receipt_footer, blockNo: fr.atk.block_no ?? null, print: fr.atk.print ?? null } })
         return
       }
       const o = unwrap(await supabase.from('pos_orders').select('number, device_ref, order_at, is_refund, change_given, partner:business_partners(name), lines:pos_order_lines(description, quantity, unit_price, discount_pct, line_total, tax_rate, line_no), payments:pos_payments(method, amount)')

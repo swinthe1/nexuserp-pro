@@ -754,6 +754,9 @@ export type Database = {
           created_by: string | null
           updated_at: string
           updated_by: string | null
+          payload: string | null
+          prev_hash: string | null
+          hash: string | null
         }
         Insert: {
           id?: number
@@ -771,6 +774,9 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          payload?: string | null
+          prev_hash?: string | null
+          hash?: string | null
         }
         Update: {
           id?: number
@@ -788,6 +794,9 @@ export type Database = {
           created_by?: string | null
           updated_at?: string
           updated_by?: string | null
+          payload?: string | null
+          prev_hash?: string | null
+          hash?: string | null
         }
         Relationships: [
           { foreignKeyName: "atk_events_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -8490,6 +8499,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           promotion_id: string | null
+          discount_amount: number
           line_total: number | null
           line_subtotal: number | null
           tax_amount: number | null
@@ -8514,6 +8524,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           promotion_id?: string | null
+          discount_amount?: number
           line_total?: never
           line_subtotal?: never
           tax_amount?: never
@@ -8538,6 +8549,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           promotion_id?: string | null
+          discount_amount?: number
           line_total?: never
           line_subtotal?: never
           tax_amount?: never
@@ -8589,6 +8601,8 @@ export type Database = {
           moved_from_session_id: string | null
           atk: Json | null
           refund_reason: string | null
+          sale_discount: number
+          sale_discount_pct: number | null
         }
         Insert: {
           id?: string
@@ -8629,6 +8643,8 @@ export type Database = {
           moved_from_session_id?: string | null
           atk?: Json | null
           refund_reason?: string | null
+          sale_discount?: number
+          sale_discount_pct?: number | null
         }
         Update: {
           id?: string
@@ -8669,6 +8685,8 @@ export type Database = {
           moved_from_session_id?: string | null
           atk?: Json | null
           refund_reason?: string | null
+          sale_discount?: number
+          sale_discount_pct?: number | null
         }
         Relationships: [
           { foreignKeyName: "pos_orders_cashier_profile_fkey"; columns: ["cashier_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
@@ -16861,6 +16879,12 @@ export type Database = {
           p_events: Json
         }
         Returns: number
+      }
+      atk_log_verify: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
       }
       atk_numbers_save: {
         Args: {

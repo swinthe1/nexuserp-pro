@@ -78,6 +78,7 @@ export const serverTemplates: [string, string][] = [
   ['Delivery % is not picked yet', 'Dërgesa {0} nuk është mbledhur ende'],
   ['Delivery is already %', 'Dërgesa është tashmë {0}'],
   ['Discounts above % %% need a manager', 'Zbritjet mbi {0}% kërkojnë menaxherin'],
+  ['Line %: the discount is more than the line itself', 'Rreshti {0}: zbritja është më e madhe se vetë rreshti'],
   ['Document type % has no approval flow', 'Lloji i dokumentit {0} nuk ka rrjedhë miratimi'],
   ['Documents of type % have no approval step', 'Dokumentet e llojit {0} nuk kanë hap miratimi'],
   ['Enter the best-before date for lot %', 'Shkruani datën e skadimit për lotin {0}'],

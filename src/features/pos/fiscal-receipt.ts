@@ -6,7 +6,7 @@
  */
 import { formatDateWith, formatNumberWith, t } from '@/i18n'
 import { CouponType, PaymentType, type PosCoupon } from '@/lib/atk/proto'
-import { RATE_OF } from '@/lib/atk/coupon'
+import { RATE_OF, type CouponPrint } from '@/lib/atk/coupon'
 import { qrSvg } from './atk'
 import { RKS_LOGO } from './rks-logo'
 
@@ -15,7 +15,7 @@ const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&
 const eur = (cents: number) => `${formatNumberWith(cents / 100, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
 /** a unit price in ten-thousandths: two decimals at least, four at most */
 const unitPrice = (p: number) => formatNumberWith(p / 10000, { minimumFractionDigits: 2, maximumFractionDigits: 4 })
-const qtyText = (q: number) => formatNumberWith(Math.round(q * 1000) / 1000, { maximumFractionDigits: 3 })
+const qtyText = (q: number) => formatNumberWith(Math.round(q * 10000) / 10000, { maximumFractionDigits: 4 })
 
 export type FiscalHeader = { legal_name: string; store: string | null; store_address: string | null; city: string | null; phone: string | null; vat_number: string | null }
 export interface FiscalPrint {
@@ -39,6 +39,8 @@ export interface FiscalPrint {
   footer?: string | null
   /** registered from the fiscal receipt book */
   blockNo?: string | null
+  /** the shelf prices and how the discounts were given (ATK's coupon carries the prices with the discount in them) */
+  print?: CouponPrint | null
 }
 
 const PAY: Record<number, string> = { [PaymentType.Cash]: 'CASH', [PaymentType.CreditCard]: 'CARD', [PaymentType.Voucher]: 'VOUCHER', [PaymentType.Cheque]: 'CHEQUE',
@@ -75,17 +77,27 @@ export function fiscalReceiptHtml(f: FiscalPrint, paper: Paper = 80) {
     `<div class="b">${esc(t('NF-NUI: {nui}', { nui: f.nui }))}</div>`,
     h.vat_number ? `<div class="b">${esc(t('VAT NUMBER: {vat}', { vat: h.vat_number }))}</div>` : '',
   ].join('')
-  const lines = c.items.map((i) => {
-    const gross = Math.round(i.price * i.quantity / 100)      // cents, before the discount
-    const net = Math.round(i.total / 100)                      // cents, after it
-    const off = gross - net
-    const pct = gross > 0 && off > 0 ? Math.round(off / gross * 10000) / 100 : 0
+  let subtotal = 0
+  const lines = c.items.map((i, k) => {
+    const p = f.print?.lines[k]
+    const list = p?.list ?? i.price                            // the shelf price (a coupon kept without it: its own price)
+    const gross = Math.max(Math.round(list * i.quantity / 100), Math.round(i.total / 100))      // cents, before the discount
+    // the line's own discount; a discount on the whole sale comes under the subtotal
+    const off = p ? Math.min(p.off, gross) : gross - Math.round(i.total / 100)
+    subtotal += gross - off
+    const pct = p?.pct ?? (gross > 0 && off > 0 ? Math.round(off / gross * 10000) / 100 : 0)
+    const offLabel = p?.value ? t('Discount|fiscal') : t('Discount {pct}%|fiscal', { pct: formatNumberWith(pct, { maximumFractionDigits: 2 }) })
     // on 58 mm paper the name takes its own line, the quantity and the amount go under it
     return (narrow
-      ? `<tr><td colspan="3">${esc(i.name)}</td></tr><tr><td colspan="2" class="r">${esc(qtyText(i.quantity))} X ${esc(unitPrice(i.price))}</td><td class="r">${eur(gross)} ${esc(i.taxRate)}</td></tr>`
-      : `<tr><td>${esc(i.name)}</td><td class="r">${esc(qtyText(i.quantity))} X ${esc(unitPrice(i.price))}</td><td class="r">${eur(gross)} ${esc(i.taxRate)}</td></tr>`)
-      + (off > 0 ? `<tr class="sm"><td colspan="2">&nbsp;${esc(t('Discount {pct}%|fiscal', { pct: formatNumberWith(pct, { maximumFractionDigits: 2 }) }))}</td><td class="r">−${eur(off)}</td></tr>` : '')
+      ? `<tr><td colspan="3">${esc(i.name)}</td></tr><tr><td colspan="2" class="r">${esc(qtyText(i.quantity))} X ${esc(unitPrice(list))}</td><td class="r">${eur(gross)} ${esc(i.taxRate)}</td></tr>`
+      : `<tr><td>${esc(i.name)}</td><td class="r">${esc(qtyText(i.quantity))} X ${esc(unitPrice(list))}</td><td class="r">${eur(gross)} ${esc(i.taxRate)}</td></tr>`)
+      + (off > 0 ? `<tr class="sm"><td colspan="2">&nbsp;${esc(offLabel)}</td><td class="r">−${eur(off)}</td></tr>` : '')
   }).join('')
+  // a discount on the whole sale: the subtotal, then the discount on it with a minus (Kërkesat, neni 25.18)
+  const sale = f.print?.sale
+  const saleRows = sale && sale.off > 0
+    ? `<hr><table><tr><td>${esc(t('SUBTOTAL|fiscal'))}</td><td class="r">${eur(subtotal)}</td></tr><tr><td>${esc(sale.pct
+        ? t('Discount on the total {pct}%|fiscal', { pct: formatNumberWith(sale.pct, { maximumFractionDigits: 2 }) }) : t('Discount on the total|fiscal'))}</td><td class="r">−${eur(sale.off)}</td></tr></table>` : ''
   const pays = c.payments.map((p) => `<tr><td>${esc(payName(p.type))}</td><td class="r">${eur(p.amount)}</td></tr>`).join('')
   const taxes = c.taxGroups.map((g) => `<tr><td>${esc(g.taxRate === 'A' ? t('VAT A exempt|fiscal') : t('VAT {letter} {rate}%|fiscal', { letter: g.taxRate, rate: RATE_OF[g.taxRate] }))}</td><td class="r">${eur(g.totalTax)}</td></tr>`).join('')
   const when = formatDateWith(new Date(c.time * 1000), { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -98,6 +110,7 @@ export function fiscalReceiptHtml(f: FiscalPrint, paper: Paper = 80) {
     ${f.blockNo ? `<div class="c sm b">${esc(t('From the fiscal receipt book, no. {no}', { no: f.blockNo }))}</div>` : ''}
     ${f.reason ? `<div class="sm">${esc(t('Reason for the cancellation: {reason}', { reason: f.reason }))}</div>` : ''}
     <table><tr><th>${esc(t('ITEM|fiscal'))}</th><th class="r">${esc(t('QTY X PRICE|fiscal'))}</th><th class="r">${esc(t('AMOUNT|fiscal'))}</th></tr>${lines}</table>
+    ${saleRows}
     ${c.totalDiscount > 0 ? `<table class="sm"><tr><td>${esc(t('Discounts|fiscal'))}</td><td class="r">−${eur(c.totalDiscount)}</td></tr></table>` : ''}
     <hr><table><tr class="b big"><td>${esc(c.type === CouponType.Sale ? t('TOTAL TO PAY|fiscal') : t('TOTAL|fiscal'))}</td><td class="r">${eur(c.total)}</td></tr></table>
     <table><tr><td class="sm">${esc(t('PAYMENT METHOD|fiscal'))}</td><td></td></tr>${pays}${f.change ? `<tr><td>${esc(t('Change|fiscal'))}</td><td class="r">${eur(f.change)}</td></tr>` : ''}

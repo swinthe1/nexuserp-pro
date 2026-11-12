@@ -422,7 +422,9 @@ function QueueCard({ s }: { s: Setup }) {
 }
 
 /* ------------------------------------------------------------------ the log ATK checks (Kërkesat specifike, neni 25.15 and "Verifikimi dhe Kontrolli") */
-type LogRow = { id: number; kind: string; at: string; register_id: string | null; coupon_no: number | null; amount: number | null; details: Record<string, unknown> }
+type LogRow = { id: number; kind: string; at: string; register_id: string | null; coupon_no: number | null; amount: number | null; details: Record<string, unknown>
+  payload: string | null; prev_hash: string | null; hash: string | null }
+type LogCheck = { ok: boolean; rows: number; broken: number[]; first_broken_at: string | null; last_hash: string | null; checked_at: string }
 const KINDS: Record<string, string> = {
   started: msg('Till opened|log'), offline: msg('Internet lost|log'), online: msg('Internet back|log'), clock: msg('Clock off|log'),
   sent: msg('Sent to ATK|log'), failed: msg('Not taken by ATK|log'), change: msg('Change to the SEF|log'),
@@ -463,18 +465,23 @@ function LogCard() {
   const tills = useQuery({ queryKey: ['atk-log-tills', companyId], enabled: !!companyId, staleTime: 300_000,
     queryFn: async () => new Map(unwrap(await supabase.from('pos_registers').select('id, name').eq('company_id', companyId!)).map((r) => [r.id, r.name])) })
   const fetchRows = async (limit: number) => {
-    let q = supabase.from('atk_events').select('id, kind, at, register_id, coupon_no, amount, details').eq('company_id', companyId!)
+    let q = supabase.from('atk_events').select('id, kind, at, register_id, coupon_no, amount, details, payload, prev_hash, hash').eq('company_id', companyId!)
       .gte('at', new Date(`${from}T00:00:00`).toISOString()).lt('at', new Date(new Date(`${to}T00:00:00`).getTime() + 864e5).toISOString())
     if (kinds) q = q.in('kind', kinds)
     return unwrap(await q.order('at', { ascending: false }).order('id', { ascending: false }).limit(limit)) as unknown as LogRow[]
   }
   const rows = useQuery({ queryKey: ['atk-log', companyId, from, to, filter], enabled: !!companyId && !!from && !!to, queryFn: () => fetchRows(100) })
+  // Integrity Check: the server walks the chain of hashes and names every row that was touched
+  const verify = async () => unwrap(await supabase.rpc('atk_log_verify' as never, { p_company: companyId } as never)) as unknown as LogCheck
+  const check = useMutation({ mutationFn: verify, onError: (e) => toast.error(describeError(e)) })
   const exp = useMutation({
     mutationFn: async () => {
-      const all = await fetchRows(50000)
+      const [all, v] = await Promise.all([fetchRows(50000), verify()])
+      const bad = new Set(v.broken)
       downloadCsv(`atk-log-${from}-${to}`, [
-        [t('Date and time'), t('Event|log'), t('Till'), t('Coupon no.'), t('Total'), t('Details')],
-        ...[...all].reverse().map((r) => [secs(r.at), t(KINDS[r.kind] ?? r.kind), r.register_id ? tills.data?.get(r.register_id) ?? '' : '', r.coupon_no ?? '', r.amount ?? '', logText(r)]),
+        [t('Date and time'), t('Event|log'), t('Till'), t('Coupon no.'), t('Total'), t('Details'), 'PayLoad', 'Previous Hash', 'Current Hash', 'Integrity Check'],
+        ...[...all].reverse().map((r) => [secs(r.at), t(KINDS[r.kind] ?? r.kind), r.register_id ? tills.data?.get(r.register_id) ?? '' : '', r.coupon_no ?? '', r.amount ?? '', logText(r),
+          r.payload ?? '', r.prev_hash ?? '', r.hash ?? '', bad.has(r.id) ? 'FAILED' : 'OK']),
       ])
     },
     onError: (e) => toast.error(describeError(e)),
@@ -489,13 +496,23 @@ function LogCard() {
           <div className="grid gap-1"><Label htmlFor="lg-to" className="text-xs">{t('To|date')}</Label><Input id="lg-to" type="date" className="h-9 w-40" value={to} min={from} onChange={(e) => setTo(e.target.value)} /></div>
           <Select value={filter} onValueChange={setFilter}><SelectTrigger className="h-9 w-48" aria-label={t('Show|log')}><SelectValue /></SelectTrigger>
             <SelectContent>{FILTERS.map((f) => <SelectItem key={f.v} value={f.v}>{t(f.l)}</SelectItem>)}</SelectContent></Select>
-          <Button variant="outline" className="ml-auto" loading={exp.isPending} onClick={() => exp.mutate()}><Download /> {t('Download the log (CSV)')}</Button>
+          <Button variant="outline" className="ml-auto" loading={check.isPending} onClick={() => check.mutate()}><ShieldCheck /> {t('Integrity check')}</Button>
+          <Button variant="outline" loading={exp.isPending} onClick={() => exp.mutate()}><Download /> {t('Download the log (CSV)')}</Button>
         </div>
+        {check.data && (
+          <div className={cn('rounded-md border px-3 py-2 text-[13px]', check.data.ok ? 'border-success/40 bg-success/[0.06]' : 'border-destructive/40 bg-destructive/[0.06]')}>
+            <span className="font-medium">{check.data.ok
+              ? t('The chain holds: {n} rows, none changed or missing.', { n: check.data.rows })
+              : t('The chain is broken: {n} rows were changed or are missing, the first on {date}.', { n: check.data.broken.length, date: check.data.first_broken_at ? secs(check.data.first_broken_at) : '' })}</span>
+            {check.data.last_hash && <span className="ml-2 break-all font-mono text-xs text-muted-foreground">{t('Last hash: {hash}', { hash: check.data.last_hash })}</span>}
+          </div>
+        )}
         <div className="overflow-x-auto rounded-md border">
           <table className="w-full text-[13px]">
             <thead className="bg-muted/50 text-left text-xs text-muted-foreground"><tr>
               <th className="px-3 py-2 font-medium">{t('Date and time')}</th><th className="px-3 py-2 font-medium">{t('Event|log')}</th><th className="px-3 py-2 font-medium">{t('Till')}</th>
-              <th className="px-3 py-2 text-right font-medium">{t('Coupon no.')}</th><th className="px-3 py-2 text-right font-medium">{t('Total')}</th><th className="px-3 py-2 font-medium">{t('Details')}</th></tr></thead>
+              <th className="px-3 py-2 text-right font-medium">{t('Coupon no.')}</th><th className="px-3 py-2 text-right font-medium">{t('Total')}</th><th className="px-3 py-2 font-medium">{t('Details')}</th>
+              <th className="px-3 py-2 font-medium">{t('Previous hash')}</th><th className="px-3 py-2 font-medium">{t('Current hash')}</th></tr></thead>
             <tbody>
               {(rows.data ?? []).map((r) => (
                 <tr key={r.id} className="border-t align-top">
@@ -505,9 +522,11 @@ function LogCard() {
                   <td className="whitespace-nowrap px-3 py-1.5 text-right tabular">{r.coupon_no ?? ''}</td>
                   <td className="whitespace-nowrap px-3 py-1.5 text-right tabular">{r.amount != null ? formatNumberWith(r.amount, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}</td>
                   <td className="max-w-[22rem] truncate px-3 py-1.5 text-muted-foreground" title={logText(r)}>{logText(r)}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5 font-mono text-xs text-muted-foreground" title={r.prev_hash ?? ''}>{r.prev_hash ? `${r.prev_hash.slice(0, 10)}…` : ''}</td>
+                  <td className={cn('whitespace-nowrap px-3 py-1.5 font-mono text-xs', check.data?.broken.includes(r.id) ? 'font-semibold text-destructive' : 'text-muted-foreground')} title={r.payload ? `${r.hash}\n${r.payload}` : r.hash ?? ''}>{r.hash ? `${r.hash.slice(0, 10)}…` : ''}</td>
                 </tr>
               ))}
-              {rows.data && !rows.data.length && <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">{t('Nothing in the log for these days')}</td></tr>}
+              {rows.data && !rows.data.length && <tr><td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">{t('Nothing in the log for these days')}</td></tr>}
             </tbody>
           </table>
         </div>

@@ -47,7 +47,16 @@ import { formatQtyOf } from '@/lib/units'
 
 /* ------------------------------------------------------------------ money helpers (same rounding as the database) */
 const r2 = (v: number) => Math.sign(v) * Math.round(Math.abs(v) * 100 + 1e-7) / 100
-const lineTotal = (l: { qty: number; price: number; discount: number }) => r2(l.qty * l.price * (1 - l.discount / 100))
+/** a line's total with VAT: the discount in %, then the line's own discount in euro, then its share of a discount on the whole sale */
+const lineTotal = (l: { qty: number; price: number; discount: number; off?: number; share?: number }) =>
+  r2(r2(l.qty * l.price * (1 - l.discount / 100)) - (l.off ?? 0) - (l.share ?? 0))
+/** how much of a line's shelf value its discounts take, in % (the cashier's limit is on this) */
+const offPct = (l: { qty: number; price: number; discount: number; off?: number; share?: number }) => {
+  const gross = r2(l.qty * l.price)
+  return gross > 0 ? Math.round((1 - lineTotal(l) / gross) * 10000) / 100 : 0
+}
+/** a discount on the whole sale: a percentage, or an amount in euro */
+type SaleDiscount = { pct?: number; value?: number }
 /** the cashier's discount limit when the till has none set (an older server) */
 const MAX_DISCOUNT = 10
 const NOTES = [100, 200, 500, 1000, 2000, 5000, 10000]
@@ -60,11 +69,15 @@ const METHODS = [
 ] as const
 type Method = (typeof METHODS)[number]['id']
 
-type Line = { key: string; variant_id: string; name: string; sku: string; price: number; qty: number; discount: number; rate: number; barcode: string | null }
-type PricedLine = Line & { card?: boolean; promo?: { id: string; name: string } }
+type Line = { key: string; variant_id: string; name: string; sku: string; price: number; qty: number; discount: number; rate: number; barcode: string | null
+  /** the line's own discount in euro, on top of the one in % */
+  off?: number }
+type PricedLine = Line & { card?: boolean; promo?: { id: string; name: string }
+  /** this line's share of a discount on the whole sale, in euro */
+  share?: number }
 export type Tender = { method: Method; amount: number; reference?: string | null }
 /** a sale put aside while the customer fetches something: kept on this device, for this shift */
-type Held = { id: string; at: string; lines: Line[]; customer: string | null; card: AppliedCard | null }
+type Held = { id: string; at: string; lines: Line[]; customer: string | null; card: AppliedCard | null; saleDisc?: SaleDiscount | null }
 const MAX_HELD = 5
 const heldKey = (session: string) => `pos.held.${session}`
 const readHeld = (session: string): Held[] => { try { return JSON.parse(localStorage.getItem(heldKey(session)) ?? '[]') as Held[] } catch { return [] } }
@@ -190,6 +203,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   const [lines, setLines] = React.useState<Line[]>([])
   const [card, setCard] = React.useState<AppliedCard | null>(null)
   const [redeem, setRedeem] = React.useState<Redeem | null>(null)
+  const [saleDisc, setSaleDisc] = React.useState<SaleDiscount | null>(null)
   React.useEffect(() => { setRedeem(null) }, [lines])
   const [selected, setSelected] = React.useState<string | null>(null)
   // the line in focus stays in sight in the coupon table, as a scan adds it at the bottom
@@ -203,7 +217,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   const [customer, setCustomer] = React.useState<string | null>(data.register.default_customer_id)
   const maxDiscount = num((data.register as { max_discount_pct?: number | null }).max_discount_pct ?? MAX_DISCOUNT)
   const [flash, setFlash] = React.useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
-  const [dialog, setDialog] = React.useState<null | 'pay' | 'customer' | 'card' | 'refund' | 'cash' | 'close' | 'line' | 'queue' | 'manager' | 'refund-manager' | 'voucher'>(null)
+  const [dialog, setDialog] = React.useState<null | 'pay' | 'customer' | 'card' | 'refund' | 'cash' | 'close' | 'line' | 'queue' | 'manager' | 'refund-manager' | 'voucher' | 'sale-discount'>(null)
   const [done, setDone] = React.useState<Done | null>(null)
   const [camera, setCamera] = React.useState(false)
   const [autoPrint, setAutoPrint] = React.useState(() => prefGet('pos.autoprint', '1') === '1')
@@ -249,15 +263,15 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   const [clock, setClock] = React.useState(() => Date.now())
   React.useEffect(() => { const id = setInterval(() => setClock(Date.now()), 60_000); return () => clearInterval(id) }, [])
   const promoted = React.useMemo<PricedLine[]>(() => lines.map((l) => {
-    if (l.qty <= 0 || l.discount !== 0 || !data.promotions?.length) return l
+    if (l.qty <= 0 || l.discount !== 0 || l.off || !data.promotions?.length) return l
     const b = bestPromo(data.promotions, l.variant_id, l.price, l.qty, new Date(clock))
     return b ? { ...l, discount: b.pct, promo: { id: b.id, name: b.name } } : l
   }), [lines, data.promotions, clock])
-  const priced = React.useMemo<PricedLine[]>(() => {
+  const carded = React.useMemo<PricedLine[]>(() => {
     if (!card || !cardUsable(card.program)) return promoted
     const p = card.program
     const excluded = new Set(p.excluded_categories)
-    const eligible = (l: Line) => l.qty > 0 && l.discount === 0 && !excluded.has(catOf.get(l.variant_id) ?? '\u0000')
+    const eligible = (l: Line) => l.qty > 0 && l.discount === 0 && !l.off && !excluded.has(catOf.get(l.variant_id) ?? '\u0000')
     let pct = num(p.discount_pct)
     if (p.monthly_limit != null) {
       const left = Math.max(num(p.monthly_limit) - card.monthUsed, 0)
@@ -266,6 +280,25 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     }
     return promoted.map((l) => (eligible(l) ? { ...l, discount: redeem?.pct[l.key] ?? pct, card: true } : l))
   }, [promoted, card, redeem, catOf])
+  // a discount on the whole sale is shared out over the lines by their value, to the cent (the last cent goes on the biggest line)
+  const saleOff = React.useMemo(() => {
+    const sum = r2(carded.reduce((a, l) => a + lineTotal(l), 0))
+    if (!saleDisc || sum <= 0) return 0
+    return Math.min(saleDisc.pct ? r2(sum * saleDisc.pct / 100) : r2(saleDisc.value ?? 0), sum)
+  }, [carded, saleDisc])
+  const priced = React.useMemo<PricedLine[]>(() => {
+    if (saleOff <= 0) return carded
+    const base = carded.map((l) => Math.max(lineTotal(l), 0))
+    const sum = base.reduce((a, b) => a + b, 0)
+    const shares = base.map((b) => Math.floor(saleOff * b / sum * 100 + 1e-7) / 100)
+    let left = Math.round((saleOff - shares.reduce((a, b) => a + b, 0)) * 100)
+    // the cents left by the rounding go one by one on the biggest lines
+    for (const i of base.map((b, i) => [b, i] as const).sort((x, y) => y[0] - x[0]).map((x) => x[1])) {
+      if (left <= 0) break
+      if (base[i]! - shares[i]! >= 0.01) { shares[i] = r2(shares[i]! + 0.01); left-- }
+    }
+    return carded.map((l, i) => (shares[i]! > 0 ? { ...l, share: shares[i] } : l))
+  }, [carded, saleOff])
   const cardSaving = priced.filter((l) => l.card).reduce((s, l) => s + r2(l.qty * l.price) - lineTotal(l), 0)
 
   const total = priced.reduce((s, l) => s + lineTotal(l), 0)
@@ -532,7 +565,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     })()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const clearSale = () => { setLines([]); setSelected(null); setCustomer(data.register.default_customer_id); setMultiplier(null); setFlash(null); setCard(null); setRedeem(null); setVoidApproval(null) }
+  const clearSale = () => { setLines([]); setSelected(null); setCustomer(data.register.default_customer_id); setMultiplier(null); setFlash(null); setCard(null); setRedeem(null); setVoidApproval(null); setSaleDisc(null) }
   /** the cashier clears the whole sale: that is a void too */
   const voidSale = () => requestVoid({ entries: lines.length ? [{ kind: 'void_sale', description: tn(lines.length, '{n} line', '{n} lines'), quantity: itemsCount,
     amount: r2(total) }] : [], apply: clearSale })
@@ -546,9 +579,9 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     if (!lines.length) return
     if (redeem) { setFlash({ tone: 'error', text: t('Points are being spent on this sale: finish it or undo the points first') }); return }
     if (held.length >= MAX_HELD) { setFlash({ tone: 'error', text: t('Already {n} sales on hold: take one back first', { n: MAX_HELD }) }); return }
-    setHeld([...held, { id: crypto.randomUUID(), at: new Date().toISOString(), lines, customer, card }])
+    setHeld([...held, { id: crypto.randomUUID(), at: new Date().toISOString(), lines, customer, card, saleDisc }])
     // not a void: the lines wait, nothing leaves the sale
-    setLines([]); setSelected(null); setCustomer(data.register.default_customer_id); setMultiplier(null); setCard(null); setRedeem(null)
+    setLines([]); setSelected(null); setCustomer(data.register.default_customer_id); setMultiplier(null); setCard(null); setRedeem(null); setSaleDisc(null)
     setFlash({ tone: 'ok', text: t('Sale put on hold. Tap it above the lines to take it back.') })
     focusSearch()
   }
@@ -558,8 +591,8 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     if (redeem) { setFlash({ tone: 'error', text: t('Points are being spent on this sale: finish it or undo the points first') }); return }
     // the sale on screen takes its place on hold, so nothing is lost
     const rest = held.filter((x) => x.id !== id)
-    setHeld(lines.length ? [...rest, { id: crypto.randomUUID(), at: new Date().toISOString(), lines, customer, card }] : rest)
-    setLines(h.lines); setCustomer(h.customer); setCard(h.card); setRedeem(null); setSelected(null); setFlash(null)
+    setHeld(lines.length ? [...rest, { id: crypto.randomUUID(), at: new Date().toISOString(), lines, customer, card, saleDisc }] : rest)
+    setLines(h.lines); setCustomer(h.customer); setCard(h.card); setSaleDisc(h.saleDisc ?? null); setRedeem(null); setSelected(null); setFlash(null)
     focusSearch()
   }
   /** a sale on hold the customer does not want after all: a void, like clearing it */
@@ -589,7 +622,9 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       const taxOf = new Map(data.catalog.map((c) => [c.variant_id, c.tax_code_id]))
       try {
         atk = await signAtkSale({ registerId: data.register.id, atk: data.atk, key: atkState.key, operator: cashier, time: new Date(created_at),
-          lines: saleLines.map((l) => ({ name: l.name, qty: l.qty, price: l.price, total: lineTotal(l), rate: l.rate, variant_id: l.variant_id, tax_code_id: taxOf.get(l.variant_id) ?? null })),
+          lines: saleLines.map((l) => ({ name: l.name, qty: l.qty, price: l.price, total: lineTotal(l), rate: l.rate, variant_id: l.variant_id, tax_code_id: taxOf.get(l.variant_id) ?? null,
+            discountPct: l.discount || null, discountValue: l.off || null, saleShare: l.share || null })),
+          saleDiscountPct: !refund && saleOff > 0 ? saleDisc?.pct ?? null : null,
           payments: tenders.map((x) => ({ method: x.method, amount: x.amount })), change: Math.max(change, 0),
           isReturn: !!refund, returnOf: refund?.of?.atk_coupon ? Number(refund.of.atk_coupon) : null, cancelReason: refund?.cancelReason ?? null,
           dailyNo: Number(device_ref.split('-').at(-1)) || null, offline: isOffline, footer: data.register.receipt_footer, blockNo: fromBook?.no ?? null })
@@ -598,11 +633,13 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     const payload = {
       client_uuid, session_id: session.id, cashier_id: user?.id ?? null, order_at: created_at, device_ref, offline: isOffline, partner_id: customer, is_refund: !!refund, refund_of_id: refund?.of?.id ?? null, refund_reason: refund?.reason ?? null,
       // a promotion's line counts as discounted already, so the card does not add to it (the server checks the promotion)
-      lines: saleLines.map((l) => ({ variant_id: l.variant_id, quantity: l.qty, unit_price: l.price, discount_pct: l.discount, manual_pct: l.card ? 0 : l.discount,
+      lines: saleLines.map((l) => ({ variant_id: l.variant_id, quantity: l.qty, unit_price: l.price, discount_pct: l.discount, discount_amount: r2((l.off ?? 0) + (l.share ?? 0)), manual_pct: l.card ? 0 : l.discount,
         promotion_id: l.promo?.id ?? null, barcode: l.barcode, description: l.name })),
       payments: tenders.map((t) => ({ method: t.method, amount: t.amount, reference: t.reference ?? null })),
       loyalty: usedCard ? { card_id: usedCard.id, redeem_points: redeem?.points ?? 0 } : null,
       fiscal: atk?.payload ?? null,
+      // a discount on the whole sale (already inside the lines), kept on the receipt
+      sale_discount: !refund && saleOff > 0 ? saleOff : null, sale_discount_pct: !refund && saleOff > 0 ? saleDisc?.pct ?? null : null,
       // a refund confirmed by a manager (when the company asks for it); the server checks it
       approval: opts?.approval ?? null,
     }
@@ -615,7 +652,8 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
     patch((d) => ({ ...d, catalog: d.catalog.map((c) => { const sold = saleLines.filter((l) => l.variant_id === c.variant_id).reduce((s, l) => s + l.qty, 0); return sold ? { ...c, on_hand: c.on_hand - sold } : c }) }))
     const receipt: ReceiptData = {
       company: data.company, register: data.register, ref: device_ref, number: null, date: new Date(created_at), cashier, customer: customerName, isRefund: !!refund, offline: isOffline, currency: cur,
-      lines: saleLines.map((l) => ({ name: l.name, qty: l.qty, price: l.price, discount: l.discount, total: lineTotal(l), rate: l.rate })),
+      lines: saleLines.map((l) => ({ name: l.name, qty: l.qty, price: l.price, discount: l.discount, off: l.off, total: lineTotal(l), rate: l.rate })),
+      saleDiscount: !refund && saleOff > 0 ? { off: saleOff, pct: saleDisc?.pct ?? null } : null,
       payments: tenders.map((t) => ({ method: t.method, amount: t.amount })), change: Math.max(change, 0), fiscal: atk?.receipt ?? null,
       loyalty: usedCard ? { holder: usedCard.holder, number: usedCard.number, discount: saved, redeemed: spent || undefined, earned: earned || undefined,
                             balance: usedCard.program.kind === 'points' ? usedCard.points - spent + earned : undefined } : null,
@@ -818,7 +856,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
               {l.sku && <span className="block truncate text-[11.5px] text-muted-foreground tabular">{l.sku}</span>}</span>
             <span className="text-right font-semibold tabular">{formatQtyOf(num(l.qty), l.variant_id)}</span>
             <span className="text-right tabular">{formatMoney(l.price)}</span>
-            <span className="text-right text-[13px] text-primary tabular">{l.discount ? `−${Math.round(l.discount * 100) / 100}%` : ''}</span>
+            <span className="text-right text-[13px] text-primary tabular">{[l.discount ? `−${Math.round(l.discount * 100) / 100}%` : '', l.off ? `−${formatMoney(l.off)}` : ''].filter(Boolean).join(' ')}</span>
             <span className="text-right font-semibold tabular">{formatMoney(lineTotal(l))}</span>
           </div>
         ))}
@@ -1074,7 +1112,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
                 className={cn('grid cursor-pointer grid-cols-[1fr_auto] gap-x-3 border-b px-4 py-2.5', selected === l.key ? 'bg-primary/5 ring-1 ring-inset ring-primary/30' : 'hover:bg-muted/40')}>
                 <div className="min-w-0">
                   <div className="truncate text-[13px] font-medium">{l.name}</div>
-                  <div className="text-xs text-muted-foreground tabular">{num(l.qty)} × {formatMoney(l.price)}{l.discount ? <span className="text-primary"> · −{Math.round(l.discount * 100) / 100}%{l.card ? ` ${t('card')}` : ''}{(l as PricedLine).promo ? ` ${(l as PricedLine).promo!.name}` : ''}</span> : null}</div>
+                  <div className="text-xs text-muted-foreground tabular">{num(l.qty)} × {formatMoney(l.price)}{l.discount ? <span className="text-primary"> · −{Math.round(l.discount * 100) / 100}%{l.card ? ` ${t('card')}` : ''}{(l as PricedLine).promo ? ` ${(l as PricedLine).promo!.name}` : ''}</span> : null}{l.off ? <span className="text-primary"> · −{formatMoney(l.off)}</span> : null}</div>
                 </div>
                 <div className="text-right text-[15px] font-semibold tabular">{formatMoney(lineTotal(l))}</div>
                 {selected === l.key && (
@@ -1097,6 +1135,11 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
               </div>
             )}
             <div className="flex justify-between text-[13px] text-muted-foreground"><span>{t('{a} lines · {b} items', { a: lines.length, b: num(itemsCount) })}</span><span className="tabular">{t('incl. VAT {amount}', { amount: formatMoney(vat) })}</span></div>
+            <div className="mt-1 flex items-center justify-between text-[13px]">
+              <Button size="sm" variant="ghost" className="-ml-2 h-7 px-2 text-primary" disabled={!lines.length || !!redeem} onClick={() => setDialog('sale-discount')}>
+                <BadgePercent /> {saleOff > 0 ? (saleDisc?.pct ? t('Discount on the total {pct}%', { pct: saleDisc.pct }) : t('Discount on the total')) : t('Discount on the total…')}</Button>
+              {saleOff > 0 && <span className="font-medium tabular text-destructive">−{formatMoney(saleOff)}</span>}
+            </div>
             <div className="mt-1 flex items-baseline justify-between">
               <span className="text-sm font-medium">{t('Total with VAT|till')}</span>
               <span className="text-[34px] font-semibold leading-none tracking-[-0.02em] tabular">{formatMoney(total, cur)}</span>
@@ -1123,7 +1166,11 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
           onCancel={() => { setPendingVoid(null); setDialog(null); focusSearch() }}
           onApproved={(a) => { setVoidApproval(a); commitVoid(pendingVoid, a.approval); setPendingVoid(null); setDialog(null); focusSearch() }} />
       )}
-      {dialog === 'line' && selectedLine && <LineDialog line={selectedLine} maxDiscount={maxDiscount} canDiscount={(d) => d <= maxDiscount || can('pos.approve')}
+      {dialog === 'sale-discount' && <SaleDiscountDialog value={saleDisc} maxDiscount={maxDiscount} currency={cur}
+        subtotal={r2(carded.reduce((a, l) => a + lineTotal(l), 0))}
+        allowed={(off) => can('pos.approve') || carded.every((l) => { const b = Math.max(lineTotal(l), 0), sum = carded.reduce((a, x) => a + Math.max(lineTotal(x), 0), 0); return sum <= 0 || offPct({ ...l, share: off * b / sum }) <= maxDiscount + 0.01 })}
+        onClose={(v) => { if (v !== undefined) setSaleDisc(v); setDialog(null); focusSearch() }} />}
+      {dialog === 'line' && selectedLine && <LineDialog line={selectedLine} maxDiscount={maxDiscount} canDiscount={(d) => d <= maxDiscount + 0.01 || can('pos.approve')}
         onClose={(p) => { if (p) updateLine(selectedLine.key, p); setDialog(null); focusSearch() }} onRemove={() => { removeLine(selectedLine.key); setDialog(null); focusSearch() }} />}
       {dialog === 'refund' && <RefundDialog data={data} currency={cur} onClose={() => { setDialog(null); focusSearch() }}
         onRefund={(of, ls, method, cancelReason, reason) => {
@@ -1449,20 +1496,69 @@ function CustomerDialog({ data, value, onClose }: { data: TillData; value: strin
 function LineDialog({ line, maxDiscount, canDiscount, onClose, onRemove }: { line: Line; maxDiscount: number; canDiscount: (d: number) => boolean; onClose: (p?: Partial<Line>) => void; onRemove: () => void }) {
   const [qty, setQty] = React.useState(String(line.qty))
   const [disc, setDisc] = React.useState(String(line.discount || ''))
-  const d = num(disc)
-  const allowed = canDiscount(d)
-  const valid = num(qty) > 0 && d >= 0 && d <= 100 && allowed
+  const [off, setOff] = React.useState(line.off ? String(line.off) : '')
+  const d = num(disc), o = r2(num(off))
+  const next = { qty: num(qty), price: line.price, discount: d, off: o }
+  const afterPct = r2(next.qty * line.price * (1 - d / 100))
+  // the limit is on everything the line's discounts take, the one in % and the one in euro together
+  const allowed = canDiscount(offPct(next))
+  const valid = num(qty) > 0 && d >= 0 && d <= 100 && o >= 0 && o <= afterPct && allowed
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-sm">
         <DialogHeader><DialogTitle className="truncate pr-6">{line.name}</DialogTitle><DialogDescription>{line.sku} · {t('{price} each, with VAT', { price: formatMoney(line.price) })}</DialogDescription></DialogHeader>
-        <form className="grid grid-cols-2 gap-3" onSubmit={(e) => { e.preventDefault(); if (valid) onClose({ qty: num(qty), discount: d }) }}>
-          <div className="grid gap-1.5"><Label htmlFor="ln-q">{t('Quantity')}</Label><Input id="ln-q" autoFocus inputMode="decimal" className="h-12 text-right text-lg tabular" value={qty} onChange={(e) => setQty(e.target.value.replace(',', '.'))} onFocus={(e) => e.target.select()} /></div>
+        <form className="grid grid-cols-2 gap-3" onSubmit={(e) => { e.preventDefault(); if (valid) onClose({ qty: num(qty), discount: d, off: o || undefined }) }}>
+          <div className="col-span-2 grid gap-1.5"><Label htmlFor="ln-q">{t('Quantity')}</Label><Input id="ln-q" autoFocus inputMode="decimal" className="h-12 text-right text-lg tabular" value={qty} onChange={(e) => setQty(e.target.value.replace(',', '.'))} onFocus={(e) => e.target.select()} /></div>
           <div className="grid gap-1.5"><Label htmlFor="ln-d">{t('Discount %')}</Label><Input id="ln-d" inputMode="decimal" className="h-12 text-right text-lg tabular" value={disc} onChange={(e) => setDisc(e.target.value.replace(',', '.'))} placeholder="0" /></div>
+          <div className="grid gap-1.5"><Label htmlFor="ln-o">{t('Discount in €')}</Label><Input id="ln-o" inputMode="decimal" className="h-12 text-right text-lg tabular" value={off} onChange={(e) => setOff(e.target.value.replace(',', '.'))} placeholder="0,00" /></div>
           <div className="col-span-2 flex flex-wrap gap-1.5">{[5, 10, 15, 20].map((p) => <Button key={p} type="button" variant="outline" size="sm" onClick={() => setDisc(String(p))}>{p}%</Button>)}</div>
+          {o > afterPct && <p className="col-span-2 text-[13px] text-destructive">{t('The discount is more than the line itself.')}</p>}
           {!allowed && <p className="col-span-2 text-[13px] text-destructive">{t('Discounts above {pct}% need a manager.', { pct: maxDiscount })}</p>}
-          <div className="col-span-2 flex justify-between text-[13px]"><span className="text-muted-foreground">{t('Line total, with VAT')}</span><span className="font-semibold tabular">{formatMoney(lineTotal({ qty: num(qty), price: line.price, discount: d }))}</span></div>
+          <div className="col-span-2 flex justify-between text-[13px]"><span className="text-muted-foreground">{t('Line total, with VAT')}</span><span className="font-semibold tabular">{formatMoney(lineTotal(next))}</span></div>
           <div className="col-span-2 flex gap-2"><Button type="button" variant="ghost" className="text-destructive" onClick={onRemove}><Trash2 /> {t('Remove')}</Button><Button type="submit" className="ml-auto" disabled={!valid}>{t('Apply')}</Button></div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/** a discount on the whole sale: a percentage or an amount in euro, shared out over the lines */
+function SaleDiscountDialog({ value, subtotal, maxDiscount, currency, allowed, onClose }: {
+  value: SaleDiscount | null; subtotal: number; maxDiscount: number; currency: string; allowed: (off: number) => boolean; onClose: (v?: SaleDiscount | null) => void
+}) {
+  const [kind, setKind] = React.useState<'pct' | 'value'>(value?.value ? 'value' : 'pct')
+  const [amount, setAmount] = React.useState(String(value?.pct ?? value?.value ?? ''))
+  const n = num(amount)
+  const off = kind === 'pct' ? r2(subtotal * n / 100) : r2(n)
+  const ok = allowed(off)
+  const valid = n > 0 && off <= subtotal && (kind === 'value' || n <= 100) && ok
+  const input = React.useRef<HTMLInputElement>(null)
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-sm" onOpenAutoFocus={(e) => { e.preventDefault(); input.current?.focus() }}>
+        <DialogHeader><DialogTitle>{t('Discount on the total')}</DialogTitle>
+          <DialogDescription>{t('On the whole sale, after the discounts of the lines. It is shared out over the items, so the VAT of each stays right.')}</DialogDescription></DialogHeader>
+        <form className="grid gap-3" onSubmit={(e) => { e.preventDefault(); if (valid) onClose(kind === 'pct' ? { pct: n } : { value: r2(n) }) }}>
+          <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1 text-sm" role="radiogroup" aria-label={t('Kind')}>
+            {(['pct', 'value'] as const).map((k) => (
+              <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => { setKind(k); input.current?.focus() }}
+                className={cn('rounded-md px-3 py-1.5', kind === k ? 'bg-card font-medium shadow-sm' : 'text-muted-foreground')}>{k === 'pct' ? t('In %') : t('In €')}</button>
+            ))}
+          </div>
+          <Input ref={input} inputMode="decimal" className="h-12 text-right text-lg tabular" value={amount} aria-label={t('Discount on the total')}
+            onChange={(e) => setAmount(e.target.value.replace(',', '.'))} onFocus={(e) => e.target.select()} placeholder={kind === 'pct' ? '0' : '0,00'} />
+          {kind === 'pct' && <div className="flex flex-wrap gap-1.5">{[5, 10, 15, 20].map((p) => <Button key={p} type="button" variant="outline" size="sm" onClick={() => setAmount(String(p))}>{p}%</Button>)}</div>}
+          <div className="grid gap-1 text-[13px]">
+            <div className="flex justify-between"><span className="text-muted-foreground">{t('Subtotal, with VAT')}</span><span className="tabular">{formatMoney(subtotal, currency)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{t('Discount on the total')}</span><span className="tabular text-destructive">−{formatMoney(Math.min(off, subtotal), currency)}</span></div>
+            <div className="flex justify-between font-semibold"><span>{t('Total with VAT|till')}</span><span className="tabular">{formatMoney(Math.max(subtotal - off, 0), currency)}</span></div>
+          </div>
+          {off > subtotal && <p className="text-[13px] text-destructive">{t('The discount is more than the sale itself.')}</p>}
+          {!ok && off <= subtotal && <p className="text-[13px] text-destructive">{t('Discounts above {pct}% need a manager.', { pct: maxDiscount })}</p>}
+          <DialogFooter className="sm:justify-between">
+            <Button type="button" variant="ghost" className="text-destructive" disabled={!value} onClick={() => onClose(null)}><Trash2 /> {t('Remove the discount')}</Button>
+            <Button type="submit" disabled={!valid}>{t('Apply')}</Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

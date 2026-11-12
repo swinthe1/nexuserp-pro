@@ -22,7 +22,9 @@ export interface ReceiptData {
   company: { name: string; legal_name: string | null; tax_number: string | null; address: string | null }
   register: { code: string; name: string; receipt_header: string | null; receipt_footer: string | null; paper_mm?: number | null }
   ref: string; number?: string | null; date: Date; cashier: string; customer?: string | null; isRefund?: boolean; offline?: boolean
-  lines: { name: string; qty: number; price: number; discount: number; total: number; rate: number }[]
+  lines: { name: string; qty: number; price: number; discount: number; total: number; rate: number; off?: number }[]
+  /** a discount on the whole sale, already inside the lines' totals */
+  saleDiscount?: { off: number; pct?: number | null } | null
   payments: { method: string; amount: number }[]; change: number; currency: string
   /** loyalty card used on this receipt */
   loyalty?: { holder: string; number: string; discount: number; redeemed?: number; earned?: number; balance?: number } | null
@@ -39,7 +41,7 @@ export function receiptHtml(r: ReceiptData) {
     const v = byRate.get(l.rate) ?? { base: 0, tax: 0 }
     v.base += base; v.tax += l.total - base; byRate.set(l.rate, v)
   }
-  const lines = r.lines.map((l) => `<tr><td colspan="2">${esc(l.name)}</td></tr><tr><td class="muted">&nbsp;${esc(qty(l.qty))} × ${money(l.price)}${l.discount ? ` −${l.discount}%` : ''}</td><td class="r">${money(l.total)}</td></tr>`).join('')
+  const lines = r.lines.map((l) => `<tr><td colspan="2">${esc(l.name)}</td></tr><tr><td class="muted">&nbsp;${esc(qty(l.qty))} × ${money(l.price)}${l.discount ? ` −${l.discount}%` : ''}${l.off ? ` −${money(l.off)}` : ''}</td><td class="r">${money(l.total)}</td></tr>`).join('')
   const taxes = [...byRate.entries()].sort((a, b) => b[0] - a[0]).map(([rate, v]) => `<tr><td class="muted">${esc(t('VAT {rate}% on {base}', { rate, base: money(v.base) }))}</td><td class="r muted">${money(v.tax)}</td></tr>`).join('')
   const pays = r.payments.map((p) => `<tr><td>${esc(method(p.method))}</td><td class="r">${money(p.amount)}</td></tr>`).join('')
   return `<div class="c b big">${esc(r.company.name)}</div>
@@ -47,7 +49,7 @@ export function receiptHtml(r: ReceiptData) {
     ${r.register.receipt_header ? `<div class="c muted">${esc(r.register.receipt_header)}</div>` : ''}
     <hr><div>${r.isRefund ? `<b>${esc(t('REFUND'))}</b><br>` : ''}${esc(t('Receipt {number}', { number: r.number ?? r.ref }))}${r.number && r.number !== r.ref ? `<br><span class="muted">${esc(t('Till ref {ref}', { ref: r.ref }))}</span>` : ''}<br>
     ${esc(stamp(r.date))} · ${esc(r.register.name)}<br>${esc(t('Cashier: {name}', { name: r.cashier }))}${r.customer ? `<br>${esc(t('Customer: {name}', { name: r.customer }))}` : ''}</div><hr>
-    <table>${lines}</table><hr>
+    <table>${lines}${r.saleDiscount && r.saleDiscount.off > 0 ? `<tr><td>${esc(r.saleDiscount.pct ? t('Of which discount on the total {pct}%', { pct: r.saleDiscount.pct }) : t('Of which discount on the total'))}</td><td class="r">−${money(r.saleDiscount.off)}</td></tr>` : ''}</table><hr>
     <table><tr class="b big"><td>${esc(t('TOTAL {currency}', { currency: r.currency }))}</td><td class="r">${money(total)}</td></tr>${taxes}</table><hr>
     <table>${pays}${r.change > 0 ? `<tr class="b"><td>${esc(t('Change'))}</td><td class="r">${money(r.change)}</td></tr>` : ''}</table>
     ${r.loyalty ? `<hr><div>${esc(t('Card {number}', { number: '•••• ' + r.loyalty.number.slice(-4) }))} · ${esc(r.loyalty.holder)}</div><table>
