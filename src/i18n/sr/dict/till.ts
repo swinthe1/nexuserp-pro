@@ -1695,4 +1695,6 @@ export default {
   "The receipt as its copy prints.": "Kupon kako se štampa njegova kopija.",
   "See a receipt again or print its copy. The copy of a fiscal coupon is marked as a copy, is not sent to ATK again, and each print is written into the SEF log.": "Pogledajte kupon ponovo ili odštampajte njegovu kopiju. Kopija fiskalnog kupona je označena kao kopija, ne šalje se ponovo ATK-u, a svako štampanje se upisuje u dnevnik SEF-a.",
   "copies printed: {n}": "odštampanih kopija: {n}",
+  "Another cashier's shift is open": "Otvorena je smena drugog kasira",
+  "Each cashier sells in her own shift. Whoever opened this one closes it with her count, then you open yours.": "Svaki kasir prodaje u svojoj smeni. Ko je otvorio ovu, zatvara je svojim brojanjem, pa vi otvarate svoju.",
 } satisfies Dict

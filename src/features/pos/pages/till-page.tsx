@@ -148,8 +148,9 @@ function NotYourShift({ data }: { data: TillData }) {
     <Centered>
       <div className="rounded-xl border bg-card p-6 text-left shadow-sm">
         <div className="text-[13px] text-muted-foreground">{data.register.name} · {data.session!.number}</div>
-        <h1 className="mt-0.5 text-xl font-semibold">{t('This shift is {name}\'s', { name: data.session!.opener ?? '—' })}</h1>
-        <p className="mt-1 text-[13px] text-muted-foreground">{t('Each cashier sells in her own shift. {name} closes this one with her count, then you open yours.', { name: data.session!.opener ?? '—' })}</p>
+        <h1 className="mt-0.5 text-xl font-semibold">{data.session!.opener ? t('This shift is {name}\'s', { name: data.session!.opener }) : t('Another cashier\'s shift is open')}</h1>
+        <p className="mt-1 text-[13px] text-muted-foreground">{data.session!.opener ? t('Each cashier sells in her own shift. {name} closes this one with her count, then you open yours.', { name: data.session!.opener })
+          : t('Each cashier sells in her own shift. Whoever opened this one closes it with her count, then you open yours.')}</p>
         <div className="mt-5 flex gap-2">
           <Button variant="outline" asChild><Link to="/pos">{t('Back')}</Link></Button>
           {can('pos.approve') && <Button className="flex-1" onClick={() => setClosing(true)}>{t('Close her shift (manager)')}</Button>}

@@ -213,4 +213,6 @@ export default {
   "The receipt as its copy prints.": "Kuponi ashtu siç shtypet kopja e tij.",
   "See a receipt again or print its copy. The copy of a fiscal coupon is marked as a copy, is not sent to ATK again, and each print is written into the SEF log.": "Shikoni përsëri një kupon ose printoni kopjen e tij. Kopja e kuponit fiskal del me shënimin e kopjes, nuk dërgohet përsëri në ATK, dhe çdo printim shkruhet në regjistrin e SEF-it.",
   "copies printed: {n}": "kopje të printuara: {n}",
+  "Another cashier's shift is open": "Është i hapur ndërrimi i një arkëtari tjetër",
+  "Each cashier sells in her own shift. Whoever opened this one closes it with her count, then you open yours.": "Çdo arkëtar shet në ndërrimin e vet. Kush e hapi këtë e mbyll me numërimin e vet, pastaj ti hap tëndin.",
 } satisfies Dict
