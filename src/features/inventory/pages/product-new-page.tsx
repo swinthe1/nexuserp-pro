@@ -2,6 +2,7 @@ import { categoryTreeOptions } from '@/features/inventory/components/category-pi
 import { Hint } from '@/components/help'
 import { zodResolver } from '@/lib/zod-resolver'
 import { ChevronDown, Plus, Sparkles, Trash2, X } from 'lucide-react'
+import { useCompany } from '@/app/company-provider'
 import * as React from 'react'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
@@ -40,14 +41,9 @@ function buildMatrix(attrs: AttributeWithValues[], selected: Record<string, stri
   )
 }
 
-/** a code from the name: the first letters of its words and its numbers ("Artikulli Test me TVSH 18%" → ART-TES-TVS-18) */
-function codeFromName(name: string) {
-  const words = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().match(/[A-Z0-9]+/g) ?? []
-  return words.filter((w) => /\d/.test(w) || w.length > 2).slice(0, 4).map((w) => (/^\d+$/.test(w) ? w : w.slice(0, 3))).join('-').slice(0, 40)
-}
-
 export function ProductNewPage() {
   const navigate = useNavigate()
+  const { companyId } = useCompany()
   const units = useUnits()
   const categories = useCategories()
   const taxes = useTaxCodes()
@@ -120,8 +116,14 @@ export function ProductNewPage() {
     if (vs.length === 1 && vs[0]!.key === 'default') form.setValue('variants.0.sku', (code || '').toUpperCase())
   }, [code, form])
 
+  // the item number: the next one after the company's highest, until the person types their own
   const codeTyped = React.useRef(false)
-  const retry = React.useRef({ base: '', n: 0 })
+  const retry = React.useRef(0)
+  const nextCode = React.useCallback(async () => unwrap(await supabase.rpc('product_next_code' as never, { p_company: companyId } as never)) as unknown as string, [companyId])
+  React.useEffect(() => {
+    if (!companyId) return
+    void nextCode().then((c) => { if (!codeTyped.current && !form.getValues('code')) form.setValue('code', c) }, () => undefined)
+  }, [companyId, nextCode, form])
   const onSubmit = form.handleSubmit(async (v) => {
     try {
       const id = await create.mutateAsync({
@@ -149,12 +151,11 @@ export function ProductNewPage() {
       const code = (e as { code?: string }).code
       if (code === '23505' || String((e as { message?: string }).message ?? '').includes('code is already used')) {
         // a code the program wrote itself gets the next number and the save is tried again; one the person typed is theirs to change
-        if (!codeTyped.current && retry.current.n < 9) {
-          if (!retry.current.n) retry.current.base = v.code
-          retry.current.n++
-          form.setValue('code', `${retry.current.base.slice(0, 37)}-${retry.current.n + 1}`)
-          setTimeout(() => void onSubmit(), 0)
-          return
+        // a number the program gave was taken meanwhile by someone else: the next one, and the save is tried again
+        if (!codeTyped.current && retry.current < 5) {
+          retry.current++
+          const next = await nextCode().catch(() => null)
+          if (next && next !== v.code) { form.setValue('code', next); setTimeout(() => void onSubmit(), 0); return }
         }
         form.setError('code', { message: t('This code is already used by another product') })
       }
@@ -194,12 +195,10 @@ export function ProductNewPage() {
             )}
             <div className="grid gap-4 sm:grid-cols-[1fr_180px]">
               <FormField control={form.control} name="name" render={({ field }) => (
-                <FormItem><FormLabel>{t('Name')}</FormLabel><FormControl><Input placeholder={t('T-Shirt Basic')} {...field}
-                  // the code writes itself from the name, until the person types a code of their own
-                  onChange={(e) => { field.onChange(e); if (!codeTyped.current) form.setValue('code', codeFromName(e.target.value), { shouldValidate: form.formState.isSubmitted }) }} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>{t('Name')}</FormLabel><FormControl><Input placeholder={t('T-Shirt Basic')} {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="code" render={({ field }) => (
-                <FormItem><FormLabel>{t('Code')}</FormLabel><FormControl><Input placeholder={t('TEE-BASIC')} {...field} onChange={(e) => { codeTyped.current = e.target.value !== ''; field.onChange(e.target.value.toUpperCase()) }} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>{t('Code')}</FormLabel><FormControl><Input placeholder="1001" {...field} onChange={(e) => { codeTyped.current = e.target.value !== ''; field.onChange(e.target.value.toUpperCase()) }} /></FormControl><FormMessage /></FormItem>
               )} />
             </div>
             <div className="grid gap-4 sm:grid-cols-3">

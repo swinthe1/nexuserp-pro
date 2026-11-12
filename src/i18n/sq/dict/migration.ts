@@ -13,7 +13,7 @@ export default {
   'Balances, open invoices and stock are taken as they stand on the cut-over date; from that day on the client works only in DrisPRO. Export each list from the old program to Excel on that date.':
     'Saldot, faturat e hapura dhe stoku merren siç janë në datën e kalimit; nga ajo ditë klienti punon vetëm në DrisPRO. Eksportoni çdo listë nga programi i vjetër në Excel në atë datë.',
   'Check the totals': 'Kontrolli i totaleve',
-  'Codes, names, units, prices and VAT of every item.': 'Kodet, emërtimet, njësitë, çmimet dhe TVSH-ja e çdo artikulli.',
+  'Codes, names, units, prices and VAT of every item.': 'Shifrat, emërtimet, njësitë, çmimet dhe TVSH-ja e çdo artikulli.',
   'Customers and vendors with their NUI/NIPT, before their open invoices.': 'Klientët dhe furnitorët me NUI/NIPT, para faturave të tyre të hapura.',
   'Only if the company runs payroll here.': 'Vetëm nëse kompania i llogarit pagat këtu.',
   'Quantity and cost per item on the cut-over date, one file per warehouse.': 'Sasia dhe kostoja e çdo artikulli në datën e kalimit, një skedar për çdo njësi.',

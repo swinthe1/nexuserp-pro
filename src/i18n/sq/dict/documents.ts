@@ -72,7 +72,7 @@ export default {
   'right': 'djathtë',
   'Colour': 'Ngjyra',
   'Another colour': 'Ngjyrë tjetër',
-  'Item codes': 'Kodet e artikujve',
+  'Item codes': 'Shifrat e artikujve',
   'Discount column': 'Kolona e zbritjes',
   'Bank accounts (on invoices and offers)': 'Llogaritë bankare (te faturat dhe ofertat)',
   'Places to sign': 'Vendet për nënshkrim',

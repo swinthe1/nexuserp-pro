@@ -74,7 +74,7 @@ export default {
   // document types
   "Credit Note": "Notë krediti",
   "Customer Payment": "Arkëtim nga klienti",
-  "Customer code": "Kodi i klientit",
+  "Customer code": "Shifra e klientit",
   "Cycle Count": "Numërim i pjesshëm",
   "Delivery Route": "Itinerar dërgimi",
   "Fixed Asset": "Aktiv afatgjatë",
@@ -98,7 +98,7 @@ export default {
   "Vendor Bill": "Faturë blerjeje",
   "Vendor Credit Note": "Notë krediti nga furnitori",
   "Vendor Payment": "Pagesë furnitori",
-  "Vendor code": "Kodi i furnitorit",
+  "Vendor code": "Shifra e furnitorit",
   "Warehouse Task": "Detyrë njësi",
   "Work Order": "Urdhër pune",
   "Z-Report": "Raporti Z",

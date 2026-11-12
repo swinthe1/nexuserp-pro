@@ -71,7 +71,7 @@ export default {
   'Every movement of an item with the quantity and the value after each: goods in, sales, returns, transfers, counts.':
     'Çdo lëvizje e artikullit me sasinë dhe vlerën pas secilës: hyrje, shitje, kthime, transferime, numërime.',
   'Choose an item': 'Zgjidhni artikullin',
-  'Choose an item (name, code or barcode)': 'Zgjidhni artikullin (emri, kodi ose barkodi)',
+  'Choose an item (name, code or barcode)': 'Zgjidhni artikullin (emri, shifra ose barkodi)',
   'Movement': 'Lëvizja',
   'Partner / warehouse': 'Partneri / njësia',
   'Goods in': 'Hyrje malli',

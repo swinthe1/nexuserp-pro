@@ -20181,6 +20181,12 @@ export type Database = {
         }
         Returns: Json
       }
+      product_next_code: {
+        Args: {
+          p_company: string
+        }
+        Returns: string
+      }
       product_opening_stock: {
         Args: {
           p_product: string

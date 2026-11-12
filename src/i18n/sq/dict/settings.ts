@@ -161,7 +161,7 @@ export default {
   'Invoicing and payments': 'Faturimi dhe pagesat',
   'Issued to the certified software.': 'I dhënë softuerit të certifikuar.',
   'It can only move forward (now {n}), so no number is used twice.': 'Mund të shkojë vetëm përpara (tani {n}), që asnjë numër të mos përdoret dy herë.',
-  'Items you buy, make or sell. Rows with an existing SKU update that product.': 'Artikuj që blini, prodhoni ose shisni. Rreshtat me një kod (SKU) ekzistues e përditësojnë atë produkt.',
+  'Items you buy, make or sell. Rows with an existing SKU update that product.': 'Artikuj që blini, prodhoni ose shisni. Rreshtat me një shifër (SKU) ekzistuese e përditësojnë atë produkt.',
   'Joined': 'U bashkua',
   'Keep': 'Mbaje',
   'Last signed in': 'Hyrja e fundit',

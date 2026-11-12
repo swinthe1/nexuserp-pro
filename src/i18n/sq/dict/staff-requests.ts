@@ -21,7 +21,7 @@ export default {
   "barcode {code}": "barkodi {code}",
   "cost {amount}": "kosto {amount}",
   "stock-by-unit": "gjendja-sipas-njesive",
-  "supplier code {code}": "kodi i furnitorit {code}",
+  "supplier code {code}": "shifra e furnitorit {code}",
   "{name} is not in DrisPRO yet: it was sent for approval. Once it is made, the line is found.": "{name} nuk është ende në DrisPRO: u dërgua për miratim. Pasi të krijohet, rreshti gjendet.",
   "{n} items, on hand in each store and warehouse. Click an item to open its card.": "{n} artikuj, gjendja në çdo njësi. Kliko një artikull për ta hapur.",
   "{n} new items to approve": "{n} artikuj të rinj për miratim",

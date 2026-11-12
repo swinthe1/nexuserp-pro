@@ -69,7 +69,7 @@ export default {
   "Leave the walk-in customer for anonymous sales. A business customer's NIPT prints on the receipt.": "Lini klientin e rastit për shitje pa emër. NIPT-i i një klienti biznes printohet në kupon.",
   "Line total": "Totali i rreshtit",
   "NIPT": "NIPT",
-  "Name, code or NIPT": "Emri, kodi ose NIPT-i",
+  "Name, code or NIPT": "Emri, shifra ose NIPT-i",
   "Net of VAT": "Pa TVSH",
   "Next item × {n}": "Artikulli tjetër × {n}",
   "Next sale": "Shitja tjetër",

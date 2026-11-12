@@ -222,7 +222,7 @@ export default {
   'Updated': 'U përditësua',
   'Changed {fields}': 'Ndryshoi {fields}',
   'Changed {fields} and {n} more': 'Ndryshoi {fields} dhe {n} të tjera',
-  'Scan a barcode or type a code': 'Skanoni një barkod ose shkruani një kod',
+  'Scan a barcode or type a code': 'Skanoni një barkod ose shkruani një shifër',
   'Scan with the camera': 'Skano me kamerë',
   'Hold the barcode inside the frame.': 'Mbajeni barkodin brenda kornizës.',
   'On hand {a} · reserved {b} · available {c}': 'Gjendje {a} · të rezervuara {b} · në dispozicion {c}',

@@ -21,7 +21,7 @@ export default {
   'Sections': 'Seksionet',
   'Out of stock': 'Nuk ka në stok',
   'Few left': 'Pak të mbetura',
-  'Search by name, code or barcode': 'Kërko me emër, kod ose barkod',
+  'Search by name, code or barcode': 'Kërko me emër, shifër ose barkod',
   'prices with VAT': 'çmimet me TVSH',
   '{n} product': '{n} artikull',
   '{n} products': '{n} artikuj',

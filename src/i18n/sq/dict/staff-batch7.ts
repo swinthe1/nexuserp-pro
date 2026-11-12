@@ -32,7 +32,7 @@ export default {
   "Things in use": "Sende në përdorim",
   "Their value": "Vlera e tyre",
   "Counted this year": "Numëruar këtë vit",
-  "Code, name, serial number…": "Kodi, emri, numri serik…",
+  "Code, name, serial number…": "Shifra, emri, numri serik…",
   "small-inventory": "inventari-i-imet",
   "Print labels": "Printo etiketat",
   "Add the shelves, scales, chairs and tools of each unit, with who has them.": "Shtoni raftet, peshoret, karriget dhe mjetet e çdo njësie, me personin që i ka në ngarkim.",

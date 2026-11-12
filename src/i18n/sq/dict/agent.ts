@@ -80,7 +80,7 @@ export default {
   'Order saved on the phone; it goes when there is internet': 'Porosia u ruajt në telefon; dërgohet kur të ketë internet',
   'Order {number} waits for the manager: {why}': 'Porosia {number} pret menaxherin: {why}',
   'Order {number} sent · {amount}': 'Porosia {number} u dërgua · {amount}',
-  'Search a product or code': 'Kërko artikullin ose kodin',
+  'Search a product or code': 'Kërko artikullin ose shifrën',
   '{n} product in the order': '{n} artikull në porosi',
   '{n} products in the order': '{n} artikuj në porosi',
   'No product matches': 'Asnjë artikull nuk përputhet',

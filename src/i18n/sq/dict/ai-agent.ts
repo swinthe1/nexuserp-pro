@@ -17,7 +17,7 @@ export default {
   "Customers more than 30 days late get no goods on credit before they pay.": "Klientët me vonesë mbi 30 ditë nuk marrin mall me borxh pa paguar.",
   "A word or a name": "Fjalë ose emër",
   "What you mean when you say it": "Çka keni parasysh kur e thoni",
-  "When we say \"kafe\" we mean Kafe turke 200 g (code KAF-200).": "Kur themi \"kafe\" e kemi fjalën për Kafe turke 200 g (kodi KAF-200).",
+  "When we say \"kafe\" we mean Kafe turke 200 g (code KAF-200).": "Kur themi \"kafe\" e kemi fjalën për Kafe turke 200 g (shifra KAF-200).",
   "How we do it": "Si e bëjmë",
   "The steps of a job, with a title": "Hapat e një pune, me titull",
   "1. Count the cash. 2. Print the Z report. 3. Put the money in the safe and write the amount on the envelope.": "1. Numëro paratë. 2. Printo raportin Z. 3. Vendosi paratë në sef dhe shkruaje shumën në zarf.",
