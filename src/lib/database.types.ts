@@ -16889,6 +16889,12 @@ export type Database = {
         }
         Returns: Json
       }
+      atk_missing_numbers: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       atk_numbers_save: {
         Args: {
           p_company: string
@@ -16924,6 +16930,14 @@ export type Database = {
           p_order: string
         }
         Returns: Json
+      }
+      atk_report_stuck: {
+        Args: {
+          p_register: string
+          p_fiscal: Json
+          p_error: string
+        }
+        Returns: undefined
       }
       atk_settings_save: {
         Args: {

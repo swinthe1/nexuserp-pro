@@ -86,6 +86,8 @@ function emit(patch: Partial<typeof snapshot>) { snapshot = { ...snapshot, ...pa
 async function reload() { emit({ items: (await tx<QueuedSale[]>('queue', 'readonly', (s) => s.getAll() as IDBRequest<QueuedSale[]>)).sort((a, b) => a.created_at.localeCompare(b.created_at)) }) }
 
 export async function enqueue(sale: QueuedSale) {
+  // the browser is asked never to clear this till's storage by itself (sales waiting to be sent live there)
+  try { void navigator.storage?.persist?.() } catch { /* an older browser */ }
   await tx('queue', 'readwrite', (s) => s.put(sale))
   await reload()
   void syncNow()
@@ -101,7 +103,13 @@ export function pendingQty(registerId: string): Map<string, number> {
   }
   return out
 }
-export async function discard(clientUuid: string) { await tx('queue', 'readwrite', (s) => s.delete(clientUuid)); await reload() }
+/** a sale that carries a signed fiscal coupon is never thrown away: ATK must get it (Kërkesat, neni 25.5: no deleting, only corrections that can be audited) */
+export const isFiscal = (it: QueuedSale) => !!(it.payload as { fiscal?: unknown }).fiscal
+export async function discard(clientUuid: string) {
+  const it = snapshot.items.find((i) => i.client_uuid === clientUuid)
+  if (it && isFiscal(it)) throw new Error('A sale with a fiscal coupon cannot be discarded')
+  await tx('queue', 'readwrite', (s) => s.delete(clientUuid)); await reload()
+}
 export async function retry(clientUuid: string) {
   const it = snapshot.items.find((i) => i.client_uuid === clientUuid)
   if (it) { await tx('queue', 'readwrite', (s) => s.put({ ...it, status: 'pending', error: undefined })); await reload(); void syncNow() }
@@ -141,6 +149,9 @@ export function syncNow(): Promise<void> {
             }
           }
           await tx('queue', 'readwrite', (s) => s.put({ ...it, status: 'failed', error: msg, attempts: it.attempts + 1 }))
+          // a signed fiscal coupon the server refused: its trace goes to the SEF log on the server, so it is known even if this device is lost
+          const fiscal = (it.payload as { fiscal?: Record<string, unknown> | null }).fiscal
+          if (fiscal) void supabase.rpc('atk_report_stuck' as never, { p_register: it.register_id, p_fiscal: fiscal, p_error: msg } as never).then(() => undefined, () => undefined)
         }
       }
       if (snapshot.online) await flushTillLog().catch(() => undefined)

@@ -412,6 +412,8 @@ function QueueCard({ s }: { s: Setup }) {
     onSuccess: (n) => { if (!n) toast.success(t('Everything has reached ATK')) },
     onError: (e) => toast.error(describeError(e)),
   })
+  const gaps = useQuery({ queryKey: ['atk-gaps', companyId], enabled: !!companyId,
+    queryFn: async () => unwrap(await supabase.rpc('atk_missing_numbers' as never, { p_company: companyId } as never)) as unknown as { register_id: string; till: string; from: number; to: number; missing: number }[] })
   return (
     <Card>
       <CardHeader><CardTitle>{t('Coupons to ATK')}</CardTitle>
@@ -423,6 +425,16 @@ function QueueCard({ s }: { s: Setup }) {
           <StatCard label={t('Taken by ATK today')} value={s.queue.sent_today} />
         </div>
         <div><Button variant="outline" loading={exp.isPending} onClick={() => exp.mutate()}><Download /> {t('Download what has not reached ATK (CSV)')}</Button></div>
+        {/* a till's coupon numbers run one after another: a number that never arrived shows here */}
+        {(gaps.data?.length ?? 0) > 0 ? (
+          <div className="rounded-md border border-destructive/40 bg-destructive/[0.06] px-3 py-2 text-[13px]">
+            <div className="font-medium">{t('Coupon numbers that never arrived')}</div>
+            <ul className="mt-1 grid gap-0.5">{gaps.data!.map((g) => (
+              <li key={`${g.register_id}-${g.from}`}>{t('{till}: numbers {from} to {to} ({n})', { till: g.till, from: g.from, to: g.to, n: g.missing })}</li>
+            ))}</ul>
+            <div className="mt-1 text-muted-foreground">{t('Open the till on its computer with internet: the coupons waiting there are sent by themselves and leave this list.')}</div>
+          </div>
+        ) : gaps.data ? <p className="text-[13px] text-muted-foreground">{t('No coupon number is missing: every number of every till has arrived.')}</p> : null}
       </CardContent>
     </Card>
   )
@@ -435,6 +447,7 @@ type LogCheck = { ok: boolean; rows: number; broken: number[]; first_broken_at: 
 const KINDS: Record<string, string> = {
   started: msg('Till opened|log'), offline: msg('Internet lost|log'), online: msg('Internet back|log'), clock: msg('Clock off|log'),
   sent: msg('Sent to ATK|log'), failed: msg('Not taken by ATK|log'), change: msg('Change to the SEF|log'),
+  gap: msg('Coupon numbers missing|log'), stuck: msg('Coupon not taken by the server|log'),
 }
 const CHANGES: Record<string, string> = {
   fiscalization_no: msg('Fiscalization number (EDI)'), sef_enabled: msg('DrisPRO signs the till receipts'), environment: msg('Environment'),
@@ -443,7 +456,7 @@ const CHANGES: Record<string, string> = {
 const FILTERS: { v: string; l: string; kinds: string[] | null }[] = [
   { v: 'all', l: msg('Everything|log'), kinds: null },
   { v: 'sends', l: msg('Sends to ATK|log'), kinds: ['sent', 'failed'] },
-  { v: 'failed', l: msg('Errors|log'), kinds: ['failed', 'clock'] },
+  { v: 'failed', l: msg('Errors|log'), kinds: ['failed', 'clock', 'gap', 'stuck'] },
   { v: 'offline', l: msg('Interruptions|log'), kinds: ['offline', 'online', 'started'] },
   { v: 'change', l: msg('Changes to the SEF|log'), kinds: ['change'] },
 ]
@@ -457,6 +470,8 @@ function logText(r: LogRow) {
     case 'failed': return `${tServer(v('error')) || v('error_code')}${d.attempt ? ` · ${t('try {n}', { n: v('attempt') })}` : ''}`
     case 'online': return t('After {time} without internet · {n} sales were waiting', { time: dur(Number(d.offline_seconds) || 0), n: Number(d.waiting) || 0 })
     case 'clock': return t('The device clock was {s} s off', { s: v('offset_seconds') })
+    case 'gap': return t('Numbers {from} to {to} have not arrived ({n})', { from: v('from'), to: v('to'), n: v('missing') })
+    case 'stuck': return `${t('Signed on the till, refused by the server')}: ${tServer(v('error'))}`
     case 'started': return d.online === false ? t('Opened without internet') : ''
     case 'change': return `${t(CHANGES[v('what')] ?? v('what'))}: ${v('from') || '—'} → ${v('to') || '—'}`
     default: return ''

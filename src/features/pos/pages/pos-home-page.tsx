@@ -34,7 +34,7 @@ import { AccountingTab } from '@/features/finance/components/t-accounts'
 import { useLocations, useWarehouses } from '@/features/inventory/api'
 import { usePartners, usePriceLists } from '@/features/sales/api'
 import { cardBankLines, posKeys, xReport, useCashRules, useRegisters, useSaveRegister, useSessionControls, useSessionDetail, useSessionPayouts, useSessions, type Register, type SessionRow } from '../api'
-import { discard, retry, syncNow, useSyncState } from '../offline'
+import { discard, isFiscal, retry, syncNow, useSyncState } from '../offline'
 import { ShiftReviewCard } from './review-page'
 import { printReceipt, printZReport } from '../receipt'
 import type { FiscalHeader } from '../fiscal-receipt'
@@ -185,7 +185,9 @@ export function SyncPanel({ compact }: { compact?: boolean }) {
                   <TableCell className="w-[1%] whitespace-nowrap text-right">
                     {i.status === 'failed' && <>
                       <Button size="sm" variant="ghost" onClick={() => void retry(i.client_uuid)}>{t('Try again')}</Button>
-                      <Button size="sm" variant="ghost" className="text-destructive" onClick={() => { if (confirm(t('Discard {ref}? The sale will not reach the books.', { ref: i.device_ref }))) void discard(i.client_uuid) }}>{t('Discard')}</Button>
+                      {isFiscal(i)
+                        ? <span className="ml-1 text-xs text-muted-foreground" title={t('A sale with a fiscal coupon cannot be discarded: ATK must get it. Fix the cause and try again; it is in the SEF log already.')}>{t('Fiscal coupon: cannot be discarded')}</span>
+                        : <Button size="sm" variant="ghost" className="text-destructive" onClick={() => { if (confirm(t('Discard {ref}? The sale will not reach the books.', { ref: i.device_ref }))) void discard(i.client_uuid) }}>{t('Discard')}</Button>}
                     </>}
                   </TableCell>
                 </TableRow>
