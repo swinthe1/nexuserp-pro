@@ -30,10 +30,10 @@
   const $ = (id) => document.getElementById(id)
   const kind = q.get('kind') === 'till' ? 'Arkë' : 'Administratë'
   const TEXT = {
-    pending: ['Kompjuteri pret miratimin', 'Licenca e këtij kompjuteri u kërkua te furnitori i DrisPRO. Sapo ta miratojë, programi hapet vetë.', 'Në pritje', ''],
-    blocked: ['Ky kompjuter nuk ka licencë', 'Licenca e këtij kompjuteri është bllokuar. Pyesni furnitorin e DrisPRO.', 'I bllokuar', 'bad'],
+    pending: ['Kompjuteri pret miratimin', 'Licenca e këtij kompjuteri u kërkua te DrisPRO. Sapo të miratohet, programi hapet vetë.', 'Në pritje', ''],
+    blocked: ['Ky kompjuter nuk ka licencë', 'Licenca e këtij kompjuteri është bllokuar. Lidhuni me mbështetjen e DrisPRO.', 'I bllokuar', 'bad'],
     offline: ['Licenca duhet kontrolluar', 'Kanë kaluar më shumë se 7 ditë pa u kontrolluar licenca e këtij kompjuteri. Lidheni me internet dhe shtypni "Kontrollo tani".', 'Pa internet', 'bad'],
-    unknown: ['Kompjuteri nuk njihet', 'Serveri nuk e gjen më licencën e këtij kompjuteri: mund të jetë hequr nga furnitori i DrisPRO, ose programi është instaluar përsëri. Shtypni "Aktivizo përsëri" dhe shkruani kodin e licencës; të dhënat nuk preken.', 'I panjohur', 'bad'],
+    unknown: ['Kompjuteri nuk njihet', 'Serveri nuk e gjen më licencën e këtij kompjuteri: mund të jetë hequr nga DrisPRO, ose programi është instaluar përsëri. Shtypni "Aktivizo përsëri" dhe shkruani kodin e licencës; të dhënat nuk preken.', 'I panjohur', 'bad'],
   }[state] || ['Licenca e kompjuterit', '', '', '']
   $('title').textContent = TEXT[0]; $('text').textContent = TEXT[1]
   if (q.get('label')) {

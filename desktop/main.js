@@ -197,9 +197,9 @@ async function post(url, body, headers = {}) {
 }
 const SERVER_MSG = {
   'This licence code is not known': 'Ky kod licence nuk njihet. Kontrollojeni dhe provoni përsëri.',
-  'This licence is not active; ask your DrisPRO supplier': 'Kjo licencë nuk është aktive; pyesni furnitorin e DrisPRO.',
-  'Too many computers are waiting for approval; ask your DrisPRO supplier': 'Shumë kompjuterë presin miratimin; pyesni furnitorin e DrisPRO.',
-  'This computer is registered with another key': 'Ky kompjuter është regjistruar me çelës tjetër; pyesni furnitorin e DrisPRO.',
+  'This licence is not active; ask your DrisPRO supplier': 'Kjo licencë nuk është aktive; lidhuni me mbështetjen e DrisPRO.',
+  'Too many computers are waiting for approval; ask your DrisPRO supplier': 'Shumë kompjuterë presin miratimin; lidhuni me mbështetjen e DrisPRO.',
+  'This computer is registered with another key': 'Ky kompjuter është regjistruar me çelës tjetër; lidhuni me mbështetjen e DrisPRO.',
 }
 handle('drispro:activate', async (code) => {
   const c = String(code ?? '').trim().toUpperCase()
