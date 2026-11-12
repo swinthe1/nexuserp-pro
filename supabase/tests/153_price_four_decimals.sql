@@ -16,5 +16,19 @@ select t.ok((select count(*) from pg_class where relnamespace = 'public'::regnam
   and reloptions @> array['security_invoker=true'] and has_table_privilege('authenticated', oid, 'select') and not has_table_privilege('anon', oid, 'select')) = 2,
   'the two views over the price are back, with the caller''s rights');
 select t.ok((select count(*) from pg_trigger where tgname = 'trg_90_price_change' and not tgisinternal) = 2, 'a price change is still written down');
+select t.ok((select count(*) from information_schema.columns where table_schema = 'public' and numeric_scale = 6
+  and (table_name, column_name) in (('price_level_lines', 'old_price'), ('price_level_lines', 'new_price'), ('price_list_items', 'price'))) = 3,
+  'the levelling and the price list keep six decimals too');
+-- a change in the fifth decimal of the price without VAT is a change (0,33 -> 0,3333 on the shelf)
+select id as co from public.companies where name = 'Kontrolle Test' \gset
+select email as boss from public.profiles where is_super_admin limit 1 \gset
+select v.id as pv, p.id as pp from public.product_variants v join public.products p on p.id = v.product_id
+ where v.company_id = :'co' and v.sales_price_override is null and v.deleted_at is null and p.deleted_at is null limit 1 \gset
+update public.products set sales_price = 0.2825 where id = :'pp';
+set role authenticated;
+select t.login(:'boss');
+select public.price_level_quick(:'pv', 0.282458) \gset lv_
+reset role;
+select t.ok((select sales_price from public.products where id = :'pp') = 0.282458, 'a levelling from 0,2825 to 0,282458 changes the price');
 \set QUIET off
 select count(*) as assertions_passed from t.results;
