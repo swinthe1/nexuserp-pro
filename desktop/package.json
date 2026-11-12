@@ -1,14 +1,14 @@
 {
   "name": "drispro-desktop",
   "productName": "DrisPRO",
-  "version": "1.9.0",
+  "version": "2.53.6",
   "description": "DrisPRO për Windows dhe Mac: i gjithë aplikacioni, me printim direkt në printerët e kuponëve dhe të kuzhinës.",
   "author": "DrisPRO",
   "main": "main.js",
   "private": true,
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win nsis --x64 --publish never",
+    "dist": "node nsis-shqip.mjs && electron-builder --win nsis --x64 --publish never",
     "dist:mac": "electron-builder --mac --universal --publish never"
   },
   "devDependencies": {
@@ -51,7 +51,11 @@
       "guid": "16ba544e-9015-5059-ab77-250c11fafbcc",
       "installerSidebar": "build/installerSidebar.bmp",
       "uninstallerSidebar": "build/uninstallerSidebar.bmp",
-      "installerHeader": "build/installerHeader.bmp"
+      "installerHeader": "build/installerHeader.bmp",
+      "installerLanguages": [
+        "sq_AL"
+      ],
+      "uninstallDisplayName": "DrisPRO"
     },
     "afterSign": "adhoc-sign.js",
     "mac": {

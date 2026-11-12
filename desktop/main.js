@@ -59,7 +59,7 @@ function createWindow() {
   watchDownloads(win.webContents.session)
   if (!settings.licence) void win.loadFile(path.join(__dirname, 'activation.html'))
   // a computer known to be waiting or blocked does not open the program; the check below may let it in
-  else if (settings.device && settings.device.status !== 'active') showDevice(settings.device.status)
+  else if (settings.device && settings.device.status !== 'active') showDevice(settings.device.status || 'unknown')
   else void win.loadURL(settings.server)
   void startupDeviceCheck()
 }
@@ -278,7 +278,8 @@ async function pingDevice() {
   const d = settings.device
   if (!d?.id || !d.secret) return null
   const r = await rpc('device_ping', { p_device: d.id, p_secret: d.secret, p: machine() })
-  if (r.status === 'unknown') { settings = { ...settings, device: { secret: d.secret } }; writeSettings(settings); syncSupport(); return { status: 'unknown' } }
+  // the server no longer knows this computer (removed in the console, or another server): it says so and waits for a new activation
+  if (r.status === 'unknown') { settings = { ...settings, device: { secret: d.secret, status: 'unknown', name: d.name, kind: d.kind } }; writeSettings(settings); syncSupport(); return { status: 'unknown' } }
   return { ...keep(r), licenceOk: r.licence_ok !== false }
 }
 function showDevice(state) { if (win) void win.loadFile(path.join(__dirname, 'device.html'), { query: { state, label: settings.device?.label ?? '', name: settings.device?.name ?? '', kind: settings.device?.kind ?? '' } }) }
@@ -287,6 +288,8 @@ async function startupDeviceCheck() {
   if (!settings.licence) return
   try {
     // installed before computers had licences: it registers itself, approved, as what it looks like
+    // a computer the server stopped knowing is never let back in by itself: it is activated again with the licence code
+    if (settings.device && !settings.device.id && (settings.device.status === 'unknown' || settings.device.secret)) return showDevice('unknown')
     if (!settings.device?.id) {
       const kind = settings.fullScreen || settings.receiptPrinter || settings.drawer?.mode !== 'none' ? 'till' : 'office'
       await activateDevice(settings.licence, { kind, name: os.hostname(), migrated: true })
@@ -310,7 +313,10 @@ handle('drispro:device-check', async () => {
       if (settings.server.startsWith('http://')) { app.relaunch(); app.exit(0); return 'active' }
       void win.loadURL(settings.server); return 'active'
     }
-    return d?.status ?? 'unknown'
+    const st = d?.status ?? 'unknown'
+    // the page shows what the server said, whole: its title, its text and its buttons
+    if (onDevicePage()) showDevice(st)
+    return st
   } catch { return 'offline' }
 })
 
