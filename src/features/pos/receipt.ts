@@ -60,6 +60,11 @@ export function receiptHtml(r: ReceiptData) {
     ${r.offline ? `<hr><div class="c muted">${esc(t('Recorded offline — sent to the books when the till is back online.'))}</div>` : ''}
     <hr><div class="c muted">${esc(r.register.receipt_footer ?? 'Faleminderit! Thank you!')}</div>`
 }
+/** the receipt as a whole page, for showing it on the screen as it prints */
+export function receiptDoc(r: ReceiptData) {
+  const mm = paperOf(r.register.paper_mm)
+  return `<!doctype html><meta charset="utf-8"><style>${r.fiscal ? fiscalCss(mm) : css(mm)} body{margin:8px auto!important}</style>${receiptHtml(r)}`
+}
 export function printReceipt(r: ReceiptData) {
   const mm = paperOf(r.register.paper_mm)
   printHtml(receiptHtml(r), r.fiscal ? fiscalCss(mm) : css(mm), 'receipt')

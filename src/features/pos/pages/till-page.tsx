@@ -2,7 +2,7 @@ import { PageHelpButton, TourHost } from '@/components/help'
 import { TillTasks } from '@/features/tasks/components/till-tasks'
 import { whereElsewhere } from '@/features/inventory/where'
 import {
-  ArrowLeft, BadgePercent, Banknote, Camera, Check, CloudOff, CreditCard, Ellipsis, ListOrdered, LogOut, Minus, NotebookPen, Plus, Printer, ReceiptText, RotateCcw, ScanLine, Search,
+  ArrowLeft, BadgePercent, Banknote, Camera, Check, CloudOff, CreditCard, Ellipsis, Files, ListOrdered, LogOut, Minus, NotebookPen, Plus, Printer, ReceiptText, RotateCcw, ScanLine, Search,
   HandCoins, Lock, NotebookTabs, Pause, Pin, PinOff, ShieldCheck, Ticket, Trash2, UserRound, Users, Wallet, X,
 } from 'lucide-react'
 import * as React from 'react'
@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import { useAuth } from '@/app/auth-provider'
 import { useCompany } from '@/app/company-provider'
 import { CameraScanner, hasCamera, scanFeedback } from '@/components/scan-input'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { usePhone } from '@/hooks/use-phone'
@@ -35,7 +36,8 @@ import { CashCount, countedOf, countsToNotes, denomsOf } from '../cash-count'
 import { WaiterHandoverDialog, useWaitersOwing } from '../waiters'
 import type { WaiterOwes } from '../api'
 import { readScaleBarcode } from '@/lib/scale-barcode'
-import { printReceipt, printVoucher, printZReport, type ReceiptData } from '../receipt'
+import { printReceipt, printVoucher, printZReport, receiptDoc, type ReceiptData } from '../receipt'
+import { receiptCopy } from '../reprint'
 import { qrSvg, signAtkSale, useAtkState, waitForAtk } from '../atk'
 import { fiscalCss, fiscalReceiptHtml, paperOf, type FiscalPrint } from '../fiscal-receipt'
 import { clockNow, useClockCheck } from '../clock'
@@ -240,6 +242,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   // a coupon from the fiscal receipt book, written by hand while the till was down (UA 01/2026, neni 45)
   const [block, setBlock] = React.useState<{ no: string; at: Date } | null>(null)
   const [blockOpen, setBlockOpen] = React.useState(false)
+  const [copies, setCopies] = React.useState(false)
   // ATK's log: when this till was opened, lost and found the internet; its clock is set by the server's
   const waitingRef = React.useRef(0)
   waitingRef.current = sync.items.filter((i) => i.status === 'pending').length
@@ -920,6 +923,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
               <DropdownMenuItem onSelect={openRefund}><RotateCcw /> {t('Refund')}</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setDialog('voucher')}><Ticket /> {t('Sell a gift voucher')}</DropdownMenuItem>
               {data.atk?.required && <DropdownMenuItem onSelect={() => setBlockOpen(true)}><NotebookPen /> {t('From the receipt book')}</DropdownMenuItem>}
+              <DropdownMenuItem onSelect={() => setCopies(true)}><Files /> {t('The shift\'s receipts')}</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setDialog('cash')}><Wallet /> {t('Cash and payments')}</DropdownMenuItem>
               <DropdownMenuCheckboxItem checked={autoPrint} onCheckedChange={() => setAutoPrint((a) => { prefSet('pos.autoprint', a ? '0' : '1'); return !a })}>
                 <Printer className="mr-2 size-4" /> {t('Print a receipt automatically after each sale')}</DropdownMenuCheckboxItem>
@@ -942,6 +946,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
               <DropdownMenuItem onSelect={() => setDialog('voucher')}><Ticket /> {t('Sell a gift voucher')}</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setDialog('cash')}><Wallet /> {t('Cash and payments')}</DropdownMenuItem>
               {data.atk?.required && <DropdownMenuItem onSelect={() => setBlockOpen(true)}><NotebookPen /> {t('From the receipt book')}</DropdownMenuItem>}
+              <DropdownMenuItem onSelect={() => setCopies(true)}><Files /> {t('The shift\'s receipts')}</DropdownMenuItem>
               {waiters.restaurant && <DropdownMenuItem onSelect={() => setHandover(true)}><HandCoins /> {t('The waiters\' takings')}{waiters.owing.length > 0 ? ` (${waiters.owing.length})` : ''}</DropdownMenuItem>}
               <DropdownMenuItem onSelect={() => void printX()}><ReceiptText /> {t('X-report')}</DropdownMenuItem>
               <DropdownMenuCheckboxItem checked={autoPrint} onCheckedChange={() => setAutoPrint((a) => { prefSet('pos.autoprint', a ? '0' : '1'); return !a })}>
@@ -968,6 +973,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
           <Button size="sm" variant="ghost" onClick={() => setBlock(null)}>{t('Stop|action')}</Button>
         </div>
       )}
+      {copies && <ShiftReceiptsDialog sessionId={data.session!.id} registerId={data.register.id} paperMm={data.register.paper_mm} currency={cur} companyName={data.company.name} onClose={() => { setCopies(false); focusSearch() }} />}
       {blockOpen && <BlockDialog onClose={(b) => { setBlockOpen(false); if (b) { setBlock(b); setLines([]); setSelected(null) } focusSearch() }} />}
       {atkRefused > 0 && (
         <div role="alert" className="flex flex-wrap items-center gap-x-3 border-b border-destructive/30 bg-destructive/10 px-4 py-1.5 text-[13px] text-destructive">
@@ -1599,6 +1605,68 @@ function SaleDiscountDialog({ value, subtotal, maxDiscount, currency, allowed, o
 }
 
 /** a coupon written by hand from the fiscal receipt book while the till was fully down: its number and the time written on it */
+/** the shift's receipts, at the till: see one again or print its copy (a fiscal coupon's copy says "KOPJE E KUPONIT"; nothing goes to ATK again) */
+function ShiftReceiptsDialog({ sessionId, registerId, paperMm, currency, companyName, onClose }: { sessionId: string; registerId: string; paperMm?: number | null; currency: string; companyName: string; onClose: () => void }) {
+  type Row = { id: string; number: string; order_at: string; total: number; is_refund: boolean; coupon_type: string | null; coupon_no: string | null }
+  const [rows, setRows] = React.useState<Row[] | null>(null)
+  const [error, setError] = React.useState<string | null>(null)
+  const [busy, setBusy] = React.useState<string | null>(null)
+  const [seen, setSeen] = React.useState<ReceiptData | null>(null)
+  React.useEffect(() => {
+    let alive = true
+    void (async () => {
+      try {
+        const r = unwrap(await supabase.from('pos_orders').select('id, number, order_at, total, is_refund, coupon_type:atk->>type, coupon_no:atk->>coupon_id')
+          .eq('session_id', sessionId).order('order_at', { ascending: false }).limit(200).returns<Row[]>())
+        if (alive) setRows(r)
+      } catch (e) { if (alive) setError(navigator.onLine ? describeError(e) : t('The receipts of the shift open when the till is online again.')) }
+    })()
+    return () => { alive = false }
+  }, [sessionId])
+  const copy = async (id: string, show: boolean) => {
+    setBusy(id)
+    try {
+      const r = await receiptCopy(id, { registerId, paperMm, currency, companyName })
+      if (show) setSeen(r); else printReceipt(r)
+    } catch (e) { toast.error(describeError(e)) } finally { setBusy(null) }
+  }
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader><DialogTitle>{t('The shift\'s receipts')}</DialogTitle>
+          <DialogDescription>{t('See a receipt again or print its copy. The copy of a fiscal coupon is marked as a copy and is not sent to ATK again.')}</DialogDescription></DialogHeader>
+        {error ? <p className="text-[13px] text-warning">{error}</p> : !rows ? <p className="py-6 text-center text-[13px] text-muted-foreground">{t('Loading…')}</p>
+          : !rows.length ? <p className="py-6 text-center text-[13px] text-muted-foreground">{t('No receipts in this shift.')}</p> : (
+          <ul className="max-h-[60vh] divide-y overflow-y-auto rounded-lg border">
+            {rows.map((o) => (
+              <li key={o.id} className="flex items-center gap-3 px-3 py-2">
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium">{o.number} {o.coupon_type === '2' ? <Badge variant="destructive" className="ml-1">{t('Cancellation|coupon')}</Badge> : o.is_refund && <Badge variant="destructive" className="ml-1">{t('Refund')}</Badge>}</div>
+                  <div className="text-xs text-muted-foreground tabular">{formatDate(o.order_at, true)}{o.coupon_no ? ` · ${t('Coupon no.')} ${o.coupon_no}` : ''}</div>
+                </div>
+                <div className={cn('shrink-0 font-semibold tabular', (o.is_refund || o.coupon_type === '2') && 'text-destructive')}>{formatMoney(o.total, currency)}</div>
+                <Button size="sm" variant="ghost" disabled={busy === o.id} onClick={() => void copy(o.id, true)}><ReceiptText /> {t('See|receipt')}</Button>
+                <Button size="sm" variant="outline" disabled={busy === o.id} onClick={() => void copy(o.id, false)}><Printer /> {t('Reprint')}</Button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {seen && (
+          <Dialog open onOpenChange={(o) => { if (!o) setSeen(null) }}>
+            <DialogContent className="max-w-[26rem]">
+              <DialogHeader><DialogTitle>{seen.number ?? seen.ref}</DialogTitle><DialogDescription>{t('The receipt as its copy prints.')}</DialogDescription></DialogHeader>
+              <iframe title={t('The receipt as its copy prints.')} className="h-[65vh] w-full rounded-md border bg-white"
+                srcDoc={receiptDoc(seen)} />
+              <DialogFooter><Button variant="outline" onClick={() => setSeen(null)}>{t('Close')}</Button><Button onClick={() => { printReceipt(seen); setSeen(null) }}><Printer /> {t('Print')}</Button></DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+        <DialogFooter><Button variant="outline" onClick={onClose}>{t('Close')}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function BlockDialog({ onClose }: { onClose: (b?: { no: string; at: Date }) => void }) {
   const [no, setNo] = React.useState('')
   const now = clockNow()

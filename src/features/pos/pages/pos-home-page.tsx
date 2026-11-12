@@ -37,18 +37,12 @@ import { cardBankLines, posKeys, xReport, useCashRules, useRegisters, useSaveReg
 import { discard, isFiscal, retry, syncNow, useSyncState } from '../offline'
 import { ShiftReviewCard } from './review-page'
 import { printReceipt, printZReport } from '../receipt'
-import type { FiscalHeader } from '../fiscal-receipt'
-import { decodePosCoupon, fromBase64 } from '@/lib/atk/proto'
-import type { CouponPrint } from '@/lib/atk/coupon'
+import { receiptCopy } from '../reprint'
 
 const since = (iso: string) => {
   const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000)
   return m < 60 ? t('{m} min', { m }) : m < 1440 ? t('{h} h {m} min', { h: Math.floor(m / 60), m: m % 60 }) : tn(Math.floor(m / 1440), '{n} day', '{n} days')
 }
-
-type AtkReceipt = { atk: { env: 'test' | 'production'; details: string; qr: string; daily_no?: number | null; reason?: string | null; operator_no?: string | null; block_no?: string | null; print?: CouponPrint | null }
-  number: string; device_ref: string | null; order_at: string; nui: string | null; cashier: string | null; fiscal_status: string | null
-  register: { code: string; name: string; receipt_header: string | null; receipt_footer: string | null }; header: FiscalHeader }
 
 export function PosHomePage() {
   const navigate = useNavigate()
@@ -333,27 +327,7 @@ export function PosSessionPage() {
   const c = ctl.data
   const voids = c?.voids
   const reprint = async (orderId: string) => {
-    try {
-      // a fiscal coupon is printed again from what was signed, marked "KOPJE E KUPONIT"
-      const fr = unwrap(await supabase.rpc('atk_receipt', { p_order: orderId })) as unknown as AtkReceipt | null
-      if (fr?.atk?.details) {
-        printReceipt({ company: { name: fr.header.legal_name, legal_name: null, tax_number: fr.nui, address: null }, register: { ...fr.register, paper_mm: paper.data },
-          ref: fr.device_ref ?? fr.number, number: fr.number, date: new Date(fr.order_at), cashier: fr.cashier ?? '', currency: cur, lines: [], payments: [], change: 0,
-          fiscal: { env: fr.atk.env, nui: fr.nui ?? '', header: fr.header, operator: fr.cashier ?? '', operatorNo: fr.atk.operator_no ?? null,
-            coupon: decodePosCoupon(fromBase64(fr.atk.details)), qr: fr.atk.qr, dailyNo: fr.atk.daily_no ?? (Number(fr.device_ref?.split('-').at(-1)) || null), reason: fr.atk.reason ?? null,
-            offline: fr.fiscal_status !== 'fiscalized', copy: true, footer: fr.register.receipt_footer, blockNo: fr.atk.block_no ?? null, print: fr.atk.print ?? null } })
-        return
-      }
-      const o = unwrap(await supabase.from('pos_orders').select('number, device_ref, order_at, is_refund, change_given, partner:business_partners(name), lines:pos_order_lines(description, quantity, unit_price, discount_pct, line_total, tax_rate, line_no), payments:pos_payments(method, amount)')
-        .eq('id', orderId).single().returns<{ number: string; device_ref: string | null; order_at: string; is_refund: boolean; change_given: number; partner: { name: string } | null
-          lines: { description: string; quantity: number; unit_price: number; discount_pct: number; line_total: number; tax_rate: number; line_no: number }[]; payments: { method: string; amount: number }[] }>())
-      const reg = unwrap(await supabase.from('pos_registers').select('*').eq('id', s.register_id).single())
-      printReceipt({
-        company: { name: company?.name ?? '', legal_name: null, tax_number: null, address: null }, register: reg,
-        ref: o.device_ref ?? o.number, number: o.number, date: new Date(o.order_at), cashier: '', customer: o.partner?.name, isRefund: o.is_refund, currency: cur,
-        lines: [...o.lines].sort((a, b) => a.line_no - b.line_no).map((l) => ({ name: l.description, qty: num(l.quantity), price: num(l.unit_price), discount: num(l.discount_pct), total: num(l.line_total), rate: num(l.tax_rate) })),
-        payments: o.payments.map((p) => ({ method: p.method, amount: num(p.amount) })), change: num(o.change_given),
-      })
+    try { printReceipt(await receiptCopy(orderId, { registerId: s.register_id, paperMm: paper.data, currency: cur, companyName: company?.name ?? '' }))
     } catch (e) { toast.error(describeError(e)) }
   }
 

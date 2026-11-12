@@ -207,4 +207,9 @@ export default {
   "Subtotal, with VAT": "Nëntotali, me TVSH",
   "The discount is more than the line itself.": "Zbritja është më e madhe se vetë rreshti.",
   "The discount is more than the sale itself.": "Zbritja është më e madhe se vetë shitja.",
+  "The shift's receipts": "Kuponët e ndërrimit",
+  "The receipts of the shift open when the till is online again.": "Kuponët e ndërrimit hapen kur arka të ketë përsëri internet.",
+  "See a receipt again or print its copy. The copy of a fiscal coupon is marked as a copy and is not sent to ATK again.": "Shikoni përsëri një kupon ose printoni kopjen e tij. Kopja e kuponit fiskal del me shënimin e kopjes dhe nuk dërgohet përsëri në ATK.",
+  "See|receipt": "Shiko",
+  "The receipt as its copy prints.": "Kuponi ashtu siç shtypet kopja e tij.",
 } satisfies Dict
