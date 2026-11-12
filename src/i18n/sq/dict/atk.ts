@@ -349,4 +349,6 @@ export default {
   "{name} has no number in the staff list (the cashier's number on the coupon)": "{name} nuk ka numër te lista e punonjësve (numri i arkëtarit në kupon)",
   "The coupon prints without these": "Kuponi shtypet pa këto",
   "ATK asks for them on every fiscal coupon. The address and the town are in the unit's details, the unit number under Settings here, and the cashier's number on the employee's page.": "ATK-ja i kërkon në çdo kupon fiskal. Adresa dhe vendi janë te të dhënat e njësisë, numri i njësisë te Cilësimet këtu, dhe numri i arkëtarit te faqja e punonjësit.",
+  "The device clock was moved {s} s with no connection; the till kept the right time": "Ora e pajisjes u lëviz {s} sek pa lidhje; arka e mbajti kohën e saktë",
+  "The device clock moved {s} s with no connection (or the computer slept); the time is checked when the connection is back": "Ora e pajisjes lëvizi {s} sek pa lidhje (ose kompjuteri fjeti); koha kontrollohet kur të kthehet lidhja",
 } satisfies Dict

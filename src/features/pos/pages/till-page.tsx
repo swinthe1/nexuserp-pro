@@ -249,7 +249,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
   waitingRef.current = sync.items.filter((i) => i.status === 'pending').length
   const sef = !!data.atk?.required
   React.useEffect(() => (sef ? watchSef(data.register.id, () => waitingRef.current) : undefined), [sef, data.register.id])
-  const clockOff = useClockCheck((ms) => { if (sef) void logSef(data.register.id, 'clock', { offset_seconds: Math.round(ms / 1000) }) })
+  const clockOff = useClockCheck((ms, guess) => { if (sef) void logSef(data.register.id, 'clock', { offset_seconds: Math.round(ms / 1000), ...(guess ? { offline: true, ...guess } : {}) }) })
   const openPay = () => {
     if (atkStop) { setFlash({ tone: 'error', text: atkText }); return }
     // the company's highest value of one receipt (not for refunds)

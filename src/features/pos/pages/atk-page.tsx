@@ -470,7 +470,9 @@ function logText(r: LogRow) {
     case 'sent': return t('ATK transaction {no}', { no: v('transaction') }) + (Number(d.attempt) > 1 ? ` · ${t('try {n}', { n: v('attempt') })}` : '')
     case 'failed': return `${tServer(v('error')) || v('error_code')}${d.attempt ? ` · ${t('try {n}', { n: v('attempt') })}` : ''}`
     case 'online': return t('After {time} without internet · {n} sales were waiting', { time: dur(Number(d.offline_seconds) || 0), n: Number(d.waiting) || 0 })
-    case 'clock': return t('The device clock was {s} s off', { s: v('offset_seconds') })
+    case 'clock': return !d.offline ? t('The device clock was {s} s off', { s: v('offset_seconds') })
+      : d.corrected ? t('The device clock was moved {s} s with no connection; the till kept the right time', { s: v('jump_seconds') })
+      : t('The device clock moved {s} s with no connection (or the computer slept); the time is checked when the connection is back', { s: v('jump_seconds') })
     case 'gap': return t('Numbers {from} to {to} have not arrived ({n})', { from: v('from'), to: v('to'), n: v('missing') })
     case 'copy': return [v('number'), t('copy no. {n}', { n: v('copy_no') }), v('by')].filter(Boolean).join(' · ')
     case 'stuck': return `${t('Signed on the till, refused by the server')}: ${tServer(v('error'))}`
