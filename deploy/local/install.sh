@@ -16,8 +16,11 @@
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 cd "$here"
-say() { printf '\n==> %s\n' "$*"; }
-die() { printf '\n!! %s\n' "$*" >&2; exit 1; }
+# "@@" lines are for the Windows installer (DrisPRO Server): the step, a problem, the end
+say() { printf '\n==> %s\n' "$*"; printf '@@step %s\n' "${*%% *}"; }
+die() { printf '\n!! %s\n' "$*" >&2; printf '@@error install %s\n' "$*"; exit 1; }
+# the Windows installer leaves its answers here (licence, administrator), readable only by root; gone at the end
+if [ -f .setup ]; then set -a; . ./.setup; set +a; fi
 [ "$(id -u)" = 0 ] || die "Run as root: sudo bash install.sh"
 
 say "1/7 Docker"
@@ -84,14 +87,24 @@ mkdir -p data/db data/storage
 
 say "3/7 Starting the services (the first time downloads about 1.5 GB)"
 profiles=(); [ -n "${TUNNEL_TOKEN:-}" ] && profiles=(--profile tunnel)
-docker compose "${profiles[@]}" up -d --remove-orphans
+# a download cut off by the network is tried again
+for try in 1 2 3; do
+  docker compose "${profiles[@]}" up -d --remove-orphans && break
+  [ "$try" = 3 ] && die "The services could not be downloaded or started (internet?). Run this again."
+  echo "    !! not all started: trying again in 20 seconds ($try/3)"; sleep 20
+done
 
 say "4/7 Waiting for the database, sign-in and storage"
+health() { docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$1" 2>/dev/null || echo missing; }
 for svc in drispro-db drispro-auth drispro-storage; do
-  for i in $(seq 1 90); do
-    st="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$svc" 2>/dev/null || echo missing)"
+  # a service that does not get ready is started again, twice, before giving up
+  for round in 1 2 3; do
+    for i in $(seq 1 90); do st="$(health "$svc")"; [ "$st" = healthy ] && break; sleep 2; done
     [ "$st" = healthy ] && break
-    sleep 2
+    [ "$round" = 3 ] && break
+    echo "    !! $svc is $st: starting it again ($round/2)"
+    docker compose "${profiles[@]}" up -d "${svc#drispro-}" >/dev/null 2>&1 || true
+    docker restart "$svc" >/dev/null 2>&1 || true
   done
   [ "$st" = healthy ] || { docker logs --tail 30 "$svc" >&2 || true; die "$svc did not start ($st)"; }
   echo "    $svc ready"
@@ -102,7 +115,10 @@ NO_DEMO=1 bash deploy/coolify/setup-database.sh drispro-db | grep -v '^   skip' 
 docker restart drispro-rest drispro-web >/dev/null
 
 say "6/7 Licence"
-bash "$here/licence.sh" || echo "    !! the licence could not be checked now; the server works and tries again every night"
+lic=0; bash "$here/licence.sh" || lic=$?
+# 3: the administrator's name or PIN is not accepted, 4: the licence is refused: the installer asks again
+[ "$lic" = 3 ] || [ "$lic" = 4 ] && exit "$lic"
+[ "$lic" = 0 ] || echo "    !! the licence could not be checked now; the server works and tries again every night"
 # the postier reads the licence and the server id written just now
 docker compose "${profiles[@]}" up -d postier >/dev/null 2>&1 || true
 
@@ -118,6 +134,20 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 EOF
 chmod 644 /etc/cron.d/drispro-licence
 
+# the last check: every part answers through the one address, as the other computers will use it
+say "8/8 Check: every part answers"
+ok=1
+for t in "app /" "sign-in /auth/v1/health" "data /rest/v1/" "files /storage/v1/status"; do
+  name="${t%% *}"; path="${t#* }"; code=000
+  for i in $(seq 1 15); do
+    code="$(curl -s -o /dev/null -w '%{http_code}' -H "apikey: $ANON_KEY" "http://127.0.0.1:${HTTP_PORT:-80}$path" || true)"
+    [ "$code" = 200 ] && break; sleep 2
+  done
+  if [ "$code" = 200 ]; then echo "    ✓ $name"; else echo "    ✗ $name ($code)"; ok=0; fi
+done
+[ "$ok" = 1 ] || die "Not every part answers: see the lines above"
+rm -f .setup
+echo "@@done $PUBLIC_URL"
 echo
 echo "DrisPRO is running: $PUBLIC_URL"
 echo "Open it on this network (browser or the DrisPRO program, choose \"Local server\" and type this address)."

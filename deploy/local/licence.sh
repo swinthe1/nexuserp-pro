@@ -14,11 +14,10 @@ LICENCE_SERVER="${LICENCE_SERVER:-https://api.erp.dris-ks.com}"
 if [ -z "${LICENCE:-}" ]; then
   [ -t 0 ] || { echo "No licence code in .env (LICENCE=...)"; exit 1; }
   read -rp "Licence code (NXS-....-....-....): " LICENCE
-  echo "LICENCE=$LICENCE" >> .env
 fi
-if [ -z "${SERVER_ID:-}" ]; then
-  SERVER_ID="$(cat /proc/sys/kernel/random/uuid)"; echo "SERVER_ID=$SERVER_ID" >> .env
-fi
+# this server's id: made once (or given by the Windows installer, which checked the licence with it already)
+[ -n "${SERVER_ID:-}" ] || SERVER_ID="$(cat /proc/sys/kernel/random/uuid)"
+grep -q '^SERVER_ID=.' .env || echo "SERVER_ID=$SERVER_ID" >> .env
 grep -q '^LICENCE=.' .env || { sed -i '/^LICENCE=/d' .env; echo "LICENCE=$LICENCE" >> .env; }
 
 pass="$(docker exec drispro-db printenv POSTGRES_PASSWORD)"
@@ -28,7 +27,13 @@ sql() { docker exec -i -e PGPASSWORD="$pass" -e PGOPTIONS='-c client_min_message
 # email no one types and a password no one knows). Asked until it is there, also when an earlier try failed.
 uid_of() { sql -v email="$1" <<<"select id from auth.users where lower(email) = lower(:'email');"; }
 has_login() { [ -n "${ADMIN_EMAIL:-}" ] && [ "$(sql -v email="$ADMIN_EMAIL" <<<"select count(*) from app.user_logins l join auth.users u on u.id = l.user_id where lower(u.email) = lower(:'email');")" != 0 ]; }
-if ! has_login; then
+pin_problem() { sql -v pin="$1" <<<"select app.check_login_pin(:'pin');" 2>&1 >/dev/null | sed -n 's/^ERROR: *//p' || true; }
+if ! has_login && [ -n "${ADMIN_USER:-}" ] && [ -n "${ADMIN_PIN:-}" ]; then
+  # given by the Windows installer (or in the environment): checked, not asked
+  ADMIN_USER="$(echo "$ADMIN_USER" | tr '[:upper:]' '[:lower:]' | tr -d ' ')"
+  [[ "$ADMIN_USER" =~ ^[a-z0-9][a-z0-9._-]{2,29}$ ]] || { echo "@@error admin_user The user name is 3 to 30 letters or digits (a dot, a dash or _ also)"; exit 3; }
+  err="$(pin_problem "$ADMIN_PIN")"; [ -z "$err" ] || { echo "@@error admin_pin $err"; exit 3; }
+elif ! has_login; then
   [ -t 0 ] || { echo "No administrator yet: run  bash licence.sh  on this server"; exit 1; }
   echo "    The administrator of this server (signs in with a user name and a PIN, like everyone):"
   while :; do
@@ -39,13 +44,15 @@ if ! has_login; then
   done
   while :; do
     read -rsp "    PIN, 6 digits (it does not show while typed): " ADMIN_PIN; echo
-    err="$(sql -v pin="$ADMIN_PIN" <<<"select app.check_login_pin(:'pin');" 2>&1 >/dev/null | sed -n 's/^ERROR: *//p' || true)"
+    err="$(pin_problem "$ADMIN_PIN")"
     [ -z "$err" ] || { echo "    $err: again"; continue; }
     read -rsp "    The same PIN again: " again; echo
     [ "$again" = "$ADMIN_PIN" ] && break
     echo "    the two are not the same: again"
   done
   read -rp "    Full name: " ADMIN_NAME
+fi
+if ! has_login; then
   [ -n "${ADMIN_EMAIL:-}" ] || ADMIN_EMAIL="${ADMIN_USER}@admin.drispro.local"
   sql -v email="$ADMIN_EMAIL" -v password="$(openssl rand -hex 24)" -v name="${ADMIN_NAME:-}" -v username="$ADMIN_USER" -v pin="$ADMIN_PIN" <<'SQL' >/dev/null
 select app.create_auth_user(:'email', :'password', :'name');
@@ -60,9 +67,9 @@ fi
 version="$(cat VERSION 2>/dev/null || echo local)"
 body="$(printf '{"p_code":"%s","p_server":"%s","p_url":"%s","p_version":"%s"}' "$LICENCE" "$SERVER_ID" "${PUBLIC_URL:-}" "$version")"
 res="$(curl -sS --max-time 20 -X POST "$LICENCE_SERVER/rest/v1/rpc/licence_check" -H "apikey: $CLOUD_ANON_KEY" -H "Authorization: Bearer $CLOUD_ANON_KEY" \
-       -H 'Content-Type: application/json' -d "$body" -w '\n%{http_code}' 2>&1)" || { echo "    $(date '+%F %T') no connection to $LICENCE_SERVER: licence unchanged"; exit 1; }
+       -H 'Content-Type: application/json' -d "$body" -w '\n%{http_code}' 2>&1)" || { echo "    $(date '+%F %T') no connection to $LICENCE_SERVER: licence unchanged"; echo "@@warn licence_offline"; exit 1; }
 code="${res##*$'\n'}"; json="${res%$'\n'*}"
-if [ "$code" != 200 ]; then echo "    $(date '+%F %T') licence refused ($code): $(echo "$json" | head -c 300)"; exit 1; fi
+if [ "$code" != 200 ]; then echo "    $(date '+%F %T') licence refused ($code): $(echo "$json" | head -c 300)"; echo "@@error licence $(echo "$json" | sed -n 's/.*"message" *: *"\([^"]*\)".*/\1/p' | head -c 200)"; exit 4; fi
 sql -v admin="$ADMIN_EMAIL" -v lic="$json" >/dev/null <<'SQL'
 select app.apply_licence(:'lic'::jsonb, :'admin');
 SQL
