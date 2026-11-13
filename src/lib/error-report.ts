@@ -26,10 +26,17 @@ export function reportError(error: unknown, kind: Kind = 'error') {
   } catch { /* reporting never breaks anything */ }
 }
 
+// errors a save already showed to the person (its own message): awaiting it without a catch is not a new problem
+const shown = new WeakSet<object>()
+export function markShown(error: unknown) { if (error && typeof error === 'object') shown.add(error) }
+
 /** the errors no page caught */
 export function installErrorReporting() {
   if (installed || typeof window === 'undefined') return
   installed = true
   window.addEventListener('error', (ev) => { if (ev.error || ev.message) reportError(ev.error ?? ev.message, 'error') })
-  window.addEventListener('unhandledrejection', (ev) => reportError(ev.reason, 'promise'))
+  window.addEventListener('unhandledrejection', (ev) => {
+    if (ev.reason && typeof ev.reason === 'object' && shown.has(ev.reason)) { ev.preventDefault(); return }
+    reportError(ev.reason, 'promise')
+  })
 }

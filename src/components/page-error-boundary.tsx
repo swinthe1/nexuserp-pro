@@ -4,6 +4,18 @@ import { Button } from '@/components/ui/button'
 import { t } from '@/i18n'
 import { reportError } from '@/lib/error-report'
 
+/** Reloads the app for its new version, at most once a minute (true when it did). */
+export function reloadForNewVersion() {
+  try {
+    const last = Number(sessionStorage.getItem('drispro.version-reload') ?? 0)
+    if (Date.now() - last < 60_000) return false
+    sessionStorage.setItem('drispro.version-reload', String(Date.now()))
+  } catch { return false }
+  window.location.reload()
+  return true
+}
+if (typeof window !== 'undefined') window.addEventListener('vite:preloadError', (e) => { if (reloadForNewVersion()) e.preventDefault() })
+
 const isChunkError = (e: Error) => /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|ChunkLoadError/i.test(e.message)
 
 /**
@@ -14,7 +26,12 @@ const isChunkError = (e: Error) => /Failed to fetch dynamically imported module|
 export class PageErrorBoundary extends React.Component<{ children: React.ReactNode; fullScreen?: boolean }, { error: Error | null }> {
   state = { error: null as Error | null }
   static getDerivedStateFromError(error: Error) { return { error } }
-  componentDidCatch(error: Error) { console.error('[page]', error); reportError(error, isChunkError(error) ? 'chunk' : 'page') }
+  componentDidCatch(error: Error) {
+    console.error('[page]', error)
+    // a tab opened before an update asks for files that are gone: it loads the new version by itself, once
+    if (isChunkError(error) && reloadForNewVersion()) return
+    reportError(error, isChunkError(error) ? 'chunk' : 'page')
+  }
   render() {
     const e = this.state.error
     if (!e) return this.props.children

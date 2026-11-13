@@ -113,7 +113,7 @@ export function PlatformLayout() {
   React.useEffect(() => { setMobile(false) }, [pathname])
   // Ctrl K: find a client from anywhere in the console
   React.useEffect(() => {
-    const on = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setSearch(true) } }
+    const on = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && (e.key ?? "").toLowerCase() === 'k') { e.preventDefault(); setSearch(true) } }
     window.addEventListener('keydown', on); return () => window.removeEventListener('keydown', on)
   }, [])
 

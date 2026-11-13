@@ -183,7 +183,7 @@ export function OpenTill({ data, offline, onOpened }: { data: TillData; offline:
           {t('You still have shift {number} open at {register}. Close it first.', { number: data.shift.mine_open.number, register: data.shift.mine_open.register })}</p>}
         {!!data.shift?.returned && <p className="mt-3 rounded-md border border-warning/50 bg-warning/5 px-3 py-2 text-[12.5px]">
           {tn(data.shift.returned, 'The manager returned {n} of your shifts for a recount.', 'The manager returned {n} of your shifts for a recount.')} <Link className="font-medium text-primary hover:underline" to="/pos">{t('See them')}</Link></p>}
-        <form className="mt-5 grid gap-3" onSubmit={async (e) => { e.preventDefault(); await open.mutateAsync({ register: data.register.id, cash: num(cash) }); toast.success(t('Till open')); onOpened() }}>
+        <form className="mt-5 grid gap-3" onSubmit={async (e) => { e.preventDefault(); try { await open.mutateAsync({ register: data.register.id, cash: num(cash) }) } catch { return } toast.success(t('Till open')); onOpened() }}>
           <Label htmlFor="float">{t('Cash in the drawer ({currency})', { currency: data.company.base_currency })}</Label>
           <Input id="float" autoFocus inputMode="decimal" className="h-14 text-right text-2xl font-semibold tabular" value={cash} onChange={(e) => setCash(e.target.value.replace(/[^\d.,]/g, '').replace(',', '.'))} placeholder="0.00" />
           {offline && <p className="text-[13px] text-warning">{t('You are offline. Opening a till needs internet; selling afterwards does not.')}</p>}
@@ -762,7 +762,7 @@ function Till({ data, offline, patch, reload }: { data: TillData; offline: boole
       if (tillLock.locked || switching) return
       if (done) {
         if (e.key === 'Enter' || e.key === 'Escape' || e.key === 'F2') { e.preventDefault(); setDone(null); focusSearch() }
-        else if (e.key.toLowerCase() === 'p' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); printDone() }
+        else if ((e.key ?? "").toLowerCase() === 'p' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); printDone() }
         return
       }
       if (dialog) return
@@ -1957,7 +1957,7 @@ function CashDialog({ data, sessionId, currency, onClose }: { data: TillData; se
     if (!ready || busy) return
     setError(null)
     if (tab === 'cash') {
-      await move.mutateAsync({ session: sessionId, type, amount: amt, reason })
+      try { await move.mutateAsync({ session: sessionId, type, amount: amt, reason }) } catch { return }
       toast.success(type === 'cash_in' ? t('Cash in recorded') : t('Cash out recorded'))
       onClose(); return
     }
@@ -2114,7 +2114,8 @@ function CloseDialog({ data, pending, held = 0, onClose, onClosed, waitersOwing 
       approval = a.approval
     }
     const notesCoins = useNotes && direct === '' ? countsToNotes(denoms, counts) : null
-    const zId = await close.mutateAsync({ session: session.id, counted, notes, notesCoins, approval })
+    let zId: string
+    try { zId = await close.mutateAsync({ session: session.id, counted, notes, notesCoins, approval }) as unknown as string } catch { return }
     try {
       const z = unwrap(await supabase.from('z_reports').select('*').eq('id', zId).single())
       const ctl = await sessionControls(session.id).catch(() => null)

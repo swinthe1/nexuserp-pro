@@ -10,6 +10,7 @@ import { PwaPrompts } from '@/components/pwa-prompts'
 import { OfflineSync } from '@/app/offline-sync'
 import { LanguageSync, LocaleBoundary } from '@/i18n/language'
 import { describeError } from '@/lib/errors'
+import { markShown } from '@/lib/error-report'
 
 function makeClient() {
   return new QueryClient({
@@ -21,6 +22,7 @@ function makeClient() {
     }),
     mutationCache: new MutationCache({
       onError: (error, _v, _c, mutation) => {
+        markShown(error)
         if (!mutation.options.onError) toast.error(describeError(error))
       },
     }),

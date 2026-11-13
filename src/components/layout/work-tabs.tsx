@@ -240,7 +240,7 @@ export function WorkTabsProvider({ children }: { children: React.ReactNode }) {
       if (!e.altKey || e.ctrlKey || e.metaKey) return
       const n = Number(e.key)
       if (n >= 1 && n <= 9) { const tab = tabsRef.current.filter((x) => x.id !== HOME)[n - 1]; if (tab) { e.preventDefault(); activate(tab.id) } return }
-      if (e.key.toLowerCase() === 'w' && activeRef.current && activeRef.current !== HOME) { e.preventDefault(); window.dispatchEvent(new CustomEvent('drispro-close-tab', { detail: activeRef.current })) }
+      if ((e.key ?? "").toLowerCase() === 'w' && activeRef.current && activeRef.current !== HOME) { e.preventDefault(); window.dispatchEvent(new CustomEvent('drispro-close-tab', { detail: activeRef.current })) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)

@@ -182,7 +182,7 @@ function AssistantLauncher() {
   }, [])
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') { e.preventDefault(); setOpen((o) => !o) }
+      if ((e.ctrlKey || e.metaKey) && (e.key ?? "").toLowerCase() === 'j') { e.preventDefault(); setOpen((o) => !o) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)

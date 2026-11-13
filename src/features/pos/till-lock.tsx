@@ -154,7 +154,7 @@ export function LockScreen({ register, registerName, user, cashier, managers, on
       else if (e.key === 'Backspace') { e.preventDefault(); setPin((p) => p.slice(0, -1)) }
       else if (e.key === 'Enter') { e.preventDefault(); void submit(pin) }
       else if (e.key === 'Escape') { e.preventDefault(); setPin(''); keys.current = [] }
-      else if (e.key.length === 1 || e.key.startsWith('F')) e.preventDefault()
+      else if ((e.key ?? '').length === 1 || (e.key ?? '').startsWith('F')) e.preventDefault()
     }
     window.addEventListener('keydown', onKey, { capture: true })
     return () => window.removeEventListener('keydown', onKey, { capture: true })

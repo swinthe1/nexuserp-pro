@@ -6,7 +6,7 @@ export function useHotkey(key: string, handler: (e: KeyboardEvent) => void, opts
   ref.current = handler
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() !== key.toLowerCase()) return
+      if ((e.key ?? "").toLowerCase() !== key.toLowerCase()) return
       const mod = e.metaKey || e.ctrlKey
       if (!!opts.mod !== mod) return
       const t = e.target as HTMLElement | null
