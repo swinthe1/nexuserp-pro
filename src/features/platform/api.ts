@@ -264,7 +264,9 @@ export function usePlatformOverview() {
 }
 
 export type ClientMember = { member_id: string; user_id: string | null; email: string; name: string | null; status: string; last_sign_in_at: string | null
-  joined_at: string | null; external_accountant: boolean; roles: string[]; role_keys: string[]; is_admin: boolean }
+  joined_at: string | null; external_accountant: boolean; roles: string[]; role_keys: string[]; is_admin: boolean
+  /** the user name they sign in with (with a PIN); the platform's administrator signs in with the email */
+  username?: string | null; platform_admin?: boolean }
 export interface ClientDetail {
   company: { id: string; name: string; legal_name: string | null; tax_number: string | null; vat_number: string | null; business_number: string | null
     country_code: string; base_currency: string; address: string | null; address_line1: string | null; city: string | null; phone: string | null; email: string | null; website: string | null

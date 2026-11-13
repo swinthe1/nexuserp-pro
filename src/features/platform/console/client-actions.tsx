@@ -10,7 +10,7 @@ import { t } from '@/i18n'
 import { describeError } from '@/lib/errors'
 import { formatDate, todayISO } from '@/lib/utils'
 import { type PlatformClient, useSaveLicense } from '../api'
-import { addMonths, BusinessTypeDialog, DeleteClientDialog, LicenseDialog, LiveLinkDialog, PasswordDialog } from '../dialogs'
+import { addMonths, BusinessTypeDialog, DeleteClientDialog, LicenseDialog, LiveLinkDialog } from '../dialogs'
 
 /** Open a client's company to help them (written in the platform's diary). */
 export function useOpenCompany() {
@@ -43,6 +43,7 @@ export function useRenew() {
 export function ClientActions({ c, button }: { c: PlatformClient; button?: React.ReactNode }) {
   const open = useOpenCompany()
   const { renew, pause } = useRenew()
+  const navigate = useNavigate()
   const [dialog, setDialog] = React.useState<null | 'licence' | 'password' | 'type' | 'link' | 'delete'>(null)
   return (
     <>
@@ -58,7 +59,7 @@ export function ClientActions({ c, button }: { c: PlatformClient; button?: React
             : c.status && <DropdownMenuItem onSelect={() => pause(c, true)}><Pause /> {t('Pause the licence')}</DropdownMenuItem>}
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => setDialog('type')}><Shapes /> {t('Type of business')}</DropdownMenuItem>
-          <DropdownMenuItem disabled={!c.admins.length} onSelect={() => setDialog('password')}><KeyRound /> {t('Set a new password')}</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => navigate(`/platform/clients/${c.id}?tab=people`)}><KeyRound /> {t('User names and PINs')}</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setDialog('link')}><Cable /> {t('Live link and training')}</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => void open(c.id, '/settings/migration')}><ArrowDownToLine /> {t('Move data from the old program')}</DropdownMenuItem>
           <DropdownMenuSeparator />
@@ -66,7 +67,6 @@ export function ClientActions({ c, button }: { c: PlatformClient; button?: React
         </DropdownMenuContent>
       </DropdownMenu>
       <LicenseDialog client={dialog === 'licence' ? c : null} onClose={() => setDialog(null)} />
-      <PasswordDialog target={dialog === 'password' ? { email: c.admins[0] ?? '' } : null} onClose={() => setDialog(null)} />
       <BusinessTypeDialog client={dialog === 'type' ? c : null} onClose={() => setDialog(null)} />
       <LiveLinkDialog client={dialog === 'link' ? c : null} onClose={() => setDialog(null)} />
       <DeleteClientDialog client={dialog === 'delete' ? c : null} onClose={() => setDialog(null)} />
