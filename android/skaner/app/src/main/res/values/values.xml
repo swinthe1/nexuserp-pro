@@ -3,7 +3,7 @@
     <color name="green">#0E8A5F</color>
     <color name="white">#FFFFFF</color>
     <string name="server_url_title">Adresa e serverit</string>
-    <string name="server_url_desc">Cloud: https://erp.dris-ks.com · Server lokal: p.sh. http://192.168.1.20</string>
+    <string name="server_url_desc">Cloud: https://app.drispro.com · Server lokal: p.sh. http://192.168.1.20</string>
     <style name="Skaner" parent="@android:style/Theme.Material.Light.NoActionBar">
         <item name="android:colorPrimary">@color/green</item>
         <item name="android:colorAccent">@color/green</item>

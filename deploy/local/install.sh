@@ -8,7 +8,7 @@
 #   PUBLIC_URL     the address people open, e.g. http://192.168.1.20 (found by itself)
 #   HTTP_PORT      port of the app on this server (80)
 #   TUNNEL_TOKEN   a Cloudflare tunnel token, to open the server from outside the shop too
-#   LICENCE_SERVER where licences are checked (https://api.erp.dris-ks.com)
+#   LICENCE_SERVER where licences are checked (https://api.drispro.com)
 #
 # What it does: installs Docker if needed, makes the secrets once (.env), starts the database,
 # sign-in, API, live updates, file storage and the app, creates the database from the migrations,
@@ -68,18 +68,20 @@ SMTP_USER=
 SMTP_PASS=
 TUNNEL_TOKEN=${TUNNEL_TOKEN:-}
 LICENCE=${LICENCE:-}
-LICENCE_SERVER=${LICENCE_SERVER:-https://api.erp.dris-ks.com}
+LICENCE_SERVER=${LICENCE_SERVER:-https://api.drispro.com}
 # new versions every night at 04:15 (false = only by hand with update.sh)
 AUTO_UPDATE=true
 # the nightly copy also goes to the DrisPRO cloud, encrypted (false = only on this server)
 CLOUD_BACKUP=true
-UPDATE_SERVER=https://erp.dris-ks.com
+UPDATE_SERVER=https://app.drispro.com
 EOF
   umask 022
   echo "    made .env (address $url)"
 else
   echo "    .env already here: kept"
 fi
+# DrisPRO moved from erp.dris-ks.com to app.drispro.com: an older server's settings follow
+sed -i -e 's#https://api\.erp\.dris-ks\.com#https://api.drispro.com#g' -e 's#https://erp\.dris-ks\.com#https://app.drispro.com#g' .env
 set -a; . ./.env; set +a
 if [ -n "${TUNNEL_TOKEN_NEW:-}" ]; then sed -i "s|^TUNNEL_TOKEN=.*|TUNNEL_TOKEN=$TUNNEL_TOKEN_NEW|" .env; TUNNEL_TOKEN="$TUNNEL_TOKEN_NEW"; fi
 printf "// made by install.sh: this DrisPRO runs on this server\nwindow.__DRISPRO__ = { url: 'same-origin', anonKey: '%s', local: true }\n" "$ANON_KEY" > drispro-config.js
@@ -119,7 +121,7 @@ lic=0; bash "$here/licence.sh" || lic=$?
 # 3: the administrator's name or PIN is not accepted, 4: the licence is refused: the installer asks again
 [ "$lic" = 3 ] || [ "$lic" = 4 ] && exit "$lic"
 [ "$lic" = 0 ] || echo "    !! the licence could not be checked now; the server works and tries again every night"
-# the outside address (https://<name>.dris-ks.com), made by the cloud: waited for a minute and a half
+# the outside address (https://<name>.drispro.com), made by the cloud: waited for a minute and a half
 [ "$lic" = 0 ] && bash "$here/remote.sh" --wait 90 || true
 # the postier reads the licence and the server id written just now
 docker compose "${profiles[@]}" up -d postier >/dev/null 2>&1 || true

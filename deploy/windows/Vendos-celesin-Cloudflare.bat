@@ -5,14 +5,14 @@ set "SSHOPT="
 if exist "%KEY%" set "SSHOPT=-i "%KEY%""
 echo ==============================================================
 echo  DrisPRO - Cloudflare per adresat nga jashte te serverave lokale
-echo  (https://emri.dris-ks.com per cdo server lokal, krijohen vete)
+echo  (https://emri.drispro.com per cdo server lokal, krijohen vete)
 echo.
 echo  Ne Cloudflare: My Profile - API Tokens - Create Token - Custom:
 echo    Account / Cloudflare Tunnel / Edit
-echo    Zone / DNS / Edit  (zona dris-ks.com)
+echo    Zone / DNS / Edit  (zona drispro.com)
 echo  Pastaj ngjiteni celesin kur ta kerkoje (klikimi i djathte ngjit).
 echo  Celesi nuk shfaqet ne ekran dhe nuk ruhet ne kete kompjuter.
-echo  Account ID dhe Zone ID jane te dris-ks.com - Overview, djathtas.
+echo  Account ID dhe Zone ID jane te drispro.com - Overview, djathtas.
 echo ==============================================================
 if not exist "%KEY%" echo Do te kerkohet fjalekalimi i serverit.
 echo.

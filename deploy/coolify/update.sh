@@ -41,11 +41,11 @@ SQL
     read -rp "WhatsApp phone number ID: " v; [ -n "$v" ] && put whatsapp_phone_id "$v"
   elif [ "$1" = "--cloudflare" ]; then
     echo "Cloudflare → My Profile → API Tokens → Create Token (custom):"
-    echo "  Account · Cloudflare Tunnel · Edit,  Zone · DNS · Edit (zone dris-ks.com)"
+    echo "  Account · Cloudflare Tunnel · Edit,  Zone · DNS · Edit (zone drispro.com)"
     read -rsp "API token (not shown): " v; echo; [ -n "$v" ] && put cf_api_token "$v"
-    read -rp "Account ID (Cloudflare → dris-ks.com → Overview, right side): " v; [ -n "$v" ] && put cf_account_id "$v"
+    read -rp "Account ID (Cloudflare → drispro.com → Overview, right side): " v; [ -n "$v" ] && put cf_account_id "$v"
     read -rp "Zone ID (same page): " v; [ -n "$v" ] && put cf_zone_id "$v"
-    read -rp "Domain for the addresses [dris-ks.com]: " v; put cf_domain "${v:-dris-ks.com}"
+    read -rp "Domain for the addresses [drispro.com]: " v; put cf_domain "${v:-drispro.com}"
   else
     read -rsp "Anthropic API key (not shown): " v; echo; [ -n "$v" ] && put anthropic_api_key "$v"
   fi
@@ -112,7 +112,7 @@ if [ -n "$svc" ]; then
     mkdir -p /root/drispro-postier && rm -f /root/drispro-postier/*.mjs && cp deploy/worker/*.mjs /root/drispro-postier/
     docker rm -f drispro-postier >/dev/null 2>&1 || true
     docker run -d --name drispro-postier --restart unless-stopped -v /root/drispro-postier:/worker:ro \
-      -e API_URL="${DRISPRO_API:-https://api.erp.dris-ks.com}" -e SERVICE_KEY="$svc" -e MODE=cloud \
+      -e API_URL="${DRISPRO_API:-https://api.drispro.com}" -e SERVICE_KEY="$svc" -e MODE=cloud \
       --entrypoint node "$img" /worker/postier.mjs >/dev/null && echo "    postier (email, WhatsApp, phone notifications, webhooks, AI): running"
     sleep 8
     if docker logs --tail 20 drispro-postier 2>&1 | grep -q ' 401 '; then

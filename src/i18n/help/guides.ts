@@ -627,7 +627,7 @@ const BASE: Record<string, Guide> = {
   '/skaner': {
     what: { sq: 'DrisPRO Skaner: programi për pajisjen e dorës (Zebra). Ka vetëm ekranet e skanimit, me butona të mëdhenj, dhe punon edhe pa internet.', en: 'DrisPRO Skaner: the program for the handheld (Zebra). It has only the scanning screens, with large buttons, and works without internet too.' },
     steps: [
-      { sq: 'Në pajisje hap Chrome te erp.dris-ks.com/skaner dhe hyr me përdoruesin e saj.', en: 'On the device open Chrome at erp.dris-ks.com/skaner and log in with its user.' },
+      { sq: 'Në pajisje hap Chrome te app.drispro.com/skaner dhe hyr me përdoruesin e saj.', en: 'On the device open Chrome at app.drispro.com/skaner and log in with its user.' },
       { sq: 'Shtyp "Instalo DrisPRO Skaner në këtë pajisje" (ose ⋮ → Instalo aplikacionin). Del ikona "Skaner" me shiritin portokalli.', en: 'Press "Install DrisPRO Skaner on this device" (or ⋮ → Install app). The "Skaner" icon with the orange bar appears.' },
       { sq: 'Lart zgjidh njësinë ku punon pajisja. Tastet 1–9 hapin ekranet.', en: 'At the top choose the unit the device works in. Keys 1–9 open the screens.' },
       { sq: 'Te DataWedge lidhe profilin me aplikacionin Skaner dhe ndiz "Send ENTER".', en: 'In DataWedge link the profile to the Skaner app and switch on "Send ENTER".' },

@@ -17,7 +17,7 @@ type Connector = { id: string; name: string; prefix: string; can_draft: boolean;
 
 /** The app's own address: the assistants call https://<it>/mcp/<key>. */
 function appOrigin() {
-  return /^https?:$/.test(window.location.protocol) && !/^(localhost|127\.)/.test(window.location.hostname) ? window.location.origin : 'https://erp.dris-ks.com' // i18n-ignore
+  return /^https?:$/.test(window.location.protocol) && !/^(localhost|127\.)/.test(window.location.hostname) ? window.location.origin : 'https://app.drispro.com' // i18n-ignore
 }
 
 /** A person's own links that let ChatGPT or Claude look at the company with that person's rights. */

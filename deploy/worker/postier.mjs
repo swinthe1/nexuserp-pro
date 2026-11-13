@@ -2,7 +2,7 @@
 // DrisPRO · the postier: sends what waits in the outbox and runs the timed work.
 // No packages: Node 18+ only (SMTP over net/tls, WhatsApp and the API over fetch).
 //
-//   API_URL        the DrisPRO API (cloud: https://api.erp.dris-ks.com, local: http://drispro-web)
+//   API_URL        the DrisPRO API (cloud: https://api.drispro.com, local: http://drispro-web)
 //   SERVICE_KEY    the service key of that API
 //   MODE           cloud | local
 //   LICENCE, SERVER_ID, LICENCE_SERVER   local only: WhatsApp goes through the cloud with the licence
@@ -27,7 +27,7 @@ const KEY = process.env.SERVICE_KEY || ''
 const MODE = process.env.MODE === 'local' ? 'local' : 'cloud'
 const LICENCE = process.env.LICENCE || ''
 const SERVER_ID = process.env.SERVER_ID || ''
-const LICENCE_SERVER = (process.env.LICENCE_SERVER || 'https://api.erp.dris-ks.com').replace(/\/+$/, '')
+const LICENCE_SERVER = (process.env.LICENCE_SERVER || 'https://api.drispro.com').replace(/\/+$/, '')
 const ONCE = process.env.ONCE === '1'
 // the cloud's public key (anon role: it can only call the public licence functions)
 const CLOUD_ANON_KEY = process.env.CLOUD_ANON_KEY || 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc5Mjg0NTY2MCwiZXhwIjo0OTQ4NTE5MjYwLCJyb2xlIjoiYW5vbiJ9.b6G9lu0yfVwPpWlddYYql4Hf0oelvnyrF-JH_xl3jd0'

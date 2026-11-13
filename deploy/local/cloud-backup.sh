@@ -8,7 +8,7 @@ cd "$here"
 set -a; . ./.env; set +a
 [ "${CLOUD_BACKUP:-true}" = "true" ] || { echo "$(date '+%F %T') cloud copies are off"; exit 0; }
 CLOUD_ANON_KEY="${CLOUD_ANON_KEY:-eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc5Mjg0NTY2MCwiZXhwIjo0OTQ4NTE5MjYwLCJyb2xlIjoiYW5vbiJ9.b6G9lu0yfVwPpWlddYYql4Hf0oelvnyrF-JH_xl3jd0}"
-api="${LICENCE_SERVER:-https://api.erp.dris-ks.com}"
+api="${LICENCE_SERVER:-https://api.drispro.com}"
 [ -n "${LICENCE:-}" ] && [ -n "${SERVER_ID:-}" ] || { echo "$(date '+%F %T') no licence yet: no cloud copy"; exit 0; }
 
 latest="$(ls -1t /root/backups/drispro-*.dump 2>/dev/null | grep -v before-restore | head -1 || true)"

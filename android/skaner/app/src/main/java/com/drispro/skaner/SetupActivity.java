@@ -65,7 +65,7 @@ public class SetupActivity extends Activity {
         col.addView(p);
 
         RadioGroup g = new RadioGroup(this);
-        cloud = choice("Cloud (serveri i DrisPRO)\nerp.dris-ks.com, me internet");
+        cloud = choice("Cloud (serveri i DrisPRO)\napp.drispro.com, me internet");
         local = choice("Server lokal\nServeri në lokalin tuaj, punon edhe pa internet");
         g.addView(cloud); g.addView(spacer(10)); g.addView(local);
         g.setOnCheckedChangeListener((gr, id) -> pick());

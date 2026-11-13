@@ -2,7 +2,7 @@
 
 A small Android app for Zebra and other handhelds. On first start it asks where DrisPRO is:
 
-- **Cloud**: https://erp.dris-ks.com
+- **Cloud**: https://app.drispro.com
 - **Local server**: the shop's own server by its address (e.g. http://192.168.1.20); it is checked through `/drispro-config.js` (`local: true`).
 
 Then it opens `<server>/skaner` full screen in Android's WebView, portrait. Back on the start screen offers "Exit" and "Change server". When the server cannot be reached it opens what the device kept from the last visit, otherwise a screen to try again or change the server.

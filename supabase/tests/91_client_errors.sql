@@ -12,7 +12,7 @@ select email as boss from public.profiles where is_super_admin limit 1 \gset
 set role authenticated;
 select t.login('cora@kt.al');
 select public.report_client_error(jsonb_build_object('kind', 'page', 'message', 'Cannot read properties of undefined (reading ''x'') at row 12',
-  'stack', E'TypeError\n    at Till (till-page.tsx:120)', 'url', 'https://erp.dris-ks.com/pos?access_token=eyJabcdefghij.klmnopqrstuv.wxyz0123456789', 'version', '1.86.0', 'company_id', :'co'));
+  'stack', E'TypeError\n    at Till (till-page.tsx:120)', 'url', 'https://app.drispro.com/pos?access_token=eyJabcdefghij.klmnopqrstuv.wxyz0123456789', 'version', '1.86.0', 'company_id', :'co'));
 select public.report_client_error(jsonb_build_object('kind', 'page', 'message', 'Cannot read properties of undefined (reading ''x'') at row 13',
   'stack', E'TypeError\n    at Till (till-page.tsx:120)', 'version', '1.86.0'));
 select t.login('besa@kt.al');

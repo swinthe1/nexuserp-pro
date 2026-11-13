@@ -22,7 +22,7 @@
 </main>
 <script>
   const q = new URLSearchParams(location.search)
-  const input = document.getElementById('server'); input.value = q.get('server') || 'https://erp.dris-ks.com'
+  const input = document.getElementById('server'); input.value = q.get('server') || 'https://app.drispro.com'
   document.getElementById('retry').onclick = () => window.drisproDesktop.retry()
   document.getElementById('save').onclick = async () => {
     try { await window.drisproDesktop.setServer(input.value.trim()) } catch (e) { document.getElementById('msg').textContent = String(e.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, '') }

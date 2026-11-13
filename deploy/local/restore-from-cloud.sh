@@ -10,7 +10,7 @@ here="$(cd "$(dirname "$0")" && pwd)"
 cd "$here"
 set -a; . ./.env; set +a
 CLOUD_ANON_KEY="${CLOUD_ANON_KEY:-eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc5Mjg0NTY2MCwiZXhwIjo0OTQ4NTE5MjYwLCJyb2xlIjoiYW5vbiJ9.b6G9lu0yfVwPpWlddYYql4Hf0oelvnyrF-JH_xl3jd0}"
-api="${LICENCE_SERVER:-https://api.erp.dris-ks.com}"
+api="${LICENCE_SERVER:-https://api.drispro.com}"
 rpc() { curl -fsS --max-time 30 -X POST "$api/rest/v1/rpc/$1" -H "apikey: $CLOUD_ANON_KEY" -H "Authorization: Bearer $CLOUD_ANON_KEY" -H 'Content-Type: application/json' -d "$2"; }
 field() { printf '%s' "$1" | sed -n "s/.*\"$2\" *: *\"\\([^\"]*\\)\".*/\\1/p"; }
 # this server must hold the licence first

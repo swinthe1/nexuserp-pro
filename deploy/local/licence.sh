@@ -9,7 +9,7 @@ cd "$here"
 set -a; . ./.env; set +a
 # the cloud's public key (anon role: it can only call the public licence functions)
 CLOUD_ANON_KEY="${CLOUD_ANON_KEY:-eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc5Mjg0NTY2MCwiZXhwIjo0OTQ4NTE5MjYwLCJyb2xlIjoiYW5vbiJ9.b6G9lu0yfVwPpWlddYYql4Hf0oelvnyrF-JH_xl3jd0}"
-LICENCE_SERVER="${LICENCE_SERVER:-https://api.erp.dris-ks.com}"
+LICENCE_SERVER="${LICENCE_SERVER:-https://api.drispro.com}"
 
 if [ -z "${LICENCE:-}" ]; then
   [ -t 0 ] || { echo "No licence code in .env (LICENCE=...)"; exit 1; }

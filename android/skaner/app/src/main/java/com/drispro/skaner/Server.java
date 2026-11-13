@@ -13,7 +13,7 @@ import java.net.URL;
 
 /** Where DrisPRO lives for this device: the cloud or the shop's own local server. */
 final class Server {
-    static final String CLOUD = "https://erp.dris-ks.com";
+    static final String CLOUD = "https://app.drispro.com";
     private static final String PREFS = "drispro";
     private static final String KEY = "server";
 
@@ -32,7 +32,10 @@ final class Server {
     static String get(Context c) {
         String m = managed(c);
         if (m != null) return m;
-        return prefs(c).getString(KEY, null);
+        String v = prefs(c).getString(KEY, null);
+        // DrisPRO moved from erp.dris-ks.com to app.drispro.com: a device set to the old address follows by itself
+        if ("https://erp.dris-ks.com".equals(v)) { set(c, CLOUD); return CLOUD; }
+        return v;
     }
 
     static void set(Context c, String origin) { prefs(c).edit().putString(KEY, origin).apply(); }

@@ -25,7 +25,7 @@ $env:WSL_UTF8 = '1'
 
 $Distro = 'Ubuntu-24.04'
 $TaskName = 'DrisPRO Server'
-$LicenceApi = 'https://api.erp.dris-ks.com'
+$LicenceApi = 'https://api.drispro.com'
 $AnonKey = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc5Mjg0NTY2MCwiZXhwIjo0OTQ4NTE5MjYwLCJyb2xlIjoiYW5vbiJ9.b6G9lu0yfVwPpWlddYYql4Hf0oelvnyrF-JH_xl3jd0'
 $Root = Join-Path $env:ProgramData 'DrisPRO Server'
 $StateFile = Join-Path $Root 'state.json'
@@ -589,7 +589,7 @@ try {
       Send 'done' @{ ok = ($r.Code -eq 0) }
     }
     'update' {
-      $r = Invoke-Wsl 'cd /opt/drispro && AUTO_UPDATE=true bash auto-update.sh 2>&1' { param($l) Say $l } 3600
+      $r = Invoke-Wsl 'cd /opt/drispro && sed -i -e "s#https://api.erp.dris-ks.com#https://api.drispro.com#g" -e "s#https://erp.dris-ks.com#https://app.drispro.com#g" .env && AUTO_UPDATE=true bash auto-update.sh 2>&1' { param($l) Say $l } 3600
       Send 'done' @{ ok = ($r.Code -eq 0) }
     }
     'restart' {

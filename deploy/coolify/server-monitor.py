@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 
 DB = sys.argv[1] if len(sys.argv) > 1 else ''
 STATE = '/var/lib/drispro-monitor/state.json'
-CHECKS = [u for u in os.environ.get('DRISPRO_CHECKS', 'https://erp.dris-ks.com,https://api.erp.dris-ks.com/rest/v1/').split(',') if u]
+CHECKS = [u for u in os.environ.get('DRISPRO_CHECKS', 'https://app.drispro.com,https://api.drispro.com/rest/v1/').split(',') if u]
 DISK_PATHS = ['/', '/root/backups', '/var/lib/docker']
 
 

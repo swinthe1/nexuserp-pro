@@ -306,7 +306,7 @@ export default {
   "empty: the PIN stays": "bosh: PIN-i mbetet",
   "no user name yet": "pa emër përdoruesi ende",
   "Write the name, a user name and a PIN of 6 digits for the demo.": "Shkruani emrin, një emër përdoruesi dhe një PIN me 6 shifra për demon.",
-  "The outside addresses (https://name.dris-ks.com) are made once Cloudflare is set: run Vendos-celesin-Cloudflare.bat once.": "Adresat nga jashtë (https://emri.dris-ks.com) krijohen pasi të vendoset Cloudflare: nisni një herë Vendos-celesin-Cloudflare.bat.",
+  "The outside addresses (https://name.drispro.com) are made once Cloudflare is set: run Vendos-celesin-Cloudflare.bat once.": "Adresat nga jashtë (https://emri.drispro.com) krijohen pasi të vendoset Cloudflare: nisni një herë Vendos-celesin-Cloudflare.bat.",
   "From outside": "Nga jashtë",
   "not asked yet": "ende pa kërkuar",
   "Works": "Punon",

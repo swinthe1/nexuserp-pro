@@ -197,7 +197,7 @@ function ConnectionSettings({ onClose }: { onClose: () => void }) {
           <DialogDescription>{t('How the console and the client\'s computer reach each other. Without a TURN server some networks (strict firewalls, mobile internet) do not let the picture through.')}</DialogDescription></DialogHeader>
         <div className="grid gap-3">
           <div className="grid gap-1.5"><Label htmlFor="sp-stun">STUN</Label><Input id="sp-stun" value={stun} onChange={(e) => setStun(e.target.value)} placeholder="stun:stun.l.google.com:19302" />{/* i18n-ignore */}</div>
-          <div className="grid gap-1.5"><Label htmlFor="sp-turn" optional>TURN</Label><Input id="sp-turn" value={turn} onChange={(e) => setTurn(e.target.value)} placeholder="turn:turn.dris-ks.com:3478" />{/* i18n-ignore */}</div>
+          <div className="grid gap-1.5"><Label htmlFor="sp-turn" optional>TURN</Label><Input id="sp-turn" value={turn} onChange={(e) => setTurn(e.target.value)} placeholder="turn:turn.drispro.com:3478" />{/* i18n-ignore */}</div>
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5"><Label htmlFor="sp-user" optional>{t('User')}</Label><Input id="sp-user" value={user} onChange={(e) => setUser(e.target.value)} autoComplete="off" /></div>
             <div className="grid gap-1.5"><Label htmlFor="sp-pass" optional>{t('Password')}</Label><Input id="sp-pass" type="password" value={pass} onChange={(e) => setPass(e.target.value)} autoComplete="new-password"

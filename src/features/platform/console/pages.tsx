@@ -132,7 +132,7 @@ export function ServersPage() {
         <Card><CardContent className="p-4"><div className="text-xs text-muted-foreground">{t('Online now')}</div><div className="text-2xl font-semibold tabular text-success">{rows.filter(online).length}</div></CardContent></Card>
         <Card><CardContent className="p-4"><div className="text-xs text-muted-foreground">{t('Newest version in use')}</div><div className="text-2xl font-semibold tabular">{latest ?? '—'}</div></CardContent></Card>
       </div>
-      {tunnels.data && !tunnels.data.configured && <p className="mb-3 rounded-md bg-warning/10 p-3 text-[13px]">{t('The outside addresses (https://name.dris-ks.com) are made once Cloudflare is set: run Vendos-celesin-Cloudflare.bat once.')}</p>}
+      {tunnels.data && !tunnels.data.configured && <p className="mb-3 rounded-md bg-warning/10 p-3 text-[13px]">{t('The outside addresses (https://name.drispro.com) are made once Cloudflare is set: run Vendos-celesin-Cloudflare.bat once.')}</p>}
       <Card><CardContent className="overflow-x-auto p-0">
         {clients.isLoading ? <Skeleton className="m-4 h-48" /> : clients.isError ? <ErrorState error={clients.error} onRetry={() => void clients.refetch()} /> : !rows.length ? <EmptyState compact icon={Server} title={t('No local server yet')} description={t('When a client installs a local server with its licence code, it shows here.')} /> : (
           <Table className="min-w-[760px]">

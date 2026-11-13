@@ -4,7 +4,7 @@
 //   DRISPRO_PUBLISH_KEY=dpk_… node next-version.mjs [mac]
 import { readFileSync, writeFileSync } from 'node:fs'
 
-const API = (process.env.DRISPRO_API || 'https://api.erp.dris-ks.com').replace(/\/+$/, '')
+const API = (process.env.DRISPRO_API || 'https://api.drispro.com').replace(/\/+$/, '')
 const ANON = process.env.DRISPRO_ANON || (readFileSync("publish.mjs", "utf8").match(/eyJ[\w.-]+/)?.[0] ?? "")
 const KEY = process.env.DRISPRO_PUBLISH_KEY
 if (!KEY) { console.log('No DRISPRO_PUBLISH_KEY: the version stays as it is.'); process.exit(0) }

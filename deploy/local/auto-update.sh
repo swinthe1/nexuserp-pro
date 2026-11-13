@@ -9,7 +9,7 @@ here="$(cd "$(dirname "$0")" && pwd)"
 cd "$here"
 set -a; . ./.env; set +a
 [ "${AUTO_UPDATE:-true}" = "true" ] || { echo "$(date '+%F %T') automatic updates are off"; exit 0; }
-src="${UPDATE_SERVER:-https://erp.dris-ks.com}/updates"
+src="${UPDATE_SERVER:-https://app.drispro.com}/updates"
 latest="$(curl -fsS --max-time 30 "$src/latest.json")" || { echo "$(date '+%F %T') no connection to $src: no update"; exit 0; }
 ver="$(printf '%s' "$latest" | sed -n 's/.*"version":"\([^"]*\)".*/\1/p')"
 file="$(printf '%s' "$latest" | sed -n 's/.*"file":"\([^"]*\)".*/\1/p')"

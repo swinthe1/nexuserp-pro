@@ -18,8 +18,8 @@ jobs:
     timeout-minutes: 5
     env:
       GH_TOKEN: ${{ github.token }}
-      WEB: https://erp.dris-ks.com
-      API: https://api.erp.dris-ks.com/rest/v1/
+      WEB: https://app.drispro.com
+      API: https://api.drispro.com/rest/v1/
     steps:
       - name: Look at the website and the API
         id: look
@@ -39,7 +39,7 @@ jobs:
           echo "down=$down" >> "$GITHUB_OUTPUT"
           # certificates
           short=""
-          for host in erp.dris-ks.com api.erp.dris-ks.com; do
+          for host in app.drispro.com api.drispro.com; do
             end=$(echo | timeout 15 openssl s_client -servername "$host" -connect "$host:443" 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2)
             [ -z "$end" ] && continue
             left=$(( ($(date -d "$end" +%s) - $(date +%s)) / 86400 ))

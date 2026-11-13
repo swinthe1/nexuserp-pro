@@ -26,10 +26,10 @@ let jobs = []; const done = []
 const rpc = async (fn, a) => { if (fn === 'postier_tunnel_claim') return { cloudflare, jobs }; done.push(a); return null }
 
 // a new one
-jobs = [{ company_id: 'c1', hostname: 'lider-market.dris-ks.com', status: 'requested', tunnel_id: null, name: 'drispro-nxs-1' }]
+jobs = [{ company_id: 'c1', hostname: 'lider-market.drispro.com', status: 'requested', tunnel_id: null, name: 'drispro-nxs-1' }]
 await tunnelRound(rpc, () => {}, fakeFetch)
 assert.equal(state.tunnels.length, 1)
-assert.deepEqual(state.tunnels[0].config.ingress[0], { hostname: 'lider-market.dris-ks.com', service: 'http://drispro-web:80' })
+assert.deepEqual(state.tunnels[0].config.ingress[0], { hostname: 'lider-market.drispro.com', service: 'http://drispro-web:80' })
 assert.equal(state.dns[0].content, `${state.tunnels[0].id}.cfargotunnel.com`)
 assert.equal(state.dns[0].proxied, true)
 assert.equal(done[0].p_ok, true); assert.equal(done[0].p_token, 'tok-' + state.tunnels[0].id)
@@ -39,12 +39,12 @@ await tunnelRound(rpc, () => {}, fakeFetch)
 assert.equal(state.tunnels.length, 1); assert.equal(state.dns.length, 1); assert.equal(done[0].p_ok, true)
 // turned off: the address and the tunnel go
 done.length = 0
-jobs = [{ company_id: 'c1', hostname: 'lider-market.dris-ks.com', status: 'remove', tunnel_id: state.tunnels[0].id, name: 'drispro-nxs-1' }]
+jobs = [{ company_id: 'c1', hostname: 'lider-market.drispro.com', status: 'remove', tunnel_id: state.tunnels[0].id, name: 'drispro-nxs-1' }]
 await tunnelRound(rpc, () => {}, fakeFetch)
 assert.equal(state.tunnels.length, 0); assert.equal(state.dns.length, 0); assert.equal(done[0].p_ok, true)
 // Cloudflare refuses: the failure is said, the round goes on
 done.length = 0
-jobs = [{ company_id: 'c2', hostname: 'x.dris-ks.com', status: 'requested', tunnel_id: null, name: 'drispro-nxs-2' }]
+jobs = [{ company_id: 'c2', hostname: 'x.drispro.com', status: 'requested', tunnel_id: null, name: 'drispro-nxs-2' }]
 await tunnelRound(rpc, () => {}, async (url, init) => (init.method === 'POST' ? json(null, false, 403, [{ code: 10000, message: 'Authentication error' }]) : fakeFetch(url, init)))
 assert.equal(done[0].p_ok, false); assert.match(done[0].p_error, /403 10000 Authentication error/)
 console.log('tunnels: 4 cases passed')

@@ -29,6 +29,8 @@ if [ -d "$olddir" ] && [ ! -L "$olddir" ] && [ ! -e /opt/drispro ] && { [ "$dest
   moved=1
 fi
 [ -f "$dest/.env" ] || { echo "No DrisPRO server in $dest (no .env). For a first install run install.sh."; exit 1; }
+# DrisPRO moved from erp.dris-ks.com to app.drispro.com: the server's settings follow
+sed -i -e 's#https://api\.erp\.dris-ks\.com#https://api.drispro.com#g' -e 's#https://erp\.dris-ks\.com#https://app.drispro.com#g' "$dest/.env"
 if [ "$new" != "$dest" ]; then
   echo "==> Copy before the update"
   [ -n "${moved:-}" ] || /usr/local/bin/drispro-backup drispro-db /root/backups 14 before-update | tail -1 || true

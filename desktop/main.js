@@ -11,9 +11,9 @@ const crypto = require('crypto')
 const isMac = process.platform === 'darwin'
 const supportInput = require('./support-input')
 
-const DEFAULT_SERVER = 'https://erp.dris-ks.com'
+const DEFAULT_SERVER = 'https://app.drispro.com'
 // where licences are checked (our cloud), with its public key (anon role: only the public licence functions)
-const LICENCE_API = 'https://api.erp.dris-ks.com'
+const LICENCE_API = 'https://api.drispro.com'
 const LICENCE_KEY = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc5Mjg0NTY2MCwiZXhwIjo0OTQ4NTE5MjYwLCJyb2xlIjoiYW5vbiJ9.b6G9lu0yfVwPpWlddYYql4Hf0oelvnyrF-JH_xl3jd0'
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json')
 const defaults = { licence: '', mode: '', company: '', server: DEFAULT_SERVER, receiptPrinter: '', kitchenPrinter: '', documentPrinter: '', paperWidth: 80, drawer: { mode: 'none', host: '', port: 9100 }, autoStart: false, fullScreen: false, bounds: null }
@@ -24,6 +24,8 @@ function writeSettings(s) {
   try { fs.mkdirSync(path.dirname(settingsFile()), { recursive: true }); fs.writeFileSync(settingsFile(), JSON.stringify(s, null, 2)) } catch { /* keep going */ }
 }
 let settings = readSettings()
+// DrisPRO moved from erp.dris-ks.com to app.drispro.com: a computer set to the old address follows by itself
+if (/^https:\/\/erp\.dris-ks\.com/i.test(settings.server || '')) { settings.server = DEFAULT_SERVER; writeSettings(settings) }
 let win
 // a local server on a plain address (http://192.168.x.x) is treated like https, so offline work and the device's ids work there too
 if (/^http:\/\//.test(settings.server)) app.commandLine.appendSwitch('unsafely-treat-insecure-origin-as-secure', new URL(settings.server).origin)

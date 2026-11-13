@@ -57,7 +57,7 @@ set role authenticated;
 select t.login('zoe@platform.io');
 select t.ok((select jsonb_agg(x ->> 'status' order by x ->> 'requested_at') from jsonb_array_elements(public.platform_support_sessions(:'mini')) x) = '["ended", "expired", "declined"]'::jsonb,
   'the console shows every session: ended, unanswered, refused');
-select public.platform_support_settings('{"turn_url": "turn:turn.dris-ks.com:3478", "turn_username": "u", "turn_credential": "p"}');
+select public.platform_support_settings('{"turn_url": "turn:turn.drispro.com:3478", "turn_username": "u", "turn_credential": "p"}');
 select t.ok(jsonb_array_length(public.platform_support_start(:'pc') -> 'ice') = 2 and not (public.platform_support_settings() ? 'turn_credential'),
   'a TURN server is used once set; its password is not shown back');
 reset role;

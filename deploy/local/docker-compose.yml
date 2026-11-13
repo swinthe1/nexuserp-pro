@@ -168,7 +168,7 @@ services:
       MODE: local
       LICENCE: ${LICENCE:-}
       SERVER_ID: ${SERVER_ID:-}
-      LICENCE_SERVER: ${LICENCE_SERVER:-https://api.erp.dris-ks.com}
+      LICENCE_SERVER: ${LICENCE_SERVER:-https://api.drispro.com}
     volumes:
       - ./worker:/worker:ro
 

@@ -8,13 +8,13 @@ reset role;
 select set_config('request.jwt.claims', '', false), set_config('request.jwt.claim.sub', '', false);
 select id as co from public.companies where name = 'Kontrolle Test' \gset
 select email as boss from public.profiles where is_super_admin limit 1 \gset
-select code as old_code, local_server_id as old_server, deployment as old_dep from public.licenses where company_id = :'co' \gset
+select code as old_code, coalesce(local_server_id::text, '') as old_server, deployment as old_dep from public.licenses where company_id = :'co' \gset
 update public.licenses set code = 'NXS-T162-T162-T162', local_server_id = '11111111-1111-1111-1111-111111111111', deployment = 'any' where company_id = :'co';
 delete from app.local_tunnels where company_id = :'co';
 set role anon;
 select t.throws($q$select public.licence_tunnel('NXS-T162-T162-T162', '22222222-2222-2222-2222-222222222222')$q$, 'another server', 'only the licence''s own server asks');
 select public.licence_tunnel('NXS-T162-T162-T162', '11111111-1111-1111-1111-111111111111') as r \gset
-select t.ok(:'r'::jsonb ->> 'status' = 'pending' and :'r'::jsonb ->> 'hostname' like 'kontrolle-test%.dris-ks.com', 'the first ask: an address being made, from the company''s name');
+select t.ok(:'r'::jsonb ->> 'status' = 'pending' and :'r'::jsonb ->> 'hostname' like 'kontrolle-test%.drispro.com', 'the first ask: an address being made, from the company''s name');
 select t.throws('select public.postier_tunnel_claim()', '', 'only the server''s worker takes the work');
 reset role;
 select set_config('request.jwt.claims', '', false), set_config('request.jwt.claim.sub', '', false);

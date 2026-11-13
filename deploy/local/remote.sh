@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The outside address of this server (https://<name>.dris-ks.com): asked from DrisPRO with the licence,
+# The outside address of this server (https://<name>.drispro.com): asked from DrisPRO with the licence,
 # made by the cloud, then the tunnel is started here. Nothing to open on the router.
 #   sudo bash remote.sh [--wait SECONDS]     (install.sh and licence.sh run it; every night too)
 set -uo pipefail
@@ -8,7 +8,7 @@ cd "$here"
 set -a; . ./.env; set +a
 wait_s=0; [ "${1:-}" = "--wait" ] && wait_s="${2:-90}"
 CLOUD_ANON_KEY="${CLOUD_ANON_KEY:-eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc5Mjg0NTY2MCwiZXhwIjo0OTQ4NTE5MjYwLCJyb2xlIjoiYW5vbiJ9.b6G9lu0yfVwPpWlddYYql4Hf0oelvnyrF-JH_xl3jd0}"
-LICENCE_SERVER="${LICENCE_SERVER:-https://api.erp.dris-ks.com}"
+LICENCE_SERVER="${LICENCE_SERVER:-https://api.drispro.com}"
 [ -n "${LICENCE:-}" ] && [ -n "${SERVER_ID:-}" ] || { echo "    outside address: no licence yet"; exit 0; }
 [ "${REMOTE_ACCESS:-true}" = "true" ] || { echo "    outside address: turned off on this server (REMOTE_ACCESS=false)"; docker rm -f drispro-tunnel >/dev/null 2>&1; exit 0; }
 setenv() { sed -i "/^$1=/d" .env; printf '%s=%s\n' "$1" "$2" >> .env; }

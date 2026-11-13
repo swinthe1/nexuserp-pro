@@ -6,7 +6,7 @@
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 
-const API = (process.env.DRISPRO_API || 'https://api.erp.dris-ks.com').replace(/\/+$/, '')
+const API = (process.env.DRISPRO_API || 'https://api.drispro.com').replace(/\/+$/, '')
 const ANON = process.env.DRISPRO_ANON || 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc5Mjg0NTY2MCwiZXhwIjo0OTQ4NTE5MjYwLCJyb2xlIjoiYW5vbiJ9.b6G9lu0yfVwPpWlddYYql4Hf0oelvnyrF-JH_xl3jd0'
 const KEY = process.env.DRISPRO_PUBLISH_KEY
 if (!KEY) { console.log('No DRISPRO_PUBLISH_KEY: the installer is built but not published.'); process.exit(0) }
