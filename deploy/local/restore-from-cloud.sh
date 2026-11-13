@@ -23,7 +23,7 @@ copies="$(printf '%s' "$list" | grep -o '"name":"[^"]*\.enc\.part000"' | sed 's/
 [ -n "$copies" ] || { echo "No copies of this licence in the cloud."; exit 1; }
 if [ "${1:-}" = list ]; then printf '%s\n' "$copies"; exit 0; fi
 pick="${1:-$(printf '%s\n' "$copies" | tail -1)}"
-printf '%s\n' "$copies" | grep -qx "$pick" || { echo "No copy named $pick (see: restore-from-cloud.sh list)"; exit 1; }
+grep -qx "$pick" <<<"$copies" || { echo "No copy named $pick (see: restore-from-cloud.sh list)"; exit 1; }
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
 echo "==> downloading $pick"
 for p in $(printf '%s' "$list" | grep -o "\"name\":\"$pick\.part[0-9]*\"" | sed 's/"name":"//; s/"$//' | sort); do

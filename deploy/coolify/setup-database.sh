@@ -64,7 +64,8 @@ applied="$(psql_as postgres -tAc "select name from drispro_meta.applied_migratio
 skipped=0
 for f in supabase/migrations/*.sql; do
   name="$(basename "$f")"
-  if printf '%s\n' "$applied" | grep -qxF "$name"; then skipped=$((skipped + 1)); continue; fi
+  # a here-string, not a pipe: with pipefail, grep -q stopping early made printf fail and a file look new
+  if grep -qxF "$name" <<<"$applied"; then skipped=$((skipped + 1)); continue; fi
   echo "   apply $name"
   docker cp "$f" "$container:/tmp/$name"
   # one transaction per file, recorded only when it succeeds
