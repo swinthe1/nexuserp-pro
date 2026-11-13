@@ -44,7 +44,8 @@ if (-not $have) {
 }
 
 Step '3/6 Systemd dhe rrjeti'
-wsl.exe -d $Distro -u root -- bash -c "printf '[boot]\nsystemd=true\n' > /etc/wsl.conf"
+# no backslashes in what goes to wsl.exe: its shell drops them
+wsl.exe -d $Distro -u root -- bash -c "echo '[boot]' > /etc/wsl.conf && echo 'systemd=true' >> /etc/wsl.conf"
 # Windows 11 22H2+ / Server 2025: the server's ports are this computer's ports (mirrored); older: a port forward
 $build = [int](Get-CimInstance Win32_OperatingSystem).BuildNumber
 $wslconfig = Join-Path $env:USERPROFILE '.wslconfig'
@@ -68,7 +69,9 @@ $port = 80
 while (Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue) { $port = if ($port -eq 80) { 8080 } else { $port + 1 } }
 if ($port -ne 80) { Write-Host "Porti 80 është i zënë nga një program tjetër: DrisPRO do të punojë në portin $port." -ForegroundColor Yellow }
 $url = if ($port -eq 80) { "http://$ip" } else { "http://${ip}:$port" }
-$src = (wsl.exe -d $Distro -u root -- wslpath -a "$bundle") -replace "`0", ''
+# the bundle folder as Linux sees it: C:\Users\… → /mnt/c/Users/… (wslpath loses the backslashes on the way)
+$w = "$bundle"
+$src = '/mnt/' + $w.Substring(0, 1).ToLower() + ($w.Substring(2) -replace '\\', '/')
 wsl.exe -d $Distro -u root -- bash -c "mkdir -p /opt/drispro && cp -r '$($src.Trim())/.' /opt/drispro/ && chmod +x /opt/drispro/*.sh /opt/drispro/deploy/coolify/*.sh"
 wsl.exe -d $Distro -u root -- bash -c "cd /opt/drispro && HTTP_PORT=$port PUBLIC_URL=$url bash install.sh"
 if ($LASTEXITCODE -ne 0) { Fail 'Instalimi në Ubuntu nuk përfundoi. Bëni screenshot të kësaj dritareje.' }
