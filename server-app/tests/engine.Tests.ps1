@@ -1,4 +1,4 @@
-# The engine's own logic, on a Windows build machine (no WSL there: what needs Linux is tested on a real server).
+﻿# The engine's own logic, on a Windows build machine (no WSL there: what needs Linux is tested on a real server).
 BeforeAll {
   $env:DRIS_ENGINE_TEST = '1'
   . (Join-Path $PSScriptRoot '..\engine\engine.ps1') -Action status

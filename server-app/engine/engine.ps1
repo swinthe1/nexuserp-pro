@@ -1,4 +1,4 @@
-<#
+﻿<#
   DrisPRO Server: the engine under the installer and the tray program (Windows PowerShell 5.1).
 
   Every step checks first, puts right what it can, and checks again; nothing is done twice. What it
