@@ -11,6 +11,7 @@ const ImportPage = lazyPage(() => import('./pages/import-page'), 'ImportPage')
 const MigrationPage = lazyPage(() => import('./pages/migration-page'), 'MigrationPage')
 const AutomationPage = lazyPage(() => import('./pages/automation-page'), 'AutomationPage')
 const IntegrationsPage = lazyPage(() => import('@/features/portal/integrations-page'), 'IntegrationsPage')
+const BusinessDocumentsPage = lazyPage(() => import('./pages/business-documents-page'), 'BusinessDocumentsPage')
 const NotificationsPage = lazyPage(() => import('./pages/notifications-page'), 'NotificationsPage')
 const AssistantKnowledgePage = lazyPage(() => import('./pages/assistant-page'), 'AssistantKnowledgePage')
 
@@ -25,6 +26,7 @@ export const settingsRoutes: RouteObject[] = [
     { path: 'roles', element: <RolesPage /> },
     { path: 'workflows', element: <WorkflowsPage /> },
     { path: 'numbering', element: <NumberingPage /> },
+    { path: 'documents', element: <BusinessDocumentsPage /> },
     { path: 'migration', element: <MigrationPage /> },
     { path: 'integrations', element: <IntegrationsPage /> },
   ] },

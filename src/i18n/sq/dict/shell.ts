@@ -457,4 +457,5 @@ export default {
   "A new item": "Artikull i ri",
   "Something you sell or keep in stock": "Diçka që shet ose mban në stok",
   "Shop till|menu": "Arkat (POS)",
+  "Business documents|menu": "Dokumentet e biznesit",
 } satisfies Dict

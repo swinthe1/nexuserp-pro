@@ -5,7 +5,7 @@ import { Lightbulb, Undo2,
   ArrowDownToLine, ArrowLeftRight, BadgeDollarSign, Cog, Layers, Banknote, Building, HandCoins, ListTree, Network, Settings2, BarChart3, Boxes, Building2, ClipboardList, Factory, FileCheck2, FileStack, FileText, 
   Kanban, Landmark, LayoutDashboard, Magnet, PackageCheck, PackageSearch, Receipt, RefreshCw, Scale, Ship, ShoppingBag, ShoppingCart,
   BedDouble, BookUser, CalendarRange, ConciergeBell, Repeat, ScanText, SlidersHorizontal, Store, Tag, Tags, Ticket, CalendarCheck, Percent, Truck, TriangleAlert, Users, Vault, Warehouse, Smartphone, Plug, ReceiptText, IdCard, Settings, CreditCard, type LucideIcon, Activity, ArrowUpDown, BadgeEuro, BookOpen, CalendarPlus, CheckCheck, CircleDollarSign, Clock, Coins, Combine, FileScan, FolderTree, Gift, Handshake, LineChart, Map, Move, NotebookTabs, PieChart, ScanBarcode, Send, ListChecks, ChartSpline, PackageMinus, GraduationCap,
-  FileSignature, ListTodo, ScanSearch, Grid3x3, Gauge, Award, Gavel, Brain, FolderDown, MessageSquare, Trash2, Shuffle, Weight, ShieldAlert } from 'lucide-react'
+  FileSignature, ListTodo, ScanSearch, Grid3x3, Gauge, Award, Gavel, Brain, FolderDown, FolderOpen, MessageSquare, Trash2, Shuffle, Weight, ShieldAlert } from 'lucide-react'
 import { msg } from '@/i18n'
 
 export interface NavItem {
@@ -289,6 +289,7 @@ export const NAV: NavSection[] = [
     title: msg('Administration|menu'),
     items: [
       { label: msg('Company settings|menu'), href: '/settings', icon: Building2, perm: 'admin.read', keywords: ['profile', 'nipt', 'fiscal codes', 'preferences'], hub: msg('Settings|menu') },
+      { label: msg('Business documents|menu'), href: '/settings/documents', icon: FolderOpen, perm: 'admin.read', keywords: ['certifikata e biznesit', 'certifikata', 'dokumentet e biznesit', 'informatat e biznesit', 'njësitë me adresa', 'vizita e atk', 'licenca', 'business certificate', 'documents'], hub: msg('Settings|menu') },
       { label: msg('Users and roles'), href: '/settings/users', icon: KeyRound, perm: 'admin.read', keywords: ['invite', 'members', 'permissions', 'roles', 'access', 'security', 'siguria', 'permission matrix', 'custom role'], hub: msg('Settings|menu') },
       // the units are how the company is built: found here too, not only under the stock
       { label: msg('Warehouses|menu'), href: '/inventory/warehouses', icon: Store, perm: 'inventory.read', also: true, keywords: ['njësitë', 'njësitë e biznesit', 'dyqanet', 'marketet', 'lokalet', 'depot', 'pikat', 'units', 'branches'], hub: msg('Settings|menu') },

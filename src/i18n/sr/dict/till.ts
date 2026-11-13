@@ -1697,4 +1697,5 @@ export default {
   "copies printed: {n}": "odštampanih kopija: {n}",
   "Another cashier's shift is open": "Otvorena je smena drugog kasira",
   "Each cashier sells in her own shift. Whoever opened this one closes it with her count, then you open yours.": "Svaki kasir prodaje u svojoj smeni. Ko je otvorio ovu, zatvara je svojim brojanjem, pa vi otvarate svoju.",
+  "Business documents|menu": "Dokumenti preduzeća",
 } satisfies Dict

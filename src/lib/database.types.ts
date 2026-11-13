@@ -2331,6 +2331,59 @@ export type Database = {
           { foreignKeyName: "company_account_defaults_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
         ]
       }
+      company_documents: {
+        Row: {
+          id: string
+          company_id: string
+          kind: string
+          title: string
+          valid_until: string | null
+          note: string | null
+          storage_path: string
+          file_name: string
+          mime_type: string | null
+          size_bytes: number | null
+          created_at: string
+          created_by: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          kind?: string
+          title: string
+          valid_until?: string | null
+          note?: string | null
+          storage_path: string
+          file_name: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          kind?: string
+          title?: string
+          valid_until?: string | null
+          note?: string | null
+          storage_path?: string
+          file_name?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "company_documents_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
       company_members: {
         Row: {
           id: string
@@ -17128,6 +17181,22 @@ export type Database = {
         Returns: string
       }
       books_check: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
+      business_documents_email: {
+        Args: {
+          p_company: string
+          p_to: string
+          p_subject: string
+          p_message: string
+          p_files: Json
+        }
+        Returns: string
+      }
+      business_sheet: {
         Args: {
           p_company: string
         }

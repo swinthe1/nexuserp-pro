@@ -177,6 +177,16 @@ export const GUIDES_D: Record<string, Guide> = {
     mistakes: [{ sq: 'Një rol i personalizuar fshihet vetëm pasi t\'ua heqësh të gjithëve.', en: 'A custom role can be deleted only after you take it away from everyone.' }],
     related: [{ href: '/settings/users', label: { sq: 'Përdoruesit', en: 'Users' } }],
   },
+  '/settings/documents': {
+    what: { sq: 'Dokumentet e biznesit: certifikatat dhe letrat tjera si skedarë, bashkë me fletën "Informatat e biznesit" që e bën programi nga të dhënat e kompanisë dhe njësive.', en: 'Business documents: the certificates and other papers as files, with the "Business information" sheet the program makes from the company and its units.' },
+    steps: [
+      { sq: 'Kliko "Shto një dokument", zgjidh çfarë është dhe skedarin (PDF ose foto deri në 5 MB), pastaj "Ruaj".', en: 'Click "Add a document", choose what it is and the file (PDF or a photo up to 5 MB), then "Save".' },
+      { sq: 'Te "Informatat e biznesit" kliko "Shtyp" ose "Shkarko PDF" për fletën me të dhënat dhe njësitë me adresa.', en: 'At "Business information" click "Print" or "Download PDF" for the sheet with the data and the units with their addresses.' },
+      { sq: 'Kliko "Dërgo me email", zgjidh dokumentet, shkruaj adresën dhe kliko "Dërgo".', en: 'Click "Send by email", choose the documents, write the address and click "Send".' },
+    ],
+    mistakes: [{ sq: 'Emaili del nga emaili i kompanisë; pa të dërgimi nuk bëhet. Vendoset te Automatizimet.', en: 'The message goes from the company mailbox; without one nothing is sent. It is set at Automations.' }],
+    related: [{ href: '/settings', label: { sq: 'Cilësimet e kompanisë', en: 'Company settings' } }],
+  },
   '/settings/numbering': {
     what: { sq: 'Numërimi i dokumenteve: si numërohet çdo lloj dokumenti. Numrat nuk kanë zbrazëtira dhe nuk përdoren dy herë.', en: 'Document numbering: how each kind of document is numbered. Numbers have no gaps and are never used twice.' },
     steps: [

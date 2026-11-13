@@ -934,4 +934,9 @@ export default {
   "This category has sub-categories of its own: move them first": "Kjo kategori ka nënkategoritë e veta: zhvendosini ato së pari",
   "There is already a category with this name": "Ekziston tashmë një kategori me këtë emër",
   "This category already has a sub-category with this name": "Kjo kategori e ka tashmë një nënkategori me këtë emër",
+  "Choose at least one document": "Zgjidhni të paktën një dokument",
+  "At most 12 files in one message": "Më së shumti 12 skedarë në një mesazh",
+  "A file is empty or damaged": "Një skedar është bosh ose i dëmtuar",
+  "Only PDF, JPG and PNG files go by email": "Me email shkojnë vetëm skedarë PDF, JPG dhe PNG",
+  "The files together are too large for one message (10 MB)": "Skedarët së bashku janë tepër të mëdhenj për një mesazh (10 MB)",
 } satisfies Dict
