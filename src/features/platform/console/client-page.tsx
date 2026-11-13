@@ -21,6 +21,7 @@ import { describeError } from '@/lib/errors'
 import { daysUntil } from '@/lib/license'
 import { FEATURES } from '@/lib/plans'
 import { ClientDevicesTab } from './devices'
+import { ClientUnitsTab } from './units-tab'
 import { cn, formatDate } from '@/lib/utils'
 import { type ClientDetail, useClientDetail, useUpdateCompany, usePlatformClients, useSetTraining } from '../api'
 import { businessTypeLabel } from '../business-types'
@@ -30,7 +31,7 @@ import { EventRow } from './events'
 import { PeopleTab } from './people-tab'
 import { ClientContracts } from './contracts'
 
-const TABS = ['summary', 'contracts', 'licence', 'devices', 'people', 'links', 'diary', 'danger'] as const
+const TABS = ['summary', 'contracts', 'licence', 'units', 'devices', 'people', 'links', 'diary', 'danger'] as const
 type Tab = (typeof TABS)[number]
 
 function Field({ label, value, mono }: { label: string; value: React.ReactNode; mono?: boolean }) {
@@ -88,6 +89,7 @@ export function ClientPage() {
           <TabsTrigger value="summary">{t('Summary')}</TabsTrigger>
           <TabsTrigger value="contracts">{t('Contracts')}</TabsTrigger>
           <TabsTrigger value="licence">{t('Licence')}</TabsTrigger>
+          <TabsTrigger value="units">{t('Units|places')} <span className="ml-1 text-xs text-muted-foreground">{c.units ?? ''}</span></TabsTrigger>
           <TabsTrigger value="devices">{t('Computers')}{c.devices?.pending ? <span className="ml-1 rounded-full bg-warning px-1.5 text-[11px] font-semibold text-warning-foreground">{c.devices.pending}</span> : null}</TabsTrigger>
           <TabsTrigger value="people">{t('People')} <span className="ml-1 text-xs text-muted-foreground">{d.members.length}</span></TabsTrigger>
           <TabsTrigger value="links">{t('Links and server')}</TabsTrigger>
@@ -100,6 +102,7 @@ export function ClientPage() {
       {tab === 'contracts' && <ClientContracts companyId={c.id} />}
       {tab === 'licence' && <LicenceTab d={d} c={c} />}
       {tab === 'people' && <PeopleTab d={d} />}
+      {tab === 'units' && <ClientUnitsTab company={c.id} />}
       {tab === 'devices' && <ClientDevicesTab company={c.id} />}
       {tab === 'links' && <LinksTab d={d} c={c} />}
       {tab === 'diary' && <Card><CardContent className="p-4">{d.events.length ? <ul className="divide-y">{d.events.map((e) => <EventRow key={e.id} e={e} showClient={false} />)}</ul>

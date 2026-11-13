@@ -7,7 +7,7 @@
 <style>
   :root {
     --bg: #f6f8f7; --card: #ffffff; --ink: #14201b; --muted: #5d6b65; --line: #dfe6e2;
-    --brand: #0f8a5f; --brand-ink: #ffffff; --brand-soft: #e6f4ee;
+    --brand: #0e8a5f; --brand-ink: #ffffff; --brand-soft: #e6f4ee;
     --ok: #0f8a5f; --warn: #b7791f; --warn-soft: #fdf3e1; --bad: #c0392b; --bad-soft: #fbeaea;
   }
   * { box-sizing: border-box; }
@@ -15,7 +15,7 @@
   body { display: grid; grid-template-columns: 230px 1fr; }
   aside { background: #0e2a20; color: #d7e7df; padding: 26px 20px; display: flex; flex-direction: column; gap: 22px; }
   .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; color: #fff; }
-  .logo b { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: #22c58b; color: #0e2a20; font-size: 15px; }
+  .logo img { border-radius: 8px; }
   .logo small { display: block; font-weight: 400; font-size: 12px; color: #9fbcae; }
   ol.path { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
   ol.path li { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 7px; color: #9fbcae; }
@@ -67,7 +67,7 @@
 </head>
 <body>
 <aside>
-  <div class="logo"><b>D</b><div>DrisPRO Server<small id="ver"></small></div></div>
+  <div class="logo"><img src="logo.svg" alt="" width="34" height="34"><div>Dris<span style="color:#22c58b">PRO</span> Server<small id="ver"></small></div></div>
   <ol class="path" id="path">
     <li data-k="checks"><i>1</i>Kontrolli</li>
     <li data-k="prepare"><i>2</i>Përgatitja</li>

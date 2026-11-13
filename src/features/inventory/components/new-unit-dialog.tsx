@@ -1,5 +1,4 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { ChefHat, Factory, Store, Warehouse } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { useCompany } from '@/app/company-provider'
@@ -9,19 +8,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { usePriceLists } from '@/features/sales/api'
-import { msg, t, td } from '@/i18n'
+import { t, td } from '@/i18n'
+import { UNIT_CATEGORIES, unitCategory, type UnitCategory } from '@/lib/unit-categories'
 import { describeError, unwrap } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { useWarehouses } from '../api'
 
-type Kind = 'store' | 'restaurant' | 'warehouse' | 'production'
-const KINDS: { kind: Kind; icon: typeof Store; title: string; text: string }[] = [
-  { kind: 'store', icon: Store, title: msg('Market or shop'), text: msg('Sells at the till: stock, tills, labels.') },
-  { kind: 'restaurant', icon: ChefHat, title: msg('Restaurant or café'), text: msg('Tables and waiters at the till; recipes take the ingredients.') },
-  { kind: 'warehouse', icon: Warehouse, title: msg('Warehouse|kind'), text: msg('Keeps goods and supplies the other units. No till.') },
-  { kind: 'production', icon: Factory, title: msg('Kitchen or production'), text: msg('Makes products from recipes. No till.') },
-]
+type Kind = UnitCategory
 
 /**
  * "Njësi e re" in one form: what kind of unit, where, its number at ATK, how many tills and where its goods
@@ -34,23 +28,25 @@ export function NewUnitDialog({ open, onOpenChange, onCreated }: { open: boolean
   const priceLists = usePriceLists()
   const depots = units.filter((w) => w.warehouse_type === 'warehouse')
   const blank = React.useCallback(() => ({
-    kind: 'store' as Kind, name: '', code: '', city: '', address: '', atk: '', tills: '1', from: depots[0]?.id ?? '', priceList: '',
+    kind: 'market' as Kind, name: '', code: '', city: '', address: '', atk: '', tills: '1', from: depots[0]?.id ?? '', priceList: '',
   }), [depots[0]?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   const [v, setV] = React.useState(blank)
   const [busy, setBusy] = React.useState(false)
   React.useEffect(() => { if (open) setV(blank()) }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
   const set = <K extends keyof ReturnType<typeof blank>>(k: K, x: ReturnType<typeof blank>[K]) => setV((s) => ({ ...s, [k]: x }))
-  const sells = v.kind === 'store' || v.kind === 'restaurant'
+  const cat = unitCategory(v.kind)!
+  const sells = cat.sells
+  const noModule = cat.restaurant && !hasFeature('restaurant')
   // a code from the name, until one is written: "Lider Market 2" → LM2
   const suggested = v.name.split(/[\s–-]+/).filter(Boolean).map((w) => (/^\d+$/.test(w) ? w : w[0])).join('').toUpperCase().slice(0, 6)
   const code = (v.code || suggested).toUpperCase()
-  const ok = v.name.trim() && code && (!v.atk || /^\d{1,3}$/.test(v.atk))
+  const ok = v.name.trim() && code && (!v.atk || /^\d{1,3}$/.test(v.atk)) && !noModule
 
   const submit = async () => {
     setBusy(true)
     try {
       const r = unwrap(await supabase.rpc('unit_create', { p: {
-        company_id: companyId, kind: v.kind, name: v.name.trim(), code, city: v.city, address: v.address, atk_branch_id: v.atk || null,
+        company_id: companyId, category: v.kind, name: v.name.trim(), code, city: v.city, address: v.address, atk_branch_id: v.atk || null,
         tills: sells ? Number(v.tills) || 0 : 0, supplied_from_id: v.from || null, price_list_id: v.priceList || null,
       } })) as { id: string; tills: string[] }
       await qc.invalidateQueries()
@@ -71,15 +67,16 @@ export function NewUnitDialog({ open, onOpenChange, onCreated }: { open: boolean
         <div className="grid gap-5">
           <section className="grid gap-2">
             <Label>{t('What kind of unit')}</Label>
-            <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label={t('What kind of unit')}>
-              {KINDS.filter((k) => k.kind !== 'restaurant' || hasFeature('restaurant')).map((k) => (
-                <button key={k.kind} type="button" role="radio" aria-checked={v.kind === k.kind} onClick={() => set('kind', k.kind)}
-                  className={cn('flex items-start gap-2.5 rounded-md border p-3 text-left transition-colors', v.kind === k.kind ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted/50')}>
-                  <k.icon className={cn('mt-0.5 size-4 shrink-0', v.kind === k.kind ? 'text-primary' : 'text-muted-foreground')} />
-                  <span><span className="block text-sm font-medium">{t(k.title)}</span><span className="block text-[12px] leading-snug text-muted-foreground">{t(k.text)}</span></span>
+            <div className="grid gap-1.5 sm:grid-cols-3" role="radiogroup" aria-label={t('What kind of unit')}>
+              {UNIT_CATEGORIES.map((k) => (
+                <button key={k.key} type="button" role="radio" aria-checked={v.kind === k.key} onClick={() => set('kind', k.key)}
+                  className={cn('flex items-center gap-2 rounded-md border px-2.5 py-2 text-left text-[13px] transition-colors', v.kind === k.key ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted/50')}>
+                  <k.icon className={cn('size-4 shrink-0', v.kind === k.key ? 'text-primary' : 'text-muted-foreground')} />{t(k.label)}
                 </button>
               ))}
             </div>
+            <p className="text-[12px] text-muted-foreground">{t(cat.text)}</p>
+            {noModule && <p className="rounded-md bg-warning/10 p-2 text-[12.5px]">{t('Restaurant tills come with the restaurant module, which this licence does not have: ask DrisPRO to add it.')}</p>}
           </section>
 
           <section className="grid items-start gap-3 sm:grid-cols-[minmax(0,1fr)_150px]">
@@ -99,7 +96,7 @@ export function NewUnitDialog({ open, onOpenChange, onCreated }: { open: boolean
               <div className="grid gap-1.5"><Label>{t('Tills')}</Label>
                 <Select value={v.tills} onValueChange={(x) => set('tills', x)}><SelectTrigger aria-label={t('Tills')}><SelectValue /></SelectTrigger>
                   <SelectContent>{['0', '1', '2', '3', '4', '5', '6', '8', '10'].map((n) => <SelectItem key={n} value={n}>{n === '0' ? t('No till yet') : n}</SelectItem>)}</SelectContent></Select>
-                <p className="text-[12px] text-muted-foreground">{v.kind === 'restaurant' ? t('Restaurant tills: tables, waiters, orders to the kitchen.') : t('Shop tills: scan and sell.')} {t('Their fiscal devices are added at ATK later.')}</p></div>
+                <p className="text-[12px] text-muted-foreground">{cat.restaurant ? t('Restaurant tills: tables, waiters, orders to the kitchen.') : t('Shop tills: scan and sell.')} {t('Their fiscal devices are added at ATK later.')}</p></div>
               <div className="grid gap-1.5"><Label optional>{t('Price list')}</Label>
                 <Select value={v.priceList || 'none'} onValueChange={(x) => set('priceList', x === 'none' ? '' : x)}><SelectTrigger aria-label={t('Price list')}><SelectValue /></SelectTrigger>
                   <SelectContent><SelectItem value="none">{t('The items’ own prices')}</SelectItem>
