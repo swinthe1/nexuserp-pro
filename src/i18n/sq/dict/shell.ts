@@ -477,4 +477,8 @@ export default {
   "First steps": "Hapat e parë",
   "{done} of {n} done": "{done} nga {n} të kryera",
   "Hide": "Fshih",
+  "Check for a new version": "Kontrollo për version të ri",
+  "Looking for a new version…": "Po kërkohet version i ri…",
+  "You have the newest version.": "Keni versionin më të ri.",
+  "No connection to the server: try again in a moment.": "Nuk ka lidhje me serverin: provoni përsëri pas pak.",
 } satisfies Dict

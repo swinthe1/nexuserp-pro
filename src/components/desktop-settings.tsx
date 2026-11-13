@@ -1,6 +1,7 @@
-import { Printer } from 'lucide-react'
+import { Printer, RefreshCw } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
+import { checkForNewVersion } from '@/components/pwa-prompts'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -55,6 +56,7 @@ export function DesktopSettingsDialog({ open, onOpenChange }: { open: boolean; o
         <DialogHeader>
           <DialogTitle>{t('This computer')}</DialogTitle>
           <DialogDescription>{mac ? t('DrisPRO for Mac {version}. These choices are kept on this computer only.', { version }) : t('DrisPRO for Windows {version}. These choices are kept on this computer only.', { version })}</DialogDescription>
+          <Button size="sm" variant="outline" className="mt-2 w-fit" onClick={() => void checkForNewVersion()}><RefreshCw /> {t('Check for a new version')}</Button>
         </DialogHeader>
         {!s ? <div className="h-60" /> : (
           <div className="grid max-h-[65dvh] gap-4 overflow-y-auto pr-1">

@@ -157,6 +157,8 @@ const fromApp = (e) => { try { const u = new URL(e.senderFrame?.url ?? e.sender.
 function handle(name, fn) { ipcMain.handle(name, async (e, arg) => { if (!fromApp(e)) throw new Error('not allowed'); return fn(arg, e) }) }
 
 handle('drispro:downloads', () => downloads.slice(0, 10))
+// the "Check for a new version" button of the page: the same check as the menu, with an answer either way
+handle('drispro:check-update', () => checkForUpdate(true))
 handle('drispro:show-in-folder', (p) => { if (!known(p)) return false; shell.showItemInFolder(p); return true })
 handle('drispro:open-file', async (p) => { if (!known(p)) return false; return (await shell.openPath(p)) === '' })
 handle('drispro:info', () => ({ version: app.getVersion(), platform: process.platform, server: settings.server, hostname: os.hostname(),
@@ -438,7 +440,11 @@ let updating = false
 // 'Later' asks again in an hour, not only at the next start: a till open for weeks still gets the new version
 let declined = { version: '', at: 0 }
 async function checkForUpdate(manual = false) {
-  if (updating || !app.isPackaged) return
+  if (!app.isPackaged) return
+  if (updating) {
+    if (manual) await dialog.showMessageBox(win, { type: 'info', message: 'Versioni i ri po shkarkohet tani.', detail: 'Pyetja për ta instaluar del sapo të mbarojë shkarkimi.', buttons: ['Mirë'] })
+    return
+  }
   updating = true
   try {
     const r = await enet.fetch(`${LICENCE_API}/rest/v1/rpc/desktop_release`, { method: 'POST', headers: { apikey: LICENCE_KEY, 'Content-Type': 'application/json' },

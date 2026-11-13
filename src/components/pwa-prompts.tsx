@@ -40,6 +40,23 @@ export function PwaPrompts() {
   return null
 }
 
+/**
+ * "Check for a new version": the program on a computer looks for a newer installer and answers in its own
+ * window; the pages look for a newer version on the server and, if there is one, offer to reload.
+ */
+export async function checkForNewVersion() {
+  const { desktop } = await import('@/lib/desktop')
+  if (desktop?.checkUpdate) { await desktop.checkUpdate(); return }
+  const reg = await navigator.serviceWorker?.getRegistration().catch(() => undefined)
+  if (!reg) { window.location.reload(); return }
+  const id = toast.loading(t('Looking for a new version…'))
+  try {
+    await reg.update()
+    if (reg.installing || reg.waiting) toast.dismiss(id)   // the "A new version is ready" message follows
+    else toast.success(t('You have the newest version.'), { id })
+  } catch { toast.error(t('No connection to the server: try again in a moment.'), { id }) }
+}
+
 type BeforeInstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }> }
 let deferred: BeforeInstallPromptEvent | null = null
 const listeners = new Set<() => void>()

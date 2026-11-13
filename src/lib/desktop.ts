@@ -20,6 +20,8 @@ export interface DrisproDesktop {
   reactivate?: () => Promise<boolean>
   /** the files the program saved (from version 1.6) */
   downloads?: () => Promise<DesktopDownload[]>
+  /** looks for a newer program now and answers in its own window (from version 2.54.2) */
+  checkUpdate?: () => Promise<void>
   showInFolder?: (path: string) => Promise<boolean>
   openFile?: (path: string) => Promise<boolean>
   onDownloaded?: (cb: (d: DesktopDownload) => void) => () => void

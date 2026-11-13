@@ -1699,4 +1699,8 @@ export default {
   "Each cashier sells in her own shift. Whoever opened this one closes it with her count, then you open yours.": "Svaki kasir prodaje u svojoj smeni. Ko je otvorio ovu, zatvara je svojim brojanjem, pa vi otvarate svoju.",
   "Business documents|menu": "Dokumenti preduzeća",
   "Bank book|ledger": "Dnevnik banke",
+  "Check for a new version": "Proveri da li postoji nova verzija",
+  "Looking for a new version…": "Traži se nova verzija…",
+  "You have the newest version.": "Imate najnoviju verziju.",
+  "No connection to the server: try again in a moment.": "Nema veze sa serverom: pokušajte ponovo za trenutak.",
 } satisfies Dict

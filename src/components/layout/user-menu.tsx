@@ -1,4 +1,4 @@
-import { Download, IdCard, KeyRound, Languages, LaptopMinimal, LayoutGrid, LogOut, Monitor, Moon, PanelLeft, BriefcaseBusiness, ServerCog, Smartphone, Sparkles, Sun, UserRound, GraduationCap, FolderDown, Minus, Plus, ZoomIn, PanelTop, Lightbulb } from 'lucide-react'
+import { Download, IdCard, KeyRound, Languages, LaptopMinimal, LayoutGrid, LogOut, Monitor, Moon, PanelLeft, BriefcaseBusiness, ServerCog, Smartphone, Sparkles, Sun, UserRound, GraduationCap, FolderDown, Minus, Plus, ZoomIn, PanelTop, Lightbulb, RefreshCw } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/app/auth-provider'
@@ -16,7 +16,7 @@ import {
 import { LOCALES, type Locale, t, td, useLocale } from '@/i18n'
 import { chooseLocale } from '@/i18n/language'
 import { ChangePasswordDialog } from '@/components/change-password-dialog'
-import { useInstallApp } from '@/components/pwa-prompts'
+import { checkForNewVersion, useInstallApp } from '@/components/pwa-prompts'
 import { initials } from '@/lib/utils'
 import { DesktopSettingsDialog } from '@/components/desktop-settings'
 import { isDesktop } from '@/lib/desktop'
@@ -92,6 +92,7 @@ export function UserMenu() {
         <ZoomRow />
         <TabsRow />
         {isDesktop && <DropdownMenuItem onSelect={() => setPcOpen(true)}><LaptopMinimal /> {t('This computer: printers')}</DropdownMenuItem>}
+        <DropdownMenuItem onSelect={() => void checkForNewVersion()}><RefreshCw /> {t('Check for a new version')}</DropdownMenuItem>
         {!isDesktop && canInstall && <DropdownMenuItem onSelect={() => void install()}><Download /> {t('Install the app on this device')}</DropdownMenuItem>}
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => void signOut()}><LogOut /> {t('Sign out')}</DropdownMenuItem>
