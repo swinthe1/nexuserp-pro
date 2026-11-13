@@ -15,7 +15,7 @@ mkdir -p "$out/worker" && cp deploy/worker/*.mjs "$out/worker/"
 cp -r deploy/local/box "$out/box"
 mkdir -p "$out/supabase" "$out/deploy/coolify"
 cp -r supabase/migrations "$out/supabase/migrations"
-cp deploy/coolify/setup-database.sh deploy/coolify/backup-database.sh deploy/coolify/install-backup.sh deploy/coolify/restore-database.sh "$out/deploy/coolify/"
+cp deploy/coolify/setup-database.sh deploy/coolify/backup-database.sh deploy/coolify/install-backup.sh deploy/coolify/offsite-copy.sh deploy/coolify/restore-database.sh "$out/deploy/coolify/"
 echo "$version" > "$out/VERSION"
 chmod +x "$out"/*.sh "$out"/box/*.sh "$out"/deploy/coolify/*.sh
 ( cd build/local && tar czf "drispro-server-$version.tar.gz" drispro-server && zip -qr "drispro-server-$version.zip" drispro-server )

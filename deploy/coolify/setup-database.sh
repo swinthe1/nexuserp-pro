@@ -34,6 +34,11 @@ psql_as() { # user, then psql args
 echo "==> Waiting for the database"
 for i in $(seq 1 60); do psql_as postgres -tAc 'select 1' >/dev/null 2>&1 && break; sleep 2; done
 psql_as postgres -tAc 'select 1' >/dev/null
+# sign-in and storage make their own tables and functions when they first start: wait for them (a new
+# server starts them at the same moment as this)
+ready_sql="select to_regprocedure('auth.jwt()') is not null and to_regprocedure('auth.uid()') is not null and to_regclass('storage.objects') is not null and to_regclass('storage.buckets') is not null"
+for i in $(seq 1 90); do [ "$(psql_as postgres -tAc "$ready_sql" 2>/dev/null)" = t ] && break; sleep 2; done
+[ "$(psql_as postgres -tAc "$ready_sql")" = t ] || { echo "!! sign-in or storage did not make their tables (docker logs drispro-auth / drispro-storage)"; exit 1; }
 
 # a database made under the older name (NexusERP) keeps its bookkeeping in nexus_meta: it is renamed
 # (after a copy is put back, that schema is the true one and replaces a newer, now stale drispro_meta)
@@ -65,7 +70,7 @@ for f in supabase/migrations/*.sql; do
   # one transaction per file, recorded only when it succeeds
   # pg_trgm's library is loaded first: a function that sets one of its settings is refused otherwise (the
   # database user here is not a superuser, and a new database has not loaded the library yet)
-  psql_as postgres -1 -o /dev/null -c "select extensions.similarity('a', 'a')" -f "/tmp/$name" -c "insert into drispro_meta.applied_migrations (name) values ('$name')"
+  psql_as postgres -1 -o /dev/null -c "do \$\$ begin perform extensions.similarity('a', 'a'); exception when others then null; end \$\$" -f "/tmp/$name" -c "insert into drispro_meta.applied_migrations (name) values ('$name')"
   docker exec "$container" rm -f "/tmp/$name"
 done
 echo "   $skipped already there"
