@@ -19,18 +19,25 @@ fi
 if [ -z "${SERVER_ID:-}" ]; then
   SERVER_ID="$(cat /proc/sys/kernel/random/uuid)"; echo "SERVER_ID=$SERVER_ID" >> .env
 fi
-if [ -z "${ADMIN_EMAIL:-}" ]; then
-  [ -t 0 ] || { echo "No administrator in .env (ADMIN_EMAIL=...)"; exit 1; }
-  read -rp "Administrator email (signs in first on this server): " ADMIN_EMAIL
-  read -rsp "Administrator password (at least 8 characters): " ADMIN_PASSWORD; echo
-  read -rp "Administrator name: " ADMIN_NAME
-  echo "ADMIN_EMAIL=$ADMIN_EMAIL" >> .env
-elif ! grep -q '^ADMIN_EMAIL=' .env; then echo "ADMIN_EMAIL=$ADMIN_EMAIL" >> .env
-fi
 grep -q '^LICENCE=.' .env || { sed -i '/^LICENCE=/d' .env; echo "LICENCE=$LICENCE" >> .env; }
 
 pass="$(docker exec drispro-db printenv POSTGRES_PASSWORD)"
 sql() { docker exec -i -e PGPASSWORD="$pass" -e PGOPTIONS='-c client_min_messages=warning' drispro-db psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -q -t -A "$@"; }
+
+# the administrator: asked until there is one account to sign in with (also when an earlier try failed)
+has_admin() { [ -n "${ADMIN_EMAIL:-}" ] && [ "$(sql -v email="$ADMIN_EMAIL" <<<"select count(*) from auth.users where lower(email) = lower(:'email');")" != 0 ]; }
+if ! has_admin && [ -z "${ADMIN_PASSWORD:-}" ]; then
+  [ -t 0 ] || { echo "No administrator yet: run  bash licence.sh  on this server"; exit 1; }
+  [ -n "${ADMIN_EMAIL:-}" ] || read -rp "Administrator email (signs in first on this server): " ADMIN_EMAIL
+  while :; do
+    read -rsp "Administrator password (at least 8 characters; it does not show while typed): " ADMIN_PASSWORD; echo
+    [ "${#ADMIN_PASSWORD}" -ge 8 ] || { echo "    too short (${#ADMIN_PASSWORD} characters): again"; continue; }
+    read -rsp "The same password again: " again; echo
+    [ "$again" = "$ADMIN_PASSWORD" ] && break
+    echo "    the two are not the same: again"
+  done
+  read -rp "Administrator name: " ADMIN_NAME
+fi
 
 # the administrator's account, made once
 if [ -n "${ADMIN_PASSWORD:-}" ]; then
@@ -40,6 +47,8 @@ update public.profiles set full_name = coalesce(nullif(:'name', ''), full_name) 
 SQL
   echo "    administrator: $ADMIN_EMAIL"
 fi
+# written once the account is there, so a failed try asks again next time
+[ -n "${ADMIN_EMAIL:-}" ] && { sed -i '/^ADMIN_EMAIL=/d' .env; echo "ADMIN_EMAIL=$ADMIN_EMAIL" >> .env; }
 
 version="$(cat VERSION 2>/dev/null || echo local)"
 body="$(printf '{"p_code":"%s","p_server":"%s","p_url":"%s","p_version":"%s"}' "$LICENCE" "$SERVER_ID" "${PUBLIC_URL:-}" "$version")"
