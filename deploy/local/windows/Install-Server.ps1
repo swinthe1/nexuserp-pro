@@ -32,6 +32,14 @@ if (-not $have) {
   $exe = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WindowsApps" -Filter 'ubuntu*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
   if ($exe) { & $exe.FullName install --root | Out-Null } else { wsl.exe -d $Distro -u root -- true }
 } else { Step "2/6 Ubuntu ($Distro) është gati" }
+# without virtualization WSL 2 cannot start: say so plainly, before anything else fails
+$have = (wsl.exe -l -q) -replace "`0", '' | Where-Object { $_.Trim() -eq $Distro }
+if (-not $have) {
+  $vm = (Get-CimInstance Win32_ComputerSystem).Model
+  $why = if ($vm -match 'Virtual|VMware|KVM|QEMU|Xen|Proxmox') { "Ky kompjuter është makinë virtuale ($vm): te hosti duhet ndezur 'nested virtualization' për këtë makinë." }
+         else { "Virtualizimi i procesorit është i fikur: ndizeni në BIOS/UEFI (Intel VT-x / Intel Virtualization Technology ose AMD SVM), ruajeni dhe rinisni." }
+  Fail "Ubuntu nuk mund të niset: virtualizimi nuk është i ndezur në këtë kompjuter.`n$why`nPastaj nisni këtë skript përsëri."
+}
 
 Step '3/6 Systemd dhe rrjeti'
 wsl.exe -d $Distro -u root -- bash -c "printf '[boot]\nsystemd=true\n' > /etc/wsl.conf"
