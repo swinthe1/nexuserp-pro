@@ -485,12 +485,12 @@ netsh interface portproxy add v4tov4 listenport=$Port listenaddress=0.0.0.0 conn
   }
 }
 
-function Register-Autostart([string]$User, [string]$Password, [bool]$Start) {
+function Register-Autostart([string]$Account, [string]$Secret, [bool]$Start) {
   $fwd = Join-Path $Root 'start.ps1'
   $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$fwd`""
   $trigger = New-ScheduledTaskTrigger -AtStartup
   $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -StartWhenAvailable
-  Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -User $User -Password $Password -RunLevel Highest -Force -ErrorAction Stop | Out-Null
+  Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -User $Account -Password $Secret -RunLevel Highest -Force -ErrorAction Stop | Out-Null
   if (-not $Start) { return }
   Start-ScheduledTask -TaskName $TaskName
   Start-Sleep -Seconds 5
