@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Plus } from 'lucide-react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -19,7 +19,7 @@ import { UNIT_CATEGORIES, unitCategory, type UnitCategory } from '@/lib/unit-cat
 import { cn } from '@/lib/utils'
 
 type Unit = { id: string; code: string; name: string; category: UnitCategory | null; type: string; city: string | null; address: string | null
-  atk_branch_id: number | null; atk_unit_no: string | null; is_active: boolean; supplied_from_id: string | null; tills: number; restaurant_tills: number }
+  atk_branch_id: number | null; atk_unit_no: string | null; is_active: boolean; supplied_from_id: string | null; tills: number; restaurant_tills: number; can_delete?: boolean }
 type Units = { limit: number | null; restaurant: boolean; units: Unit[] }
 
 /**
@@ -95,6 +95,15 @@ function UnitDialog({ company, units, restaurant, unit, onClose }: { company: st
     },
     onError: (e) => toast.error(tServer(describeError(e))),
   })
+  const remove = useMutation({
+    mutationFn: async () => unwrap(await supabase.rpc('platform_unit_delete' as never, { p_unit: unit!.id } as never)) as unknown as { deleted: boolean; history?: Record<string, number> },
+    onSuccess: (r) => {
+      void qc.invalidateQueries({ queryKey: ['platform'] })
+      if (r.deleted) { toast.success(t('{name} was deleted', { name: unit!.name })); onClose(); return }
+      toast.error(t('This unit has documents or stock behind it, so it cannot be deleted: make it not active instead.'))
+    },
+    onError: (e) => toast.error(tServer(describeError(e))),
+  })
   return (
     <Dialog open onOpenChange={(o) => !o && !save.isPending && onClose()}>
       <DialogContent className="max-h-[92dvh] max-w-2xl overflow-y-auto">
@@ -138,9 +147,16 @@ function UnitDialog({ company, units, restaurant, unit, onClose }: { company: st
             {unit && <label className="flex items-center gap-2 text-[13px]"><Switch checked={v.active} onCheckedChange={(x) => set('active', x)} /> {t('Active')}</label>}
           </section>
         </div>
-        <DialogFooter>
+        <DialogFooter className="sm:justify-between">
+          {unit ? (unit.can_delete
+            ? <Button variant="ghost" className="text-destructive" loading={remove.isPending} disabled={save.isPending}
+                onClick={() => { if (confirm(t('Delete {name} with its places and tills? It has no document or stock behind it.', { name: unit.name }))) remove.mutate() }}><Trash2 /> {t('Delete the unit')}</Button>
+            : <p className="max-w-[46ch] text-[12px] text-muted-foreground">{t('It has documents or stock behind it, so it is not deleted: switch "Active" off to close it.')}</p>)
+            : <span />}
+          <div className="flex gap-2">
           <Button variant="outline" onClick={onClose} disabled={save.isPending}>{t('Cancel')}</Button>
           <Button onClick={() => save.mutate()} loading={save.isPending} disabled={!ok}>{unit ? t('Save') : t('Create the unit')}</Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

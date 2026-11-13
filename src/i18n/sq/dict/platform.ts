@@ -291,4 +291,9 @@ export default {
   "Saved, the unit has its places and tills and is ready to work.": "Pasi ruhet, njësia ka vendet dhe arkat e veta dhe është gati për punë.",
   "The licence has no restaurant module: add it, so the restaurant tills open.": "Licenca nuk e ka modulin e restorantit: shtoje, që të hapen arkat e restorantit.",
   "Restaurant tills come with the restaurant module, which this licence does not have: ask DrisPRO to add it.": "Arkat e restorantit vijnë me modulin e restorantit, që kjo licencë nuk e ka: kërkojani DrisPRO-s ta shtojë.",
+  "{name} was deleted": "{name} u fshi",
+  "This unit has documents or stock behind it, so it cannot be deleted: make it not active instead.": "Kjo njësi ka dokumente ose stok pas saj, ndaj nuk fshihet: bëjeni jo aktive.",
+  "Delete {name} with its places and tills? It has no document or stock behind it.": "Të fshihet {name} me vendet dhe arkat e saj? Nuk ka asnjë dokument ose stok pas saj.",
+  "Delete the unit": "Fshi njësinë",
+  "It has documents or stock behind it, so it is not deleted: switch \"Active\" off to close it.": "Ka dokumente ose stok pas saj, ndaj nuk fshihet: fikni \"Aktive\" për ta mbyllur.",
 } satisfies Dict
