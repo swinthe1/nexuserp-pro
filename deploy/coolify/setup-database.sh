@@ -54,16 +54,19 @@ SQL
 psql_as postgres -c "create schema if not exists drispro_meta; create table if not exists drispro_meta.applied_migrations (name text primary key, applied_at timestamptz not null default now());"
 
 echo "==> Applying migrations"
+# the list of what is already there is read once, not asked again for every file
+applied="$(psql_as postgres -tAc "select name from drispro_meta.applied_migrations")"
+skipped=0
 for f in supabase/migrations/*.sql; do
   name="$(basename "$f")"
-  done_already="$(psql_as postgres -tAc "select 1 from drispro_meta.applied_migrations where name = '$name'")"
-  if [ "$done_already" = "1" ]; then echo "   skip  $name"; continue; fi
+  if printf '%s\n' "$applied" | grep -qxF "$name"; then skipped=$((skipped + 1)); continue; fi
   echo "   apply $name"
   docker cp "$f" "$container:/tmp/$name"
   # one transaction per file, recorded only when it succeeds
   psql_as postgres -1 -o /dev/null -f "/tmp/$name" -c "insert into drispro_meta.applied_migrations (name) values ('$name')"
   docker exec "$container" rm -f "/tmp/$name"
 done
+echo "   $skipped already there"
 
 # PostgREST caches the database layout; tell it to reload
 psql_as postgres -c "notify pgrst, 'reload schema';" >/dev/null || true
