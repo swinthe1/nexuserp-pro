@@ -14,6 +14,7 @@ import os from 'node:os'
 import crypto from 'node:crypto'
 import { newPushKeys, sendPush } from './push.mjs'
 import { deliver } from './webhooks.mjs'
+import { tunnelRound } from './tunnels.mjs'
 
 /** what the client sees when a reading fails: the reading service's own message (credits, keys, limits) stays in the log */
 function plainReadError(m) {
@@ -732,8 +733,16 @@ async function tick() {
   waConfig = null
 }
 
+/* ------------------------------------------------------------------ outside addresses of local servers (cloud) */
+async function tunnelLoop() {
+  for (;;) {
+    try { await tunnelRound(rpc, log) } catch (e) { if (!/404|postier_tunnel_claim/.test(String(e.message))) log('tunnels failed', String(e.message || e)) }
+    await new Promise((r) => setTimeout(r, 60_000))
+  }
+}
+
 log(`postier ${MODE} → ${API}`)
-if (!ONCE) { if (process.env.ASSISTANT !== '0') assistantLoop(); pinLoop(); for (let i = 0; i < 3; i++) atkLoop(); relayLoop() }
+if (!ONCE) { if (process.env.ASSISTANT !== '0') assistantLoop(); pinLoop(); for (let i = 0; i < 3; i++) atkLoop(); relayLoop(); if (MODE === 'cloud') tunnelLoop() }
 for (;;) {
   try { await tick(); const n = (await round()) + (await pushRound().catch((e) => { log('phone notifications failed', String(e.message || e)); pushPause = Date.now() + 10 * 60 * 1000; return 0 }))
     + (await webhookRound().catch((e) => { log('webhooks failed', String(e.message || e)); hookPause = Date.now() + 10 * 60 * 1000; return 0 })) + (await readerRound().catch((e) => { log('reading failed', String(e.message || e)); return 0 })); if (ONCE) break; await new Promise((r) => setTimeout(r, n ? 2000 : 20000)) }

@@ -278,6 +278,9 @@ function pageDone(d) {
     <p class="lead">Çdo pjesë u provua nga rrjeti. Serveri niset vetë sa herë ndizet kompjuteri. Ky program mbetet poshtë djathtas, pranë orës, me gjendjen e serverit.</p>
     <div class="card"><div class="fixtext">Adresa për kompjuterët e tjerë</div>
       <div class="row"><div class="address grow">${esc(url)}</div><button id="cp">Kopjo</button></div></div>
+    ${d?.remote ? `<div class="card"><div class="fixtext">Nga jashtë lokalit (telefoni, shtëpia), me HTTPS</div>
+      <div class="row"><div class="address grow">${esc(d.remote)}</div><button id="cp2">Kopjo</button></div></div>`
+      : '<div class="card fixtext">Adresa nga jashtë lokalit (https://…dris-ks.com) po krijohet nga DrisPRO dhe ndizet vetë brenda orës; shfaqet te gjendja e serverit.</div>'}
     <div class="card"><b>Në çdo kompjuter tjetër të lokalit</b>
       <ol style="margin:8px 0 0;padding-left:20px"><li>Instaloni programin DrisPRO (nga faqja e hyrjes: "DrisPRO për Windows").</li>
       <li>Zgjidhni <b>Server lokal</b> dhe shkruani adresën më sipër.</li>
@@ -285,6 +288,7 @@ function pageDone(d) {
       <li>Te Cilësimet → Përdoruesit krijoni kolegët me emër përdoruesi dhe PIN.</li></ol></div>
     <div class="row"><button class="primary" id="open">Hap DrisPRO</button><button id="close">Mbyll dritaren</button></div>`
   $('#cp').onclick = async () => { await window.server.copy(url); $('#cp').textContent = 'U kopjua' }
+  if ($('#cp2')) $('#cp2').onclick = async () => { await window.server.copy(d.remote); $('#cp2').textContent = 'U kopjua' }
   $('#open').onclick = () => window.server.openUrl(url)
   $('#close').onclick = () => window.close()
 }
@@ -300,6 +304,7 @@ function statusHtml(s) {
   const b = s.server?.last_backup_at ? new Date(s.server.last_backup_at) : null
   const old = !b || (Date.now() - b.getTime()) > 36 * 3600e3
   return `<div class="card"><div class="fixtext">Adresa për kompjuterët e tjerë</div><div class="row"><div class="address grow">${esc(s.url)}</div><button id="cp">Kopjo</button><button id="open">Hap</button></div>
+      ${s.remote ? `<div class="fixtext" style="margin-top:10px">Nga jashtë lokalit</div><div class="row"><div class="address grow" style="font-size:18px">${esc(s.remote)}</div><button id="cp2">Kopjo</button></div>` : ''}
       <div style="margin-top:8px">${s.network ? '<span class="pill">✓ arrihet nga rrjeti</span>' : '<span class="pill bad">nuk arrihet nga rrjeti</span>'} ${s.task === 'Running' ? '<span class="pill">✓ nisja automatike</span>' : `<span class="pill warn">nisja automatike: ${esc(s.task)}</span>`}</div></div>
     <div class="card"><ul class="checks">${svc}</ul></div>
     <div class="card"><dl class="kv">
@@ -313,7 +318,7 @@ async function pageStatus() {
   setPath('none')
   main.innerHTML = `<h1>Gjendja e serverit</h1><p class="lead">Kontrollohet çdo minutë.</p><div id="st">${statusHtml(info?.status)}</div>
     <div class="row"><button class="primary" data-a="repair">Kontrollo dhe ripariro</button><button data-a="backup">Bëj kopje tani</button><button data-a="update">Përditëso</button><button data-a="restart">Rinis shërbimet</button><span class="grow"></span><button id="logs">Logët</button><button data-a="uninstall">Çinstalo…</button></div>`
-  const bind = (s) => { $('#st').innerHTML = statusHtml(s); const c = $('#cp'); if (c) c.onclick = () => window.server.copy(s.url); const o = $('#open'); if (o) o.onclick = () => window.server.openUrl(s.url) }
+  const bind = (s) => { $('#st').innerHTML = statusHtml(s); const c = $('#cp'); if (c) c.onclick = () => window.server.copy(s.url); const c2 = $('#cp2'); if (c2) c2.onclick = () => window.server.copy(s.remote); const o = $('#open'); if (o) o.onclick = () => window.server.openUrl(s.url) }
   bind(info?.status)
   window.server.onStatus((s) => { if ($('#st')) bind(s) })
   main.querySelectorAll('[data-a]').forEach((b) => { b.onclick = () => pageAction(b.dataset.a) })

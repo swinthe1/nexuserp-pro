@@ -45,7 +45,7 @@ if [ "$new" != "$dest" ]; then
   [ -d "$new/worker" ] && mkdir -p "$dest/worker" && cp "$new/worker/"*.mjs "$dest/worker/"
   [ -d "$new/box" ] && cp -r "$new/box" "$dest/" && install -m 755 "$new/box/drispro-status.sh" /usr/local/bin/drispro-status 2>/dev/null || true
   cp "$new/docker-compose.yml" "$new/nginx.conf" "$new/install.sh" "$new/licence.sh" "$new/update.sh" "$new/auto-update.sh" "$new/cloud-backup.sh" "$new/restore-from-cloud.sh" "$new/VERSION" "$new/LEXOME.txt" "$dest/" 2>/dev/null || true
-  for f in status.sh repair.sh; do [ -f "$new/$f" ] && cp "$new/$f" "$dest/"; done
+  for f in status.sh repair.sh remote.sh; do [ -f "$new/$f" ] && cp "$new/$f" "$dest/"; done
   chmod +x "$dest"/*.sh 2>/dev/null || true
 fi
 cd "$dest"

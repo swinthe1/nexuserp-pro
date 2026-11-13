@@ -23,6 +23,6 @@ last="$(ls -1t /root/backups/drispro-*.dump 2>/dev/null | head -1)"
 lastat=""; [ -n "$last" ] && lastat="$(date -r "$last" '+%FT%T%z')"
 free="$(df -BG --output=avail / | tail -1 | tr -dc 0-9)"
 code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "http://127.0.0.1:${HTTP_PORT:-80}/auth/v1/health" || true)"
-printf '{"installed":true,"url":"%s","port":%s,"version":"%s","answers":%s,"services":{%s},"licence":%s,"last_backup":"%s","last_backup_at":"%s","free_gb":%s,"auto_update":"%s"}\n' \
-  "$(j "${PUBLIC_URL:-}")" "${HTTP_PORT:-80}" "$(j "$(cat VERSION 2>/dev/null || echo local)")" "$([ "$code" = 200 ] && echo true || echo false)" \
+printf '{"installed":true,"remote_url":"%s","remote_on":%s,"url":"%s","port":%s,"version":"%s","answers":%s,"services":{%s},"licence":%s,"last_backup":"%s","last_backup_at":"%s","free_gb":%s,"auto_update":"%s"}\n' \
+  "$(j "${REMOTE_URL:-}")" "$(docker ps --format '{{.Names}}' | grep -qx drispro-tunnel && echo true || echo false)" "$(j "${PUBLIC_URL:-}")" "${HTTP_PORT:-80}" "$(j "$(cat VERSION 2>/dev/null || echo local)")" "$([ "$code" = 200 ] && echo true || echo false)" \
   "$svc" "${lic:-null}" "$(j "${last##*/}")" "$lastat" "${free:-0}" "${AUTO_UPDATE:-true}"

@@ -27,7 +27,8 @@ fi
 # keys the cloud keeps for everyone, typed here and never shown:
 #   bash deploy/coolify/update.sh --whatsapp   (Meta WhatsApp: token and phone number ID)
 #   bash deploy/coolify/update.sh --ai         (Anthropic API key, for reading supplier invoices)
-if [ "${1:-}" = "--whatsapp" ] || [ "${1:-}" = "--ai" ]; then
+#   bash deploy/coolify/update.sh --cloudflare (Cloudflare: the outside addresses of the local servers)
+if [ "${1:-}" = "--whatsapp" ] || [ "${1:-}" = "--ai" ] || [ "${1:-}" = "--cloudflare" ]; then
   if [ -f "$ENV" ]; then . "$ENV"; fi
   db="${DRISPRO_DB:-$(docker ps --format '{{.Names}}' | grep -E '^supabase-db' | head -1 || true)}"
   pass="$(docker exec "$db" printenv POSTGRES_PASSWORD)"
@@ -38,6 +39,13 @@ SQL
   if [ "$1" = "--whatsapp" ]; then
     read -rsp "WhatsApp permanent access token (not shown): " v; echo; [ -n "$v" ] && put whatsapp_token "$v"
     read -rp "WhatsApp phone number ID: " v; [ -n "$v" ] && put whatsapp_phone_id "$v"
+  elif [ "$1" = "--cloudflare" ]; then
+    echo "Cloudflare → My Profile → API Tokens → Create Token (custom):"
+    echo "  Account · Cloudflare Tunnel · Edit,  Zone · DNS · Edit (zone dris-ks.com)"
+    read -rsp "API token (not shown): " v; echo; [ -n "$v" ] && put cf_api_token "$v"
+    read -rp "Account ID (Cloudflare → dris-ks.com → Overview, right side): " v; [ -n "$v" ] && put cf_account_id "$v"
+    read -rp "Zone ID (same page): " v; [ -n "$v" ] && put cf_zone_id "$v"
+    read -rp "Domain for the addresses [dris-ks.com]: " v; put cf_domain "${v:-dris-ks.com}"
   else
     read -rsp "Anthropic API key (not shown): " v; echo; [ -n "$v" ] && put anthropic_api_key "$v"
   fi

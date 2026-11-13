@@ -108,8 +108,18 @@ export function LicencesPage() {
 const vparts = (v: string) => v.split(/[.-]/).map((x) => Number(x) || 0)
 const newer = (a: string, b: string) => { const x = vparts(a), y = vparts(b); for (let i = 0; i < Math.max(x.length, y.length); i++) { if ((x[i] ?? 0) !== (y[i] ?? 0)) return (x[i] ?? 0) > (y[i] ?? 0) } return false }
 
+type Tunnel = { company_id: string; company: string; hostname: string; status: 'requested' | 'ready' | 'failed' | 'remove' | 'off'; error: string | null; updated_at: string }
 export function ServersPage() {
   const clients = usePlatformClients()
+  const qc = useQueryClient()
+  const tunnels = useQuery({ queryKey: ['platform', 'tunnels'], refetchInterval: 30_000,
+    queryFn: async () => unwrap(await supabase.rpc('platform_tunnels' as never)) as unknown as { configured: boolean; tunnels: Tunnel[] } })
+  const setTunnel = useMutation({
+    mutationFn: async (a: { company: string; on: boolean }) => unwrap(await supabase.rpc('platform_tunnel_set' as never, { p_company: a.company, p_on: a.on } as never)),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['platform', 'tunnels'] }),
+    onError: (e) => toast.error(tServer(describeError(e))),
+  })
+  const tunnelOf = (id: string) => tunnels.data?.tunnels.find((x) => x.company_id === id)
   const rows = (clients.data?.clients ?? []).filter((c) => c.has_server || c.local_seen_at || c.deployment === 'local')
     .sort((a, b) => (a.local_seen_at ?? '').localeCompare(b.local_seen_at ?? ''))
   const latest = rows.map((c) => c.local_version).filter((v): v is string => !!v).reduce<string | null>((m, v) => (!m || newer(v, m) ? v : m), null)
@@ -122,11 +132,12 @@ export function ServersPage() {
         <Card><CardContent className="p-4"><div className="text-xs text-muted-foreground">{t('Online now')}</div><div className="text-2xl font-semibold tabular text-success">{rows.filter(online).length}</div></CardContent></Card>
         <Card><CardContent className="p-4"><div className="text-xs text-muted-foreground">{t('Newest version in use')}</div><div className="text-2xl font-semibold tabular">{latest ?? '—'}</div></CardContent></Card>
       </div>
+      {tunnels.data && !tunnels.data.configured && <p className="mb-3 rounded-md bg-warning/10 p-3 text-[13px]">{t('The outside addresses (https://name.dris-ks.com) are made once Cloudflare is set: run Vendos-celesin-Cloudflare.bat once.')}</p>}
       <Card><CardContent className="overflow-x-auto p-0">
         {clients.isLoading ? <Skeleton className="m-4 h-48" /> : clients.isError ? <ErrorState error={clients.error} onRetry={() => void clients.refetch()} /> : !rows.length ? <EmptyState compact icon={Server} title={t('No local server yet')} description={t('When a client installs a local server with its licence code, it shows here.')} /> : (
           <Table className="min-w-[760px]">
             <TableHeader><TableRow className="hover:bg-transparent">
-              <TableHead>{t('Client')}</TableHead><TableHead>{t('State')}</TableHead><TableHead>{t('Version')}</TableHead><TableHead>{t('Address')}</TableHead><TableHead>{t('Last seen')}</TableHead>
+              <TableHead>{t('Client')}</TableHead><TableHead>{t('State')}</TableHead><TableHead>{t('Version')}</TableHead><TableHead>{t('Address')}</TableHead><TableHead>{t('From outside')}</TableHead><TableHead>{t('Last seen')}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {rows.map((c) => (
@@ -137,6 +148,17 @@ export function ServersPage() {
                   <TableCell>{c.local_version ? <span className="tabular">{c.local_version}</span> : '—'}
                     {c.local_version && latest && newer(latest, c.local_version) && <Badge variant="warning" className="ml-2">{t('Older')}</Badge>}</TableCell>
                   <TableCell className="max-w-[260px] truncate font-mono text-xs text-muted-foreground">{c.local_url ?? '—'}</TableCell>
+                  <TableCell>{(() => { const x = tunnelOf(c.id); if (!x) return <span className="text-xs text-muted-foreground">{t('not asked yet')}</span>
+                    return (
+                      <div className="flex items-center gap-2">
+                        <div className="min-w-0">
+                          {x.status === 'ready' ? <a href={`https://${x.hostname}`} target="_blank" rel="noreferrer" className="font-mono text-xs text-primary hover:underline">{x.hostname}</a>
+                            : <span className="font-mono text-xs text-muted-foreground">{x.hostname}</span>}
+                          <div className="text-2xs text-muted-foreground" title={x.error ?? undefined}>{x.status === 'ready' ? t('Works') : x.status === 'requested' ? t('Being made|tunnel') : x.status === 'failed' ? t('Not made: {e}', { e: (x.error ?? '').slice(0, 60) }) : t('Turned off')}</div>
+                        </div>
+                        <Switch checked={x.status === 'ready' || x.status === 'requested'} disabled={setTunnel.isPending} aria-label={t('Reach from outside')}
+                          onCheckedChange={(on) => setTunnel.mutate({ company: c.id, on })} />
+                      </div>) })()}</TableCell>
                   <TableCell className="text-[13px] text-muted-foreground">{c.local_seen_at ? formatDate(c.local_seen_at, true) : '—'}</TableCell>
                 </TableRow>
               ))}

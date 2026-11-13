@@ -119,6 +119,8 @@ lic=0; bash "$here/licence.sh" || lic=$?
 # 3: the administrator's name or PIN is not accepted, 4: the licence is refused: the installer asks again
 [ "$lic" = 3 ] || [ "$lic" = 4 ] && exit "$lic"
 [ "$lic" = 0 ] || echo "    !! the licence could not be checked now; the server works and tries again every night"
+# the outside address (https://<name>.dris-ks.com), made by the cloud: waited for a minute and a half
+[ "$lic" = 0 ] && bash "$here/remote.sh" --wait 90 || true
 # the postier reads the licence and the server id written just now
 docker compose "${profiles[@]}" up -d postier >/dev/null 2>&1 || true
 
@@ -128,7 +130,7 @@ NO_FIRST=1 bash deploy/coolify/install-backup.sh drispro-db >/dev/null && echo "
 cat > /etc/cron.d/drispro-licence <<EOF
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-45 3 * * * root bash $here/licence.sh >> /var/log/drispro-licence.log 2>&1
+45 3 * * * root bash $here/licence.sh >> /var/log/drispro-licence.log 2>&1 && bash $here/remote.sh >> /var/log/drispro-licence.log 2>&1
 0 4 * * * root bash $here/cloud-backup.sh >> /var/log/drispro-cloud-backup.log 2>&1
 15 4 * * * root bash $here/auto-update.sh >> /var/log/drispro-update.log 2>&1
 EOF

@@ -416,11 +416,13 @@ function Invoke-Install([string]$BundleDir) {
 
   Step 'drispro' 'run'
   $script:lastError = ''
+  $script:remoteUrl = ''
   $onLine = {
     param($l)
     if ($l -match '^@@step (\S+)') { Send 'progress' @{ key = 'drispro'; part = $Matches[1] } }
     elseif ($l -match '^@@error (\S+) ?(.*)$') { $script:lastError = "$($Matches[1]) $($Matches[2])"; Send 'problem' @{ key = $Matches[1]; text = $Matches[2] } }
     elseif ($l -match '^@@warn (\S+)') { Send 'warn' @{ key = $Matches[1] } }
+    elseif ($l -match '^@@remote (\S+)') { $script:remoteUrl = $Matches[1]; Set-StateValue 'remoteUrl' $Matches[1] }
     elseif ($l -match '^@@done') { }
     elseif ($l.Trim()) { Say $l }
   }
@@ -449,7 +451,7 @@ function Invoke-Install([string]$BundleDir) {
   if ($bad) { Stop-Here 'final' ("Nga rrjeti nuk përgjigjen: " + ($bad -join ', ')) }
   Step 'final' 'ok'
   Set-StateValue 'installedAt' (Get-Date -Format 'o')
-  Send 'done' @{ url = $url; user = [string]$a.adminUser }
+  Send 'done' @{ url = $url; user = [string]$a.adminUser; remote = $script:remoteUrl }
 }
 
 function Set-Network([int]$Port, [bool]$Mirrored) {
@@ -521,7 +523,7 @@ function Invoke-Status {
   $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
   $lan = $false
   if ($s.ip -and $s.port) { try { $lan = ((Invoke-WebRequest -Uri "http://$($s.ip):$($s.port)/auth/v1/health" -UseBasicParsing -TimeoutSec 5).StatusCode -eq 200) } catch { } }
-  Send 'status' @{ installed = $true; server = $st; url = [string]$s.url; task = $(if ($task) { [string]$task.State } else { 'missing' }); network = $lan }
+  Send 'status' @{ installed = $true; server = $st; url = [string]$s.url; remote = $(if ($st -and $st.remote_url) { [string]$st.remote_url } else { '' }); task = $(if ($task) { [string]$task.State } else { 'missing' }); network = $lan }
 }
 
 function Invoke-Repair {
