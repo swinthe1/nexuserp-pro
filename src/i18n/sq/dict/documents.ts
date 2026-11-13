@@ -99,4 +99,7 @@ export default {
   'Set up the company mailbox first (Automations › Email)': 'Rregulloni fillimisht e-mailin e kompanisë (Automatizimet › E-mail)',
   'The PDF is missing or too large': 'PDF-ja mungon ose është shumë e madhe',
   'The logo must be a picture smaller than 500 KB': 'Logoja duhet të jetë foto më e vogël se 500 KB',
+  "Preview": "Parapamja",
+  "As it will print; the PDF is made from the saved document.": "Si do të shtypet; PDF-ja bëhet nga dokumenti i ruajtur.",
+  "The document as it will print, beside the form": "Dokumenti si do të shtypet, pranë formularit",
 } satisfies Dict

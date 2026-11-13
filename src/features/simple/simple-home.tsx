@@ -1,6 +1,7 @@
 import { ArrowLeft, ArrowRight, Check, ClipboardCheck, FileText, PackagePlus, Pencil, Plus, RotateCcw, Search, ShoppingCart, Sparkles, Truck, UserRound, Users, Wallet, X, type LucideIcon } from 'lucide-react'
 import * as React from 'react'
 import { Link } from 'react-router-dom'
+import { FirstSteps } from '@/features/dashboard/first-steps'
 import { toast } from 'sonner'
 import { useAuth } from '@/app/auth-provider'
 import { useCompany } from '@/app/company-provider'
@@ -113,6 +114,7 @@ export function SimpleHome() {
           <Button variant="outline" onClick={() => setEditing(keys)}><Pencil /> {t('Arrange')}</Button>
         )}
       </div>
+      {!editing && <FirstSteps />}
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         {tiles.map((x, i) => {

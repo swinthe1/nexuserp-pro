@@ -270,4 +270,10 @@ export default {
   'Program': 'Programi',
   'the server itself': 'vetë serveri',
   'Stopped by hand': 'U ndal me dorë',
+  "Email for companies without a mailbox": "Emaili për kompanitë pa kuti emaili",
+  "A company that has not set up its own mailbox sends invoices and reminders from the platform's mailbox, with its own name as the sender and its email for replies. Its own mailbox, when set up, always comes first.": "Kompania që nuk e ka vendosur kutinë e vet dërgon faturat dhe kujtesat nga kutia e platformës, me emrin e vet si dërgues dhe me emailin e vet për përgjigjet. Kutia e vet, kur vendoset, ka gjithmonë përparësi.",
+  "Sends from {from} ({company})": "Dërgon nga {from} ({company})",
+  "The platform's own company has no mailbox yet.": "Kompania e platformës ende nuk ka kuti emaili.",
+  "On": "Ndezur",
+  "Off": "Fikur",
 } satisfies Dict

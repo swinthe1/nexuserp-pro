@@ -1,5 +1,6 @@
 import { MyTasksCard } from '@/features/tasks/components/linked-tasks'
 import { UnitsToday } from './units-today'
+import { FirstSteps } from './first-steps'
 import { SalesPulse } from './sales-pulse'
 import { useQuery } from '@tanstack/react-query'
 import { AlarmClock, Ban, CalendarClock, Coins as CoinsIcon, HandCoins, PackageX, Receipt, ShoppingBasket, Tags, Timer, ArrowDownLeft, ArrowLeftRight, ArrowRight, ArrowUpRight, Coins, FileQuestion, FileText, PackageMinus, Percent, ReceiptText, Scale, ShoppingCart, Truck, Boxes, ClipboardCheck, Landmark, PackageCheck, ShieldAlert, Ship, TrendingUp, TriangleAlert, Users, Wallet } from 'lucide-react'
@@ -238,6 +239,7 @@ export function DashboardPage() {
       <PageHeader title={greeting(firstName)} description={`${company?.name ?? ''} · ${formatDate(new Date())}`}
         actions={<ChooseCards all={cards.map((c) => ({ key: c.key, label: c.label, group: c.group }))} shown={shown} usual={usual.filter((k) => byKey.has(k))} onSave={choice.set} />} />
       <BooksCheckBanner />
+      <FirstSteps />
       {/* the day so far and my tasks side by side on a wide screen; either one alone takes the whole row */}
       <div className="mb-4 flex flex-col gap-4 empty:hidden lg:flex-row [&>*]:!mb-0 [&>*]:min-w-0 [&>*]:flex-1">
         <SalesPulse />

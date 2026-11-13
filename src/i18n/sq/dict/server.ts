@@ -939,4 +939,5 @@ export default {
   "A file is empty or damaged": "Një skedar është bosh ose i dëmtuar",
   "Only PDF, JPG and PNG files go by email": "Me email shkojnë vetëm skedarë PDF, JPG dhe PNG",
   "The files together are too large for one message (10 MB)": "Skedarët së bashku janë tepër të mëdhenj për një mesazh (10 MB)",
+  "Set up the mailbox of the platform's own company first (Contracts › billing company, then its Automations › Email)": "Vendosni së pari kutinë e emailit të kompanisë së platformës (Kontratat › kompania që faturon, pastaj Automatizimet › Email te ajo)",
 } satisfies Dict

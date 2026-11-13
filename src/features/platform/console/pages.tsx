@@ -1,5 +1,9 @@
 import { CalendarPlus, Cable, CircleDollarSign, ExternalLink, Server } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { Switch } from '@/components/ui/switch'
+import { describeError } from '@/lib/errors'
+import { tServer } from '@/i18n'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -280,6 +284,7 @@ export function ConsoleSettingsPage() {
             <p className="mt-0.5 text-[13px] text-muted-foreground">{t('Only you, from Clients › New client. Nobody can open a company on their own; the people you invite sign up into the company you made.')}</p>
           </CardContent>
         </Card>
+        <MailFallbackCard />
         <Card>
           <CardHeader><CardTitle>{t('The platform administrator')}</CardTitle><CardDescription>{t('Only this account sees the console. Clients never see it.')}</CardDescription></CardHeader>
           <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-0 text-[13px]">
@@ -289,5 +294,28 @@ export function ConsoleSettingsPage() {
         </Card>
       </div>
     </>
+  )
+}
+
+/** Companies without their own mailbox send through the platform's: the switch and what it uses */
+function MailFallbackCard() {
+  const qc = useQueryClient()
+  const q = useQuery({ queryKey: ['platform', 'mail-fallback'],
+    queryFn: async () => unwrap(await supabase.rpc('platform_mail_fallback' as never)) as unknown as { on: boolean; company: string | null; from: string | null } })
+  const set = useMutation({
+    mutationFn: async (on: boolean) => unwrap(await supabase.rpc('platform_set_mail_fallback' as never, { p_on: on } as never)),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['platform', 'mail-fallback'] }),
+    onError: (e) => toast.error(tServer(describeError(e))),
+  })
+  if (!q.data) return null
+  return (
+    <Card>
+      <CardHeader><CardTitle>{t('Email for companies without a mailbox')}</CardTitle>
+        <CardDescription>{t('A company that has not set up its own mailbox sends invoices and reminders from the platform\'s mailbox, with its own name as the sender and its email for replies. Its own mailbox, when set up, always comes first.')}</CardDescription></CardHeader>
+      <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-0 text-[13px]">
+        <span className="text-muted-foreground">{q.data.from ? t('Sends from {from} ({company})', { from: q.data.from, company: q.data.company ?? '' }) : t('The platform\'s own company has no mailbox yet.')}</span>
+        <label className="flex items-center gap-2"><Switch checked={q.data.on} disabled={set.isPending} onCheckedChange={(on) => set.mutate(on)} /> {q.data.on ? t('On') : t('Off')}</label>
+      </CardContent>
+    </Card>
   )
 }

@@ -7,7 +7,7 @@ import { DocumentActions } from '@/components/document-actions'
 import { AdvanceButton, AdvancesCard } from '../components/advances'
 import { zodResolver } from '@/lib/zod-resolver'
 import {
-  Ban, Check, CheckCheck, FileText, PackageCheck, PackageOpen, Receipt, Repeat, RotateCcw, Send, ShoppingCart, Trash2, Truck, Redo2, Undo2, X, } from 'lucide-react'
+  Ban, Check, CheckCheck, Eye, EyeOff, FileText, PackageCheck, PackageOpen, Receipt, Repeat, RotateCcw, Send, ShoppingCart, Trash2, Truck, Redo2, Undo2, X, } from 'lucide-react'
 import * as React from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -41,6 +41,7 @@ import {
   useSaveSalesDocument, useSetStatus, type SalesKind,
 } from '../api'
 import { SalesLinesEditor, type LineProgress } from '../components/sales-lines-editor'
+import { LivePreview } from '../components/live-preview'
 import { salesDocSchema, type SalesDocValues } from '../schemas'
 import { AccountingTab } from '@/features/finance/components/t-accounts'
 import { ErrorState } from '@/components/error-state'
@@ -101,6 +102,9 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
   const creditNote = useCreditNote()
   const debitNote = useDebitNote()
   const [repeat, setRepeat] = React.useState(false)
+  // the document as it will print, beside the form while it is written (remembered per person on this device)
+  const [preview, setPreview] = React.useState(() => { try { return localStorage.getItem('drispro.doc-preview') === '1' } catch { return false } })
+  const togglePreview = () => setPreview((x) => { try { localStorage.setItem('drispro.doc-preview', x ? '0' : '1') } catch { /* private window */ } return !x })
 
   const isCredit = kind === 'invoices' && doc?.document_type === 'credit_note'
   const isDebit = kind === 'invoices' && !!doc?.is_debit_note
@@ -279,12 +283,13 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
     : undefined
 
   const title = doc ? doc.number : t(cfg.newTitle)
+  const showPreview = preview && editable
   const body = (
     <>
-      <div className={cn('grid grid-cols-[minmax(0,1fr)] items-start gap-3', doc && 'lg:grid-cols-[minmax(0,1fr)_280px]')}>
+      <div className={cn('grid grid-cols-[minmax(0,1fr)] items-start gap-3', showPreview ? 'xl:grid-cols-[minmax(0,1fr)_minmax(0,560px)]' : doc && 'lg:grid-cols-[minmax(0,1fr)_280px]')}>
         <div className="grid min-w-0 content-start">
         <Card>
-          <CardContent className="grid items-start gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-4">
+          <CardContent className={cn('grid items-start gap-3 pt-5 sm:grid-cols-2', !showPreview && 'lg:grid-cols-4')}>
             <FormField control={form.control} name="partner_id" render={({ field }) => (
               <FormItem className="sm:col-span-2"><FormLabel>{t('Customer')}</FormLabel>
                 <FormControl><SearchSelect value={field.value} onChange={onCustomer} disabled={!editable} placeholder={t('Choose a customer')} remote={registry}
@@ -353,18 +358,20 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
               )} />
             )}
             <FormField control={form.control} name="notes" render={({ field }) => (
-              <FormItem className="sm:col-span-2 lg:col-span-4"><FormLabel optional>{t('Notes')}</FormLabel><FormControl><Textarea rows={1} disabled={!editable} {...field} /></FormControl></FormItem>
+              <FormItem className={cn('sm:col-span-2', !showPreview && 'lg:col-span-4')}><FormLabel optional>{t('Notes')}</FormLabel><FormControl><Textarea rows={1} disabled={!editable} {...field} /></FormControl></FormItem>
             )} />
             {kind === 'quotes' && (
               <FormField control={form.control} name="terms" render={({ field }) => (
-                <FormItem className="sm:col-span-2 lg:col-span-4"><FormLabel optional>{t('Terms shown to the customer')}</FormLabel><FormControl><Textarea rows={2} disabled={!editable} placeholder={t('Delivery within 7 working days. Prices exclude VAT.')} {...field} /></FormControl></FormItem>
+                <FormItem className={cn('sm:col-span-2', !showPreview && 'lg:col-span-4')}><FormLabel optional>{t('Terms shown to the customer')}</FormLabel><FormControl><Textarea rows={2} disabled={!editable} placeholder={t('Delivery within 7 working days. Prices exclude VAT.')} {...field} /></FormControl></FormItem>
               )} />
             )}
           </CardContent>
         </Card>
         <SalesLinesEditor form={form} editable={editable} currency={currency} progress={progress} showProgress={!!progress} />
         </div>
-        {doc && <div className="side-compact grid content-start gap-3 lg:sticky lg:top-[64px]">
+        {showPreview ? <div className="grid content-start gap-3 xl:sticky xl:top-[64px]">
+          <LivePreview form={form} kind={kind} number={doc?.number ?? null} customers={customers.data} />
+        </div> : doc && <div className="side-compact grid content-start gap-3 lg:sticky lg:top-[64px]">
         <SidePanel kind={kind} doc={doc} availability={availability.data} currency={currency} base={base} />
         </div>}
       </div>
@@ -394,6 +401,7 @@ function SalesDocumentForm({ kind, doc }: { kind: DocKind; doc?: Doc }) {
                 description={t('The draft disappears from the lists. Its number is not used again.')} confirmLabel={t('Delete draft')} destructive
                 onConfirm={async () => { await del.mutateAsync(doc.id); navigate(cfg.list) }} />
             )}
+            {editable && <Button variant="ghost" size="sm" onClick={togglePreview} title={t('The document as it will print, beside the form')}>{preview ? <EyeOff /> : <Eye />} {t('Preview')}</Button>}
             {editable && <Button variant={doc || kind === 'invoices' ? 'outline' : 'default'} onClick={() => void saveOnly()} loading={save.isPending}>{doc ? t('Save draft') : t('Create draft')}</Button>}
             {actions}
             {more.length > 0 && <MoreMenu items={more} />}

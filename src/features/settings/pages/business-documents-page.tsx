@@ -20,6 +20,7 @@ import { describeError, unwrap } from '@/lib/errors'
 import { printHtml } from '@/lib/print'
 import { supabase } from '@/lib/supabase'
 import { formatDate, todayISO } from '@/lib/utils'
+import { DocumentArchive } from '../components/document-archive'
 
 const BUCKET = 'company-assets'
 const MAX_FILE = 5 * 1024 * 1024
@@ -138,6 +139,8 @@ export function BusinessDocumentsPage() {
           {missing.length > 0 && <p className="mt-3 text-[13px] text-warning">{t('Not filled in yet: {what}.', { what: missing.join(', ') })} <Link className="underline" to="/settings">{t('Company settings|menu')}</Link></p>}
         </CardContent>
       </Card>
+
+      {can('invoicing.read') && <DocumentArchive />}
 
       <Card>
         <CardHeader><CardTitle>{t('Documents')}</CardTitle>

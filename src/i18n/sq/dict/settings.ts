@@ -485,4 +485,13 @@ export default {
   "only PDF, JPG and PNG go by email": "me email shkojnë vetëm PDF, JPG dhe PNG",
   "The chosen files are over 10 MB together. Send them in two messages.": "Skedarët e zgjedhur janë mbi 10 MB së bashku. Dërgojini në dy mesazhe.",
   "Kind|unit": "Lloji",
+  "Payments received and made": "Pagesat e marra dhe të bëra",
+  "No documents in this period.": "Asnjë dokument në këtë periudhë.",
+  "More than {n} documents: choose a shorter period.": "Më shumë se {n} dokumente: zgjidhni një periudhë më të shkurtër.",
+  "{n} documents in one ZIP.": "{n} dokumente në një ZIP.",
+  "Documents of a period as PDF": "Dokumentet e një periudhe si PDF",
+  "Every chosen document of the period, printed as it is saved, in one ZIP: for the accountant, the bank or an inspection.": "Çdo dokument i zgjedhur i periudhës, i shtypur siç është ruajtur, në një ZIP: për kontabilistin, bankën ose një inspektim.",
+  "Download the ZIP": "Shkarko ZIP-in",
+  "{done} of {of} documents ready": "{done} nga {of} dokumente gati",
+  "Goods receipts|archive": "Pranimet e mallit",
 } satisfies Dict

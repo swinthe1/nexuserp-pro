@@ -8310,6 +8310,7 @@ export type Database = {
           billing_email: boolean
           billing_grace_days: number
           requests_on: boolean
+          mail_fallback: boolean
         }
         Insert: {
           id?: boolean
@@ -8323,6 +8324,7 @@ export type Database = {
           billing_email?: boolean
           billing_grace_days?: number
           requests_on?: boolean
+          mail_fallback?: boolean
         }
         Update: {
           id?: boolean
@@ -8336,6 +8338,7 @@ export type Database = {
           billing_email?: boolean
           billing_grace_days?: number
           requests_on?: boolean
+          mail_fallback?: boolean
         }
         Relationships: [
           { foreignKeyName: "platform_settings_billing_company_id_fkey"; columns: ["billing_company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -17476,6 +17479,12 @@ export type Database = {
         }
         Returns: Json
       }
+      company_first_steps: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       company_user_create: {
         Args: {
           p_company: string
@@ -19551,6 +19560,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      platform_mail_fallback: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       platform_member_roles: {
         Args: {
           p_member: string
@@ -19632,6 +19645,12 @@ export type Database = {
           p_apply_menu?: boolean
         }
         Returns: undefined
+      }
+      platform_set_mail_fallback: {
+        Args: {
+          p_on: boolean
+        }
+        Returns: Json
       }
       platform_set_multi_unit: {
         Args: {
@@ -20245,6 +20264,12 @@ export type Database = {
           p_company: string
         }
         Returns: number
+      }
+      print_company_header: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
       }
       print_company_preview: {
         Args: {
