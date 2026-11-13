@@ -63,7 +63,9 @@ for f in supabase/migrations/*.sql; do
   echo "   apply $name"
   docker cp "$f" "$container:/tmp/$name"
   # one transaction per file, recorded only when it succeeds
-  psql_as postgres -1 -o /dev/null -f "/tmp/$name" -c "insert into drispro_meta.applied_migrations (name) values ('$name')"
+  # pg_trgm's library is loaded first: a function that sets one of its settings is refused otherwise (the
+  # database user here is not a superuser, and a new database has not loaded the library yet)
+  psql_as postgres -1 -o /dev/null -c "select extensions.similarity('a', 'a')" -f "/tmp/$name" -c "insert into drispro_meta.applied_migrations (name) values ('$name')"
   docker exec "$container" rm -f "/tmp/$name"
 done
 echo "   $skipped already there"
