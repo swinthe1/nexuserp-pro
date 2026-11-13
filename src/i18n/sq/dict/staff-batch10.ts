@@ -2143,4 +2143,8 @@ export default {
   "Undo": "Zhbëj",
   "Clear the drawing": "Fshi vizatimin",
   "Keep the drawing": "Ruaj vizatimin",
+  "See and use this computer, once the person there allows it": "Shiko dhe përdor këtë kompjuter, pasi ta lejojë personi atje",
+  "You control it: click on the picture": "E kontrollon ti: kliko mbi pamje",
+  "Viewing only: the person allowed no control": "Vetëm pamje: personi nuk e lejoi kontrollin",
+  "The remote computer: mouse and keyboard go to it": "Kompjuteri në distancë: miu dhe tastiera shkojnë te ai",
 } satisfies Dict

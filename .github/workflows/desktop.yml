@@ -19,6 +19,10 @@ jobs:
         with:
           node-version: 22
       - run: npm install --no-audit --no-fund
+      # a version number already published takes the next one, so every build reaches the computers
+      - run: node next-version.mjs
+        env:
+          DRISPRO_PUBLISH_KEY: ${{ secrets.DRISPRO_PUBLISH_KEY }}
       # the installer's pages in Albanian
       - run: node nsis-shqip.mjs
       - run: npx electron-builder --win nsis --x64 --publish never
@@ -41,6 +45,9 @@ jobs:
         with:
           node-version: 22
       - run: npm install --no-audit --no-fund
+      - run: node next-version.mjs mac
+        env:
+          DRISPRO_PUBLISH_KEY: ${{ secrets.DRISPRO_PUBLISH_KEY }}
       # one program for both kinds of Mac (Apple Silicon and Intel); signed "ad hoc" until there is an Apple Developer ID
       - run: npx electron-builder --mac --universal --publish never
         env:

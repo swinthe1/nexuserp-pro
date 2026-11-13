@@ -12,4 +12,6 @@ contextBridge.exposeInMainWorld('drisproSupport', {
   /** the bar's "Stop" */
   stop: () => ipcRenderer.invoke('support:stop'),
   onStop: (cb) => { ipcRenderer.on('support:stop', () => cb()) },
+  /** one mouse or key event from the support person (used only when the person here allowed control) */
+  input: (session, ev) => ipcRenderer.send('support:input', { session, ev }),
 })

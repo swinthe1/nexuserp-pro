@@ -393,8 +393,9 @@ export type SupportSession = { id: string; device: string; device_name: string; 
   status: 'requested' | 'accepted' | 'declined' | 'ended' | 'failed' | 'expired'; by: string | null; requested_at: string; answered_at: string | null; ended_at: string | null
   ended_by: string | null; note: string | null; minutes: number | null }
 export type SupportSettings = { stun_url: string; turn_url: string | null; turn_username: string | null; has_turn_credential: boolean }
-export async function supportStart(device: string) {
-  return unwrap(await supabase.rpc('platform_support_start', { p_device: device, p_mode: 'view' })) as unknown as SupportStart
+/** control is asked for; the person at the computer chooses between viewing only and viewing with control */
+export async function supportStart(device: string, mode: 'view' | 'control' = 'control') {
+  return unwrap(await supabase.rpc('platform_support_start', { p_device: device, p_mode: mode })) as unknown as SupportStart
 }
 export async function supportEnd(session: string, status: 'ended' | 'failed' = 'ended', note?: string) {
   await supabase.rpc('platform_support_end', { p_session: session, p_status: status, p_note: note ?? undefined })

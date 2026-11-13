@@ -7,12 +7,17 @@ import { t } from '@/i18n'
  * Service worker lifecycle, in plain words:
  *  - a new version is downloaded in the background; people choose when to reload (never in the middle of a sale)
  *  - the first time everything is cached, say once that the app now opens without internet
- *  - check for updates every hour for tills and tablets that stay open all day
+ *  - check for updates every 10 minutes for tills and tablets that stay open all day
  */
 export function PwaPrompts() {
   const { needRefresh: [needRefresh], offlineReady: [offlineReady, setOfflineReady], updateServiceWorker } = useRegisterSW({
     onRegisteredSW(_url, reg) {
-      if (reg) setInterval(() => { void reg.update() }, 60 * 60 * 1000)
+      if (!reg) return
+      // every 10 minutes, and when the page comes back to the front or the internet returns
+      const check = () => { if (navigator.onLine) void reg.update().catch(() => undefined) }
+      setInterval(check, 10 * 60 * 1000)
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check() })
+      window.addEventListener('online', check)
     },
   })
 

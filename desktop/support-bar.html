@@ -25,8 +25,9 @@
   const q = new URLSearchParams(location.search)
   const who = q.get('who') || 'DrisPRO'
   const t = document.getElementById('text')
-  t.append(`${who} po e sheh ekranin`)
-  const s = document.createElement('small'); s.textContent = 'vetëm shikim'; t.append(s)
+  const control = q.get('control') === '1'
+  t.append(control ? `${who} po e përdor kompjuterin` : `${who} po e sheh ekranin`)
+  const s = document.createElement('small'); s.textContent = control ? 'miu dhe tastiera' : 'vetëm shikim'; t.append(s)
   const start = Date.now()
   const pad = (n) => String(n).padStart(2, '0')
   setInterval(() => { const x = Math.floor((Date.now() - start) / 1000); document.getElementById('time').textContent = `${pad(Math.floor(x / 60))}:${pad(x % 60)}` }, 1000)

@@ -3,7 +3,7 @@
  * asked through its own channel; the person there allows it or not; the picture comes straight from
  * that computer (WebRTC). Leaving this page, or "End", stops it on both sides.
  */
-import { ArrowLeft, Ban, Clock, Expand, Loader2, MonitorOff, MonitorSmartphone, PhoneOff, RotateCcw, ShieldCheck, WifiOff } from 'lucide-react'
+import { ArrowLeft, Ban, Clock, Expand, Loader2, MonitorOff, MonitorSmartphone, MousePointer2, PhoneOff, RotateCcw, ShieldCheck, WifiOff } from 'lucide-react'
 import * as React from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -46,6 +46,9 @@ function Viewer({ start }: { start: SupportStart }) {
   const [size, setSize] = React.useState<string | null>(null)
   const [now, setNow] = React.useState(Date.now())
   const [retrying, setRetrying] = React.useState(false)
+  // the person at the computer allowed control: the mouse and keys on the picture go to that computer
+  const [control, setControl] = React.useState(false)
+  const dc = React.useRef<RTCDataChannel | null>(null)
   const phaseRef = React.useRef<Phase>('connecting')
   const go = React.useCallback((p: Phase) => { phaseRef.current = p; setPhase(p) }, [])
   const ctl = React.useRef<{ signal: SupportSignal | null; pc: RTCPeerConnection | null; queue: RTCIceCandidateInit[]; closed: boolean; leaving?: number }>({ signal: null, pc: null, queue: [], closed: false })
@@ -62,7 +65,7 @@ function Viewer({ start }: { start: SupportStart }) {
     const finish = (p: Phase, server: 'ended' | 'failed' | null = 'ended') => {
       if (DONE.includes(phaseRef.current)) return
       window.clearInterval(ask); window.clearTimeout(giveUp)
-      c.pc?.close(); c.pc = null
+      c.pc?.close(); c.pc = null; dc.current = null
       if (video.current) video.current.srcObject = null
       go(p)
       if (server) void supportEnd(id, server)
@@ -79,10 +82,12 @@ function Viewer({ start }: { start: SupportStart }) {
       else if (event === 'end') finish('ended', null)
       else if (event === 'offer') {
         go('joining')
+        setControl(!!p.control)
         const scr = p.screen as { width?: number; height?: number } | undefined
         if (scr?.width) setSize(`${scr.width}×${scr.height}`)
         const pc = new RTCPeerConnection({ iceServers: start.ice })
         c.pc = pc
+        pc.ondatachannel = (e) => { if (e.channel.label === 'input') dc.current = e.channel }
         pc.ontrack = (e) => {
           if (video.current) { video.current.srcObject = e.streams[0] ?? new MediaStream([e.track]); void video.current.play().catch(() => undefined) }
           go('live'); setSince(Date.now())
@@ -147,6 +152,8 @@ function Viewer({ start }: { start: SupportStart }) {
           <p className="truncate text-[12px] text-muted-foreground">{start.device.company}{size ? ` · ${size}` : ''}</p>
         </div>
         <StatusPill phase={phase} online={online} secs={secs} />
+        {phase === 'live' && <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-medium', control ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground')}>
+          <MousePointer2 className="size-3.5" />{control ? t('You control it: click on the picture') : t('Viewing only: the person allowed no control')}</span>}
         <div className="ml-auto flex items-center gap-2">
           {phase === 'live' && <Button variant="outline" size="sm" onClick={() => void stage.current?.requestFullscreen?.()}><Expand /> {t('Full screen')}</Button>}
           {done
@@ -156,6 +163,7 @@ function Viewer({ start }: { start: SupportStart }) {
       </div>
       <div ref={stage} className="relative grid flex-1 place-items-center bg-[#0d1117]">
         <video ref={video} muted playsInline autoPlay className={cn('absolute inset-0 size-full object-contain', phase !== 'live' && 'invisible')} />
+        {phase === 'live' && control && <ControlLayer video={video} send={(ev) => { const ch = dc.current; if (ch?.readyState === 'open') ch.send(JSON.stringify(ev)) }} />}
         {phase !== 'live' && <StatePanel phase={phase} online={online} />}
       </div>
     </div>
@@ -197,5 +205,51 @@ function StatePanel({ phase, online }: { phase: Phase; online: boolean }) {
       <p className="text-[16px] font-semibold">{s.title}</p>
       <p className="text-[13px] text-white/70">{s.text}</p>
     </div>
+  )
+}
+
+/**
+ * Over the picture: the mouse and keyboard of the support person, sent to the computer. Positions are shares
+ * of the picture (0–1), so the size of either screen does not matter; the black bands around it send nothing.
+ */
+function ControlLayer({ video, send }: { video: React.RefObject<HTMLVideoElement | null>; send: (ev: Record<string, unknown>) => void }) {
+  const layer = React.useRef<HTMLDivElement>(null)
+  const last = React.useRef(0)
+  React.useEffect(() => { layer.current?.focus() }, [])
+  const at = (e: React.MouseEvent | React.WheelEvent) => {
+    const v = video.current
+    if (!v || !v.videoWidth) return null
+    const r = v.getBoundingClientRect()
+    const k = Math.min(r.width / v.videoWidth, r.height / v.videoHeight)
+    const w = v.videoWidth * k, h = v.videoHeight * k
+    const x = (e.clientX - r.left - (r.width - w) / 2) / w, y = (e.clientY - r.top - (r.height - h) / 2) / h
+    return x < 0 || x > 1 || y < 0 || y > 1 ? null : { x, y }
+  }
+  const move = (e: React.MouseEvent, force = false) => {
+    const now = performance.now()
+    if (!force && now - last.current < 30) return
+    last.current = now
+    const p = at(e); if (p) send({ t: 'm', ...p })
+  }
+  const button = (e: React.MouseEvent, up: boolean) => {
+    e.preventDefault(); layer.current?.focus()
+    if (![0, 1, 2].includes(e.button)) return
+    move(e, true); send({ t: 'b', b: e.button === 2 ? 2 : e.button === 1 ? 1 : 0, up })
+  }
+  const key = (e: React.KeyboardEvent, up: boolean) => {
+    // the Windows key stays on this side; a plain character goes as text, the rest as keys
+    if (e.key === 'Meta' || e.code.startsWith('Meta') || e.code.startsWith('OS')) return
+    e.preventDefault()
+    if (!up && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) { send({ t: 'c', ch: e.key }); return }
+    if (up && e.key.length === 1 && !e.ctrlKey && !e.altKey) return
+    send({ t: 'k', code: e.code, up })
+  }
+  return (
+    <div ref={layer} tabIndex={0} aria-label={t('The remote computer: mouse and keyboard go to it')}
+      className="absolute inset-0 cursor-crosshair outline-none"
+      onMouseMove={(e) => move(e)} onMouseDown={(e) => button(e, false)} onMouseUp={(e) => button(e, true)}
+      onContextMenu={(e) => e.preventDefault()} onAuxClick={(e) => e.preventDefault()}
+      onWheel={(e) => { const p = at(e); if (p) send({ t: 'w', dy: e.deltaY, dx: e.deltaX }) }}
+      onKeyDown={(e) => key(e, false)} onKeyUp={(e) => key(e, true)} />
   )
 }

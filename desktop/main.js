@@ -2,13 +2,14 @@
 // printing straight to the receipt and kitchen printers (no print window), opening the cash drawer of a
 // network printer, starting with Windows, full screen for tills. The application itself comes from the
 // server (always the latest version) and keeps working offline the same way as in the browser.
-const { app, BrowserWindow, ipcMain, shell, Menu, dialog, net: enet, session: esession, desktopCapturer, screen } = require('electron')
+const { app, BrowserWindow, ipcMain, shell, Menu, dialog, net: enet, session: esession, desktopCapturer, screen, powerMonitor } = require('electron')
 const fs = require('fs')
 const net = require('net')
 const path = require('path')
 const os = require('os')
 const crypto = require('crypto')
 const isMac = process.platform === 'darwin'
+const supportInput = require('./support-input')
 
 const DEFAULT_SERVER = 'https://erp.dris-ks.com'
 // where licences are checked (our cloud), with its public key (anon role: only the public licence functions)
@@ -324,12 +325,15 @@ handle('drispro:device-check', async () => {
 // DrisPRO's support can ask to see this computer's screen. A hidden page listens on the computer's own
 // channel (from its licence); a request is shown only after the server confirmed it was made for this
 // computer a moment ago, and the screen is shared only if the person here allows it. While it is shared
-// a red bar stays on top of everything with "Stop"; nothing is shared without it. Step 1: viewing only.
+// a red bar stays on top of everything with "Stop"; nothing is shared without it. When the console asked for
+// control and the person here allowed it (a separate answer), the support person's mouse and keyboard work
+// too (support-input.js, Windows); the bar then says so.
 let supportWin = null
 let supportChannel = null
 let barWin = null
 let captureAllowedAt = 0
 let asking = false
+let controlFor = null   // the session whose control the person here allowed
 const SUPPORT_PARTITION = 'drispro-support'
 function syncSupport() {
   const d = settings.device
@@ -353,7 +357,7 @@ function syncSupport() {
     webPreferences: { partition: SUPPORT_PARTITION, preload: path.join(__dirname, 'support-preload.js'), contextIsolation: true, sandbox: true, backgroundThrottling: false } })
   void supportWin.loadFile(path.join(__dirname, 'support.html'))
 }
-function showBar(who) {
+function showBar(who, control = false) {
   closeBar()
   const area = screen.getPrimaryDisplay().workArea
   const width = Math.min(560, area.width - 40)
@@ -364,7 +368,7 @@ function showBar(who) {
   barWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
   // closing the bar (Alt+F4) stops the sharing too
   barWin.on('close', () => { barWin = null; if (supportWin && !supportWin.isDestroyed()) supportWin.webContents.send('support:stop') })
-  void barWin.loadFile(path.join(__dirname, 'support-bar.html'), { query: { who: who || 'DrisPRO' } })
+  void barWin.loadFile(path.join(__dirname, 'support-bar.html'), { query: { who: who || 'DrisPRO', control: control ? '1' : '0' } })
 }
 function closeBar() { if (barWin && !barWin.isDestroyed()) { const b = barWin; barWin = null; b.removeAllListeners('close'); b.destroy() } }
 const fromSupport = (e) => !!supportWin && !supportWin.isDestroyed() && e.sender === supportWin.webContents
@@ -385,25 +389,41 @@ ipcMain.handle('support:request', async (e, session) => {
     if (parent) { if (parent.isMinimized()) parent.restore(); parent.show(); parent.flashFrame(true) }
     const ac = new AbortController()
     const timer = setTimeout(() => ac.abort(), 90_000)
-    const a = await dialog.showMessageBox(parent, {
+    const control = r.mode === 'control' && supportInput.supported()
+    const a = await dialog.showMessageBox(parent, control ? {
+      type: 'question', title: 'Ndihmë në distancë', noLink: true, defaultId: 2, cancelId: 2, signal: ac.signal,
+      buttons: ['Lejo shikimin dhe kontrollin', 'Lejo vetëm shikimin', 'Refuzo'],
+      message: `${r.who || 'Mbështetja'} nga ${r.org || 'DrisPRO'} kërkon ta shohë dhe ta përdorë këtë kompjuter.`,
+      detail: 'Me kontroll mund të lëvizin miun, të klikojnë dhe të shkruajnë si të ishin këtu. Nuk mund të marrin skedarë. Sa të jetë e ndezur, lart shfaqet një shirit i kuq; me "Ndal" e mbyllni në çdo moment, edhe nëse miu po lëviz.\n\nLejojeni vetëm nëse e keni kërkuar ju ndihmën ose e prisni këtë thirrje.',
+    } : {
       type: 'question', title: 'Ndihmë në distancë', noLink: true, defaultId: 1, cancelId: 1, signal: ac.signal,
       buttons: ['Lejo shikimin e ekranit', 'Refuzo'],
       message: `${r.who || 'Mbështetja'} nga ${r.org || 'DrisPRO'} kërkon ta shohë ekranin e këtij kompjuteri.`,
       detail: 'Do ta shohin vetëm ekranin: nuk mund të klikojnë, të shkruajnë ose të marrin skedarë. Sa të jetë e ndezur, lart shfaqet një shirit i kuq; me "Ndal" e mbyllni në çdo moment.\n\nLejojeni vetëm nëse e keni kërkuar ju ndihmën ose e prisni këtë thirrje.',
-    }).catch(() => ({ response: 1 }))
+    }).catch(() => ({ response: control ? 2 : 1 }))
     clearTimeout(timer)
     if (parent) parent.flashFrame(false)
     if (ac.signal.aborted) { void supportEvent(session, 'ended'); return { ok: false, unanswered: true } }
-    if (a.response !== 0) { void supportEvent(session, 'declined'); return { ok: false, declined: true } }
+    const allowed = control ? a.response === 0 || a.response === 1 : a.response === 0
+    if (!allowed) { void supportEvent(session, 'declined'); return { ok: false, declined: true } }
     await supportEvent(session, 'accepted')
     captureAllowedAt = Date.now()
-    return { ok: true, ice: r.ice, who: r.who }
+    controlFor = control && a.response === 0 ? session : null
+    return { ok: true, ice: r.ice, who: r.who, control: !!controlFor }
   } finally { asking = false }
 })
-ipcMain.handle('support:active', (e, a) => { if (fromSupport(e)) showBar(String(a?.who ?? '')) })
+ipcMain.handle('support:active', (e, a) => {
+  if (!fromSupport(e)) return
+  const control = !!controlFor && a?.session === controlFor && supportInput.start()
+  if (!control) controlFor = null
+  showBar(String(a?.who ?? ''), control)
+})
+// the support person's mouse and keyboard: only from the hidden page, only for the session allowed control
+ipcMain.on('support:input', (e, a) => { if (fromSupport(e) && controlFor && a?.session === controlFor) supportInput.handle(a.ev) })
 ipcMain.handle('support:ended', (e, a) => {
   if (!fromSupport(e)) return
   closeBar(); captureAllowedAt = 0
+  controlFor = null; supportInput.stop()
   if (a?.session && a.by !== 'admin') void supportEvent(String(a.session), 'ended')
 })
 ipcMain.handle('support:stop', (e) => { if ((fromBar(e) || fromSupport(e)) && supportWin && !supportWin.isDestroyed()) supportWin.webContents.send('support:stop') })
@@ -415,7 +435,8 @@ ipcMain.handle('support:stop', (e) => { if ((fromBar(e) || fromSupport(e)) && su
 const { spawn } = require('child_process')
 const newer = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0) } return false }
 let updating = false
-let declined = ''
+// 'Later' asks again in an hour, not only at the next start: a till open for weeks still gets the new version
+let declined = { version: '', at: 0 }
 async function checkForUpdate(manual = false) {
   if (updating || !app.isPackaged) return
   updating = true
@@ -427,7 +448,7 @@ async function checkForUpdate(manual = false) {
       if (manual) await dialog.showMessageBox(win, { type: 'info', message: `Keni versionin më të ri (${app.getVersion()}).`, buttons: ['Mirë'] })
       return
     }
-    if (rel.version === declined && !manual) return
+    if (!manual && rel.version === declined.version && Date.now() - declined.at < 3600_000) return
     const dir = path.join(app.getPath('temp'), 'drispro-update')
     fs.mkdirSync(dir, { recursive: true })
     const file = path.join(dir, rel.file_name)
@@ -445,12 +466,15 @@ async function checkForUpdate(manual = false) {
       if (size !== rel.size_bytes || hash.digest('hex') !== rel.sha256) { fs.rmSync(`${file}.part`, { force: true }); throw new Error('the download is damaged') }
       fs.renameSync(`${file}.part`, file)
     }
+    // the window comes to the front, so the question is seen and not left behind other programs
+    if (win && !win.isDestroyed()) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); win.flashFrame(true) }
     const a = await dialog.showMessageBox(win, {
       type: 'question', buttons: ['Po, instaloje tani', 'Më vonë'], defaultId: 0, cancelId: 1,
       message: `Ka një version të ri të DrisPRO (${rel.version}).`,
-      detail: `Ju keni ${app.getVersion()}. Instalimi zgjat rreth një minutë; programi mbyllet dhe hapet vetë. Cilësimet dhe licenca mbeten.`,
+      detail: `Ju keni ${app.getVersion()}. Instalimi zgjat rreth një minutë; programi mbyllet dhe hapet vetë. Cilësimet dhe licenca mbeten.\n\nNëse zgjidhni "Më vonë", pyetja del përsëri pas një ore.`,
     })
-    if (a.response !== 0) { declined = rel.version; return }
+    if (win && !win.isDestroyed()) win.flashFrame(false)
+    if (a.response !== 0) { declined = { version: rel.version, at: Date.now() }; return }
     if (isMac) {
       // the new DrisPRO.app replaces this one once it has closed, then opens again
       const bundle = path.resolve(process.execPath, '..', '..', '..')
@@ -476,9 +500,11 @@ app.whenReady().then(() => {
   buildMenu()
   createWindow()
   syncSupport()
-  // a minute after the start (the till is open by then), then every 6 hours
+  // a minute after the start (the till is open by then), then every 15 minutes, and when the computer wakes
+  // up or is unlocked: a new version reaches every computer within a quarter of an hour of being published
   setTimeout(() => void checkForUpdate(), 60_000)
-  setInterval(() => void checkForUpdate(), 6 * 3600_000)
+  setInterval(() => void checkForUpdate(), 15 * 60_000)
+  for (const ev of ['resume', 'unlock-screen']) powerMonitor.on(ev, () => setTimeout(() => void checkForUpdate(), 20_000))
   // this computer's licence, every 6 hours too
   setInterval(() => { void pingDevice().then((d) => { if (d && d.status !== 'active') showDevice(d.status) }).catch(() => undefined) }, 6 * 3600_000)
 })

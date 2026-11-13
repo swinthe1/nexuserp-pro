@@ -67,7 +67,7 @@ function DevicesTable({ rows, loading, error, showClient, tableKey }: { rows: Pl
     { id: 'actions', meta: { label: '', noExport: true }, header: () => null, enableSorting: false,
       cell: ({ row: { original: d } }) => (
         <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-          {d.status === 'active' && <Button size="sm" variant="outline" loading={calling === d.id} title={t('See this computer\'s screen, once the person there allows it')}
+          {d.status === 'active' && <Button size="sm" variant="outline" loading={calling === d.id} title={t('See and use this computer, once the person there allows it')}
             onClick={() => void connect(d)}><ScreenShare /> {t('Connect|support')}</Button>}
           {d.status !== 'active' && <Button size="sm" onClick={() => void act(d, 'active')}><Check /> {d.status === 'pending' ? t('Approve') : t('Unblock')}</Button>}
           {d.status !== 'blocked' && <Button size="sm" variant="outline" onClick={() => void act(d, 'blocked')}><Ban /> {t('Block')}</Button>}

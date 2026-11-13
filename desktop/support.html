@@ -68,11 +68,16 @@ async function share(r) {
   const pc = new RTCPeerConnection({ iceServers: r.ice || [] })
   cur.pc = pc
   const sender = pc.addTrack(track, stream)
+  // the support person's mouse and keyboard come on this channel; the program uses them only if control was allowed
+  if (r.control) {
+    const dc = pc.createDataChannel('input', { ordered: true })
+    dc.onmessage = (m) => { let ev; try { ev = JSON.parse(m.data) } catch { return } S.input(session, ev) }
+  }
   try { const prm = sender.getParameters(); prm.encodings = [{ ...(prm.encodings?.[0] || {}), maxBitrate: 2_500_000 }]; await sender.setParameters(prm) } catch { /* default quality */ }
   pc.onicecandidate = (e) => { if (e.candidate) bc('ice', { session, from: 'device', candidate: e.candidate.toJSON() }) }
   pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed') void stop('failed') }
   await pc.setLocalDescription(await pc.createOffer())
-  bc('offer', { session, sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp }, screen: { width: track.getSettings().width, height: track.getSettings().height } })
+  bc('offer', { session, control: !!r.control, sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp }, screen: { width: track.getSettings().width, height: track.getSettings().height } })
   S.active({ session, who: r.who })
 }
 
