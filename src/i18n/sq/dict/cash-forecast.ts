@@ -180,4 +180,11 @@ export default {
   'Between 2 and 24 instalments': 'Nga 2 deri në 24 këste',
   'Every instalment needs a date and an amount above zero': 'Çdo këst duhet të ketë datë dhe shumë mbi zero',
   'An instalment cannot be due before the document date': 'Një këst nuk mund të ketë afat para datës së dokumentit',
+  "Bank book|ledger": "Ditari i bankës",
+  "Add the bank account of the company first; its book opens here.": "Shtoni së pari llogarinë bankare të kompanisë; ditari i saj hapet këtu.",
+  "Balance at the end": "Saldoja në fund",
+  "Choose a bank account to open its book: every payment in and out, day by day.": "Zgjidhni një llogari bankare për ta hapur ditarin e saj: çdo pagesë hyrëse dhe dalëse, ditë pas dite.",
+  "No bank account yet": "Ende asnjë llogari bankare",
+  "Payment by hand": "Pagesë me dorë",
+  "bank-journal": "ditari-i-bankes",
 } satisfies Dict

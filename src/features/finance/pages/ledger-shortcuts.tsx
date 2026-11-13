@@ -1,8 +1,8 @@
-import { ArrowDownLeft, ArrowUpRight, Printer, Wallet } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Landmark, Plus, Printer, Upload, Wallet } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { useCompany } from '@/app/company-provider'
+import { Can, useCompany } from '@/app/company-provider'
 import { useWarehouses } from '@/features/inventory/api'
 import { supabase } from '@/lib/supabase'
 import { EmptyState } from '@/components/empty-state'
@@ -18,7 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { t, td, tServer } from '@/i18n'
 import { cn, formatDate, formatMoney, num, todayISO } from '@/lib/utils'
-import { SOURCE_HREF, sourceLabel, useAccountLedger, useAccounts, type LedgerLine } from '../api'
+import { SOURCE_HREF, sourceLabel, useAccountLedger, useAccounts, useBankAccounts, type LedgerLine } from '../api'
 
 const monthStart = () => todayISO().slice(0, 8) + '01'
 
@@ -28,20 +28,34 @@ type Day = { date: string; rows: LedgerLine[]; inflow: number; outflow: number; 
  * "Libri i arkës": every cash in and out, day by day, with the cash left at the end of each day.
  * Several cash desks: choose which one. Printable for the signature at the end of the month.
  */
-export function CashBookPage() {
+export function CashBookPage() { return <Book kind="cash" /> }
+
+/**
+ * "Ditari i bankës" (request K-0006): the same book for one bank account, chosen from the list of all of them:
+ * every payment in and out, day by day, with the balance at the end of each day. From here the statement is
+ * imported or a payment is written by hand.
+ */
+export function BankBookPage() { return <Book kind="bank" /> }
+
+function Book({ kind }: { kind: 'cash' | 'bank' }) {
+  const bank = kind === 'bank'
   const { company, companyId } = useCompany()
+  const banks = useBankAccounts()
   const accounts = useAccounts()
   const [params, setParams] = useSearchParams()
   const [from, setFrom] = React.useState(params.get('from') ?? monthStart())
   const [to, setTo] = React.useState(params.get('to') ?? todayISO())
-  const cashes = (accounts.data ?? []).filter((a) => a.is_postable && a.account_subtype === 'cash')
+  // the bank book lists the bank accounts as the user named them (with the IBAN), each with its account in the books
+  const bankOf = new Map((banks.data ?? []).filter((b) => b.is_active && !['cash', 'owner'].includes(b.account_kind)).map((b) => [b.account_id, b]))
+  const cashes = (accounts.data ?? []).filter((a) => a.is_postable && (bank ? bankOf.has(a.id) : a.account_subtype === 'cash'))
+  const nameOf = (a: { id: string; code: string; name: string }) => { const b = bankOf.get(a.id); return bank && b ? [td(b.name), b.iban].filter(Boolean).join(' · ') : `${a.code} · ${td(a.name)}` }
   const id = params.get('account') ?? cashes[0]?.id
   const cash = cashes.find((a) => a.id === id)
   const ledger = useAccountLedger(cash?.id, from, to)
   // the cash of one unit: a line belongs to the unit it came from (the till's shift, the unit's safe, a payment at its cash desk)
   const warehouses = useWarehouses()
   const unitOf = useQuery({
-    queryKey: ['fin', companyId, 'cash-entry-units', from, to], enabled: !!companyId, staleTime: 60_000,
+    queryKey: ['fin', companyId, 'cash-entry-units', from, to], enabled: !!companyId && !bank, staleTime: 60_000,
     queryFn: async () => {
       const r = await supabase.rpc('cash_entry_units', { p_company: companyId!, p_from: from, p_to: to })
       return r.error ? null : (r.data as unknown as Record<string, string>)   // a server not updated yet: no choice of unit
@@ -69,8 +83,10 @@ export function CashBookPage() {
   const inflow = days.reduce((s, d) => s + d.inflow, 0)
   const outflow = days.reduce((s, d) => s + d.outflow, 0)
 
-  if (accounts.isLoading) return <Skeleton className="h-64" />
+  if (accounts.isLoading || (bank && banks.isLoading)) return <Skeleton className="h-64" />
   if (accounts.isError) return <ErrorState error={accounts.error} onRetry={() => void accounts.refetch()} />
+  if (!cash && bank) return <EmptyState icon={Landmark} title={t('No bank account yet')} description={t('Add the bank account of the company first; its book opens here.')}
+    action={<Button variant="outline" asChild><Link to="/finance/bank">{t('Bank and cash')}</Link></Button>} />
   if (!cash) return <EmptyState icon={Wallet} title={t('No cash account yet')} description={t('Add a cash account in the chart of accounts.')}
     action={<Button variant="outline" asChild><Link to="/finance/accounts">{t('Chart of accounts')}</Link></Button>} />
 
@@ -81,19 +97,22 @@ export function CashBookPage() {
     return href && l.entry.source_doc_id ? <Link className="hover:underline" to={href + l.entry.source_doc_id}>{text}</Link>
       : <Link className="hover:underline" to={`/finance/journal/${l.entry_id}`}>{text}</Link>
   }
+  const title = bank ? t('Bank book|ledger') : t('Cash book|ledger')
+  const bal = bank ? t('Balance') : t('Cash')
+  const bankId = bank ? bankOf.get(cash.id)?.id : undefined
   const setPeriod = (f: string, tt: string) => { setFrom(f); setTo(tt); const p = new URLSearchParams(params); p.set('from', f); p.set('to', tt); setParams(p, { replace: true }) }
 
   return (
     <div className="mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)] gap-4">
-      <PageHeader title={t('Cash book|ledger')}
+      <PageHeader title={title}
         description={<>{company?.name} · <span className="font-mono">{cash.code}</span> {td(cash.name)}{one && unit !== 'none' ? ` · ${td(unitOptions.find((w) => w.id === unit)?.name ?? '')}` : ''} · {formatDate(from)} – {formatDate(to)}. {t('Amounts in {cur}.', { cur: company?.base_currency ?? '' })}</>}
         actions={<div className="flex gap-2 print:hidden">
-          <GridExportMenu name={`${t('cash-journal')}-${cash.code}-${from}-${to}`} title={t('Cash book|ledger')} disabled={!days.length}
+          <GridExportMenu name={`${bank ? t('bank-journal') : t('cash-journal')}-${cash.code}-${from}-${to}`} title={title} disabled={!days.length}
             subtitle={`${company?.name ?? ''} · ${cash.code} ${td(cash.name)} · ${formatDate(from)} – ${formatDate(to)} · ${company?.base_currency ?? ''}`}
             grid={() => {
               let run = one ? 0 : num(ledger.data?.opening ?? 0)
               const r2 = (x: number) => Math.round(x * 100) / 100
-              return [[t('Date'), t('Document'), t('Description'), t('In'), t('Out'), t('Cash')],
+              return [[t('Date'), t('Document'), t('Description'), t('In'), t('Out'), bal],
                 ...(one ? [] : [[formatDate(from), null, t('Opening balance on {date}', { date: formatDate(from) }), null, null, r2(run)]]),
                 ...days.flatMap((d) => [
                   ...d.rows.map((l) => {
@@ -106,13 +125,17 @@ export function CashBookPage() {
                 [formatDate(to), null, one ? t('Total of the period') : t('Closing balance on {date}', { date: formatDate(to) }), r2(inflow), r2(outflow), r2(one ? inflow - outflow : num(ledger.data?.closing ?? 0))]]
             }} />
           <Button variant="outline" onClick={() => window.print()}><Printer /> {t('Print')}</Button>
+          {bank && <Can perm="finance.write">
+            <Button variant="outline" asChild><Link to="/finance/payments/new"><Plus /> {t('Payment by hand')}</Link></Button>
+            {bankId && <Button asChild><Link to={`/finance/bank?import=${bankId}`}><Upload /> {t('Import statement')}</Link></Button>}
+          </Can>}
         </div>} />
 
       <div className="flex flex-wrap items-end gap-2 print:hidden">
-        {cashes.length > 1 && (
+        {(bank || cashes.length > 1) && (
           <Select value={cash.id} onValueChange={(v) => { const p = new URLSearchParams(params); p.set('account', v); setParams(p, { replace: true }) }}>
-            <SelectTrigger className="w-full sm:w-[240px]" aria-label={t('Cash desk')}><SelectValue /></SelectTrigger>
-            <SelectContent>{cashes.map((a) => <SelectItem key={a.id} value={a.id}>{a.code} · {td(a.name)}</SelectItem>)}</SelectContent>
+            <SelectTrigger className={bank ? 'w-full sm:w-[360px]' : 'w-full sm:w-[240px]'} aria-label={bank ? t('Bank account') : t('Cash desk')}><SelectValue /></SelectTrigger>
+            <SelectContent>{cashes.map((a) => <SelectItem key={a.id} value={a.id}>{nameOf(a)}</SelectItem>)}</SelectContent>
           </Select>
         )}
         {unitOptions.length > 0 && (
@@ -134,10 +157,10 @@ export function CashBookPage() {
       {ledger.isLoading ? <Skeleton className="h-64" /> : ledger.isError ? <ErrorState error={ledger.error} onRetry={() => void ledger.refetch()} /> : <>
         {/* the four numbers a cashier and the owner look at */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {!one && <Sum label={t('Cash at the start')} value={ledger.data?.opening ?? 0} />}
+          {!one && <Sum label={bank ? t('Balance at the start') : t('Cash at the start')} value={ledger.data?.opening ?? 0} />}
           <Sum label={t('Came in')} value={inflow} tone="in" />
           <Sum label={t('Went out')} value={outflow} tone="out" />
-          {one ? <Sum label={t('In less out|cash')} value={inflow - outflow} strong /> : <Sum label={t('Cash at the end')} value={ledger.data?.closing ?? 0} strong />}
+          {one ? <Sum label={t('In less out|cash')} value={inflow - outflow} strong /> : <Sum label={bank ? t('Balance at the end') : t('Cash at the end')} value={ledger.data?.closing ?? 0} strong />}
         </div>
 
         {one && <p className="text-[12.5px] text-muted-foreground print:hidden">{unit === 'none'
@@ -170,7 +193,7 @@ export function CashBookPage() {
             <Table className="min-w-[760px]">
               <TableHeader><TableRow className="hover:bg-transparent">
                 <TableHead className="w-[110px]">{t('Date')}</TableHead><TableHead>{t('Document')}</TableHead><TableHead>{t('Description')}</TableHead>
-                <TableHead className="text-right">{t('In')}</TableHead><TableHead className="text-right">{t('Out')}</TableHead><TableHead className="text-right">{t('Cash')}</TableHead>
+                <TableHead className="text-right">{t('In')}</TableHead><TableHead className="text-right">{t('Out')}</TableHead><TableHead className="text-right">{bal}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {!one && <TableRow className="bg-muted/40 hover:bg-muted/40"><TableCell colSpan={5} className="text-[13px] font-medium">{t('Opening balance on {date}', { date: formatDate(from) })}</TableCell>
@@ -213,7 +236,7 @@ export function CashBookPage() {
 
           {/* signatures, only on paper */}
           <div className="hidden grid-cols-2 gap-16 pt-12 text-[13px] print:grid">
-            <div className="border-t pt-1">{t('Cashier')}</div><div className="border-t pt-1">{t('Accountant')}</div>
+            <div className="border-t pt-1">{bank ? t('Prepared by') : t('Cashier')}</div><div className="border-t pt-1">{t('Accountant')}</div>
           </div>
         </>}
       </>}

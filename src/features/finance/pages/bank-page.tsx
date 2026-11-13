@@ -2,7 +2,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { PageTableExport } from '@/components/page-table-export'
 import { Ban, BookCheck, BookOpenText, Check, CheckCheck, HandCoins, Landmark, Link2, Plus, Undo2, Upload, Wallet } from 'lucide-react'
 import * as React from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Can, useCompany } from '@/app/company-provider'
 import { ColumnHeader, DataTable } from '@/components/data-table/data-table'
@@ -73,6 +73,15 @@ export function BankPage() {
   const balances = useAccountBalances('1900-01-01', todayISO())
   const [edit, setEdit] = React.useState<BankAccount | 'new' | null>(null)
   const [importFor, setImportFor] = React.useState<string | null | undefined>(undefined)
+  // from the bank book: "Import statement" of one account opens the import here, already on that account
+  const [params, setParams] = useSearchParams()
+  const wanted = params.get('import')
+  React.useEffect(() => {
+    if (!wanted || !banks.data) return
+    if (banks.data.some((b) => b.id === wanted)) setImportFor(wanted)
+    setParams((p) => { const n = new URLSearchParams(p); n.delete('import'); return n }, { replace: true })
+  }, [wanted, banks.data]) // eslint-disable-line react-hooks/exhaustive-deps
+  const bankOnly = (banks.data ?? []).filter((b) => b.is_active && !['cash', 'owner'].includes(b.account_kind))
   const glBal = new Map((balances.data ?? []).map((b) => [b.account_id, num(b.closing)]))
   const position = useBankPosition()
   const posOf = (id: string) => position.data?.find((a) => a.id === id)
@@ -122,12 +131,24 @@ export function BankPage() {
                 </div>
                 {b.account_kind !== 'owner' && <BankPositionLine a={posOf(b.id)} onOpen={() => setWhy(b.id)} />}
                 {b.account_kind === 'cash' && <Button size="sm" variant="outline" className="justify-self-start" asChild><Link to={`/finance/cash-book?account=${b.account_id}`}><BookOpenText /> {t('Cash book|ledger')}</Link></Button>}
-                {!['cash', 'owner'].includes(b.account_kind) && <Can perm="finance.write"><Button size="sm" variant="outline" className="justify-self-start" onClick={() => setImportFor(b.id)}><Upload /> {t('Import statement')}</Button></Can>}
+                {!['cash', 'owner'].includes(b.account_kind) && <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" asChild><Link to={`/finance/bank-book?account=${b.account_id}`}><BookOpenText /> {t('Bank book|ledger')}</Link></Button>
+                  <Can perm="finance.write"><Button size="sm" variant="outline" onClick={() => setImportFor(b.id)}><Upload /> {t('Import statement')}</Button></Can>
+                </div>}
               </CardContent>
             </Card>
           )
         })}
       </div>
+      {bankOnly.length > 0 && <Card className="mt-3"><CardContent className="flex flex-wrap items-center gap-x-3 gap-y-2 p-3">
+        <BookOpenText className="size-4 text-muted-foreground" />
+        <div className="min-w-0 flex-1"><div className="text-[13.5px] font-medium">{t('Bank book|ledger')}</div>
+          <div className="text-[12.5px] text-muted-foreground">{t('Choose a bank account to open its book: every payment in and out, day by day.')}</div></div>
+        <Select value="" onValueChange={(v) => navigate(`/finance/bank-book?account=${v}`)}>
+          <SelectTrigger className="w-full sm:w-[360px]" aria-label={t('Bank account')}><SelectValue placeholder={t('Choose the bank account')} /></SelectTrigger>
+          <SelectContent>{bankOnly.map((b) => <SelectItem key={b.id} value={b.account_id}>{[td(b.name), b.iban].filter(Boolean).join(' · ')}</SelectItem>)}</SelectContent>
+        </Select>
+      </CardContent></Card>}
       <h2 className="mb-2 mt-6 text-sm font-semibold">{t('Statements')}</h2>
       <DataTable tableKey="finance.statements" columns={cols} data={statements.data} isLoading={statements.isLoading} error={statements.error} getRowId={(r) => r.id}
         exportName={t('bank-statements')} searchPlaceholder={t('Reference, account…')} onRowClick={(r) => navigate(`/finance/bank/statements/${r.id}`)}
