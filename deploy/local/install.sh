@@ -121,6 +121,6 @@ chmod 644 /etc/cron.d/drispro-licence
 echo
 echo "DrisPRO is running: $PUBLIC_URL"
 echo "Open it on this network (browser or the DrisPRO program, choose \"Local server\" and type this address)."
-[ -n "$(grep "^ADMIN_EMAIL=" .env | cut -d= -f2)" ] && echo "Sign in with the administrator: $(grep "^ADMIN_EMAIL=" .env | cut -d= -f2)"
+echo "Sign in with the administrator's user name and PIN (the first page of DrisPRO)."
 [ -n "${TUNNEL_TOKEN:-}" ] && echo "From outside: the address of your Cloudflare tunnel."
 exit 0

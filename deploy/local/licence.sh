@@ -24,28 +24,35 @@ grep -q '^LICENCE=.' .env || { sed -i '/^LICENCE=/d' .env; echo "LICENCE=$LICENC
 pass="$(docker exec drispro-db printenv POSTGRES_PASSWORD)"
 sql() { docker exec -i -e PGPASSWORD="$pass" -e PGOPTIONS='-c client_min_messages=warning' drispro-db psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -q -t -A "$@"; }
 
-# the administrator: asked until there is one account to sign in with (also when an earlier try failed)
-has_admin() { [ -n "${ADMIN_EMAIL:-}" ] && [ "$(sql -v email="$ADMIN_EMAIL" <<<"select count(*) from auth.users where lower(email) = lower(:'email');")" != 0 ]; }
-if ! has_admin && [ -z "${ADMIN_PASSWORD:-}" ]; then
+# the administrator signs in like everyone else: a user name and a 6-digit PIN (the account under it has an
+# email no one types and a password no one knows). Asked until it is there, also when an earlier try failed.
+uid_of() { sql -v email="$1" <<<"select id from auth.users where lower(email) = lower(:'email');"; }
+has_login() { [ -n "${ADMIN_EMAIL:-}" ] && [ "$(sql -v email="$ADMIN_EMAIL" <<<"select count(*) from app.user_logins l join auth.users u on u.id = l.user_id where lower(u.email) = lower(:'email');")" != 0 ]; }
+if ! has_login; then
   [ -t 0 ] || { echo "No administrator yet: run  bash licence.sh  on this server"; exit 1; }
-  [ -n "${ADMIN_EMAIL:-}" ] || read -rp "Administrator email (signs in first on this server): " ADMIN_EMAIL
+  echo "    The administrator of this server (signs in with a user name and a PIN, like everyone):"
   while :; do
-    read -rsp "Administrator password (at least 8 characters; it does not show while typed): " ADMIN_PASSWORD; echo
-    [ "${#ADMIN_PASSWORD}" -ge 8 ] || { echo "    too short (${#ADMIN_PASSWORD} characters): again"; continue; }
-    read -rsp "The same password again: " again; echo
-    [ "$again" = "$ADMIN_PASSWORD" ] && break
+    read -rp "    User name (e.g. arben.krasniqi): " ADMIN_USER
+    ADMIN_USER="$(echo "$ADMIN_USER" | tr '[:upper:]' '[:lower:]' | tr -d ' ')"
+    [[ "$ADMIN_USER" =~ ^[a-z0-9][a-z0-9._-]{2,29}$ ]] && break
+    echo "    3 to 30 letters or digits (a dot, a dash or _ also): again"
+  done
+  while :; do
+    read -rsp "    PIN, 6 digits (it does not show while typed): " ADMIN_PIN; echo
+    err="$(sql -v pin="$ADMIN_PIN" <<<"select app.check_login_pin(:'pin');" 2>&1 >/dev/null | sed -n 's/^ERROR: *//p' || true)"
+    [ -z "$err" ] || { echo "    $err: again"; continue; }
+    read -rsp "    The same PIN again: " again; echo
+    [ "$again" = "$ADMIN_PIN" ] && break
     echo "    the two are not the same: again"
   done
-  read -rp "Administrator name: " ADMIN_NAME
-fi
-
-# the administrator's account, made once
-if [ -n "${ADMIN_PASSWORD:-}" ]; then
-  sql -v email="$ADMIN_EMAIL" -v password="$ADMIN_PASSWORD" -v name="${ADMIN_NAME:-}" <<'SQL' >/dev/null
+  read -rp "    Full name: " ADMIN_NAME
+  [ -n "${ADMIN_EMAIL:-}" ] || ADMIN_EMAIL="${ADMIN_USER}@admin.drispro.local"
+  sql -v email="$ADMIN_EMAIL" -v password="$(openssl rand -hex 24)" -v name="${ADMIN_NAME:-}" -v username="$ADMIN_USER" -v pin="$ADMIN_PIN" <<'SQL' >/dev/null
 select app.create_auth_user(:'email', :'password', :'name');
 update public.profiles set full_name = coalesce(nullif(:'name', ''), full_name) where lower(email) = lower(:'email');
+select app.set_user_login((select id from auth.users where lower(email) = lower(:'email')), :'username', :'pin', null);
 SQL
-  echo "    administrator: $ADMIN_EMAIL"
+  echo "    administrator: $ADMIN_USER (signs in with this user name and the PIN)"
 fi
 # written once the account is there, so a failed try asks again next time
 [ -n "${ADMIN_EMAIL:-}" ] && { sed -i '/^ADMIN_EMAIL=/d' .env; echo "ADMIN_EMAIL=$ADMIN_EMAIL" >> .env; }
