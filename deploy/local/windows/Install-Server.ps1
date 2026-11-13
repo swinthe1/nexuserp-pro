@@ -45,19 +45,27 @@ wsl.exe --shutdown
 Start-Sleep 3
 
 Step '4/6 DrisPRO në Ubuntu'
-$ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notmatch '^(127|169\.254)\.' -and $_.PrefixOrigin -ne 'WellKnown' } | Sort-Object InterfaceMetric | Select-Object -First 1).IPAddress
+# the shop's own network first (192.168.x, 10.x, 172.16-31.x), not a VPN such as Radmin (26.x) or Hamachi (25.x)
+$ips = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notmatch '^(127|169\.254)\.' -and $_.PrefixOrigin -ne 'WellKnown' } | Sort-Object InterfaceMetric
+$ip = ($ips | Where-Object { $_.IPAddress -match '^(192\.168|10)\.|^172\.(1[6-9]|2\d|3[01])\.' } | Select-Object -First 1).IPAddress
+if (-not $ip) { $ip = ($ips | Select-Object -First 1).IPAddress }
 if (-not $ip) { $ip = 'localhost' }
+# port 80 is often taken on a shop server (IIS, another program's web page): then 8080, 8081...
+$port = 80
+while (Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue) { $port = if ($port -eq 80) { 8080 } else { $port + 1 } }
+if ($port -ne 80) { Write-Host "Porti 80 është i zënë nga një program tjetër: DrisPRO do të punojë në portin $port." -ForegroundColor Yellow }
+$url = if ($port -eq 80) { "http://$ip" } else { "http://${ip}:$port" }
 $src = (wsl.exe -d $Distro -u root -- wslpath -a "$bundle") -replace "`0", ''
 wsl.exe -d $Distro -u root -- bash -c "mkdir -p /opt/drispro && cp -r '$($src.Trim())/.' /opt/drispro/ && chmod +x /opt/drispro/*.sh /opt/drispro/deploy/coolify/*.sh"
-wsl.exe -d $Distro -u root -- bash -c "cd /opt/drispro && PUBLIC_URL=http://$ip bash install.sh"
+wsl.exe -d $Distro -u root -- bash -c "cd /opt/drispro && HTTP_PORT=$port PUBLIC_URL=$url bash install.sh"
 if ($LASTEXITCODE -ne 0) { Fail 'Instalimi në Ubuntu nuk përfundoi. Bëni screenshot të kësaj dritareje.' }
 
 Step '5/6 Hyrja nga kompjuterët e tjerë'
-New-NetFirewallRule -DisplayName 'DrisPRO (port 80)' -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow -ErrorAction SilentlyContinue | Out-Null
+New-NetFirewallRule -DisplayName "DrisPRO (port $port)" -Direction Inbound -Protocol TCP -LocalPort $port -Action Allow -ErrorAction SilentlyContinue | Out-Null
 $keep = "wsl.exe -d $Distro -u root -- bash -c 'sleep infinity'"
 if (-not $mirrored) {
   # the Linux side gets a new address after each start: the forward is renewed at start
-  $fwd = "`$w=(wsl.exe -d $Distro -u root -- hostname -I).Trim().Split(' ')[0]; netsh interface portproxy delete v4tov4 listenport=80 listenaddress=0.0.0.0 | Out-Null; netsh interface portproxy add v4tov4 listenport=80 listenaddress=0.0.0.0 connectport=80 connectaddress=`$w"
+  $fwd = "`$w=(wsl.exe -d $Distro -u root -- hostname -I).Trim().Split(' ')[0]; netsh interface portproxy delete v4tov4 listenport=$port listenaddress=0.0.0.0 | Out-Null; netsh interface portproxy add v4tov4 listenport=$port listenaddress=0.0.0.0 connectport=$port connectaddress=`$w"
   Set-Content -Path (Join-Path $bundle 'windows\forward-port.ps1') -Value $fwd -Encoding UTF8
   & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $bundle 'windows\forward-port.ps1')
 }
@@ -72,6 +80,6 @@ $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoi
 Register-ScheduledTask -TaskName 'DrisPRO Server' -Action $actions -Trigger $trigger -Settings $settings -User $cred.UserName -Password $cred.GetNetworkCredential().Password -RunLevel Highest -Force | Out-Null
 Start-ScheduledTask -TaskName 'DrisPRO Server'
 
-Write-Host "`nDrisPRO SERVER PUNON: http://$ip" -ForegroundColor Green
+Write-Host "`nDrisPRO SERVER PUNON: $url" -ForegroundColor Green
 Write-Host 'Në kompjuterët e tjerë: hapni programin DrisPRO, zgjidhni "Server lokal" dhe shkruani këtë adresë.'
 Read-Host 'Shtypni Enter'
