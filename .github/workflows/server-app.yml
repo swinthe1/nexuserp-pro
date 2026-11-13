@@ -1,0 +1,76 @@
+# DrisPRO Server for Windows: the installer of the local server, with the server package inside.
+# Built on every change of server-app/ or of the local server's files; the engine is checked and tested
+# on Windows first. The installer is kept as a build artifact (DrisPRO-Server-Setup).
+name: DrisPRO Server
+on:
+  push:
+    branches: [main]
+    paths: ['server-app/**', 'deploy/local/**', 'deploy/coolify/setup-database.sh', '.github/workflows/server-app.yml']
+  workflow_dispatch:
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - run: bash deploy/local/make-bundle.sh "$(date -u +%Y.%m.%d.%H%M)"
+      - run: mkdir -p server-bundle && unzip -q build/local/drispro-server-*.zip -d server-bundle && ls server-bundle/drispro-server
+      - uses: actions/upload-artifact@v5
+        with:
+          name: server-bundle
+          path: server-bundle
+          retention-days: 7
+  engine:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: The engine reads in Windows PowerShell 5.1 without errors
+        shell: powershell
+        run: |
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("$pwd\server-app\engine\engine.ps1", [ref]$null, [ref]$errors) | Out-Null
+          if ($errors) { $errors | ForEach-Object { Write-Host "$($_.Extent.StartLineNumber): $($_.Message)" }; exit 1 }
+      - name: Script analyzer (errors only)
+        shell: powershell
+        run: |
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser -SkipPublisherCheck
+          $r = Invoke-ScriptAnalyzer -Path server-app\engine\engine.ps1 -Severity Error
+          $r | Format-Table -AutoSize | Out-String | Write-Host
+          if ($r) { exit 1 }
+      - name: Tests
+        shell: powershell
+        run: |
+          Install-Module Pester -MinimumVersion 5.5 -Force -Scope CurrentUser -SkipPublisherCheck
+          Import-Module Pester -MinimumVersion 5.5
+          $c = New-PesterConfiguration
+          $c.Run.Path = 'server-app\tests'
+          $c.Output.Verbosity = 'Detailed'
+          $c.Run.Exit = $true
+          Invoke-Pester -Configuration $c
+  build:
+    needs: [bundle, engine]
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: server-app
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v5
+        with:
+          name: server-bundle
+          path: server-app/bundle
+      - run: npm install --no-audit --no-fund
+      # the installer's pages in Albanian (the same texts as the DrisPRO program's)
+      - run: copy ..\desktop\nsis-shqip.mjs . ; node nsis-shqip.mjs
+      - run: npx electron-builder --win nsis --x64 --publish never
+      - uses: actions/upload-artifact@v5
+        with:
+          name: DrisPRO-Server-Setup
+          path: server-app/dist/DrisPRO-Server-Setup-*.exe
+          retention-days: 30

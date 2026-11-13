@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="sq">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+<title>DrisPRO Server</title>
+<style>
+  :root {
+    --bg: #f6f8f7; --card: #ffffff; --ink: #14201b; --muted: #5d6b65; --line: #dfe6e2;
+    --brand: #0f8a5f; --brand-ink: #ffffff; --brand-soft: #e6f4ee;
+    --ok: #0f8a5f; --warn: #b7791f; --warn-soft: #fdf3e1; --bad: #c0392b; --bad-soft: #fbeaea;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 14px/1.5 "Segoe UI", system-ui, sans-serif; }
+  body { display: grid; grid-template-columns: 230px 1fr; }
+  aside { background: #0e2a20; color: #d7e7df; padding: 26px 20px; display: flex; flex-direction: column; gap: 22px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; color: #fff; }
+  .logo b { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: #22c58b; color: #0e2a20; font-size: 15px; }
+  .logo small { display: block; font-weight: 400; font-size: 12px; color: #9fbcae; }
+  ol.path { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  ol.path li { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 7px; color: #9fbcae; }
+  ol.path li i { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid #4b6b5d; display: grid; place-items: center; font-style: normal; font-size: 11px; }
+  ol.path li.now { background: rgba(255,255,255,.07); color: #fff; }
+  ol.path li.now i { border-color: #22c58b; color: #22c58b; }
+  ol.path li.done i { background: #22c58b; border-color: #22c58b; color: #0e2a20; }
+  aside .foot { margin-top: auto; font-size: 12px; color: #7f9d90; }
+  main { overflow: auto; padding: 34px 40px 28px; }
+  h1 { font-size: 22px; margin: 0 0 6px; letter-spacing: -.01em; }
+  p.lead { color: var(--muted); margin: 0 0 22px; max-width: 62ch; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; margin-bottom: 14px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .grow { flex: 1; }
+  button { font: inherit; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--ink); padding: 9px 16px; cursor: pointer; }
+  button.primary { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); font-weight: 600; }
+  button.danger { background: var(--bad); color: #fff; border-color: var(--bad); }
+  button:disabled { opacity: .5; cursor: default; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+  ul.checks { list-style: none; margin: 0; padding: 0; }
+  ul.checks li { display: grid; grid-template-columns: 26px 1fr; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+  ul.checks li:last-child { border-bottom: 0; }
+  .dot { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 700; margin-top: 1px; }
+  .dot.ok { background: var(--ok); } .dot.warn, .dot.fix { background: var(--warn); } .dot.fail { background: var(--bad); }
+  .dot.run { border: 2px solid var(--brand); border-right-color: transparent; animation: spin 1s linear infinite; }
+  .dot.wait { border: 1.5px solid var(--line); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .dot.run { animation: none; } }
+  .fixtext { color: var(--muted); font-size: 13px; }
+  label { display: block; font-weight: 600; margin: 0 0 5px; }
+  .hint { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+  input { font: inherit; width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+  input.code { font-family: Consolas, monospace; letter-spacing: .06em; text-transform: uppercase; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+  .field { margin-bottom: 4px; }
+  .msg { border-radius: 8px; padding: 10px 12px; margin: 10px 0; }
+  .msg.bad { background: var(--bad-soft); color: #7d241a; }
+  .msg.warn { background: var(--warn-soft); color: #7a4f12; }
+  .msg.ok { background: var(--brand-soft); color: #0b5c40; }
+  pre.log { background: #0f1915; color: #cfe3d8; border-radius: 8px; padding: 12px; max-height: 210px; overflow: auto; font: 12px/1.45 Consolas, monospace; white-space: pre-wrap; margin: 0; }
+  details summary { cursor: pointer; color: var(--muted); margin: 6px 0; }
+  .address { font: 600 26px/1.2 Consolas, monospace; color: var(--brand); word-break: break-all; }
+  .kv { display: grid; grid-template-columns: 170px 1fr; gap: 6px 14px; }
+  .kv dt { color: var(--muted); } .kv dd { margin: 0; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 99px; padding: 2px 10px; font-size: 12.5px; background: var(--brand-soft); color: #0b5c40; }
+  .pill.bad { background: var(--bad-soft); color: #7d241a; } .pill.warn { background: var(--warn-soft); color: #7a4f12; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<aside>
+  <div class="logo"><b>D</b><div>DrisPRO Server<small id="ver"></small></div></div>
+  <ol class="path" id="path">
+    <li data-k="checks"><i>1</i>Kontrolli</li>
+    <li data-k="prepare"><i>2</i>Përgatitja</li>
+    <li data-k="answers"><i>3</i>Licenca dhe administratori</li>
+    <li data-k="install"><i>4</i>Instalimi</li>
+    <li data-k="done"><i>5</i>Gati</li>
+  </ol>
+  <div class="foot">Programet e tjera të këtij kompjuteri (p.sh. SQL Server) nuk preken.</div>
+</aside>
+<main id="main"></main>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s)
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+const main = $('#main')
+let info = null
+let answers = { licence: '', adminName: '', adminUser: '', adminPin: '', windowsPassword: '' }
+let listeners = []
+window.server.onEngine((m) => listeners.forEach((f) => f(m.ev, m.action)))
+const listen = (f) => { listeners = [f] }
+
+function setPath(k) {
+  const order = ['checks', 'prepare', 'answers', 'install', 'done']
+  const n = order.indexOf(k)
+  document.querySelectorAll('#path li').forEach((li, i) => { li.className = i < n ? 'done' : i === n ? 'now' : '' ; li.querySelector('i').textContent = i < n ? '✓' : String(i + 1) })
+  $('#path').classList.toggle('hidden', n < 0)
+}
+const dot = (state) => `<span class="dot ${state}">${state === 'ok' ? '✓' : state === 'fail' ? '!' : state === 'warn' || state === 'fix' ? '•' : ''}</span>`
+
+/* ------------------------------------------------------------------ 1. checks */
+async function pageChecks() {
+  setPath('checks')
+  main.innerHTML = `<h1>Instalo serverin DrisPRO në këtë kompjuter</h1>
+    <p class="lead">Së pari shikohet çfarë ka ky kompjuter. Asgjë nuk ndryshohet derisa ta pranoni. Kompjuterët e tjerë të lokalit do ta hapin DrisPRO-n nga ky server.</p>
+    <div class="card"><ul class="checks" id="checks"><li>${dot('run')}<div>Po kontrollohet…</div></li></ul></div>
+    <div id="verdict"></div>
+    <div class="row"><button id="again">Kontrollo përsëri</button><span class="grow"></span><button class="primary" id="go" disabled>Vazhdo</button></div>`
+  const list = $('#checks'); let first = true
+  const items = {}
+  listen((ev) => {
+    if (ev.t === 'check') {
+      if (first) { list.innerHTML = ''; first = false }
+      items[ev.key] = ev
+      list.insertAdjacentHTML('beforeend', `<li>${dot(ev.state)}<div>${esc(ev.text)}${ev.fix ? `<div class="fixtext">${esc(ev.fix)}</div>` : ''}</div></li>`)
+    }
+    if (ev.t === 'stop') $('#verdict').innerHTML = `<div class="msg bad">${esc(ev.text)}</div>`
+  })
+  $('#again').onclick = () => pageChecks()
+  const r = await window.server.run('preflight')
+  if (r.code === -3) return
+  const all = Object.values(items)
+  const fails = all.filter((c) => c.state === 'fail')
+  const fixes = all.filter((c) => c.state === 'fix')
+  if (fails.length) $('#verdict').innerHTML = `<div class="msg bad">${fails.length === 1 ? 'Një gjë' : fails.length + ' gjëra'} duhen rregulluar para instalimit (shih më sipër). Pastaj shtypni "Kontrollo përsëri".</div>`
+  else if (fixes.length) $('#verdict').innerHTML = `<div class="msg warn">Gjërat me pikë të verdhë i rregullon vetë programi në hapin tjetër.</div>`
+  else $('#verdict').innerHTML = `<div class="msg ok">Ky kompjuter është gati.</div>`
+  $('#go').disabled = !!fails.length
+  $('#go').onclick = () => pagePrepare()
+}
+
+/* ------------------------------------------------------------------ 2. prepare: BIOS, WSL, maybe a restart */
+async function pagePrepare(biosPassword) {
+  setPath('prepare')
+  main.innerHTML = `<h1>Përgatitja e kompjuterit</h1>
+    <p class="lead">Ndizet virtualizimi dhe WSL (Linux brenda Windows), nëse nuk janë ndezur ende.</p>
+    <div class="card"><ul class="checks" id="steps">
+      <li data-k="virtualization">${dot('wait')}<div>Virtualizimi i procesorit</div></li>
+      <li data-k="wsl">${dot('wait')}<div>WSL (Linux brenda Windows)</div></li></ul></div>
+    <div id="out"></div>`
+  const out = $('#out')
+  listen((ev) => {
+    if (ev.t === 'step') { const li = $(`#steps li[data-k="${ev.key}"]`); if (li) li.querySelector('.dot').outerHTML = dot(ev.state); if (li && ev.text) li.querySelector('div').innerHTML += ` <span class="fixtext">· ${esc(ev.text)}</span>` }
+    if (ev.t === 'line') out.insertAdjacentHTML('beforeend', `<div class="fixtext">${esc(ev.text)}</div>`)
+  })
+  const r = await window.server.run('prepare', biosPassword ? { biosPassword } : {})
+  if (r.code === -3) return
+  const ev = (t) => r.events.find((e) => e.t === t)
+  if (ev('restart')) {
+    out.innerHTML = `<div class="card"><h1 style="font-size:18px">Duhet rinisur kompjuteri</h1>
+      <p class="lead">${esc(ev('restart').reason)}. Pas rinisjes dhe hyrjes në Windows, ky program hapet vetë dhe vazhdon nga këtu.</p>
+      <div class="msg warn">Rinisja i mbyll programet e hapura në këtë kompjuter (p.sh. programet e tjera që përdor lokali). Zgjidhni një moment kur askush nuk po punon në to.</div>
+      <div class="row"><button class="primary" id="rs">Rinis kompjuterin tani</button><button id="later">Më vonë</button></div></div>`
+    $('#rs').onclick = async () => { $('#rs').disabled = true; await window.server.restartComputer(); out.insertAdjacentHTML('beforeend', '<div class="msg ok">Kompjuteri riniset pas 10 sekondash…</div>') }
+    $('#later').onclick = () => out.insertAdjacentHTML('beforeend', '<div class="msg warn">Kur të jeni gati, rinisni kompjuterin dhe hapni përsëri "DrisPRO Server".</div>')
+    return
+  }
+  const stop = ev('stop')
+  if (stop) {
+    if (stop.key === 'bios-password') {
+      out.innerHTML = `<div class="card"><label for="bp">Fjalëkalimi i BIOS-it</label><input id="bp" type="password" autocomplete="off">
+        <div class="hint">BIOS-i i këtij kompjuteri ka fjalëkalim. Shkruajeni që programi ta ndezë virtualizimin. Nuk ruhet askund.</div>
+        <div class="row" style="margin-top:10px"><button class="primary" id="bpgo">Vazhdo</button></div></div>`
+      $('#bpgo').onclick = () => pagePrepare($('#bp').value)
+      return
+    }
+    out.innerHTML = `<div class="msg bad">${esc(stop.text)}</div>
+      ${stop.key === 'virtualization-manual' ? '<p class="fixtext">Pas ndryshimit në BIOS dhe rinisjes, hapni përsëri "DrisPRO Server".</p>' : ''}
+      <div class="row"><button id="retry">Provo përsëri</button><button id="logs">Hap logun</button></div>`
+    $('#retry').onclick = () => pagePrepare(); $('#logs').onclick = () => window.server.openLogs()
+    return
+  }
+  pageAnswers()
+}
+
+/* ------------------------------------------------------------------ 3. answers: licence, administrator, Windows password */
+const easyPin = (p) => /^(\d)\1{5}$/.test(p) || '0123456789'.includes(p) || '9876543210'.includes(p)
+function pageAnswers(problem) {
+  setPath('answers')
+  const acct = info?.state?.account || ''
+  main.innerHTML = `<h1>Licenca dhe administratori</h1>
+    <p class="lead">Me këto të dhëna serveri lidhet me licencën tuaj dhe krijohet administratori i parë. PIN-i dhe fjalëkalimet nuk ruhen askund në këtë kompjuter.</p>
+    ${problem ? `<div class="msg bad">${esc(problem)}</div>` : ''}
+    <div class="card">
+      <label for="lic">Kodi i licencës</label>
+      <div class="row"><input id="lic" class="code grow" placeholder="NXS-XXXX-XXXX-XXXX" value="${esc(answers.licence)}" autocomplete="off"><button id="licgo">Kontrollo</button></div>
+      <div id="licout" class="hint">Kodi që ju ka dhënë DrisPRO për këtë kompani.</div>
+    </div>
+    <div class="card"><div class="grid2">
+      <div class="field"><label for="nm">Emri dhe mbiemri i administratorit</label><input id="nm" value="${esc(answers.adminName)}" autocomplete="off"></div>
+      <div class="field"><label for="us">Emri i përdoruesit</label><input id="us" value="${esc(answers.adminUser)}" placeholder="p.sh. arben.krasniqi" autocomplete="off" spellcheck="false"><div class="hint">Me këtë dhe PIN-in hyhet në DrisPRO.</div></div>
+      <div class="field"><label for="p1">PIN, 6 shifra</label><input id="p1" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></div>
+      <div class="field"><label for="p2">PIN-i edhe një herë</label><input id="p2" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></div>
+    </div></div>
+    <div class="card">
+      <label for="wp">Fjalëkalimi i llogarisë së Windows${acct ? ` (${esc(acct)})` : ''}</label>
+      <input id="wp" type="password" autocomplete="off">
+      <div class="hint">Që serveri të niset vetë sa herë ndizet kompjuteri, edhe kur askush nuk është i kyçur. Windows e kontrollon menjëherë.</div>
+    </div>
+    <div id="err"></div>
+    <div class="row"><span class="grow"></span><button class="primary" id="go">Instalo</button></div>`
+  let licOk = false
+  const checkLicence = async () => {
+    const code = $('#lic').value.trim().toUpperCase()
+    if (!/^[A-Z0-9]{2,5}(-[A-Z0-9]{4}){3}$/.test(code)) { $('#licout').innerHTML = '<span style="color:var(--bad)">Kodi ka formën NXS-XXXX-XXXX-XXXX.</span>'; return false }
+    $('#licout').textContent = 'Po kontrollohet…'
+    const r = await window.server.run('licence', { licence: code })
+    const l = r.events.find((e) => e.t === 'licence')
+    licOk = !!l?.ok
+    $('#licout').innerHTML = l?.ok ? `<span class="pill">✓ ${esc(l.company)} · paketa ${esc(l.plan)} · deri më ${esc(l.until)}</span>` : `<span style="color:var(--bad)">${esc(l?.text || 'Licenca nuk u kontrollua.')}</span>`
+    return licOk
+  }
+  $('#licgo').onclick = checkLicence
+  $('#go').onclick = async () => {
+    const e = (t) => { $('#err').innerHTML = `<div class="msg bad">${esc(t)}</div>` }
+    answers.licence = $('#lic').value.trim().toUpperCase()
+    answers.adminName = $('#nm').value.trim()
+    answers.adminUser = $('#us').value.trim().toLowerCase()
+    const p1 = $('#p1').value, p2 = $('#p2').value
+    if (!answers.adminName) return e('Shkruani emrin e administratorit.')
+    if (!/^[a-z0-9][a-z0-9._-]{2,29}$/.test(answers.adminUser)) return e('Emri i përdoruesit: 3 deri në 30 shkronja ose shifra (lejohen edhe . - _), pa hapësira.')
+    if (!/^\d{6}$/.test(p1)) return e('PIN-i ka saktësisht 6 shifra.')
+    if (easyPin(p1)) return e('Ky PIN merret me mend lehtë (p.sh. 123456 ose 111111): zgjidhni një tjetër.')
+    if (p1 !== p2) return e('Dy PIN-et nuk janë të njëjtë.')
+    if (!$('#wp').value) return e('Shkruani fjalëkalimin e Windows. Pa të serveri nuk niset vetë pas rinisjes.')
+    if (!licOk && !(await checkLicence())) return e('Licenca duhet të kontrollohet me sukses para instalimit.')
+    answers.adminPin = p1; answers.windowsPassword = $('#wp').value
+    pageInstall()
+  }
+}
+
+/* ------------------------------------------------------------------ 4. install */
+const STEPS = [
+  ['account', 'Llogaria e Windows për nisjen automatike'], ['ubuntu', 'Ubuntu (Linux)'], ['linux', 'Cilësimet e Linux-it'],
+  ['files', 'Skedarët e serverit'], ['drispro', 'DrisPRO: shërbimet, baza e të dhënave, licenca, kopjet e natës'],
+  ['network', 'Rrjeti: porti dhe firewall-i'], ['autostart', 'Nisja automatike me Windows'], ['final', 'Prova nga rrjeti'],
+]
+const PARTS = { '1/7': 'Docker', '2/7': 'çelësat', '3/7': 'shkarkimi i shërbimeve (rreth 1.5 GB)', '4/7': 'nisja e shërbimeve', '5/7': 'baza e të dhënave', '6/7': 'licenca dhe administratori', '7/7': 'kopjet e natës', '8/8': 'prova e çdo pjese' }
+async function pageInstall() {
+  setPath('install')
+  main.innerHTML = `<h1>Po instalohet serveri</h1>
+    <p class="lead">Zgjat rreth 10–25 minuta, sipas internetit. Mund ta lini kompjuterin të punojë; mos e fikni.</p>
+    <div class="card"><ul class="checks" id="steps">${STEPS.map(([k, t]) => `<li data-k="${k}">${dot('wait')}<div>${t}<div class="fixtext" data-sub></div></div></li>`).join('')}</ul></div>
+    <details><summary>Shiko detajet</summary><pre class="log" id="log"></pre></details>
+    <div id="out"></div>`
+  const log = $('#log')
+  listen((ev) => {
+    if (ev.t === 'step') { const li = $(`#steps li[data-k="${ev.key}"]`); if (li) { li.querySelector('.dot').outerHTML = dot(ev.state); if (ev.text) li.querySelector('[data-sub]').textContent = ev.text } }
+    if (ev.t === 'progress') { const li = $(`#steps li[data-k="${ev.key}"]`); if (li && PARTS[ev.part]) li.querySelector('[data-sub]').textContent = 'Tani: ' + PARTS[ev.part] }
+    if (ev.t === 'line' || ev.t === 'problem') { log.textContent += (ev.text || '') + '\n'; log.scrollTop = log.scrollHeight }
+  })
+  const r = await window.server.run('install', answers)
+  if (r.code === -3) return
+  const ev = (t) => r.events.filter((e) => e.t === t).pop()
+  const need = ev('need')
+  if (need && ['admin', 'licence', 'windowsPassword'].includes(need.what)) {
+    answers.windowsPassword = ''
+    return pageAnswers(need.text || ev('stop')?.text)
+  }
+  const stop = ev('stop')
+  if (stop || r.code !== 0) {
+    $('#out').innerHTML = `<div class="msg bad"><b>Instalimi ndaloi.</b> ${esc(stop?.text || 'Një gabim i papritur.')}</div>
+      <p class="fixtext">Çdo gjë që u bë mbetet. "Provo përsëri" vazhdon nga ky hap. Nëse ndalon prapë, dërgoni logun te DrisPRO.</p>
+      <div class="row"><button class="primary" id="retry">Provo përsëri</button><button id="logs">Hap logun</button></div>`
+    $('#retry').onclick = () => (answers.windowsPassword ? pageInstall() : pageAnswers('Shkruani përsëri fjalëkalimin e Windows dhe PIN-in.'))
+    $('#logs').onclick = () => window.server.openLogs()
+    return
+  }
+  answers.adminPin = ''; answers.windowsPassword = ''
+  await window.server.installed()
+  pageDone(ev('done'))
+}
+
+/* ------------------------------------------------------------------ 5. done */
+function pageDone(d) {
+  setPath('done')
+  const url = d?.url || info?.state?.url || ''
+  main.innerHTML = `<h1>Serveri DrisPRO punon</h1>
+    <p class="lead">Çdo pjesë u provua nga rrjeti. Serveri niset vetë sa herë ndizet kompjuteri. Ky program mbetet poshtë djathtas, pranë orës, me gjendjen e serverit.</p>
+    <div class="card"><div class="fixtext">Adresa për kompjuterët e tjerë</div>
+      <div class="row"><div class="address grow">${esc(url)}</div><button id="cp">Kopjo</button></div></div>
+    <div class="card"><b>Në çdo kompjuter tjetër të lokalit</b>
+      <ol style="margin:8px 0 0;padding-left:20px"><li>Instaloni programin DrisPRO (nga faqja e hyrjes: "DrisPRO për Windows").</li>
+      <li>Zgjidhni <b>Server lokal</b> dhe shkruani adresën më sipër.</li>
+      <li>Hyni me emrin e përdoruesit <b>${esc(d?.user || answers.adminUser)}</b> dhe PIN-in.</li>
+      <li>Te Cilësimet → Përdoruesit krijoni kolegët me emër përdoruesi dhe PIN.</li></ol></div>
+    <div class="row"><button class="primary" id="open">Hap DrisPRO</button><button id="close">Mbyll dritaren</button></div>`
+  $('#cp').onclick = async () => { await window.server.copy(url); $('#cp').textContent = 'U kopjua' }
+  $('#open').onclick = () => window.server.openUrl(url)
+  $('#close').onclick = () => window.close()
+}
+
+/* ------------------------------------------------------------------ after the install: status and the buttons */
+function statusHtml(s) {
+  if (!s) return '<div class="card"><ul class="checks"><li>' + dot('run') + '<div>Po lexohet gjendja…</div></li></ul></div>'
+  if (!s.installed) return '<div class="msg warn">Serveri nuk është i instaluar në këtë llogari të Windows.</div>'
+  const sv = s.server?.services || {}
+  const names = { 'drispro-db': 'Baza e të dhënave', 'drispro-auth': 'Hyrja', 'drispro-rest': 'Të dhënat (API)', 'drispro-storage': 'Skedarët', 'drispro-web': 'Faqja', 'drispro-postier': 'Email-et dhe automatizimet', 'drispro-realtime': 'Ndryshimet live' }
+  const svc = Object.entries(names).map(([k, n]) => { const v = sv[k] || 'missing'; const ok = v === 'healthy' || v === 'running'; return `<li>${dot(ok ? 'ok' : 'fail')}<div>${n}${ok ? '' : ` <span class="fixtext">(${esc(v)})</span>`}</div></li>` }).join('')
+  const l = s.server?.licence
+  const b = s.server?.last_backup_at ? new Date(s.server.last_backup_at) : null
+  const old = !b || (Date.now() - b.getTime()) > 36 * 3600e3
+  return `<div class="card"><div class="fixtext">Adresa për kompjuterët e tjerë</div><div class="row"><div class="address grow">${esc(s.url)}</div><button id="cp">Kopjo</button><button id="open">Hap</button></div>
+      <div style="margin-top:8px">${s.network ? '<span class="pill">✓ arrihet nga rrjeti</span>' : '<span class="pill bad">nuk arrihet nga rrjeti</span>'} ${s.task === 'Running' ? '<span class="pill">✓ nisja automatike</span>' : `<span class="pill warn">nisja automatike: ${esc(s.task)}</span>`}</div></div>
+    <div class="card"><ul class="checks">${svc}</ul></div>
+    <div class="card"><dl class="kv">
+      <dt>Kompania</dt><dd>${esc(l?.company || '—')}</dd>
+      <dt>Licenca</dt><dd>${l ? `${esc(l.plan)} · deri më ${esc(l.until)} · ${esc(l.status)}` : '—'}</dd>
+      <dt>Kopja e fundit e bazës</dt><dd>${b ? b.toLocaleString('sq-AL') : 'asnjë ende'} ${old ? '<span class="pill warn">më e vjetër se 36 orë</span>' : ''}</dd>
+      <dt>Hapësira e lirë</dt><dd>${esc(s.server?.free_gb)} GB</dd>
+      <dt>Versioni</dt><dd>${esc(s.server?.version)} · përditësim automatik: ${s.server?.auto_update === 'true' ? 'po, çdo natë' : 'jo'}</dd></dl></div>`
+}
+async function pageStatus() {
+  setPath('none')
+  main.innerHTML = `<h1>Gjendja e serverit</h1><p class="lead">Kontrollohet çdo minutë.</p><div id="st">${statusHtml(info?.status)}</div>
+    <div class="row"><button class="primary" data-a="repair">Kontrollo dhe ripariro</button><button data-a="backup">Bëj kopje tani</button><button data-a="update">Përditëso</button><button data-a="restart">Rinis shërbimet</button><span class="grow"></span><button id="logs">Logët</button><button data-a="uninstall">Çinstalo…</button></div>`
+  const bind = (s) => { $('#st').innerHTML = statusHtml(s); const c = $('#cp'); if (c) c.onclick = () => window.server.copy(s.url); const o = $('#open'); if (o) o.onclick = () => window.server.openUrl(s.url) }
+  bind(info?.status)
+  window.server.onStatus((s) => { if ($('#st')) bind(s) })
+  main.querySelectorAll('[data-a]').forEach((b) => { b.onclick = () => pageAction(b.dataset.a) })
+  $('#logs').onclick = () => window.server.openLogs()
+  if (!info?.status) { const r = await window.server.run('status'); const s = r.events?.find((e) => e.t === 'status'); if (s) bind(s) }
+}
+const ACTIONS = {
+  repair: ['Kontrollo dhe ripariro', 'Nisen përsëri pjesët që kanë ngecur, shtohen ndryshimet e bazës që mungojnë, kontrollohen kopjet dhe rrjeti. Të dhënat nuk preken.'],
+  backup: ['Kopje e bazës tani', 'Bëhet një kopje e plotë e bazës së të dhënave në këtë server (14 kopjet e fundit mbahen).'],
+  update: ['Përditëso serverin', 'Nëse ka version të ri, shkarkohet, kontrollohet dhe instalohet. Para kësaj bëhet kopje e bazës. Përdoruesit mund ta ndiejnë një ndërprerje 1–2 minuta.'],
+  restart: ['Rinis shërbimet', 'Shërbimet e DrisPRO-s rinisen (rreth 1 minutë pa server).'],
+}
+async function pageAction(a, auto) {
+  if (a === 'uninstall') return pageUninstall()
+  const [title, text] = ACTIONS[a]
+  main.innerHTML = `<h1>${title}</h1><p class="lead">${text}</p>
+    <div class="row" id="startrow"><button class="primary" id="go">Fillo</button><button id="back">Kthehu</button></div>
+    <pre class="log hidden" id="log"></pre><div id="out"></div>`
+  $('#back').onclick = () => pageStatus()
+  const go = async () => {
+    $('#startrow').classList.add('hidden'); $('#log').classList.remove('hidden')
+    listen((ev) => { if (ev.t === 'line' || ev.t === 'step' || ev.t === 'progress') { $('#log').textContent += (ev.text || (ev.key ? `${ev.key}: ${ev.state || ev.part}` : '')) + '\n'; $('#log').scrollTop = 1e9 } })
+    const r = await window.server.run(a)
+    if (r.code === -3) return
+    const stop = r.events.find((e) => e.t === 'stop')
+    $('#out').innerHTML = stop || r.code !== 0 ? `<div class="msg bad">${esc(stop?.text || 'Nuk përfundoi me sukses: shihni detajet.')}</div>` : '<div class="msg ok">U krye.</div>'
+    $('#out').insertAdjacentHTML('beforeend', '<div class="row"><button id="b2">Kthehu te gjendja</button></div>'); $('#b2').onclick = () => pageStatus()
+  }
+  $('#go').onclick = go
+  if (auto) go()
+}
+function pageUninstall() {
+  main.innerHTML = `<h1>Çinstalo serverin DrisPRO</h1>
+    <p class="lead">Ndalet nisja automatike, hiqen rregullat e rrjetit dhe shërbimet. Kompjuterët e tjerë nuk do ta hapin më DrisPRO-n nga ky server.</p>
+    <div class="card"><label><input type="radio" name="k" value="keep" checked style="width:auto"> Ruaj të dhënat (një instalim i ri i gjen dhe vazhdon me to)</label>
+    <label style="margin-top:8px"><input type="radio" name="k" value="all" style="width:auto"> Fshi gjithçka, edhe të dhënat. <span style="color:var(--bad)">Nuk kthehet më.</span></label></div>
+    <div id="out"></div>
+    <div class="row"><button class="danger" id="go">Çinstalo</button><button id="back">Kthehu</button></div>`
+  $('#back').onclick = () => pageStatus()
+  $('#go').onclick = async () => {
+    const keep = $('input[name=k]:checked').value === 'keep'
+    if (!keep && !confirm('Të fshihen përgjithmonë të gjitha të dhënat e DrisPRO në këtë server?')) return
+    $('#go').disabled = true
+    const r = await window.server.run('uninstall', {}, keep)
+    if (r.code === -3) return
+    $('#out').innerHTML = r.code === 0 ? '<div class="msg ok">Serveri u çinstalua. Këtë program e hiqni nga "Apps & features" i Windows.</div>' : '<div class="msg bad">Nuk përfundoi: hapni logun.</div>'
+  }
+}
+
+/* ------------------------------------------------------------------ start */
+;(async () => {
+  info = await window.server.info()
+  $('#ver').textContent = 'versioni ' + info.version
+  const page = new URLSearchParams(location.search).get('page') || 'install'
+  const route = (p) => {
+    if (p === 'status') return pageStatus()
+    if (['repair', 'backup', 'update', 'restart'].includes(p)) return pageAction(p, info.admin)
+    if (p === 'uninstall') return pageUninstall()
+    // the install: after a restart it goes on from the preparation
+    if (info.state?.installedAt) return pageStatus()
+    if (info.state?.prepared === false || new URLSearchParams(location.search).has('resume')) return pagePrepare()
+    return pageChecks()
+  }
+  window.server.onPage(route)
+  route(page)
+})()
+</script>
+</body>
+</html>
