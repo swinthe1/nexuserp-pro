@@ -12,6 +12,8 @@ param([string]$Distro = 'Ubuntu-24.04')
 $ErrorActionPreference = 'Stop'
 function Step($t) { Write-Host "`n==> $t" -ForegroundColor Cyan }
 function Fail($t) { Write-Host "`n$t" -ForegroundColor Red; Read-Host 'Shtypni Enter'; exit 1 }
+# any other error stays on screen too, instead of the window closing by itself
+trap { Write-Host "`nGabim: $($_.Exception.Message)`n$($_.InvocationInfo.PositionMessage)" -ForegroundColor Red; Read-Host 'Bëni screenshot dhe shtypni Enter'; exit 1 }
 
 $admin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $admin) { Fail 'Nisni PowerShell si administrator (klik i djathtë → Run as administrator) dhe provoni përsëri.' }
