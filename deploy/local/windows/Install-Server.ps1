@@ -47,8 +47,11 @@ wsl.exe -d $Distro -u root -- bash -c "printf '[boot]\nsystemd=true\n' > /etc/ws
 $build = [int](Get-CimInstance Win32_OperatingSystem).BuildNumber
 $wslconfig = Join-Path $env:USERPROFILE '.wslconfig'
 $mirrored = $build -ge 22621
-if ($mirrored) { Set-Content -Path $wslconfig -Value "[wsl2]`nnetworkingMode=mirrored`nvmIdleTimeout=-1`n" -Encoding ASCII }
-else { Set-Content -Path $wslconfig -Value "[wsl2]`nvmIdleTimeout=-1`n" -Encoding ASCII }
+# a fixed share of memory (a quarter, 4-8 GB), so programs already on this computer (SQL Server…) keep theirs
+$gb = [math]::Max(4, [math]::Min(8, [math]::Floor((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 4GB)))
+$mem = "memory=${gb}GB`n"
+if ($mirrored) { Set-Content -Path $wslconfig -Value "[wsl2]`nnetworkingMode=mirrored`nvmIdleTimeout=-1`n$mem" -Encoding ASCII }
+else { Set-Content -Path $wslconfig -Value "[wsl2]`nvmIdleTimeout=-1`n$mem" -Encoding ASCII }
 wsl.exe --shutdown
 Start-Sleep 3
 
