@@ -444,6 +444,7 @@ function Invoke-Install([string]$BundleDir) {
 
   Step 'autostart' 'run'
   Register-Autostart $user ([string]$a.windowsPassword) $true
+  try { Register-Watchdog } catch { Say "Roja e nisjes nuk u vendos: $($_.Exception.Message)" }
   Step 'autostart' 'ok'
 
   Step 'final' 'run'
@@ -485,6 +486,19 @@ netsh interface portproxy add v4tov4 listenport=$Port listenaddress=0.0.0.0 conn
     # portproxy needs the IP Helper service
     Set-Service iphlpsvc -StartupType Automatic -ErrorAction SilentlyContinue; Start-Service iphlpsvc -ErrorAction SilentlyContinue
   }
+}
+
+# a watchdog run by Windows itself every 5 minutes: when the start task has stopped (WSL shut down, a sign-out,
+# an update), it starts it again, so the server never stays down until someone presses Repair. It runs as SYSTEM,
+# so it needs no password.
+function Register-Watchdog {
+  $wd = Join-Path $Root 'watchdog.ps1'
+  $body = "`$t = Get-ScheduledTask -TaskName '$TaskName' -ErrorAction SilentlyContinue`r`nif (`$t -and `$t.State -ne 'Running') { Start-ScheduledTask -TaskName '$TaskName' }`r`n"
+  Set-Content -Path $wd -Value $body -Encoding UTF8
+  $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$wd`""
+  $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(2) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 3650)
+  $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 2) -StartWhenAvailable -MultipleInstances IgnoreNew
+  Register-ScheduledTask -TaskName "$TaskName Roja" -Action $action -Trigger $trigger -Settings $settings -User 'SYSTEM' -RunLevel Highest -Force -ErrorAction Stop | Out-Null
 }
 
 function Register-Autostart([string]$Account, [string]$Secret, [bool]$Start) {
@@ -544,6 +558,7 @@ function Invoke-Repair {
     $t = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
     if (-not $t) { Say 'Nisja automatike mungon: regjistrojeni përsëri nga programi (kërkon fjalëkalimin e Windows)'; Send 'need' @{ what = 'autostart' } }
     elseif ($t.State -ne 'Running') { Start-ScheduledTask -TaskName $TaskName; Say 'Nisja automatike u nis përsëri' }
+    try { if (-not (Get-ScheduledTask -TaskName "$TaskName Roja" -ErrorAction SilentlyContinue)) { Register-Watchdog; Say 'Roja e nisjes u vendos (kontrollon çdo 5 minuta)' } } catch { Say "Roja e nisjes nuk u vendos: $($_.Exception.Message)" }
     $bad = Test-FromNetwork ([string]$s.ip) ([int]$s.port)
     Step 'network' $(if ($bad) { 'fail' } else { 'ok' })
   }
@@ -553,6 +568,7 @@ function Invoke-Repair {
 function Invoke-Uninstall([bool]$Keep) {
   $s = Get-State
   Step 'autostart' 'run'
+  Unregister-ScheduledTask -TaskName "$TaskName Roja" -Confirm:$false -ErrorAction SilentlyContinue
   Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
   Step 'autostart' 'ok'
   Step 'network' 'run'
