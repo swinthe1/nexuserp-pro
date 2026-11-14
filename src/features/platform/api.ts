@@ -30,6 +30,8 @@ export interface PlatformClient {
   modules?: string[] | null
   /** the computers licensed: tills, administration, waiting for approval */
   devices?: { till: number; office: number; pending: number } | null
+  /** the client's own address: https://<name>.drispro.com */
+  app_url?: string | null
   valid_from: string | null
   valid_until: string | null
   status: 'active' | 'suspended' | null

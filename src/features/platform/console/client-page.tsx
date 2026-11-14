@@ -76,6 +76,7 @@ export function ClientPage() {
           <Badge variant={s.variant}>{s.label}</Badge>
           <Badge variant="outline">{planLabel(c.plan, c.package)}</Badge>
           {d.company.is_training && <Badge variant="warning">{t('Training')}</Badge>}
+          {c.app_url && <a href={c.app_url} target="_blank" rel="noreferrer" className="text-[12.5px] font-medium text-primary hover:underline">{c.app_url.replace(/^https:\/\//, '')}</a>}
         </div>}
         description={[d.company.country_code === 'XK' ? t('Kosovo') : t('Albania'), d.company.tax_number && `NUI ${d.company.tax_number}`, t(businessTypeLabel(d.company.business_type)),
           t('client since {date}', { date: formatDate(d.company.created_at) })].filter(Boolean).join(' · ')}

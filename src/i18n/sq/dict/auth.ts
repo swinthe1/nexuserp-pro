@@ -97,4 +97,6 @@ export default {
   "The code ran out: ask for a new one": "Kodi skadoi: kërkoni një të ri",
   "This device now has its licence. Sign in.": "Kjo pajisje tani ka licencën e saj. Kyçuni.",
   "Signing you in on this client's server…": "Po ju kyç në serverin e këtij klienti…",
+  "The people of a company sign in at their company's address, e.g. name.drispro.com.": "Njerëzit e një kompanie kyçen te adresa e kompanisë së tyre, p.sh. emri.drispro.com.",
+  "Your company's address: {url}": "Adresa e kompanisë suaj: {url}",
 } satisfies Dict

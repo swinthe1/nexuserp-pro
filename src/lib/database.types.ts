@@ -2234,6 +2234,7 @@ export type Database = {
           is_training: boolean
           business_type: string
           licence_code: string | null
+          app_slug: string | null
         }
         Insert: {
           id?: string
@@ -2265,6 +2266,7 @@ export type Database = {
           is_training?: boolean
           business_type?: string
           licence_code?: string | null
+          app_slug?: string | null
         }
         Update: {
           id?: string
@@ -2296,6 +2298,7 @@ export type Database = {
           is_training?: boolean
           business_type?: string
           licence_code?: string | null
+          app_slug?: string | null
         }
         Relationships: [
           { foreignKeyName: "companies_base_currency_fkey"; columns: ["base_currency"]; isOneToOne: false; referencedRelation: "currencies"; referencedColumns: ["code"] },
@@ -17492,6 +17495,12 @@ export type Database = {
       close_work_order: {
         Args: {
           p_wo: string
+        }
+        Returns: Json
+      }
+      company_by_host: {
+        Args: {
+          p_host: string
         }
         Returns: Json
       }

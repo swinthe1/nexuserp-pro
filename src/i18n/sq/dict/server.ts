@@ -948,4 +948,5 @@ export default {
   "This entry is not valid": "Kjo hyrje nuk është e vlefshme",
   "This entry is not valid or has run out; open the company again from the Platform": "Kjo hyrje nuk është e vlefshme ose ka skaduar; hapeni kompaninë përsëri nga Platforma",
   "Too many entries asked; wait a little and try again": "U kërkuan shumë hyrje; prisni pak dhe provoni përsëri",
+  "Sign in at your company's address": "Kyçuni te adresa e kompanisë suaj",
 } satisfies Dict

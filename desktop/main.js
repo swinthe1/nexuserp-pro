@@ -226,6 +226,7 @@ handle('drispro:finish-activation', async (a) => {
     if (!/local:\s*true/.test(text)) throw new Error(`Në ${u.origin} nuk u gjet një server lokal i DrisPRO. Kontrolloni adresën dhe që serveri është ndezur.`)
     server = u.origin
   } else if (lic.deployment === 'local') throw new Error('Kjo licencë është vetëm për server lokal.')
+  else if (lic.app_url) server = lic.app_url   // every client has its own address: https://<name>.drispro.com
   settings = { ...settings, licence: lic.code, mode: a.mode, company: lic.company?.name ?? '', server }
   writeSettings(settings)
   // this computer's own licence: a till or administration; it may have to wait for DrisPRO's approval
@@ -307,6 +308,11 @@ async function pingDevice() {
   const r = await rpc('device_ping', { p_device: d.id, p_secret: secret, p: machine() })
   // the server no longer knows this computer (removed in the console, or another server): it says so and waits for a new activation
   if (r.status === 'unknown') { settings = { ...settings, device: { secret: d.secret, secretEnc: d.secretEnc, status: 'unknown', name: d.name, kind: d.kind } }; writeSettings(settings); syncSupport(); return { status: 'unknown' } }
+  // a computer in the cloud opens its company's own address (app.drispro.com is the platform's)
+  if (settings.mode === 'cloud' && r.app_url && origin() === new URL(DEFAULT_SERVER).origin) {
+    settings = { ...settings, server: r.app_url }; writeSettings(settings)
+    if (win && !onDevicePage()) void win.loadURL(settings.server)
+  }
   return { ...keep(r), licenceOk: r.licence_ok !== false }
 }
 function showDevice(state) { if (win) void win.loadFile(path.join(__dirname, 'device.html'), { query: { state, label: settings.device?.label ?? '', name: settings.device?.name ?? '', kind: settings.device?.kind ?? '' } }) }

@@ -91,12 +91,16 @@ function TicketLogin({ ticket }: { ticket: string }) {
   )
 }
 
+/** app.drispro.com is the platform's own address: the people of a client sign in at their company's address */
+const onPlatformAddress = typeof window !== 'undefined' && window.location.hostname === 'app.drispro.com'
+
 function PeopleLogin() {
   const [till] = React.useState(getTill)
   // the platform's administrator signs in at /login?admin (nothing on the page points there: clients never see it)
   const [mode, setMode] = React.useState<'till' | 'user' | 'admin'>(() => (new URLSearchParams(window.location.search).has('admin') ? 'admin' : till ? 'till' : 'user'))
   const toUser = React.useCallback(() => setMode('user'), [])
   if (till && mode === 'till') return <PinLogin till={till} onEmail={toUser} />
+  if (onPlatformAddress) return <EmailLogin />
   if (mode === 'admin') return <EmailLogin onBack={toUser} />
   return <UserPinLogin onTill={till ? () => setMode('till') : undefined} />
 }
@@ -112,6 +116,16 @@ function UserPinLogin({ onTill }: { onTill?: () => void }) {
   const [error, setError] = React.useState<string | null>(null)
   // the client lets only licensed devices work and this one has none (or its licence ran out)
   const [needDevice, setNeedDevice] = React.useState(() => new URLSearchParams(window.location.search).has('device'))
+  const [goTo, setGoTo] = React.useState<string | null>(null)
+  // at a company's address the page says whose it is
+  const [company, setCompany] = React.useState<string | null>(null)
+  React.useEffect(() => {
+    if (!window.location.hostname.endsWith('.drispro.com')) return
+    void supabase.rpc('company_by_host', { p_host: window.location.hostname }).then(({ data }) => {
+      const r = data as unknown as { kind: string; name?: string } | null
+      if (r?.kind === 'client' && r.name) setCompany(r.name)
+    })
+  }, [])
   const submit = async (e?: React.FormEvent) => {
     e?.preventDefault()
     if (!username.trim() || pin.length !== 6 || busy) return
@@ -119,8 +133,9 @@ function UserPinLogin({ onTill }: { onTill?: () => void }) {
     try {
       const { data, error: err } = await supabase.rpc('login_with_pin', { p_username: username.trim(), p_pin: pin })
       if (err) throw err
-      const r = data as unknown as { error?: string; request?: string; secret?: string; device?: boolean }
+      const r = data as unknown as { error?: string; request?: string; secret?: string; device?: boolean; company_url?: string }
       if (r.device) { setNeedDevice(true); setPin(''); return }
+      if (r.company_url) setGoTo(r.company_url)
       if (r.error) { setError(tServer(r.error)); setPin(''); return }
       await finishPinSignIn(r.request!, r.secret!)
       try { localStorage.setItem('drispro.last-username', username.trim().toLowerCase()) } catch { /* private window */ }
@@ -129,7 +144,8 @@ function UserPinLogin({ onTill }: { onTill?: () => void }) {
   }
   return (
     <>
-      <Heading title={t('Welcome back')} sub={t('Sign in with your user name and PIN. The administrator of your company gives them.')} />
+      <Heading title={company ?? t('Welcome back')} sub={t('Sign in with your user name and PIN. The administrator of your company gives them.')} />
+      {goTo ? <a href={`${goTo}/login`} className="mb-4 block rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm font-medium text-primary hover:underline">{t('Your company\'s address: {url}', { url: goTo.replace(/^https:\/\//, '') })}</a> : null}
       {needDevice ? <div className="mb-4"><DevicePairing onLicensed={() => setNeedDevice(false)} /></div> : null}
       <form onSubmit={(e) => void submit(e)} className="grid gap-4" noValidate>
         <div className="grid gap-1.5">
@@ -159,7 +175,7 @@ function UserPinLogin({ onTill }: { onTill?: () => void }) {
   )
 }
 
-function EmailLogin({ onBack }: { onBack: () => void }) {
+function EmailLogin({ onBack }: { onBack?: () => void }) {
   const { signIn } = useAuth()
   const navigate = useNavigate()
   const from = (useLocation().state as { from?: string } | null)?.from ?? '/'
@@ -177,7 +193,8 @@ function EmailLogin({ onBack }: { onBack: () => void }) {
 
   return (
     <>
-      <Heading title={t('Platform administrator')} sub={<button type="button" onClick={onBack} className="text-primary hover:underline">{t('Back to the sign-in with a user name')}</button>} />
+      <Heading title={t('Platform administrator')} sub={onBack ? <button type="button" onClick={onBack} className="text-primary hover:underline">{t('Back to the sign-in with a user name')}</button>
+        : t('The people of a company sign in at their company\'s address, e.g. name.drispro.com.')} />
       <Form {...form}>
         <form onSubmit={onSubmit} className="grid gap-4" noValidate>
           <FormField control={form.control} name="email" render={({ field }) => (
