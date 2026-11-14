@@ -570,6 +570,15 @@ function Invoke-Status {
   $r = Invoke-Wsl 'bash /opt/drispro/status.sh 2>/dev/null || echo "{\"installed\":false}"' $null 120
   $json = ($r.Lines | Where-Object { $_.StartsWith('{') } | Select-Object -Last 1)
   $st = $null; try { $st = $json | ConvertFrom-Json } catch { }
+  # a server that runs here but whose note was lost (an older version, a reinstall of the program): the note is made again
+  if ($st -and $st.installed -and -not $s.installedAt) {
+    try {
+      Set-StateValue 'installedAt' (Get-Date -Format 'o')
+      if ($st.url -and -not $s.url) { Set-StateValue 'url' ([string]$st.url) }
+      if ($st.port -and -not $s.port) { Set-StateValue 'port' ([int]$st.port) }
+      $s = Get-State
+    } catch { }
+  }
   $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
   $lan = $false
   if ($s.ip -and $s.port) { try { $lan = ((Invoke-WebRequest -Uri "http://$($s.ip):$($s.port)/auth/v1/health" -UseBasicParsing -TimeoutSec 5).StatusCode -eq 200) } catch { } }

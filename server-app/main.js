@@ -176,6 +176,8 @@ app.whenReady().then(async () => {
     startTray()
     if (!has('--tray') || page) openWindow(page || 'status')
   } else {
-    openWindow(page || 'install')
+    // a server already running here whose note was lost: its status makes the note again, and the status opens, not a new install
+    try { await engine('status', {}, []) } catch { /* no server here */ }
+    if (installed()) { startTray(); openWindow(page || 'status') } else openWindow(page || 'install')
   }
 })
