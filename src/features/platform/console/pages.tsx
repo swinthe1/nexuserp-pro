@@ -1,3 +1,4 @@
+import { ServerDownload } from '@/features/auth/desktop-download'
 import { CalendarPlus, Cable, CircleDollarSign, ExternalLink, Server } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -127,6 +128,7 @@ export function ServersPage() {
   return (
     <>
       <PageHeader icon={false} title={t('Local servers')} description={t('Clients who run DrisPRO on their own computer or server. Each one checks its licence regularly; the oldest sign of life comes first.')} />
+      <ServerDownload className="mb-4" />
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <Card><CardContent className="p-4"><div className="text-xs text-muted-foreground">{t('Servers')}</div><div className="text-2xl font-semibold tabular">{rows.length}</div></CardContent></Card>
         <Card><CardContent className="p-4"><div className="text-xs text-muted-foreground">{t('Online now')}</div><div className="text-2xl font-semibold tabular text-success">{rows.filter(online).length}</div></CardContent></Card>

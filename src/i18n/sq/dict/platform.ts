@@ -336,4 +336,7 @@ export default {
   "Find": "Gjej",
   "Choose the client": "Zgjidhni klientin",
   "e.g. Till 2, Arben's phone": "p.sh. Arka 2, telefoni i Arbenit",
+  "DrisPRO Server (the installer for a local server)": "DrisPRO Server (instaluesi për server lokal)",
+  "Looking for the newest DrisPRO Server…": "Po kërkohet versioni më i ri i DrisPRO Server…",
+  "No DrisPRO Server published yet: the next build publishes it.": "Ende nuk është botuar DrisPRO Server: ndërtimi i radhës e boton.",
 } satisfies Dict

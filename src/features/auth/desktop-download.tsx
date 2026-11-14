@@ -15,7 +15,7 @@ export type DesktopRelease = { version: string; file_name: string; size_bytes: n
 /** this computer is a Mac (the Mac program is offered there, the Windows one elsewhere) */
 export const onMac = typeof navigator !== 'undefined' && /Macintosh|Mac OS X/.test(navigator.userAgent) && !/iPhone|iPad/.test(navigator.userAgent)
 
-export function useDesktopRelease(enabled = true, platform: 'windows' | 'mac' = onMac ? 'mac' : 'windows') {
+export function useDesktopRelease(enabled = true, platform: 'windows' | 'mac' | 'server' = onMac ? 'mac' : 'windows') {
   return useQuery({
     queryKey: ['desktop-release', platform], enabled, staleTime: 10 * 60_000, retry: 1,
     queryFn: async () => {
@@ -73,7 +73,7 @@ export function DesktopDownload({ className }: { className?: string }) {
   )
 }
 
-function DownloadRow({ platform, rel }: { platform: 'windows' | 'mac'; rel: DesktopRelease }) {
+function DownloadRow({ platform, rel }: { platform: 'windows' | 'mac' | 'server'; rel: DesktopRelease }) {
   const [progress, setProgress] = React.useState<number | null>(null)
   const [error, setError] = React.useState(false)
   const start = async () => {
@@ -87,7 +87,7 @@ function DownloadRow({ platform, rel }: { platform: 'windows' | 'mac'; rel: Desk
       <div className="flex items-center gap-3">
         <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary"><Icon className="size-5" /></span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">{platform === 'mac' ? t('DrisPRO for Mac') : t('DrisPRO for Windows')}</p>
+          <p className="text-sm font-medium">{platform === 'mac' ? t('DrisPRO for Mac') : platform === 'server' ? t('DrisPRO Server (the installer for a local server)') : t('DrisPRO for Windows')}</p>
           <p className="text-xs text-muted-foreground">{t('Version {v} · {size} · {date}', { v: rel.version, size: mb(rel.size_bytes), date: formatDate(rel.published_at) })}</p>
         </div>
         <Button type="button" variant="outline" size="sm" onClick={() => void start()} disabled={progress !== null}>
@@ -97,6 +97,17 @@ function DownloadRow({ platform, rel }: { platform: 'windows' | 'mac'; rel: Desk
       {progress !== null && <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${pct}%` }} /></div>}
       {platform === 'mac' && (onMac || progress !== null) && <p className="mt-2 text-xs text-muted-foreground">{t('Drag DrisPRO into Applications. The first time, the Mac asks to confirm: System Settings › Privacy & Security › Open Anyway.')}</p>}
       {error && <p className="mt-2 text-xs text-destructive">{t('The download did not finish. Check the connection and try again.')}</p>}
+    </div>
+  )
+}
+
+/** The Platform: the newest DrisPRO Server, to download whenever a local server is installed (it updates itself after). */
+export function ServerDownload({ className }: { className?: string }) {
+  const q = useDesktopRelease(true, 'server')
+  return (
+    <div className={cn('grid gap-2 rounded-xl border bg-card/60 p-3', className)}>
+      {q.data ? <DownloadRow platform="server" rel={q.data} />
+        : <p className="p-1 text-sm text-muted-foreground">{q.isLoading ? t('Looking for the newest DrisPRO Server…') : t('No DrisPRO Server published yet: the next build publishes it.')}</p>}
     </div>
   )
 }
