@@ -12,9 +12,11 @@ const KEY = process.env.DRISPRO_PUBLISH_KEY
 if (!KEY) { console.log('No DRISPRO_PUBLISH_KEY: the installer is built but not published.'); process.exit(0) }
 
 const version = JSON.parse(readFileSync('package.json', 'utf8')).version
-const system = process.argv[2] === 'mac' ? 'mac' : 'windows'
+// 'server': DrisPRO Server (run from server-app/), which the local servers install over themselves
+const system = ['mac', 'server'].includes(process.argv[2]) ? process.argv[2] : 'windows'
 const files = system === 'mac'
   ? [{ platform: 'mac', name: `DrisPRO-${version}.dmg` }, { platform: 'mac-update', name: `DrisPRO-${version}-mac.zip` }]
+  : system === 'server' ? [{ platform: 'server', name: `DrisPRO-Server-Setup-${version}.exe` }]
   : [{ platform: 'windows', name: `DrisPRO-Setup-${version}.exe` }]
 
 const rpc = async (fn, body) => {

@@ -11,9 +11,10 @@
     engine.ps1 -Action licence  [stdin: {licence}]   checks the licence code with DrisPRO
     engine.ps1 -Action install -Bundle <dir> [stdin: answers]   Ubuntu, DrisPRO, network, autostart, last check
     engine.ps1 -Action status | repair | backup | update | uninstall [-KeepData]
+    engine.ps1 -Action watch       run by Windows every 5 minutes: keeps the server started, installs a newer DrisPRO Server
 #>
 param(
-  [ValidateSet('preflight', 'prepare', 'licence', 'install', 'status', 'repair', 'backup', 'update', 'uninstall', 'restart')]
+  [ValidateSet('preflight', 'prepare', 'licence', 'install', 'status', 'repair', 'backup', 'update', 'uninstall', 'restart', 'watch')]
   [string]$Action = 'status',
   [string]$Bundle = '',
   [switch]$KeepData
@@ -492,13 +493,48 @@ netsh interface portproxy add v4tov4 listenport=$Port listenaddress=0.0.0.0 conn
 # an update), it starts it again, so the server never stays down until someone presses Repair. It runs as SYSTEM,
 # so it needs no password.
 function Register-Watchdog {
-  $wd = Join-Path $Root 'watchdog.ps1'
-  $body = "`$t = Get-ScheduledTask -TaskName '$TaskName' -ErrorAction SilentlyContinue`r`nif (`$t -and `$t.State -ne 'Running') { Start-ScheduledTask -TaskName '$TaskName' }`r`n"
-  Set-Content -Path $wd -Value $body -Encoding UTF8
-  $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$wd`""
+  # the engine itself, from where it is installed (the same place after every update)
+  $engine = Join-Path $PSScriptRoot 'engine.ps1'
+  $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$engine`" -Action watch"
   $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(2) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 3650)
-  $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 2) -StartWhenAvailable -MultipleInstances IgnoreNew
+  $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 30) -StartWhenAvailable -MultipleInstances IgnoreNew
   Register-ScheduledTask -TaskName "$TaskName Roja" -Action $action -Trigger $trigger -Settings $settings -User 'SYSTEM' -RunLevel Highest -Force -ErrorAction Stop | Out-Null
+}
+
+# every 5 minutes, by Windows: the start task runs; and every 6 hours a newer DrisPRO Server (published by DrisPRO,
+# checked by size and sha256) installs itself over this one, silently. Says nothing unless it acts.
+function Invoke-Watch {
+  $t = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+  if ($t -and $t.State -ne 'Running') { Start-ScheduledTask -TaskName $TaskName; Write-Log 'the start task had stopped: started again' }
+  $mark = Join-Path $Root 'update-checked.txt'
+  if ((Test-Path $mark) -and ((Get-Date) - (Get-Item $mark).LastWriteTime).TotalHours -lt 6) { return }
+  Set-Content -Path $mark -Value (Get-Date -Format o)
+  $exe = Join-Path (Split-Path (Split-Path $PSScriptRoot)) 'DrisPRO Server.exe'
+  if (-not (Test-Path $exe)) { return }
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  $rel = Invoke-RestMethod -Method Post -Uri "$LicenceApi/rest/v1/rpc/desktop_release" -Headers @{ apikey = $AnonKey; Authorization = "Bearer $AnonKey" } -ContentType 'application/json' -Body '{"p_platform":"server"}' -TimeoutSec 30
+  if (-not $rel -or -not $rel.version) { return }
+  $have = [string](Get-Item $exe).VersionInfo.ProductVersion
+  try { if ([version]$rel.version -le [version]$have) { return } } catch { return }
+  $dir = Join-Path $Root 'update'
+  New-Item -ItemType Directory -Force -Path $dir | Out-Null
+  $file = Join-Path $dir ([string]$rel.file_name)
+  $out = [IO.File]::Create("$file.part")
+  try {
+    for ($i = 0; $i -lt [int]$rel.parts; $i++) {
+      $piece = Join-Path $dir 'piece.bin'
+      Invoke-WebRequest -UseBasicParsing -Uri ("{0}/storage/v1/object/public/downloads/{1}.part{2:D3}" -f $LicenceApi, $rel.path, $i) -OutFile $piece -TimeoutSec 600
+      $bytes = [IO.File]::ReadAllBytes($piece); $out.Write($bytes, 0, $bytes.Length)
+      Remove-Item $piece -Force
+    }
+  } finally { $out.Close() }
+  $size = (Get-Item "$file.part").Length
+  $sha = (Get-FileHash -Algorithm SHA256 "$file.part").Hash.ToLower()
+  if ($size -ne [long]$rel.size_bytes -or $sha -ne ([string]$rel.sha256).ToLower()) { Remove-Item "$file.part" -Force; Write-Log "the download of DrisPRO Server $($rel.version) is damaged: not installed"; return }
+  Move-Item "$file.part" $file -Force
+  Write-Log "DrisPRO Server $($rel.version) installs itself over $have"
+  Start-Process -FilePath $file -ArgumentList '/S' -Wait
+  Remove-Item $file -Force -ErrorAction SilentlyContinue
 }
 
 function Register-Autostart([string]$Account, [string]$Secret, [bool]$Start) {
@@ -592,8 +628,9 @@ function Invoke-Uninstall([bool]$Keep) {
 # (the tests load the functions without running anything)
 if ($env:DRIS_ENGINE_TEST -eq '1') { return }
 try {
-  Write-Log "DrisPRO Server engine: $Action ($([Environment]::OSVersion.VersionString), PowerShell $($PSVersionTable.PSVersion))"
+  if ($Action -ne 'watch') { Write-Log "DrisPRO Server engine: $Action ($([Environment]::OSVersion.VersionString), PowerShell $($PSVersionTable.PSVersion))" }
   switch ($Action) {
+    'watch' { Invoke-Watch }
     'preflight' { Invoke-Preflight }
     'prepare' { Invoke-Prepare }
     'licence' { $a = Read-Answers; [void](Invoke-LicenceCheck ([string]$a.licence)) }
