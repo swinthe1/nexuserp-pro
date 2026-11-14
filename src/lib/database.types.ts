@@ -18814,6 +18814,14 @@ export type Database = {
         }
         Returns: string
       }
+      licence_support_ticket: {
+        Args: {
+          p_code: string
+          p_server: string
+          p_ticket: string
+        }
+        Returns: Json
+      }
       licence_tunnel: {
         Args: {
           p_code: string
@@ -19654,6 +19662,12 @@ export type Database = {
         Returns: Json
       }
       platform_local_backups: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
+      platform_local_ticket: {
         Args: {
           p_company: string
         }
@@ -21732,6 +21746,41 @@ export type Database = {
           p_vendor: string
           p_date?: string
         }
+        Returns: Json
+      }
+      support_login_done: {
+        Args: {
+          p_id: string
+          p_ok: boolean
+          p_otp?: string
+          p_error?: string
+        }
+        Returns: undefined
+      }
+      support_login_result: {
+        Args: {
+          p_request: string
+          p_secret: string
+        }
+        Returns: Json
+      }
+      support_login_start: {
+        Args: {
+          p_ticket: string
+        }
+        Returns: Json
+      }
+      support_login_user: {
+        Args: {
+          p_id: string
+          p_code: string
+          p_email: string
+          p_name: string
+        }
+        Returns: Json
+      }
+      support_login_wait: {
+        Args: Record<PropertyKey, never>
         Returns: Json
       }
       switch_company: {

@@ -944,4 +944,8 @@ export default {
   "Too many pairing codes asked; wait a little and try again": "U kërkuan shumë kode çiftimi; prisni pak dhe provoni përsëri",
   "The device sent no key": "Pajisja nuk dërgoi çelës",
   "A device is a till, administration or a phone": "Pajisja është arkë, administratë ose telefon",
+  "This client works on its own server and it has no outside address yet": "Ky klient punon në serverin e vet dhe ai ende nuk ka adresë nga jashtë",
+  "This entry is not valid": "Kjo hyrje nuk është e vlefshme",
+  "This entry is not valid or has run out; open the company again from the Platform": "Kjo hyrje nuk është e vlefshme ose ka skaduar; hapeni kompaninë përsëri nga Platforma",
+  "Too many entries asked; wait a little and try again": "U kërkuan shumë hyrje; prisni pak dhe provoni përsëri",
 } satisfies Dict

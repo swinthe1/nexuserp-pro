@@ -6,17 +6,29 @@ import { useCompany } from '@/app/company-provider'
 import { startSupportVisit } from '@/components/license-banner'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { t } from '@/i18n'
+import { t, tServer } from '@/i18n'
 import { describeError } from '@/lib/errors'
+import { supabase } from '@/lib/supabase'
 import { formatDate, todayISO } from '@/lib/utils'
 import { type PlatformClient, useSaveLicense } from '../api'
 import { addMonths, BusinessTypeDialog, DeleteClientDialog, LicenseDialog, LiveLinkDialog } from '../dialogs'
 
-/** Open a client's company to help them (written in the platform's diary). */
+/** Open a client's company to help them (written in the platform's diary). A client on its own server keeps its
+ *  books there: its server opens in a new tab through its outside address, and signs the Super Admin in there. */
 export function useOpenCompany() {
   const { switchCompany } = useCompany()
   const navigate = useNavigate()
-  return async (id: string, path = '/') => { startSupportVisit(id); await switchCompany(id); navigate(path) }
+  return async (id: string, path = '/') => {
+    const { data, error } = await supabase.rpc('platform_local_ticket', { p_company: id })
+    if (error) { toast.error(tServer(describeError(error))); return }
+    const r = data as unknown as { local: boolean; url?: string }
+    if (r.local && r.url) {
+      const url = path !== '/' ? `${r.url}&path=${encodeURIComponent(path)}` : r.url
+      if (!window.open(url, '_blank', 'noopener')) window.location.assign(url)
+      return
+    }
+    startSupportVisit(id); await switchCompany(id); navigate(path)
+  }
 }
 
 /** One more year (or month) on a licence, from its end date (or from today when it has ended). */

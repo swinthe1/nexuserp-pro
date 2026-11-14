@@ -1,11 +1,13 @@
 import { zodResolver } from '@/lib/zod-resolver'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { z } from 'zod/v3'
 import { useAuth } from '@/app/auth-provider'
+import { useCompany } from '@/app/company-provider'
+import { startSupportVisit } from '@/components/license-banner'
 import { Button } from '@/components/ui/button'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
@@ -43,6 +45,53 @@ const loginSchema = z.object({
 })
 
 export function LoginPage() {
+  // opened by DrisPRO's Platform on this client's own server: the Super Admin is signed in with the ticket
+  const [ticket] = React.useState(() => new URLSearchParams(window.location.hash.slice(1)).get('ticket'))
+  if (ticket) return <TicketLogin ticket={ticket} />
+  return <PeopleLogin />
+}
+
+/** the platform's administrator, sent here from the Platform with a ticket of 2 minutes */
+function TicketLogin({ ticket }: { ticket: string }) {
+  const { switchCompany } = useCompany()
+  const navigate = useNavigate()
+  const [error, setError] = React.useState<string | null>(null)
+  const started = React.useRef(false)
+  React.useEffect(() => {
+    if (started.current) return
+    started.current = true
+    const path = new URLSearchParams(window.location.hash.slice(1)).get('path') || '/'
+    history.replaceState(null, '', window.location.pathname)
+    void (async () => {
+      try {
+        const s = await supabase.rpc('support_login_start', { p_ticket: ticket })
+        if (s.error) throw s.error
+        const { request, secret } = s.data as unknown as { request: string; secret: string }
+        let res: { status: string; email?: string; otp?: string; company_id?: string; error?: string } = { status: 'queued' }
+        for (let i = 0; i < 80 && (res.status === 'queued' || res.status === 'running'); i++) {
+          await new Promise((r) => setTimeout(r, i < 10 ? 300 : 600))
+          const q = await supabase.rpc('support_login_result', { p_request: request, p_secret: secret })
+          if (q.error) throw q.error
+          res = q.data as unknown as typeof res
+        }
+        if (res.status !== 'done' || !res.email || !res.otp) throw new Error(res.error ?? 'The sign-in did not answer in time; try again')
+        let v = await supabase.auth.verifyOtp({ email: res.email, token: res.otp, type: 'magiclink' })
+        if (v.error) v = await supabase.auth.verifyOtp({ email: res.email, token: res.otp, type: 'email' })
+        if (v.error) throw v.error
+        if (res.company_id) { startSupportVisit(res.company_id); await switchCompany(res.company_id) }
+        navigate(path, { replace: true })
+      } catch (e) { setError(tServer(describeError(e))) }
+    })()
+  }, [ticket, switchCompany, navigate])
+  return (
+    <>
+      <Heading title={t('Platform administrator')} sub={error ? '' : t('Signing you in on this client\'s server…')} />
+      {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : <Loader2 className="size-6 animate-spin text-muted-foreground" aria-hidden />}
+    </>
+  )
+}
+
+function PeopleLogin() {
   const [till] = React.useState(getTill)
   // the platform's administrator signs in at /login?admin (nothing on the page points there: clients never see it)
   const [mode, setMode] = React.useState<'till' | 'user' | 'admin'>(() => (new URLSearchParams(window.location.search).has('admin') ? 'admin' : till ? 'till' : 'user'))

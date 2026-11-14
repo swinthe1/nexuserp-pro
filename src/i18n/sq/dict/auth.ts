@@ -96,4 +96,5 @@ export default {
   "Waiting for the approval… the code is valid for 15 minutes.": "Në pritje të aprovimit… kodi vlen 15 minuta.",
   "The code ran out: ask for a new one": "Kodi skadoi: kërkoni një të ri",
   "This device now has its licence. Sign in.": "Kjo pajisje tani ka licencën e saj. Kyçuni.",
+  "Signing you in on this client's server…": "Po ju kyç në serverin e këtij klienti…",
 } satisfies Dict

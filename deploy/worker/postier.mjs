@@ -593,6 +593,18 @@ async function relayLoop() {
 
 /* ------------------------------------------------------------------ PIN sign-in on a shared till */
 // the server has checked the PIN; the sign-in service gives a one-time code that the till turns into a session
+// a one-time sign-in code for a person (the sign-in service's own, never sent by email)
+async function signInCode(email) {
+  const res = await fetch(`${API}/auth/v1/admin/generate_link`, {
+    method: 'POST', headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'magiclink', email }),
+  })
+  const j = await res.json().catch(() => ({}))
+  const otp = j.email_otp ?? j.properties?.email_otp
+  if (!res.ok || !otp) throw new Error(j.msg || j.message || j.error_description || `sign-in service ${res.status}`)
+  return otp
+}
+
 async function pinLoop() {
   for (;;) {
     try {
@@ -600,13 +612,7 @@ async function pinLoop() {
       if (!r) continue
       void (async () => {
         try {
-          const res = await fetch(`${API}/auth/v1/admin/generate_link`, {
-            method: 'POST', headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'magiclink', email: r.email }),
-          })
-          const j = await res.json().catch(() => ({}))
-          const otp = j.email_otp ?? j.properties?.email_otp
-          if (!res.ok || !otp) throw new Error(j.msg || j.message || j.error_description || `sign-in service ${res.status}`)
+          const otp = await signInCode(r.email)
           await rpc('pin_done', { p_id: r.id, p_ok: true, p_otp: otp })
         } catch (e) {
           log('PIN sign-in failed', String(e.message || e))
@@ -764,7 +770,27 @@ async function localLoop() {
   }
 }
 
-if (!ONCE) { if (process.env.ASSISTANT !== '0') assistantLoop(); pinLoop(); for (let i = 0; i < 3; i++) atkLoop(); relayLoop(); if (MODE === 'cloud') tunnelLoop(); if (MODE === 'local') localLoop() }
+// a local server: DrisPRO's Super Admin opens this client's company from the Platform with a ticket; the cloud says
+// whether it is good, and the Super Admin is signed in here as the platform's administrator
+async function supportLoop() {
+  for (;;) {
+    let r = null
+    try { r = await rpc('support_login_wait') } catch (e) { log('platform entry wait failed', String(e.message || e)) }
+    if (!r) { await new Promise((res) => setTimeout(res, 1500)); continue }
+    try {
+      if (!LICENCE || !SERVER_ID) throw new Error('This server has no licence yet')
+      const who = await rpc('licence_support_ticket', { p_code: LICENCE, p_server: SERVER_ID, p_ticket: r.ticket }, LICENCE_SERVER, CLOUD_ANON_KEY)
+      const u = await rpc('support_login_user', { p_id: r.id, p_code: LICENCE, p_email: who.email, p_name: who.name || '' })
+      await rpc('support_login_done', { p_id: r.id, p_ok: true, p_otp: await signInCode(u.email) })
+      log('the platform administrator entered this server')
+    } catch (e) {
+      log('platform entry refused', String(e.message || e))
+      await rpc('support_login_done', { p_id: r.id, p_ok: false, p_error: String(e.message || e) }).catch(() => {})
+    }
+  }
+}
+
+if (!ONCE) { if (process.env.ASSISTANT !== '0') assistantLoop(); pinLoop(); for (let i = 0; i < 3; i++) atkLoop(); relayLoop(); if (MODE === 'cloud') tunnelLoop(); if (MODE === 'local') { localLoop(); supportLoop() } }
 for (;;) {
   try { await tick(); const n = (await round()) + (await pushRound().catch((e) => { log('phone notifications failed', String(e.message || e)); pushPause = Date.now() + 10 * 60 * 1000; return 0 }))
     + (await webhookRound().catch((e) => { log('webhooks failed', String(e.message || e)); hookPause = Date.now() + 10 * 60 * 1000; return 0 })) + (await readerRound().catch((e) => { log('reading failed', String(e.message || e)); return 0 })); if (ONCE) break; await new Promise((r) => setTimeout(r, n ? 2000 : 20000)) }
