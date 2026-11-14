@@ -69,12 +69,12 @@ jobs:
       # the installer's pages in Albanian (the same texts as the DrisPRO program's)
       - run: copy ..\desktop\nsis-shqip.mjs . ; node nsis-shqip.mjs
       - run: npx electron-builder --win nsis --x64 --publish never
-      # the local servers find it and install it over themselves (the watchdog, every 6 hours)
-      - run: node ../desktop/publish.mjs server
-        env:
-          DRISPRO_PUBLISH_KEY: ${{ secrets.DRISPRO_PUBLISH_KEY }}
       - uses: actions/upload-artifact@v5
         with:
           name: DrisPRO-Server-Setup
           path: server-app/dist/DrisPRO-Server-Setup-*.exe
           retention-days: 30
+      # the local servers find it and install it over themselves (the watchdog, every 6 hours)
+      - run: node ../desktop/publish.mjs server
+        env:
+          DRISPRO_PUBLISH_KEY: ${{ secrets.DRISPRO_PUBLISH_KEY }}
