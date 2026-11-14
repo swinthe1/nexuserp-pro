@@ -44,15 +44,16 @@ const loginSchema = z.object({
 
 export function LoginPage() {
   const [till] = React.useState(getTill)
-  const [mode, setMode] = React.useState<'till' | 'user' | 'admin'>(() => (till ? 'till' : 'user'))
+  // the platform's administrator signs in at /login?admin (nothing on the page points there: clients never see it)
+  const [mode, setMode] = React.useState<'till' | 'user' | 'admin'>(() => (new URLSearchParams(window.location.search).has('admin') ? 'admin' : till ? 'till' : 'user'))
   const toUser = React.useCallback(() => setMode('user'), [])
   if (till && mode === 'till') return <PinLogin till={till} onEmail={toUser} />
   if (mode === 'admin') return <EmailLogin onBack={toUser} />
-  return <UserPinLogin onTill={till ? () => setMode('till') : undefined} onAdmin={() => setMode('admin')} />
+  return <UserPinLogin onTill={till ? () => setMode('till') : undefined} />
 }
 
 /** everyone signs in with a user name and a PIN of 6 digits; the company's administrator gives them */
-function UserPinLogin({ onTill, onAdmin }: { onTill?: () => void; onAdmin: () => void }) {
+function UserPinLogin({ onTill }: { onTill?: () => void }) {
   const navigate = useNavigate()
   const from = (useLocation().state as { from?: string } | null)?.from ?? '/'
   const [username, setUsername] = React.useState(() => { try { return localStorage.getItem('drispro.last-username') ?? '' } catch { return '' } })
@@ -102,10 +103,9 @@ function UserPinLogin({ onTill, onAdmin }: { onTill?: () => void; onAdmin: () =>
         </div>
         <Button type="submit" size="lg" loading={busy} disabled={!username.trim() || pin.length !== 6} className="mt-1 h-11 w-full text-[15px]">{t('Sign in')}</Button>
       </form>
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-        {onTill ? <button type="button" onClick={onTill} className="hover:text-foreground hover:underline">{t('Pick my name on this till')}</button> : <span />}
-        <button type="button" onClick={onAdmin} className="hover:text-foreground hover:underline">{t('Platform administrator')}</button>
-      </div>
+      {onTill ? <div className="mt-8 text-xs text-muted-foreground">
+        <button type="button" onClick={onTill} className="hover:text-foreground hover:underline">{t('Pick my name on this till')}</button>
+      </div> : null}
     </>
   )
 }
