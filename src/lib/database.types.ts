@@ -18803,6 +18803,14 @@ export type Database = {
         }
         Returns: number
       }
+      licence_health: {
+        Args: {
+          p_code: string
+          p_server: string
+          p: Json
+        }
+        Returns: undefined
+      }
       licence_read_result: {
         Args: {
           p_code: string
@@ -18850,6 +18858,10 @@ export type Database = {
         Args: {
           p_channel: string
         }
+        Returns: number
+      }
+      local_db_size: {
+        Args: Record<PropertyKey, never>
         Returns: number
       }
       local_devices_apply: {
@@ -19758,6 +19770,12 @@ export type Database = {
         }
         Returns: undefined
       }
+      platform_server_health: {
+        Args: {
+          p_company?: string
+        }
+        Returns: Json
+      }
       platform_server_log: {
         Args: {
           p_container: string
@@ -20343,6 +20361,10 @@ export type Database = {
           p_relayed?: boolean
         }
         Returns: undefined
+      }
+      postier_health_watch: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       postier_push_claim: {
         Args: {

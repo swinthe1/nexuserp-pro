@@ -22,7 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { t, tn } from '@/i18n'
+import { msg, t, tn } from '@/i18n'
 import { unwrap } from '@/lib/errors'
 import { daysUntil } from '@/lib/license'
 import { supabase } from '@/lib/supabase'
@@ -121,6 +121,11 @@ export function ServersPage() {
     onError: (e) => toast.error(tServer(describeError(e))),
   })
   const tunnelOf = (id: string) => tunnels.data?.tunnels.find((x) => x.company_id === id)
+  // each server says how it is every 5 minutes; silent for 10 minutes = a problem
+  const health = useQuery({ queryKey: ['platform', 'server-health'], refetchInterval: 30_000,
+    queryFn: async () => unwrap(await supabase.rpc('platform_server_health' as never)) as unknown as { servers: ServerHealth[] } })
+  const healthOf = (id: string) => health.data?.servers.find((x) => x.company_id === id)
+  const troubled = (health.data?.servers ?? []).filter((x) => x.state !== 'ok')
   const rows = (clients.data?.clients ?? []).filter((c) => c.has_server || c.local_seen_at || c.deployment === 'local')
     .sort((a, b) => (a.local_seen_at ?? '').localeCompare(b.local_seen_at ?? ''))
   const latest = rows.map((c) => c.local_version).filter((v): v is string => !!v).reduce<string | null>((m, v) => (!m || newer(v, m) ? v : m), null)
@@ -128,6 +133,14 @@ export function ServersPage() {
   return (
     <>
       <PageHeader icon={false} title={t('Local servers')} description={t('Clients who run DrisPRO on their own computer or server. Each one checks its licence regularly; the oldest sign of life comes first.')} />
+      {troubled.length > 0 && (
+        <div className="mb-4 grid gap-2 rounded-xl border border-destructive/40 bg-destructive/5 p-3" role="alert">
+          {troubled.map((x) => (
+            <p key={x.company_id} className="text-sm"><span className="font-medium">{x.company}</span>{' · '}
+              {x.state === 'silent' ? t('silent since {time}: the server or its internet is down', { time: formatDate(x.seen_at, true) })
+                : t('a part is down: {parts}', { parts: x.down.map(partLabel).join(', ') })}</p>))}
+        </div>
+      )}
       <ServerDownload className="mb-4" />
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <Card><CardContent className="p-4"><div className="text-xs text-muted-foreground">{t('Servers')}</div><div className="text-2xl font-semibold tabular">{rows.length}</div></CardContent></Card>
@@ -145,8 +158,8 @@ export function ServersPage() {
               {rows.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell><ClientLink c={c} /><div className="font-mono text-2xs text-muted-foreground">{c.licence_code}</div></TableCell>
-                  <TableCell>{!c.local_seen_at ? <Badge variant="secondary">{t('Never seen')}</Badge> : online(c) ? <Badge variant="success">{t('Online')}</Badge>
-                    : Date.now() - new Date(c.local_seen_at).getTime() > 24 * 3600_000 ? <Badge variant="destructive">{t('Quiet for over a day')}</Badge> : <Badge variant="warning">{t('Not seen for a while')}</Badge>}</TableCell>
+                  <TableCell>{(() => { const h = healthOf(c.id); return h ? <HealthBadge h={h} /> : null })() ?? (!c.local_seen_at ? <Badge variant="secondary">{t('Never seen')}</Badge> : online(c) ? <Badge variant="success">{t('Online')}</Badge>
+                    : Date.now() - new Date(c.local_seen_at).getTime() > 24 * 3600_000 ? <Badge variant="destructive">{t('Quiet for over a day')}</Badge> : <Badge variant="warning">{t('Not seen for a while')}</Badge>)}</TableCell>
                   <TableCell>{c.local_version ? <span className="tabular">{c.local_version}</span> : '—'}
                     {c.local_version && latest && newer(latest, c.local_version) && <Badge variant="warning" className="ml-2">{t('Older')}</Badge>}</TableCell>
                   <TableCell className="max-w-[260px] truncate font-mono text-xs text-muted-foreground">{c.local_url ?? '—'}</TableCell>
@@ -170,6 +183,17 @@ export function ServersPage() {
       </CardContent></Card>
     </>
   )
+}
+
+export type ServerHealth = { company_id: string; company: string; state: 'ok' | 'warn' | 'silent'; state_since: string; seen_at: string
+  down: string[]; services: Record<string, boolean>; version: string | null; db_mb: number | null }
+const PARTS: Record<string, string> = { database: msg('Database'), sign_in: msg('Sign-in'), data: msg('Data (API)'), files: msg('Files'), page: msg('Page') }
+export const partLabel = (k: string) => (PARTS[k] ? t(PARTS[k]) : k)
+/** a server's state as the Platform shows it: works, a part down, or silent */
+export function HealthBadge({ h }: { h: ServerHealth }) {
+  if (h.state === 'ok') return <span><Badge variant="success">{t('Works')}</Badge><span className="block text-2xs text-muted-foreground">{t('checked {time}', { time: formatDate(h.seen_at, true) })}</span></span>
+  if (h.state === 'warn') return <span><Badge variant="warning">{t('A part is down')}</Badge><span className="block text-2xs text-muted-foreground">{h.down.map(partLabel).join(', ')}</span></span>
+  return <span><Badge variant="destructive">{t('Silent')}</Badge><span className="block text-2xs text-muted-foreground">{t('since {time}', { time: formatDate(h.seen_at, true) })}</span></span>
 }
 
 /* ------------------------------------------------------------------ live links */

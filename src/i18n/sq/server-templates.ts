@@ -5,6 +5,9 @@
  * report bucket labels and journal line descriptions.
  */
 export const serverTemplates: [string, string][] = [
+  ['Server works again: %', 'Serveri punon përsëri: {0}'],
+  ['Server silent: %', 'Serveri hesht: {0}'],
+  ['Server has a problem: %', 'Serveri ka problem: {0}'],
   ['You are invited to %', 'Jeni ftuar te {0}'],
   ['The instalments add up to %, the document is %', 'Këstet bëjnë gjithsej {0}, dokumenti është {1}'],
   ['Bills in % must be paid from an account in that currency; % is in %', 'Faturat në {0} duhet të paguhen nga një llogari në atë monedhë; {1} është në {2}'],

@@ -17,7 +17,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { formatDateWith, msg, t, tn } from '@/i18n'
-import { describeError } from '@/lib/errors'
+import { describeError, unwrap } from '@/lib/errors'
+import { supabase } from '@/lib/supabase'
+import { useQuery } from '@tanstack/react-query'
+import { HealthBadge, partLabel, type ServerHealth } from './pages'
 import { daysUntil } from '@/lib/license'
 import { FEATURES } from '@/lib/plans'
 import { ClientDevicesTab } from './devices'
@@ -289,13 +292,14 @@ function LinksTab({ d, c }: { d: ClientDetail; c: NonNullable<ReturnType<typeof 
         <CardHeader><CardTitle className="flex items-center gap-2"><Server className="size-4" /> {t('Local server')}</CardTitle>
           <CardDescription>{l?.has_server ? t('This client runs DrisPRO on its own server') : t('This client works in the cloud')}</CardDescription></CardHeader>
         <CardContent className="pt-0">
-          {l?.has_server ? (
+          {l?.has_server ? (<>
             <dl className="divide-y">
               <Field label={t('Version')} value={l.local_version} />
               <Field label={t('Address')} value={l.local_url} mono />
               <Field label={t('Last seen')} value={l.local_seen_at ? formatDate(l.local_seen_at, true) : t('Never')} />
             </dl>
-          ) : <p className="text-[13px] text-muted-foreground">{t('With the licence code, the client can also install a local server; it shows here when it checks in.')}</p>}
+            <ServerHealthBlock company={d.company.id} />
+          </>) : <p className="text-[13px] text-muted-foreground">{t('With the licence code, the client can also install a local server; it shows here when it checks in.')}</p>}
           <div className="mt-3"><CloudCopies companyId={d.company.id} /></div>
         </CardContent>
       </Card>
@@ -327,6 +331,38 @@ function DangerTab({ d, c }: { d: ClientDetail; c: NonNullable<ReturnType<typeof
         </CardContent>
       </Card>
       <DeleteClientDialog client={del ? c : null} onClose={() => setDel(false)} />
+    </div>
+  )
+}
+
+/** a local server's health: its state now, each part, the minutes down in 30 days and the last changes */
+function ServerHealthBlock({ company }: { company: string }) {
+  const q = useQuery({ queryKey: ['platform', 'server-health', company], refetchInterval: 30_000,
+    queryFn: async () => unwrap(await supabase.rpc('platform_server_health' as never, { p_company: company } as never)) as unknown as
+      { servers: ServerHealth[]; events: { at: string; state: 'ok' | 'warn' | 'silent'; detail: string | null }[]; down_minutes: number } })
+  const h = q.data?.servers[0]
+  if (!q.data) return null
+  if (!h) return <p className="mt-3 text-[13px] text-muted-foreground">{t('The server has not reported its health yet: it does every 5 minutes once it has the newest version.')}</p>
+  const uptime = Math.max(0, 100 - (q.data.down_minutes / (30 * 24 * 60)) * 100)
+  return (
+    <div className="mt-3 grid gap-3 border-t pt-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <HealthBadge h={h} />
+        <div className="text-right text-[13px]"><div className="font-semibold tabular">{uptime.toFixed(2)}%</div>
+          <div className="text-2xs text-muted-foreground">{t('working in the last 30 days · {n} min down', { n: q.data.down_minutes })}</div></div>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {Object.entries(h.services).map(([k, ok]) => <Badge key={k} variant={ok ? 'outline' : 'destructive'}>{ok ? '✓' : '✕'} {partLabel(k)}</Badge>)}
+        {h.db_mb != null && <Badge variant="outline">{t('database {mb} MB', { mb: h.db_mb })}</Badge>}
+      </div>
+      {q.data.events.length > 0 && (
+        <ul className="grid gap-1 text-[12.5px]">
+          {q.data.events.slice(0, 8).map((e, i) => (
+            <li key={i} className="flex gap-2"><span className="w-32 shrink-0 text-muted-foreground">{formatDate(e.at, true)}</span>
+              <span className={e.state === 'ok' ? 'text-success' : e.state === 'warn' ? 'text-warning' : 'text-destructive'}>
+                {e.state === 'ok' ? t('works again') : e.state === 'silent' ? t('went silent') : t('a part down: {parts}', { parts: (e.detail ?? '').split(', ').map(partLabel).join(', ') })}</span></li>))}
+        </ul>
+      )}
     </div>
   )
 }

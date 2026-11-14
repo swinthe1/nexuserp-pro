@@ -1,7 +1,7 @@
 {
   "name": "drispro-server",
   "productName": "DrisPRO Server",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Serveri DrisPRO për Windows: instalimi, gjendja, kopjet dhe riparimi.",
   "author": "DrisPRO",
   "main": "main.js",
@@ -18,14 +18,39 @@
     "appId": "com.drispro.server",
     "productName": "DrisPRO Server",
     "artifactName": "DrisPRO-Server-Setup-${version}.${ext}",
-    "directories": { "output": "dist", "buildResources": "build" },
-    "files": ["main.js", "preload.js", "ui/**", "package.json"],
-    "extraResources": [
-      { "from": "engine", "to": "engine" },
-      { "from": "bundle", "to": "bundle" },
-      { "from": "build", "to": "build", "filter": ["*.png"] }
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "ui/**",
+      "package.json"
     ],
-    "win": { "target": ["nsis"], "icon": "build/icon.png" },
+    "extraResources": [
+      {
+        "from": "engine",
+        "to": "engine"
+      },
+      {
+        "from": "bundle",
+        "to": "bundle"
+      },
+      {
+        "from": "build",
+        "to": "build",
+        "filter": [
+          "*.png"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico"
+    },
     "nsis": {
       "oneClick": false,
       "perMachine": true,
@@ -38,9 +63,14 @@
       "installerSidebar": "../desktop/build/installerSidebar.bmp",
       "uninstallerSidebar": "../desktop/build/uninstallerSidebar.bmp",
       "installerHeader": "../desktop/build/installerHeader.bmp",
-      "installerLanguages": ["sq_AL"],
+      "installerLanguages": [
+        "sq_AL"
+      ],
       "uninstallDisplayName": "DrisPRO Server",
-      "runAfterFinish": true
+      "runAfterFinish": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico"
     }
   }
 }

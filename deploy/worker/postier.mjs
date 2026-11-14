@@ -757,6 +757,15 @@ async function localLoop() {
         const list = await rpc('licence_devices', { p_code: LICENCE, p_server: SERVER_ID }, LICENCE_SERVER, CLOUD_ANON_KEY)
         await rpc('local_devices_apply', { p_code: LICENCE, p: list })
       } catch (e) { log('device licences not synced', String(e.message || e)) }
+      // how this server is: each part asked inside, the database's size; the cloud notices when this stops coming
+      try {
+        const up = async (url, headers = {}) => { try { const r = await fetch(url, { headers, signal: AbortSignal.timeout(8000) }); return r.status < 500 } catch { return false } }
+        let dbMb = null
+        try { dbMb = await rpc('local_db_size') } catch { /* the database did not answer */ }
+        const services = { database: dbMb !== null, sign_in: await up(`${API}/auth/v1/health`), data: await up(`${API}/rest/v1/`, { apikey: KEY }),
+          files: await up(`${API}/storage/v1/status`), page: await up(`${API}/`) }
+        await rpc('licence_health', { p_code: LICENCE, p_server: SERVER_ID, p: { services, db_mb: dbMb, version: process.env.DRISPRO_VERSION || null } }, LICENCE_SERVER, CLOUD_ANON_KEY)
+      } catch (e) { log('health not reported', String(e.message || e)) }
       try {
         const errors = await rpc('local_errors_take')
         if (Array.isArray(errors) && errors.length) {
@@ -790,7 +799,15 @@ async function supportLoop() {
   }
 }
 
-if (!ONCE) { if (process.env.ASSISTANT !== '0') assistantLoop(); pinLoop(); for (let i = 0; i < 3; i++) atkLoop(); relayLoop(); if (MODE === 'cloud') tunnelLoop(); if (MODE === 'local') { localLoop(); supportLoop() } }
+// the cloud: every minute, a local server silent for more than 10 minutes is told to the Super Admins
+async function healthLoop() {
+  for (;;) {
+    try { const n = await rpc('postier_health_watch'); if (n) log(`${n} local server(s) went silent`) } catch (e) { log('health watch failed', String(e.message || e)) }
+    await new Promise((r) => setTimeout(r, 60_000))
+  }
+}
+
+if (!ONCE) { if (process.env.ASSISTANT !== '0') assistantLoop(); pinLoop(); for (let i = 0; i < 3; i++) atkLoop(); relayLoop(); if (MODE === 'cloud') { tunnelLoop(); healthLoop() } if (MODE === 'local') { localLoop(); supportLoop() } }
 for (;;) {
   try { await tick(); const n = (await round()) + (await pushRound().catch((e) => { log('phone notifications failed', String(e.message || e)); pushPause = Date.now() + 10 * 60 * 1000; return 0 }))
     + (await webhookRound().catch((e) => { log('webhooks failed', String(e.message || e)); hookPause = Date.now() + 10 * 60 * 1000; return 0 })) + (await readerRound().catch((e) => { log('reading failed', String(e.message || e)); return 0 })); if (ONCE) break; await new Promise((r) => setTimeout(r, n ? 2000 : 20000)) }
