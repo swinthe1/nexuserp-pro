@@ -742,7 +742,29 @@ async function tunnelLoop() {
 }
 
 log(`postier ${MODE} → ${API}`)
-if (!ONCE) { if (process.env.ASSISTANT !== '0') assistantLoop(); pinLoop(); for (let i = 0; i < 3; i++) atkLoop(); relayLoop(); if (MODE === 'cloud') tunnelLoop() }
+// a local server: its client's device licences come from the cloud every 5 minutes (it checks them itself, also
+// without internet), and the errors people met in the program go to DrisPRO, with the device they came from
+async function localLoop() {
+  for (;;) {
+    if (LICENCE && SERVER_ID) {
+      try {
+        const list = await rpc('licence_devices', { p_code: LICENCE, p_server: SERVER_ID }, LICENCE_SERVER, CLOUD_ANON_KEY)
+        await rpc('local_devices_apply', { p_code: LICENCE, p: list })
+      } catch (e) { log('device licences not synced', String(e.message || e)) }
+      try {
+        const errors = await rpc('local_errors_take')
+        if (Array.isArray(errors) && errors.length) {
+          await rpc('licence_errors_submit', { p_code: LICENCE, p_server: SERVER_ID, p: errors }, LICENCE_SERVER, CLOUD_ANON_KEY)
+          await rpc('local_errors_sent', { p: errors })
+          log(`sent ${errors.length} program errors to DrisPRO`)
+        }
+      } catch (e) { log('program errors not sent', String(e.message || e)) }
+    }
+    await new Promise((r) => setTimeout(r, 5 * 60_000))
+  }
+}
+
+if (!ONCE) { if (process.env.ASSISTANT !== '0') assistantLoop(); pinLoop(); for (let i = 0; i < 3; i++) atkLoop(); relayLoop(); if (MODE === 'cloud') tunnelLoop(); if (MODE === 'local') localLoop() }
 for (;;) {
   try { await tick(); const n = (await round()) + (await pushRound().catch((e) => { log('phone notifications failed', String(e.message || e)); pushPause = Date.now() + 10 * 60 * 1000; return 0 }))
     + (await webhookRound().catch((e) => { log('webhooks failed', String(e.message || e)); hookPause = Date.now() + 10 * 60 * 1000; return 0 })) + (await readerRound().catch((e) => { log('reading failed', String(e.message || e)); return 0 })); if (ONCE) break; await new Promise((r) => setTimeout(r, n ? 2000 : 20000)) }

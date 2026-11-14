@@ -1,10 +1,11 @@
 /**
- * The computers: every installation of the DrisPRO program has its own licence, a till or administration.
- * The console shows them all (requests first) and each client's, with its limits; the Super Admin
- * approves, blocks, renames, changes what a computer is, or removes it.
+ * The devices: every computer, browser and phone has its own licence (a till, administration or a phone),
+ * approved by the Super Admin only. A new device shows a pairing code; here it is typed and given to a client.
+ * The console shows them all (requests first) and each client's, with the client's check (off / warn / on);
+ * the Super Admin approves, blocks, renames, changes what a device is, or removes it (its place is freed).
  */
 import type { ColumnDef } from '@tanstack/react-table'
-import { Ban, Check, CheckCheck, Monitor, MonitorSmartphone, Pencil, ScreenShare, Settings2, Trash2 } from 'lucide-react'
+import { AlertTriangle, Ban, Check, CheckCheck, KeyRound, Monitor, MonitorSmartphone, Pencil, ScreenShare, Settings2, Smartphone, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -17,18 +18,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { msg, t, tServer } from '@/i18n'
 import { describeError } from '@/lib/errors'
 import { cn, formatDate } from '@/lib/utils'
-import { supportStart, useDeviceDelete, useDeviceLimits, useDeviceSet, usePlatformDevices, useSupportSessions, useSupportSettings, type DeviceLimits, type PlatformDevice, type SupportSession } from '../api'
+import { devicePairFind, supportStart, useDeviceDelete, useDeviceGuard, useDeviceGuardSet, useDeviceLimits, useDevicePairApprove, useDeviceSet, usePlatformClients, usePlatformDevices, useSupportSessions, useSupportSettings, type DeviceGuard, type DeviceLimits, type DevicePairing, type PlatformDevice, type SupportSession } from '../api'
 
 const STATUS: Record<PlatformDevice['status'], { label: string; tone: 'success' | 'warning' | 'destructive' }> = {
   active: { label: msg('Licensed'), tone: 'success' }, pending: { label: msg('Waiting for approval'), tone: 'warning' }, blocked: { label: msg('Blocked|device'), tone: 'destructive' },
 }
-const KIND = (k: string) => (k === 'till' ? t('Till|device') : t('Administration|device'))
+const KIND = (k: string) => (k === 'till' ? t('Till|device') : k === 'mobile' ? t('Phone|device') : t('Administration|device'))
+const KINDS = ['till', 'office', 'mobile'] as const
 /** seen in the last 7 hours: the program checks every 6 */
 const recent = (at: string | null) => !!at && Date.now() - Date.parse(at) < 7 * 3600_000
 
@@ -51,13 +52,15 @@ function DevicesTable({ rows, loading, error, showClient, tableKey }: { rows: Pl
       cell: ({ row }) => <Link className="font-medium text-primary hover:underline" to={`/platform/clients/${row.original.company_id}?tab=devices`}>{row.original.company}</Link> } as ColumnDef<PlatformDevice>] : []),
     { accessorKey: 'label', meta: { label: t('Computer') }, header: ({ column }) => <ColumnHeader column={column} title={t('Computer')} />,
       cell: ({ row: { original: d } }) => <span className="flex items-center gap-2">
-        {d.kind === 'till' ? <MonitorSmartphone className="size-4 shrink-0 text-primary" /> : <Monitor className="size-4 shrink-0 text-muted-foreground" />}
+        {d.kind === 'till' ? <MonitorSmartphone className="size-4 shrink-0 text-primary" /> : d.kind === 'mobile' ? <Smartphone className="size-4 shrink-0 text-muted-foreground" /> : <Monitor className="size-4 shrink-0 text-muted-foreground" />}
         <span><span className="font-medium">{d.label}</span> · {d.name}<span className="block text-[11.5px] text-muted-foreground">{KIND(d.kind)}{d.register ? ` · ${d.register}` : ''}</span></span></span> },
     { accessorKey: 'status', meta: { label: t('State') }, header: ({ column }) => <ColumnHeader column={column} title={t('State')} />,
       cell: ({ row: { original: d } }) => <span><Badge variant={STATUS[d.status].tone}>{t(STATUS[d.status].label)}</Badge>
-        {d.migrated && <span className="block text-[11px] text-muted-foreground">{t('registered after the update')}</span>}</span> },
+        {d.migrated && <span className="block text-[11px] text-muted-foreground">{t('registered after the update')}</span>}
+        {d.clone_suspect && <span className="mt-0.5 flex items-center gap-1 text-[11px] text-destructive"><AlertTriangle className="size-3" />{t('its key was seen on another machine')}</span>}
+        {d.status === 'active' && d.lease_until && <span className="block text-[11px] text-muted-foreground">{t('works until {date} without DrisPRO', { date: formatDate(d.lease_until) })}</span>}</span> },
     { accessorKey: 'hostname', meta: { label: t('In Windows') }, header: ({ column }) => <ColumnHeader column={column} title={t('In Windows')} />,
-      cell: ({ row: { original: d } }) => <span className="text-[12.5px]">{d.hostname ?? '—'}{d.os_user && <span className="text-muted-foreground"> · {d.os_user}</span>}
+      cell: ({ row: { original: d } }) => <span className="text-[12.5px]">{d.hostname ?? (d.user_agent ? browserOf(d.user_agent) : '—')}{d.os_user && <span className="text-muted-foreground"> · {d.os_user}</span>}
         <span className="block text-[11px] text-muted-foreground">{[d.os, d.app_version && `DrisPRO ${d.app_version}`, d.mode === 'local' ? t('local server') : null].filter(Boolean).join(' · ')}</span></span> },
     { accessorKey: 'last_seen_at', meta: { label: t('Last check') }, header: ({ column }) => <ColumnHeader column={column} title={t('Last check')} />,
       cell: ({ row: { original: d } }) => <span className="flex items-center gap-1.5 text-[12.5px]"><span className={cn('size-2 rounded-full', recent(d.last_seen_at) ? 'bg-success' : 'bg-muted-foreground/40')} />
@@ -100,8 +103,8 @@ function EditDevice({ d, onClose }: { d: PlatformDevice; onClose: () => void }) 
           <DialogDescription>{[d.hostname, d.os_user, d.os].filter(Boolean).join(' · ')}</DialogDescription></DialogHeader>
         <div className="grid gap-3">
           <div className="grid gap-1.5"><Label htmlFor="dv-name">{t('Name')}</Label><Input id="dv-name" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} /></div>
-          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('The computer is')}>
-            {(['till', 'office'] as const).map((k) => (
+          <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={t('The device is')}>
+            {KINDS.map((k) => (
               <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(k)}
                 className={cn('rounded-lg border-2 px-3 py-2 text-left text-[13px] font-medium', kind === k ? 'border-primary bg-primary/5' : 'hover:bg-muted')}>{KIND(k)}</button>))}
           </div>
@@ -122,13 +125,16 @@ export function DevicesPage() {
   const all = q.data?.devices ?? []
   const rows = tab === 'all' ? all : all.filter((d) => d.status === tab)
   React.useEffect(() => { if (q.data && q.data.pending > 0) setTab('pending') }, [q.data?.pending]) // eslint-disable-line react-hooks/exhaustive-deps
+  const [pairing, setPairing] = React.useState(false)
   return (
     <>
-      <PageHeader title={t('Computers')} description={t('Every computer where the DrisPRO program is installed has its own licence: a till or administration. Within the client\'s limits it is licensed at once; beyond them it waits here for your approval.')} />
+      <PageHeader title={t('Devices')} description={t('Every computer, browser and phone has its own licence: a till, administration or a phone. Only you approve them: a new device shows a code, you type it here and give it to its client.')}
+        actions={<Button onClick={() => setPairing(true)}><KeyRound /> {t('Approve a device by its code')}</Button>} />
+      {pairing && <PairDialog onClose={() => setPairing(false)} />}
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
         <StatCard label={t('Waiting for approval')} value={String(q.data?.pending ?? 0)} />
         <StatCard label={t('Tills')} value={String(all.filter((d) => d.kind === 'till' && d.status === 'active').length)} />
-        <StatCard label={t('Administration|device')} value={String(all.filter((d) => d.kind === 'office' && d.status === 'active').length)} />
+        <StatCard label={t('Administration and phones')} value={String(all.filter((d) => d.kind !== 'till' && d.status === 'active').length)} />
         <StatCard label={t('Checked in the last 7 hours')} value={String(all.filter((d) => recent(d.last_seen_at)).length)} />
       </div>
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="mb-3">
@@ -219,24 +225,21 @@ export function ClientDevicesTab({ company }: { company: string }) {
   const rows = q.data?.devices ?? []
   const used = (k: 'till' | 'office') => rows.filter((d) => d.kind === k && d.status === 'active').length
   const [edit, setEdit] = React.useState(false)
-  const save = useDeviceLimits()
+  const [pairing, setPairing] = React.useState(false)
   return (
     <div className="grid gap-4">
+      {pairing && <PairDialog company={company} onClose={() => setPairing(false)} />}
       <Card>
         <CardHeader className="flex-row items-start justify-between space-y-0">
           <div><CardTitle>{t('Licences for computers')}</CardTitle>
-            <CardDescription>{t('A computer within these limits is licensed at once; beyond them it waits for your approval.')}</CardDescription></div>
-          <Button variant="outline" size="sm" onClick={() => setEdit(true)}><Pencil /> {t('Change limits')}</Button>
+            <CardDescription>{t('Every new device of this client waits for your approval; the limits say how many you sold.')}</CardDescription></div>
+          <div className="flex gap-2"><Button size="sm" onClick={() => setPairing(true)}><KeyRound /> {t('Approve a device by its code')}</Button>
+            <Button variant="outline" size="sm" onClick={() => setEdit(true)}><Pencil /> {t('Change limits')}</Button></div>
         </CardHeader>
         <CardContent className="grid gap-3 pt-0 sm:grid-cols-3">
           <Limit label={t('Tills')} used={used('till')} max={limits?.till ?? null} hint={limits?.max_till_devices == null && limits?.max_registers ? t('as many as its tills') : undefined} />
           <Limit label={t('Administration|device')} used={used('office')} max={limits?.office ?? null} />
-          <label className="flex items-start justify-between gap-3 rounded-md border p-3 text-[13px]">
-            <span><span className="font-medium">{t('Every computer waits for approval')}</span>
-              <span className="block text-muted-foreground">{t('Even within the limits, a new computer works only once you approve it.')}</span></span>
-            <Switch checked={limits?.approval === 'request'} disabled={save.isPending || !limits} aria-label={t('Every computer waits for approval')}
-              onCheckedChange={(on) => void save.mutateAsync({ company, approval: on ? 'request' : 'auto' }).catch((e) => toast.error(describeError(e)))} />
-          </label>
+          <GuardChoice company={company} />
         </CardContent>
       </Card>
       <DevicesTable rows={rows} loading={q.isLoading} error={q.error} showClient={false} tableKey="platform.client.devices" />
@@ -275,6 +278,97 @@ function LimitsDialog({ company, limits, onClose }: { company: string; limits: D
         <DialogFooter><Button variant="ghost" onClick={onClose}>{t('Cancel')}</Button>
           <Button loading={save.isPending} onClick={() => void save.mutateAsync({ company, max_till_devices: n(till), max_office_devices: n(office) }).then(() => { toast.success(t('Saved')); onClose() })
             .catch((e) => toast.error(describeError(e)))}><CheckCheck /> {t('Save')}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+const browserOf = (ua: string) => {
+  const b = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : t('Browser')
+  const os = /Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iOS' : /Windows/.test(ua) ? 'Windows' : /Mac OS/.test(ua) ? 'Mac' : ''
+  return [b, os].filter(Boolean).join(' · ')
+}
+
+const GUARDS: { v: DeviceGuard; label: string; hint: string }[] = [
+  { v: 'off', label: msg('Any device'), hint: msg('As before: people sign in from any computer, browser or phone.') },
+  { v: 'warn', label: msg('Warn'), hint: msg('A device without licence still works, and is told it needs one: the time to license them all.') },
+  { v: 'on', label: msg('Only licensed devices'), hint: msg('People of this client sign in and work only from its licensed devices; any other is stopped.') },
+]
+/** per client: whether only its licensed devices may work */
+function GuardChoice({ company }: { company: string }) {
+  const q = useDeviceGuard(company)
+  const set = useDeviceGuardSet()
+  const choose = (g: DeviceGuard) => {
+    if (g === 'on' && !window.confirm(t('Only licensed devices from now on: a computer, browser or phone of this client without its licence stops at once. Go on?'))) return
+    void set.mutateAsync({ company, guard: g }).then(() => { toast.success(t('Saved')); void q.refetch() }).catch((e) => toast.error(describeError(e)))
+  }
+  return (
+    <div className="grid gap-2 rounded-md border p-3 text-[13px] sm:col-span-1">
+      <span className="font-medium">{t('Which devices may work')}</span>
+      <div className="grid gap-1.5" role="radiogroup" aria-label={t('Which devices may work')}>
+        {GUARDS.map((g) => (
+          <button key={g.v} type="button" role="radio" aria-checked={q.data === g.v} disabled={set.isPending || q.isLoading} onClick={() => choose(g.v)}
+            className={cn('rounded-md border-2 px-2.5 py-1.5 text-left', q.data === g.v ? 'border-primary bg-primary/5' : 'hover:bg-muted')}>
+            <span className="font-medium">{t(g.label)}</span><span className="block text-[11.5px] text-muted-foreground">{t(g.hint)}</span>
+          </button>))}
+      </div>
+    </div>
+  )
+}
+
+/** the Super Admin types a device's pairing code, sees what it is, gives it to a client */
+function PairDialog({ company: fixed, onClose }: { company?: string; onClose: () => void }) {
+  const clients = usePlatformClients(!fixed)
+  const approve = useDevicePairApprove()
+  const [code, setCode] = React.useState('')
+  const [found, setFound] = React.useState<DevicePairing | null>(null)
+  const [finding, setFinding] = React.useState(false)
+  const [company, setCompany] = React.useState(fixed ?? '')
+  const [kind, setKind] = React.useState<'till' | 'office' | 'mobile'>('office')
+  const [name, setName] = React.useState('')
+  const find = async () => {
+    setFinding(true)
+    try { const r = await devicePairFind(code); setFound(r); setKind(r.kind); setName(r.info.name || r.info.hostname || '') }
+    catch (e) { toast.error(tServer(describeError(e))) } finally { setFinding(false) }
+  }
+  const list = (clients.data?.clients ?? []) as { id: string; name: string }[]
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader><DialogTitle>{t('Approve a device by its code')}</DialogTitle>
+          <DialogDescription>{t('The device shows a code of 6 letters, valid for 15 minutes. Type it here.')}</DialogDescription></DialogHeader>
+        {!found ? (
+          <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); void find() }}>
+            <Input aria-label={t('Pairing code')} autoFocus autoCapitalize="characters" spellCheck={false} maxLength={8} className="h-11 font-mono text-lg tracking-[0.3em] uppercase"
+              value={code} onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))} placeholder="ABC234" />
+            <Button type="submit" className="h-11" loading={finding} disabled={code.length < 6}>{t('Find')}</Button>
+          </form>
+        ) : (
+          <div className="grid gap-3">
+            <div className="rounded-md border bg-muted/40 p-3 text-[12.5px]">
+              <div className="font-mono text-base font-semibold tracking-widest">{found.code}</div>
+              <div>{[found.info.hostname, found.info.os, found.info.version && `DrisPRO ${found.info.version}`].filter(Boolean).join(' · ') || (found.info.user_agent ? browserOf(found.info.user_agent) : '—')}</div>
+              <div className="text-muted-foreground">{[found.ip, found.info.server, formatDate(found.created_at, true)].filter(Boolean).join(' · ')}</div>
+            </div>
+            {!fixed && (
+              <div className="grid gap-1.5"><Label htmlFor="pd-client">{t('Client')}</Label>
+                <select id="pd-client" className="h-10 rounded-md border bg-background px-2 text-sm" value={company} onChange={(e) => setCompany(e.target.value)}>
+                  <option value="">{t('Choose the client')}</option>
+                  {list.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select></div>
+            )}
+            <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={t('The device is')}>
+              {KINDS.map((k) => (
+                <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(k)}
+                  className={cn('rounded-lg border-2 px-3 py-2 text-left text-[13px] font-medium', kind === k ? 'border-primary bg-primary/5' : 'hover:bg-muted')}>{KIND(k)}</button>))}
+            </div>
+            <div className="grid gap-1.5"><Label htmlFor="pd-name">{t('Name')}</Label><Input id="pd-name" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('e.g. Till 2, Arben\'s phone')} /></div>
+          </div>
+        )}
+        <DialogFooter><Button variant="ghost" onClick={onClose}>{t('Cancel')}</Button>
+          {found && <Button loading={approve.isPending} disabled={!company} onClick={() => void approve.mutateAsync({ code: found.code, company, kind, name: name.trim() })
+            .then((d) => { toast.success(t('{pc} is licensed', { pc: `${d.label} · ${d.name}` })); onClose() }).catch((e) => toast.error(tServer(describeError(e))))}><Check /> {t('Approve')}</Button>}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

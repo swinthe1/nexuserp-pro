@@ -2,7 +2,7 @@
 // printing straight to the receipt and kitchen printers (no print window), opening the cash drawer of a
 // network printer, starting with Windows, full screen for tills. The application itself comes from the
 // server (always the latest version) and keeps working offline the same way as in the browser.
-const { app, BrowserWindow, ipcMain, shell, Menu, dialog, net: enet, session: esession, desktopCapturer, screen, powerMonitor } = require('electron')
+const { app, BrowserWindow, ipcMain, shell, Menu, dialog, net: enet, session: esession, desktopCapturer, screen, powerMonitor, safeStorage } = require('electron')
 const fs = require('fs')
 const net = require('net')
 const path = require('path')
@@ -273,18 +273,40 @@ const keep = (r) => {
   syncSupport()
   return settings.device
 }
+// The device's key is kept locked by Windows (DPAPI, the Mac's keychain): settings.json copied to another computer
+// cannot be opened there, so a licence never moves with a copy of the files.
+function deviceSecret() {
+  const d = settings.device || {}
+  if (d.secretEnc) {
+    try { return safeStorage.decryptString(Buffer.from(d.secretEnc, 'base64')) } catch { return null }
+  }
+  return d.secret || null
+}
+function keepSecret(secret) {
+  const d = { ...(settings.device || {}) }
+  let enc = null
+  try { if (app.isReady() && safeStorage.isEncryptionAvailable()) enc = safeStorage.encryptString(secret).toString('base64') } catch { enc = null }
+  if (enc) { d.secretEnc = enc; delete d.secret } else { d.secret = secret }
+  settings = { ...settings, device: d }; writeSettings(settings)
+}
+// a key kept in the open by an older version is locked now
+function lockOldSecret() {
+  const d = settings.device
+  if (d?.secret && !d.secretEnc) keepSecret(d.secret)
+}
 async function activateDevice(code, { kind, name, migrated = false }) {
-  const secret = settings.device?.secret || crypto.randomBytes(32).toString('hex')
-  settings = { ...settings, device: { ...(settings.device || {}), secret } }; writeSettings(settings)
+  const secret = deviceSecret() || crypto.randomBytes(32).toString('hex')
+  keepSecret(secret)
   const r = await rpc('device_activate', { p_code: code, p: { ...machine(), kind, name, migrated, secret, device_id: settings.device.id || null } })
   return keep(r)
 }
 async function pingDevice() {
   const d = settings.device
-  if (!d?.id || !d.secret) return null
-  const r = await rpc('device_ping', { p_device: d.id, p_secret: d.secret, p: machine() })
+  const secret = deviceSecret()
+  if (!d?.id || !secret) return null
+  const r = await rpc('device_ping', { p_device: d.id, p_secret: secret, p: machine() })
   // the server no longer knows this computer (removed in the console, or another server): it says so and waits for a new activation
-  if (r.status === 'unknown') { settings = { ...settings, device: { secret: d.secret, status: 'unknown', name: d.name, kind: d.kind } }; writeSettings(settings); syncSupport(); return { status: 'unknown' } }
+  if (r.status === 'unknown') { settings = { ...settings, device: { secret: d.secret, secretEnc: d.secretEnc, status: 'unknown', name: d.name, kind: d.kind } }; writeSettings(settings); syncSupport(); return { status: 'unknown' } }
   return { ...keep(r), licenceOk: r.licence_ok !== false }
 }
 function showDevice(state) { if (win) void win.loadFile(path.join(__dirname, 'device.html'), { query: { state, label: settings.device?.label ?? '', name: settings.device?.name ?? '', kind: settings.device?.kind ?? '' } }) }
@@ -294,7 +316,10 @@ async function startupDeviceCheck() {
   try {
     // installed before computers had licences: it registers itself, approved, as what it looks like
     // a computer the server stopped knowing is never let back in by itself: it is activated again with the licence code
-    if (settings.device && !settings.device.id && (settings.device.status === 'unknown' || settings.device.secret)) return showDevice('unknown')
+    lockOldSecret()
+    // a copy of another computer's settings: its key cannot be opened here, so this computer asks for its own licence
+    if (settings.device?.id && !deviceSecret()) { settings = { ...settings, device: { status: 'unknown', name: settings.device.name, kind: settings.device.kind } }; writeSettings(settings); return showDevice('unknown') }
+    if (settings.device && !settings.device.id && (settings.device.status === 'unknown' || settings.device.secret || settings.device.secretEnc)) return showDevice('unknown')
     if (!settings.device?.id) {
       const kind = settings.fullScreen || settings.receiptPrinter || settings.drawer?.mode !== 'none' ? 'till' : 'office'
       await activateDevice(settings.licence, { kind, name: os.hostname(), migrated: true })
@@ -310,6 +335,13 @@ async function startupDeviceCheck() {
     if (settings.device?.status === 'active' && at && Date.now() - at > GRACE_DAYS * 86400_000) showDevice('offline')
   }
 }
+// the page sends this computer's licence with every request to DrisPRO (only an approved one)
+ipcMain.on('drispro:device-auth', (e) => {
+  if (!fromApp(e)) { e.returnValue = null; return }
+  const d = settings.device
+  const secret = d?.id && d.status === 'active' ? deviceSecret() : null
+  e.returnValue = secret ? { id: d.id, secret } : null
+})
 handle('drispro:device-check', async () => {
   try {
     const d = await pingDevice()
@@ -341,7 +373,7 @@ let controlFor = null   // the session whose control the person here allowed
 const SUPPORT_PARTITION = 'drispro-support'
 function syncSupport() {
   const d = settings.device
-  const want = app.isReady() && d?.status === 'active' && d.channel && d.secret ? d.channel : null
+  const want = app.isReady() && d?.status === 'active' && d.channel && deviceSecret() ? d.channel : null
   if (want === supportChannel && (!want || (supportWin && !supportWin.isDestroyed()))) return
   if (supportWin && !supportWin.isDestroyed()) supportWin.destroy()
   supportWin = null; supportChannel = want
@@ -377,7 +409,7 @@ function showBar(who, control = false) {
 function closeBar() { if (barWin && !barWin.isDestroyed()) { const b = barWin; barWin = null; b.removeAllListeners('close'); b.destroy() } }
 const fromSupport = (e) => !!supportWin && !supportWin.isDestroyed() && e.sender === supportWin.webContents
 const fromBar = (e) => !!barWin && !barWin.isDestroyed() && e.sender === barWin.webContents
-const supportEvent = (session, event) => rpc('device_support_event', { p_device: settings.device.id, p_secret: settings.device.secret, p_session: session, p_event: event }).catch(() => undefined)
+const supportEvent = (session, event) => rpc('device_support_event', { p_device: settings.device.id, p_secret: deviceSecret(), p_session: session, p_event: event }).catch(() => undefined)
 ipcMain.handle('support:config', (e) => {
   if (!fromSupport(e) || !supportChannel) return null
   return { url: `${LICENCE_API.replace(/^http/, 'ws')}/realtime/v1/websocket?apikey=${LICENCE_KEY}&vsn=1.0.0`, key: LICENCE_KEY,
@@ -387,7 +419,7 @@ ipcMain.handle('support:request', async (e, session) => {
   if (!fromSupport(e) || asking || typeof session !== 'string') return { ok: false }
   asking = true
   try {
-    const r = await rpc('device_support_check', { p_device: settings.device.id, p_secret: settings.device.secret, p_session: session }).catch(() => null)
+    const r = await rpc('device_support_check', { p_device: settings.device.id, p_secret: deviceSecret(), p_session: session }).catch(() => null)
     if (!r?.ok) return { ok: false }
     const parent = win && !win.isDestroyed() ? win : undefined
     if (parent) { if (parent.isMinimized()) parent.restore(); parent.show(); parent.flashFrame(true) }

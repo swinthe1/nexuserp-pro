@@ -354,7 +354,8 @@ export function useClientErrors(days = 7) {
 }
 
 /* ------------------------------------------------------------------ the computers: a licence for each */
-export type PlatformDevice = { id: string; company_id: string; company: string | null; number: number; label: string; name: string; kind: 'till' | 'office'
+export type PlatformDevice = { id: string; company_id: string; company: string | null; number: number; label: string; name: string; kind: 'till' | 'office' | 'mobile'
+  lease_until?: string | null; clone_suspect?: boolean; user_agent?: string | null
   status: 'active' | 'pending' | 'blocked'; hostname: string | null; os: string | null; os_user: string | null; platform: string | null; app_version: string | null
   mode: string | null; server: string | null; last_ip: string | null; migrated: boolean; note: string | null; register: string | null; register_seen_at: string | null
   created_at: string; approved_at: string | null; approved_by: string | null; blocked_at: string | null; last_seen_at: string | null }
@@ -369,6 +370,29 @@ export function usePlatformDevices(company?: string, enabled = true) {
 function useDevicesRefresh() {
   const qc = useQueryClient()
   return () => Promise.all([qc.invalidateQueries({ queryKey: ['platform', 'devices'] }), qc.invalidateQueries({ queryKey: KEY })])
+}
+export type DevicePairing = { id: string; code: string; kind: 'till' | 'office' | 'mobile'; ip: string | null; created_at: string; expires_at: string
+  info: { name?: string; hostname?: string; os?: string; platform?: string; version?: string; user_agent?: string; server?: string } }
+/** the Super Admin looks a device's pairing code up */
+export async function devicePairFind(code: string) {
+  return unwrap(await supabase.rpc('platform_device_pair_find', { p_code: code })) as unknown as DevicePairing
+}
+/** … and approves it for a client: the device has its licence at once */
+export function useDevicePairApprove() {
+  const refresh = useDevicesRefresh()
+  return useMutation({ mutationFn: async (a: { code: string; company: string; kind: string; name: string }) =>
+    unwrap(await supabase.rpc('platform_device_pair_approve', { p_code: a.code, p_company: a.company, p: { kind: a.kind, name: a.name } as never })) as unknown as PlatformDevice,
+  onSuccess: refresh })
+}
+export type DeviceGuard = 'off' | 'warn' | 'on'
+export function useDeviceGuard(company: string) {
+  return useQuery({ queryKey: ['platform', 'devices', 'guard', company],
+    queryFn: async () => unwrap(await supabase.rpc('platform_device_guard', { p_company: company })) as unknown as DeviceGuard })
+}
+export function useDeviceGuardSet() {
+  const refresh = useDevicesRefresh()
+  return useMutation({ mutationFn: async (a: { company: string; guard: DeviceGuard }) =>
+    unwrap(await supabase.rpc('platform_device_guard_set', { p_company: a.company, p_guard: a.guard })), onSuccess: refresh })
 }
 export function useDeviceSet() {
   const refresh = useDevicesRefresh()

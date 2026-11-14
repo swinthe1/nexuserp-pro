@@ -25,6 +25,8 @@ export interface DrisproDesktop {
   showInFolder?: (path: string) => Promise<boolean>
   openFile?: (path: string) => Promise<boolean>
   onDownloaded?: (cb: (d: DesktopDownload) => void) => () => void
+  /** this computer's licence for every request to DrisPRO (from version 2.57): its id and its key */
+  deviceAuth?: () => { id: string; secret: string } | null
 }
 export type DesktopDownload = { name: string; path: string; at: number; size: number }
 export type PrintKind = 'receipt' | 'kitchen' | 'document'

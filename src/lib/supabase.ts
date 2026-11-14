@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
+import { deviceHeaders } from './device-licence'
 
 // a DrisPRO on a local server says at start where its API is (drispro-config.js); the cloud build has it built in
 const local = (typeof window !== 'undefined' ? (window as unknown as { __DRISPRO__?: { url?: string; anonKey?: string } | null }).__DRISPRO__ : null) ?? null
@@ -16,6 +17,16 @@ if (!url || !anonKey) {
 
 export const supabase = createClient<Database>(url, anonKey, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+  // every request carries this device's licence (when it has one): a client may let only licensed devices work
+  global: {
+    fetch: (input: RequestInfo | URL, init?: RequestInit) => {
+      const extra = deviceHeaders()
+      if (!extra['x-drispro-device']) return fetch(input, init)
+      const headers = new Headers(init?.headers)
+      for (const [k, v] of Object.entries(extra)) headers.set(k, v)
+      return fetch(input, { ...init, headers })
+    },
+  },
 })
 
 export type Supabase = typeof supabase

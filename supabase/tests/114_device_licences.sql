@@ -1,7 +1,7 @@
 -- =============================================================================
--- A licence for every computer: within the client's limits a computer is licensed at once, beyond
--- them it waits for the Super Admin; the program checks its licence with its own key; a blocked
--- computer is told so; an older installation registers itself, approved.
+-- A licence for every computer: every new computer waits for the Super Admin (since 163, also within
+-- the client's limits and an older installation); the program checks its licence with its own key;
+-- a blocked computer is told so.
 -- (after 113: the Mini market "Mini Market Arbëri", 2 tills, 2 office computers)
 -- =============================================================================
 \set QUIET on
@@ -16,12 +16,20 @@ create function pg_temp.act(p_kind text, p_name text, p_extra jsonb default '{}'
   select public.device_activate('nxs-test-mini-0001', jsonb_build_object('kind', p_kind, 'name', p_name, 'hostname', 'PC-' || p_name,
     'secret', repeat(md5(p_name), 2), 'version', '1.8.0', 'platform', 'win32') || p_extra) $$;
 
--- 1. the tills: two are licensed at once, the third waits
+-- 1. the tills: every one waits for the Super Admin, numbered; he approves two
 select pg_temp.act('till', 'Arka 1') as a1 \gset
 select pg_temp.act('till', 'Arka 2') as a2 \gset
 select pg_temp.act('till', 'Arka 3') as a3 \gset
-select t.ok(:'a1'::jsonb ->> 'status' = 'active' and :'a2'::jsonb ->> 'status' = 'active' and :'a1'::jsonb ->> 'label' = 'PC-0001', 'two tills licensed at once, numbered');
-select t.ok(:'a3'::jsonb ->> 'status' = 'pending', 'the third till waits for the Super Admin');
+select t.ok(:'a1'::jsonb ->> 'status' = 'pending' and :'a2'::jsonb ->> 'status' = 'pending' and :'a1'::jsonb ->> 'label' = 'PC-0001', 'every new till waits for the Super Admin, numbered');
+select t.ok(:'a3'::jsonb ->> 'status' = 'pending', 'the third till waits too');
+reset role;
+set role authenticated;
+select t.login('zoe@platform.io');
+select public.platform_device_set((:'a1'::jsonb ->> 'id')::uuid, '{"status": "active"}');
+select public.platform_device_set((:'a2'::jsonb ->> 'id')::uuid, '{"status": "active"}');
+reset role;
+select set_config('request.jwt.claims', '', false), set_config('request.jwt.claim.sub', '', false);
+set role anon;
 
 -- 2. the program checks its licence with its own key
 select t.ok(public.device_ping((:'a1'::jsonb ->> 'id')::uuid, repeat(md5('Arka 1'), 2), '{"version": "1.8.1"}') ->> 'status' = 'active', 'the till checks its licence');
@@ -33,8 +41,16 @@ select t.throws(format($q$select public.device_activate('NXS-TEST-MINI-0001', js
 -- 3. an office computer; an older installation registers itself approved even beyond the limits
 select pg_temp.act('office', 'Zyra') as o1 \gset
 select pg_temp.act('till', 'Arka e vjetër', '{"migrated": true}') as old \gset
-select t.ok(:'o1'::jsonb ->> 'status' = 'active' and :'o1'::jsonb ->> 'kind' = 'office', 'the office computer is licensed');
-select t.ok(:'old'::jsonb ->> 'status' = 'active' and (:'old'::jsonb ->> 'migrated')::boolean, 'an older installation keeps working');
+select t.ok(:'o1'::jsonb ->> 'status' = 'pending' and :'o1'::jsonb ->> 'kind' = 'office', 'the office computer waits too');
+select t.ok(:'old'::jsonb ->> 'status' = 'pending' and (:'old'::jsonb ->> 'migrated')::boolean, 'one that says it was there before waits too');
+reset role;
+set role authenticated;
+select t.login('zoe@platform.io');
+select public.platform_device_set((:'o1'::jsonb ->> 'id')::uuid, '{"status": "active"}');
+select public.platform_device_set((:'old'::jsonb ->> 'id')::uuid, '{"status": "active"}');
+reset role;
+select set_config('request.jwt.claims', '', false), set_config('request.jwt.claim.sub', '', false);
+set role anon;
 
 -- 4. the Super Admin approves the waiting till, blocks another; the program learns it
 reset role;

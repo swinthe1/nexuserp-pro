@@ -2162,6 +2162,8 @@ export type Database = {
           count: number
           first_at: string
           last_at: string
+          device: string | null
+          sent_count: number
         }
         Insert: {
           id?: number
@@ -2178,6 +2180,8 @@ export type Database = {
           count?: number
           first_at?: string
           last_at?: string
+          device?: string | null
+          sent_count?: number
         }
         Update: {
           id?: number
@@ -2194,6 +2198,8 @@ export type Database = {
           count?: number
           first_at?: string
           last_at?: string
+          device?: string | null
+          sent_count?: number
         }
         Relationships: []
       }
@@ -6705,6 +6711,7 @@ export type Database = {
           max_till_devices: number | null
           max_office_devices: number | null
           device_approval: string
+          device_guard: string
         }
         Insert: {
           company_id: string
@@ -6733,6 +6740,7 @@ export type Database = {
           max_till_devices?: number | null
           max_office_devices?: number | null
           device_approval?: string
+          device_guard?: string
         }
         Update: {
           company_id?: string
@@ -6761,6 +6769,7 @@ export type Database = {
           max_till_devices?: number | null
           max_office_devices?: number | null
           device_approval?: string
+          device_guard?: string
         }
         Relationships: [
           { foreignKeyName: "licenses_company_id_fkey"; columns: ["company_id"]; isOneToOne: true; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -15496,6 +15505,7 @@ export type Database = {
           pos_receipt_max: number | null
           supplied_from_id: string | null
           atk_unit_no: string | null
+          unit_category: string | null
         }
         Insert: {
           id?: string
@@ -15518,6 +15528,7 @@ export type Database = {
           pos_receipt_max?: number | null
           supplied_from_id?: string | null
           atk_unit_no?: string | null
+          unit_category?: string | null
         }
         Update: {
           id?: string
@@ -15540,6 +15551,7 @@ export type Database = {
           pos_receipt_max?: number | null
           supplied_from_id?: string | null
           atk_unit_no?: string | null
+          unit_category?: string | null
         }
         Relationships: [
           { foreignKeyName: "warehouses_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
@@ -17433,6 +17445,10 @@ export type Database = {
         }
         Returns: number
       }
+      check_device: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       check_sync_health: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -18128,12 +18144,29 @@ export type Database = {
         }
         Returns: undefined
       }
+      device_pair_start: {
+        Args: {
+          p: Json
+        }
+        Returns: Json
+      }
+      device_pair_status: {
+        Args: {
+          p_id: string
+          p_secret: string
+        }
+        Returns: Json
+      }
       device_ping: {
         Args: {
           p_device: string
           p_secret: string
           p?: Json
         }
+        Returns: Json
+      }
+      device_state: {
+        Args: Record<PropertyKey, never>
         Returns: Json
       }
       device_support_check: {
@@ -18746,6 +18779,21 @@ export type Database = {
         }
         Returns: Json
       }
+      licence_devices: {
+        Args: {
+          p_code: string
+          p_server: string
+        }
+        Returns: Json
+      }
+      licence_errors_submit: {
+        Args: {
+          p_code: string
+          p_server: string
+          p: Json
+        }
+        Returns: number
+      }
       licence_read_result: {
         Args: {
           p_code: string
@@ -18766,6 +18814,13 @@ export type Database = {
         }
         Returns: string
       }
+      licence_tunnel: {
+        Args: {
+          p_code: string
+          p_server: string
+        }
+        Returns: Json
+      }
       licence_whatsapp_relay: {
         Args: {
           p_code: string
@@ -18779,6 +18834,23 @@ export type Database = {
           p_channel: string
         }
         Returns: number
+      }
+      local_devices_apply: {
+        Args: {
+          p_code: string
+          p: Json
+        }
+        Returns: number
+      }
+      local_errors_sent: {
+        Args: {
+          p: Json
+        }
+        Returns: undefined
+      }
+      local_errors_take: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       log_migration_run: {
         Args: {
@@ -19397,6 +19469,12 @@ export type Database = {
         }
         Returns: Json
       }
+      platform_client_units: {
+        Args: {
+          p_company: string
+        }
+        Returns: Json
+      }
       platform_clients: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -19511,12 +19589,39 @@ export type Database = {
         }
         Returns: undefined
       }
+      platform_device_guard: {
+        Args: {
+          p_company: string
+        }
+        Returns: string
+      }
+      platform_device_guard_set: {
+        Args: {
+          p_company: string
+          p_guard: string
+        }
+        Returns: undefined
+      }
       platform_device_limits: {
         Args: {
           p_company: string
           p: Json
         }
         Returns: undefined
+      }
+      platform_device_pair_approve: {
+        Args: {
+          p_code: string
+          p_company: string
+          p?: Json
+        }
+        Returns: Json
+      }
+      platform_device_pair_find: {
+        Args: {
+          p_code: string
+        }
+        Returns: Json
       }
       platform_device_set: {
         Args: {
@@ -19562,6 +19667,24 @@ export type Database = {
       }
       platform_mail_fallback: {
         Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      platform_member_create: {
+        Args: {
+          p_company: string
+          p_name: string
+          p_username: string
+          p_pin: string
+          p_role_keys: string[]
+        }
+        Returns: Json
+      }
+      platform_member_login: {
+        Args: {
+          p_member: string
+          p_username?: string
+          p_pin?: string
+        }
         Returns: Json
       }
       platform_member_roles: {
@@ -19717,6 +19840,37 @@ export type Database = {
         Args: {
           p_device: string
           p_mode?: string
+        }
+        Returns: Json
+      }
+      platform_tunnel_set: {
+        Args: {
+          p_company: string
+          p_on: boolean
+        }
+        Returns: undefined
+      }
+      platform_tunnels: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      platform_unit_create: {
+        Args: {
+          p_company: string
+          p: Json
+        }
+        Returns: Json
+      }
+      platform_unit_delete: {
+        Args: {
+          p_unit: string
+        }
+        Returns: Json
+      }
+      platform_unit_update: {
+        Args: {
+          p_unit: string
+          p: Json
         }
         Returns: Json
       }
@@ -20188,6 +20342,20 @@ export type Database = {
           p_private?: string
         }
         Returns: Json
+      }
+      postier_tunnel_claim: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      postier_tunnel_done: {
+        Args: {
+          p_company: string
+          p_ok: boolean
+          p_tunnel_id?: string
+          p_token?: string
+          p_error?: string
+        }
+        Returns: undefined
       }
       postier_webhook_claim: {
         Args: {
@@ -21742,6 +21910,13 @@ export type Database = {
       }
       unit_create: {
         Args: {
+          p: Json
+        }
+        Returns: Json
+      }
+      unit_update: {
+        Args: {
+          p_unit: string
           p: Json
         }
         Returns: Json

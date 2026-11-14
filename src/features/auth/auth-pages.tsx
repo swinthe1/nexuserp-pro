@@ -13,6 +13,7 @@ import { t, tServer } from '@/i18n'
 import { describeError } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { getTill } from '@/lib/shared-till'
+import { DevicePairing } from './device-pairing'
 import { PinLogin, finishPinSignIn } from './pin-login'
 
 /** Sign-in errors from the auth service, in plain words. */
@@ -59,6 +60,8 @@ function UserPinLogin({ onTill, onAdmin }: { onTill?: () => void; onAdmin: () =>
   const [show, setShow] = React.useState(false)
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  // the client lets only licensed devices work and this one has none (or its licence ran out)
+  const [needDevice, setNeedDevice] = React.useState(() => new URLSearchParams(window.location.search).has('device'))
   const submit = async (e?: React.FormEvent) => {
     e?.preventDefault()
     if (!username.trim() || pin.length !== 6 || busy) return
@@ -66,7 +69,8 @@ function UserPinLogin({ onTill, onAdmin }: { onTill?: () => void; onAdmin: () =>
     try {
       const { data, error: err } = await supabase.rpc('login_with_pin', { p_username: username.trim(), p_pin: pin })
       if (err) throw err
-      const r = data as unknown as { error?: string; request?: string; secret?: string }
+      const r = data as unknown as { error?: string; request?: string; secret?: string; device?: boolean }
+      if (r.device) { setNeedDevice(true); setPin(''); return }
       if (r.error) { setError(tServer(r.error)); setPin(''); return }
       await finishPinSignIn(r.request!, r.secret!)
       try { localStorage.setItem('drispro.last-username', username.trim().toLowerCase()) } catch { /* private window */ }
@@ -76,6 +80,7 @@ function UserPinLogin({ onTill, onAdmin }: { onTill?: () => void; onAdmin: () =>
   return (
     <>
       <Heading title={t('Welcome back')} sub={t('Sign in with your user name and PIN. The administrator of your company gives them.')} />
+      {needDevice ? <div className="mb-4"><DevicePairing onLicensed={() => setNeedDevice(false)} /></div> : null}
       <form onSubmit={(e) => void submit(e)} className="grid gap-4" noValidate>
         <div className="grid gap-1.5">
           <label htmlFor="li-user" className="text-sm font-medium">{t('User name')}</label>

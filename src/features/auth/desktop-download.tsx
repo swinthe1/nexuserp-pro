@@ -4,11 +4,10 @@ import * as React from 'react'
 import { Button } from '@/components/ui/button'
 import { t } from '@/i18n'
 import { isDesktop } from '@/lib/desktop'
+import { CLOUD } from '@/lib/cloud'
 import { isLocalServer, supabaseAnonKey, supabaseUrl } from '@/lib/supabase'
 import { cn, formatDate } from '@/lib/utils'
 
-/** The Windows program lives in the DrisPRO cloud; a local server asks there too (public key, read only). */
-const CLOUD = { url: 'https://api.drispro.com', key: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc5Mjg0NTY2MCwiZXhwIjo0OTQ4NTE5MjYwLCJyb2xlIjoiYW5vbiJ9.b6G9lu0yfVwPpWlddYYql4Hf0oelvnyrF-JH_xl3jd0' }
 const api = isLocalServer ? CLOUD : { url: supabaseUrl, key: supabaseAnonKey }
 
 export type DesktopRelease = { version: string; file_name: string; size_bytes: number; parts: number; sha256: string; path: string; published_at: string; notes: string | null }

@@ -21,6 +21,8 @@ contextBridge.exposeInMainWorld('drisproDesktop', {
   /** the files the program saved, newest first: name, full path, time, size */
   downloads: () => ipcRenderer.invoke('drispro:downloads'),
   checkUpdate: () => ipcRenderer.invoke('drispro:check-update'),
+  /** this computer's licence (id and key) for every request to DrisPRO; null until it is approved */
+  deviceAuth: () => ipcRenderer.sendSync('drispro:device-auth'),
   /** opens the folder with the file selected (only a file this program saved) */
   showInFolder: (p) => ipcRenderer.invoke('drispro:show-in-folder', p),
   openFile: (p) => ipcRenderer.invoke('drispro:open-file', p),

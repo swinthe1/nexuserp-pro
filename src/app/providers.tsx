@@ -8,6 +8,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { PwaPrompts } from '@/components/pwa-prompts'
 import { OfflineSync } from '@/app/offline-sync'
+import { DeviceGuard } from '@/app/device-guard'
 import { LanguageSync, LocaleBoundary } from '@/i18n/language'
 import { describeError } from '@/lib/errors'
 import { markShown } from '@/lib/error-report'
@@ -47,6 +48,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               <LocaleBoundary>{children}</LocaleBoundary>
               <Toaster />
               <PwaPrompts />
+              <DeviceGuard />
             </TooltipProvider>
           </CompanyProvider>
         </AuthProvider>
